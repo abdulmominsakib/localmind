@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -7,8 +8,8 @@ import 'package:localmind/features/servers/data/models/server.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/service_providers.dart';
 import '../providers/server_providers.dart';
-import '../widgets/server_icon_picker.dart';
-import '../widgets/server_type_selector.dart';
+import 'components/server_icon_picker.dart';
+import 'components/server_type_selector.dart';
 
 class AddServerScreen extends ConsumerStatefulWidget {
   final Server? editServer;
@@ -217,8 +218,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   }
 
   void _showIconPicker() {
-    showShadDialog(
+    showShadSheet(
       context: context,
+      side: ShadSheetSide.bottom,
       builder: (context) => ServerIconPicker(
         selectedIconName: _selectedIconName,
         onIconSelected: (iconName) {
@@ -271,18 +273,16 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
+                        // color: theme.colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: HugeIcon(
-                        _selectedIconName != null
-                            ? (getHugeIconByName(_selectedIconName)?.iconData ??
+                        icon: _selectedIconName != null
+                            ? (getHugeIconByName(_selectedIconName)?.icon ??
                                   getDefaultServerIcon(
                                     _selectedType.name,
-                                  )!.iconData)
-                            : getDefaultServerIcon(
-                                _selectedType.name,
-                              )!.iconData,
+                                  )!.icon)
+                            : getDefaultServerIcon(_selectedType.name)!.icon,
                         size: 24,
                         color: theme.colorScheme.primary,
                       ),

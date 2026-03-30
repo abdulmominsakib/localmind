@@ -3,7 +3,6 @@ class AppRoutes {
   static const String onboarding = '/onboarding';
   static const String onboardingSetup = '/onboarding/setup';
   static const String onboardingTheme = '/onboarding/theme';
-  static const String conversations = '/conversations';
   static const String servers = '/servers';
   static const String addServer = '/servers/add';
   static const String personas = '/personas';
@@ -11,3 +10,4 @@ class AppRoutes {
   static const String settings = '/settings';
   static const String models = '/models';
 }
+

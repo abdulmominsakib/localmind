@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/models/enums.dart';
+import '../../../../core/models/enums.dart';
 
 class ServerTypeSelector extends StatelessWidget {
   final ServerType selectedType;

@@ -214,10 +214,15 @@ class _OnboardingServerSetupScreenState
                     fillColor: theme.colorScheme.surface,
                   ),
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty)
+                    if (val == null || val.trim().isEmpty) {
                       return 'Port required';
-                    if (int.tryParse(val) == null) return 'Must be a number';
-                    return null;
+                    } else {
+                      if (int.tryParse(val) == null) {
+                        return 'Must be a number';
+                      } else {
+                        return null;
+                      }
+                    }
                   },
                 ),
                 const SizedBox(height: 16),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/models/enums.dart';
+import '../../../../core/models/enums.dart';
 
 class ConnectionStatusIndicator extends StatefulWidget {
   final ConnectionStatus status;
@@ -12,7 +12,8 @@ class ConnectionStatusIndicator extends StatefulWidget {
   });
 
   @override
-  State<ConnectionStatusIndicator> createState() => _ConnectionStatusIndicatorState();
+  State<ConnectionStatusIndicator> createState() =>
+      _ConnectionStatusIndicatorState();
 }
 
 class _ConnectionStatusIndicatorState extends State<ConnectionStatusIndicator>
@@ -27,10 +28,11 @@ class _ConnectionStatusIndicatorState extends State<ConnectionStatusIndicator>
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    _animation = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    
+    _animation = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
     if (widget.status == ConnectionStatus.connected) {
       _controller.repeat(reverse: true);
     }
@@ -72,10 +74,7 @@ class _ConnectionStatusIndicatorState extends State<ConnectionStatusIndicator>
       return SizedBox(
         width: widget.size,
         height: widget.size,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: _color,
-        ),
+        child: CircularProgressIndicator(strokeWidth: 2, color: _color),
       );
     }
 
@@ -87,7 +86,11 @@ class _ConnectionStatusIndicatorState extends State<ConnectionStatusIndicator>
           height: widget.size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: _color.withValues(alpha: widget.status == ConnectionStatus.connected ? _animation.value : 1.0),
+            color: _color.withValues(
+              alpha: widget.status == ConnectionStatus.connected
+                  ? _animation.value
+                  : 1.0,
+            ),
           ),
         );
       },

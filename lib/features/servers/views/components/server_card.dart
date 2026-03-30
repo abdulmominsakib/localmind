@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
-import '../../../core/models/enums.dart';
+import '../../../../core/models/enums.dart';
 import 'connection_status_indicator.dart';
 import 'server_icon_picker.dart';
 
@@ -66,12 +67,12 @@ class ServerCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
+                  // color: theme.colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: _serverIconData != null
                     ? HugeIcon(
-                        _serverIconData!.iconData,
+                        icon: _serverIconData!.icon,
                         size: 24,
                         color: theme.colorScheme.primary,
                       )

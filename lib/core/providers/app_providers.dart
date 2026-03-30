@@ -49,9 +49,41 @@ class SettingsNotifier extends Notifier<AppSettings> {
     await boxes.settings.put('appSettings', appSettings);
   }
 
-  Future<void> resetToDefaults() async {
+  void setTemperature(double value) =>
+      _update(state.copyWith(temperature: value));
+  void setTopP(double value) => _update(state.copyWith(topP: value));
+  void setMaxTokens(int value) => _update(state.copyWith(maxTokens: value));
+  void setContextLength(int value) =>
+      _update(state.copyWith(contextLength: value));
+  void setFontSize(double value) => _update(state.copyWith(fontSize: value));
+  void setShowSystemMessages(bool value) =>
+      _update(state.copyWith(showSystemMessages: value));
+  void setHapticFeedback(bool value) =>
+      _update(state.copyWith(hapticFeedbackEnabled: value));
+  void setSendOnEnter(bool value) =>
+      _update(state.copyWith(sendOnEnter: value));
+  void setDefaultServer(String? id) =>
+      _update(state.copyWith(defaultServerId: id));
+  void setShowDataIndicator(bool value) =>
+      _update(state.copyWith(showDataIndicator: value));
+  void setAutoGenerateTitle(bool value) =>
+      _update(state.copyWith(autoGenerateTitle: value));
+  void setStreamingEnabled(bool value) =>
+      _update(state.copyWith(streamingEnabled: value));
+  void setDefaultPersona(String? id) =>
+      _update(state.copyWith(defaultPersonaId: id));
+  void setHasCompletedOnboarding(bool value) =>
+      _update(state.copyWith(hasCompletedOnboarding: value));
+
+  Future<void> _update(AppSettings updated) async {
+    state = updated;
     final boxes = ref.read(hiveBoxesProvider);
+    await boxes.settings.put('appSettings', updated);
+  }
+
+  Future<void> resetToDefaults() async {
     state = AppSettings();
+    final boxes = ref.read(hiveBoxesProvider);
     await boxes.settings.put('appSettings', state);
   }
 }

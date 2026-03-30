@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hugeicons/hugeicons.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
 import 'package:localmind/core/routes/app_routes.dart';
@@ -81,11 +81,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return Column(
       children: [
         AppBar(
-          leading: Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-            ),
+          leading: ShadResponsiveBuilder(
+            builder: (context, breakpoint) {
+              final isDesktop =
+                  breakpoint >= ShadTheme.of(context).breakpoints.md;
+              if (isDesktop) return const SizedBox.shrink();
+              return IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              );
+            },
           ),
           title: GestureDetector(
             onTap: () => _showModelPicker(context),
@@ -147,7 +152,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       ref.read(chatProvider.notifier).sendMessage(prompt),
                   quickPrompts: _quickPrompts,
                   recentConversations: ref.watch(recentConversationsProvider),
-                  onSeeAll: () => context.go(AppRoutes.conversations),
+                  onSeeAll: () {
+                    if (Scaffold.maybeOf(context)?.hasDrawer ?? false) {
+                      Scaffold.of(context).openDrawer();
+                    }
+                  },
                 )
               : _MessageList(
                   scrollController: _scrollController,
@@ -223,7 +232,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      useSafeArea: true,
       builder: (context) => const ModelPickerSheet(),
     );
   }
@@ -337,14 +346,9 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            HugeIcon(
-              icon: HugeIcons.strokeRoundedChatBot,
-              size: 64,
-              color: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
-            ),
             const SizedBox(height: 24),
             Text(
-              'LocalMind',
+              'Select Model LocalMind',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,

@@ -302,8 +302,30 @@ class ChatNotifier extends Notifier<ChatState> {
     final settings = ref.read(settingsProvider);
     final messages = <Message>[];
 
-    if (settings.showSystemMessages && state.messages.isEmpty) {
-      // Add default system prompt if enabled
+    final personaPrompt = _getPersonaSystemPrompt();
+    if (personaPrompt != null) {
+      messages.add(
+        Message(
+          id: 'system-${_currentConversationId}',
+          conversationId: _currentConversationId ?? '',
+          role: MessageRole.system,
+          content: personaPrompt,
+          createdAt: DateTime.now(),
+          status: MessageStatus.complete,
+        ),
+      );
+    } else if (settings.showSystemMessages) {
+      messages.add(
+        Message(
+          id: 'system-default-${_currentConversationId}',
+          conversationId: _currentConversationId ?? '',
+          role: MessageRole.system,
+          content:
+              'You are LocalMind, a helpful AI assistant. Provide clear, accurate, and concise responses.',
+          createdAt: DateTime.now(),
+          status: MessageStatus.complete,
+        ),
+      );
     }
 
     for (final message in state.messages) {
@@ -314,6 +336,32 @@ class ChatNotifier extends Notifier<ChatState> {
 
     final contextLength = ref.read(chatParamsProvider).contextLength;
     return _truncateToContextWindow(messages, contextLength);
+  }
+
+  String? _getPersonaSystemPrompt() {
+    final conversation = ref.read(conv.activeConversationProvider);
+    final personaId = conversation?.personaId;
+    if (personaId == null) return null;
+
+    if (conversation?.systemPrompt != null &&
+        conversation!.systemPrompt!.isNotEmpty) {
+      return conversation.systemPrompt;
+    }
+
+    try {
+      final boxes = ref.read(hiveBoxesProvider);
+      final persona = boxes.personas.values.cast<dynamic>().firstWhere(
+        (p) => p.id == personaId,
+        orElse: () => null,
+      );
+      if (persona != null &&
+          persona.systemPrompt != null &&
+          persona.systemPrompt.isNotEmpty) {
+        return persona.systemPrompt;
+      }
+    } catch (_) {}
+
+    return null;
   }
 
   List<Message> _truncateToContextWindow(
