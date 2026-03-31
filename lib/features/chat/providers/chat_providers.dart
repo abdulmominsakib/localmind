@@ -43,11 +43,37 @@ class IsStreamingNotifier extends Notifier<bool> {
 
 final chatParamsProvider = Provider<ChatParameters>((ref) {
   final settings = ref.watch(settingsProvider);
+  final activeConv = ref.watch(conv.activeConversationProvider);
+
+  double temperature = settings.temperature;
+  double topP = settings.topP;
+  int maxTokens = settings.maxTokens;
+  int contextLength = settings.contextLength;
+
+  if (activeConv?.personaId != null) {
+    final personaId = activeConv!.personaId;
+    try {
+      final boxes = ref.read(hiveBoxesProvider);
+      final persona = boxes.personas.values.cast<dynamic>().firstWhere(
+        (p) => p.id == personaId,
+        orElse: () => null,
+      );
+      if (persona != null && persona.preferredParams != null) {
+        final params = persona.preferredParams as Map<String, dynamic>;
+        if (params['temperature'] != null)
+          temperature = (params['temperature'] as num).toDouble();
+        if (params['topP'] != null) topP = (params['topP'] as num).toDouble();
+        if (params['maxTokens'] != null)
+          maxTokens = (params['maxTokens'] as num).toInt();
+      }
+    } catch (_) {}
+  }
+
   return ChatParameters(
-    temperature: settings.temperature,
-    topP: settings.topP,
-    maxTokens: settings.maxTokens,
-    contextLength: settings.contextLength,
+    temperature: temperature,
+    topP: topP,
+    maxTokens: maxTokens,
+    contextLength: contextLength,
   );
 });
 
@@ -57,6 +83,60 @@ final chatServiceProvider = Provider<ChatService>((ref) {
     throw StateError('No active server');
   }
   return ChatService.forServer(server.type, ref.read(dioProvider));
+});
+
+final smartRepliesProvider = Provider<List<String>>((ref) {
+  final chatState = ref.watch(chatProvider);
+  final isStreaming = ref.watch(isStreamingProvider);
+
+  if (chatState.messages.length < 2 || isStreaming) return [];
+
+  final lastAssistant = chatState.messages.reversed.firstWhere(
+    (m) =>
+        m.role == MessageRole.assistant && m.status == MessageStatus.complete,
+    orElse: () => chatState.messages.last,
+  );
+  if (lastAssistant.role != MessageRole.assistant) return [];
+
+  final content = lastAssistant.content.toLowerCase();
+  final suggestions = <String>[];
+
+  if (content.contains('```') ||
+      content.contains('function') ||
+      content.contains('class ') ||
+      content.contains('import ')) {
+    suggestions.addAll([
+      'Explain this code',
+      'How can I improve this?',
+      'Add error handling',
+      'Write tests for this',
+    ]);
+  } else if (content.contains('step') ||
+      content.contains('first') ||
+      content.contains('then')) {
+    suggestions.addAll([
+      'Can you elaborate on step 1?',
+      'What if I get stuck?',
+      'Give me a summary',
+    ]);
+  } else if (content.contains('error') ||
+      content.contains('problem') ||
+      content.contains('issue')) {
+    suggestions.addAll([
+      'Show me a fix',
+      'What else could cause this?',
+      'How to prevent this?',
+    ]);
+  } else {
+    suggestions.addAll([
+      'Tell me more',
+      'Give me an example',
+      'Summarize this',
+      'What are the alternatives?',
+    ]);
+  }
+
+  return suggestions;
 });
 
 class ChatState {
@@ -263,6 +343,16 @@ class ChatNotifier extends Notifier<ChatState> {
                         preview,
                         DateTime.now(),
                       );
+
+                  final userMessage = state.messages
+                      .where((m) => m.role == MessageRole.user)
+                      .firstOrNull;
+                  if (userMessage != null && userMessage.content.length > 10) {
+                    _autoGenerateTitle(
+                      userMessage.content,
+                      finalMessage.content,
+                    );
+                  }
                 }
               }
             },
@@ -385,6 +475,24 @@ class ChatNotifier extends Notifier<ChatState> {
     }
 
     return result;
+  }
+
+  void _autoGenerateTitle(String userContent, String assistantContent) {
+    final settings = ref.read(settingsProvider);
+    if (!settings.autoGenerateTitle) return;
+    if (_currentConversationId == null) return;
+
+    final activeConv = ref.read(conv.activeConversationProvider);
+    if (activeConv == null) return;
+    if (activeConv.title != 'New Chat') return;
+
+    final title = userContent.length > 40
+        ? '${userContent.substring(0, 40)}...'
+        : userContent;
+
+    ref
+        .read(conv.conversationsProvider.notifier)
+        .renameConversation(_currentConversationId!, title);
   }
 
   void cancelStream() {

@@ -10,7 +10,10 @@ import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/chat/views/components/chat_bubble.dart';
 import 'package:localmind/features/chat/views/components/chat_input_bar.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
+import 'package:localmind/features/conversations/providers/conversation_providers.dart'
+    as conv;
 import 'package:localmind/features/models/screens/model_picker_sheet.dart';
+import 'package:localmind/features/personas/providers/personas_providers.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -65,6 +68,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final chatState = ref.watch(chatProvider);
     final selectedModel = ref.watch(selectedModelProvider);
     final connectionStatus = ref.watch(connectionStatusProvider);
+    final activeConversation = ref.watch(conv.activeConversationProvider);
+    final personaId = activeConversation?.personaId;
+    final persona = personaId != null
+        ? ref.watch(personaByIdProvider(personaId))
+        : null;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -97,6 +105,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (persona != null) ...[
+                  Text(persona.emoji, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 4),
+                ],
                 Text(
                   selectedModel?.displayName ?? 'Select Model',
                   style: const TextStyle(fontSize: 16),
@@ -130,6 +142,29 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
+                PopupMenuItem(
+                  value: 'persona',
+                  child: ListTile(
+                    leading: Icon(
+                      persona != null
+                          ? Icons.swap_horiz
+                          : Icons.smart_toy_outlined,
+                    ),
+                    title: Text(
+                      persona != null ? 'Change Persona' : 'Set Persona',
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                if (persona != null)
+                  const PopupMenuItem(
+                    value: 'remove_persona',
+                    child: ListTile(
+                      leading: Icon(Icons.person_remove_outlined),
+                      title: Text('Remove Persona'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
                 const PopupMenuItem(
                   value: 'clear',
                   child: ListTile(
@@ -146,77 +181,90 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             connectionStatus == ConnectionStatus.error)
           _ConnectionBanner(status: connectionStatus),
         Expanded(
-          child: chatState.messages.isEmpty
-              ? _EmptyState(
-                  onQuickPrompt: (prompt) =>
-                      ref.read(chatProvider.notifier).sendMessage(prompt),
-                  quickPrompts: _quickPrompts,
-                  recentConversations: ref.watch(recentConversationsProvider),
-                  onSeeAll: () {
-                    if (Scaffold.maybeOf(context)?.hasDrawer ?? false) {
-                      Scaffold.of(context).openDrawer();
-                    }
-                  },
-                )
-              : _MessageList(
-                  scrollController: _scrollController,
-                  messages: chatState.messages,
-                  streamingMessage: chatState.streamingMessage,
-                  isStreaming: chatState.isStreaming,
-                  onRetry: (messageId) {
-                    ref.read(chatProvider.notifier).retryLastMessage();
-                  },
-                  onDelete: (messageId) {
-                    ref.read(chatProvider.notifier).deleteMessage(messageId);
-                  },
-                ),
-        ),
-        if (_showScrollToBottom && chatState.messages.isNotEmpty)
-          Positioned(
-            bottom: 100,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: _scrollToBottom,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF3A3A3A)
-                        : const Color(0xFFE5E5E5),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.arrow_downward,
-                        size: 14,
-                        color: isDark
-                            ? const Color(0xFF888888)
-                            : const Color(0xFF666666),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'New messages',
-                        style: TextStyle(
-                          fontSize: 12,
+          child: Stack(
+            children: [
+              chatState.messages.isEmpty
+                  ? _EmptyState(
+                      onQuickPrompt: (prompt) =>
+                          ref.read(chatProvider.notifier).sendMessage(prompt),
+                      quickPrompts: _quickPrompts,
+                      recentConversations:
+                          ref.watch(recentConversationsProvider),
+                      onSeeAll: () {
+                        if (Scaffold.maybeOf(context)?.hasDrawer ?? false) {
+                          Scaffold.of(context).openDrawer();
+                        }
+                      },
+                    )
+                  : _MessageList(
+                      scrollController: _scrollController,
+                      messages: chatState.messages,
+                      streamingMessage: chatState.streamingMessage,
+                      isStreaming: chatState.isStreaming,
+                      onRetry: (messageId) {
+                        ref.read(chatProvider.notifier).retryLastMessage();
+                      },
+                      onDelete: (messageId) {
+                        ref
+                            .read(chatProvider.notifier)
+                            .deleteMessage(messageId);
+                      },
+                    ),
+              if (_showScrollToBottom && chatState.messages.isNotEmpty)
+                Positioned(
+                  bottom: 20,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: _scrollToBottom,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
                           color: isDark
-                              ? const Color(0xFF888888)
-                              : const Color(0xFF666666),
+                              ? const Color(0xFF3A3A3A)
+                              : const Color(0xFFE5E5E5),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.arrow_downward,
+                              size: 14,
+                              color: isDark
+                                  ? const Color(0xFF888888)
+                                  : const Color(0xFF666666),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'New messages',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark
+                                    ? const Color(0xFF888888)
+                                    : const Color(0xFF666666),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
+            ],
           ),
+        ),
+        _SmartReplyChips(
+          onSend: (message) {
+            ref.read(chatProvider.notifier).sendMessage(message);
+          },
+        ),
         ChatInputBar(
+          isStreaming: chatState.isStreaming,
           onSend: (message) {
             ref.read(chatProvider.notifier).sendMessage(message);
           },
@@ -241,6 +289,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     switch (action) {
       case 'new_chat':
         ref.read(chatProvider.notifier).startNewConversation();
+        break;
+      case 'persona':
+        _showPersonaPicker(context);
+        break;
+      case 'remove_persona':
+        final activeConv = ref.read(conv.activeConversationProvider);
+        if (activeConv != null) {
+          ref
+              .read(conv.conversationsProvider.notifier)
+              .updatePersona(activeConv.id, null, null);
+        }
         break;
       case 'clear':
         showDialog(
@@ -267,6 +326,106 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         );
         break;
     }
+  }
+
+  void _showPersonaPicker(BuildContext context) {
+    final personas = ref.read(personasNotifierProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeConv = ref.read(conv.activeConversationProvider);
+    final currentPersonaId = activeConv?.personaId;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey[600] : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Select Persona',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: personas.length,
+                    itemBuilder: (context, index) {
+                      final p = personas[index];
+                      final isSelected = p.id == currentPersonaId;
+                      final accent = isDark
+                          ? const Color(0xFF3B82F6)
+                          : const Color(0xFF2563EB);
+                      return ListTile(
+                        leading: Text(
+                          p.emoji,
+                          style: const TextStyle(fontSize: 22),
+                        ),
+                        title: Text(
+                          p.name,
+                          style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        subtitle: p.description != null
+                            ? Text(
+                                p.description!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? const Color(0xFF888888)
+                                      : const Color(0xFF999999),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            : null,
+                        trailing: isSelected
+                            ? Icon(Icons.check_circle, color: accent)
+                            : null,
+                        onTap: () {
+                          if (activeConv != null) {
+                            ref
+                                .read(conv.conversationsProvider.notifier)
+                                .updatePersona(
+                                  activeConv.id,
+                                  p.id,
+                                  p.systemPrompt,
+                                );
+                          }
+                          Navigator.pop(ctx);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -341,8 +500,8 @@ class _EmptyState extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -360,9 +519,7 @@ class _EmptyState extends StatelessWidget {
               'Your AI. Your Device. Your Rules.',
               style: TextStyle(
                 fontSize: 14,
-                color: isDark
-                    ? const Color(0xFF888888)
-                    : const Color(0xFF666666),
+                color: isDark ? const Color(0xFF888888) : const Color(0xFF666666),
               ),
             ),
             const SizedBox(height: 32),
@@ -387,9 +544,7 @@ class _EmptyState extends StatelessWidget {
                       ? const Color(0xFF2A2A2A)
                       : const Color(0xFFF5F5F5),
                   side: BorderSide(
-                    color: isDark
-                        ? const Color(0xFF3A3A3A)
-                        : const Color(0xFFE5E5E5),
+                    color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5),
                   ),
                 );
               }).toList(),
@@ -404,9 +559,7 @@ class _EmptyState extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: isDark
-                          ? const Color(0xFFA0A0A0)
-                          : const Color(0xFF666666),
+                      color: isDark ? const Color(0xFFA0A0A0) : const Color(0xFF666666),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -417,18 +570,14 @@ class _EmptyState extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: isDark
-                            ? const Color(0xFF3B82F6)
-                            : const Color(0xFF2563EB),
+                        color: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              ...recentConversations
-                  .take(5)
-                  .map(
+              ...recentConversations.take(5).map(
                     (conv) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: _RecentConversationItem(conversation: conv),
@@ -571,6 +720,59 @@ class _MessageList extends StatelessWidget {
           onDelete: () => onDelete(message.id),
         );
       },
+    );
+  }
+}
+
+class _SmartReplyChips extends ConsumerWidget {
+  const _SmartReplyChips({required this.onSend});
+  final ValueChanged<String> onSend;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final suggestions = ref.watch(smartRepliesProvider);
+    if (suggestions.isEmpty) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: suggestions.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (context, index) {
+          final label = suggestions[index];
+          return GestureDetector(
+            onTap: () => onSend(label),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF2A2A2A)
+                    : const Color(0xFFF0F0F0),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF3A3A3A)
+                      : const Color(0xFFE0E0E0),
+                ),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark
+                      ? const Color(0xFFCCCCCC)
+                      : const Color(0xFF444444),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

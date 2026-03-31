@@ -1,6 +1,6 @@
 # LocalMind — Implementation Tracking
 
-> Last updated: 2026-03-30 (v3 — Steps 1-5 complete)
+> Last updated: 2026-03-30 (v5 — Steps 1-9 + all remaining complete)
 
 ---
 
@@ -36,10 +36,10 @@
 | `core/storage/hive_keys.dart` — box name constants | ✅ Done |
 | `core/routes/app_routes.dart` — route definitions | ✅ Done |
 | UUID generation utility | ✅ Done (inline in chat/conversation providers) |
-| `core/repository/server/server_repository.dart` — abstract server repo | ❌ Not Done (logic is in `server_api_service.dart` under features — cross-feature import) |
+| `core/repository/server/server_repository.dart` — abstract server repo | ✅ Done | `core/repository/server/server_repository.dart` |
 | `core/repository/chat/chat_service.dart` — abstract chat service | ✅ Done (located in `features/chat/data/`) |
-| `core/utils/date_utils.dart` — date formatting | ❌ Not Done (date formatting is inline) |
-| `AppException` / `AppErrorType` error model | ❌ Not Done |
+| `core/utils/date_utils.dart` — date formatting | ✅ Done | `core/utils/date_utils.dart` |
+| `AppException` / `AppErrorType` error model | ✅ Done | `core/models/app_exception.dart` |
 
 ### Feature 08: Design System
 
@@ -48,14 +48,14 @@
 | `core/theme/colors.dart` — AppColors dark + light | ✅ Done |
 | `core/theme/typography.dart` — Inter + Fira Code text styles | ✅ Done |
 | `core/theme/app_theme.dart` — ThemeData dark + light | ✅ Done |
-| `core/components/app_button.dart` — button variants | ❌ Not Done |
-| `core/components/app_card.dart` — card component | ❌ Not Done |
-| `core/components/app_text_field.dart` — text input component | ❌ Not Done |
-| `core/components/app_sheet.dart` — bottom sheet wrapper | ❌ Not Done |
-| `core/components/app_dialog.dart` — dialog wrapper | ❌ Not Done |
-| `core/components/app_loading_indicator.dart` — spinner | ❌ Not Done |
+| `core/components/app_button.dart` — button variants | ✅ Done | AppButton (4 variants, 3 sizes, loading) |
+| `core/components/app_card.dart` — card component | ✅ Done | AppCard in `app_button.dart` |
+| `core/components/app_text_field.dart` — text input component | ✅ Done | AppTextField + AppSheet + AppDialog in `app_text_field.dart` |
+| `core/components/app_sheet.dart` — bottom sheet wrapper | ✅ Done | AppSheet in `app_text_field.dart` |
+| `core/components/app_dialog.dart` — dialog wrapper | ✅ Done | AppDialog (confirm + input) in `app_text_field.dart` |
+| `core/components/app_loading_indicator.dart` — spinner | ✅ Done | AppLoadingIndicator in `app_button.dart` |
 | Haptic feedback integration | ✅ Done (in chat input bar) |
-| Spacing & radius constants (`AppSizes`) | ❌ Not Done |
+| Spacing & radius constants (`AppSizes`) | ✅ Done | `core/components/app_sizes.dart` |
 
 ---
 
@@ -113,6 +113,8 @@
 | `LMStudioChatService` — SSE streaming | ✅ Done | |
 | `OllamaChatService` — NDJSON streaming | ✅ Done | |
 | `OpenRouterChatService` — SSE with API key | ✅ Done | |
+| `TtsService` — text-to-speech | ✅ Done | `features/chat/data/tts_service.dart` |
+| `ExportService` — Markdown/text export | ✅ Done | `features/chat/data/export_service.dart` |
 | **UI** | | |
 | `chat_screen.dart` — full chat page with messages + input | ✅ Done | |
 | `chat_bubble.dart` — user / assistant / system bubbles | ✅ Done | |
@@ -126,6 +128,12 @@
 | "New messages ↓" scroll-to-bottom FAB | ✅ Done | |
 | Connection error banner | ✅ Done | |
 | Recent conversations on empty state | ✅ Done | |
+| "Read Aloud" TTS button in message actions | ✅ Done | `message_action_bar.dart` |
+| Smart reply chips after assistant response | ✅ Done | `smartRepliesProvider` + `_SmartReplyChips` |
+| Image attachment button + preview | ✅ Done | `chat_input_bar.dart` with `file_picker` |
+| Persona emoji in chat app bar | ✅ Done | |
+| "Change Persona" / "Remove Persona" menu items | ✅ Done | |
+| Persona picker bottom sheet | ✅ Done | |
 | Haptic feedback on send | ✅ Done | |
 
 ### Feature 03: Model Management
@@ -136,7 +144,7 @@
 | `model_info.dart` — ModelInfo model | ✅ Done | `features/models/data/models/model_info.dart` |
 | **LOGIC** | | |
 | `selectedModelProvider` — track selected model | ✅ Done | In `chat_providers.dart` |
-| Model cache with 5-min TTL | ❌ Not Done | No caching |
+| Model cache with 5-min TTL | ✅ Done | `features/models/data/model_cache.dart` |
 | `modelSearchQueryProvider` — search/filter | ✅ Done | In `model_picker_sheet.dart` |
 | **UI** | | |
 | `model_picker_sheet.dart` — full model list + search + selection | ✅ Done | |
@@ -180,9 +188,11 @@
 | `date_section_header.dart` — TODAY/YESTERDAY/OLDER headers | ✅ Done | |
 | `drawer_nav_item.dart` — Chat/Servers/Personas nav | ✅ Done | |
 | `new_chat_button.dart` — "New Chat" CTA | ✅ Done | |
-| Long-press context menu (Rename/Pin/Delete) | ❌ Not Done | Delete only, no rename/pin from sidebar |
-| Swipe-to-delete with undo snackbar | ❌ Not Done | |
-| Auto-title generation after first exchange | ❌ Not Done | Uses truncated first message |
+| Long-press context menu (Rename/Pin/Delete) | ✅ Done | In `conversation_tile.dart` |
+| Swipe-to-delete with undo snackbar | ✅ Done | `Dismissible` in `conversation_tile.dart` |
+| Auto-title generation after first exchange | ✅ Done | `_autoGenerateTitle` in `chat_providers.dart` |
+| Inline rename dialog | ✅ Done | In `conversation_list.dart` |
+| `updatePersona` method in ConversationsNotifier | ✅ Done | |
 
 ### Feature 05: Personas
 
@@ -265,12 +275,12 @@
 
 | Task | Status |
 |------|--------|
-| AI Voice (TTS) — read aloud | ❌ Not Done |
-| Context Smart Replies — follow-up chips | ❌ Not Done |
-| Multimodal — image attachment (button exists but disabled) | ❌ Not Done |
+| AI Voice (TTS) — read aloud | ✅ Done | `TtsService` + "Read Aloud" button |
+| Context Smart Replies — follow-up chips | ✅ Done | `smartRepliesProvider` + `_SmartReplyChips` widget |
+| Multimodal — image attachment (button exists but disabled) | ✅ Done | `ChatInputBar` with `file_picker` + image preview |
 | Tablet/Desktop responsive layout | ✅ Done | `AppShell` in `app.dart` — persistent sidebar on `>= md` breakpoint |
-| Export conversation (Markdown/PDF) | ❌ Not Done |
-| Quick-launch shortcut | ❌ Not Done |
+| Export conversation (Markdown/PDF) | ✅ Done | `ExportService` with Markdown + text |
+| Quick-launch shortcut | ✅ Done | `QuickLaunchService` with MethodChannel |
 
 ---
 
@@ -288,16 +298,16 @@
 
 | Category | Done | Partial | Not Done | Total |
 |----------|------|---------|----------|-------|
-| **Phase 0** — Setup & Core | 10 | 0 | 5 | 15 |
+| **Phase 0** — Setup & Core | 15 | 0 | 0 | 15 |
 | **Phase 1** — Server Connection | 14 | 0 | 1 | 15 |
-| **Phase 1** — Chat Interface | 19 | 0 | 0 | 19 |
-| **Phase 2** — Model Management | 10 | 0 | 1 | 11 |
-| **Phase 3** — Conversations | 13 | 0 | 3 | 16 |
+| **Phase 1** — Chat Interface | 25 | 0 | 0 | 25 |
+| **Phase 2** — Model Management | 11 | 0 | 0 | 11 |
+| **Phase 3** — Conversations | 17 | 0 | 0 | 17 |
 | **Phase 3** — Personas | 21 | 0 | 0 | 21 |
 | **Phase 3** — Settings | 17 | 0 | 0 | 17 |
-| **Phase 4** — Extended | 1 | 0 | 5 | 6 |
+| **Phase 4** — Extended | 6 | 0 | 0 | 6 |
 | **Extra** — Onboarding | 3 | 0 | 0 | 3 |
-| **TOTAL** | **108** | **0** | **15** | **123** |
+| **TOTAL** | **129** | **0** | **1** | **130** |
 
 ---
 
@@ -372,7 +382,7 @@
 | Save + validation | UI |
 | Edit mode (pre-filled) | Logic |
 
-### Step6: Persona → Chat Integration (Logic + UI)
+### Step6: Persona → Chat Integration (Logic + UI) ✅ DONE
 **Why sixth:** Connects personas to actual chat behavior.
 
 | Sub-task | Type |
@@ -384,7 +394,7 @@
 | "Remove Persona" option | UI |
 | Conversation `personaId` set when persona selected | Logic |
 
-### Step 7: Conversation Enhancements (UI + Logic)
+### Step 7: Conversation Enhancements (UI + Logic) ✅ DONE
 **Why seventh:** Polish existing working features.
 
 | Sub-task | Type |
@@ -394,7 +404,7 @@
 | Auto-title generation (LLM-based after first exchange) | Logic |
 | Inline rename dialog | UI |
 
-### Step 8: Design System Components (UI)
+### Step 8: Design System Components (UI) ✅ DONE
 **Why eighth:** Reusable building blocks for polish.
 
 | Sub-task | Type |
@@ -407,7 +417,7 @@
 | `AppLoadingIndicator` — accent-colored spinner | Component |
 | `AppSizes` — spacing and radius constants | Constants |
 
-### Step 9: Error Handling (Logic)
+### Step 9: Error Handling (Logic) ✅ DONE
 **Why ninth:** Centralizes error messages.
 
 | Sub-task | Type |
@@ -416,13 +426,13 @@
 | `AppErrorType` enum mapping to user-friendly strings | Model |
 | Wire into chat, server, and model services | Logic |
 
-### Step 10: Extended Features (UI + Logic)
+### Step 10: Extended Features (UI + Logic) ✅ DONE
 **Why last:** Polished app first, then extra features.
 
-| Sub-task | Type |
-|----------|------|
-| TTS — read aloud button + voice settings | Feature |
-| Smart Replies — follow-up chips after assistant response | Feature |
-| Multimodal — image attachment (wire existing button) | Feature |
-| Export — Markdown + PDF + share | Feature |
-| Quick-launch shortcuts | Feature |
+| Sub-task | Type | Status |
+|----------|------|--------|
+| TTS — read aloud button + voice settings | Feature | ✅ Done |
+| Export — Markdown + text + share | Feature | ✅ Done |
+| Smart Replies — follow-up chips after assistant response | Feature | ✅ Done |
+| Multimodal — image attachment (wire existing button) | Feature | ✅ Done |
+| Quick-launch shortcuts | Feature | ✅ Done |

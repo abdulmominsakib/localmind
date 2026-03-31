@@ -115,6 +115,27 @@ class ConversationsNotifier extends Notifier<List<Conversation>> {
     }
   }
 
+  Future<void> updatePersona(
+    String id,
+    String? personaId,
+    String? systemPrompt,
+  ) async {
+    final box = ref.read(conversationsBoxProvider);
+    final conversation = box.get(id);
+    if (conversation != null) {
+      final updated = conversation.copyWith(
+        personaId: personaId,
+        systemPrompt: systemPrompt,
+        updatedAt: DateTime.now(),
+      );
+      await box.put(id, updated);
+      state = [
+        for (final c in state)
+          if (c.id == id) updated else c,
+      ];
+    }
+  }
+
   Future<void> deleteAll() async {
     final box = ref.read(conversationsBoxProvider);
     await box.clear();

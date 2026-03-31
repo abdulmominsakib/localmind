@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:localmind/features/chat/data/tts_service.dart';
 
-class MessageActionBar extends StatelessWidget {
+class MessageActionBar extends StatefulWidget {
   const MessageActionBar({
     super.key,
     required this.content,
@@ -21,6 +22,31 @@ class MessageActionBar extends StatelessWidget {
   final VoidCallback? onShare;
 
   @override
+  State<MessageActionBar> createState() => _MessageActionBarState();
+}
+
+class _MessageActionBarState extends State<MessageActionBar> {
+  final _tts = TtsService();
+  bool _isSpeaking = false;
+
+  @override
+  void dispose() {
+    _tts.dispose();
+    super.dispose();
+  }
+
+  void _toggleTts() async {
+    if (_isSpeaking) {
+      await _tts.stop();
+      setState(() => _isSpeaking = false);
+    } else {
+      setState(() => _isSpeaking = true);
+      await _tts.speak(widget.content);
+      setState(() => _isSpeaking = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -29,8 +55,8 @@ class MessageActionBar extends StatelessWidget {
           icon: Icons.copy,
           label: 'Copy',
           onTap: () async {
-            await Clipboard.setData(ClipboardData(text: content));
-            onCopy?.call();
+            await Clipboard.setData(ClipboardData(text: widget.content));
+            widget.onCopy?.call();
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -41,15 +67,19 @@ class MessageActionBar extends StatelessWidget {
             }
           },
         ),
-        if (onRetry != null) ...[
+        if (widget.onRetry != null) ...[
           const SizedBox(width: 4),
-          _ActionButton(icon: Icons.refresh, label: 'Retry', onTap: onRetry),
+          _ActionButton(
+            icon: Icons.refresh,
+            label: 'Retry',
+            onTap: widget.onRetry,
+          ),
         ],
-        if (onEdit != null) ...[
+        if (widget.onEdit != null) ...[
           const SizedBox(width: 4),
-          _ActionButton(icon: Icons.edit, label: 'Edit', onTap: onEdit),
+          _ActionButton(icon: Icons.edit, label: 'Edit', onTap: widget.onEdit),
         ],
-        if (onDelete != null) ...[
+        if (widget.onDelete != null) ...[
           const SizedBox(width: 4),
           _ActionButton(
             icon: Icons.delete_outline,
@@ -58,10 +88,20 @@ class MessageActionBar extends StatelessWidget {
             isDestructive: true,
           ),
         ],
-        if (onShare != null) ...[
+        if (widget.onShare != null) ...[
           const SizedBox(width: 4),
-          _ActionButton(icon: Icons.ios_share, label: 'Share', onTap: onShare),
+          _ActionButton(
+            icon: Icons.ios_share,
+            label: 'Share',
+            onTap: widget.onShare,
+          ),
         ],
+        const SizedBox(width: 4),
+        _ActionButton(
+          icon: _isSpeaking ? Icons.stop_circle : Icons.volume_up,
+          label: _isSpeaking ? 'Stop' : 'Read Aloud',
+          onTap: _toggleTts,
+        ),
         const SizedBox(width: 4),
         _ActionButton(
           icon: Icons.more_horiz,
@@ -87,7 +127,7 @@ class MessageActionBar extends StatelessWidget {
             child: const Text('Delete'),
             onPressed: () {
               Navigator.of(context).pop();
-              onDelete?.call();
+              widget.onDelete?.call();
             },
           ),
         ],
@@ -108,24 +148,32 @@ class MessageActionBar extends StatelessWidget {
               title: const Text('Copy as Markdown'),
               onTap: () {
                 Navigator.of(context).pop();
-                Clipboard.setData(ClipboardData(text: content));
+                Clipboard.setData(ClipboardData(text: widget.content));
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Copied as Markdown')),
                 );
               },
             ),
-            if (onShare != null)
+            ListTile(
+              leading: Icon(_isSpeaking ? Icons.stop : Icons.volume_up),
+              title: Text(_isSpeaking ? 'Stop Reading' : 'Read Aloud'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _toggleTts();
+              },
+            ),
+            if (widget.onShare != null)
               ListTile(
                 leading: const Icon(Icons.ios_share),
                 title: const Text('Share'),
                 onTap: () {
                   Navigator.of(context).pop();
-                  onShare?.call();
+                  widget.onShare?.call();
                 },
               ),
             ListTile(
               leading: const Icon(Icons.text_fields),
-              title: Text('${content.length} characters'),
+              title: Text('${widget.content.length} characters'),
               enabled: false,
             ),
           ],

@@ -7,14 +7,16 @@ class ConversationTile extends StatelessWidget {
     required this.conversation,
     required this.isActive,
     required this.onTap,
-    required this.onLongPress,
+    required this.onRename,
+    required this.onTogglePin,
     required this.onDelete,
   });
 
   final Conversation conversation;
   final bool isActive;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final VoidCallback onRename;
+  final VoidCallback onTogglePin;
   final VoidCallback onDelete;
 
   String _formatTimestamp(DateTime dateTime) {
@@ -62,7 +64,7 @@ class ConversationTile extends StatelessWidget {
             : Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          onLongPress: onLongPress,
+          onLongPress: () => _showContextMenu(context, isDark),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -129,6 +131,53 @@ class ConversationTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showContextMenu(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(
+                  conversation.isPinned
+                      ? Icons.push_pin_outlined
+                      : Icons.push_pin,
+                ),
+                title: Text(conversation.isPinned ? 'Unpin' : 'Pin'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onTogglePin();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Rename'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onRename();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onDelete();
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
     );
   }
 }

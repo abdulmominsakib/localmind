@@ -3,6 +3,9 @@ import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
 import 'package:localmind/core/providers/service_providers.dart';
+import 'package:localmind/features/models/data/model_cache.dart';
+
+final _modelCache = ModelCache();
 
 final serversProvider = NotifierProvider<ServersNotifier, List<Server>>(() {
   return ServersNotifier();
@@ -23,13 +26,18 @@ final availableModelsProvider = FutureProvider.family<List<dynamic>, String>((
   ref,
   serverId,
 ) async {
+  final cached = _modelCache.get(serverId);
+  if (cached != null) return cached;
+
   final servers = ref.watch(serversProvider);
   final server = servers.firstWhere(
     (s) => s.id == serverId,
     orElse: () => throw Exception('Server not found'),
   );
   final apiService = ref.watch(serverApiServiceProvider);
-  return await apiService.fetchModels(server);
+  final models = await apiService.fetchModels(server);
+  _modelCache.put(serverId, models);
+  return models;
 });
 
 class ServersNotifier extends Notifier<List<Server>> {

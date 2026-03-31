@@ -55,14 +55,21 @@ class ConversationList extends ConsumerWidget {
                 conversation: conversation,
                 isActive: activeConversation?.id == conversation.id,
                 onTap: () {
-                  ref.read(chatProvider.notifier).loadConversation(conversation);
+                  ref
+                      .read(chatProvider.notifier)
+                      .loadConversation(conversation);
                   context.go(AppRoutes.home);
                   if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
                     Navigator.pop(context); // Close drawer if it was a drawer
                   }
                 },
-                onLongPress: () {
-                  _showConversationOptions(context, ref, conversation);
+                onRename: () {
+                  _showRenameDialog(context, ref, conversation);
+                },
+                onTogglePin: () {
+                  ref
+                      .read(conversationsProvider.notifier)
+                      .togglePin(conversation.id);
                 },
                 onDelete: () {
                   _showDeleteConfirmation(context, ref, conversation);

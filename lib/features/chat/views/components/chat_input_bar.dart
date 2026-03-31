@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 
@@ -9,12 +11,16 @@ class ChatInputBar extends ConsumerStatefulWidget {
     super.key,
     required this.onSend,
     required this.onStop,
+    this.onAttach,
     this.enabled = true,
+    this.isStreaming = false,
   });
 
   final void Function(String message) onSend;
   final VoidCallback onStop;
+  final void Function(List<File> onAttach)? onAttach;
   final bool enabled;
+  final bool isStreaming;
 
   @override
   ConsumerState<ChatInputBar> createState() => _ChatInputBarState();
@@ -24,12 +30,28 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   bool _isComposing = false;
+  final List<File> _attachedFiles = [];
 
   @override
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleAttach() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _attachedFiles.addAll(
+          result.files.where((f) => f.path != null).map((f) => File(f.path!)),
+        );
+      });
+      widget.onAttach?.call(_attachedFiles);
+    }
   }
 
   void _handleSubmit() {
@@ -58,7 +80,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
         widget.enabled &&
         isConnected &&
         _controller.text.trim().isNotEmpty &&
-        !_isComposing;
+        !widget.isStreaming;
 
     return Container(
       padding: EdgeInsets.only(
@@ -78,83 +100,90 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (!isConnected)
+          if (_attachedFiles.isNotEmpty)
             Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.wifi_off, size: 16, color: Colors.orange),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Not connected to server',
-                    style: TextStyle(fontSize: 13, color: Colors.orange[700]),
-                  ),
-                ],
+              height: 60,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _attachedFiles.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                itemBuilder: (context, index) {
+                  final file = _attachedFiles[index];
+                  return Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          file,
+                          width: 52,
+                          height: 52,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: () =>
+                              setState(() => _attachedFiles.removeAt(index)),
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1F1F1F)
-                      : const Color(0xFFFFFFFF),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF3A3A3A)
-                        : const Color(0xFFE5E5E5),
-                  ),
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    Icons.attach_file,
-                    size: 20,
-                    color: isDark
-                        ? const Color(0xFF888888)
-                        : const Color(0xFF666666),
-                  ),
-                  onPressed: null,
-                  tooltip: 'Attach file (Coming soon)',
-                ),
-              ),
-              const SizedBox(width: 8),
               Expanded(
                 child: Container(
                   constraints: const BoxConstraints(maxHeight: 150),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF1F1F1F)
-                        : const Color(0xFFFFFFFF),
+                    color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFFFFFFF),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF3A3A3A)
-                          : const Color(0xFFE5E5E5),
+                      color: isDark ? const Color(0xFF333333) : const Color(0xFFE5E5E5),
                     ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.attach_file,
+                          size: 20,
+                          color: isDark
+                              ? const Color(0xFF888888)
+                              : const Color(0xFF666666),
+                        ),
+                        onPressed: isConnected ? _handleAttach : null,
+                        tooltip: 'Attach image',
+                      ),
                       Expanded(
                         child: TextField(
                           controller: _controller,
                           focusNode: _focusNode,
-                          enabled: widget.enabled && isConnected,
+                          enabled: widget.enabled,
                           maxLines: null,
                           textInputAction: TextInputAction.newline,
                           keyboardType: TextInputType.multiline,
                           onChanged: (text) {
-                            setState(
-                              () => _isComposing = text.trim().isNotEmpty,
-                            );
+                            setState(() => _isComposing = text.trim().isNotEmpty);
                           },
                           onSubmitted: (_) => _handleSubmit(),
                           decoration: InputDecoration(
@@ -166,7 +195,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                             ),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
+                              horizontal: 8,
                               vertical: 12,
                             ),
                           ),
@@ -174,7 +203,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                       ),
                       if (_isComposing)
                         Padding(
-                          padding: const EdgeInsets.only(right: 4, bottom: 4),
+                          padding: const EdgeInsets.only(right: 12, bottom: 12),
                           child: Text(
                             '${_controller.text.length}',
                             style: TextStyle(
@@ -190,7 +219,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                 ),
               ),
               const SizedBox(width: 8),
-              _isComposing
+              widget.isStreaming
                   ? Container(
                       decoration: BoxDecoration(
                         color: Colors.red[400],
@@ -206,11 +235,11 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                       decoration: BoxDecoration(
                         color: canSend
                             ? (isDark
-                                  ? const Color(0xFF3B82F6)
-                                  : const Color(0xFF2563EB))
+                                ? const Color(0xFF3B82F6)
+                                : const Color(0xFF2563EB))
                             : (isDark
-                                  ? const Color(0xFF3A3A3A)
-                                  : const Color(0xFFE5E5E5)),
+                                ? const Color(0xFF3A3A3A)
+                                : const Color(0xFFE5E5E5)),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
@@ -219,8 +248,8 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                           color: canSend
                               ? Colors.white
                               : (isDark
-                                    ? const Color(0xFF666666)
-                                    : const Color(0xFF999999)),
+                                  ? const Color(0xFF666666)
+                                  : const Color(0xFF999999)),
                         ),
                         onPressed: canSend ? _handleSubmit : null,
                         tooltip: 'Send message',
