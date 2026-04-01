@@ -12,6 +12,7 @@ class ModelInfo {
   final ServerType serverType;
   final String serverId;
   final DateTime? modifiedAt;
+  final ModelStatus status;
 
   ModelInfo({
     required this.id,
@@ -25,6 +26,7 @@ class ModelInfo {
     required this.serverType,
     required this.serverId,
     this.modifiedAt,
+    this.status = ModelStatus.unloaded,
   });
 
   String get displayName {
@@ -50,5 +52,35 @@ class ModelInfo {
   String? get parameterCountDisplay {
     if (parameterCount == null) return null;
     return '${parameterCount}B';
+  }
+
+  ModelInfo copyWith({
+    String? id,
+    String? name,
+    String? description,
+    int? parameterCount,
+    int? contextLength,
+    int? fileSize,
+    String? quantization,
+    String? architecture,
+    ServerType? serverType,
+    String? serverId,
+    DateTime? modifiedAt,
+    ModelStatus? status,
+  }) {
+    return ModelInfo(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      parameterCount: parameterCount ?? this.parameterCount,
+      contextLength: contextLength ?? this.contextLength,
+      fileSize: fileSize ?? this.fileSize,
+      quantization: quantization ?? this.quantization,
+      architecture: architecture ?? this.architecture,
+      serverType: serverType ?? this.serverType,
+      serverId: serverId ?? this.serverId,
+      modifiedAt: modifiedAt ?? this.modifiedAt,
+      status: status ?? this.status,
+    );
   }
 }

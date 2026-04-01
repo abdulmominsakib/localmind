@@ -50,6 +50,9 @@ class AppSettings extends HiveObject {
   @HiveField(14, defaultValue: false)
   final bool hasCompletedOnboarding;
 
+  @HiveField(15, defaultValue: true)
+  final bool mcpEnabled;
+
   AppSettings({
     this.temperature = 0.7,
     this.topP = 0.9,
@@ -66,6 +69,7 @@ class AppSettings extends HiveObject {
     this.streamingEnabled = true,
     this.defaultPersonaId,
     this.hasCompletedOnboarding = false,
+    this.mcpEnabled = true,
   });
 
   AppSettings copyWith({
@@ -84,6 +88,7 @@ class AppSettings extends HiveObject {
     bool? streamingEnabled,
     String? defaultPersonaId,
     bool? hasCompletedOnboarding,
+    bool? mcpEnabled,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -93,14 +98,17 @@ class AppSettings extends HiveObject {
       themeMode: themeMode ?? this.themeMode,
       fontSize: fontSize ?? this.fontSize,
       showSystemMessages: showSystemMessages ?? this.showSystemMessages,
-      hapticFeedbackEnabled: hapticFeedbackEnabled ?? this.hapticFeedbackEnabled,
+      hapticFeedbackEnabled:
+          hapticFeedbackEnabled ?? this.hapticFeedbackEnabled,
       sendOnEnter: sendOnEnter ?? this.sendOnEnter,
       defaultServerId: defaultServerId ?? this.defaultServerId,
       showDataIndicator: showDataIndicator ?? this.showDataIndicator,
       autoGenerateTitle: autoGenerateTitle ?? this.autoGenerateTitle,
       streamingEnabled: streamingEnabled ?? this.streamingEnabled,
       defaultPersonaId: defaultPersonaId ?? this.defaultPersonaId,
-      hasCompletedOnboarding: hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      hasCompletedOnboarding:
+          hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      mcpEnabled: mcpEnabled ?? this.mcpEnabled,
     );
   }
 }

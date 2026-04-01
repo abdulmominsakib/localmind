@@ -69,6 +69,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
         _portController.text = '443';
       } else if (type == ServerType.lmStudio) {
         _portController.text = AppConstants.lmStudioDefaultPort.toString();
+      } else if (type == ServerType.openAICompatible) {
+        _portController.text = AppConstants.openAICompatibleDefaultPort
+            .toString();
       } else if (type == ServerType.ollama) {
         _portController.text = AppConstants.ollamaDefaultPort.toString();
       }

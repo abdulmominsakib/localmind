@@ -34,6 +34,8 @@ class ServerCard extends StatelessWidget {
     switch (server.type) {
       case ServerType.lmStudio:
         return 'LM Studio';
+      case ServerType.openAICompatible:
+        return 'OpenAI Compatible';
       case ServerType.ollama:
         return 'Ollama';
       case ServerType.openRouter:

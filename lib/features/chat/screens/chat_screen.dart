@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:localmind/core/models/enums.dart';
+import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
 import 'package:localmind/core/routes/app_routes.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/chat/views/components/chat_bubble.dart';
 import 'package:localmind/features/chat/views/components/chat_input_bar.dart';
+import 'package:localmind/features/chat/views/components/mcp_config_sheet.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
     as conv;
@@ -47,6 +49,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _onScroll() {
+    final chatState = ref.read(chatProvider);
+    if (chatState.isStreaming) return;
+
     final isNearBottom =
         _scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 100;
@@ -65,9 +70,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(autoSelectFirstLoadedModelProvider);
+
     final chatState = ref.watch(chatProvider);
     final selectedModel = ref.watch(selectedModelProvider);
     final connectionStatus = ref.watch(connectionStatusProvider);
+    final isStreaming = ref.watch(isStreamingProvider);
     final activeConversation = ref.watch(conv.activeConversationProvider);
     final personaId = activeConversation?.personaId;
     final persona = personaId != null
@@ -77,10 +85,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     ref.listen(chatProvider, (previous, next) {
-      if (previous?.messages.length != next.messages.length) {
+      final newMessage = previous?.messages.length != next.messages.length;
+      final newStreaming =
+          next.isStreaming &&
+          next.streamingMessage != null &&
+          next.streamingMessage != previous?.streamingMessage;
+
+      if (newMessage || newStreaming) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
-            _scrollToBottom();
+            if (next.isStreaming) {
+              _scrollController.jumpTo(
+                _scrollController.position.maxScrollExtent,
+              );
+            } else {
+              _scrollToBottom();
+            }
           }
         });
       }
@@ -108,6 +128,29 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 if (persona != null) ...[
                   Text(persona.emoji, style: const TextStyle(fontSize: 18)),
                   const SizedBox(width: 4),
+                  Text(
+                    persona.name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark
+                          ? const Color(0xFF9CA3AF)
+                          : const Color(0xFF6B7280),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (isStreaming) ...[
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF4CAF50),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
                 ],
                 Text(
                   selectedModel?.displayName ?? 'Select Model',
@@ -125,6 +168,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ),
           actions: [
+            Consumer(
+              builder: (context, ref, child) {
+                final settings = ref.watch(settingsProvider);
+                final mcpConfig = ref.watch(chatMcpConfigProvider);
+                final isEnabled = settings.mcpEnabled && mcpConfig.enabled;
+                return IconButton(
+                  icon: Icon(
+                    isEnabled ? Icons.extension : Icons.extension_off_outlined,
+                    color: isEnabled
+                        ? theme.colorScheme.primary
+                        : (isDark
+                              ? const Color(0xFF666666)
+                              : const Color(0xFF999999)),
+                  ),
+                  tooltip: isEnabled ? 'MCP Enabled' : 'MCP Disabled',
+                  onPressed: () => showMcpConfigSheet(context),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
               onPressed: () => context.push(AppRoutes.settings),
@@ -188,8 +250,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       onQuickPrompt: (prompt) =>
                           ref.read(chatProvider.notifier).sendMessage(prompt),
                       quickPrompts: _quickPrompts,
-                      recentConversations:
-                          ref.watch(recentConversationsProvider),
+                      recentConversations: ref.watch(
+                        recentConversationsProvider,
+                      ),
                       onSeeAll: () {
                         if (Scaffold.maybeOf(context)?.hasDrawer ?? false) {
                           Scaffold.of(context).openDrawer();
@@ -258,11 +321,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ],
           ),
         ),
-        _SmartReplyChips(
-          onSend: (message) {
-            ref.read(chatProvider.notifier).sendMessage(message);
-          },
-        ),
+        if (!chatState.isStreaming)
+          _SmartReplyChips(
+            onSend: (message) {
+              ref.read(chatProvider.notifier).sendMessage(message);
+            },
+          ),
         ChatInputBar(
           isStreaming: chatState.isStreaming,
           onSend: (message) {
@@ -519,7 +583,9 @@ class _EmptyState extends StatelessWidget {
               'Your AI. Your Device. Your Rules.',
               style: TextStyle(
                 fontSize: 14,
-                color: isDark ? const Color(0xFF888888) : const Color(0xFF666666),
+                color: isDark
+                    ? const Color(0xFF888888)
+                    : const Color(0xFF666666),
               ),
             ),
             const SizedBox(height: 32),
@@ -544,7 +610,9 @@ class _EmptyState extends StatelessWidget {
                       ? const Color(0xFF2A2A2A)
                       : const Color(0xFFF5F5F5),
                   side: BorderSide(
-                    color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5),
+                    color: isDark
+                        ? const Color(0xFF3A3A3A)
+                        : const Color(0xFFE5E5E5),
                   ),
                 );
               }).toList(),
@@ -559,7 +627,9 @@ class _EmptyState extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: isDark ? const Color(0xFFA0A0A0) : const Color(0xFF666666),
+                      color: isDark
+                          ? const Color(0xFFA0A0A0)
+                          : const Color(0xFF666666),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -570,14 +640,18 @@ class _EmptyState extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                        color: isDark
+                            ? const Color(0xFF3B82F6)
+                            : const Color(0xFF2563EB),
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              ...recentConversations.take(5).map(
+              ...recentConversations
+                  .take(5)
+                  .map(
                     (conv) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: _RecentConversationItem(conversation: conv),
@@ -688,7 +762,6 @@ class _MessageList extends StatelessWidget {
     for (final message in messages) {
       if (streamingMessage != null &&
           message.id == streamingMessage!.id &&
-          message.content.isEmpty &&
           isStreaming) {
         continue;
       }
@@ -697,7 +770,7 @@ class _MessageList extends StatelessWidget {
 
     return ListView.builder(
       controller: scrollController,
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.only(top: 16, bottom: 16),
       itemCount:
           allMessages.length +
           (streamingMessage != null && isStreaming ? 1 : 0),

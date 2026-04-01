@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:hive_ce/hive.dart';
 
-enum ServerType { lmStudio, ollama, openRouter }
+enum ServerType { lmStudio, openAICompatible, ollama, openRouter }
 
 enum ConnectionStatus { connected, disconnected, checking, error }
 
-enum MessageRole { user, assistant, system }
+enum MessageRole { user, assistant, system, tool }
 
 enum MessageStatus { sending, streaming, complete, error }
+
+enum ModelStatus { unloaded, loading, loaded, preloaded, thinking }
 
 class ServerTypeAdapter extends TypeAdapter<ServerType> {
   @override
@@ -65,6 +67,21 @@ class MessageStatusAdapter extends TypeAdapter<MessageStatus> {
 
   @override
   void write(BinaryWriter writer, MessageStatus obj) {
+    writer.writeInt(obj.index);
+  }
+}
+
+class ModelStatusAdapter extends TypeAdapter<ModelStatus> {
+  @override
+  final int typeId = 15;
+
+  @override
+  ModelStatus read(BinaryReader reader) {
+    return ModelStatus.values[reader.readInt()];
+  }
+
+  @override
+  void write(BinaryWriter writer, ModelStatus obj) {
     writer.writeInt(obj.index);
   }
 }

@@ -21,6 +21,11 @@ class ServerTypeSelector extends StatelessWidget {
           icon: Icon(Icons.terminal, size: 18),
         ),
         ButtonSegment<ServerType>(
+          value: ServerType.openAICompatible,
+          label: Text('OpenAI'),
+          icon: Icon(Icons.api, size: 18),
+        ),
+        ButtonSegment<ServerType>(
           value: ServerType.ollama,
           label: Text('Ollama'),
           icon: Icon(Icons.pets, size: 18),

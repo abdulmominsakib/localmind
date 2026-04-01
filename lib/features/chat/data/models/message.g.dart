@@ -8,7 +8,7 @@ part of 'message.dart';
 
 class MessageAdapter extends TypeAdapter<Message> {
   @override
-  final typeId = 1;
+  final int typeId = 1;
 
   @override
   Message read(BinaryReader reader) {
@@ -30,13 +30,15 @@ class MessageAdapter extends TypeAdapter<Message> {
       errorMessage: fields[8] as String?,
       attachmentPaths: (fields[9] as List?)?.cast<String>(),
       generationTimeMs: (fields[10] as num?)?.toInt(),
+      reasoningContent: fields[11] as String?,
+      toolCallId: fields[13] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Message obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -58,7 +60,13 @@ class MessageAdapter extends TypeAdapter<Message> {
       ..writeByte(9)
       ..write(obj.attachmentPaths)
       ..writeByte(10)
-      ..write(obj.generationTimeMs);
+      ..write(obj.generationTimeMs)
+      ..writeByte(11)
+      ..write(obj.reasoningContent)
+      ..writeByte(12)
+      ..write(obj.toolCalls)
+      ..writeByte(13)
+      ..write(obj.toolCallId);
   }
 
   @override

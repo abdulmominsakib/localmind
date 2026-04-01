@@ -20,6 +20,9 @@ class NewChatButton extends ConsumerWidget {
           onPressed: () {
             ref.read(chatProvider.notifier).startNewConversation();
             context.go(AppRoutes.home);
+            if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+              Navigator.pop(context);
+            }
           },
           icon: const Icon(Icons.add, size: 18),
           label: const Text('New Chat'),

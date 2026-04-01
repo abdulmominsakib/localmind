@@ -26,13 +26,12 @@ class ExportService {
       switch (message.role) {
         case MessageRole.user:
           buffer.writeln('## 👤 User');
-          break;
         case MessageRole.assistant:
           buffer.writeln('## 🤖 Assistant');
-          break;
         case MessageRole.system:
           buffer.writeln('## ⚙️ System');
-          break;
+        case MessageRole.tool:
+          buffer.writeln('## 🔧 Tool');
       }
       buffer.writeln();
       buffer.writeln(message.content);
@@ -73,6 +72,7 @@ class ExportService {
         MessageRole.user => 'USER',
         MessageRole.assistant => 'ASSISTANT',
         MessageRole.system => 'SYSTEM',
+        MessageRole.tool => 'TOOL',
       };
       buffer.writeln('[$roleLabel]');
       buffer.writeln(message.content);

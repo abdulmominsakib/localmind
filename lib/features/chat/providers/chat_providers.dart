@@ -28,6 +28,33 @@ class SelectedModelNotifier extends Notifier<ModelInfo?> {
   }
 }
 
+final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
+  final selectedModel = ref.read(selectedModelProvider);
+  if (selectedModel != null) return;
+
+  final activeServer = ref.read(activeServerProvider);
+  if (activeServer == null) return;
+  if (activeServer.type == ServerType.openRouter) return;
+
+  final apiService = ref.read(serverApiServiceProvider);
+  final loadedModels = await apiService.fetchRunningModels(activeServer);
+  if (loadedModels.isEmpty) return;
+
+  final availableModels = await ref.read(
+    availableModelsProvider(activeServer.id).future,
+  );
+  if (availableModels.isEmpty) return;
+
+  final typedModels = availableModels.cast<ModelInfo>();
+  final firstLoadedModel = typedModels
+      .where((m) => loadedModels.contains(m.id))
+      .firstOrNull;
+
+  if (firstLoadedModel != null) {
+    ref.read(selectedModelProvider.notifier).setModel(firstLoadedModel);
+  }
+});
+
 final isStreamingProvider = NotifierProvider<IsStreamingNotifier, bool>(() {
   return IsStreamingNotifier();
 });
@@ -40,6 +67,60 @@ class IsStreamingNotifier extends Notifier<bool> {
     state = streaming;
   }
 }
+
+class ModelLoadingState {
+  final bool isLoading;
+  final String? modelId;
+  final double? progress;
+
+  const ModelLoadingState({
+    this.isLoading = false,
+    this.modelId,
+    this.progress,
+  });
+
+  ModelLoadingState copyWith({
+    bool? isLoading,
+    String? modelId,
+    double? progress,
+  }) {
+    return ModelLoadingState(
+      isLoading: isLoading ?? this.isLoading,
+      modelId: modelId ?? this.modelId,
+      progress: progress ?? this.progress,
+    );
+  }
+}
+
+final modelLoadingProvider =
+    NotifierProvider<ModelLoadingNotifier, ModelLoadingState>(() {
+      return ModelLoadingNotifier();
+    });
+
+class ModelLoadingNotifier extends Notifier<ModelLoadingState> {
+  @override
+  ModelLoadingState build() => const ModelLoadingState();
+
+  void setLoading(String modelId, {double? progress}) {
+    state = ModelLoadingState(
+      isLoading: true,
+      modelId: modelId,
+      progress: progress,
+    );
+  }
+
+  void updateProgress(double progress) {
+    state = state.copyWith(progress: progress);
+  }
+
+  void setLoaded() {
+    state = const ModelLoadingState();
+  }
+}
+
+final modelThinkingProvider = Provider<bool>((ref) {
+  return ref.watch(isStreamingProvider);
+});
 
 final chatParamsProvider = Provider<ChatParameters>((ref) {
   final settings = ref.watch(settingsProvider);
@@ -176,7 +257,7 @@ final chatProvider = NotifierProvider<ChatNotifier, ChatState>(() {
 });
 
 class ChatNotifier extends Notifier<ChatState> {
-  StreamSubscription<String>? _streamSubscription;
+  StreamSubscription<ChatResponse>? _streamSubscription;
   String? _currentConversationId;
 
   @override
@@ -290,6 +371,9 @@ class ChatNotifier extends Notifier<ChatState> {
 
     try {
       _streamSubscription?.cancel();
+
+      String reasoningContent = '';
+
       _streamSubscription = chatService
           .sendMessage(
             server: server,
@@ -298,20 +382,44 @@ class ChatNotifier extends Notifier<ChatState> {
             params: chatParams,
           )
           .listen(
-            (chunk) {
-              final currentContent = state.streamingMessage?.content ?? '';
-              final updatedMessage =
-                  (state.streamingMessage ?? assistantMessage).copyWith(
-                    content: currentContent + chunk,
+            (response) {
+              switch (response.type) {
+                case ChatResponseType.message:
+                  final currentContent = state.streamingMessage?.content ?? '';
+                  final updatedMessage =
+                      (state.streamingMessage ?? assistantMessage).copyWith(
+                        content: currentContent + (response.content ?? ''),
+                      );
+                  state = state.copyWith(streamingMessage: updatedMessage);
+                  final messageIndex = state.messages.indexWhere(
+                    (m) => m.id == assistantMessageId,
                   );
-              state = state.copyWith(streamingMessage: updatedMessage);
-              final messageIndex = state.messages.indexWhere(
-                (m) => m.id == assistantMessageId,
-              );
-              if (messageIndex != -1) {
-                final updatedMessages = List<Message>.from(state.messages);
-                updatedMessages[messageIndex] = updatedMessage;
-                state = state.copyWith(messages: updatedMessages);
+                  if (messageIndex != -1) {
+                    final updatedMessages = List<Message>.from(state.messages);
+                    updatedMessages[messageIndex] = updatedMessage;
+                    state = state.copyWith(messages: updatedMessages);
+                  }
+                  break;
+                case ChatResponseType.reasoning:
+                  reasoningContent += response.reasoningContent ?? '';
+                  final reasoningMessage =
+                      (state.streamingMessage ?? assistantMessage).copyWith(
+                        reasoningContent: reasoningContent,
+                      );
+                  state = state.copyWith(streamingMessage: reasoningMessage);
+                  final msgIndex = state.messages.indexWhere(
+                    (m) => m.id == assistantMessageId,
+                  );
+                  if (msgIndex != -1) {
+                    final updatedMessages = List<Message>.from(state.messages);
+                    updatedMessages[msgIndex] = reasoningMessage;
+                    state = state.copyWith(messages: updatedMessages);
+                  }
+                  break;
+                case ChatResponseType.toolCall:
+                case ChatResponseType.invalidToolCall:
+                case ChatResponseType.done:
+                  break;
               }
             },
             onDone: () async {

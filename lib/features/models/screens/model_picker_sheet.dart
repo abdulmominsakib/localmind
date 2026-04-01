@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
+import 'package:localmind/core/providers/service_providers.dart';
 
 final modelSearchQueryProvider = NotifierProvider<_ModelSearchNotifier, String>(
   _ModelSearchNotifier.new,
@@ -26,6 +27,8 @@ class ModelPickerSheet extends ConsumerWidget {
     final activeServer = ref.watch(activeServerProvider);
     final selectedModel = ref.watch(selectedModelProvider);
     final searchQuery = ref.watch(modelSearchQueryProvider);
+    final modelLoading = ref.watch(modelLoadingProvider);
+    final isThinking = ref.watch(modelThinkingProvider);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
@@ -50,20 +53,60 @@ class ModelPickerSheet extends ConsumerWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              Text(
-                'Select Model',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Select Model',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        if (isThinking) ...[
+                          const SizedBox(width: 8),
+                          _ThinkingIndicator(isDark: isDark),
+                        ],
+                      ],
+                    ),
+                    if (modelLoading.isLoading)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Loading ${modelLoading.modelId ?? "model"}...',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark
+                                    ? const Color(0xFF888888)
+                                    : const Color(0xFF999999),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            LinearProgressIndicator(
+                              value: modelLoading.progress,
+                              backgroundColor: isDark
+                                  ? const Color(0xFF333333)
+                                  : const Color(0xFFE0E0E0),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const Spacer(),
               if (activeServer != null)
                 IconButton(
                   icon: const Icon(Icons.refresh, size: 20),
                   onPressed: () {
                     ref.invalidate(availableModelsProvider(activeServer.id));
+                    ref.invalidate(loadedModelsProvider(activeServer));
                   },
                   tooltip: 'Refresh models',
                 ),
@@ -216,6 +259,17 @@ class _ModelList extends ConsumerWidget {
         ),
       ),
       data: (models) {
+        final servers = ref.watch(serversProvider);
+        final activeServer = servers.where((s) => s.id == serverId).firstOrNull;
+        final loadedModelsAsync = activeServer != null
+            ? ref.watch(loadedModelsProvider(activeServer))
+            : const AsyncValue<Set<String>>.data(<String>{});
+
+        final loadedModels = loadedModelsAsync.maybeWhen(
+          data: (data) => data,
+          orElse: () => <String>{},
+        );
+
         final modelList = models.cast<ModelInfo>();
         final filtered = searchQuery.isEmpty
             ? modelList
@@ -250,14 +304,47 @@ class _ModelList extends ConsumerWidget {
           itemBuilder: (context, index) {
             final model = filtered[index];
             final isSelected = model.id == selectedModelId;
+            final isLoaded = loadedModels.contains(model.id);
 
             return _ModelTile(
               model: model,
               isSelected: isSelected,
+              isLoaded: isLoaded,
               isDark: isDark,
-              onTap: () {
+              onTap: () async {
+                final activeServer = ref.read(activeServerProvider);
+                if (activeServer == null) return;
+
+                if (!isLoaded) {
+                  ref.read(modelLoadingProvider.notifier).setLoading(model.id);
+
+                  try {
+                    final apiService = ref.read(serverApiServiceProvider);
+                    await apiService.loadModelWithInstanceId(
+                      activeServer,
+                      model.id,
+                    );
+
+                    ref.invalidate(loadedModelsProvider(activeServer));
+                    ref.read(modelLoadingProvider.notifier).setLoaded();
+                  } catch (e) {
+                    ref.read(modelLoadingProvider.notifier).setLoaded();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to load model: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                    return;
+                  }
+                }
+
                 ref.read(selectedModelProvider.notifier).setModel(model);
-                Navigator.pop(context);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
               },
             );
           },
@@ -271,12 +358,14 @@ class _ModelTile extends StatelessWidget {
   const _ModelTile({
     required this.model,
     required this.isSelected,
+    required this.isLoaded,
     required this.isDark,
     required this.onTap,
   });
 
   final ModelInfo model;
   final bool isSelected;
+  final bool isLoaded;
   final bool isDark;
   final VoidCallback onTap;
 
@@ -305,17 +394,33 @@ class _ModelTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    model.displayName,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          model.displayName,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isLoaded)
+                        Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.only(left: 8),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF4CAF50),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Wrap(
@@ -360,6 +465,76 @@ class _ModelTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ThinkingIndicator extends StatefulWidget {
+  const _ThinkingIndicator({required this.isDark});
+  final bool isDark;
+
+  @override
+  State<_ThinkingIndicator> createState() => _ThinkingIndicatorState();
+}
+
+class _ThinkingIndicatorState extends State<_ThinkingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: widget.isDark
+                    ? Color.lerp(
+                        const Color(0xFF888888),
+                        const Color(0xFF4CAF50),
+                        _controller.value,
+                      )
+                    : Color.lerp(
+                        const Color(0xFF999999),
+                        const Color(0xFF4CAF50),
+                        _controller.value,
+                      ),
+                shape: BoxShape.circle,
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 4),
+        Text(
+          'Thinking',
+          style: TextStyle(
+            fontSize: 12,
+            color: widget.isDark
+                ? const Color(0xFF888888)
+                : const Color(0xFF999999),
+          ),
+        ),
+      ],
     );
   }
 }

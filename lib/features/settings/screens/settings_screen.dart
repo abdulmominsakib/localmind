@@ -119,6 +119,13 @@ class SettingsScreen extends ConsumerWidget {
                 ref.read(settingsProvider.notifier).setHapticFeedback(v),
             isDark: isDark,
           ),
+          _ToggleSetting(
+            label: 'Enable MCP',
+            value: settings.mcpEnabled,
+            onChanged: (v) =>
+                ref.read(settingsProvider.notifier).setMcpEnabled(v),
+            isDark: isDark,
+          ),
           const Divider(height: 32),
           _SectionHeader(title: 'Default Server'),
           _DropdownSetting(

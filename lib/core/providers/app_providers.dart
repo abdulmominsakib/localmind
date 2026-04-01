@@ -74,6 +74,7 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(defaultPersonaId: id));
   void setHasCompletedOnboarding(bool value) =>
       _update(state.copyWith(hasCompletedOnboarding: value));
+  void setMcpEnabled(bool value) => _update(state.copyWith(mcpEnabled: value));
 
   Future<void> _update(AppSettings updated) async {
     state = updated;

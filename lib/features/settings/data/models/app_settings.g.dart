@@ -32,13 +32,14 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       streamingEnabled: fields[12] == null ? true : fields[12] as bool,
       defaultPersonaId: fields[13] as String?,
       hasCompletedOnboarding: fields[14] == null ? false : fields[14] as bool,
+      mcpEnabled: fields[15] == null ? true : fields[15] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.temperature)
       ..writeByte(1)
@@ -68,7 +69,9 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(13)
       ..write(obj.defaultPersonaId)
       ..writeByte(14)
-      ..write(obj.hasCompletedOnboarding);
+      ..write(obj.hasCompletedOnboarding)
+      ..writeByte(15)
+      ..write(obj.mcpEnabled);
   }
 
   @override

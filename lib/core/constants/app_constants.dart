@@ -18,6 +18,7 @@ class AppConstants {
   static const String settingsBox = 'settings';
 
   static const int lmStudioDefaultPort = 1234;
+  static const int openAICompatibleDefaultPort = 8080;
   static const int ollamaDefaultPort = 11434;
 
   static const String openRouterBaseUrl = 'https://openrouter.ai/api/v1';

@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -44,6 +46,10 @@ class _OnboardingServerSetupScreenState
         defaultName = 'LM Studio';
         defaultPort = AppConstants.lmStudioDefaultPort.toString();
         break;
+      case ServerType.openAICompatible:
+        defaultName = 'Local AI';
+        defaultPort = AppConstants.openAICompatibleDefaultPort.toString();
+        break;
       case ServerType.ollama:
         defaultName = 'Ollama';
         defaultPort = AppConstants.ollamaDefaultPort.toString();
@@ -56,7 +62,9 @@ class _OnboardingServerSetupScreenState
 
     _nameController = TextEditingController(text: defaultName);
     _hostController = TextEditingController(
-      text: widget.selectedType == ServerType.openRouter ? '' : '127.0.0.1',
+      text: widget.selectedType == ServerType.openRouter
+          ? ''
+          : (Platform.isAndroid ? '10.0.2.2' : '127.0.0.1'),
     );
     _portController = TextEditingController(text: defaultPort);
     _apiKeyController = TextEditingController();

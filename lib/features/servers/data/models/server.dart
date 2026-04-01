@@ -62,6 +62,8 @@ class Server extends HiveObject {
   String get chatEndpoint {
     switch (type) {
       case ServerType.lmStudio:
+        return '$baseUrl/api/v1/chat';
+      case ServerType.openAICompatible:
         return '$baseUrl/v1/chat/completions';
       case ServerType.ollama:
         return '$baseUrl/api/chat';
@@ -73,11 +75,52 @@ class Server extends HiveObject {
   String get modelsEndpoint {
     switch (type) {
       case ServerType.lmStudio:
+        return '$baseUrl/api/v1/models';
+      case ServerType.openAICompatible:
         return '$baseUrl/v1/models';
       case ServerType.ollama:
         return '$baseUrl/api/tags';
       case ServerType.openRouter:
         return '$baseUrl/models';
+    }
+  }
+
+  String get runningModelsEndpoint {
+    switch (type) {
+      case ServerType.lmStudio:
+        return '$baseUrl/api/v1/models';
+      case ServerType.openAICompatible:
+        return '$baseUrl/v1/models';
+      case ServerType.ollama:
+        return '$baseUrl/api/ps';
+      case ServerType.openRouter:
+        return '';
+    }
+  }
+
+  String get loadModelEndpoint {
+    switch (type) {
+      case ServerType.lmStudio:
+        return '$baseUrl/api/v1/models/load';
+      case ServerType.openAICompatible:
+        return '$baseUrl/v1/models/load';
+      case ServerType.ollama:
+        return '$baseUrl/api/load';
+      case ServerType.openRouter:
+        return '';
+    }
+  }
+
+  String get unloadModelEndpoint {
+    switch (type) {
+      case ServerType.lmStudio:
+        return '$baseUrl/api/v1/models/unload';
+      case ServerType.openAICompatible:
+        return '$baseUrl/v1/models/unload';
+      case ServerType.ollama:
+        return '$baseUrl/api/unload';
+      case ServerType.openRouter:
+        return '';
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:localmind/features/chat/data/models/message.dart';
 import 'package:localmind/features/chat/views/components/code_block.dart';
 import 'package:localmind/features/chat/views/components/message_action_bar.dart';
 import 'package:localmind/features/chat/views/components/typing_indicator.dart';
+import 'package:localmind/features/chat/views/components/reasoning_widget.dart';
 
 class ChatBubble extends StatelessWidget {
   const ChatBubble({
@@ -37,6 +38,8 @@ class ChatBubble extends StatelessWidget {
         );
       case MessageRole.system:
         return _SystemBubble(message: message);
+      case MessageRole.tool:
+        return _ToolBubble(message: message);
     }
   }
 }
@@ -139,6 +142,12 @@ class _AssistantBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (message.reasoningContent != null &&
+                message.reasoningContent!.isNotEmpty)
+              ReasoningWidget(
+                reasoningContent: message.reasoningContent,
+                isStreaming: isStreaming,
+              ),
             if (isStreaming && message.content.isEmpty)
               const TypingIndicator()
             else
@@ -314,6 +323,72 @@ class _SystemBubble extends StatelessWidget {
             color: Colors.grey[600],
           ),
           textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+class _ToolBubble extends StatelessWidget {
+  const _ToolBubble({required this.message});
+
+  final Message message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
+        ),
+        margin: const EdgeInsets.only(left: 8, right: 48, top: 4, bottom: 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1F2937) : const Color(0xFFEEF2FF),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? const Color(0xFF374151) : const Color(0xFFC7D2FE),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.build_outlined,
+                  size: 14,
+                  color: isDark
+                      ? const Color(0xFF9CA3AF)
+                      : const Color(0xFF6B7280),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Tool: ${message.toolCallId ?? "Unknown"}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? const Color(0xFF9CA3AF)
+                        : const Color(0xFF6B7280),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message.content,
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? Colors.white : Colors.black87,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ],
         ),
       ),
     );

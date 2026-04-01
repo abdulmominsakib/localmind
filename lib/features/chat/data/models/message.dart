@@ -38,6 +38,15 @@ class Message extends HiveObject {
   @HiveField(10)
   final int? generationTimeMs;
 
+  @HiveField(11)
+  final String? reasoningContent;
+
+  @HiveField(12)
+  final List<ToolCallData>? toolCalls;
+
+  @HiveField(13)
+  final String? toolCallId;
+
   Message({
     required this.id,
     required this.conversationId,
@@ -50,6 +59,9 @@ class Message extends HiveObject {
     this.errorMessage,
     this.attachmentPaths,
     this.generationTimeMs,
+    this.reasoningContent,
+    this.toolCalls,
+    this.toolCallId,
   });
 
   Message copyWith({
@@ -64,6 +76,9 @@ class Message extends HiveObject {
     String? errorMessage,
     List<String>? attachmentPaths,
     int? generationTimeMs,
+    String? reasoningContent,
+    List<ToolCallData>? toolCalls,
+    String? toolCallId,
   }) {
     return Message(
       id: id ?? this.id,
@@ -77,6 +92,23 @@ class Message extends HiveObject {
       errorMessage: errorMessage ?? this.errorMessage,
       attachmentPaths: attachmentPaths ?? this.attachmentPaths,
       generationTimeMs: generationTimeMs ?? this.generationTimeMs,
+      reasoningContent: reasoningContent ?? this.reasoningContent,
+      toolCalls: toolCalls ?? this.toolCalls,
+      toolCallId: toolCallId ?? this.toolCallId,
     );
   }
+}
+
+class ToolCallData {
+  final String id;
+  final String toolName;
+  final Map<String, dynamic> arguments;
+  final String? result;
+
+  ToolCallData({
+    required this.id,
+    required this.toolName,
+    required this.arguments,
+    this.result,
+  });
 }

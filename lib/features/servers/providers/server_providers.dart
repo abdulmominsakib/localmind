@@ -22,6 +22,33 @@ final connectionStatusProvider =
       return ConnectionStatusNotifier();
     });
 
+final loadedModelsRefreshProvider =
+    NotifierProvider<LoadedModelsRefreshNotifier, int>(() {
+      return LoadedModelsRefreshNotifier();
+    });
+
+class LoadedModelsRefreshNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void refresh() {
+    state++;
+  }
+}
+
+final loadedModelsProvider = FutureProvider.family<Set<String>, Server>((
+  ref,
+  server,
+) async {
+  ref.watch(loadedModelsRefreshProvider);
+  final apiService = ref.watch(serverApiServiceProvider);
+  try {
+    return await apiService.fetchRunningModels(server);
+  } catch (e) {
+    return {};
+  }
+});
+
 final availableModelsProvider = FutureProvider.family<List<dynamic>, String>((
   ref,
   serverId,
