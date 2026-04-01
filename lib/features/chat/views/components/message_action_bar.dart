@@ -183,7 +183,7 @@ class _MessageActionBarState extends State<MessageActionBar> {
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class _ActionButton extends StatefulWidget {
   const _ActionButton({
     required this.icon,
     required this.label,
@@ -197,22 +197,82 @@ class _ActionButton extends StatelessWidget {
   final bool isDestructive;
 
   @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isHovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final color = isDestructive
+    final baseColor = widget.isDestructive
         ? (isDark ? Colors.red[300] : Colors.red[600])
         : (isDark ? const Color(0xFF888888) : const Color(0xFF666666));
 
-    return Tooltip(
-      message: label,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          child: Icon(icon, size: 16, color: color),
+    final hoverColor = widget.isDestructive
+        ? (isDark ? Colors.red[200] : Colors.red[500])
+        : (isDark ? const Color(0xFFAAAAAA) : const Color(0xFF444444));
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: Tooltip(
+        message: widget.label,
+        child: GestureDetector(
+          onTapDown: widget.onTap != null ? (_) => _controller.forward() : null,
+          onTapUp: widget.onTap != null ? (_) => _controller.reverse() : null,
+          onTapCancel: widget.onTap != null
+              ? () => _controller.reverse()
+              : null,
+          onTap: widget.onTap,
+          child: AnimatedScale(
+            scale: _scaleAnimation.value,
+            duration: const Duration(milliseconds: 100),
+            curve: Curves.easeInOut,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              decoration: BoxDecoration(
+                color: _isHovered
+                    ? (isDark
+                          ? const Color(0xFF2A2A2A)
+                          : const Color(0xFFE5E5E5))
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Icon(
+                widget.icon,
+                size: 16,
+                color: _isHovered ? hoverColor : baseColor,
+              ),
+            ),
+          ),
         ),
       ),
     );

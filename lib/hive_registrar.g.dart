@@ -11,6 +11,7 @@ import 'package:localmind/features/servers/data/models/server.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
+    registerAdapter(SyntaxThemeNameAdapter());
     registerAdapter(AppSettingsAdapter());
     registerAdapter(ConversationAdapter());
     registerAdapter(MessageAdapter());
@@ -21,6 +22,7 @@ extension HiveRegistrar on HiveInterface {
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
+    registerAdapter(SyntaxThemeNameAdapter());
     registerAdapter(AppSettingsAdapter());
     registerAdapter(ConversationAdapter());
     registerAdapter(MessageAdapter());

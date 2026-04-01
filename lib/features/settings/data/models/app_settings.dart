@@ -3,6 +3,32 @@ import 'package:hive_ce/hive.dart';
 
 part 'app_settings.g.dart';
 
+@HiveType(typeId: 5)
+enum SyntaxThemeName {
+  @HiveField(0)
+  vscodeDark,
+  @HiveField(1)
+  vscodeLight,
+  @HiveField(2)
+  dracula,
+  @HiveField(3)
+  monokaiSublime,
+  @HiveField(4)
+  ayuLight,
+  @HiveField(5)
+  ayuDark,
+  @HiveField(6)
+  gravityLight,
+  @HiveField(7)
+  gravityDark,
+  @HiveField(8)
+  obsidian,
+  @HiveField(9)
+  oceanSunset,
+  @HiveField(10)
+  standard,
+}
+
 @HiveType(typeId: 4)
 class AppSettings extends HiveObject {
   @HiveField(0)
@@ -53,6 +79,9 @@ class AppSettings extends HiveObject {
   @HiveField(15, defaultValue: true)
   final bool mcpEnabled;
 
+  @HiveField(16, defaultValue: SyntaxThemeName.vscodeDark)
+  final SyntaxThemeName codeTheme;
+
   AppSettings({
     this.temperature = 0.7,
     this.topP = 0.9,
@@ -70,6 +99,7 @@ class AppSettings extends HiveObject {
     this.defaultPersonaId,
     this.hasCompletedOnboarding = false,
     this.mcpEnabled = true,
+    this.codeTheme = SyntaxThemeName.vscodeDark,
   });
 
   AppSettings copyWith({
@@ -89,6 +119,7 @@ class AppSettings extends HiveObject {
     String? defaultPersonaId,
     bool? hasCompletedOnboarding,
     bool? mcpEnabled,
+    SyntaxThemeName? codeTheme,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -109,6 +140,7 @@ class AppSettings extends HiveObject {
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       mcpEnabled: mcpEnabled ?? this.mcpEnabled,
+      codeTheme: codeTheme ?? this.codeTheme,
     );
   }
 }

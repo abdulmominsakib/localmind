@@ -279,40 +279,61 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: GestureDetector(
-                      onTap: _scrollToBottom,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF3A3A3A)
-                              : const Color(0xFFE5E5E5),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.arrow_downward,
-                              size: 14,
-                              color: isDark
-                                  ? const Color(0xFF888888)
-                                  : const Color(0xFF666666),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'New messages',
-                              style: TextStyle(
-                                fontSize: 12,
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, child) {
+                        return Opacity(
+                          opacity: value,
+                          child: Transform.translate(
+                            offset: Offset(0, 20 * (1 - value)),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: GestureDetector(
+                        onTap: _scrollToBottom,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF3A3A3A)
+                                : const Color(0xFFE5E5E5),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.arrow_downward,
+                                size: 14,
                                 color: isDark
                                     ? const Color(0xFF888888)
                                     : const Color(0xFF666666),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                'New messages',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? const Color(0xFF888888)
+                                      : const Color(0xFF666666),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -545,7 +566,7 @@ class _ConnectionBanner extends StatelessWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends StatefulWidget {
   const _EmptyState({
     required this.onQuickPrompt,
     required this.quickPrompts,
@@ -559,6 +580,62 @@ class _EmptyState extends StatelessWidget {
   final VoidCallback onSeeAll;
 
   @override
+  State<_EmptyState> createState() => _EmptyStateState();
+}
+
+class _EmptyStateState extends State<_EmptyState>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late List<Animation<double>> _fadeAnimations;
+  late List<Animation<Offset>> _slideAnimations;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    _fadeAnimations = List.generate(widget.quickPrompts.length, (index) {
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: Interval(
+            (index * 0.1).clamp(0.0, 0.7),
+            (0.3 + index * 0.1).clamp(0.2, 1.0),
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+    });
+
+    _slideAnimations = List.generate(widget.quickPrompts.length, (index) {
+      return Tween<Offset>(
+        begin: const Offset(0.0, 0.3),
+        end: Offset.zero,
+      ).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: Interval(
+            (index * 0.1).clamp(0.0, 0.7),
+            (0.3 + index * 0.1).clamp(0.2, 1.0),
+            curve: Curves.easeOutCubic,
+          ),
+        ),
+      );
+    });
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -570,31 +647,67 @@ class _EmptyState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const SizedBox(height: 24),
-            Text(
-              'Select Model LocalMind',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black,
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: child,
+                  ),
+                );
+              },
+              child: Text(
+                'Select Model LocalMind',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Your AI. Your Device. Your Rules.',
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark
-                    ? const Color(0xFF888888)
-                    : const Color(0xFF666666),
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOut,
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Transform.translate(
+                    offset: Offset(0, 15 * (1 - value)),
+                    child: child,
+                  ),
+                );
+              },
+              child: Text(
+                'Your AI. Your Device. Your Rules.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark
+                      ? const Color(0xFF888888)
+                      : const Color(0xFF666666),
+                ),
               ),
             ),
             const SizedBox(height: 32),
-            Text(
-              'Start a conversation',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: isDark ? Colors.white : Colors.black,
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOut,
+              builder: (context, value, child) {
+                return Opacity(opacity: value, child: child);
+              },
+              child: Text(
+                'Start a conversation',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -602,22 +715,43 @@ class _EmptyState extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               alignment: WrapAlignment.center,
-              children: quickPrompts.map((prompt) {
-                return ActionChip(
-                  label: Text(prompt),
-                  onPressed: () => onQuickPrompt(prompt),
-                  backgroundColor: isDark
-                      ? const Color(0xFF2A2A2A)
-                      : const Color(0xFFF5F5F5),
-                  side: BorderSide(
-                    color: isDark
-                        ? const Color(0xFF3A3A3A)
-                        : const Color(0xFFE5E5E5),
+              children: widget.quickPrompts.asMap().entries.map((entry) {
+                final index = entry.key;
+                final prompt = entry.value;
+                final fadeAnimation = index < _fadeAnimations.length
+                    ? _fadeAnimations[index]
+                    : const AlwaysStoppedAnimation(1.0);
+                final slideAnimation = index < _slideAnimations.length
+                    ? _slideAnimations[index]
+                    : const AlwaysStoppedAnimation(Offset.zero);
+
+                return AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    return FadeTransition(
+                      opacity: fadeAnimation,
+                      child: SlideTransition(
+                        position: slideAnimation,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: ActionChip(
+                    label: Text(prompt),
+                    onPressed: () => widget.onQuickPrompt(prompt),
+                    backgroundColor: isDark
+                        ? const Color(0xFF2A2A2A)
+                        : const Color(0xFFF5F5F5),
+                    side: BorderSide(
+                      color: isDark
+                          ? const Color(0xFF3A3A3A)
+                          : const Color(0xFFE5E5E5),
+                    ),
                   ),
                 );
               }).toList(),
             ),
-            if (recentConversations.isNotEmpty) ...[
+            if (widget.recentConversations.isNotEmpty) ...[
               const SizedBox(height: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -634,7 +768,7 @@ class _EmptyState extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: onSeeAll,
+                    onTap: widget.onSeeAll,
                     child: Text(
                       'See all',
                       style: TextStyle(
@@ -649,14 +783,29 @@ class _EmptyState extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              ...recentConversations
-                  .take(5)
-                  .map(
-                    (conv) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _RecentConversationItem(conversation: conv),
-                    ),
+              ...List.generate(widget.recentConversations.take(5).length, (
+                index,
+              ) {
+                final conv = widget.recentConversations.take(5).toList()[index];
+                return TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: Duration(milliseconds: 400 + (index * 50)),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 10 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _RecentConversationItem(conversation: conv),
                   ),
+                );
+              }),
             ],
           ],
         ),
@@ -797,54 +946,163 @@ class _MessageList extends StatelessWidget {
   }
 }
 
-class _SmartReplyChips extends ConsumerWidget {
+class _SmartReplyChips extends ConsumerStatefulWidget {
   const _SmartReplyChips({required this.onSend});
   final ValueChanged<String> onSend;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SmartReplyChips> createState() => _SmartReplyChipsState();
+}
+
+class _SmartReplyChipsState extends ConsumerState<_SmartReplyChips>
+    with TickerProviderStateMixin {
+  List<String> _previousSuggestions = [];
+  late AnimationController _controller;
+  List<Animation<double>> _fadeAnimations = [];
+  List<Animation<Offset>> _slideAnimations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  bool _listsEqual(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  void _updateAnimations(List<String> suggestions) {
+    if (suggestions.isEmpty) {
+      _previousSuggestions = [];
+      return;
+    }
+    if (_listsEqual(suggestions, _previousSuggestions)) {
+      return;
+    }
+
+    _previousSuggestions = List.from(suggestions);
+
+    _fadeAnimations = List.generate(suggestions.length, (index) {
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: Interval(
+            (index * 0.1).clamp(0.0, 0.8),
+            (0.3 + index * 0.1).clamp(0.2, 1.0),
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+    });
+
+    _slideAnimations = List.generate(suggestions.length, (index) {
+      return Tween<Offset>(
+        begin: const Offset(0.0, 0.5),
+        end: Offset.zero,
+      ).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: Interval(
+            (index * 0.1).clamp(0.0, 0.8),
+            (0.3 + index * 0.1).clamp(0.2, 1.0),
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+    });
+
+    _controller.forward(from: 0.0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final suggestions = ref.watch(smartRepliesProvider);
-    if (suggestions.isEmpty) return const SizedBox.shrink();
+
+    if (suggestions.isEmpty) {
+      _previousSuggestions = [];
+      return const SizedBox.shrink();
+    }
+
+    _updateAnimations(suggestions);
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: suggestions.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 6),
-        itemBuilder: (context, index) {
-          final label = suggestions[index];
-          return GestureDetector(
-            onTap: () => onSend(label),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF2A2A2A)
-                    : const Color(0xFFF0F0F0),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF3A3A3A)
-                      : const Color(0xFFE0E0E0),
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: suggestions.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 6),
+          itemBuilder: (context, index) {
+            final label = suggestions[index];
+            final fadeAnimation = index < _fadeAnimations.length
+                ? _fadeAnimations[index]
+                : const AlwaysStoppedAnimation(1.0);
+            final slideAnimation = index < _slideAnimations.length
+                ? _slideAnimations[index]
+                : const AlwaysStoppedAnimation(Offset.zero);
+
+            return AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: fadeAnimation,
+                  child: SlideTransition(
+                    position: slideAnimation,
+                    child: child,
+                  ),
+                );
+              },
+              child: GestureDetector(
+                onTap: () => widget.onSend(label),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF2A2A2A)
+                        : const Color(0xFFF0F0F0),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF3A3A3A)
+                          : const Color(0xFFE0E0E0),
+                    ),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark
+                          ? const Color(0xFFCCCCCC)
+                          : const Color(0xFF444444),
+                    ),
+                  ),
                 ),
               ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isDark
-                      ? const Color(0xFFCCCCCC)
-                      : const Color(0xFF444444),
-                ),
-              ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

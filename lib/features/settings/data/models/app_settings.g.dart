@@ -6,6 +6,90 @@ part of 'app_settings.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
+class SyntaxThemeNameAdapter extends TypeAdapter<SyntaxThemeName> {
+  @override
+  final typeId = 5;
+
+  @override
+  SyntaxThemeName read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return SyntaxThemeName.vscodeDark;
+      case 1:
+        return SyntaxThemeName.vscodeLight;
+      case 2:
+        return SyntaxThemeName.dracula;
+      case 3:
+        return SyntaxThemeName.monokaiSublime;
+      case 4:
+        return SyntaxThemeName.ayuLight;
+      case 5:
+        return SyntaxThemeName.ayuDark;
+      case 6:
+        return SyntaxThemeName.gravityLight;
+      case 7:
+        return SyntaxThemeName.gravityDark;
+      case 8:
+        return SyntaxThemeName.obsidian;
+      case 9:
+        return SyntaxThemeName.oceanSunset;
+      case 10:
+        return SyntaxThemeName.standard;
+      default:
+        return SyntaxThemeName.vscodeDark;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, SyntaxThemeName obj) {
+    switch (obj) {
+      case SyntaxThemeName.vscodeDark:
+        writer.writeByte(0);
+        break;
+      case SyntaxThemeName.vscodeLight:
+        writer.writeByte(1);
+        break;
+      case SyntaxThemeName.dracula:
+        writer.writeByte(2);
+        break;
+      case SyntaxThemeName.monokaiSublime:
+        writer.writeByte(3);
+        break;
+      case SyntaxThemeName.ayuLight:
+        writer.writeByte(4);
+        break;
+      case SyntaxThemeName.ayuDark:
+        writer.writeByte(5);
+        break;
+      case SyntaxThemeName.gravityLight:
+        writer.writeByte(6);
+        break;
+      case SyntaxThemeName.gravityDark:
+        writer.writeByte(7);
+        break;
+      case SyntaxThemeName.obsidian:
+        writer.writeByte(8);
+        break;
+      case SyntaxThemeName.oceanSunset:
+        writer.writeByte(9);
+        break;
+      case SyntaxThemeName.standard:
+        writer.writeByte(10);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SyntaxThemeNameAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
 class AppSettingsAdapter extends TypeAdapter<AppSettings> {
   @override
   final typeId = 4;
@@ -33,13 +117,16 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       defaultPersonaId: fields[13] as String?,
       hasCompletedOnboarding: fields[14] == null ? false : fields[14] as bool,
       mcpEnabled: fields[15] == null ? true : fields[15] as bool,
+      codeTheme: fields[16] == null
+          ? SyntaxThemeName.vscodeDark
+          : fields[16] as SyntaxThemeName,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(16)
+      ..writeByte(17)
       ..writeByte(0)
       ..write(obj.temperature)
       ..writeByte(1)
@@ -71,7 +158,9 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(14)
       ..write(obj.hasCompletedOnboarding)
       ..writeByte(15)
-      ..write(obj.mcpEnabled);
+      ..write(obj.mcpEnabled)
+      ..writeByte(16)
+      ..write(obj.codeTheme);
   }
 
   @override

@@ -47,3 +47,5 @@ app.*.map.json
 # FVM Version Cache
 .fvm/
 playstore_keys
+.agent
+.claude

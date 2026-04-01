@@ -39,6 +39,7 @@ class HiveInitializer {
     Hive.registerAdapter(PersonaAdapter());
     Hive.registerAdapter(AppSettingsAdapter());
     Hive.registerAdapter(ThemeModeAdapter());
+    Hive.registerAdapter(SyntaxThemeNameAdapter());
 
     final servers = await Hive.openBox<Server>(HiveKeys.servers);
     final messages = await Hive.openBox<Message>(HiveKeys.messages);

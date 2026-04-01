@@ -6,6 +6,7 @@ import 'package:localmind/core/providers/storage_providers.dart' as storage;
 import 'package:localmind/core/theme/app_theme.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
+import 'package:localmind/features/settings/data/models/app_settings.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -81,6 +82,12 @@ class SettingsScreen extends ConsumerWidget {
             isDark: isDark,
             valueFormat: (v) => v.toStringAsFixed(0),
             previewText: 'The quick brown fox jumps over the lazy dog.',
+          ),
+          _CodeThemeDropdown(
+            current: settings.codeTheme,
+            onChanged: (v) =>
+                ref.read(settingsProvider.notifier).setCodeTheme(v),
+            isDark: isDark,
           ),
           const Divider(height: 32),
           _SectionHeader(title: 'Behavior'),
@@ -709,6 +716,109 @@ class _DropdownSetting extends StatelessWidget {
             onChanged: onChanged,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CodeThemeDropdown extends StatelessWidget {
+  const _CodeThemeDropdown({
+    required this.current,
+    required this.onChanged,
+    required this.isDark,
+  });
+
+  final SyntaxThemeName current;
+  final ValueChanged<SyntaxThemeName> onChanged;
+  final bool isDark;
+
+  String _getDisplayName(SyntaxThemeName theme) {
+    switch (theme) {
+      case SyntaxThemeName.vscodeDark:
+        return 'VS Code Dark';
+      case SyntaxThemeName.vscodeLight:
+        return 'VS Code Light';
+      case SyntaxThemeName.dracula:
+        return 'Dracula';
+      case SyntaxThemeName.monokaiSublime:
+        return 'Monokai';
+      case SyntaxThemeName.ayuLight:
+        return 'Ayu Light';
+      case SyntaxThemeName.ayuDark:
+        return 'Ayu Dark';
+      case SyntaxThemeName.gravityLight:
+        return 'Gravity Light';
+      case SyntaxThemeName.gravityDark:
+        return 'Gravity Dark';
+      case SyntaxThemeName.obsidian:
+        return 'Obsidian';
+      case SyntaxThemeName.oceanSunset:
+        return 'Ocean Sunset';
+      case SyntaxThemeName.standard:
+        return 'Standard';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Code Theme',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white : Colors.black,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF3A3A3A)
+                    : const Color(0xFFE5E5E5),
+              ),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<SyntaxThemeName>(
+                value: current,
+                isExpanded: true,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                borderRadius: BorderRadius.circular(8),
+                dropdownColor: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+                items: SyntaxThemeName.values.map((theme) {
+                  return DropdownMenuItem(
+                    value: theme,
+                    child: Text(
+                      _getDisplayName(theme),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (v) {
+                  if (v != null) onChanged(v);
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Choose syntax highlighting theme for code blocks.',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? const Color(0xFF666666) : const Color(0xFF999999),
+            ),
+          ),
+        ],
       ),
     );
   }
