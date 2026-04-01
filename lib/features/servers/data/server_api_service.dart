@@ -267,15 +267,6 @@ class ServerApiService {
         .join(' ');
   }
 
-  int? _extractParameterCount(String id) {
-    final regex = RegExp(r'(\d+(?:\.\d+)?)\s*[Bb]');
-    final match = regex.firstMatch(id);
-    if (match != null) {
-      final value = double.tryParse(match.group(1) ?? '');
-      return value?.toInt();
-    }
-    return null;
-  }
 
   int? _parseParameterSize(String size) {
     final cleaned = size.replaceAll('B', '').replaceAll('b', '').trim();

@@ -107,7 +107,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _attachedFiles.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                separatorBuilder: (_, _) => const SizedBox(width: 6),
                 itemBuilder: (context, index) {
                   final file = _attachedFiles[index];
                   return Stack(

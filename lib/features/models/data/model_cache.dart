@@ -1,4 +1,3 @@
-import 'dart:collection';
 import 'package:localmind/features/models/data/models/model_info.dart';
 
 class ModelCache {

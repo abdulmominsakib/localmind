@@ -19,15 +19,12 @@ class ConversationDrawerHeader extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF3B82F6)
-                      : const Color(0xFF2563EB),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.psychology,
-                  color: Colors.white,
-                  size: 20,
+                child: Image.asset(
+                  'assets/images/logo.webp',
+                  width: 24,
+                  height: 24,
                 ),
               ),
               const SizedBox(width: 12),
@@ -44,9 +41,7 @@ class ConversationDrawerHeader extends StatelessWidget {
           IconButton(
             icon: Icon(
               Icons.settings,
-              color: isDark
-                  ? const Color(0xFF888888)
-                  : const Color(0xFF666666),
+              color: isDark ? const Color(0xFF888888) : const Color(0xFF666666),
             ),
             onPressed: () {
               Navigator.pop(context); // Close drawer

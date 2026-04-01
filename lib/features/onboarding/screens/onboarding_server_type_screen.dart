@@ -27,10 +27,13 @@ class _OnboardingServerTypeScreenState
       appBar: AppBar(
         title: Row(
           children: [
-            /// TODO: Replace with actual app logo
             Padding(
               padding: const EdgeInsets.all(8),
-              child: Placeholder(fallbackHeight: 24, fallbackWidth: 24),
+              child: Image.asset(
+                'assets/images/logo.webp',
+                width: 24,
+                height: 24,
+              ),
             ),
             const Text(
               'LOCALMIND',

@@ -1,4 +1,3 @@
-import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 

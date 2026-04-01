@@ -201,7 +201,7 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _emojis.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 4),
+                separatorBuilder: (_, _) => const SizedBox(width: 4),
                 itemBuilder: (context, index) {
                   final emoji = _emojis[index];
                   final isSelected = emoji == _selectedEmoji;
@@ -263,7 +263,7 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
             const SizedBox(height: 12),
 
             DropdownButtonFormField<String>(
-              value: _selectedCategory,
+              initialValue: _selectedCategory,
               decoration: const InputDecoration(labelText: 'Category'),
               items: _categories
                   .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -362,8 +362,9 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
                 minLines: 4,
                 maxLength: 4000,
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty)
+                  if (v == null || v.trim().isEmpty) {
                     return 'System prompt is required';
+                  }
                   if (v.trim().length > 4000) return 'Max 4000 characters';
                   return null;
                 },

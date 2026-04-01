@@ -142,15 +142,18 @@ class LMStudioChatService implements ChatService {
     }
     if (params.topK != null) body['top_k'] = params.topK;
     if (params.minP != null) body['min_p'] = params.minP;
-    if (params.repeatPenalty != null)
+    if (params.repeatPenalty != null) {
       body['repeat_penalty'] = params.repeatPenalty;
-    if (params.reasoningLevel != null)
+    }
+    if (params.reasoningLevel != null) {
       body['reasoning'] = params.reasoningLevel;
+    }
     if (integrations != null && integrations.isNotEmpty) {
       body['integrations'] = integrations.map((i) => i.toJson()).toList();
     }
-    if (previousResponseId != null)
+    if (previousResponseId != null) {
       body['previous_response_id'] = previousResponseId;
+    }
 
     final response = await _dio.post<ResponseBody>(
       server.chatEndpoint,
@@ -436,7 +439,9 @@ class OpenAICompatibleChatService implements ChatService {
                 content: content,
               );
             }
-          } catch (e) {}
+          } catch (e) {
+            // ignore: empty_catches
+          }
         }
       }
     }
@@ -508,7 +513,9 @@ class OllamaChatService implements ChatService {
               yield const ChatResponse(type: ChatResponseType.done);
               return;
             }
-          } catch (e) {}
+          } catch (e) {
+            // ignore: empty_catches
+          }
         }
       }
     }
@@ -587,7 +594,9 @@ class OpenRouterChatService implements ChatService {
                 content: content,
               );
             }
-          } catch (e) {}
+          } catch (e) {
+            // ignore: empty_catches
+          }
         }
       }
     }

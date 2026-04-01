@@ -196,7 +196,6 @@ class PersonaListScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -254,9 +253,10 @@ class PersonaListScreen extends ConsumerWidget {
                   final clone = ref
                       .read(personasNotifierProvider.notifier)
                       .clonePersona(persona.id);
-                  clone.then(
-                    (c) => context.push(AppRoutes.createPersona, extra: c),
-                  );
+                  clone.then((c) {
+                    if (!context.mounted) return;
+                    context.push(AppRoutes.createPersona, extra: c);
+                  });
                 },
               ),
               const SizedBox(height: 8),

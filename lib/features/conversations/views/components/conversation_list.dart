@@ -82,57 +82,6 @@ class ConversationList extends ConsumerWidget {
     );
   }
 
-  void _showConversationOptions(
-    BuildContext context,
-    WidgetRef ref,
-    Conversation conversation,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(
-                  conversation.isPinned
-                      ? Icons.push_pin
-                      : Icons.push_pin_outlined,
-                ),
-                title: Text(conversation.isPinned ? 'Unpin' : 'Pin'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ref
-                      .read(conversationsProvider.notifier)
-                      .togglePin(conversation.id);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.edit),
-                title: const Text('Rename'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showRenameDialog(context, ref, conversation);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDeleteConfirmation(context, ref, conversation);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   void _showRenameDialog(
     BuildContext context,

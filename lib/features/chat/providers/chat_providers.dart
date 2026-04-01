@@ -141,11 +141,13 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
       );
       if (persona != null && persona.preferredParams != null) {
         final params = persona.preferredParams as Map<String, dynamic>;
-        if (params['temperature'] != null)
+        if (params['temperature'] != null) {
           temperature = (params['temperature'] as num).toDouble();
+        }
         if (params['topP'] != null) topP = (params['topP'] as num).toDouble();
-        if (params['maxTokens'] != null)
+        if (params['maxTokens'] != null) {
           maxTokens = (params['maxTokens'] as num).toInt();
+        }
       }
     } catch (_) {}
   }
@@ -504,7 +506,7 @@ class ChatNotifier extends Notifier<ChatState> {
     if (personaPrompt != null) {
       messages.add(
         Message(
-          id: 'system-${_currentConversationId}',
+          id: 'system-$_currentConversationId',
           conversationId: _currentConversationId ?? '',
           role: MessageRole.system,
           content: personaPrompt,
@@ -515,7 +517,7 @@ class ChatNotifier extends Notifier<ChatState> {
     } else if (settings.showSystemMessages) {
       messages.add(
         Message(
-          id: 'system-default-${_currentConversationId}',
+          id: 'system-default-$_currentConversationId',
           conversationId: _currentConversationId ?? '',
           role: MessageRole.system,
           content:
