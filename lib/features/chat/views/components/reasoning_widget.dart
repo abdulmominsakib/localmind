@@ -15,7 +15,21 @@ class ReasoningWidget extends StatefulWidget {
 }
 
 class _ReasoningWidgetState extends State<ReasoningWidget> {
-  bool _isExpanded = false;
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.isStreaming;
+  }
+
+  @override
+  void didUpdateWidget(ReasoningWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isStreaming && !oldWidget.isStreaming) {
+      _isExpanded = true;
+    }
+  }
 
   String _getLastLines(String content, int maxLines) {
     final lines = content

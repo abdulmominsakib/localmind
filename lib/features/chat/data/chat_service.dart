@@ -430,12 +430,23 @@ class OpenAICompatibleChatService implements ChatService {
           }
           try {
             final json = jsonDecode(data) as Map<String, dynamic>;
-            final content = json['choices']?[0]?['delta']?['content'];
-            if (content != null && content is String) {
-              yield ChatResponse(
-                type: ChatResponseType.message,
-                content: content,
-              );
+            final delta = json['choices']?[0]?['delta'] as Map<String, dynamic>?;
+            if (delta != null) {
+              final content = delta['content'] as String?;
+              final reasoning = (delta['reasoning'] ?? delta['reasoning_content']) as String?;
+
+              if (content != null && content.isNotEmpty) {
+                yield ChatResponse(
+                  type: ChatResponseType.message,
+                  content: content,
+                );
+              }
+              if (reasoning != null && reasoning.isNotEmpty) {
+                yield ChatResponse(
+                  type: ChatResponseType.reasoning,
+                  reasoningContent: reasoning,
+                );
+              }
             }
           } catch (e) {
             // ignore: empty_catches
@@ -585,12 +596,23 @@ class OpenRouterChatService implements ChatService {
           }
           try {
             final json = jsonDecode(data) as Map<String, dynamic>;
-            final content = json['choices']?[0]?['delta']?['content'];
-            if (content != null && content is String) {
-              yield ChatResponse(
-                type: ChatResponseType.message,
-                content: content,
-              );
+            final delta = json['choices']?[0]?['delta'] as Map<String, dynamic>?;
+            if (delta != null) {
+              final content = delta['content'] as String?;
+              final reasoning = (delta['reasoning'] ?? delta['reasoning_content']) as String?;
+
+              if (content != null && content.isNotEmpty) {
+                yield ChatResponse(
+                  type: ChatResponseType.message,
+                  content: content,
+                );
+              }
+              if (reasoning != null && reasoning.isNotEmpty) {
+                yield ChatResponse(
+                  type: ChatResponseType.reasoning,
+                  reasoningContent: reasoning,
+                );
+              }
             }
           } catch (e) {
             // ignore: empty_catches
