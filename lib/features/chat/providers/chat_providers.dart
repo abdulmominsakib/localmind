@@ -13,6 +13,7 @@ import 'package:localmind/features/conversations/providers/conversation_provider
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/core/providers/app_providers.dart';
+import 'package:localmind/features/personas/providers/personas_providers.dart';
 
 final selectedModelProvider =
     NotifierProvider<SelectedModelNotifier, ModelInfo?>(() {
@@ -131,6 +132,7 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
   int maxTokens = settings.maxTokens;
   int contextLength = settings.contextLength;
 
+  String? systemPrompt;
   if (activeConv?.personaId != null) {
     final personaId = activeConv!.personaId;
     try {
@@ -139,14 +141,17 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
         (p) => p.id == personaId,
         orElse: () => null,
       );
-      if (persona != null && persona.preferredParams != null) {
-        final params = persona.preferredParams as Map<String, dynamic>;
-        if (params['temperature'] != null) {
-          temperature = (params['temperature'] as num).toDouble();
-        }
-        if (params['topP'] != null) topP = (params['topP'] as num).toDouble();
-        if (params['maxTokens'] != null) {
-          maxTokens = (params['maxTokens'] as num).toInt();
+      if (persona != null) {
+        systemPrompt = persona.systemPrompt;
+        if (persona.preferredParams != null) {
+          final params = persona.preferredParams as Map<String, dynamic>;
+          if (params['temperature'] != null) {
+            temperature = (params['temperature'] as num).toDouble();
+          }
+          if (params['topP'] != null) topP = (params['topP'] as num).toDouble();
+          if (params['maxTokens'] != null) {
+            maxTokens = (params['maxTokens'] as num).toInt();
+          }
         }
       }
     } catch (_) {}
@@ -157,6 +162,7 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
     topP: topP,
     maxTokens: maxTokens,
     contextLength: contextLength,
+    systemPrompt: systemPrompt,
   );
 });
 
@@ -324,6 +330,7 @@ class ChatNotifier extends Notifier<ChatState> {
     if (_currentConversationId == null) {
       final server = ref.read(activeServerProvider);
       final selectedModel = ref.read(selectedModelProvider);
+      final selectedPersona = ref.read(selectedPersonaProvider);
       final conversation = await ref
           .read(conv.conversationsProvider.notifier)
           .createConversation(
@@ -332,11 +339,16 @@ class ChatNotifier extends Notifier<ChatState> {
                 : content,
             serverId: server?.id,
             modelId: selectedModel?.id,
+            personaId: selectedPersona?.id,
+            systemPrompt: selectedPersona?.systemPrompt,
           );
       _currentConversationId = conversation.id;
       ref
           .read(conv.activeConversationProvider.notifier)
           .setActiveConversation(conversation);
+
+      // Clear preselected persona after it's applied to the new conversation
+      ref.read(selectedPersonaProvider.notifier).clear();
     }
 
     final userMessage = Message(

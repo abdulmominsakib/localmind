@@ -330,40 +330,46 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar>
                           ),
                         ),
                       ),
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 150),
-                        curve: Curves.easeOut,
-                        child: AnimatedOpacity(
-                          opacity: _isComposing ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 150),
-                          child: _isComposing
-                              ? Padding(
-                                  padding: const EdgeInsets.only(
-                                    right: 12,
-                                    bottom: 12,
-                                  ),
-                                  child: TweenAnimationBuilder<double>(
-                                    tween: Tween(begin: 0.5, end: 1.0),
-                                    duration: const Duration(milliseconds: 150),
-                                    builder: (context, scale, child) {
-                                      return Transform.scale(
-                                        scale: scale,
-                                        child: child,
-                                      );
-                                    },
-                                    child: Text(
-                                      '${_controller.text.length}',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: isDark
-                                            ? const Color(0xFF666666)
-                                            : const Color(0xFF999999),
+                      ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _controller,
+                        builder: (context, value, child) {
+                          final showCounter = _isComposing && value.text.length >= 300;
+                          return AnimatedSize(
+                            duration: const Duration(milliseconds: 150),
+                            curve: Curves.easeOut,
+                            child: AnimatedOpacity(
+                              opacity: showCounter ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 150),
+                              child: showCounter
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(
+                                        right: 12,
+                                        bottom: 12,
                                       ),
-                                    ),
-                                  ),
-                                )
-                              : const SizedBox(width: 0),
-                        ),
+                                      child: TweenAnimationBuilder<double>(
+                                        tween: Tween(begin: 0.5, end: 1.0),
+                                        duration: const Duration(milliseconds: 150),
+                                        builder: (context, scale, child) {
+                                          return Transform.scale(
+                                            scale: scale,
+                                            child: child,
+                                          );
+                                        },
+                                        child: Text(
+                                          '${value.text.length}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: isDark
+                                                ? const Color(0xFF666666)
+                                                : const Color(0xFF999999),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : const SizedBox(width: 0),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:localmind/features/servers/views/components/server_icon_picker.dart';
+import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
@@ -75,7 +78,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final chatState = ref.watch(chatProvider);
     final selectedModel = ref.watch(selectedModelProvider);
     final connectionStatus = ref.watch(connectionStatusProvider);
-    final isStreaming = ref.watch(isStreamingProvider);
+    final activeServer = ref.watch(activeServerProvider);
     final activeConversation = ref.watch(conv.activeConversationProvider);
     final personaId = activeConversation?.personaId;
     final persona = personaId != null
@@ -108,140 +111,146 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return Column(
       children: [
-        AppBar(
-          leading: ShadResponsiveBuilder(
-            builder: (context, breakpoint) {
-              final isDesktop =
-                  breakpoint >= ShadTheme.of(context).breakpoints.md;
-              if (isDesktop) return const SizedBox.shrink();
-              return IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              );
-            },
-          ),
-          title: GestureDetector(
-            onTap: () => _showModelPicker(context),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (persona != null) ...[
-                  Text(persona.emoji, style: const TextStyle(fontSize: 18)),
-                  const SizedBox(width: 4),
-                  Text(
-                    persona.name,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isDark
-                          ? const Color(0xFF9CA3AF)
-                          : const Color(0xFF6B7280),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                if (isStreaming) ...[
-                  const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Color(0xFF4CAF50),
+        _ModelTopBar(
+          selectedModel: selectedModel,
+          onTap: () => _showModelPicker(context),
+        ),
+        Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              ShadResponsiveBuilder(
+                builder: (context, breakpoint) {
+                  final isDesktop =
+                      breakpoint >= ShadTheme.of(context).breakpoints.md;
+                  if (isDesktop) return const SizedBox.shrink();
+                  return IconButton(
+                    icon: const Icon(Icons.menu),
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Row(
+                  children: [
+                    if (activeServer != null) ...[
+                      _buildServerIcon(context, activeServer),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      activeServer?.name ?? 'LocalMind',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                ],
-                Text(
-                  selectedModel?.displayName ?? 'Select Model',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.expand_more,
-                  size: 16,
-                  color: isDark
-                      ? const Color(0xFF888888)
-                      : const Color(0xFF666666),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            Consumer(
-              builder: (context, ref, child) {
-                final settings = ref.watch(settingsProvider);
-                final mcpConfig = ref.watch(chatMcpConfigProvider);
-                final isEnabled = settings.mcpEnabled && mcpConfig.enabled;
-                return IconButton(
-                  icon: Icon(
-                    isEnabled ? Icons.extension : Icons.extension_off_outlined,
-                    color: isEnabled
-                        ? theme.colorScheme.primary
-                        : (isDark
-                              ? const Color(0xFF666666)
-                              : const Color(0xFF999999)),
-                  ),
-                  tooltip: isEnabled ? 'MCP Enabled' : 'MCP Disabled',
-                  onPressed: () => showMcpConfigSheet(context),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: () => context.push(AppRoutes.settings),
-              tooltip: 'Settings',
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: (value) => _handleMenuAction(value, context),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'new_chat',
-                  child: ListTile(
-                    leading: Icon(Icons.add),
-                    title: Text('New Chat'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'persona',
-                  child: ListTile(
-                    leading: Icon(
-                      persona != null
-                          ? Icons.swap_horiz
-                          : Icons.smart_toy_outlined,
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color:
+                            connectionStatus == ConnectionStatus.connected
+                                ? Colors.green
+                                : Colors.grey,
+                      ),
                     ),
-                    title: Text(
-                      persona != null ? 'Change Persona' : 'Set Persona',
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                  ],
                 ),
-                if (persona != null)
+              ),
+              Consumer(
+                builder: (context, ref, child) {
+                  final settings = ref.watch(settingsProvider);
+                  final mcpConfig = ref.watch(chatMcpConfigProvider);
+                  final isEnabled = settings.mcpEnabled && mcpConfig.enabled;
+                  return IconButton(
+                    icon: Icon(
+                      isEnabled
+                          ? Icons.extension
+                          : Icons.extension_off_outlined,
+                      color: isEnabled
+                          ? theme.colorScheme.primary
+                          : (isDark
+                                ? const Color(0xFF666666)
+                                : const Color(0xFF999999)),
+                    ),
+                    tooltip: isEnabled ? 'MCP Enabled' : 'MCP Disabled',
+                    onPressed: () => showMcpConfigSheet(context),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () => context.push(AppRoutes.settings),
+                tooltip: 'Settings',
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) => _handleMenuAction(value, context),
+                itemBuilder: (context) => [
                   const PopupMenuItem(
-                    value: 'remove_persona',
+                    value: 'new_chat',
                     child: ListTile(
-                      leading: Icon(Icons.person_remove_outlined),
-                      title: Text('Remove Persona'),
+                      leading: Icon(Icons.add),
+                      title: Text('New Chat'),
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                const PopupMenuItem(
-                  value: 'clear',
-                  child: ListTile(
-                    leading: Icon(Icons.delete_outline),
-                    title: Text('Clear Conversation'),
-                    contentPadding: EdgeInsets.zero,
+                  PopupMenuItem(
+                    value: 'persona',
+                    child: ListTile(
+                      leading: Icon(
+                        persona != null
+                            ? Icons.swap_horiz
+                            : Icons.smart_toy_outlined,
+                      ),
+                      title: Text(
+                        persona != null ? 'Change Persona' : 'Set Persona',
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  if (persona != null)
+                    const PopupMenuItem(
+                      value: 'remove_persona',
+                      child: ListTile(
+                        leading: Icon(Icons.person_remove_outlined),
+                        title: Text('Remove Persona'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  const PopupMenuItem(
+                    value: 'clear',
+                    child: ListTile(
+                      leading: Icon(Icons.delete_outline),
+                      title: Text('Clear Conversation'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         if (connectionStatus == ConnectionStatus.disconnected ||
             connectionStatus == ConnectionStatus.error)
           _ConnectionBanner(status: connectionStatus),
+        if (persona != null)
+          _PersonaIndicator(
+            persona: persona,
+            onTap: () => _showPersonaPicker(context),
+            onRemove: () {
+              final activeConv = ref.read(conv.activeConversationProvider);
+              if (activeConv != null) {
+                ref
+                    .read(conv.conversationsProvider.notifier)
+                    .updatePersona(activeConv.id, null, null);
+              }
+            },
+          ),
         Expanded(
           child: Stack(
             children: [
@@ -258,6 +267,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           Scaffold.of(context).openDrawer();
                         }
                       },
+                      selectedModel: selectedModel,
+                      onModelTap: () => _showModelPicker(context),
+                      selectedPersona: ref.watch(selectedPersonaProvider),
+                      onPersonaTap: () => _showPersonaPickerForPreselection(context),
                     )
                   : _MessageList(
                       scrollController: _scrollController,
@@ -520,6 +533,161 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       },
     );
   }
+
+  void _showPersonaPickerForPreselection(BuildContext context) {
+    final personas = ref.read(personasNotifierProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentPersona = ref.watch(selectedPersonaProvider);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey[600] : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Select Persona',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: personas.length,
+                    itemBuilder: (context, index) {
+                      final p = personas[index];
+                      final isSelected = p.id == currentPersona?.id;
+                      final accent = isDark
+                          ? const Color(0xFF3B82F6)
+                          : const Color(0xFF2563EB);
+                      return ListTile(
+                        leading: Text(
+                          p.emoji,
+                          style: const TextStyle(fontSize: 22),
+                        ),
+                        title: Text(
+                          p.name,
+                          style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        subtitle: p.description != null
+                            ? Text(
+                                p.description!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? const Color(0xFF888888)
+                                      : const Color(0xFF999999),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            : null,
+                        trailing: isSelected
+                            ? Icon(Icons.check_circle, color: accent)
+                            : null,
+                        onTap: () {
+                          ref.read(selectedPersonaProvider.notifier).select(p);
+                          Navigator.pop(ctx);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildServerIcon(BuildContext context, Server server) {
+    final iconData =
+        server.iconName != null
+            ? getHugeIconByName(server.iconName)
+            : getDefaultServerIcon(server.type.name);
+
+    if (iconData == null) {
+      return const Icon(Icons.dns, size: 18);
+    }
+
+    return HugeIcon(
+      icon: iconData.icon,
+      size: 18,
+      color: Theme.of(context).colorScheme.primary,
+    );
+  }
+}
+
+class _ModelTopBar extends StatelessWidget {
+  const _ModelTopBar({required this.selectedModel, required this.onTap});
+
+  final dynamic selectedModel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      color: theme.colorScheme.surface,
+      child: SafeArea(
+        bottom: false,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  selectedModel?.displayName ?? 'Select Model',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white70 : Colors.black87,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.expand_more,
+                  size: 14,
+                  color: isDark ? Colors.white38 : Colors.black38,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ConnectionBanner extends StatelessWidget {
@@ -580,12 +748,20 @@ class _EmptyState extends StatefulWidget {
     required this.quickPrompts,
     required this.recentConversations,
     required this.onSeeAll,
+    required this.selectedModel,
+    required this.onModelTap,
+    this.selectedPersona,
+    required this.onPersonaTap,
   });
 
   final void Function(String) onQuickPrompt;
   final List<String> quickPrompts;
   final List<Conversation> recentConversations;
   final VoidCallback onSeeAll;
+  final dynamic selectedModel;
+  final VoidCallback onModelTap;
+  final dynamic selectedPersona;
+  final VoidCallback onPersonaTap;
 
   @override
   State<_EmptyState> createState() => _EmptyStateState();
@@ -668,37 +844,112 @@ class _EmptyStateState extends State<_EmptyState>
                   ),
                 );
               },
-              child: Text(
-                'Select Model LocalMind',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeOut,
-              builder: (context, value, child) {
-                return Opacity(
-                  opacity: value,
-                  child: Transform.translate(
-                    offset: Offset(0, 15 * (1 - value)),
-                    child: child,
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: widget.onModelTap,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF333333)
+                              : const Color(0xFFE5E5E5),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.settings_suggest,
+                            size: 18,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            widget.selectedModel?.displayName ?? 'Select Model',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.expand_more,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                );
-              },
-              child: Text(
-                'Your AI. Your Device. Your Rules.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark
-                      ? const Color(0xFF888888)
-                      : const Color(0xFF666666),
-                ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: widget.onPersonaTap,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF333333)
+                              : const Color(0xFFE5E5E5),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.selectedPersona != null) ...[
+                            Text(
+                              widget.selectedPersona!.emoji,
+                              style: const TextStyle(fontSize: 18),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              widget.selectedPersona!.name,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                            ),
+                          ] else ...[
+                            Icon(
+                              Icons.smart_toy_outlined,
+                              size: 18,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Select Persona',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.expand_more,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 32),
@@ -1116,6 +1367,73 @@ class _SmartReplyChipsState extends ConsumerState<_SmartReplyChips>
             );
           },
         ),
+      ),
+    );
+  }
+}
+class _PersonaIndicator extends StatelessWidget {
+  const _PersonaIndicator({
+    required this.persona,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  final dynamic persona;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      color: isDark ? const Color(0xFF121212) : const Color(0xFFF9F9F9),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    persona.emoji,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    persona.name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.close, size: 16),
+            onPressed: onRemove,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            tooltip: 'Remove Persona',
+            color: isDark ? Colors.white38 : Colors.black38,
+          ),
+        ],
       ),
     );
   }

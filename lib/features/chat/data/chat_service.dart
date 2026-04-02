@@ -359,9 +359,7 @@ class LMStudioChatService implements ChatService {
   dynamic _formatInput(List<Message> messages) {
     final formattedInputs = <Map<String, dynamic>>[];
     for (final m in messages) {
-      if (m.role == MessageRole.system) {
-        formattedInputs.add({'type': 'system_prompt', 'content': m.content});
-      } else {
+      if (m.role != MessageRole.system) {
         formattedInputs.add({'type': 'text', 'content': m.content});
       }
     }

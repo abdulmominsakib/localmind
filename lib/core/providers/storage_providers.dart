@@ -27,7 +27,7 @@ final conversationsProvider = Provider<List<Conversation>>((ref) {
 
 final recentConversationsProvider = Provider<List<Conversation>>((ref) {
   final all = ref.watch(conversationsProvider);
-  return all.take(5).toList();
+  return all.take(3).toList();
 });
 
 final personasBoxProvider = Provider<Box<Persona>>((ref) {

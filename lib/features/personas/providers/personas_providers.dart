@@ -8,6 +8,24 @@ final personaSearchQueryProvider =
       _PersonaSearchNotifier.new,
     );
 
+final selectedPersonaProvider =
+    NotifierProvider<SelectedPersonaNotifier, Persona?>(
+      SelectedPersonaNotifier.new,
+    );
+
+class SelectedPersonaNotifier extends Notifier<Persona?> {
+  @override
+  Persona? build() => null;
+
+  void select(Persona? persona) {
+    state = persona;
+  }
+
+  void clear() {
+    state = null;
+  }
+}
+
 class _PersonaSearchNotifier extends Notifier<String> {
   @override
   String build() => '';
