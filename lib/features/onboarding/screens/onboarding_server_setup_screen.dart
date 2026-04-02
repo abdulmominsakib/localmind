@@ -64,7 +64,7 @@ class _OnboardingServerSetupScreenState
     _hostController = TextEditingController(
       text: widget.selectedType == ServerType.openRouter
           ? ''
-          : (Platform.isAndroid ? '10.0.2.2' : '127.0.0.1'),
+          : (Platform.isAndroid ? '192.168.0.0' : '127.0.0.1'),
     );
     _portController = TextEditingController(text: defaultPort);
     _apiKeyController = TextEditingController();

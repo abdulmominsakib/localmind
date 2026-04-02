@@ -47,5 +47,7 @@ app.*.map.json
 # FVM Version Cache
 .fvm/
 playstore_keys
-.agent
-.claude
+.agent/
+.claude/
+.dart_skills/
+private/

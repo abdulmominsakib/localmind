@@ -5,9 +5,9 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:localmind/core/theme/app_theme.dart';
 import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
-import 'package:localmind/features/chat/screens/chat_screen.dart';
-import 'package:localmind/features/conversations/views/conversation_sidebar.dart';
-import 'package:localmind/features/conversations/views/conversation_drawer.dart';
+import 'package:localmind/features/chat/views/chat_screen.dart';
+import 'package:localmind/features/sidebar/sidebar_widget.dart';
+import 'package:localmind/features/sidebar/sidebar_drawer.dart';
 import 'package:localmind/features/servers/views/server_list_screen.dart';
 import 'package:localmind/features/servers/views/add_server_screen.dart';
 import 'package:localmind/features/personas/views/persona_list_screen.dart';
@@ -200,7 +200,7 @@ class AppShell extends StatelessWidget {
           return Scaffold(
             body: Row(
               children: [
-                const ConversationSidebar(),
+                const SidebarWidget(),
                 VerticalDivider(
                   width: 1,
                   thickness: 1,

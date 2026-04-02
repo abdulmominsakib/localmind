@@ -82,7 +82,6 @@ class ConversationList extends ConsumerWidget {
     );
   }
 
-
   void _showRenameDialog(
     BuildContext context,
     WidgetRef ref,

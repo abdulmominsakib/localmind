@@ -3,30 +3,30 @@
 // Check in to version control
 
 import 'package:hive_ce/hive_ce.dart';
-import 'package:localmind/features/settings/data/models/app_settings.dart';
-import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
+import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/personas/data/models/persona.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
+import 'package:localmind/features/settings/data/models/app_settings.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
-    registerAdapter(SyntaxThemeNameAdapter());
     registerAdapter(AppSettingsAdapter());
     registerAdapter(ConversationAdapter());
     registerAdapter(MessageAdapter());
     registerAdapter(PersonaAdapter());
     registerAdapter(ServerAdapter());
+    registerAdapter(SyntaxThemeNameAdapter());
   }
 }
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
-    registerAdapter(SyntaxThemeNameAdapter());
     registerAdapter(AppSettingsAdapter());
     registerAdapter(ConversationAdapter());
     registerAdapter(MessageAdapter());
     registerAdapter(PersonaAdapter());
     registerAdapter(ServerAdapter());
+    registerAdapter(SyntaxThemeNameAdapter());
   }
 }

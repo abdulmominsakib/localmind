@@ -168,12 +168,12 @@ class LMStudioChatService implements ChatService {
       cancelToken: _cancelToken,
     );
 
-    final stream = response.data!.stream;
+    final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
     String buffer = '';
     String currentEventType = '';
 
     await for (final chunk in stream) {
-      buffer += String.fromCharCodes(chunk);
+      buffer += chunk;
       final lines = buffer.split('\n');
       buffer = lines.removeLast();
 
@@ -415,11 +415,11 @@ class OpenAICompatibleChatService implements ChatService {
       cancelToken: _cancelToken,
     );
 
-    final stream = response.data!.stream;
+    final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
     String buffer = '';
 
     await for (final chunk in stream) {
-      buffer += String.fromCharCodes(chunk);
+      buffer += chunk;
       final lines = buffer.split('\n');
       buffer = lines.removeLast();
 
@@ -490,11 +490,11 @@ class OllamaChatService implements ChatService {
       cancelToken: _cancelToken,
     );
 
-    final stream = response.data!.stream;
+    final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
     String buffer = '';
 
     await for (final chunk in stream) {
-      buffer += String.fromCharCodes(chunk);
+      buffer += chunk;
       final lines = buffer.split('\n');
       buffer = lines.removeLast();
 
@@ -570,11 +570,11 @@ class OpenRouterChatService implements ChatService {
       cancelToken: _cancelToken,
     );
 
-    final stream = response.data!.stream;
+    final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
     String buffer = '';
 
     await for (final chunk in stream) {
-      buffer += String.fromCharCodes(chunk);
+      buffer += chunk;
       final lines = buffer.split('\n');
       buffer = lines.removeLast();
 

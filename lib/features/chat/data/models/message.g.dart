@@ -8,7 +8,7 @@ part of 'message.dart';
 
 class MessageAdapter extends TypeAdapter<Message> {
   @override
-  final int typeId = 1;
+  final typeId = 1;
 
   @override
   Message read(BinaryReader reader) {
@@ -31,6 +31,7 @@ class MessageAdapter extends TypeAdapter<Message> {
       attachmentPaths: (fields[9] as List?)?.cast<String>(),
       generationTimeMs: (fields[10] as num?)?.toInt(),
       reasoningContent: fields[11] as String?,
+      toolCalls: (fields[12] as List?)?.cast<ToolCallData>(),
       toolCallId: fields[13] as String?,
     );
   }

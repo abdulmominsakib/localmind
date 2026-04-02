@@ -3,17 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-import '../../../core/routes/app_routes.dart';
-import '../providers/conversation_providers.dart';
+import '../../core/routes/app_routes.dart';
+import '../conversations/providers/conversation_providers.dart';
+import 'components/active_server_indicator.dart';
 import 'components/conversation_drawer_header.dart';
-import 'components/conversation_empty_state.dart';
-import 'components/conversation_list.dart';
-import 'components/conversation_search_bar.dart';
+import '../conversations/views/components/conversation_empty_state.dart';
+import '../conversations/views/components/conversation_list.dart';
+import '../conversations/views/components/conversation_search_bar.dart';
 import 'components/drawer_nav_item.dart';
-import 'components/new_chat_button.dart';
+import '../conversations/views/components/new_chat_button.dart';
 
-class ConversationSidebar extends ConsumerWidget {
-  const ConversationSidebar({super.key});
+class SidebarWidget extends ConsumerWidget {
+  const SidebarWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,6 +56,7 @@ class ConversationSidebar extends ConsumerWidget {
                     ),
             ),
             const Divider(height: 1),
+            const ActiveServerIndicator(),
             const SizedBox(height: 8),
             DrawerNavItem(
               iconData: HugeIcons.strokeRoundedMessageMultiple01,

@@ -272,6 +272,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             .read(chatProvider.notifier)
                             .deleteMessage(messageId);
                       },
+                      hasSmartReplies:
+                          !chatState.isStreaming &&
+                          ref.read(smartRepliesProvider).isNotEmpty,
                     ),
               if (_showScrollToBottom && chatState.messages.isNotEmpty)
                 Positioned(
@@ -339,15 +342,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                   ),
                 ),
+              if (!chatState.isStreaming)
+                Positioned(
+                  bottom: 8,
+                  left: 0,
+                  right: 0,
+                  child: _SmartReplyChips(
+                    onSend: (message) {
+                      ref.read(chatProvider.notifier).sendMessage(message);
+                    },
+                  ),
+                ),
             ],
           ),
         ),
-        if (!chatState.isStreaming)
-          _SmartReplyChips(
-            onSend: (message) {
-              ref.read(chatProvider.notifier).sendMessage(message);
-            },
-          ),
         ChatInputBar(
           isStreaming: chatState.isStreaming,
           onSend: (message) {
@@ -895,6 +903,7 @@ class _MessageList extends StatelessWidget {
     required this.isStreaming,
     required this.onRetry,
     required this.onDelete,
+    this.hasSmartReplies = false,
   });
 
   final ScrollController scrollController;
@@ -903,6 +912,7 @@ class _MessageList extends StatelessWidget {
   final bool isStreaming;
   final void Function(String) onRetry;
   final void Function(String) onDelete;
+  final bool hasSmartReplies;
 
   @override
   Widget build(BuildContext context) {
@@ -919,7 +929,10 @@ class _MessageList extends StatelessWidget {
 
     return ListView.builder(
       controller: scrollController,
-      padding: EdgeInsets.only(top: 16, bottom: 16),
+      padding: EdgeInsets.only(
+        top: 16,
+        bottom: 16 + (hasSmartReplies ? 56 : 0),
+      ),
       itemCount:
           allMessages.length +
           (streamingMessage != null && isStreaming ? 1 : 0),
@@ -1044,10 +1057,10 @@ class _SmartReplyChipsState extends ConsumerState<_SmartReplyChips>
     return AnimatedSize(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
-      child: Container(
+      child: SizedBox(
         height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
         child: ListView.separated(
+          padding: EdgeInsets.only(left: 8),
           scrollDirection: Axis.horizontal,
           itemCount: suggestions.length,
           separatorBuilder: (_, _) => const SizedBox(width: 6),

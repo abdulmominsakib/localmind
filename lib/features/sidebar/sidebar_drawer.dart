@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'conversation_sidebar.dart';
+import 'sidebar_widget.dart';
 
 class ConversationDrawer extends StatelessWidget {
   const ConversationDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Drawer(
-      child: ConversationSidebar(),
-    );
+    return const Drawer(child: SidebarWidget());
   }
 }
-
