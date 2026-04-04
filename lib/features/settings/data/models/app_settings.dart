@@ -80,7 +80,10 @@ class AppSettings extends HiveObject {
   final bool mcpEnabled;
 
   @HiveField(16, defaultValue: SyntaxThemeName.vscodeDark)
-  final SyntaxThemeName codeTheme;
+  final SyntaxThemeName codeThemeDark;
+
+  @HiveField(17, defaultValue: SyntaxThemeName.vscodeLight)
+  final SyntaxThemeName codeThemeLight;
 
   AppSettings({
     this.temperature = 0.7,
@@ -99,7 +102,8 @@ class AppSettings extends HiveObject {
     this.defaultPersonaId,
     this.hasCompletedOnboarding = false,
     this.mcpEnabled = true,
-    this.codeTheme = SyntaxThemeName.vscodeDark,
+    this.codeThemeDark = SyntaxThemeName.vscodeDark,
+    this.codeThemeLight = SyntaxThemeName.vscodeLight,
   });
 
   AppSettings copyWith({
@@ -119,7 +123,8 @@ class AppSettings extends HiveObject {
     String? defaultPersonaId,
     bool? hasCompletedOnboarding,
     bool? mcpEnabled,
-    SyntaxThemeName? codeTheme,
+    SyntaxThemeName? codeThemeDark,
+    SyntaxThemeName? codeThemeLight,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -140,7 +145,8 @@ class AppSettings extends HiveObject {
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       mcpEnabled: mcpEnabled ?? this.mcpEnabled,
-      codeTheme: codeTheme ?? this.codeTheme,
+      codeThemeDark: codeThemeDark ?? this.codeThemeDark,
+      codeThemeLight: codeThemeLight ?? this.codeThemeLight,
     );
   }
 }

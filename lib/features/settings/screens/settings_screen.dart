@@ -84,9 +84,17 @@ class SettingsScreen extends ConsumerWidget {
             previewText: 'The quick brown fox jumps over the lazy dog.',
           ),
           _CodeThemeDropdown(
-            current: settings.codeTheme,
+            label: 'Code Theme (Dark)',
+            current: settings.codeThemeDark,
             onChanged: (v) =>
-                ref.read(settingsProvider.notifier).setCodeTheme(v),
+                ref.read(settingsProvider.notifier).setCodeThemeDark(v),
+            isDark: isDark,
+          ),
+          _CodeThemeDropdown(
+            label: 'Code Theme (Light)',
+            current: settings.codeThemeLight,
+            onChanged: (v) =>
+                ref.read(settingsProvider.notifier).setCodeThemeLight(v),
             isDark: isDark,
           ),
           const Divider(height: 32),
@@ -723,11 +731,13 @@ class _DropdownSetting extends StatelessWidget {
 
 class _CodeThemeDropdown extends StatelessWidget {
   const _CodeThemeDropdown({
+    required this.label,
     required this.current,
     required this.onChanged,
     required this.isDark,
   });
 
+  final String label;
   final SyntaxThemeName current;
   final ValueChanged<SyntaxThemeName> onChanged;
   final bool isDark;
@@ -767,7 +777,7 @@ class _CodeThemeDropdown extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Code Theme',
+            label,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,

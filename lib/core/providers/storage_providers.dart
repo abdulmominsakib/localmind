@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/personas/data/models/persona.dart';
@@ -38,4 +40,8 @@ final personasBoxProvider = Provider<Box<Persona>>((ref) {
 final personasProvider = Provider<List<Persona>>((ref) {
   final box = ref.watch(personasBoxProvider);
   return box.values.toList();
+});
+
+final storageDirectoryProvider = FutureProvider<Directory>((ref) async {
+  return await getApplicationDocumentsDirectory();
 });

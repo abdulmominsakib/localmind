@@ -47,6 +47,9 @@ class Message extends HiveObject {
   @HiveField(13)
   final String? toolCallId;
 
+  @HiveField(14)
+  final bool isProcessing;
+
   Message({
     required this.id,
     required this.conversationId,
@@ -62,6 +65,7 @@ class Message extends HiveObject {
     this.reasoningContent,
     this.toolCalls,
     this.toolCallId,
+    this.isProcessing = false,
   });
 
   Message copyWith({
@@ -79,6 +83,7 @@ class Message extends HiveObject {
     String? reasoningContent,
     List<ToolCallData>? toolCalls,
     String? toolCallId,
+    bool? isProcessing,
   }) {
     return Message(
       id: id ?? this.id,
@@ -95,6 +100,7 @@ class Message extends HiveObject {
       reasoningContent: reasoningContent ?? this.reasoningContent,
       toolCalls: toolCalls ?? this.toolCalls,
       toolCallId: toolCallId ?? this.toolCallId,
+      isProcessing: isProcessing ?? this.isProcessing,
     );
   }
 }

@@ -30,7 +30,6 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
-  bool _showScrollToBottom = false;
 
   static const List<String> _quickPrompts = [
     'Help me write a function',
@@ -42,33 +41,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    final chatState = ref.read(chatProvider);
-    if (chatState.isStreaming) return;
-
-    final isNearBottom =
-        _scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 100;
-    if (_showScrollToBottom != !isNearBottom) {
-      setState(() => _showScrollToBottom = !isNearBottom);
-    }
-  }
-
-  void _scrollToBottom() {
-    _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
   }
 
   @override
@@ -87,27 +65,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    ref.listen(chatProvider, (previous, next) {
-      final newMessage = previous?.messages.length != next.messages.length;
-      final newStreaming =
-          next.isStreaming &&
-          next.streamingMessage != null &&
-          next.streamingMessage != previous?.streamingMessage;
-
-      if (newMessage || newStreaming) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scrollController.hasClients) {
-            if (next.isStreaming) {
-              _scrollController.jumpTo(
-                _scrollController.position.maxScrollExtent,
-              );
-            } else {
-              _scrollToBottom();
-            }
-          }
-        });
-      }
-    });
+    // Autoscroll disabled as per user request
+    // ref.listen(chatProvider, (previous, next) { ... });
 
     return Column(
       children: [
@@ -152,10 +111,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       height: 8,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color:
-                            connectionStatus == ConnectionStatus.connected
-                                ? Colors.green
-                                : Colors.grey,
+                        color: connectionStatus == ConnectionStatus.connected
+                            ? Colors.green
+                            : Colors.grey,
                       ),
                     ),
                   ],
@@ -270,7 +228,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       selectedModel: selectedModel,
                       onModelTap: () => _showModelPicker(context),
                       selectedPersona: ref.watch(selectedPersonaProvider),
-                      onPersonaTap: () => _showPersonaPickerForPreselection(context),
+                      onPersonaTap: () =>
+                          _showPersonaPickerForPreselection(context),
                     )
                   : _MessageList(
                       scrollController: _scrollController,
@@ -278,7 +237,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       streamingMessage: chatState.streamingMessage,
                       isStreaming: chatState.isStreaming,
                       onRetry: (messageId) {
-                        ref.read(chatProvider.notifier).retryLastMessage();
+                        ref.read(chatProvider.notifier).retryMessage(messageId);
                       },
                       onDelete: (messageId) {
                         ref
@@ -289,75 +248,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           !chatState.isStreaming &&
                           ref.read(smartRepliesProvider).isNotEmpty,
                     ),
-              if (_showScrollToBottom && chatState.messages.isNotEmpty)
-                Positioned(
-                  bottom: 20,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, 20 * (1 - value)),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: GestureDetector(
-                        onTap: _scrollToBottom,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF3A3A3A)
-                                : const Color(0xFFE5E5E5),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.arrow_downward,
-                                size: 14,
-                                color: isDark
-                                    ? const Color(0xFF888888)
-                                    : const Color(0xFF666666),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'New messages',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isDark
-                                      ? const Color(0xFF888888)
-                                      : const Color(0xFF666666),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               if (!chatState.isStreaming)
                 Positioned(
-                  bottom: 8,
+                  bottom: 90,
                   left: 0,
                   right: 0,
                   child: _SmartReplyChips(
@@ -366,17 +259,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     },
                   ),
                 ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: ChatInputBar(
+                  isStreaming: chatState.isStreaming,
+                  onSend: (message, {attachments}) {
+                    ref
+                        .read(chatProvider.notifier)
+                        .sendMessage(message, attachments: attachments);
+                  },
+                  onStop: () {
+                    ref.read(chatProvider.notifier).cancelStream();
+                  },
+                ),
+              ),
             ],
           ),
-        ),
-        ChatInputBar(
-          isStreaming: chatState.isStreaming,
-          onSend: (message) {
-            ref.read(chatProvider.notifier).sendMessage(message);
-          },
-          onStop: () {
-            ref.read(chatProvider.notifier).cancelStream();
-          },
         ),
       ],
     );
@@ -626,10 +526,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildServerIcon(BuildContext context, Server server) {
-    final iconData =
-        server.iconName != null
-            ? getHugeIconByName(server.iconName)
-            : getDefaultServerIcon(server.type.name);
+    final iconData = server.iconName != null
+        ? getHugeIconByName(server.iconName)
+        : getDefaultServerIcon(server.type.name);
 
     if (iconData == null) {
       return const Icon(Icons.dns, size: 18);
@@ -666,13 +565,19 @@ class _ModelTopBar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  selectedModel?.displayName ?? 'Select Model',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white70 : Colors.black87,
+                Flexible(
+                  child: Text(
+                    selectedModel?.displayName ?? 'Select Model',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -1180,9 +1085,10 @@ class _MessageList extends StatelessWidget {
 
     return ListView.builder(
       controller: scrollController,
+      cacheExtent: 1000,
       padding: EdgeInsets.only(
         top: 16,
-        bottom: 16 + (hasSmartReplies ? 56 : 0),
+        bottom: 120 + (hasSmartReplies ? 56 : 0),
       ),
       itemCount:
           allMessages.length +
@@ -1371,6 +1277,7 @@ class _SmartReplyChipsState extends ConsumerState<_SmartReplyChips>
     );
   }
 }
+
 class _PersonaIndicator extends StatelessWidget {
   const _PersonaIndicator({
     required this.persona,
@@ -1407,10 +1314,7 @@ class _PersonaIndicator extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    persona.emoji,
-                    style: const TextStyle(fontSize: 16),
-                  ),
+                  Text(persona.emoji, style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 6),
                   Text(
                     persona.name,

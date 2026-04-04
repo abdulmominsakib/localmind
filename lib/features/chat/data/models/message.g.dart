@@ -33,13 +33,14 @@ class MessageAdapter extends TypeAdapter<Message> {
       reasoningContent: fields[11] as String?,
       toolCalls: (fields[12] as List?)?.cast<ToolCallData>(),
       toolCallId: fields[13] as String?,
+      isProcessing: fields[14] == null ? false : fields[14] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, Message obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -67,7 +68,9 @@ class MessageAdapter extends TypeAdapter<Message> {
       ..writeByte(12)
       ..write(obj.toolCalls)
       ..writeByte(13)
-      ..write(obj.toolCallId);
+      ..write(obj.toolCallId)
+      ..writeByte(14)
+      ..write(obj.isProcessing);
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/models/enums.dart';
@@ -26,6 +27,10 @@ class SelectedModelNotifier extends Notifier<ModelInfo?> {
 
   void setModel(ModelInfo? model) {
     state = model;
+  }
+
+  void clear() {
+    state = null;
   }
 }
 
@@ -313,7 +318,7 @@ class ChatNotifier extends Notifier<ChatState> {
         .join('-');
   }
 
-  Future<void> sendMessage(String content) async {
+  Future<void> sendMessage(String content, {List<File>? attachments}) async {
     final server = ref.read(activeServerProvider);
     final selectedModel = ref.read(selectedModelProvider);
     final chatParams = ref.read(chatParamsProvider);
@@ -351,6 +356,23 @@ class ChatNotifier extends Notifier<ChatState> {
       ref.read(selectedPersonaProvider.notifier).clear();
     }
 
+    final List<String> savedPaths = [];
+    if (attachments != null && attachments.isNotEmpty) {
+      final appDir = await ref.read(storageDirectoryProvider.future);
+      final attachmentsDir = Directory('${appDir.path}/attachments');
+      if (!await attachmentsDir.exists()) {
+        await attachmentsDir.create(recursive: true);
+      }
+
+      for (final file in attachments) {
+        final fileName = file.path.split('/').last;
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final newPath = '${attachmentsDir.path}/${timestamp}_$fileName';
+        await file.copy(newPath);
+        savedPaths.add(newPath);
+      }
+    }
+
     final userMessage = Message(
       id: generateUuid(),
       conversationId: _currentConversationId!,
@@ -358,6 +380,7 @@ class ChatNotifier extends Notifier<ChatState> {
       content: content,
       createdAt: DateTime.now(),
       status: MessageStatus.complete,
+      attachmentPaths: savedPaths.isNotEmpty ? savedPaths : null,
     );
 
     final assistantMessageId = generateUuid();
@@ -396,22 +419,27 @@ class ChatNotifier extends Notifier<ChatState> {
             params: chatParams,
           )
           .listen(
-            (response) {
+            (response) async {
               switch (response.type) {
                 case ChatResponseType.message:
                   final currentContent = state.streamingMessage?.content ?? '';
                   final updatedMessage =
                       (state.streamingMessage ?? assistantMessage).copyWith(
                         content: currentContent + (response.content ?? ''),
+                        isProcessing: false,
                       );
-                  state = state.copyWith(streamingMessage: updatedMessage);
                   final messageIndex = state.messages.indexWhere(
                     (m) => m.id == assistantMessageId,
                   );
                   if (messageIndex != -1) {
                     final updatedMessages = List<Message>.from(state.messages);
                     updatedMessages[messageIndex] = updatedMessage;
-                    state = state.copyWith(messages: updatedMessages);
+                    state = state.copyWith(
+                      streamingMessage: updatedMessage,
+                      messages: updatedMessages,
+                    );
+                  } else {
+                    state = state.copyWith(streamingMessage: updatedMessage);
                   }
                   break;
                 case ChatResponseType.reasoning:
@@ -419,6 +447,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   final reasoningMessage =
                       (state.streamingMessage ?? assistantMessage).copyWith(
                         reasoningContent: reasoningContent,
+                        isProcessing: false,
                       );
                   state = state.copyWith(streamingMessage: reasoningMessage);
                   final msgIndex = state.messages.indexWhere(
@@ -430,6 +459,54 @@ class ChatNotifier extends Notifier<ChatState> {
                     state = state.copyWith(messages: updatedMessages);
                   }
                   break;
+                case ChatResponseType.processing:
+                  // Model is working but hasn't output content yet
+                  final processingMessage =
+                      (state.streamingMessage ?? assistantMessage).copyWith(
+                        isProcessing: true,
+                      );
+                  state = state.copyWith(streamingMessage: processingMessage);
+                  final procIndex = state.messages.indexWhere(
+                    (m) => m.id == assistantMessageId,
+                  );
+                  if (procIndex != -1) {
+                    final updatedMessages = List<Message>.from(state.messages);
+                    updatedMessages[procIndex] = processingMessage;
+                    state = state.copyWith(messages: updatedMessages);
+                  }
+                  break;
+                case ChatResponseType.timeoutError:
+                case ChatResponseType.error:
+                  // Error reached without receiving content or mid-stream
+                  final errorMessage =
+                      (state.streamingMessage ?? assistantMessage).copyWith(
+                        status: MessageStatus.error,
+                        errorMessage:
+                            response.content ??
+                            (response.type == ChatResponseType.timeoutError
+                                ? 'Model is taking too long to respond. This may happen with free tier models.'
+                                : 'An unknown error occurred.'),
+                        isProcessing: false,
+                      );
+                  state = state.copyWith(
+                    streamingMessage: errorMessage,
+                    isStreaming: false,
+                  );
+                  final errIndex = state.messages.indexWhere(
+                    (m) => m.id == assistantMessageId,
+                  );
+                  if (errIndex != -1) {
+                    final updatedMessages = List<Message>.from(state.messages);
+                    updatedMessages[errIndex] = errorMessage;
+                    state = state.copyWith(
+                      messages: updatedMessages,
+                      errorMessage: errorMessage.errorMessage,
+                      clearStreaming: true,
+                    );
+                  }
+                  // Save error message to storage
+                  await boxes.messages.put(errorMessage.id, errorMessage);
+                  break;
                 case ChatResponseType.toolCall:
                 case ChatResponseType.invalidToolCall:
                 case ChatResponseType.done:
@@ -437,43 +514,76 @@ class ChatNotifier extends Notifier<ChatState> {
               }
             },
             onDone: () async {
-              final finalMessage = state.streamingMessage?.copyWith(
-                status: MessageStatus.complete,
-              );
-              if (finalMessage != null) {
-                await boxes.messages.put(finalMessage.id, finalMessage);
-                final messageIndex = state.messages.indexWhere(
-                  (m) => m.id == assistantMessageId,
-                );
-                if (messageIndex != -1) {
-                  final updatedMessages = List<Message>.from(state.messages);
-                  updatedMessages[messageIndex] = finalMessage;
-                  state = state.copyWith(
-                    messages: updatedMessages,
-                    isStreaming: false,
-                    clearStreaming: true,
-                  );
-                }
-                if (_currentConversationId != null) {
-                  final preview = finalMessage.content.length > 100
-                      ? '${finalMessage.content.substring(0, 100)}...'
-                      : finalMessage.content;
-                  await ref
-                      .read(conv.conversationsProvider.notifier)
-                      .updatePreview(
-                        _currentConversationId!,
-                        preview,
-                        DateTime.now(),
-                      );
+              final streamingMessage = state.streamingMessage;
+              if (streamingMessage != null) {
+                // Check if content is empty - this happens when free models refuse or fail
+                final hasContent =
+                    streamingMessage.content.isNotEmpty ||
+                    (streamingMessage.reasoningContent?.isNotEmpty ?? false);
 
-                  final userMessage = state.messages
-                      .where((m) => m.role == MessageRole.user)
-                      .firstOrNull;
-                  if (userMessage != null && userMessage.content.length > 10) {
-                    _autoGenerateTitle(
-                      userMessage.content,
-                      finalMessage.content,
+                if (!hasContent) {
+                  // Mark as error if no content received
+                  final errorMessage = streamingMessage.copyWith(
+                    status: MessageStatus.error,
+                    errorMessage:
+                        'Model failed to respond. This may happen with free tier models that refuse certain prompts or when the service is busy.',
+                    isProcessing: false,
+                  );
+                  await boxes.messages.put(errorMessage.id, errorMessage);
+                  final messageIndex = state.messages.indexWhere(
+                    (m) => m.id == assistantMessageId,
+                  );
+                  if (messageIndex != -1) {
+                    final updatedMessages = List<Message>.from(state.messages);
+                    updatedMessages[messageIndex] = errorMessage;
+                    state = state.copyWith(
+                      messages: updatedMessages,
+                      isStreaming: false,
+                      errorMessage: errorMessage.errorMessage,
+                      clearStreaming: true,
                     );
+                  }
+                } else {
+                  // Normal completion with content
+                  final finalMessage = streamingMessage.copyWith(
+                    status: MessageStatus.complete,
+                    isProcessing: false,
+                  );
+                  await boxes.messages.put(finalMessage.id, finalMessage);
+                  final messageIndex = state.messages.indexWhere(
+                    (m) => m.id == assistantMessageId,
+                  );
+                  if (messageIndex != -1) {
+                    final updatedMessages = List<Message>.from(state.messages);
+                    updatedMessages[messageIndex] = finalMessage;
+                    state = state.copyWith(
+                      messages: updatedMessages,
+                      isStreaming: false,
+                      clearStreaming: true,
+                    );
+                  }
+                  if (_currentConversationId != null) {
+                    final preview = finalMessage.content.length > 100
+                        ? '${finalMessage.content.substring(0, 100)}...'
+                        : finalMessage.content;
+                    await ref
+                        .read(conv.conversationsProvider.notifier)
+                        .updatePreview(
+                          _currentConversationId!,
+                          preview,
+                          DateTime.now(),
+                        );
+
+                    final userMessage = state.messages
+                        .where((m) => m.role == MessageRole.user)
+                        .firstOrNull;
+                    if (userMessage != null &&
+                        userMessage.content.length > 10) {
+                      _autoGenerateTitle(
+                        userMessage.content,
+                        finalMessage.content,
+                      );
+                    }
                   }
                 }
               }
@@ -645,8 +755,37 @@ class ChatNotifier extends Notifier<ChatState> {
           clearStreaming: true,
         );
 
-        await sendMessage(userMessage.content);
+        await sendMessage(userMessage.content, attachments: userMessage.attachmentPaths?.map((p) => File(p)).toList());
       }
+    }
+  }
+
+  Future<void> retryMessage(String messageId) async {
+    final messageIndex = state.messages.indexWhere((m) => m.id == messageId);
+    if (messageIndex == -1) return;
+
+    final message = state.messages[messageIndex];
+    if (message.role != MessageRole.assistant) return;
+
+    // Find the preceding user message
+    if (messageIndex > 0 &&
+        state.messages[messageIndex - 1].role == MessageRole.user) {
+      final userMessage = state.messages[messageIndex - 1];
+
+      // Remove this assistant message and all subsequent messages
+      final messagesToRemove = state.messages.sublist(messageIndex);
+      final boxes = ref.read(hiveBoxesProvider);
+
+      for (final msg in messagesToRemove) {
+        await boxes.messages.delete(msg.id);
+      }
+
+      state = state.copyWith(
+        messages: state.messages.sublist(0, messageIndex),
+        clearStreaming: true,
+      );
+
+      await sendMessage(userMessage.content, attachments: userMessage.attachmentPaths?.map((p) => File(p)).toList());
     }
   }
 

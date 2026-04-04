@@ -75,8 +75,10 @@ class SettingsNotifier extends Notifier<AppSettings> {
   void setHasCompletedOnboarding(bool value) =>
       _update(state.copyWith(hasCompletedOnboarding: value));
   void setMcpEnabled(bool value) => _update(state.copyWith(mcpEnabled: value));
-  void setCodeTheme(SyntaxThemeName value) =>
-      _update(state.copyWith(codeTheme: value));
+  void setCodeThemeDark(SyntaxThemeName value) =>
+      _update(state.copyWith(codeThemeDark: value));
+  void setCodeThemeLight(SyntaxThemeName value) =>
+      _update(state.copyWith(codeThemeLight: value));
 
   Future<void> _update(AppSettings updated) async {
     state = updated;

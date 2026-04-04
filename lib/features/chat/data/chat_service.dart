@@ -6,6 +6,7 @@ import 'package:localmind/features/chat/data/models/message.dart';
 import 'package:localmind/features/chat/data/models/chat_parameters.dart';
 import 'package:localmind/features/chat/data/models/mcp_integration.dart';
 import 'package:localmind/core/models/enums.dart';
+import 'package:localmind/core/logger/app_logger.dart';
 
 abstract class ChatService {
   Stream<ChatResponse> sendMessage({
@@ -51,7 +52,16 @@ class ChatResponse {
   });
 }
 
-enum ChatResponseType { message, reasoning, toolCall, invalidToolCall, done }
+enum ChatResponseType {
+  message,
+  reasoning,
+  toolCall,
+  invalidToolCall,
+  done,
+  processing,
+  timeoutError,
+  error,
+}
 
 class ToolCallData {
   final String tool;
@@ -155,52 +165,62 @@ class LMStudioChatService implements ChatService {
       body['previous_response_id'] = previousResponseId;
     }
 
-    final response = await _dio.post<ResponseBody>(
-      server.chatEndpoint,
-      data: body,
-      options: Options(
-        responseType: ResponseType.stream,
-        headers: {
-          'Content-Type': 'application/json',
-          if (server.apiKey != null) 'Authorization': 'Bearer ${server.apiKey}',
-        },
-      ),
-      cancelToken: _cancelToken,
-    );
+    try {
+      final response = await _dio.post<ResponseBody>(
+        server.chatEndpoint,
+        data: body,
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: {
+            'Content-Type': 'application/json',
+            if (server.apiKey != null) 'Authorization': 'Bearer ${server.apiKey}',
+          },
+        ),
+        cancelToken: _cancelToken,
+      );
 
-    final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
-    String buffer = '';
-    String currentEventType = '';
+      final stream = response.data!.stream.cast<List<int>>().transform(
+        utf8.decoder,
+      );
+      String buffer = '';
+      String currentEventType = '';
 
-    await for (final chunk in stream) {
-      buffer += chunk;
-      final lines = buffer.split('\n');
-      buffer = lines.removeLast();
+      await for (final chunk in stream) {
+        buffer += chunk;
+        final lines = buffer.split('\n');
+        buffer = lines.removeLast();
 
-      for (final line in lines) {
-        final trimmedLine = line.trim();
-        if (trimmedLine.isEmpty) continue;
+        for (final line in lines) {
+          final trimmedLine = line.trim();
+          if (trimmedLine.isEmpty) continue;
 
-        if (trimmedLine.startsWith('event: ')) {
-          currentEventType = trimmedLine.substring(7);
-        } else if (trimmedLine.startsWith('data: ')) {
-          final data = trimmedLine.substring(6);
-          if (data.isEmpty) continue;
+          if (trimmedLine.startsWith('event: ')) {
+            currentEventType = trimmedLine.substring(7);
+          } else if (trimmedLine.startsWith('data: ')) {
+            final data = trimmedLine.substring(6);
+            if (data.isEmpty) continue;
 
-          try {
-            final json = jsonDecode(data) as Map<String, dynamic>;
-            await for (final response in _handleSseEvent(
-              currentEventType,
-              json,
-            )) {
-              yield response;
+            try {
+              final json = jsonDecode(data) as Map<String, dynamic>;
+              await for (final response in _handleSseEvent(
+                currentEventType,
+                json,
+              )) {
+                yield response;
+              }
+              currentEventType = '';
+            } catch (e) {
+              currentEventType = '';
             }
-            currentEventType = '';
-          } catch (e) {
-            currentEventType = '';
           }
         }
       }
+    } catch (e) {
+      Log.error('LMStudio connection error: $e');
+      yield ChatResponse(
+        type: ChatResponseType.error,
+        content: _handleChatError(e),
+      );
     }
   }
 
@@ -375,6 +395,7 @@ class LMStudioChatService implements ChatService {
 class OpenAICompatibleChatService implements ChatService {
   final Dio _dio;
   CancelToken? _cancelToken;
+  Timer? _timeoutTimer;
 
   OpenAICompatibleChatService(this._dio);
 
@@ -400,64 +421,156 @@ class OpenAICompatibleChatService implements ChatService {
       'stream': true,
     };
 
-    final response = await _dio.post<ResponseBody>(
-      server.chatEndpoint,
-      data: body,
-      options: Options(
-        responseType: ResponseType.stream,
-        headers: {
-          'Content-Type': 'application/json',
-          if (server.apiKey != null) 'Authorization': 'Bearer ${server.apiKey}',
-        },
-      ),
-      cancelToken: _cancelToken,
+    Log.debug(
+      'OpenAICompatible: Sending request to ${server.chatEndpoint} with model: $modelId',
     );
 
-    final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
-    String buffer = '';
+    try {
+      final response = await _dio.post<ResponseBody>(
+        server.chatEndpoint,
+        data: body,
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: {
+            'Content-Type': 'application/json',
+            if (server.apiKey != null) 'Authorization': 'Bearer ${server.apiKey}',
+          },
+        ),
+        cancelToken: _cancelToken,
+      );
 
-    await for (final chunk in stream) {
-      buffer += chunk;
-      final lines = buffer.split('\n');
-      buffer = lines.removeLast();
+      final stream = response.data!.stream.cast<List<int>>().transform(
+        utf8.decoder,
+      );
+      String buffer = '';
+      DateTime? lastContentReceived;
+      int emptyDeltaCount = 0;
+      int logCounter = 0;
+      bool timeoutTriggered = false;
 
-      for (final line in lines) {
-        if (line.startsWith('data: ')) {
-          final data = line.substring(6);
-          if (data == '[DONE]') {
-            yield const ChatResponse(type: ChatResponseType.done);
-            return;
+      // Start timeout timer
+      _timeoutTimer = Timer(const Duration(seconds: 45), () {
+        timeoutTriggered = true;
+      });
+
+      Log.debug('OpenAICompatible: Starting to receive stream...');
+
+      await for (final chunk in stream) {
+        // Check if timeout was triggered
+        if (timeoutTriggered && lastContentReceived == null) {
+          _timeoutTimer?.cancel();
+          yield const ChatResponse(
+            type: ChatResponseType.timeoutError,
+            content:
+                'Model is taking too long to respond. This may happen with free tier models.',
+          );
+          return;
+        }
+
+        buffer += chunk;
+        final lines = buffer.split('\n');
+        buffer = lines.removeLast();
+
+        for (final line in lines) {
+          logCounter++;
+          if (logCounter % 10 == 0) {
+            Log.debug('OpenAICompatible SSE line #$logCounter');
           }
-          try {
-            final json = jsonDecode(data) as Map<String, dynamic>;
-            final delta = json['choices']?[0]?['delta'] as Map<String, dynamic>?;
-            if (delta != null) {
-              final content = delta['content'] as String?;
-              final reasoning = (delta['reasoning'] ?? delta['reasoning_content']) as String?;
 
-              if (content != null && content.isNotEmpty) {
-                yield ChatResponse(
-                  type: ChatResponseType.message,
-                  content: content,
-                );
-              }
-              if (reasoning != null && reasoning.isNotEmpty) {
-                yield ChatResponse(
-                  type: ChatResponseType.reasoning,
-                  reasoningContent: reasoning,
-                );
-              }
+          if (line.startsWith('data: ')) {
+            final data = line.substring(6);
+            if (data == '[DONE]') {
+              _timeoutTimer?.cancel();
+              Log.debug('OpenAICompatible: Received [DONE]');
+              yield const ChatResponse(type: ChatResponseType.done);
+              return;
             }
-          } catch (e) {
-            // ignore: empty_catches
+            try {
+              final json = jsonDecode(data) as Map<String, dynamic>;
+
+              // Check for errors in the response
+              if (json['error'] != null) {
+                final error = json['error'] as Map<String, dynamic>;
+                final errorMsg = error['message'] ?? 'Unknown API error';
+                Log.error('OpenAICompatible mid-stream error: $errorMsg');
+                yield ChatResponse(
+                  type: ChatResponseType.error,
+                  content: 'API Error: $errorMsg',
+                );
+                return;
+              }
+
+              final choices = json['choices'] as List<dynamic>?;
+              if (choices == null || choices.isEmpty) {
+                continue;
+              }
+
+              final firstChoice = choices[0] as Map<String, dynamic>?;
+              if (firstChoice == null) continue;
+
+              final delta = firstChoice['delta'];
+              if (delta == null || delta is! Map<String, dynamic>) continue;
+
+              final content = (delta['content'] ?? delta['text']) as String?;
+              final reasoning =
+                  (delta['reasoning'] ?? delta['reasoning_content']) as String?;
+              final refusal = delta['refusal'] as String?;
+
+              // Check if content is empty/null (processing but not outputting)
+              final hasContent = content != null && content.isNotEmpty;
+              final hasReasoning = reasoning != null && reasoning.isNotEmpty;
+              final hasRefusal = refusal != null && refusal.isNotEmpty;
+
+              if (!hasContent && !hasReasoning && !hasRefusal) {
+                emptyDeltaCount++;
+                if (emptyDeltaCount % 10 == 0) {
+                  yield const ChatResponse(type: ChatResponseType.processing);
+                }
+              } else {
+                emptyDeltaCount = 0;
+                lastContentReceived = DateTime.now();
+
+                if (hasRefusal) {
+                  yield ChatResponse(
+                    type: ChatResponseType.error,
+                    content: 'Refusal: $refusal',
+                  );
+                  return;
+                }
+                if (hasContent) {
+                  yield ChatResponse(
+                    type: ChatResponseType.message,
+                    content: content,
+                  );
+                }
+                if (hasReasoning) {
+                  yield ChatResponse(
+                    type: ChatResponseType.reasoning,
+                    reasoningContent: reasoning,
+                  );
+                }
+              }
+            } catch (e) {
+              Log.error('OpenAICompatible parsing error: $e');
+            }
           }
         }
       }
+    } catch (e) {
+      Log.error('OpenAICompatible connection error: $e');
+      yield ChatResponse(
+        type: ChatResponseType.error,
+        content: _handleChatError(e),
+      );
     }
+
+    _timeoutTimer?.cancel();
+    Log.debug('OpenAICompatible: Stream ended');
   }
 
   @override
   void cancelStream() {
+    _timeoutTimer?.cancel();
     _cancelToken?.cancel('User cancelled');
   }
 }
@@ -492,41 +605,51 @@ class OllamaChatService implements ChatService {
       },
     };
 
-    final response = await _dio.post<ResponseBody>(
-      server.chatEndpoint,
-      data: body,
-      options: Options(responseType: ResponseType.stream),
-      cancelToken: _cancelToken,
-    );
+    try {
+      final response = await _dio.post<ResponseBody>(
+        server.chatEndpoint,
+        data: body,
+        options: Options(responseType: ResponseType.stream),
+        cancelToken: _cancelToken,
+      );
 
-    final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
-    String buffer = '';
+      final stream = response.data!.stream.cast<List<int>>().transform(
+        utf8.decoder,
+      );
+      String buffer = '';
 
-    await for (final chunk in stream) {
-      buffer += chunk;
-      final lines = buffer.split('\n');
-      buffer = lines.removeLast();
+      await for (final chunk in stream) {
+        buffer += chunk;
+        final lines = buffer.split('\n');
+        buffer = lines.removeLast();
 
-      for (final line in lines) {
-        if (line.isNotEmpty) {
-          try {
-            final json = jsonDecode(line) as Map<String, dynamic>;
-            final content = json['message']?['content'];
-            if (content != null && content is String) {
-              yield ChatResponse(
-                type: ChatResponseType.message,
-                content: content,
-              );
+        for (final line in lines) {
+          if (line.isNotEmpty) {
+            try {
+              final json = jsonDecode(line) as Map<String, dynamic>;
+              final content = json['message']?['content'];
+              if (content != null && content is String) {
+                yield ChatResponse(
+                  type: ChatResponseType.message,
+                  content: content,
+                );
+              }
+              if (json['done'] == true) {
+                yield const ChatResponse(type: ChatResponseType.done);
+                return;
+              }
+            } catch (e) {
+              // ignore: empty_catches
             }
-            if (json['done'] == true) {
-              yield const ChatResponse(type: ChatResponseType.done);
-              return;
-            }
-          } catch (e) {
-            // ignore: empty_catches
           }
         }
       }
+    } catch (e) {
+      Log.error('Ollama connection error: $e');
+      yield ChatResponse(
+        type: ChatResponseType.error,
+        content: _handleChatError(e),
+      );
     }
   }
 
@@ -539,6 +662,7 @@ class OllamaChatService implements ChatService {
 class OpenRouterChatService implements ChatService {
   final Dio _dio;
   CancelToken? _cancelToken;
+  Timer? _timeoutTimer;
 
   OpenRouterChatService(this._dio);
 
@@ -564,68 +688,211 @@ class OpenRouterChatService implements ChatService {
       'stream': true,
     };
 
-    final response = await _dio.post<ResponseBody>(
-      server.chatEndpoint,
-      data: body,
-      options: Options(
-        responseType: ResponseType.stream,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${server.apiKey}',
-          'HTTP-Referer': 'https://localmind.app',
-          'X-Title': 'LocalMind',
-        },
-      ),
-      cancelToken: _cancelToken,
+    Log.debug(
+      'OpenRouter: Sending request to ${server.chatEndpoint} with model: $modelId',
     );
 
-    final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
-    String buffer = '';
+    try {
+      final response = await _dio.post<ResponseBody>(
+        server.chatEndpoint,
+        data: body,
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${server.apiKey}',
+            'HTTP-Referer': 'https://localmind.app',
+            'X-Title': 'LocalMind',
+          },
+        ),
+        cancelToken: _cancelToken,
+      );
 
-    await for (final chunk in stream) {
-      buffer += chunk;
-      final lines = buffer.split('\n');
-      buffer = lines.removeLast();
+      final stream = response.data!.stream.cast<List<int>>().transform(
+        utf8.decoder,
+      );
+      String buffer = '';
+      DateTime? lastContentReceived;
+      int emptyDeltaCount = 0;
+      int logCounter = 0;
+      bool timeoutTriggered = false;
 
-      for (final line in lines) {
-        if (line.startsWith('data: ')) {
-          final data = line.substring(6);
-          if (data == '[DONE]') {
-            yield const ChatResponse(type: ChatResponseType.done);
-            return;
+      // Start timeout timer
+      _timeoutTimer = Timer(const Duration(seconds: 45), () {
+        timeoutTriggered = true;
+      });
+
+      Log.debug('OpenRouter: Starting to receive stream...');
+
+      await for (final chunk in stream) {
+        // Check if timeout was triggered
+        if (timeoutTriggered && lastContentReceived == null) {
+          _timeoutTimer?.cancel();
+          yield const ChatResponse(
+            type: ChatResponseType.timeoutError,
+            content:
+                'Model is taking too long to respond. This may happen with free tier models.',
+          );
+          return;
+        }
+
+        buffer += chunk;
+        final lines = buffer.split('\n');
+        buffer = lines.removeLast();
+
+        for (final line in lines) {
+          logCounter++;
+          if (logCounter % 10 == 0) {
+            Log.debug('OpenRouter SSE line #$logCounter: $line');
           }
-          try {
-            final json = jsonDecode(data) as Map<String, dynamic>;
-            final delta = json['choices']?[0]?['delta'] as Map<String, dynamic>?;
-            if (delta != null) {
-              final content = delta['content'] as String?;
-              final reasoning = (delta['reasoning'] ?? delta['reasoning_content']) as String?;
 
-              if (content != null && content.isNotEmpty) {
-                yield ChatResponse(
-                  type: ChatResponseType.message,
-                  content: content,
-                );
-              }
-              if (reasoning != null && reasoning.isNotEmpty) {
-                yield ChatResponse(
-                  type: ChatResponseType.reasoning,
-                  reasoningContent: reasoning,
-                );
-              }
+          if (line.startsWith('data: ')) {
+            final data = line.substring(6);
+            if (data == '[DONE]') {
+              _timeoutTimer?.cancel();
+              Log.debug('OpenRouter: Received [DONE]');
+              yield const ChatResponse(type: ChatResponseType.done);
+              return;
             }
-          } catch (e) {
-            // ignore: empty_catches
+            try {
+              final json = jsonDecode(data) as Map<String, dynamic>;
+
+              // Check for errors in the response
+              if (json['error'] != null) {
+                final error = json['error'] as Map<String, dynamic>;
+                final errorMsg = error['message'] ?? 'Unknown API error';
+                Log.error('OpenRouter mid-stream error: $errorMsg');
+                yield ChatResponse(
+                  type: ChatResponseType.error,
+                  content: 'API Error: $errorMsg',
+                );
+                return;
+              }
+
+              final choices = json['choices'] as List<dynamic>?;
+              if (choices == null || choices.isEmpty) {
+                continue;
+              }
+
+              final firstChoice = choices[0] as Map<String, dynamic>?;
+              if (firstChoice == null) continue;
+
+              final delta = firstChoice['delta'];
+              if (delta == null || delta is! Map<String, dynamic>) continue;
+
+              final content = (delta['content'] ?? delta['text']) as String?;
+              final reasoning =
+                  (delta['reasoning'] ?? delta['reasoning_content']) as String?;
+              final refusal = delta['refusal'] as String?;
+
+              // Check if content is empty/null (processing but not outputting)
+              final hasContent = content != null && content.isNotEmpty;
+              final hasReasoning = reasoning != null && reasoning.isNotEmpty;
+              final hasRefusal = refusal != null && refusal.isNotEmpty;
+
+              if (!hasContent && !hasReasoning && !hasRefusal) {
+                emptyDeltaCount++;
+                if (emptyDeltaCount % 10 == 0) {
+                  yield const ChatResponse(type: ChatResponseType.processing);
+                }
+              } else {
+                emptyDeltaCount = 0;
+                lastContentReceived = DateTime.now();
+
+                if (hasRefusal) {
+                  yield ChatResponse(
+                    type: ChatResponseType.error,
+                    content: 'Refusal: $refusal',
+                  );
+                  return;
+                }
+                if (hasContent) {
+                  yield ChatResponse(
+                    type: ChatResponseType.message,
+                    content: content,
+                  );
+                }
+                if (hasReasoning) {
+                  yield ChatResponse(
+                    type: ChatResponseType.reasoning,
+                    reasoningContent: reasoning,
+                  );
+                }
+              }
+            } catch (e) {
+              Log.error('OpenRouter parsing error: $e');
+            }
+          } else if (line.startsWith(': ')) {
+            // SSE comment (keep-alive)
+            if (logCounter % 50 == 0) {
+              Log.debug('OpenRouter SSE comment: $line');
+            }
           }
         }
       }
+    } catch (e) {
+      Log.error('OpenRouter connection error: $e');
+      yield ChatResponse(
+        type: ChatResponseType.error,
+        content: _handleChatError(e),
+      );
     }
+
+    _timeoutTimer?.cancel();
+    Log.debug('OpenRouter: Stream ended');
   }
 
   @override
   void cancelStream() {
+    _timeoutTimer?.cancel();
     _cancelToken?.cancel('User cancelled');
   }
+}
+
+String _handleChatError(dynamic e) {
+  if (e is DioException) {
+    if (e.response != null) {
+      final status = e.response!.statusCode;
+
+      switch (status) {
+        case 401:
+          return 'Invalid API key or unauthorized.';
+        case 402:
+          return 'Monthly credit limit reached or insufficient balance.';
+        case 403:
+          return 'Access forbidden. Your API key might not have permission for this model.';
+        case 404:
+          return 'Model not found or API endpoint is incorrect.';
+        case 408:
+          return 'Request timeout. The server took too long to respond.';
+        case 429:
+          return 'Rate limit exceeded. Please wait a moment before trying again.';
+        case 500:
+          return 'Internal server error from the AI provider.';
+        case 502:
+          return 'Bad gateway. The provider is having issues.';
+        case 503:
+          return 'Service unavailable. The provider might be overloaded.';
+        case 504:
+          return 'Gateway timeout. The model took too long to respond.';
+      }
+      return 'Server error ($status): ${e.message}';
+    }
+
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return 'Connection timed out. Check your internet connection.';
+      case DioExceptionType.connectionError:
+        return 'Connection failed. Check if the server is accessible.';
+      case DioExceptionType.cancel:
+        return 'Request cancelled.';
+      default:
+        return 'Connection error: ${e.message}';
+    }
+  }
+  return e.toString();
 }
 
 String _roleToString(MessageRole role) {

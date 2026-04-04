@@ -33,16 +33,19 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       defaultPersonaId: fields[13] as String?,
       hasCompletedOnboarding: fields[14] == null ? false : fields[14] as bool,
       mcpEnabled: fields[15] == null ? true : fields[15] as bool,
-      codeTheme: fields[16] == null
+      codeThemeDark: fields[16] == null
           ? SyntaxThemeName.vscodeDark
           : fields[16] as SyntaxThemeName,
+      codeThemeLight: fields[17] == null
+          ? SyntaxThemeName.vscodeLight
+          : fields[17] as SyntaxThemeName,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(18)
       ..writeByte(0)
       ..write(obj.temperature)
       ..writeByte(1)
@@ -76,7 +79,9 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(15)
       ..write(obj.mcpEnabled)
       ..writeByte(16)
-      ..write(obj.codeTheme);
+      ..write(obj.codeThemeDark)
+      ..writeByte(17)
+      ..write(obj.codeThemeLight);
   }
 
   @override

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 
@@ -16,9 +17,9 @@ class ChatInputBar extends ConsumerStatefulWidget {
     this.isStreaming = false,
   });
 
-  final void Function(String message) onSend;
+  final void Function(String message, {List<File>? attachments}) onSend;
   final VoidCallback onStop;
-  final void Function(List<File> onAttach)? onAttach;
+  final void Function(List<File> attachments)? onAttach;
   final bool enabled;
   final bool isStreaming;
 
@@ -30,7 +31,6 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar>
     with SingleTickerProviderStateMixin {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
-  bool _isComposing = false;
   final List<File> _attachedFiles = [];
   late AnimationController _sendButtonAnimController;
   late Animation<double> _sendButtonScale;
@@ -72,12 +72,14 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar>
 
   void _handleSubmit() {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && _attachedFiles.isEmpty) return;
 
     Haptics.vibrate(HapticsType.medium);
-    widget.onSend(text);
+    widget.onSend(text, attachments: List.from(_attachedFiles));
     _controller.clear();
-    setState(() => _isComposing = false);
+    setState(() {
+      _attachedFiles.clear();
+    });
   }
 
   void _handleStop() {
@@ -85,7 +87,11 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar>
     widget.onStop();
   }
 
-  Widget _buildSendButton(bool canSend, bool isDark) {
+  Widget _buildActionButton(bool canSend, bool isDark) {
+    // Action button theme from image: circular, high contrast (black in light, white in dark)
+    final backgroundColor = isDark ? Colors.white : Colors.black;
+    final iconColor = isDark ? Colors.black : Colors.white;
+
     return GestureDetector(
       onTapDown: canSend ? (_) => _sendButtonAnimController.forward() : null,
       onTapUp: canSend ? (_) => _sendButtonAnimController.reverse() : null,
@@ -95,24 +101,13 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            color: canSend
-                ? (isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB))
-                : (isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5)),
+            color: backgroundColor.withValues(
+              alpha: (canSend || widget.isStreaming) ? 1.0 : 0.2,
+            ),
             shape: BoxShape.circle,
-            boxShadow: canSend
-                ? [
-                    BoxShadow(
-                      color:
-                          (isDark
-                                  ? const Color(0xFF3B82F6)
-                                  : const Color(0xFF2563EB))
-                              .withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    ),
-                  ]
-                : null,
           ),
           child: IconButton(
             icon: AnimatedSwitcher(
@@ -120,52 +115,27 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar>
               transitionBuilder: (child, animation) {
                 return ScaleTransition(scale: animation, child: child);
               },
-              child: Icon(
-                Icons.arrow_upward,
-                key: ValueKey(canSend),
-                color: canSend
-                    ? Colors.white
-                    : (isDark
-                          ? const Color(0xFF666666)
-                          : const Color(0xFF999999)),
-              ),
+              child: widget.isStreaming
+                  ? HugeIcon(
+                      icon: HugeIcons.strokeRoundedStop,
+                      key: const ValueKey('stop'),
+                      color: iconColor,
+                      size: 20,
+                    )
+                  : HugeIcon(
+                      icon: HugeIcons.strokeRoundedArrowUp01,
+                      key: ValueKey(canSend),
+                      color: iconColor,
+                      size: 20,
+                    ),
             ),
-            onPressed: canSend ? _handleSubmit : null,
-            tooltip: 'Send message',
+            onPressed: widget.isStreaming
+                ? _handleStop
+                : (canSend ? _handleSubmit : null),
+            tooltip: widget.isStreaming ? 'Stop generation' : 'Send message',
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildStopButton() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.8, end: 1.0),
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.elasticOut,
-      builder: (context, scale, child) {
-        return Transform.scale(
-          scale: scale,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.red[400],
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.red.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.stop, color: Colors.white),
-              onPressed: _handleStop,
-              tooltip: 'Stop generating',
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -179,215 +149,154 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar>
     final canSend =
         widget.enabled &&
         isConnected &&
-        _controller.text.trim().isNotEmpty &&
+        (_controller.text.trim().isNotEmpty || _attachedFiles.isNotEmpty) &&
         !widget.isStreaming;
 
     return Container(
-      padding: EdgeInsets.only(
-        left: 12,
-        right: 12,
-        top: 8,
-        bottom: MediaQuery.of(context).padding.bottom + 8,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
-        border: Border(
-          top: BorderSide(
-            color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E5E5),
+        color: isDark ? const Color(0xFF1C1C1C) : Colors.white,
+        borderRadius: BorderRadius.circular(40),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
           ),
+        ],
+        border: Border.all(
+          color: isDark ? const Color(0xFF2E2E2E) : const Color(0xFFE5E5E5),
+          width: 1.2,
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Attachment Preview Area
           AnimatedSize(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
             child: _attachedFiles.isEmpty
                 ? const SizedBox.shrink()
                 : Container(
-                    height: 60,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                    height: 70,
+                    padding: const EdgeInsets.only(
+                      left: 12,
+                      right: 12,
+                      top: 8,
+                      bottom: 4,
                     ),
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: _attachedFiles.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 6),
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
                       itemBuilder: (context, index) {
                         final file = _attachedFiles[index];
-                        return TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.0, end: 1.0),
-                          duration: Duration(milliseconds: 200 + (index * 50)),
-                          curve: Curves.easeOut,
-                          builder: (context, value, child) {
-                            return Opacity(
-                              opacity: value,
-                              child: Transform.scale(
-                                scale: 0.8 + (0.2 * value),
-                                child: child,
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isDark
+                                      ? const Color(0xFF333333)
+                                      : const Color(0xFFE0E0E0),
+                                ),
                               ),
-                            );
-                          },
-                          child: Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(11),
                                 child: Image.file(
                                   file,
-                                  width: 52,
-                                  height: 52,
+                                  width: 48,
+                                  height: 48,
                                   fit: BoxFit.cover,
                                 ),
                               ),
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: GestureDetector(
-                                  onTap: () => setState(
-                                    () => _attachedFiles.removeAt(index),
+                            ),
+                            Positioned(
+                              top: -4,
+                              right: -4,
+                              child: GestureDetector(
+                                onTap: () => setState(
+                                  () => _attachedFiles.removeAt(index),
+                                ),
+                                child: Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black,
+                                    shape: BoxShape.circle,
                                   ),
-                                  child: Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black54,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      size: 12,
-                                      color: Colors.white,
-                                    ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 10,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         );
                       },
                     ),
                   ),
           ),
+          // Input Main Bar
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              // Add Attachment Button
+              IconButton(
+                icon: HugeIcon(
+                  icon: HugeIcons.strokeRoundedPlusSign,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                  size: 22,
+                ),
+                onPressed: isConnected ? _handleAttach : null,
+                tooltip: 'Attach images',
+              ),
+              const SizedBox(width: 4),
+              // Text Field
               Expanded(
-                child: Container(
-                  constraints: const BoxConstraints(maxHeight: 150),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF1F1F1F)
-                        : const Color(0xFFFFFFFF),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF333333)
-                          : const Color(0xFFE5E5E5),
-                    ),
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  enabled: widget.enabled,
+                  maxLines: 5,
+                  minLines: 1,
+                  textInputAction: TextInputAction.newline,
+                  keyboardType: TextInputType.multiline,
+                  onChanged: (text) {
+                    setState(() {});
+                  },
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.attach_file,
-                          size: 20,
-                          color: isDark
-                              ? const Color(0xFF888888)
-                              : const Color(0xFF666666),
-                        ),
-                        onPressed: isConnected ? _handleAttach : null,
-                        tooltip: 'Attach image',
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          focusNode: _focusNode,
-                          enabled: widget.enabled,
-                          maxLines: null,
-                          textInputAction: TextInputAction.newline,
-                          keyboardType: TextInputType.multiline,
-                          onChanged: (text) {
-                            setState(
-                              () => _isComposing = text.trim().isNotEmpty,
-                            );
-                          },
-                          onSubmitted: (_) => _handleSubmit(),
-                          decoration: InputDecoration(
-                            hintText: 'Message LocalMind...',
-                            hintStyle: TextStyle(
-                              color: isDark
-                                  ? const Color(0xFF666666)
-                                  : const Color(0xFF999999),
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                      ValueListenableBuilder<TextEditingValue>(
-                        valueListenable: _controller,
-                        builder: (context, value, child) {
-                          final showCounter = _isComposing && value.text.length >= 300;
-                          return AnimatedSize(
-                            duration: const Duration(milliseconds: 150),
-                            curve: Curves.easeOut,
-                            child: AnimatedOpacity(
-                              opacity: showCounter ? 1.0 : 0.0,
-                              duration: const Duration(milliseconds: 150),
-                              child: showCounter
-                                  ? Padding(
-                                      padding: const EdgeInsets.only(
-                                        right: 12,
-                                        bottom: 12,
-                                      ),
-                                      child: TweenAnimationBuilder<double>(
-                                        tween: Tween(begin: 0.5, end: 1.0),
-                                        duration: const Duration(milliseconds: 150),
-                                        builder: (context, scale, child) {
-                                          return Transform.scale(
-                                            scale: scale,
-                                            child: child,
-                                          );
-                                        },
-                                        child: Text(
-                                          '${value.text.length}',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: isDark
-                                                ? const Color(0xFF666666)
-                                                : const Color(0xFF999999),
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  : const SizedBox(width: 0),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                  decoration: InputDecoration(
+                    hintText: 'Reply',
+                    hintStyle: TextStyle(
+                      color: isDark ? Colors.white38 : Colors.black38,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                transitionBuilder: (child, animation) {
-                  return ScaleTransition(
-                    scale: animation,
-                    child: FadeTransition(opacity: animation, child: child),
-                  );
-                },
-                child: widget.isStreaming
-                    ? _buildStopButton()
-                    : _buildSendButton(canSend, isDark),
-              ),
+              // Mic Icon (Visual only as per image)
+              // HugeIcon(
+              //   icon: HugeIcons.strokeRoundedMic01,
+              //   color: isDark ? Colors.white38 : Colors.black38,
+              //   size: 22,
+              // ),
+              // const SizedBox(width: 8),
+              // Action Button (Send/Stop)
+              _buildActionButton(canSend, isDark),
             ],
           ),
         ],

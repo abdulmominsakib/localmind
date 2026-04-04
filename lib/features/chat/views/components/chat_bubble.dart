@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
 import 'package:localmind/features/chat/views/components/code_block.dart';
 import 'package:localmind/features/chat/views/components/message_action_bar.dart';
+import 'package:localmind/features/chat/views/components/processing_indicator.dart';
 import 'package:localmind/features/chat/views/components/typing_indicator.dart';
 import 'package:localmind/features/chat/views/components/reasoning_widget.dart';
 
@@ -25,6 +27,12 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: _buildBubble(context),
+    );
+  }
+
+  Widget _buildBubble(BuildContext context) {
     switch (message.role) {
       case MessageRole.user:
         return _AnimatedBubble(
@@ -118,6 +126,15 @@ class _UserBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            if (message.attachmentPaths != null &&
+                message.attachmentPaths!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _AttachmentList(
+                  paths: message.attachmentPaths!,
+                  isUser: true,
+                ),
+              ),
             MarkdownBody(
               data: message.content,
               styleSheet: MarkdownStyleSheet(
@@ -169,68 +186,80 @@ class _AssistantBubble extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.8,
-        ),
-        margin: const EdgeInsets.only(left: 8, right: 48, top: 4, bottom: 4),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(
-            18,
-          ).copyWith(bottomLeft: const Radius.circular(4)),
-          border: Border.all(
-            color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E5E5),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (message.reasoningContent != null &&
-                message.reasoningContent!.isNotEmpty)
-              ReasoningWidget(
-                reasoningContent: message.reasoningContent,
-                isStreaming: isStreaming,
-              ),
-            if (isStreaming && message.content.isEmpty)
-              const TypingIndicator()
-            else
-              _MarkdownContent(content: message.content, isDark: isDark),
-            if (isStreaming && message.content.isNotEmpty)
-              const StreamingIndicator(),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _formatTime(message.createdAt),
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (message.reasoningContent != null &&
+              message.reasoningContent!.isNotEmpty)
+            ReasoningWidget(
+              reasoningContent: message.reasoningContent,
+              isStreaming: isStreaming,
+            ),
+          if (isStreaming && message.content.isEmpty && message.isProcessing)
+            const ProcessingIndicator()
+          else if (isStreaming && message.content.isEmpty)
+            const TypingIndicator()
+          else
+            _MarkdownContent(content: message.content, isDark: isDark),
+          if (message.status == MessageStatus.error &&
+              message.errorMessage != null &&
+              message.errorMessage!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+                ),
+                child: Text(
+                  message.errorMessage!,
                   style: TextStyle(
-                    fontSize: 11,
-                    color: isDark
-                        ? const Color(0xFF666666)
-                        : const Color(0xFF999999),
+                    color: Colors.red[400],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (message.status == MessageStatus.error) ...[
-                  const SizedBox(width: 4),
-                  Icon(Icons.error_outline, size: 14, color: Colors.red[400]),
-                ],
-              ],
-            ),
-            if (!isStreaming && message.status == MessageStatus.complete) ...[
-              const SizedBox(height: 4),
-              MessageActionBar(
-                content: message.content,
-                onCopy: onCopy,
-                onRetry: onRetry,
-                onDelete: onDelete,
               ),
+            ),
+          if (isStreaming && message.content.isNotEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: StreamingIndicator(),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text(
+                _formatTime(message.createdAt),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark
+                      ? const Color(0xFF666666)
+                      : const Color(0xFF999999),
+                ),
+              ),
+              if (message.status == MessageStatus.error) ...[
+                const SizedBox(width: 4),
+                Icon(Icons.error_outline, size: 14, color: Colors.red[400]),
+              ],
+              const Spacer(),
+              if (!isStreaming &&
+                  (message.status == MessageStatus.complete ||
+                      message.status == MessageStatus.error))
+                MessageActionBar(
+                  content: message.content,
+                  onCopy: onCopy,
+                  onRetry: onRetry,
+                  onDelete: onDelete,
+                ),
             ],
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -436,6 +465,153 @@ class _ToolBubble extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AttachmentList extends StatelessWidget {
+  const _AttachmentList({required this.paths, required this.isUser});
+
+  final List<String> paths;
+  final bool isUser;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: paths.map((path) => _AttachmentItem(path: path)).toList(),
+    );
+  }
+}
+
+class _AttachmentItem extends StatelessWidget {
+  const _AttachmentItem({required this.path});
+
+  final String path;
+
+  bool _isImage(String path) {
+    final mime = path.toLowerCase();
+    return mime.endsWith('.jpg') ||
+        mime.endsWith('.jpeg') ||
+        mime.endsWith('.png') ||
+        mime.endsWith('.gif') ||
+        mime.endsWith('.webp');
+  }
+
+  void _viewImage(BuildContext context) {
+    showDialog(
+      context: context,
+      useSafeArea: false,
+      builder: (context) => _ImageViewer(path: path),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final file = File(path);
+    final fileName = path.split('/').last;
+
+    if (_isImage(path)) {
+      return GestureDetector(
+        onTap: () => _viewImage(context),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.file(
+            file,
+            width: 120,
+            height: 120,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => _FilePlaceholder(fileName: fileName),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      width: 160,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.insert_drive_file_outlined,
+            size: 20,
+            color: isDark ? const Color(0xFF888888) : const Color(0xFF666666),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              fileName,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilePlaceholder extends StatelessWidget {
+  const _FilePlaceholder({required this.fileName});
+  final String fileName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 120,
+      height: 120,
+      color: Colors.grey[800],
+      child: Center(
+        child: Text(
+          fileName.split('.').last.toUpperCase(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageViewer extends StatelessWidget {
+  const _ImageViewer({required this.path});
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: Image.file(File(path)),
         ),
       ),
     );

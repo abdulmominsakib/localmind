@@ -87,7 +87,8 @@ class CodeBlock extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final settings = ref.watch(settingsProvider);
-    final codeTheme = _getSyntaxTheme(settings.codeTheme);
+    final themeName = isDark ? settings.codeThemeDark : settings.codeThemeLight;
+    final codeTheme = _getSyntaxTheme(themeName);
 
     final backgroundColor = isDark
         ? const Color(0xFF1E1E1E)
