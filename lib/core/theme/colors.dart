@@ -18,12 +18,21 @@ class AppColors {
   static const Color lightAccent = Color(0xFF0A0A0A);
 
   // Claude Theme
-  static const Color claudeBackground = Color(0xFFF6F4EB);
-  static const Color claudeSurface = Color(0xFFFFFFFF);
-  static const Color claudeBorder = Color(0xFFE5D5C5);
-  static const Color claudePrimaryText = Color(0xFF1F1E1D);
-  static const Color claudeMutedText = Color(0xFF8F8A80);
-  static const Color claudeAccent = Color(0xFFDA7048);
+  static const Color claudeBackground = Color(0xFFF5F4ED);
+  static const Color claudeSurface = Color(0xFFFAF9F5);
+  static const Color claudeBorder = Color(0xFFF0EEE6);
+  static const Color claudePrimaryText = Color(0xFF141413);
+  static const Color claudeSecondaryText = Color(0xFF5E5D59);
+  static const Color claudeMutedText = Color(0xFF87867F);
+  static const Color claudeAccent = Color(0xFFC96442);
+
+  // Claude Dark Theme (Optional, but included in design)
+  static const Color claudeDarkBackground = Color(0xFF141413);
+  static const Color claudeDarkSurface = Color(0xFF30302E);
+  static const Color claudeDarkBorder = Color(0xFF30302E);
+  static const Color claudeDarkPrimaryText = Color(0xFFFAF9F5);
+  static const Color claudeDarkSecondaryText = Color(0xFFB0AEA5);
+
 
   static const Color success = Color(0xFF22C55E);
   static const Color error = Color(0xFFEF4444);

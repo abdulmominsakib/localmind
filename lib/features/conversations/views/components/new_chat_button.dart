@@ -9,9 +9,6 @@ class NewChatButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: SizedBox(
@@ -26,16 +23,6 @@ class NewChatButton extends ConsumerWidget {
           },
           icon: const Icon(Icons.add, size: 18),
           label: const Text('New Chat'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: isDark
-                ? const Color(0xFF3B82F6)
-                : const Color(0xFF2563EB),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
         ),
       ),
     );

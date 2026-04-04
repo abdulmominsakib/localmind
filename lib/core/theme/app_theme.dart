@@ -57,6 +57,7 @@ class AppTheme {
       muted: AppColors.claudeSurface,
       mutedForeground: AppColors.claudeMutedText,
     ),
+    radius: const BorderRadius.all(Radius.circular(12)),
   );
 
   static ThemeData get darkTheme => ThemeData(
@@ -293,10 +294,7 @@ class AppTheme {
       onSurface: AppColors.claudePrimaryText,
       outline: AppColors.claudeBorder,
     ),
-    textTheme: AppTypography.lightTextTheme.apply(
-      bodyColor: AppColors.claudePrimaryText,
-      displayColor: AppColors.claudePrimaryText,
-    ),
+    textTheme: AppTypography.claudeTextTheme,
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.claudeBackground,
       foregroundColor: AppColors.claudePrimaryText,
@@ -319,15 +317,15 @@ class AppTheme {
       filled: true,
       fillColor: AppColors.claudeSurface,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.claudeBorder),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.claudeBorder),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.claudeAccent, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -337,7 +335,7 @@ class AppTheme {
         backgroundColor: AppColors.claudeAccent,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
@@ -347,7 +345,7 @@ class AppTheme {
         foregroundColor: AppColors.claudePrimaryText,
         side: const BorderSide(color: AppColors.claudeBorder),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(8), // Secondary buttons are less rounded
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
@@ -355,13 +353,13 @@ class AppTheme {
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: AppColors.claudeSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: AppColors.claudeSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
@@ -371,14 +369,15 @@ class AppTheme {
         if (states.contains(WidgetState.selected)) {
           return const TextStyle(color: AppColors.claudePrimaryText, fontSize: 12, fontWeight: FontWeight.w600);
         }
-        return const TextStyle(color: AppColors.claudeMutedText, fontSize: 12, fontWeight: FontWeight.w500);
+        return const TextStyle(color: AppColors.claudeSecondaryText, fontSize: 12, fontWeight: FontWeight.w500);
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
           return const IconThemeData(color: AppColors.claudePrimaryText);
         }
-        return const IconThemeData(color: AppColors.claudeMutedText);
+        return const IconThemeData(color: AppColors.claudeSecondaryText);
       }),
     ),
   );
+
 }

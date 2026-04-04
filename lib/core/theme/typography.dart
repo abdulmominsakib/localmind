@@ -49,4 +49,91 @@ class AppTypography {
       ),
     );
   }
+  static TextTheme get claudeTextTheme {
+    return GoogleFonts.loraTextTheme(
+      const TextTheme(
+        displayLarge: TextStyle(
+          color: AppColors.claudePrimaryText,
+          fontSize: 64,
+          fontWeight: FontWeight.w500,
+          height: 1.1,
+        ),
+        displayMedium: TextStyle(
+          color: AppColors.claudePrimaryText,
+          fontSize: 52,
+          fontWeight: FontWeight.w500,
+          height: 1.2,
+        ),
+        displaySmall: TextStyle(
+          color: AppColors.claudePrimaryText,
+          fontSize: 36,
+          fontWeight: FontWeight.w500,
+          height: 1.3,
+        ),
+        headlineLarge: TextStyle(
+          color: AppColors.claudePrimaryText,
+          fontSize: 32,
+          fontWeight: FontWeight.w500,
+          height: 1.1,
+        ),
+        headlineMedium: TextStyle(
+          color: AppColors.claudePrimaryText,
+          fontSize: 25,
+          fontWeight: FontWeight.w500,
+          height: 1.2,
+        ),
+        headlineSmall: TextStyle(
+          color: AppColors.claudePrimaryText,
+          fontSize: 20,
+          fontWeight: FontWeight.w500,
+          height: 1.2,
+        ),
+        titleLarge: TextStyle(
+          color: AppColors.claudePrimaryText,
+          fontSize: 17,
+          fontWeight: FontWeight.w500,
+          height: 1.1,
+        ),
+      ),
+    ).copyWith(
+      bodyLarge: GoogleFonts.inter(
+        color: AppColors.claudePrimaryText,
+        fontSize: 17,
+        fontWeight: FontWeight.w400,
+        height: 1.6,
+      ),
+      bodyMedium: GoogleFonts.inter(
+        color: AppColors.claudePrimaryText,
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        height: 1.6,
+      ),
+      bodySmall: GoogleFonts.inter(
+        color: AppColors.claudeSecondaryText,
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        height: 1.6,
+      ),
+      labelLarge: GoogleFonts.inter(
+        color: AppColors.claudePrimaryText,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        height: 1.4,
+      ),
+      labelMedium: GoogleFonts.inter(
+        color: AppColors.claudeSecondaryText,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        height: 1.4,
+        letterSpacing: 0.12,
+      ),
+      labelSmall: GoogleFonts.inter(
+        color: AppColors.claudeMutedText,
+        fontSize: 10,
+        fontWeight: FontWeight.w500,
+        height: 1.6,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
 }

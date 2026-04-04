@@ -19,7 +19,6 @@ class SidebarWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final groupedConversations = ref.watch(groupedConversationsProvider);
     final activeConversation = ref.watch(activeConversationProvider);
     final searchQuery = ref.watch(conversationSearchProvider);
@@ -32,10 +31,10 @@ class SidebarWidget extends ConsumerWidget {
     return Container(
       width: 300,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
+        color: theme.scaffoldBackgroundColor,
         border: Border(
           right: BorderSide(
-            color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFE5E5E5),
+            color: theme.colorScheme.outline,
           ),
         ),
       ),
