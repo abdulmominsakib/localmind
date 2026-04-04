@@ -58,11 +58,13 @@ class Conversation extends HiveObject {
     DateTime? updatedAt,
     bool? isPinned,
     String? personaId,
+    bool clearPersona = false,
     String? serverId,
     String? modelId,
     int? messageCount,
     String? lastMessagePreview,
     String? systemPrompt,
+    bool clearSystemPrompt = false,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -70,12 +72,12 @@ class Conversation extends HiveObject {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isPinned: isPinned ?? this.isPinned,
-      personaId: personaId ?? this.personaId,
+      personaId: clearPersona ? null : (personaId ?? this.personaId),
       serverId: serverId ?? this.serverId,
       modelId: modelId ?? this.modelId,
       messageCount: messageCount ?? this.messageCount,
       lastMessagePreview: lastMessagePreview ?? this.lastMessagePreview,
-      systemPrompt: systemPrompt ?? this.systemPrompt,
+      systemPrompt: clearSystemPrompt ? null : (systemPrompt ?? this.systemPrompt),
     );
   }
 }

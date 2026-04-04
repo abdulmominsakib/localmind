@@ -776,12 +776,16 @@ class _EmptyStateState extends State<_EmptyState>
                             color: theme.colorScheme.primary,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            widget.selectedModel?.displayName ?? 'Select Model',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : Colors.black,
+                          Flexible(
+                            child: Text(
+                              widget.selectedModel?.displayName ?? 'Select Model',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -820,12 +824,16 @@ class _EmptyStateState extends State<_EmptyState>
                               style: const TextStyle(fontSize: 18),
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              widget.selectedPersona!.name,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : Colors.black,
+                            Flexible(
+                              child: Text(
+                                widget.selectedPersona!.name,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ] else ...[
@@ -835,12 +843,16 @@ class _EmptyStateState extends State<_EmptyState>
                               color: theme.colorScheme.primary,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Select Persona',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : Colors.black,
+                            Flexible(
+                              child: Text(
+                                'Select Persona',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -1316,12 +1328,16 @@ class _PersonaIndicator extends StatelessWidget {
                 children: [
                   Text(persona.emoji, style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 6),
-                  Text(
-                    persona.name,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
+                  Flexible(
+                    child: Text(
+                      persona.name,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

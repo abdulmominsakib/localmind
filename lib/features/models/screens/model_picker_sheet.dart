@@ -346,6 +346,39 @@ class _ModelList extends ConsumerWidget {
                   Navigator.pop(context);
                 }
               },
+              onUnload: () async {
+                final activeServer = ref.read(activeServerProvider);
+                if (activeServer == null) return;
+
+                try {
+                  final apiService = ref.read(serverApiServiceProvider);
+                  await apiService.unloadModel(activeServer, model.id);
+                  ref.invalidate(loadedModelsProvider(activeServer));
+
+                  // If the model being unloaded is the currently selected one, clear it
+                  final selectedModel = ref.read(selectedModelProvider);
+                  if (selectedModel?.id == model.id) {
+                    ref.read(selectedModelProvider.notifier).clear();
+                  }
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${model.name} unloaded successfully'),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to unload model: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
             );
           },
         );
@@ -361,6 +394,7 @@ class _ModelTile extends StatelessWidget {
     required this.isLoaded,
     required this.isDark,
     required this.onTap,
+    this.onUnload,
   });
 
   final ModelInfo model;
@@ -368,6 +402,7 @@ class _ModelTile extends StatelessWidget {
   final bool isLoaded;
   final bool isDark;
   final VoidCallback onTap;
+  final Future<void> Function()? onUnload;
 
   @override
   Widget build(BuildContext context) {
@@ -396,28 +431,20 @@ class _ModelTile extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        model.displayName,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (isLoaded)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          margin: const EdgeInsets.only(left: 8),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF4CAF50),
-                            shape: BoxShape.circle,
+                      Expanded(
+                        child: Text(
+                          model.displayName,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -450,6 +477,30 @@ class _ModelTile extends StatelessWidget {
                 ],
               ),
             ),
+            if (isLoaded) ...[
+              Container(
+                width: 15,
+                height: 15,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF4CAF50),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+            if (isLoaded) ...[
+              IconButton(
+                icon: Icon(
+                  Icons.power_settings_new_outlined,
+                  size: 18,
+                  color: Colors.red[400],
+                ),
+                onPressed: onUnload,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Unload from server',
+              ),
+              const SizedBox(width: 8),
+            ],
             if (isSelected)
               Icon(Icons.check_circle, color: accent, size: 22)
             else

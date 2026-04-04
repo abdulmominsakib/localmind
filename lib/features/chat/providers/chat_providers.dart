@@ -730,6 +730,7 @@ class ChatNotifier extends Notifier<ChatState> {
   void cancelStream() {
     _streamSubscription?.cancel();
     _streamSubscription = null;
+    ref.read(chatServiceProvider).cancelStream();
     state = state.copyWith(isStreaming: false, clearStreaming: true);
   }
 

@@ -275,7 +275,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar>
                     color: isDark ? Colors.white : Colors.black87,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Reply',
+                    hintText: 'Ask anything',
                     hintStyle: TextStyle(
                       color: isDark ? Colors.white38 : Colors.black38,
                       fontSize: 15,

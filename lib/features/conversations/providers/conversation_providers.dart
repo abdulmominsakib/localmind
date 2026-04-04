@@ -125,7 +125,9 @@ class ConversationsNotifier extends Notifier<List<Conversation>> {
     if (conversation != null) {
       final updated = conversation.copyWith(
         personaId: personaId,
+        clearPersona: personaId == null,
         systemPrompt: systemPrompt,
+        clearSystemPrompt: systemPrompt == null,
         updatedAt: DateTime.now(),
       );
       await box.put(id, updated);
@@ -154,14 +156,34 @@ final activeConversationProvider =
     });
 
 class ActiveConversationNotifier extends Notifier<Conversation?> {
+  String? _activeConversationId;
+
   @override
   Conversation? build() {
     final conversations = ref.watch(conversationsProvider);
-    if (conversations.isEmpty) return null;
-    return conversations.first;
+    if (conversations.isEmpty) {
+      _activeConversationId = null;
+      return null;
+    }
+
+    // Attempt to maintain the currently active conversation
+    if (_activeConversationId != null) {
+      final conversation = conversations
+          .where((c) => c.id == _activeConversationId)
+          .firstOrNull;
+      if (conversation != null) {
+        return conversation;
+      }
+    }
+
+    // Default to the first available conversation if none active or active one was deleted
+    final first = conversations.first;
+    _activeConversationId = first.id;
+    return first;
   }
 
   void setActiveConversation(Conversation? conversation) {
+    _activeConversationId = conversation?.id;
     if (conversation != null) {
       final conversations = ref.read(conversationsProvider);
       final index = conversations.indexWhere((c) => c.id == conversation.id);
