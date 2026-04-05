@@ -13,6 +13,7 @@ import 'package:localmind/features/servers/views/add_server_screen.dart';
 import 'package:localmind/features/personas/views/persona_list_screen.dart';
 import 'package:localmind/features/personas/views/create_persona_screen.dart';
 import 'package:localmind/features/settings/screens/settings_screen.dart';
+import 'package:localmind/features/conversations/views/chat_history_screen.dart';
 import 'package:localmind/features/onboarding/screens/onboarding_server_type_screen.dart';
 import 'package:localmind/features/onboarding/screens/onboarding_server_setup_screen.dart';
 import 'package:localmind/features/onboarding/screens/onboarding_theme_screen.dart';
@@ -78,11 +79,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 const NoTransitionPage(child: ChatScreen()),
           ),
           GoRoute(
-            path: AppRoutes.home,
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: ChatScreen()),
-          ),
-          GoRoute(
             path: AppRoutes.servers,
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: ServerListScreen()),
@@ -112,6 +108,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.settings,
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: SettingsScreen()),
+          ),
+          GoRoute(
+            path: AppRoutes.chatHistory,
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: ChatHistoryScreen()),
           ),
         ],
       ),

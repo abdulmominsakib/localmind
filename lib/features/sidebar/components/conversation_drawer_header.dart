@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:localmind/core/routes/app_routes.dart';
 
 class ConversationDrawerHeader extends StatelessWidget {
@@ -45,7 +46,7 @@ class ConversationDrawerHeader extends StatelessWidget {
             ),
             onPressed: () {
               Navigator.pop(context); // Close drawer
-              Navigator.of(context).pushNamed(AppRoutes.settings);
+              context.push(AppRoutes.settings);
             },
           ),
         ],

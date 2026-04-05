@@ -9,5 +9,6 @@ class AppRoutes {
   static const String createPersona = '/personas/create';
   static const String settings = '/settings';
   static const String models = '/models';
+  static const String chatHistory = '/history';
 }
 

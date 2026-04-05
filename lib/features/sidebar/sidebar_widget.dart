@@ -24,9 +24,9 @@ class SidebarWidget extends ConsumerWidget {
     final searchQuery = ref.watch(conversationSearchProvider);
 
     final location = GoRouterState.of(context).uri.toString();
-    final isHome = location == AppRoutes.home || location.isEmpty;
     final isServers = location.startsWith(AppRoutes.servers);
     final isPersonas = location.startsWith(AppRoutes.personas);
+    final isHistory = location.startsWith(AppRoutes.chatHistory);
 
     return Container(
       width: 300,
@@ -58,11 +58,11 @@ class SidebarWidget extends ConsumerWidget {
             const ActiveServerIndicator(),
             const SizedBox(height: 8),
             DrawerNavItem(
-              iconData: HugeIcons.strokeRoundedMessageMultiple01,
-              label: 'Chat',
-              isSelected: isHome,
+              iconData: HugeIcons.strokeRoundedClock01,
+              label: 'History',
+              isSelected: isHistory,
               onTap: () {
-                context.go(AppRoutes.home);
+                context.go(AppRoutes.chatHistory);
                 if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
                   Navigator.pop(context);
                 }
