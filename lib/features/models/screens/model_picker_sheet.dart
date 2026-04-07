@@ -4,6 +4,7 @@ import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/core/providers/service_providers.dart';
+import 'package:localmind/core/models/enums.dart';
 
 final modelSearchQueryProvider = NotifierProvider<_ModelSearchNotifier, String>(
   _ModelSearchNotifier.new,
@@ -362,9 +363,12 @@ class _ModelList extends ConsumerWidget {
                   }
 
                   if (context.mounted) {
+                    final message = activeServer.type == ServerType.ollama
+                        ? '${model.name} will be unloaded once the keep-alive time passes'
+                        : '${model.name} unloaded successfully';
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('${model.name} unloaded successfully'),
+                        content: Text(message),
                       ),
                     );
                   }
