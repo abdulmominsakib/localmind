@@ -105,7 +105,7 @@ class Server extends HiveObject {
       case ServerType.openAICompatible:
         return '$baseUrl/v1/models/load';
       case ServerType.ollama:
-        return '$baseUrl/api/load';
+        return '$baseUrl/api/generate';
       case ServerType.openRouter:
         return '';
     }
@@ -118,7 +118,7 @@ class Server extends HiveObject {
       case ServerType.openAICompatible:
         return '$baseUrl/v1/models/unload';
       case ServerType.ollama:
-        return '$baseUrl/api/unload';
+        return '$baseUrl/api/generate';
       case ServerType.openRouter:
         return '';
     }

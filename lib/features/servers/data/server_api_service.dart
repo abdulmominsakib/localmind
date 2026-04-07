@@ -142,7 +142,7 @@ class ServerApiService {
       case ServerType.ollama:
         await _dio.post(
           server.unloadModelEndpoint,
-          data: {'model': modelId},
+          data: {'model': modelId, 'keep_alive': 0},
           options: Options(headers: _getAuthHeaders(server)),
         );
       case ServerType.openRouter:
