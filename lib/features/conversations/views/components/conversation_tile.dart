@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:localmind/features/conversations/data/models/conversation.dart';
+import '../../data/models/conversation.dart';
 
 class ConversationTile extends StatelessWidget {
   const ConversationTile({

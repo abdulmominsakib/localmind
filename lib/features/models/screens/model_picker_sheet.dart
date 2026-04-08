@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:localmind/features/chat/providers/chat_providers.dart';
-import 'package:localmind/features/models/data/models/model_info.dart';
-import 'package:localmind/features/servers/providers/server_providers.dart';
-import 'package:localmind/core/providers/service_providers.dart';
-import 'package:localmind/core/models/enums.dart';
+import '../../chat/providers/chat_providers.dart';
+import '../data/models/model_info.dart';
+import '../../servers/providers/server_providers.dart';
+import '../../../core/providers/service_providers.dart';
+import '../../../core/models/enums.dart';
 
 final modelSearchQueryProvider = NotifierProvider<_ModelSearchNotifier, String>(
   _ModelSearchNotifier.new,
@@ -260,7 +260,8 @@ class _ModelList extends ConsumerWidget {
         ),
       ),
       data: (models) {
-        final servers = ref.watch(serversProvider);
+        final serversAsync = ref.watch(serversProvider);
+        final servers = serversAsync.value ?? [];
         final activeServer = servers.where((s) => s.id == serverId).firstOrNull;
         final loadedModelsAsync = activeServer != null
             ? ref.watch(loadedModelsProvider(activeServer))
@@ -366,11 +367,9 @@ class _ModelList extends ConsumerWidget {
                     final message = activeServer.type == ServerType.ollama
                         ? '${model.name} will be unloaded once the keep-alive time passes'
                         : '${model.name} unloaded successfully';
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(message),
-                      ),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(message)));
                   }
                 } catch (e) {
                   if (context.mounted) {

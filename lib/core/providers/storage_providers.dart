@@ -1,42 +1,15 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:hive_ce/hive.dart';
-import 'package:localmind/features/conversations/data/models/conversation.dart';
-import 'package:localmind/features/personas/data/models/persona.dart';
-import '../storage/hive_initializer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../storage/objectbox_store.dart';
 
-final hiveBoxesProvider = Provider<HiveBoxes>((ref) {
+final databaseProvider = Provider<ObjectBoxStore>((ref) {
   throw UnimplementedError('Must be overridden in main.dart');
 });
 
-final settingsBoxProvider = Provider<dynamic>((ref) {
-  final boxes = ref.watch(hiveBoxesProvider);
-  return boxes.settings;
-});
-
-final conversationsBoxProvider = Provider<Box<Conversation>>((ref) {
-  final boxes = ref.watch(hiveBoxesProvider);
-  return boxes.conversations;
-});
-
-final directBoxConversationsProvider = Provider<List<Conversation>>((ref) {
-  final box = ref.watch(conversationsBoxProvider);
-  final conversations = box.values.toList();
-  conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-  return conversations;
-});
-
-
-
-final personasBoxProvider = Provider<Box<Persona>>((ref) {
-  final boxes = ref.watch(hiveBoxesProvider);
-  return boxes.personas;
-});
-
-final directBoxPersonasProvider = Provider<List<Persona>>((ref) {
-  final box = ref.watch(personasBoxProvider);
-  return box.values.toList();
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError('Must be overridden in main.dart');
 });
 
 final storageDirectoryProvider = FutureProvider<Directory>((ref) async {

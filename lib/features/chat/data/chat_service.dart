@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:localmind/features/servers/data/models/server.dart';
-import 'package:localmind/features/chat/data/models/message.dart';
-import 'package:localmind/features/chat/data/models/chat_parameters.dart';
-import 'package:localmind/features/chat/data/models/mcp_integration.dart';
-import 'package:localmind/core/models/enums.dart';
-import 'package:localmind/core/logger/app_logger.dart';
+import '../../servers/data/models/server.dart';
+import 'models/message.dart';
+import 'models/chat_parameters.dart';
+import 'models/mcp_integration.dart';
+import '../../../core/models/enums.dart';
+import '../../../core/logger/app_logger.dart';
 
 abstract class ChatService {
   Stream<ChatResponse> sendMessage({
@@ -173,7 +173,8 @@ class LMStudioChatService implements ChatService {
           responseType: ResponseType.stream,
           headers: {
             'Content-Type': 'application/json',
-            if (server.apiKey != null) 'Authorization': 'Bearer ${server.apiKey}',
+            if (server.apiKey != null)
+              'Authorization': 'Bearer ${server.apiKey}',
           },
         ),
         cancelToken: _cancelToken,
@@ -433,7 +434,8 @@ class OpenAICompatibleChatService implements ChatService {
           responseType: ResponseType.stream,
           headers: {
             'Content-Type': 'application/json',
-            if (server.apiKey != null) 'Authorization': 'Bearer ${server.apiKey}',
+            if (server.apiKey != null)
+              'Authorization': 'Bearer ${server.apiKey}',
           },
         ),
         cancelToken: _cancelToken,

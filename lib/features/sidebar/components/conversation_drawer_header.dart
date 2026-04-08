@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:localmind/core/routes/app_routes.dart';
+import '../../../core/routes/app_routes.dart';
 
 class ConversationDrawerHeader extends StatelessWidget {
   const ConversationDrawerHeader({super.key});

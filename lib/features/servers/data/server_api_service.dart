@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:localmind/features/servers/data/models/server.dart';
-import 'package:localmind/features/models/data/models/model_info.dart';
-import 'package:localmind/core/models/enums.dart';
+
+import '../../../core/models/enums.dart';
+import '../../models/data/models/model_info.dart';
+import 'models/server.dart';
 
 class ServerApiService {
   final Dio _dio;
@@ -266,7 +267,6 @@ class ServerApiService {
         )
         .join(' ');
   }
-
 
   int? _parseParameterSize(String size) {
     final cleaned = size.replaceAll('B', '').replaceAll('b', '').trim();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
+
 import '../../../../core/models/enums.dart';
 
 class ServerTypeSelector extends StatelessWidget {

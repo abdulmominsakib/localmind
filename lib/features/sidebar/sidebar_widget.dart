@@ -47,12 +47,23 @@ class SidebarWidget extends ConsumerWidget {
             const ConversationSearchBar(),
             const Divider(height: 1),
             Expanded(
-              child: groupedConversations.isEmpty
-                  ? ConversationEmptyState(isSearching: searchQuery.isNotEmpty)
-                  : ConversationList(
-                      groupedConversations: groupedConversations,
-                      activeConversation: activeConversation,
-                    ),
+              child: groupedConversations.when(
+                data: (grouped) => grouped.isEmpty
+                    ? ConversationEmptyState(isSearching: searchQuery.isNotEmpty)
+                    : ConversationList(
+                        groupedConversations: grouped,
+                        activeConversation: activeConversation,
+                      ),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                error: (err, stack) => Center(
+                  child: Text(
+                    'Error: $err',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                ),
+              ),
             ),
             const Divider(height: 1),
             const ActiveServerIndicator(),
@@ -62,10 +73,10 @@ class SidebarWidget extends ConsumerWidget {
               label: 'History',
               isSelected: isHistory,
               onTap: () {
-                context.go(AppRoutes.chatHistory);
                 if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
                   Navigator.pop(context);
                 }
+                context.go(AppRoutes.chatHistory);
               },
             ),
             DrawerNavItem(
@@ -73,10 +84,10 @@ class SidebarWidget extends ConsumerWidget {
               label: 'Servers',
               isSelected: isServers,
               onTap: () {
-                context.go(AppRoutes.servers);
                 if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
                   Navigator.pop(context);
                 }
+                context.go(AppRoutes.servers);
               },
             ),
             DrawerNavItem(
@@ -84,10 +95,10 @@ class SidebarWidget extends ConsumerWidget {
               label: 'Personas',
               isSelected: isPersonas,
               onTap: () {
-                context.go(AppRoutes.personas);
                 if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
                   Navigator.pop(context);
                 }
+                context.go(AppRoutes.personas);
               },
             ),
             const SizedBox(height: 8),

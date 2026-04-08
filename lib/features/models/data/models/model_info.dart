@@ -1,4 +1,4 @@
-import 'package:localmind/core/models/enums.dart';
+import '../../../../core/models/enums.dart';
 
 class ModelInfo {
   final String id;

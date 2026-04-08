@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:localmind/features/personas/data/models/persona.dart';
-import 'package:localmind/features/personas/providers/personas_providers.dart';
+import '../data/models/persona.dart';
+import '../providers/personas_providers.dart';
 
 class CreatePersonaScreen extends ConsumerStatefulWidget {
   final Persona? editPersona;

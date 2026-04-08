@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:localmind/core/routes/app_routes.dart';
-import 'package:localmind/features/personas/data/models/persona.dart';
-import 'package:localmind/features/personas/providers/personas_providers.dart';
+import '../../../core/routes/app_routes.dart';
+import '../data/models/persona.dart';
+import '../providers/personas_providers.dart';
 
 class PersonaListScreen extends ConsumerWidget {
   const PersonaListScreen({super.key});

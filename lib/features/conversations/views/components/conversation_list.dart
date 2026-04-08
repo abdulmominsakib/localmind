@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:localmind/core/routes/app_routes.dart';
-import 'package:localmind/features/chat/providers/chat_providers.dart';
-import 'package:localmind/features/conversations/data/models/conversation.dart';
-import 'package:localmind/features/conversations/providers/conversation_providers.dart';
+import '../../../../core/routes/app_routes.dart';
+import '../../../chat/providers/chat_providers.dart';
+import '../../data/models/conversation.dart';
+import '../../providers/conversation_providers.dart';
 import 'conversation_tile.dart';
 import 'date_section_header.dart';
 
@@ -58,10 +58,10 @@ class ConversationList extends ConsumerWidget {
                   ref
                       .read(chatProvider.notifier)
                       .loadConversation(conversation);
-                  context.go(AppRoutes.home);
                   if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
                     Navigator.pop(context); // Close drawer if it was a drawer
                   }
+                  context.go(AppRoutes.home);
                 },
                 onRename: () {
                   _showRenameDialog(context, ref, conversation);

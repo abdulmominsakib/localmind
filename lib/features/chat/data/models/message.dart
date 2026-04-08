@@ -1,53 +1,22 @@
-import 'package:hive_ce/hive.dart';
-import 'package:localmind/core/models/enums.dart';
+import 'dart:convert';
 
-part 'message.g.dart';
+import '../../../../core/models/enums.dart';
 
-@HiveType(typeId: 1)
-class Message extends HiveObject {
-  @HiveField(0)
+class Message {
   final String id;
-
-  @HiveField(1)
   final String conversationId;
-
-  @HiveField(2)
   final MessageRole role;
-
-  @HiveField(3)
   final String content;
-
-  @HiveField(4)
   final DateTime createdAt;
-
-  @HiveField(5)
   final MessageStatus status;
-
-  @HiveField(6)
   final String? modelId;
-
-  @HiveField(7)
   final int? tokenCount;
-
-  @HiveField(8)
   final String? errorMessage;
-
-  @HiveField(9)
   final List<String>? attachmentPaths;
-
-  @HiveField(10)
   final int? generationTimeMs;
-
-  @HiveField(11)
   final String? reasoningContent;
-
-  @HiveField(12)
   final List<ToolCallData>? toolCalls;
-
-  @HiveField(13)
   final String? toolCallId;
-
-  @HiveField(14)
   final bool isProcessing;
 
   Message({
@@ -117,4 +86,27 @@ class ToolCallData {
     required this.arguments,
     this.result,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'toolName': toolName,
+      'arguments': arguments,
+      'result': result,
+    };
+  }
+
+  factory ToolCallData.fromMap(Map<String, dynamic> map) {
+    return ToolCallData(
+      id: map['id'],
+      toolName: map['toolName'],
+      arguments: Map<String, dynamic>.from(map['arguments'] ?? {}),
+      result: map['result'],
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory ToolCallData.fromJson(String source) =>
+      ToolCallData.fromMap(json.decode(source));
 }

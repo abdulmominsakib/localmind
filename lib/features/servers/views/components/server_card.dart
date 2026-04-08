@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:localmind/features/servers/data/models/server.dart';
+import '../../data/models/server.dart';
 import '../../../../core/models/enums.dart';
 import 'connection_status_indicator.dart';
 import 'server_icon_picker.dart';
@@ -60,9 +60,7 @@ class ServerCard extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: isActive
-            ? activeGreen.withValues(alpha: 0.08)
-            : theme.cardColor,
+        color: isActive ? activeGreen.withValues(alpha: 0.08) : theme.cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isActive
@@ -104,7 +102,7 @@ class ServerCard extends StatelessWidget {
                       color: isActive
                           ? activeGreen.withValues(alpha: 0.1)
                           : theme.colorScheme.surfaceContainerHighest
-                              .withValues(alpha: 0.3),
+                                .withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isActive
@@ -171,8 +169,9 @@ class ServerCard extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: isActive
                                       ? activeGreen.withValues(alpha: 0.05)
-                                      : theme.colorScheme.outline
-                                          .withValues(alpha: 0.1),
+                                      : theme.colorScheme.outline.withValues(
+                                          alpha: 0.1,
+                                        ),
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
                                     color: isActive
@@ -194,13 +193,17 @@ class ServerCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Text(_serverTypeName,
-                                style: theme.textTheme.bodySmall),
+                            Text(
+                              _serverTypeName,
+                              style: theme.textTheme.bodySmall,
+                            ),
                             const SizedBox(width: 8),
                             Text('•', style: theme.textTheme.bodySmall),
                             const SizedBox(width: 8),
-                            Text(_serverAddress,
-                                style: theme.textTheme.bodySmall),
+                            Text(
+                              _serverAddress,
+                              style: theme.textTheme.bodySmall,
+                            ),
                           ],
                         ),
                       ],

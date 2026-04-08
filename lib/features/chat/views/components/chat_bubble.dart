@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:localmind/core/models/enums.dart';
-import 'package:localmind/features/chat/data/models/message.dart';
-import 'package:localmind/features/chat/views/components/code_block.dart';
-import 'package:localmind/features/chat/views/components/message_action_bar.dart';
-import 'package:localmind/features/chat/views/components/processing_indicator.dart';
-import 'package:localmind/features/chat/views/components/typing_indicator.dart';
-import 'package:localmind/features/chat/views/components/reasoning_widget.dart';
+import '../../../../core/models/enums.dart';
+import '../../data/models/message.dart';
+import 'code_block.dart';
+import 'message_action_bar.dart';
+import 'processing_indicator.dart';
+import 'typing_indicator.dart';
+import 'reasoning_widget.dart';
 
 class ChatBubble extends StatelessWidget {
   const ChatBubble({
@@ -27,9 +27,7 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: _buildBubble(context),
-    );
+    return RepaintBoundary(child: _buildBubble(context));
   }
 
   Widget _buildBubble(BuildContext context) {
@@ -526,7 +524,8 @@ class _AttachmentItem extends StatelessWidget {
             width: 120,
             height: 120,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => _FilePlaceholder(fileName: fileName),
+            errorBuilder: (context, error, stackTrace) =>
+                _FilePlaceholder(fileName: fileName),
           ),
         ),
       );

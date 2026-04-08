@@ -1,88 +1,39 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:hive_ce/hive.dart';
 
-part 'app_settings.g.dart';
-
-@HiveType(typeId: 5)
 enum SyntaxThemeName {
-  @HiveField(0)
   vscodeDark,
-  @HiveField(1)
   vscodeLight,
-  @HiveField(2)
   dracula,
-  @HiveField(3)
   monokaiSublime,
-  @HiveField(4)
   ayuLight,
-  @HiveField(5)
   ayuDark,
-  @HiveField(6)
   gravityLight,
-  @HiveField(7)
   gravityDark,
-  @HiveField(8)
   obsidian,
-  @HiveField(9)
   oceanSunset,
-  @HiveField(10)
   standard,
 }
 
-@HiveType(typeId: 4)
-class AppSettings extends HiveObject {
-  @HiveField(0)
+class AppSettings {
   final double temperature;
-
-  @HiveField(1)
   final double topP;
-
-  @HiveField(2)
   final int maxTokens;
-
-  @HiveField(3)
   final int contextLength;
-
-  @HiveField(4)
   final ThemeMode themeMode;
-
-  @HiveField(5)
   final double fontSize;
-
-  @HiveField(6)
   final bool showSystemMessages;
-
-  @HiveField(7)
   final bool hapticFeedbackEnabled;
-
-  @HiveField(8)
   final bool sendOnEnter;
-
-  @HiveField(9)
   final String? defaultServerId;
-
-  @HiveField(10)
   final bool showDataIndicator;
-
-  @HiveField(11)
   final bool autoGenerateTitle;
-
-  @HiveField(12)
   final bool streamingEnabled;
-
-  @HiveField(13)
   final String? defaultPersonaId;
-
-  @HiveField(14, defaultValue: false)
   final bool hasCompletedOnboarding;
-
-  @HiveField(15, defaultValue: true)
   final bool mcpEnabled;
-
-  @HiveField(16, defaultValue: SyntaxThemeName.vscodeDark)
   final SyntaxThemeName codeThemeDark;
-
-  @HiveField(17, defaultValue: SyntaxThemeName.vscodeLight)
   final SyntaxThemeName codeThemeLight;
 
   AppSettings({
@@ -149,4 +100,55 @@ class AppSettings extends HiveObject {
       codeThemeLight: codeThemeLight ?? this.codeThemeLight,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'temperature': temperature,
+      'topP': topP,
+      'maxTokens': maxTokens,
+      'contextLength': contextLength,
+      'themeMode': themeMode.index,
+      'fontSize': fontSize,
+      'showSystemMessages': showSystemMessages,
+      'hapticFeedbackEnabled': hapticFeedbackEnabled,
+      'sendOnEnter': sendOnEnter,
+      'defaultServerId': defaultServerId,
+      'showDataIndicator': showDataIndicator,
+      'autoGenerateTitle': autoGenerateTitle,
+      'streamingEnabled': streamingEnabled,
+      'defaultPersonaId': defaultPersonaId,
+      'hasCompletedOnboarding': hasCompletedOnboarding,
+      'mcpEnabled': mcpEnabled,
+      'codeThemeDark': codeThemeDark.index,
+      'codeThemeLight': codeThemeLight.index,
+    };
+  }
+
+  factory AppSettings.fromMap(Map<String, dynamic> map) {
+    return AppSettings(
+      temperature: map['temperature']?.toDouble() ?? 0.7,
+      topP: map['topP']?.toDouble() ?? 0.9,
+      maxTokens: map['maxTokens']?.toInt() ?? 2048,
+      contextLength: map['contextLength']?.toInt() ?? 4096,
+      themeMode: ThemeMode.values[map['themeMode'] ?? 2],
+      fontSize: map['fontSize']?.toDouble() ?? 16.0,
+      showSystemMessages: map['showSystemMessages'] ?? false,
+      hapticFeedbackEnabled: map['hapticFeedbackEnabled'] ?? true,
+      sendOnEnter: map['sendOnEnter'] ?? false,
+      defaultServerId: map['defaultServerId'],
+      showDataIndicator: map['showDataIndicator'] ?? true,
+      autoGenerateTitle: map['autoGenerateTitle'] ?? true,
+      streamingEnabled: map['streamingEnabled'] ?? true,
+      defaultPersonaId: map['defaultPersonaId'],
+      hasCompletedOnboarding: map['hasCompletedOnboarding'] ?? false,
+      mcpEnabled: map['mcpEnabled'] ?? true,
+      codeThemeDark: SyntaxThemeName.values[map['codeThemeDark'] ?? 0],
+      codeThemeLight: SyntaxThemeName.values[map['codeThemeLight'] ?? 1],
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory AppSettings.fromJson(String source) =>
+      AppSettings.fromMap(json.decode(source));
 }

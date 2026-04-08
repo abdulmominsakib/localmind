@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:localmind/features/settings/data/models/app_settings.dart';
+import '../../features/settings/data/models/app_settings.dart';
 import 'storage_providers.dart';
-
 import '../theme/app_theme.dart';
 
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, AppThemeType>(() {
@@ -11,9 +10,9 @@ final themeModeProvider = NotifierProvider<ThemeModeNotifier, AppThemeType>(() {
 class ThemeModeNotifier extends Notifier<AppThemeType> {
   @override
   AppThemeType build() {
-    final boxes = ref.watch(hiveBoxesProvider);
-    final savedMode = boxes.settings.get('themeMode');
-    if (savedMode is int &&
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final savedMode = prefs.getInt('themeMode');
+    if (savedMode != null &&
         savedMode >= 0 &&
         savedMode < AppThemeType.values.length) {
       return AppThemeType.values[savedMode];
@@ -22,9 +21,9 @@ class ThemeModeNotifier extends Notifier<AppThemeType> {
   }
 
   void setThemeMode(AppThemeType mode) {
-    final boxes = ref.read(hiveBoxesProvider);
+    final prefs = ref.read(sharedPreferencesProvider);
     state = mode;
-    boxes.settings.put('themeMode', mode.index);
+    prefs.setInt('themeMode', mode.index);
   }
 }
 
@@ -35,18 +34,20 @@ final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(() {
 class SettingsNotifier extends Notifier<AppSettings> {
   @override
   AppSettings build() {
-    final boxes = ref.watch(hiveBoxesProvider);
-    final saved = boxes.settings.get('appSettings');
-    if (saved is AppSettings) {
-      return saved;
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final savedJson = prefs.getString('appSettings');
+    if (savedJson != null) {
+      try {
+        return AppSettings.fromJson(savedJson);
+      } catch (_) {}
     }
     return AppSettings();
   }
 
   Future<void> updateSettings(AppSettings appSettings) async {
-    final boxes = ref.read(hiveBoxesProvider);
+    final prefs = ref.read(sharedPreferencesProvider);
     state = appSettings;
-    await boxes.settings.put('appSettings', appSettings);
+    await prefs.setString('appSettings', appSettings.toJson());
   }
 
   void setTemperature(double value) =>
@@ -82,13 +83,13 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   Future<void> _update(AppSettings updated) async {
     state = updated;
-    final boxes = ref.read(hiveBoxesProvider);
-    await boxes.settings.put('appSettings', updated);
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString('appSettings', updated.toJson());
   }
 
   Future<void> resetToDefaults() async {
     state = AppSettings();
-    final boxes = ref.read(hiveBoxesProvider);
-    await boxes.settings.put('appSettings', state);
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString('appSettings', state.toJson());
   }
 }

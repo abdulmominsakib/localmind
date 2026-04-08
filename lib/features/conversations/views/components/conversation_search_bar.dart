@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:localmind/features/conversations/providers/conversation_providers.dart';
+import '../../providers/conversation_providers.dart';
 
 class ConversationSearchBar extends ConsumerStatefulWidget {
   const ConversationSearchBar({super.key});

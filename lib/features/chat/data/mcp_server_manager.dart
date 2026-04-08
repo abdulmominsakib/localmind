@@ -1,4 +1,4 @@
-import 'package:localmind/features/chat/data/mcp_client.dart';
+import 'mcp_client.dart';
 
 class McpServerManager {
   final Map<String, McpClient> _clients = {};

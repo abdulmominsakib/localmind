@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/constants/app_constants.dart';
-import 'package:localmind/features/servers/data/models/server.dart';
+import '../data/models/server.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/service_providers.dart';
 import '../providers/server_providers.dart';

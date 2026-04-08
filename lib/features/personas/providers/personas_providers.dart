@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_ce/hive.dart';
-import 'package:localmind/core/providers/storage_providers.dart';
-import 'package:localmind/features/personas/data/models/persona.dart';
+import '../../../core/providers/storage_providers.dart';
+import '../../../core/storage/entities.dart';
+import '../data/models/persona.dart';
+import '../../../objectbox.g.dart';
 
 final personaSearchQueryProvider =
     NotifierProvider<_PersonaSearchNotifier, String>(
@@ -47,31 +48,33 @@ class _CategoryFilterNotifier extends Notifier<String?> {
 }
 
 final personasNotifierProvider =
-    NotifierProvider<PersonasNotifier, List<Persona>>(PersonasNotifier.new);
+    AsyncNotifierProvider<PersonasNotifier, List<Persona>>(
+      PersonasNotifier.new,
+    );
 
-class PersonasNotifier extends Notifier<List<Persona>> {
-  Box<Persona> get _box => ref.read(personasBoxProvider);
-
+class PersonasNotifier extends AsyncNotifier<List<Persona>> {
   @override
-  List<Persona> build() {
-    _seedIfEmpty();
-    return _box.values.toList()..sort((a, b) {
+  Future<List<Persona>> build() async {
+    return _loadAndSeed();
+  }
+
+  Future<List<Persona>> _loadAndSeed() async {
+    final db = ref.read(databaseProvider);
+    var entities = db.personaBox.getAll();
+
+    if (entities.isEmpty) {
+      for (final preset in _builtInPersonas) {
+        db.personaBox.put(PersonaEntity.fromDomain(preset));
+      }
+      entities = db.personaBox.getAll();
+    }
+
+    final personas = entities.map((e) => e.toDomain()).toList();
+    personas.sort((a, b) {
       if (a.isBuiltIn != b.isBuiltIn) return a.isBuiltIn ? -1 : 1;
       return a.name.compareTo(b.name);
     });
-  }
-
-  void _seedIfEmpty() {
-    if (_box.isEmpty) {
-      for (final preset in _builtInPersonas) {
-        _box.put(preset.id, preset);
-      }
-      state = _box.values.toList()
-        ..sort((a, b) {
-          if (a.isBuiltIn != b.isBuiltIn) return a.isBuiltIn ? -1 : 1;
-          return a.name.compareTo(b.name);
-        });
-    }
+    return personas;
   }
 
   Future<Persona> createPersona({
@@ -82,6 +85,7 @@ class PersonasNotifier extends Notifier<List<Persona>> {
     String? category,
     Map<String, dynamic>? preferredParams,
   }) async {
+    final db = ref.read(databaseProvider);
     final now = DateTime.now();
     final persona = Persona(
       id: now.millisecondsSinceEpoch.toString(),
@@ -95,39 +99,52 @@ class PersonasNotifier extends Notifier<List<Persona>> {
       category: category,
       preferredParams: preferredParams,
     );
-    await _box.put(persona.id, persona);
-    state = _box.values.toList()
-      ..sort((a, b) {
-        if (a.isBuiltIn != b.isBuiltIn) return a.isBuiltIn ? -1 : 1;
-        return a.name.compareTo(b.name);
-      });
+    db.personaBox.put(PersonaEntity.fromDomain(persona));
+    state = AsyncData(await _loadAndSeed());
     return persona;
   }
 
   Future<void> updatePersona(Persona updated) async {
+    final db = ref.read(databaseProvider);
     final persona = updated.copyWith(updatedAt: DateTime.now());
-    await _box.put(persona.id, persona);
-    state = _box.values.toList()
-      ..sort((a, b) {
-        if (a.isBuiltIn != b.isBuiltIn) return a.isBuiltIn ? -1 : 1;
-        return a.name.compareTo(b.name);
-      });
+
+    final query = db.personaBox
+        .query(PersonaEntity_.id.equals(persona.id))
+        .build();
+    final existing = query.findFirst();
+    query.close();
+
+    final entity = PersonaEntity.fromDomain(persona);
+    if (existing != null) {
+      entity.internalId = existing.internalId;
+    }
+    db.personaBox.put(entity);
+
+    state = AsyncData(await _loadAndSeed());
   }
 
   Future<void> deletePersona(String id) async {
-    final persona = _box.get(id);
-    if (persona != null && persona.isBuiltIn) return;
-    await _box.delete(id);
-    state = _box.values.toList()
-      ..sort((a, b) {
-        if (a.isBuiltIn != b.isBuiltIn) return a.isBuiltIn ? -1 : 1;
-        return a.name.compareTo(b.name);
-      });
+    final personas = state.value ?? [];
+    final persona = personas.firstWhere(
+      (p) => p.id == id,
+      orElse: () => throw Exception('Persona not found'),
+    );
+    if (persona.isBuiltIn) return;
+
+    final db = ref.read(databaseProvider);
+    final query = db.personaBox.query(PersonaEntity_.id.equals(id)).build();
+    db.personaBox.removeMany(query.findIds());
+    query.close();
+
+    state = AsyncData(await _loadAndSeed());
   }
 
   Future<Persona> clonePersona(String id) async {
-    final original = _box.get(id);
-    if (original == null) throw Exception('Persona not found');
+    final personas = state.value ?? [];
+    final original = personas.firstWhere(
+      (p) => p.id == id,
+      orElse: () => throw Exception('Persona not found'),
+    );
 
     final now = DateTime.now();
     final clone = Persona(
@@ -144,12 +161,9 @@ class PersonasNotifier extends Notifier<List<Persona>> {
           ? Map<String, dynamic>.from(original.preferredParams!)
           : null,
     );
-    await _box.put(clone.id, clone);
-    state = _box.values.toList()
-      ..sort((a, b) {
-        if (a.isBuiltIn != b.isBuiltIn) return a.isBuiltIn ? -1 : 1;
-        return a.name.compareTo(b.name);
-      });
+    final db = ref.read(databaseProvider);
+    db.personaBox.put(PersonaEntity.fromDomain(clone));
+    state = AsyncData(await _loadAndSeed());
     return clone;
   }
 
@@ -242,7 +256,8 @@ class PersonasNotifier extends Notifier<List<Persona>> {
 }
 
 final filteredPersonasProvider = Provider<List<Persona>>((ref) {
-  final personas = ref.watch(personasNotifierProvider);
+  final personasAsync = ref.watch(personasNotifierProvider);
+  final personas = personasAsync.value ?? [];
   final category = ref.watch(personaCategoryFilterProvider);
   final query = ref.watch(personaSearchQueryProvider).toLowerCase();
 
@@ -264,19 +279,19 @@ final filteredPersonasProvider = Provider<List<Persona>>((ref) {
 });
 
 final builtInPersonasProvider = Provider<List<Persona>>((ref) {
-  return ref.watch(personasNotifierProvider).where((p) => p.isBuiltIn).toList();
+  final personas = ref.watch(personasNotifierProvider).value ?? [];
+  return personas.where((p) => p.isBuiltIn).toList();
 });
 
 final userPersonasProvider = Provider<List<Persona>>((ref) {
-  return ref
-      .watch(personasNotifierProvider)
-      .where((p) => !p.isBuiltIn)
-      .toList();
+  final personas = ref.watch(personasNotifierProvider).value ?? [];
+  return personas.where((p) => !p.isBuiltIn).toList();
 });
 
 final personaByIdProvider = Provider.family<Persona?, String>((ref, id) {
   try {
-    return ref.watch(personasNotifierProvider).firstWhere((p) => p.id == id);
+    final personas = ref.watch(personasNotifierProvider).value ?? [];
+    return personas.firstWhere((p) => p.id == id);
   } catch (_) {
     return null;
   }

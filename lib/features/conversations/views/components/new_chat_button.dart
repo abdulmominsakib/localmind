@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:localmind/core/routes/app_routes.dart';
-import 'package:localmind/features/chat/providers/chat_providers.dart';
+import '../../../../core/routes/app_routes.dart';
+import '../../../chat/providers/chat_providers.dart';
 
 class NewChatButton extends ConsumerWidget {
   const NewChatButton({super.key});

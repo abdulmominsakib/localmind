@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:localmind/features/conversations/providers/conversation_providers.dart';
-import 'components/conversation_list.dart';
+
+import '../providers/conversation_providers.dart';
 import 'components/conversation_empty_state.dart';
+import 'components/conversation_list.dart';
 import 'components/conversation_search_bar.dart';
 
 class ChatHistoryScreen extends ConsumerWidget {
@@ -12,7 +13,7 @@ class ChatHistoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     final groupedConversations = ref.watch(groupedConversationsProvider);
     final activeConversation = ref.watch(activeConversationProvider);
     final searchQuery = ref.watch(conversationSearchProvider);
@@ -60,12 +61,23 @@ class ChatHistoryScreen extends ConsumerWidget {
 
           // List
           Expanded(
-            child: groupedConversations.isEmpty
-                ? ConversationEmptyState(isSearching: searchQuery.isNotEmpty)
-                : ConversationList(
-                  groupedConversations: groupedConversations,
-                  activeConversation: activeConversation,
+            child: groupedConversations.when(
+              data: (grouped) => grouped.isEmpty
+                  ? ConversationEmptyState(isSearching: searchQuery.isNotEmpty)
+                  : ConversationList(
+                      groupedConversations: grouped,
+                      activeConversation: activeConversation,
+                    ),
+              loading: () => const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              error: (err, stack) => Center(
+                child: Text(
+                  'Error: $err',
+                  style: TextStyle(color: theme.colorScheme.error),
                 ),
+              ),
+            ),
           ),
         ],
       ),

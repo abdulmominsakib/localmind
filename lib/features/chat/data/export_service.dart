@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:localmind/features/chat/data/models/message.dart';
-import 'package:localmind/core/models/enums.dart';
+import 'models/message.dart';
+import '../../../core/models/enums.dart';
 
 class ExportService {
   static Future<String> exportAsMarkdown(

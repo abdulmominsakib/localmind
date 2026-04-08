@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:localmind/core/providers/app_providers.dart';
-import 'package:localmind/core/providers/storage_providers.dart' as storage;
-import 'package:localmind/core/theme/app_theme.dart';
-import 'package:localmind/features/conversations/providers/conversation_providers.dart';
-import 'package:localmind/features/servers/providers/server_providers.dart';
-import 'package:localmind/features/settings/data/models/app_settings.dart';
-import 'package:localmind/features/personas/providers/personas_providers.dart';
+import '../../../core/providers/app_providers.dart';
+
+import '../../../core/theme/app_theme.dart';
+import '../../conversations/providers/conversation_providers.dart';
+import '../../servers/providers/server_providers.dart';
+import '../data/models/app_settings.dart';
+import '../../personas/providers/personas_providers.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -147,8 +147,7 @@ class SettingsScreen extends ConsumerWidget {
           _DropdownSetting(
             label: 'Default Server',
             currentValue: settings.defaultServerId,
-            items: ref
-                .watch(serversProvider)
+            items: (ref.watch(serversProvider).value ?? [])
                 .map((s) => (s.id, s.name))
                 .toList(),
             onChanged: (v) =>
@@ -161,8 +160,7 @@ class SettingsScreen extends ConsumerWidget {
           _DropdownSetting(
             label: 'Default Persona',
             currentValue: settings.defaultPersonaId,
-            items: ref
-                .watch(personasNotifierProvider)
+            items: (ref.watch(personasNotifierProvider).value ?? [])
                 .map((p) => (p.id, '${p.emoji} ${p.name}'))
                 .toList(),
             onChanged: (v) =>

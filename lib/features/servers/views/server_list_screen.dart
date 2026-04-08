@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/routes/app_routes.dart';
+
 import '../../../core/providers/service_providers.dart';
+import '../../../core/routes/app_routes.dart';
 import '../providers/server_providers.dart';
 import 'components/server_card.dart';
 
@@ -57,59 +58,81 @@ class ServerListScreen extends ConsumerWidget {
               ),
 
               Expanded(
-                child: servers.isEmpty
-                    ? _buildEmptyState(context, isDark, theme)
-                    : RefreshIndicator(
-                        onRefresh: () async {
-                          for (final server in servers) {
-                            await ref
-                                .read(serversProvider.notifier)
-                                .testConnection(
-                                  server.id,
-                                  ref.read(serverApiServiceProvider),
-                                );
-                          }
-                        },
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: servers.length,
-                          itemBuilder: (context, index) {
-                            final server = servers[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: ServerCard(
-                                server: server,
-                                isActive: activeServer?.id == server.id,
-                                onTap: () {
-                                  ref
-                                      .read(activeServerProvider.notifier)
-                                      .setActiveServer(server);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Switched to ${server.name}',
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                    ),
+                child: servers.when(
+                  data: (serverList) => serverList.isEmpty
+                      ? _buildEmptyState(context, isDark, theme)
+                      : RefreshIndicator(
+                          onRefresh: () async {
+                            for (final server in serverList) {
+                              await ref
+                                  .read(serversProvider.notifier)
+                                  .testConnection(
+                                    server.id,
+                                    ref.read(serverApiServiceProvider),
                                   );
-                                },
-                                onEdit: () =>
-                                    _showEditDialog(context, ref, server),
-                                onDelete: () => _showDeleteConfirmation(
-                                  context,
-                                  ref,
-                                  server,
-                                ),
-                                onSetDefault: () {
-                                  ref
-                                      .read(serversProvider.notifier)
-                                      .setDefault(server.id);
-                                },
-                              ),
-                            );
+                            }
                           },
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: serverList.length,
+                            itemBuilder: (context, index) {
+                              final server = serverList[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: ServerCard(
+                                  server: server,
+                                  isActive: activeServer?.id == server.id,
+                                  onTap: () {
+                                    ref
+                                        .read(activeServerProvider.notifier)
+                                        .setActiveServer(server);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Switched to ${server.name}',
+                                        ),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
+                                  onEdit: () =>
+                                      _showEditDialog(context, ref, server),
+                                  onDelete: () => _showDeleteConfirmation(
+                                    context,
+                                    ref,
+                                    server,
+                                  ),
+                                  onSetDefault: () {
+                                    ref
+                                        .read(serversProvider.notifier)
+                                        .setDefault(server.id);
+                                  },
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (err, stack) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        Text('Error loading servers: $err'),
+                        TextButton(
+                          onPressed: () => ref.invalidate(serversProvider),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

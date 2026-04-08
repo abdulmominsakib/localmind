@@ -1,41 +1,16 @@
-import 'package:hive_ce/hive.dart';
-import 'package:localmind/core/models/enums.dart';
+import '../../../../core/models/enums.dart';
 
-part 'server.g.dart';
-
-@HiveType(typeId: 0)
-class Server extends HiveObject {
-  @HiveField(0)
+class Server {
   final String id;
-
-  @HiveField(1)
   final String name;
-
-  @HiveField(2)
   final ServerType type;
-
-  @HiveField(3)
   final String host;
-
-  @HiveField(4)
   final int port;
-
-  @HiveField(5)
   final String? apiKey;
-
-  @HiveField(6)
   final bool isDefault;
-
-  @HiveField(7)
   final DateTime createdAt;
-
-  @HiveField(8)
   final DateTime lastConnectedAt;
-
-  @HiveField(9)
   final ConnectionStatus status;
-
-  @HiveField(10)
   final String? iconName;
 
   Server({

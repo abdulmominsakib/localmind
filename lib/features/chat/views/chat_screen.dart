@@ -3,18 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:localmind/features/servers/views/components/server_icon_picker.dart';
-import 'package:localmind/features/servers/data/models/server.dart';
-import 'package:localmind/core/models/enums.dart';
-import 'package:localmind/core/providers/app_providers.dart';
-import 'package:localmind/core/providers/storage_providers.dart';
-import 'package:localmind/core/routes/app_routes.dart';
-import 'package:localmind/features/chat/data/models/message.dart';
-import 'package:localmind/features/chat/providers/chat_providers.dart';
-import 'package:localmind/features/chat/views/components/chat_bubble.dart';
-import 'package:localmind/features/chat/views/components/chat_input_bar.dart';
-import 'package:localmind/features/chat/views/components/mcp_config_sheet.dart';
-import 'package:localmind/features/conversations/data/models/conversation.dart';
+import '../../servers/views/components/server_icon_picker.dart';
+import '../../servers/data/models/server.dart';
+import '../../../core/models/enums.dart';
+import '../../../core/providers/app_providers.dart';
+
+import '../../../core/routes/app_routes.dart';
+import '../data/models/message.dart';
+import '../providers/chat_providers.dart';
+import 'components/chat_bubble.dart';
+import 'components/chat_input_bar.dart';
+import 'components/mcp_config_sheet.dart';
+import '../../conversations/data/models/conversation.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
     as conv;
 import 'package:localmind/features/models/screens/model_picker_sheet.dart';
@@ -212,42 +212,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         Expanded(
           child: Stack(
             children: [
-              chatState.messages.isEmpty
-                  ? _EmptyState(
-                      onQuickPrompt: (prompt) =>
-                          ref.read(chatProvider.notifier).sendMessage(prompt),
-                      quickPrompts: _quickPrompts,
-                      recentConversations: ref.watch(
-                        conv.recentConversationsProvider,
-                      ),
-                      onSeeAll: () {
-                        if (Scaffold.maybeOf(context)?.hasDrawer ?? false) {
-                          Scaffold.of(context).openDrawer();
-                        }
-                      },
-                      selectedModel: selectedModel,
-                      onModelTap: () => _showModelPicker(context),
-                      selectedPersona: ref.watch(selectedPersonaProvider),
-                      onPersonaTap: () =>
-                          _showPersonaPickerForPreselection(context),
-                    )
-                  : _MessageList(
-                      scrollController: _scrollController,
-                      messages: chatState.messages,
-                      streamingMessage: chatState.streamingMessage,
-                      isStreaming: chatState.isStreaming,
-                      onRetry: (messageId) {
-                        ref.read(chatProvider.notifier).retryMessage(messageId);
-                      },
-                      onDelete: (messageId) {
-                        ref
-                            .read(chatProvider.notifier)
-                            .deleteMessage(messageId);
-                      },
-                      hasSmartReplies:
-                          !chatState.isStreaming &&
-                          ref.read(smartRepliesProvider).isNotEmpty,
-                    ),
+              if (chatState.isLoading)
+                const Center(child: CircularProgressIndicator(strokeWidth: 2))
+              else if (chatState.messages.isEmpty && activeConversation != null)
+                _CorruptedChatState(
+                  onStartNewChat: () =>
+                      ref.read(chatProvider.notifier).startNewConversation(),
+                )
+              else if (chatState.messages.isEmpty)
+                _EmptyState(
+                  onQuickPrompt: (prompt) =>
+                      ref.read(chatProvider.notifier).sendMessage(prompt),
+                  quickPrompts: _quickPrompts,
+                  recentConversations: ref.watch(
+                    conv.recentConversationsProvider,
+                  ),
+                  onSeeAll: () {
+                    if (Scaffold.maybeOf(context)?.hasDrawer ?? false) {
+                      Scaffold.of(context).openDrawer();
+                    }
+                  },
+                  selectedModel: selectedModel,
+                  onModelTap: () => _showModelPicker(context),
+                  selectedPersona: ref.watch(selectedPersonaProvider),
+                  onPersonaTap: () =>
+                      _showPersonaPickerForPreselection(context),
+                )
+              else
+                _MessageList(
+                  scrollController: _scrollController,
+                  messages: chatState.messages,
+                  streamingMessage: chatState.streamingMessage,
+                  isStreaming: chatState.isStreaming,
+                  onRetry: (messageId) {
+                    ref.read(chatProvider.notifier).retryMessage(messageId);
+                  },
+                  onDelete: (messageId) {
+                    ref.read(chatProvider.notifier).deleteMessage(messageId);
+                  },
+                  hasSmartReplies:
+                      !chatState.isStreaming &&
+                      ref.read(smartRepliesProvider).isNotEmpty,
+                ),
               if (!chatState.isStreaming)
                 Positioned(
                   bottom: 90,
@@ -335,7 +341,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _showPersonaPicker(BuildContext context) {
-    final personas = ref.read(personasNotifierProvider);
+    final personasAsync = ref.read(personasNotifierProvider);
+    final personas = personasAsync.value ?? [];
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeConv = ref.read(conv.activeConversationProvider);
     final currentPersonaId = activeConv?.personaId;
@@ -435,7 +442,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _showPersonaPickerForPreselection(BuildContext context) {
-    final personas = ref.read(personasNotifierProvider);
+    final personasAsync = ref.read(personasNotifierProvider);
+    final personas = personasAsync.value ?? [];
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentPersona = ref.watch(selectedPersonaProvider);
 
@@ -778,7 +786,8 @@ class _EmptyStateState extends State<_EmptyState>
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              widget.selectedModel?.displayName ?? 'Select Model',
+                              widget.selectedModel?.displayName ??
+                                  'Select Model',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -1354,6 +1363,65 @@ class _PersonaIndicator extends StatelessWidget {
             color: isDark ? Colors.white38 : Colors.black38,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CorruptedChatState extends StatelessWidget {
+  const _CorruptedChatState({required this.onStartNewChat});
+
+  final VoidCallback onStartNewChat;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.history_toggle_off_rounded,
+                size: 48,
+                color: Colors.red,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'History Missing',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Either the messages in this chat were deleted or the history record is corrupted.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                color: isDark ? Colors.white60 : Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ShadButton(
+              onPressed: onStartNewChat,
+              leading: const Icon(Icons.add_rounded, size: 20),
+              child: const Text('Start New Chat'),
+            ),
+          ],
+        ),
       ),
     );
   }

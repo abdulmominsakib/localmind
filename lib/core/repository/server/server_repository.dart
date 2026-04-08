@@ -1,5 +1,5 @@
-import 'package:localmind/features/models/data/models/model_info.dart';
-import 'package:localmind/features/servers/data/models/server.dart';
+import '../../../features/models/data/models/model_info.dart';
+import '../../../features/servers/data/models/server.dart';
 
 abstract class ServerRepository {
   Future<bool> testConnection(Server server);

@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:localmind/core/models/enums.dart';
-import 'package:localmind/features/servers/providers/server_providers.dart';
+import '../../../../core/models/enums.dart';
+import '../../../servers/providers/server_providers.dart';
 
 class ChatInputBar extends ConsumerStatefulWidget {
   const ChatInputBar({

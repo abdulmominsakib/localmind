@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/models/enums.dart';
 
 class ConnectionStatusIndicator extends StatefulWidget {

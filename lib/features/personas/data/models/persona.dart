@@ -1,37 +1,13 @@
-import 'package:hive_ce/hive.dart';
-
-part 'persona.g.dart';
-
-@HiveType(typeId: 3)
-class Persona extends HiveObject {
-  @HiveField(0)
+class Persona {
   final String id;
-
-  @HiveField(1)
   final String name;
-
-  @HiveField(2)
   final String emoji;
-
-  @HiveField(3)
   final String systemPrompt;
-
-  @HiveField(4)
   final String? description;
-
-  @HiveField(5)
   final bool isBuiltIn;
-
-  @HiveField(6)
   final DateTime createdAt;
-
-  @HiveField(7)
   final DateTime updatedAt;
-
-  @HiveField(8)
   final String? category;
-
-  @HiveField(9)
   final Map<String, dynamic>? preferredParams;
 
   Persona({

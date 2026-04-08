@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+
 import 'colors.dart';
 import 'typography.dart';
 
-enum AppThemeType {
-  system,
-  light,
-  dark,
-  claude
-}
+enum AppThemeType { system, light, dark, claude }
 
 class AppTheme {
   static ShadThemeData get darkShadTheme => ShadThemeData(
@@ -114,9 +110,7 @@ class AppTheme {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.darkAccent,
         foregroundColor: AppColors.darkBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
     ),
@@ -124,18 +118,14 @@ class AppTheme {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.darkPrimaryText,
         side: const BorderSide(color: AppColors.darkBorder),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.darkPrimaryText,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
     ),
@@ -147,16 +137,12 @@ class AppTheme {
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: AppColors.darkSurface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.darkSurface,
       contentTextStyle: AppTypography.darkTextTheme.bodyMedium,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       behavior: SnackBarBehavior.floating,
     ),
     listTileTheme: const ListTileThemeData(
@@ -167,9 +153,17 @@ class AppTheme {
       indicatorColor: AppColors.darkSurface,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const TextStyle(color: AppColors.darkPrimaryText, fontSize: 12, fontWeight: FontWeight.w600);
+          return const TextStyle(
+            color: AppColors.darkPrimaryText,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          );
         }
-        return const TextStyle(color: AppColors.darkMutedText, fontSize: 12, fontWeight: FontWeight.w500);
+        return const TextStyle(
+          color: AppColors.darkMutedText,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        );
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
@@ -234,9 +228,7 @@ class AppTheme {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.lightAccent,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
     ),
@@ -244,9 +236,7 @@ class AppTheme {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.lightPrimaryText,
         side: const BorderSide(color: AppColors.lightBorder),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
     ),
@@ -258,18 +248,24 @@ class AppTheme {
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: AppColors.lightSurface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: AppColors.lightBackground,
       indicatorColor: AppColors.lightSurface,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const TextStyle(color: AppColors.lightPrimaryText, fontSize: 12, fontWeight: FontWeight.w600);
+          return const TextStyle(
+            color: AppColors.lightPrimaryText,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          );
         }
-        return const TextStyle(color: AppColors.lightMutedText, fontSize: 12, fontWeight: FontWeight.w500);
+        return const TextStyle(
+          color: AppColors.lightMutedText,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        );
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
@@ -334,9 +330,7 @@ class AppTheme {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.claudeAccent,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
     ),
@@ -345,7 +339,9 @@ class AppTheme {
         foregroundColor: AppColors.claudePrimaryText,
         side: const BorderSide(color: AppColors.claudeBorder),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8), // Secondary buttons are less rounded
+          borderRadius: BorderRadius.circular(
+            8,
+          ), // Secondary buttons are less rounded
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
@@ -358,18 +354,24 @@ class AppTheme {
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: AppColors.claudeSurface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: AppColors.claudeBackground,
       indicatorColor: AppColors.claudeSurface,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const TextStyle(color: AppColors.claudePrimaryText, fontSize: 12, fontWeight: FontWeight.w600);
+          return const TextStyle(
+            color: AppColors.claudePrimaryText,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          );
         }
-        return const TextStyle(color: AppColors.claudeSecondaryText, fontSize: 12, fontWeight: FontWeight.w500);
+        return const TextStyle(
+          color: AppColors.claudeSecondaryText,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        );
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
@@ -379,5 +381,4 @@ class AppTheme {
       }),
     ),
   );
-
 }

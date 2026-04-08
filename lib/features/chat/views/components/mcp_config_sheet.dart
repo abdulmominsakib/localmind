@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:localmind/core/providers/app_providers.dart';
-import 'package:localmind/features/chat/data/models/mcp_integration.dart';
+import '../../../../core/providers/app_providers.dart';
+import '../../data/models/mcp_integration.dart';
 
 class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
   @override

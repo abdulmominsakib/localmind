@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
-import 'package:localmind/features/chat/data/tts_service.dart';
+import '../../data/tts_service.dart';
 
 class MessageActionBar extends StatefulWidget {
   const MessageActionBar({

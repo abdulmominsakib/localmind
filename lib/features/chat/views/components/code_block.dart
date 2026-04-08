@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_syntax_view/flutter_syntax_view.dart';
-import 'package:localmind/core/providers/app_providers.dart';
-import 'package:localmind/features/settings/data/models/app_settings.dart';
+import '../../../../core/providers/app_providers.dart';
+import '../../../settings/data/models/app_settings.dart';
 
 class CodeBlock extends ConsumerWidget {
   const CodeBlock({super.key, required this.code, this.language});

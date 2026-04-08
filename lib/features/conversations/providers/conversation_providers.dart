@@ -1,17 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:localmind/core/providers/storage_providers.dart';
-import 'package:localmind/features/conversations/data/models/conversation.dart';
+import '../../../core/providers/storage_providers.dart';
+import '../../../core/storage/entities.dart';
+import '../data/models/conversation.dart';
+import '../../../objectbox.g.dart';
 
 final conversationsProvider =
-    NotifierProvider<ConversationsNotifier, List<Conversation>>(() {
+    AsyncNotifierProvider<ConversationsNotifier, List<Conversation>>(() {
       return ConversationsNotifier();
     });
 
-class ConversationsNotifier extends Notifier<List<Conversation>> {
+class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
   @override
-  List<Conversation> build() {
-    final box = ref.watch(conversationsBoxProvider);
-    final conversations = box.values.toList();
+  Future<List<Conversation>> build() async {
+    return _loadAll();
+  }
+
+  Future<List<Conversation>> _loadAll() async {
+    final db = ref.read(databaseProvider);
+    final entities = db.conversationBox.getAll();
+    final conversations = entities.map((e) => e.toDomain()).toList();
     _sortConversations(conversations);
     return conversations;
   }
@@ -32,7 +39,7 @@ class ConversationsNotifier extends Notifier<List<Conversation>> {
     String? serverId,
     String? modelId,
   }) async {
-    final box = ref.read(conversationsBoxProvider);
+    final db = ref.read(databaseProvider);
     final now = DateTime.now();
     final id = _generateUuid();
 
@@ -50,45 +57,85 @@ class ConversationsNotifier extends Notifier<List<Conversation>> {
       systemPrompt: systemPrompt,
     );
 
-    await box.put(id, conversation);
-    state = [conversation, ...state];
+    db.conversationBox.put(ConversationEntity.fromDomain(conversation));
+    state = AsyncData(await _loadAll());
     return conversation;
   }
 
   Future<void> renameConversation(String id, String newTitle) async {
-    final box = ref.read(conversationsBoxProvider);
-    final conversation = box.get(id);
-    if (conversation != null) {
-      final updated = conversation.copyWith(
-        title: newTitle,
-        updatedAt: DateTime.now(),
-      );
-      await box.put(id, updated);
-      state = [
-        for (final c in state)
-          if (c.id == id) updated else c,
-      ];
+    final db = ref.read(databaseProvider);
+    final conversations = state.value ?? [];
+    final existing = conversations.firstWhere(
+      (c) => c.id == id,
+      orElse: () => throw Exception('Conversation not found in state'),
+    );
+
+    final updated = existing.copyWith(
+      title: newTitle,
+      updatedAt: DateTime.now(),
+    );
+
+    final query = db.conversationBox
+        .query(ConversationEntity_.id.equals(id))
+        .build();
+    final existingEntity = query.findFirst();
+    query.close();
+
+    final entity = ConversationEntity.fromDomain(updated);
+    if (existingEntity != null) {
+      entity.internalId = existingEntity.internalId;
     }
+    db.conversationBox.put(entity);
+
+    state = AsyncData(await _loadAll());
   }
 
   Future<void> deleteConversation(String id) async {
-    final box = ref.read(conversationsBoxProvider);
-    await box.delete(id);
-    state = state.where((c) => c.id != id).toList();
+    final db = ref.read(databaseProvider);
+
+    // Delete messages first
+    final msgQuery = db.messageBox
+        .query(MessageEntity_.conversationUid.equals(id))
+        .build();
+    db.messageBox.removeMany(msgQuery.findIds());
+    msgQuery.close();
+
+    // Delete conversation
+    final convQuery = db.conversationBox
+        .query(ConversationEntity_.id.equals(id))
+        .build();
+    db.conversationBox.removeMany(convQuery.findIds());
+    convQuery.close();
+
+    state = AsyncData(await _loadAll());
   }
 
   Future<void> togglePin(String id) async {
-    final box = ref.read(conversationsBoxProvider);
-    final conversation = box.get(id);
-    if (conversation != null) {
-      final updated = conversation.copyWith(
-        isPinned: !conversation.isPinned,
-        updatedAt: DateTime.now(),
-      );
-      await box.put(id, updated);
-      _sortConversations(state);
-      state = [for (final c in state) c.id == id ? updated : c];
+    final db = ref.read(databaseProvider);
+    final conversations = state.value ?? [];
+    final existing = conversations.firstWhere(
+      (c) => c.id == id,
+      orElse: () => throw Exception('Conversation not found in state'),
+    );
+
+    final updated = existing.copyWith(
+      isPinned: !existing.isPinned,
+      updatedAt: DateTime.now(),
+    );
+
+    final query = db.conversationBox
+        .query(ConversationEntity_.id.equals(id))
+        .build();
+    final existingEntity = query.findFirst();
+    query.close();
+
+    final entity = ConversationEntity.fromDomain(updated);
+    if (existingEntity != null) {
+      entity.internalId = existingEntity.internalId;
     }
+    db.conversationBox.put(entity);
+
+    state = AsyncData(await _loadAll());
   }
 
   Future<void> updatePreview(
@@ -97,21 +144,30 @@ class ConversationsNotifier extends Notifier<List<Conversation>> {
     DateTime updatedAt, {
     int? messageCount,
   }) async {
-    final box = ref.read(conversationsBoxProvider);
-    final conversation = box.get(id);
-    if (conversation != null) {
-      final updated = conversation.copyWith(
+    final db = ref.read(databaseProvider);
+    final conversations = state.value ?? [];
+    final existingIndex = conversations.indexWhere((c) => c.id == id);
+    if (existingIndex != -1) {
+      final existing = conversations[existingIndex];
+      final updated = existing.copyWith(
         lastMessagePreview: preview,
         updatedAt: updatedAt,
-        messageCount: messageCount ?? conversation.messageCount + 1,
+        messageCount: messageCount ?? existing.messageCount + 1,
       );
-      await box.put(id, updated);
-      state = [
-        for (final c in state)
-          if (c.id == id) updated else c,
-      ];
-      _sortConversations(state);
-      state = List.from(state);
+
+      final query = db.conversationBox
+          .query(ConversationEntity_.id.equals(id))
+          .build();
+      final existingEntity = query.findFirst();
+      query.close();
+
+      final entity = ConversationEntity.fromDomain(updated);
+      if (existingEntity != null) {
+        entity.internalId = existingEntity.internalId;
+      }
+      db.conversationBox.put(entity);
+
+      state = AsyncData(await _loadAll());
     }
   }
 
@@ -120,28 +176,40 @@ class ConversationsNotifier extends Notifier<List<Conversation>> {
     String? personaId,
     String? systemPrompt,
   ) async {
-    final box = ref.read(conversationsBoxProvider);
-    final conversation = box.get(id);
-    if (conversation != null) {
-      final updated = conversation.copyWith(
+    final db = ref.read(databaseProvider);
+    final conversations = state.value ?? [];
+    final existingIndex = conversations.indexWhere((c) => c.id == id);
+    if (existingIndex != -1) {
+      final existing = conversations[existingIndex];
+      final updated = existing.copyWith(
         personaId: personaId,
         clearPersona: personaId == null,
         systemPrompt: systemPrompt,
         clearSystemPrompt: systemPrompt == null,
         updatedAt: DateTime.now(),
       );
-      await box.put(id, updated);
-      state = [
-        for (final c in state)
-          if (c.id == id) updated else c,
-      ];
+
+      final query = db.conversationBox
+          .query(ConversationEntity_.id.equals(id))
+          .build();
+      final existingEntity = query.findFirst();
+      query.close();
+
+      final entity = ConversationEntity.fromDomain(updated);
+      if (existingEntity != null) {
+        entity.internalId = existingEntity.internalId;
+      }
+      db.conversationBox.put(entity);
+
+      state = AsyncData(await _loadAll());
     }
   }
 
   Future<void> deleteAll() async {
-    final box = ref.read(conversationsBoxProvider);
-    await box.clear();
-    state = [];
+    final db = ref.read(databaseProvider);
+    db.messageBox.removeAll();
+    db.conversationBox.removeAll();
+    state = AsyncData(await _loadAll());
   }
 
   String _generateUuid() {
@@ -160,43 +228,19 @@ class ActiveConversationNotifier extends Notifier<Conversation?> {
 
   @override
   Conversation? build() {
-    final conversations = ref.watch(conversationsProvider);
-    if (conversations.isEmpty) {
-      _activeConversationId = null;
-      return null;
-    }
+    final conversationsAsync = ref.watch(conversationsProvider);
+    final conversations = conversationsAsync.value ?? [];
 
-    // Attempt to maintain the currently active conversation
     if (_activeConversationId != null) {
-      final conversation = conversations
+      return conversations
           .where((c) => c.id == _activeConversationId)
           .firstOrNull;
-      if (conversation != null) {
-        return conversation;
-      }
     }
-
-    // Default to the first available conversation if none active or active one was deleted
-    final first = conversations.first;
-    _activeConversationId = first.id;
-    return first;
+    return null;
   }
 
   void setActiveConversation(Conversation? conversation) {
     _activeConversationId = conversation?.id;
-    if (conversation != null) {
-      final conversations = ref.read(conversationsProvider);
-      final index = conversations.indexWhere((c) => c.id == conversation.id);
-      if (index > 0) {
-        ref
-            .read(conversationsProvider.notifier)
-            .updatePreview(
-              conversation.id,
-              conversation.lastMessagePreview ?? '',
-              DateTime.now(),
-            );
-      }
-    }
     state = conversation;
   }
 }
@@ -219,57 +263,65 @@ class ConversationSearchNotifier extends Notifier<String> {
   }
 }
 
-final filteredConversationsProvider = Provider<List<Conversation>>((ref) {
-  final conversations = ref.watch(conversationsProvider);
+final filteredConversationsProvider = Provider<AsyncValue<List<Conversation>>>((
+  ref,
+) {
+  final conversationsAsync = ref.watch(conversationsProvider);
   final query = ref.watch(conversationSearchProvider).toLowerCase();
-  if (query.isEmpty) return conversations;
-  return conversations.where((c) {
-    return c.title.toLowerCase().contains(query) ||
-        (c.lastMessagePreview?.toLowerCase().contains(query) ?? false);
-  }).toList();
+
+  return conversationsAsync.whenData((conversations) {
+    if (query.isEmpty) return conversations;
+    return conversations.where((c) {
+      return c.title.toLowerCase().contains(query) ||
+          (c.lastMessagePreview?.toLowerCase().contains(query) ?? false);
+    }).toList();
+  });
 });
 
 final recentConversationsProvider = Provider<List<Conversation>>((ref) {
-  final all = ref.watch(conversationsProvider);
+  final allAsync = ref.watch(conversationsProvider);
+  final all = allAsync.value ?? [];
   return all.take(3).toList();
 });
 
-final groupedConversationsProvider = Provider<Map<String, List<Conversation>>>((
-  ref,
-) {
-  final conversations = ref.watch(filteredConversationsProvider);
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final yesterday = today.subtract(const Duration(days: 1));
-  final sevenDaysAgo = today.subtract(const Duration(days: 7));
-  final thirtyDaysAgo = today.subtract(const Duration(days: 30));
+final groupedConversationsProvider =
+    Provider<AsyncValue<Map<String, List<Conversation>>>>((ref) {
+      final filteredAsync = ref.watch(filteredConversationsProvider);
 
-  final grouped = <String, List<Conversation>>{};
+      return filteredAsync.whenData((conversations) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final yesterday = today.subtract(const Duration(days: 1));
+        final sevenDaysAgo = today.subtract(const Duration(days: 7));
+        final thirtyDaysAgo = today.subtract(const Duration(days: 30));
 
-  for (final conversation in conversations) {
-    final convDate = DateTime(
-      conversation.updatedAt.year,
-      conversation.updatedAt.month,
-      conversation.updatedAt.day,
-    );
+        final grouped = <String, List<Conversation>>{};
 
-    String section;
-    if (conversation.isPinned) {
-      section = 'PINNED';
-    } else if (convDate.isAtSameMomentAs(today)) {
-      section = 'TODAY';
-    } else if (convDate.isAtSameMomentAs(yesterday)) {
-      section = 'YESTERDAY';
-    } else if (convDate.isAfter(sevenDaysAgo)) {
-      section = 'PREVIOUS 7 DAYS';
-    } else if (convDate.isAfter(thirtyDaysAgo)) {
-      section = 'PREVIOUS 30 DAYS';
-    } else {
-      section = 'OLDER';
-    }
+        for (final conversation in conversations) {
+          final convDate = DateTime(
+            conversation.updatedAt.year,
+            conversation.updatedAt.month,
+            conversation.updatedAt.day,
+          );
 
-    grouped.putIfAbsent(section, () => []).add(conversation);
-  }
+          String section;
+          if (conversation.isPinned) {
+            section = 'PINNED';
+          } else if (convDate.isAtSameMomentAs(today)) {
+            section = 'TODAY';
+          } else if (convDate.isAtSameMomentAs(yesterday)) {
+            section = 'YESTERDAY';
+          } else if (convDate.isAfter(sevenDaysAgo)) {
+            section = 'PREVIOUS 7 DAYS';
+          } else if (convDate.isAfter(thirtyDaysAgo)) {
+            section = 'PREVIOUS 30 DAYS';
+          } else {
+            section = 'OLDER';
+          }
 
-  return grouped;
-});
+          grouped.putIfAbsent(section, () => []).add(conversation);
+        }
+
+        return grouped;
+      });
+    });

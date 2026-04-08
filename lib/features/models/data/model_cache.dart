@@ -1,4 +1,4 @@
-import 'package:localmind/features/models/data/models/model_info.dart';
+import 'models/model_info.dart';
 
 class ModelCache {
   final _cache = <String, _CacheEntry>{};
