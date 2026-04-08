@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import '../../../core/logger/app_logger.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/app_providers.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
@@ -304,8 +306,15 @@ final chatProvider = NotifierProvider<ChatNotifier, ChatState>(() {
 });
 
 class ChatNotifier extends Notifier<ChatState> {
+  static const _checkpointChunkThreshold = 20;
+  static const _checkpointTimeThreshold = Duration(seconds: 2);
+
   StreamSubscription<ChatResponse>? _streamSubscription;
   String? _currentConversationId;
+  int _chunkCount = 0;
+  DateTime? _lastCheckpointTime;
+  int _lastSavedContentLength = 0;
+  int _lastSavedReasoningLength = 0;
 
   @override
   ChatState build() {
@@ -326,20 +335,58 @@ class ChatNotifier extends Notifier<ChatState> {
 
     try {
       final db = ref.read(databaseProvider);
-      final query = db.messageBox
-          .query(MessageEntity_.conversationUid.equals(conversation.id))
-          .build();
-      final entities = query.find();
-      query.close();
 
-      final messages = entities.map((e) => e.toDomain()).toList();
+      // Attempt to find the conversation entity to use its native relation
+      final convQuery = db.conversationBox
+          .query(ConversationEntity_.id.equals(conversation.id))
+          .build();
+      final convEntity = convQuery.findFirst();
+      convQuery.close();
+
+      List<Message> messages = [];
+
+      if (convEntity != null) {
+        // 1. Try native ToMany relation first (managed by ObjectBox internal IDs)
+        final relatedEntities = convEntity.messages;
+        if (relatedEntities.isNotEmpty) {
+          messages = relatedEntities.map((e) => e.toDomain()).toList();
+        } else {
+          // 2. Fallback/Repair: Search by the indexed conversationUid string
+          final query = db.messageBox
+              .query(MessageEntity_.conversationUid.equals(conversation.id))
+              .build();
+          final manualEntities = query.find();
+          query.close();
+
+          if (manualEntities.isNotEmpty) {
+            // Automatic Repair: Link orphaned messages to the native relation
+            // for future consistency and performance.
+            for (final e in manualEntities) {
+              e.conversation.target = convEntity;
+              db.messageBox.put(e);
+            }
+            messages = manualEntities.map((e) => e.toDomain()).toList();
+          }
+        }
+      } else {
+        // Fallback for cases where the conversation entity itself might be hard to find by ID
+        // but messages exist tied to that UID string.
+        final query = db.messageBox
+            .query(MessageEntity_.conversationUid.equals(conversation.id))
+            .build();
+        final entities = query.find();
+        query.close();
+        messages = entities.map((e) => e.toDomain()).toList();
+      }
+
       messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
       state = ChatState(messages: messages, isLoading: false);
       ref
           .read(conv.activeConversationProvider.notifier)
           .setActiveConversation(conversation);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      Log.fatal(error: e, stackTrace: stackTrace);
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Failed to load conversation: $e',
@@ -349,7 +396,8 @@ class ChatNotifier extends Notifier<ChatState> {
 
   Future<void> startNewConversation() async {
     await cancelStream();
-    await clearConversation();
+    _currentConversationId = null;
+    state = const ChatState();
     ref
         .read(conv.activeConversationProvider.notifier)
         .setActiveConversation(null);
@@ -369,6 +417,36 @@ class ChatNotifier extends Notifier<ChatState> {
         ]
         .map((b) => b.map((e) => e.toRadixString(16).padLeft(2, '0')).join())
         .join('-');
+  }
+
+  bool _shouldCheckpointSave(Message message) {
+    final now = DateTime.now();
+    final contentLength = message.content.length;
+    final reasoningLength = message.reasoningContent?.length ?? 0;
+
+    final hasNewContent =
+        contentLength > _lastSavedContentLength ||
+        reasoningLength > _lastSavedReasoningLength;
+
+    if (!hasNewContent) return false;
+
+    final meetsChunkThreshold = _chunkCount >= _checkpointChunkThreshold;
+
+    final meetsTimeThreshold =
+        _lastCheckpointTime != null &&
+        now.difference(_lastCheckpointTime!) >= _checkpointTimeThreshold;
+
+    return meetsChunkThreshold || meetsTimeThreshold;
+  }
+
+  void _resetCheckpointMetrics() {
+    _chunkCount = 0;
+    _lastCheckpointTime = DateTime.now();
+  }
+
+  void _updateSavedMetrics(Message message) {
+    _lastSavedContentLength = message.content.length;
+    _lastSavedReasoningLength = message.reasoningContent?.length ?? 0;
   }
 
   Future<void> sendMessage(String content, {List<File>? attachments}) async {
@@ -456,6 +534,9 @@ class ChatNotifier extends Notifier<ChatState> {
     await _saveMessage(userMessage);
     await _saveMessage(assistantMessage);
 
+    _resetCheckpointMetrics();
+    _updateSavedMetrics(assistantMessage);
+
     final messagesForApi = _buildMessagesForApi(selectedModel);
 
     try {
@@ -487,6 +568,14 @@ class ChatNotifier extends Notifier<ChatState> {
                           isProcessing: false,
                         );
 
+                    _chunkCount++;
+
+                    if (_shouldCheckpointSave(streamingAssistantMessage)) {
+                      await _saveMessage(streamingAssistantMessage);
+                      _updateSavedMetrics(streamingAssistantMessage);
+                      _resetCheckpointMetrics();
+                    }
+
                     if (isCurrentContext) {
                       final messageIndex = state.messages.indexWhere(
                         (m) => m.id == assistantMessageId,
@@ -515,6 +604,14 @@ class ChatNotifier extends Notifier<ChatState> {
                           reasoningContent: reasoningContent,
                           isProcessing: false,
                         );
+
+                    _chunkCount++;
+
+                    if (_shouldCheckpointSave(streamingAssistantMessage)) {
+                      await _saveMessage(streamingAssistantMessage);
+                      _updateSavedMetrics(streamingAssistantMessage);
+                      _resetCheckpointMetrics();
+                    }
 
                     if (isCurrentContext) {
                       state = state.copyWith(
@@ -678,10 +775,19 @@ class ChatNotifier extends Notifier<ChatState> {
                         );
                       }
                     }
+
+                    _chunkCount = 0;
+                    _lastCheckpointTime = null;
+                    _lastSavedContentLength = 0;
+                    _lastSavedReasoningLength = 0;
                   }
                 }
               },
               onError: (error) async {
+                _chunkCount = 0;
+                _lastCheckpointTime = null;
+                _lastSavedContentLength = 0;
+                _lastSavedReasoningLength = 0;
                 final errorMessage = state.streamingMessage?.copyWith(
                   status: MessageStatus.error,
                   errorMessage: error.toString(),
@@ -838,6 +944,11 @@ class ChatNotifier extends Notifier<ChatState> {
     _streamSubscription = null;
     ref.read(chatServiceProvider)?.cancelStream();
 
+    _chunkCount = 0;
+    _lastCheckpointTime = null;
+    _lastSavedContentLength = 0;
+    _lastSavedReasoningLength = 0;
+
     final streamingMessage = state.streamingMessage;
     if (streamingMessage != null) {
       final finalMessage = streamingMessage.copyWith(
@@ -948,7 +1059,7 @@ class ChatNotifier extends Notifier<ChatState> {
       entity.internalId = existing.internalId;
     }
 
-    // Set relation
+    // Set native ObjectBox relation
     final convQuery = db.conversationBox
         .query(ConversationEntity_.id.equals(message.conversationId))
         .build();
@@ -957,10 +1068,10 @@ class ChatNotifier extends Notifier<ChatState> {
 
     if (convEntity != null) {
       entity.conversation.target = convEntity;
-      // Also ensure the string UID is set correctly
+      // Also ensure the string UID fallback is set correctly
       entity.conversationUid = convEntity.id;
     } else {
-      // Fallback: search by UID if the entity was just created but not found by ID (unlikely but safe)
+      // Fallback: search by UID if the entity was just created in this frame (unlikely but safe)
       entity.conversationUid = message.conversationId;
     }
 
