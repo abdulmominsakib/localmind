@@ -20,24 +20,21 @@ final conversationsBoxProvider = Provider<Box<Conversation>>((ref) {
   return boxes.conversations;
 });
 
-final conversationsProvider = Provider<List<Conversation>>((ref) {
+final directBoxConversationsProvider = Provider<List<Conversation>>((ref) {
   final box = ref.watch(conversationsBoxProvider);
   final conversations = box.values.toList();
   conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   return conversations;
 });
 
-final recentConversationsProvider = Provider<List<Conversation>>((ref) {
-  final all = ref.watch(conversationsProvider);
-  return all.take(3).toList();
-});
+
 
 final personasBoxProvider = Provider<Box<Persona>>((ref) {
   final boxes = ref.watch(hiveBoxesProvider);
   return boxes.personas;
 });
 
-final personasProvider = Provider<List<Persona>>((ref) {
+final directBoxPersonasProvider = Provider<List<Persona>>((ref) {
   final box = ref.watch(personasBoxProvider);
   return box.values.toList();
 });

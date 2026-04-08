@@ -7,6 +7,7 @@ import 'package:localmind/core/theme/app_theme.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/settings/data/models/app_settings.dart';
+import 'package:localmind/features/personas/providers/personas_providers.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -161,7 +162,7 @@ class SettingsScreen extends ConsumerWidget {
             label: 'Default Persona',
             currentValue: settings.defaultPersonaId,
             items: ref
-                .watch(storage.personasProvider)
+                .watch(personasNotifierProvider)
                 .map((p) => (p.id, '${p.emoji} ${p.name}'))
                 .toList(),
             onChanged: (v) =>

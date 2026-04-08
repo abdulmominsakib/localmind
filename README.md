@@ -5,6 +5,7 @@
 LocalMind is a premium Flutter mobile application designed to provide a beautiful, fast, and privacy-respecting interface for local LLM servers and cloud providers.
 
 ![LocalMind Header Image](docs/cover.webp)
+![LocalMind Screenshot](docs/app_screenshots.webp)
 
 ## 🚀 Vision
 

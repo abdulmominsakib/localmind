@@ -16,7 +16,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+5
+version: 1.0.0+6
 
 environment:
   sdk: ^3.11.0
@@ -40,6 +40,7 @@ dependencies:
   hive_ce_flutter: ^2.3.4
   shadcn_ui: ^0.53.3
   dio: ^5.9.2
+  flutter_secure_storage: ^9.2.3
   flutter_markdown_plus: ^1.0.7
   flutter_tts: ^4.2.5
   file_picker: ^10.3.10
@@ -50,6 +51,9 @@ dependencies:
   flutter_syntax_view: 4.1.7
   animations: 2.1.2
   logger: ^2.7.0
+  drift: ^2.32.1
+  drift_flutter: ^0.3.0
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +68,7 @@ dev_dependencies:
   build_runner: ^2.13.1
   hive_ce_generator: ^1.11.1
   change_app_package_name: ^1.4.0
+  drift_dev: ^2.32.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

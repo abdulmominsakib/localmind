@@ -727,10 +727,21 @@ class ChatNotifier extends Notifier<ChatState> {
         .renameConversation(_currentConversationId!, title);
   }
 
-  void cancelStream() {
+  Future<void> cancelStream() async {
     _streamSubscription?.cancel();
     _streamSubscription = null;
     ref.read(chatServiceProvider).cancelStream();
+
+    final streamingMessage = state.streamingMessage;
+    if (streamingMessage != null) {
+      final boxes = ref.read(hiveBoxesProvider);
+      final finalMessage = streamingMessage.copyWith(
+        status: MessageStatus.complete,
+        isProcessing: false,
+      );
+      await boxes.messages.put(finalMessage.id, finalMessage);
+    }
+
     state = state.copyWith(isStreaming: false, clearStreaming: true);
   }
 

@@ -218,7 +218,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           ref.read(chatProvider.notifier).sendMessage(prompt),
                       quickPrompts: _quickPrompts,
                       recentConversations: ref.watch(
-                        recentConversationsProvider,
+                        conv.recentConversationsProvider,
                       ),
                       onSeeAll: () {
                         if (Scaffold.maybeOf(context)?.hasDrawer ?? false) {

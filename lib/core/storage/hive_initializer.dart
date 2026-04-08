@@ -7,6 +7,7 @@ import 'package:localmind/features/personas/data/models/persona.dart';
 import 'package:localmind/features/settings/data/models/app_settings.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'hive_keys.dart';
+import 'secure_storage_service.dart';
 
 class HiveBoxes {
   final Box<Server> servers;
@@ -41,13 +42,17 @@ class HiveInitializer {
     Hive.registerAdapter(ThemeModeAdapter());
     Hive.registerAdapter(SyntaxThemeNameAdapter());
 
-    final servers = await Hive.openBox<Server>(HiveKeys.servers);
-    final messages = await Hive.openBox<Message>(HiveKeys.messages);
-    final conversations = await Hive.openBox<Conversation>(
+    final encryptionKey = await SecureStorageService.getOrGenerateKey();
+    final cipher = HiveAesCipher(encryptionKey);
+
+    final servers = await _openEncryptedBox<Server>(HiveKeys.servers, cipher);
+    final messages = await _openEncryptedBox<Message>(HiveKeys.messages, cipher);
+    final conversations = await _openEncryptedBox<Conversation>(
       HiveKeys.conversations,
+      cipher,
     );
-    final personas = await Hive.openBox<Persona>(HiveKeys.personas);
-    final settings = await Hive.openBox<dynamic>(HiveKeys.settings);
+    final personas = await _openEncryptedBox<Persona>(HiveKeys.personas, cipher);
+    final settings = await _openEncryptedBox<dynamic>(HiveKeys.settings, cipher);
 
     return HiveBoxes(
       servers: servers,
@@ -56,5 +61,19 @@ class HiveInitializer {
       personas: personas,
       settings: settings,
     );
+  }
+
+  static Future<Box<T>> _openEncryptedBox<T>(
+    String name,
+    HiveAesCipher cipher,
+  ) async {
+    try {
+      return await Hive.openBox<T>(name, encryptionCipher: cipher);
+    } catch (e) {
+      // If opening fails (likely due to encryption mismatch), 
+      // delete the box and start fresh.
+      await Hive.deleteBoxFromDisk(name);
+      return await Hive.openBox<T>(name, encryptionCipher: cipher);
+    }
   }
 }

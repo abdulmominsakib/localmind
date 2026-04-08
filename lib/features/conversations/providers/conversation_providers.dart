@@ -229,6 +229,11 @@ final filteredConversationsProvider = Provider<List<Conversation>>((ref) {
   }).toList();
 });
 
+final recentConversationsProvider = Provider<List<Conversation>>((ref) {
+  final all = ref.watch(conversationsProvider);
+  return all.take(3).toList();
+});
+
 final groupedConversationsProvider = Provider<Map<String, List<Conversation>>>((
   ref,
 ) {
