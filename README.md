@@ -7,6 +7,16 @@ LocalMind is a premium Flutter mobile application designed to provide a beautifu
 ![LocalMind Header Image](docs/cover.webp)
 ![LocalMind Screenshot](docs/app_screenshots.webp)
 
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=pro.momin.localmind">
+    <img src="docs/playstore_download_button.webp" width="200" />
+  </a>
+  <a href="https://github.com/abdulmominsakib/localmind/releases">
+    <img src="docs/github_download_button.webp" width="200" />
+  </a>
+</p>
+
+
 ## 🚀 Vision
 
 Built for those who value privacy and performance, LocalMind connects directly to your local inference servers like **LM Studio** or **Ollama**, as well as cloud providers like **OpenRouter**. No middleware, no tracking, and no hidden subscriptions. Just you and your models.
