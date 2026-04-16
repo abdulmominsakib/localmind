@@ -21,31 +21,43 @@ class DrawerNavItem extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: ListTile(
-        leading: HugeIcon(
-          icon: iconData,
-          size: 22,
-          color: isSelected
-              ? (isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB))
-              : (isDark ? const Color(0xFF888888) : const Color(0xFF666666)),
-        ),
-        title: Text(
-          label,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
             color: isSelected
-                ? (isDark ? Colors.white : Colors.black)
-                : (isDark ? const Color(0xFFA0A0A0) : const Color(0xFF666666)),
+                ? (isDark 
+                    ? theme.colorScheme.primary.withAlpha(30) 
+                    : theme.colorScheme.primary.withAlpha(20))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              HugeIcon(
+                icon: iconData,
+                size: 20,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : (isDark ? Colors.white70 : Colors.black54),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected
+                      ? (isDark ? Colors.white : theme.colorScheme.primary)
+                      : (isDark ? Colors.white70 : Colors.black87),
+                ),
+              ),
+            ],
           ),
         ),
-        selected: isSelected,
-        selectedTileColor: isDark
-            ? const Color(0xFF3B82F6).withAlpha(25)
-            : const Color(0xFF2563EB).withAlpha(25),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        onTap: onTap,
       ),
     );
   }

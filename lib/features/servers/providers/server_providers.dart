@@ -8,6 +8,9 @@ import '../../../core/storage/entities.dart';
 import '../../models/data/model_cache.dart';
 
 import '../../../objectbox.g.dart';
+import '../../models/data/models/model_info.dart';
+import '../../on_device/providers/on_device_providers.dart';
+import '../../on_device/data/models/on_device_model.dart';
 
 final _modelCache = ModelCache();
 
@@ -79,6 +82,14 @@ final loadedModelsProvider = FutureProvider.family<Set<String>, Server>((
   server,
 ) async {
   ref.watch(loadedModelsRefreshProvider);
+
+  if (server.type == ServerType.onDevice) {
+    final engineState = ref.watch(onDeviceEngineProvider);
+    return engineState.loadedModelId != null
+        ? {engineState.loadedModelId!}
+        : {};
+  }
+
   final apiService = ref.watch(serverApiServiceProvider);
   try {
     return await apiService.fetchRunningModels(server);
@@ -101,6 +112,26 @@ final availableModelsProvider = FutureProvider.family<List<dynamic>, String>((
     orElse: () => throw Exception('Server not found'),
   );
   final apiService = ref.watch(serverApiServiceProvider);
+
+  if (server.type == ServerType.onDevice) {
+    final models = OnDeviceModel.curatedModels
+        .map(
+          (m) => ModelInfo(
+            id: m.id,
+            name: m.name,
+            description: m.description,
+            parameterCount: int.tryParse(
+              m.parameterLabel.replaceAll(RegExp(r'[^0-9]'), ''),
+            ),
+            serverType: ServerType.onDevice,
+            serverId: server.id,
+          ),
+        )
+        .toList();
+    _modelCache.put(serverId, models);
+    return models;
+  }
+
   final models = await apiService.fetchModels(server);
   _modelCache.put(serverId, models);
   return models;

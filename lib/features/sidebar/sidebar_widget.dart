@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../core/routes/app_routes.dart';
-import '../conversations/providers/conversation_providers.dart';
-import '../conversations/views/components/conversation_empty_state.dart';
-import '../conversations/views/components/conversation_list.dart';
-import '../conversations/views/components/conversation_search_bar.dart';
+import '../../core/providers/app_providers.dart';
+import '../../core/theme/app_theme.dart';
+import '../chat/providers/chat_providers.dart';
 import 'components/active_server_indicator.dart';
 import 'components/conversation_drawer_header.dart';
 import 'components/drawer_nav_item.dart';
 import 'components/github_repo_card.dart';
+import 'components/sidebar_search_button.dart';
 
 class SidebarWidget extends ConsumerWidget {
   const SidebarWidget({super.key});
@@ -19,14 +20,12 @@ class SidebarWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final groupedConversations = ref.watch(groupedConversationsProvider);
-    final activeConversation = ref.watch(activeConversationProvider);
-    final searchQuery = ref.watch(conversationSearchProvider);
-
     final location = GoRouterState.of(context).uri.toString();
+    
     final isServers = location.startsWith(AppRoutes.servers);
     final isPersonas = location.startsWith(AppRoutes.personas);
-    final isHistory = location.startsWith(AppRoutes.chatHistory);
+    final themeMode = ref.watch(themeModeProvider);
+    final isLocalModels = location.startsWith(AppRoutes.onDeviceModels);
 
     return Container(
       width: 300,
@@ -38,81 +37,119 @@ class SidebarWidget extends ConsumerWidget {
         child: Column(
           children: [
             const ConversationDrawerHeader(),
-            const ConversationSearchBar(),
-            const Divider(height: 1),
+            
+            // New Chat Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ShadButton(
+                width: double.infinity,
+                leading: const Icon(LucideIcons.plus, size: 20),
+                onPressed: () {
+                  ref.read(chatProvider.notifier).startNewConversation();
+                  context.go(AppRoutes.home);
+                  if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text('New Chat'),
+              ),
+            ),
+            
+            const SidebarSearchButton(),
+            const SizedBox(height: 8),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            const SizedBox(height: 12),
+            
+            // Primary Navigation
             Expanded(
-              child: groupedConversations.when(
-                data: (grouped) => grouped.isEmpty
-                    ? ConversationEmptyState(
-                        isSearching: searchQuery.isNotEmpty,
-                      )
-                    : ConversationList(
-                        groupedConversations: grouped,
-                        activeConversation: activeConversation,
-                      ),
-                loading: () => const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                error: (err, stack) => Center(
-                  child: Text(
-                    'Error: $err',
-                    style: TextStyle(color: theme.colorScheme.error),
-                  ),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    DrawerNavItem(
+                      iconData: HugeIcons.strokeRoundedServerStack01,
+                      label: 'Servers',
+                      isSelected: isServers,
+                      onTap: () {
+                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                          Navigator.pop(context);
+                        }
+                        context.go(AppRoutes.servers);
+                      },
+                    ),
+                    DrawerNavItem(
+                      iconData: HugeIcons.strokeRoundedSmartPhone01,
+                      label: 'Local Models',
+                      isSelected: isLocalModels,
+                      onTap: () {
+                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                          Navigator.pop(context);
+                        }
+                        context.go(AppRoutes.onDeviceModels);
+                      },
+                    ),
+                    DrawerNavItem(
+                      iconData: HugeIcons.strokeRoundedCompass01,
+                      label: 'Personas',
+                      isSelected: isPersonas,
+                      onTap: () {
+                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                          Navigator.pop(context);
+                        }
+                        context.go(AppRoutes.personas);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+                    const SizedBox(height: 8),
+                    DrawerNavItem(
+                      iconData: _getThemeIcon(themeMode),
+                      label: 'Appearance: ${_getThemeLabel(themeMode)}',
+                      isSelected: false,
+                      onTap: () {
+                        final nextMode = AppThemeType.values[
+                            (themeMode.index + 1) % AppThemeType.values.length];
+                        ref.read(themeModeProvider.notifier).setThemeMode(nextMode);
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
+            
+            // Bottom Section
             const GitHubRepoCard(),
             const Divider(height: 1),
             const ActiveServerIndicator(),
-            const SizedBox(height: 8),
-            DrawerNavItem(
-              iconData: HugeIcons.strokeRoundedClock01,
-              label: 'History',
-              isSelected: isHistory,
-              onTap: () {
-                if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                  Navigator.pop(context);
-                }
-                context.go(AppRoutes.chatHistory);
-              },
-            ),
-            DrawerNavItem(
-              iconData: HugeIcons.strokeRoundedServerStack01,
-              label: 'Servers',
-              isSelected: isServers,
-              onTap: () {
-                if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                  Navigator.pop(context);
-                }
-                context.go(AppRoutes.servers);
-              },
-            ),
-            DrawerNavItem(
-              iconData: HugeIcons.strokeRoundedSmartPhone01,
-              label: 'Local Models',
-              isSelected: location.startsWith(AppRoutes.onDeviceModels),
-              onTap: () {
-                if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                  Navigator.pop(context);
-                }
-                context.go(AppRoutes.onDeviceModels);
-              },
-            ),
-            DrawerNavItem(
-              iconData: HugeIcons.strokeRoundedCompass01,
-              label: 'Personas',
-              isSelected: isPersonas,
-              onTap: () {
-                if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                  Navigator.pop(context);
-                }
-                context.go(AppRoutes.personas);
-              },
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
           ],
         ),
       ),
     );
+  }
+
+  List<List<dynamic>> _getThemeIcon(AppThemeType mode) {
+    switch (mode) {
+      case AppThemeType.system:
+        return HugeIcons.strokeRoundedSettings01;
+      case AppThemeType.light:
+        return HugeIcons.strokeRoundedSun01;
+      case AppThemeType.dark:
+        return HugeIcons.strokeRoundedMoon02;
+      case AppThemeType.claude:
+        return HugeIcons.strokeRoundedPaintBrush02;
+    }
+  }
+
+  String _getThemeLabel(AppThemeType mode) {
+    switch (mode) {
+      case AppThemeType.system:
+        return 'System';
+      case AppThemeType.light:
+        return 'Light';
+      case AppThemeType.dark:
+        return 'Dark';
+      case AppThemeType.claude:
+        return 'Claude';
+    }
   }
 }

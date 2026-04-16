@@ -68,8 +68,15 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
   if (activeServer.type == ServerType.openRouter) return;
 
   try {
-    final apiService = ref.read(serverApiServiceProvider);
-    final loadedModels = await apiService.fetchRunningModels(activeServer);
+    final Set<String> loadedModels;
+    if (activeServer.type == ServerType.onDevice) {
+      final engine = ref.watch(onDeviceEngineProvider);
+      loadedModels = engine.loadedModelId != null ? {engine.loadedModelId!} : {};
+    } else {
+      final apiService = ref.read(serverApiServiceProvider);
+      loadedModels = await apiService.fetchRunningModels(activeServer);
+    }
+
     if (loadedModels.isEmpty) return;
 
     final availableModels = await ref.read(

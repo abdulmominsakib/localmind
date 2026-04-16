@@ -757,18 +757,29 @@ class _OnDeviceModelTile extends ConsumerWidget {
             downloadProgress.status == DownloadStatus.pending);
     final isPaused = downloadProgress?.status == DownloadStatus.paused;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      margin: const EdgeInsets.only(bottom: 4),
-      decoration: BoxDecoration(
-        color: isSelected ? accent.withValues(alpha: 0.1) : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        border: isSelected
-            ? Border.all(color: accent.withValues(alpha: 0.3))
-            : null,
-      ),
-      child: Row(
-        children: [
+    return InkWell(
+      onTap: () {
+        if (isLoaded) {
+          _selectModel(context, ref);
+        } else if (isDownloaded && !isCurrentlyLoading && !isDownloading) {
+          _loadModel(context, ref);
+        }
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        margin: const EdgeInsets.only(bottom: 4),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? accent.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: isSelected
+              ? Border.all(color: accent.withValues(alpha: 0.3))
+              : null,
+        ),
+        child: Row(
+          children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -938,8 +949,9 @@ class _OnDeviceModelTile extends ConsumerWidget {
           ],
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _loadModel(BuildContext context, WidgetRef ref) async {
     final settings = ref.read(settingsProvider);
@@ -953,7 +965,7 @@ class _OnDeviceModelTile extends ConsumerWidget {
         model.parameterLabel.replaceAll(RegExp(r'[^0-9]'), ''),
       ),
       serverType: ServerType.onDevice,
-      serverId: '',
+      serverId: 'on-device',
     );
 
     await engineNotifier.loadModel(model.id, settings.preferredBackend);
@@ -961,7 +973,26 @@ class _OnDeviceModelTile extends ConsumerWidget {
     final engineState = ref.read(onDeviceEngineProvider);
     if (engineState.loadedModelId == model.id) {
       ref.read(selectedModelProvider.notifier).setModel(modelInfo);
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
     }
+  }
+
+  void _selectModel(BuildContext context, WidgetRef ref) {
+    final modelInfo = ModelInfo(
+      id: model.id,
+      name: model.name,
+      description: model.description,
+      parameterCount: int.tryParse(
+        model.parameterLabel.replaceAll(RegExp(r'[^0-9]'), ''),
+      ),
+      serverType: ServerType.onDevice,
+      serverId: 'on-device',
+    );
+
+    ref.read(selectedModelProvider.notifier).setModel(modelInfo);
+    Navigator.pop(context);
   }
 
   void _unloadModel(BuildContext context, WidgetRef ref) async {
