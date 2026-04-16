@@ -7,10 +7,10 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/enums.dart';
-import '../../servers/data/models/server.dart';
 import '../../../core/providers/service_providers.dart';
-import '../../servers/providers/server_providers.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../servers/data/models/server.dart';
+import '../../servers/providers/server_providers.dart';
 
 class OnboardingServerSetupScreen extends ConsumerStatefulWidget {
   final ServerType selectedType;

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:localmind/features/sidebar/sidebar_widget.dart';
+import '../../sidebar/sidebar_widget.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../core/models/enums.dart';
@@ -137,7 +137,7 @@ class _ModelCard extends ConsumerWidget {
     final isDownloaded = downloadedAsync.when(
       data: (set) => set.contains(model.id),
       loading: () => false,
-      error: (_, __) => false,
+      error: (_, _) => false,
     );
 
     final isLoading =

@@ -6,8 +6,8 @@ import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
 import '../../chat/data/chat_service.dart';
 import '../../chat/data/models/chat_parameters.dart';
-import '../../chat/data/models/message.dart' hide ToolCallData;
 import '../../chat/data/models/mcp_integration.dart';
+import '../../chat/data/models/message.dart' hide ToolCallData;
 import '../../servers/data/models/server.dart';
 import 'on_device_engine_service.dart';
 

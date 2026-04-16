@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/providers/storage_providers.dart';
 import '../../../core/storage/entities.dart';
-import '../data/models/conversation.dart';
 import '../../../objectbox.g.dart';
+import '../data/models/conversation.dart';
 
 final conversationsProvider =
     AsyncNotifierProvider<ConversationsNotifier, List<Conversation>>(() {

@@ -90,8 +90,9 @@ class ServerApiService {
 
   Future<void> loadModel(Server server, String modelId) async {
     if (server.type == ServerType.openRouter ||
-        server.type == ServerType.onDevice)
+        server.type == ServerType.onDevice) {
       return;
+    }
 
     switch (server.type) {
       case ServerType.lmStudio:
@@ -110,8 +111,9 @@ class ServerApiService {
 
   Future<String?> loadModelWithInstanceId(Server server, String modelId) async {
     if (server.type == ServerType.openRouter ||
-        server.type == ServerType.onDevice)
+        server.type == ServerType.onDevice) {
       return null;
+    }
 
     switch (server.type) {
       case ServerType.lmStudio:
@@ -141,8 +143,9 @@ class ServerApiService {
     String? instanceId,
   }) async {
     if (server.type == ServerType.openRouter ||
-        server.type == ServerType.onDevice)
+        server.type == ServerType.onDevice) {
       return;
+    }
 
     switch (server.type) {
       case ServerType.lmStudio:

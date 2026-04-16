@@ -151,9 +151,9 @@ class OnDeviceModelStateNotifier
     EngineStatus? engineStatus,
   }) {
     final current =
-        this.state[modelId] ?? OnDeviceModelStateInfo(modelId: modelId);
-    this.state = {
-      ...this.state,
+        state[modelId] ?? OnDeviceModelStateInfo(modelId: modelId);
+    state = {
+      ...state,
       modelId: current.copyWith(
         state: modelState ?? current.state,
         downloadProgress: downloadProgress ?? current.downloadProgress,

@@ -75,7 +75,7 @@ class _OnboardingModelDownloadScreenState
               final isDownloaded = downloadedModelsAsync.when(
                 data: (set) => set.contains(model.id),
                 loading: () => false,
-                error: (_, __) => false,
+                error: (_, _) => false,
               );
               final isDownloading = _downloadingModelId == model.id;
               return Padding(

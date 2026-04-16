@@ -5,13 +5,13 @@ import 'package:hugeicons/hugeicons.dart';
 
 import '../../core/routes/app_routes.dart';
 import '../conversations/providers/conversation_providers.dart';
-import 'components/active_server_indicator.dart';
-import 'components/conversation_drawer_header.dart';
 import '../conversations/views/components/conversation_empty_state.dart';
 import '../conversations/views/components/conversation_list.dart';
 import '../conversations/views/components/conversation_search_bar.dart';
+import 'components/active_server_indicator.dart';
+import 'components/conversation_drawer_header.dart';
 import 'components/drawer_nav_item.dart';
-import '../conversations/views/components/new_chat_button.dart';
+import 'components/github_repo_card.dart';
 
 class SidebarWidget extends ConsumerWidget {
   const SidebarWidget({super.key});
@@ -38,8 +38,6 @@ class SidebarWidget extends ConsumerWidget {
         child: Column(
           children: [
             const ConversationDrawerHeader(),
-            const NewChatButton(),
-            const SizedBox(height: 8),
             const ConversationSearchBar(),
             const Divider(height: 1),
             Expanded(
@@ -63,6 +61,7 @@ class SidebarWidget extends ConsumerWidget {
                 ),
               ),
             ),
+            const GitHubRepoCard(),
             const Divider(height: 1),
             const ActiveServerIndicator(),
             const SizedBox(height: 8),

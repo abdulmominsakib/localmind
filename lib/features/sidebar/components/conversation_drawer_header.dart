@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/routes/app_routes.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
-class ConversationDrawerHeader extends StatelessWidget {
+import '../../../core/routes/app_routes.dart';
+import '../../chat/providers/chat_providers.dart';
+
+class ConversationDrawerHeader extends ConsumerWidget {
   const ConversationDrawerHeader({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -39,14 +43,14 @@ class ConversationDrawerHeader extends StatelessWidget {
               ),
             ],
           ),
-          IconButton(
-            icon: Icon(
-              Icons.settings,
-              color: isDark ? const Color(0xFF888888) : const Color(0xFF666666),
-            ),
+          ShadIconButton.outline(
+            icon: const Icon(LucideIcons.plus, size: 20),
             onPressed: () {
-              Navigator.pop(context); // Close drawer
-              context.push(AppRoutes.settings);
+              ref.read(chatProvider.notifier).startNewConversation();
+              context.go(AppRoutes.home);
+              if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                Navigator.pop(context);
+              }
             },
           ),
         ],
