@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/app_providers.dart';
-
+import '../../../core/models/enums.dart';
+import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../conversations/providers/conversation_providers.dart';
+import '../../on_device/providers/on_device_providers.dart';
 import '../../servers/providers/server_providers.dart';
 import '../data/models/app_settings.dart';
 import '../../personas/providers/personas_providers.dart';
@@ -142,6 +144,23 @@ class SettingsScreen extends ConsumerWidget {
                 ref.read(settingsProvider.notifier).setMcpEnabled(v),
             isDark: isDark,
           ),
+          const Divider(height: 32),
+          _SectionHeader(title: 'On-Device Inference'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: OutlinedButton.icon(
+              onPressed: () => context.push(AppRoutes.onDeviceModels),
+              icon: const Icon(Icons.phone_android, size: 18),
+              label: const Text('Manage On-Device Models'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          const _OnDeviceEngineStatus(),
           const Divider(height: 32),
           _SectionHeader(title: 'Default Server'),
           _DropdownSetting(
@@ -885,6 +904,86 @@ class _DangerousAction extends StatelessWidget {
           side: const BorderSide(color: Colors.red),
           minimumSize: const Size(double.infinity, 44),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+    );
+  }
+}
+
+class _OnDeviceEngineStatus extends ConsumerWidget {
+  const _OnDeviceEngineStatus();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final engineState = ref.watch(onDeviceEngineProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (engineState.status == EngineStatus.notLoaded) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Text(
+          'No model loaded. Tap "Manage On-Device Models" to download and load a model.',
+          style: TextStyle(
+            fontSize: 12,
+            color: isDark ? const Color(0xFF666666) : const Color(0xFF999999),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: engineState.status == EngineStatus.loaded
+              ? Colors.green.withValues(alpha: 0.1)
+              : engineState.status == EngineStatus.error
+              ? Colors.red.withValues(alpha: 0.1)
+              : Colors.blue.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: engineState.status == EngineStatus.loaded
+                ? Colors.green
+                : engineState.status == EngineStatus.error
+                ? Colors.red
+                : Colors.blue,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              engineState.status == EngineStatus.loaded
+                  ? Icons.check_circle
+                  : engineState.status == EngineStatus.error
+                  ? Icons.error
+                  : Icons.hourglass_top,
+              size: 18,
+              color: engineState.status == EngineStatus.loaded
+                  ? Colors.green
+                  : engineState.status == EngineStatus.error
+                  ? Colors.red
+                  : Colors.blue,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                engineState.status == EngineStatus.loaded
+                    ? 'Loaded: ${engineState.loadedModelId ?? "unknown"} (${engineState.backend?.name ?? "CPU"})'
+                    : engineState.status == EngineStatus.loading
+                    ? 'Loading model...'
+                    : 'Error: ${engineState.error ?? "Unknown error"}',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: engineState.status == EngineStatus.loaded
+                      ? Colors.green
+                      : engineState.status == EngineStatus.error
+                      ? Colors.red
+                      : Colors.blue,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

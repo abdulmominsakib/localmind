@@ -9,12 +9,15 @@ import 'core/routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
 import 'features/chat/views/chat_screen.dart';
 import 'features/conversations/views/chat_history_screen.dart';
+import 'features/on_device/views/model_manager_screen.dart';
+import 'features/onboarding/screens/onboarding_model_download_screen.dart';
 import 'features/onboarding/screens/onboarding_server_setup_screen.dart';
 import 'features/onboarding/screens/onboarding_server_type_screen.dart';
 import 'features/onboarding/screens/onboarding_theme_screen.dart';
 import 'features/personas/views/create_persona_screen.dart';
 import 'features/personas/views/persona_list_screen.dart';
 import 'features/servers/data/models/server.dart';
+import 'features/servers/providers/server_providers.dart';
 import 'features/servers/views/add_server_screen.dart';
 import 'features/servers/views/server_list_screen.dart';
 import 'features/settings/screens/settings_screen.dart';
@@ -62,6 +65,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           );
         },
+      ),
+      GoRoute(
+        path: AppRoutes.onboardingModelDownload,
+        pageBuilder: (context, state) =>
+            const MaterialPage(child: OnboardingModelDownloadScreen()),
       ),
       GoRoute(
         path: AppRoutes.onboardingTheme,
@@ -115,6 +123,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: ChatHistoryScreen()),
           ),
+          GoRoute(
+            path: AppRoutes.onDeviceModels,
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: OnDeviceModelManagerScreen()),
+          ),
         ],
       ),
     ],
@@ -128,6 +141,8 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final appThemeType = ref.watch(themeModeProvider);
+
+    ref.watch(ensureOnDeviceServerProvider);
 
     ThemeData theme = AppTheme.lightTheme;
     ThemeData darkTheme = AppTheme.darkTheme;

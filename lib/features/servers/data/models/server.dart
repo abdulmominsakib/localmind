@@ -31,6 +31,9 @@ class Server {
     if (type == ServerType.openRouter) {
       return 'https://openrouter.ai/api/v1';
     }
+    if (type == ServerType.onDevice) {
+      return 'on-device';
+    }
     return 'http://$host:$port';
   }
 
@@ -44,6 +47,8 @@ class Server {
         return '$baseUrl/api/chat';
       case ServerType.openRouter:
         return '$baseUrl/chat/completions';
+      case ServerType.onDevice:
+        return '';
     }
   }
 
@@ -57,6 +62,8 @@ class Server {
         return '$baseUrl/api/tags';
       case ServerType.openRouter:
         return '$baseUrl/models';
+      case ServerType.onDevice:
+        return '';
     }
   }
 
@@ -69,6 +76,8 @@ class Server {
       case ServerType.ollama:
         return '$baseUrl/api/ps';
       case ServerType.openRouter:
+        return '';
+      case ServerType.onDevice:
         return '';
     }
   }
@@ -83,6 +92,8 @@ class Server {
         return '$baseUrl/api/generate';
       case ServerType.openRouter:
         return '';
+      case ServerType.onDevice:
+        return '';
     }
   }
 
@@ -96,8 +107,12 @@ class Server {
         return '$baseUrl/api/generate';
       case ServerType.openRouter:
         return '';
+      case ServerType.onDevice:
+        return '';
     }
   }
+
+  bool get isOnDevice => type == ServerType.onDevice;
 
   Server copyWith({
     String? id,

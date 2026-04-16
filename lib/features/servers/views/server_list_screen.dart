@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/models/enums.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/routes/app_routes.dart';
 import '../providers/server_providers.dart';
@@ -77,6 +78,8 @@ class ServerListScreen extends ConsumerWidget {
                             itemCount: serverList.length,
                             itemBuilder: (context, index) {
                               final server = serverList[index];
+                              final isOnDevice =
+                                  server.type == ServerType.onDevice;
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: ServerCard(
@@ -95,13 +98,20 @@ class ServerListScreen extends ConsumerWidget {
                                       ),
                                     );
                                   },
-                                  onEdit: () =>
-                                      _showEditDialog(context, ref, server),
-                                  onDelete: () => _showDeleteConfirmation(
-                                    context,
-                                    ref,
-                                    server,
-                                  ),
+                                  onEdit: isOnDevice
+                                      ? null
+                                      : () => _showEditDialog(
+                                          context,
+                                          ref,
+                                          server,
+                                        ),
+                                  onDelete: isOnDevice
+                                      ? null
+                                      : () => _showDeleteConfirmation(
+                                          context,
+                                          ref,
+                                          server,
+                                        ),
                                   onSetDefault: () {
                                     ref
                                         .read(serversProvider.notifier)

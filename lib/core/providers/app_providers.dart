@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/settings/data/models/app_settings.dart';
+import '../models/enums.dart';
 import 'storage_providers.dart';
 import '../theme/app_theme.dart';
 
@@ -80,6 +81,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(codeThemeDark: value));
   void setCodeThemeLight(SyntaxThemeName value) =>
       _update(state.copyWith(codeThemeLight: value));
+  void setPreferredBackend(LiteLmBackendType value) =>
+      _update(state.copyWith(preferredBackend: value));
 
   Future<void> _update(AppSettings updated) async {
     state = updated;

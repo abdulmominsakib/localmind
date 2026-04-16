@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/models/enums.dart';
+
 enum SyntaxThemeName {
   vscodeDark,
   vscodeLight,
@@ -35,6 +37,7 @@ class AppSettings {
   final bool mcpEnabled;
   final SyntaxThemeName codeThemeDark;
   final SyntaxThemeName codeThemeLight;
+  final LiteLmBackendType preferredBackend;
 
   AppSettings({
     this.temperature = 0.7,
@@ -55,6 +58,7 @@ class AppSettings {
     this.mcpEnabled = true,
     this.codeThemeDark = SyntaxThemeName.vscodeDark,
     this.codeThemeLight = SyntaxThemeName.vscodeLight,
+    this.preferredBackend = LiteLmBackendType.cpu,
   });
 
   AppSettings copyWith({
@@ -76,6 +80,7 @@ class AppSettings {
     bool? mcpEnabled,
     SyntaxThemeName? codeThemeDark,
     SyntaxThemeName? codeThemeLight,
+    LiteLmBackendType? preferredBackend,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -98,6 +103,7 @@ class AppSettings {
       mcpEnabled: mcpEnabled ?? this.mcpEnabled,
       codeThemeDark: codeThemeDark ?? this.codeThemeDark,
       codeThemeLight: codeThemeLight ?? this.codeThemeLight,
+      preferredBackend: preferredBackend ?? this.preferredBackend,
     );
   }
 
@@ -121,6 +127,7 @@ class AppSettings {
       'mcpEnabled': mcpEnabled,
       'codeThemeDark': codeThemeDark.index,
       'codeThemeLight': codeThemeLight.index,
+      'preferredBackend': preferredBackend.index,
     };
   }
 
@@ -144,6 +151,7 @@ class AppSettings {
       mcpEnabled: map['mcpEnabled'] ?? true,
       codeThemeDark: SyntaxThemeName.values[map['codeThemeDark'] ?? 0],
       codeThemeLight: SyntaxThemeName.values[map['codeThemeLight'] ?? 1],
+      preferredBackend: LiteLmBackendType.values[map['preferredBackend'] ?? 0],
     );
   }
 

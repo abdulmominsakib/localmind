@@ -7,6 +7,8 @@ import 'models/chat_parameters.dart';
 import 'models/mcp_integration.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/logger/app_logger.dart';
+import '../../on_device/data/on_device_engine_service.dart';
+import '../../on_device/data/on_device_chat_service.dart';
 
 abstract class ChatService {
   Stream<ChatResponse> sendMessage({
@@ -20,7 +22,11 @@ abstract class ChatService {
 
   void cancelStream();
 
-  static ChatService forServer(ServerType type, Dio dio) {
+  static ChatService forServer(
+    ServerType type,
+    Dio dio, {
+    OnDeviceEngineService? onDeviceEngine,
+  }) {
     switch (type) {
       case ServerType.lmStudio:
         return LMStudioChatService(dio);
@@ -30,6 +36,13 @@ abstract class ChatService {
         return OllamaChatService(dio);
       case ServerType.openRouter:
         return OpenRouterChatService(dio);
+      case ServerType.onDevice:
+        if (onDeviceEngine == null) {
+          throw StateError(
+            'OnDeviceEngineService is required for onDevice server type',
+          );
+        }
+        return OnDeviceChatService(onDeviceEngine);
     }
   }
 }

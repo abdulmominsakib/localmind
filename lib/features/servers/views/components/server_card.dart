@@ -40,12 +40,17 @@ class ServerCard extends StatelessWidget {
         return 'Ollama';
       case ServerType.openRouter:
         return 'OpenRouter';
+      case ServerType.onDevice:
+        return 'On-Device';
     }
   }
 
   String get _serverAddress {
     if (server.type == ServerType.openRouter) {
       return 'openrouter.ai';
+    }
+    if (server.type == ServerType.onDevice) {
+      return 'Local inference';
     }
     return '${server.host}:${server.port}';
   }

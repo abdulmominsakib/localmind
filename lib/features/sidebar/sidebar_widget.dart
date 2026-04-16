@@ -32,11 +32,7 @@ class SidebarWidget extends ConsumerWidget {
       width: 300,
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        border: Border(
-          right: BorderSide(
-            color: theme.colorScheme.outline,
-          ),
-        ),
+        border: Border(right: BorderSide(color: theme.colorScheme.outline)),
       ),
       child: SafeArea(
         child: Column(
@@ -49,7 +45,9 @@ class SidebarWidget extends ConsumerWidget {
             Expanded(
               child: groupedConversations.when(
                 data: (grouped) => grouped.isEmpty
-                    ? ConversationEmptyState(isSearching: searchQuery.isNotEmpty)
+                    ? ConversationEmptyState(
+                        isSearching: searchQuery.isNotEmpty,
+                      )
                     : ConversationList(
                         groupedConversations: grouped,
                         activeConversation: activeConversation,
@@ -88,6 +86,17 @@ class SidebarWidget extends ConsumerWidget {
                   Navigator.pop(context);
                 }
                 context.go(AppRoutes.servers);
+              },
+            ),
+            DrawerNavItem(
+              iconData: HugeIcons.strokeRoundedSmartPhone01,
+              label: 'Local Models',
+              isSelected: location.startsWith(AppRoutes.onDeviceModels),
+              onTap: () {
+                if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                  Navigator.pop(context);
+                }
+                context.go(AppRoutes.onDeviceModels);
               },
             ),
             DrawerNavItem(

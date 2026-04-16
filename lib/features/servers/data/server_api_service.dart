@@ -53,6 +53,8 @@ class ServerApiService {
           return _parseOllamaModels(response.data, server);
         case ServerType.openRouter:
           return _parseOpenRouterModels(response.data, server);
+        case ServerType.onDevice:
+          return [];
       }
     } catch (e) {
       throw Exception('Failed to fetch models: $e');
@@ -78,6 +80,8 @@ class ServerApiService {
           return _parseRunningOllamaModels(response.data);
         case ServerType.openRouter:
           return {};
+        case ServerType.onDevice:
+          return {};
       }
     } catch (e) {
       return {};
@@ -85,7 +89,9 @@ class ServerApiService {
   }
 
   Future<void> loadModel(Server server, String modelId) async {
-    if (server.type == ServerType.openRouter) return;
+    if (server.type == ServerType.openRouter ||
+        server.type == ServerType.onDevice)
+      return;
 
     switch (server.type) {
       case ServerType.lmStudio:
@@ -97,12 +103,15 @@ class ServerApiService {
           options: Options(headers: _getAuthHeaders(server)),
         );
       case ServerType.openRouter:
+      case ServerType.onDevice:
         break;
     }
   }
 
   Future<String?> loadModelWithInstanceId(Server server, String modelId) async {
-    if (server.type == ServerType.openRouter) return null;
+    if (server.type == ServerType.openRouter ||
+        server.type == ServerType.onDevice)
+      return null;
 
     switch (server.type) {
       case ServerType.lmStudio:
@@ -121,6 +130,7 @@ class ServerApiService {
         );
         return null;
       case ServerType.openRouter:
+      case ServerType.onDevice:
         return null;
     }
   }
@@ -130,7 +140,9 @@ class ServerApiService {
     String modelId, {
     String? instanceId,
   }) async {
-    if (server.type == ServerType.openRouter) return;
+    if (server.type == ServerType.openRouter ||
+        server.type == ServerType.onDevice)
+      return;
 
     switch (server.type) {
       case ServerType.lmStudio:
@@ -147,6 +159,7 @@ class ServerApiService {
           options: Options(headers: _getAuthHeaders(server)),
         );
       case ServerType.openRouter:
+      case ServerType.onDevice:
         break;
     }
   }

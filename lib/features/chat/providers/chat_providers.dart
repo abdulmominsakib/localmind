@@ -15,6 +15,7 @@ import 'package:localmind/features/servers/providers/server_providers.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/storage_providers.dart';
+import '../../on_device/providers/on_device_providers.dart';
 import '../../../core/storage/entities.dart';
 import '../../../objectbox.g.dart';
 import '../../conversations/data/models/conversation.dart';
@@ -207,6 +208,14 @@ final chatServiceProvider = Provider<ChatService?>((ref) {
   final server = ref.watch(activeServerProvider);
   if (server == null) {
     return null;
+  }
+  if (server.type == ServerType.onDevice) {
+    final engineNotifier = ref.read(onDeviceEngineProvider.notifier);
+    return ChatService.forServer(
+      server.type,
+      ref.read(dioProvider),
+      onDeviceEngine: engineNotifier.engineService,
+    );
   }
   return ChatService.forServer(server.type, ref.read(dioProvider));
 });

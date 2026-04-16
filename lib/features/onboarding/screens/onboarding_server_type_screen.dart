@@ -5,6 +5,7 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../core/models/enums.dart';
+import '../../../core/providers/app_providers.dart';
 import '../../../core/routes/app_routes.dart';
 
 class OnboardingServerTypeScreen extends ConsumerStatefulWidget {
@@ -44,7 +45,7 @@ class _OnboardingServerTypeScreenState
         centerTitle: false,
         actions: [
           TextButton.icon(
-            onPressed: () {},
+            onPressed: () => _skipOnboarding(),
             label: const Text('Skip'),
             icon: HugeIcon(icon: HugeIcons.strokeRoundedNext),
           ),
@@ -78,6 +79,19 @@ class _OnboardingServerTypeScreenState
                     ),
                   ),
                   const SizedBox(height: 24),
+                  _buildServerCard(
+                    type: ServerType.onDevice,
+                    title: 'On-Device',
+                    subtitle: 'NO SERVER NEEDED',
+                    iconWidget: Icon(
+                      Icons.phone_android_rounded,
+                      color: _selectedType == ServerType.onDevice
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface,
+                    ),
+                    theme: theme,
+                  ),
+                  const SizedBox(height: 16),
                   _buildServerCard(
                     type: ServerType.lmStudio,
                     title: 'LM Studio',
@@ -162,10 +176,14 @@ class _OnboardingServerTypeScreenState
                   enabled: _selectedType != null,
                   onPressed: () {
                     if (_selectedType != null) {
-                      context.push(
-                        AppRoutes.onboardingSetup,
-                        extra: _selectedType,
-                      );
+                      if (_selectedType == ServerType.onDevice) {
+                        _completeOnboarding();
+                      } else {
+                        context.push(
+                          AppRoutes.onboardingSetup,
+                          extra: _selectedType,
+                        );
+                      }
                     }
                   },
                   child: const Text(
@@ -241,5 +259,19 @@ class _OnboardingServerTypeScreenState
         ),
       ),
     );
+  }
+
+  Future<void> _completeOnboarding() async {
+    final settings = ref.read(settingsProvider);
+    await ref
+        .read(settingsProvider.notifier)
+        .updateSettings(settings.copyWith(hasCompletedOnboarding: true));
+    if (mounted) {
+      context.go(AppRoutes.home);
+    }
+  }
+
+  void _skipOnboarding() {
+    _completeOnboarding();
   }
 }

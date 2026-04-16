@@ -11,6 +11,38 @@ import '../../../objectbox.g.dart';
 
 final _modelCache = ModelCache();
 
+bool _onDeviceServerEnsured = false;
+
+final ensureOnDeviceServerProvider = FutureProvider<void>((ref) async {
+  if (_onDeviceServerEnsured) return;
+
+  final serversAsync = ref.watch(serversProvider);
+
+  if (!serversAsync.hasValue) return;
+
+  final servers = serversAsync.value!;
+  final hasOnDevice = servers.any((s) => s.type == ServerType.onDevice);
+  if (hasOnDevice) {
+    _onDeviceServerEnsured = true;
+    return;
+  }
+
+  final server = Server(
+    id: 'on-device',
+    name: 'On-Device',
+    type: ServerType.onDevice,
+    host: '',
+    port: 0,
+    isDefault: false,
+    createdAt: DateTime.now(),
+    lastConnectedAt: DateTime.now(),
+    status: ConnectionStatus.connected,
+    iconName: 'strokeRoundedSmartPhone01',
+  );
+  await ref.read(serversProvider.notifier).addServer(server);
+  _onDeviceServerEnsured = true;
+});
+
 final serversProvider = AsyncNotifierProvider<ServersNotifier, List<Server>>(
   () {
     return ServersNotifier();
@@ -216,6 +248,10 @@ class ConnectionStatusNotifier extends Notifier<ConnectionStatus> {
 
     if (activeServer == null) {
       return ConnectionStatus.disconnected;
+    }
+
+    if (activeServer.type == ServerType.onDevice) {
+      return ConnectionStatus.connected;
     }
 
     _checkConnection(activeServer, apiService);

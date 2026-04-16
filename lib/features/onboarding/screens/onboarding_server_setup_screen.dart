@@ -58,6 +58,10 @@ class _OnboardingServerSetupScreenState
         defaultName = 'OpenRouter';
         defaultPort = '443';
         break;
+      case ServerType.onDevice:
+        defaultName = 'On-Device';
+        defaultPort = '0';
+        break;
     }
 
     _nameController = TextEditingController(text: defaultName);

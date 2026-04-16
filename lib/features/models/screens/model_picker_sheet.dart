@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../chat/providers/chat_providers.dart';
 import '../data/models/model_info.dart';
 import '../../servers/providers/server_providers.dart';
+import '../../../core/providers/app_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/models/enums.dart';
+import '../../on_device/data/models/on_device_model.dart';
+import '../../on_device/data/models/download_status.dart';
+import '../../on_device/providers/on_device_providers.dart';
+import '../../on_device/providers/foreground_download_providers.dart';
 
 final modelSearchQueryProvider = NotifierProvider<_ModelSearchNotifier, String>(
   _ModelSearchNotifier.new,
@@ -220,6 +225,17 @@ class _ModelList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final serversAsync = ref.watch(serversProvider);
+    final servers = serversAsync.value ?? [];
+    final currentServer = servers.where((s) => s.id == serverId).firstOrNull;
+
+    if (currentServer != null && currentServer.type == ServerType.onDevice) {
+      return _OnDeviceModelList(
+        selectedModelId: selectedModelId,
+        isDark: isDark,
+      );
+    }
+
     final modelsAsync = ref.watch(availableModelsProvider(serverId));
 
     return modelsAsync.when(
@@ -613,6 +629,403 @@ class _MetadataChip extends StatelessWidget {
           fontSize: 11,
           color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF777777),
         ),
+      ),
+    );
+  }
+}
+
+class _OnDeviceModelList extends ConsumerWidget {
+  const _OnDeviceModelList({
+    required this.selectedModelId,
+    required this.isDark,
+  });
+
+  final String? selectedModelId;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final curatedModels = ref.watch(onDeviceModelsProvider);
+    final downloadedAsync = ref.watch(downloadedModelsProvider);
+    final engineState = ref.watch(onDeviceEngineProvider);
+    final searchQuery = ref.watch(modelSearchQueryProvider);
+
+    return downloadedAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, _) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading models',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => ref.invalidate(downloadedModelsProvider),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+      data: (downloadedIds) {
+        final filtered = searchQuery.isEmpty
+            ? curatedModels
+            : curatedModels
+                  .where(
+                    (m) => m.name.toLowerCase().contains(
+                      searchQuery.toLowerCase(),
+                    ),
+                  )
+                  .toList();
+
+        if (filtered.isEmpty) {
+          return Center(
+            child: Text(
+              searchQuery.isEmpty
+                  ? 'No models available'
+                  : 'No models match "$searchQuery"',
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark
+                    ? const Color(0xFF888888)
+                    : const Color(0xFF999999),
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: filtered.length,
+          itemBuilder: (context, index) {
+            final model = filtered[index];
+            final isDownloaded = downloadedIds.contains(model.id);
+            final isLoaded = engineState.loadedModelId == model.id;
+            final isCurrentlyLoading =
+                engineState.status == EngineStatus.loading &&
+                engineState.loadedModelId == model.id;
+            final isSelected = selectedModelId == model.id;
+
+            return _OnDeviceModelTile(
+              model: model,
+              isDownloaded: isDownloaded,
+              isLoaded: isLoaded,
+              isCurrentlyLoading: isCurrentlyLoading,
+              isSelected: isSelected,
+              isDark: isDark,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _OnDeviceModelTile extends ConsumerWidget {
+  const _OnDeviceModelTile({
+    required this.model,
+    required this.isDownloaded,
+    required this.isLoaded,
+    required this.isCurrentlyLoading,
+    required this.isSelected,
+    required this.isDark,
+  });
+
+  final OnDeviceModel model;
+  final bool isDownloaded;
+  final bool isLoaded;
+  final bool isCurrentlyLoading;
+  final bool isSelected;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accent = isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB);
+    final downloadProgress = ref.watch(
+      foregroundDownloadNotifierProvider,
+    )[model.id];
+    final isDownloading =
+        downloadProgress != null &&
+        (downloadProgress.status == DownloadStatus.running ||
+            downloadProgress.status == DownloadStatus.pending);
+    final isPaused = downloadProgress?.status == DownloadStatus.paused;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: isSelected ? accent.withValues(alpha: 0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        border: isSelected
+            ? Border.all(color: accent.withValues(alpha: 0.3))
+            : null,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        model.name,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: isDownloaded
+                              ? (isDark ? Colors.white : Colors.black)
+                              : (isDark
+                                    ? const Color(0xFF555555)
+                                    : const Color(0xFF999999)),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (model.isRecommended)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'REC',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: accent,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                if (isDownloading || isPaused)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LinearProgressIndicator(
+                          value: downloadProgress?.progress ?? 0.0,
+                          backgroundColor: isDark
+                              ? const Color(0xFF333333)
+                              : const Color(0xFFE0E0E0),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isPaused
+                              ? 'Paused - ${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(0)}%'
+                              : 'Downloading - ${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isDark
+                                ? const Color(0xFF888888)
+                                : const Color(0xFF999999),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    _MetadataChip(
+                      label: model.fileSizeFormatted,
+                      isDark: isDark,
+                    ),
+                    _MetadataChip(label: model.license, isDark: isDark),
+                    _MetadataChip(label: model.parameterLabel, isDark: isDark),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (isCurrentlyLoading) ...[
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ] else if (isLoaded) ...[
+            Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                color: Color(0xFF4CAF50),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            _IconButton(
+              icon: Icon(
+                Icons.power_settings_new_outlined,
+                size: 18,
+                color: Colors.red[400],
+              ),
+              tooltip: 'Unload model',
+              onPressed: () => _unloadModel(context, ref),
+            ),
+          ] else if (isDownloaded) ...[
+            _IconButton(
+              icon: Icon(Icons.play_arrow, size: 20, color: accent),
+              tooltip: 'Load model',
+              onPressed: () => _loadModel(context, ref),
+            ),
+            const SizedBox(width: 4),
+            _IconButton(
+              icon: Icon(
+                Icons.delete_outline,
+                size: 18,
+                color: isDark
+                    ? const Color(0xFF666666)
+                    : const Color(0xFF999999),
+              ),
+              tooltip: 'Delete model',
+              onPressed: () => _deleteModel(context, ref),
+            ),
+          ] else if (isDownloading) ...[
+            _IconButton(
+              icon: Icon(
+                Icons.close,
+                size: 16,
+                color: isDark
+                    ? const Color(0xFF666666)
+                    : const Color(0xFF999999),
+              ),
+              tooltip: 'Cancel download',
+              onPressed: () => ref
+                  .read(foregroundDownloadNotifierProvider.notifier)
+                  .cancelDownload(model.id),
+            ),
+          ] else ...[
+            Icon(
+              Icons.cloud_download_outlined,
+              size: 18,
+              color: isDark ? const Color(0xFF555555) : const Color(0xFF999999),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Not downloaded',
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark
+                    ? const Color(0xFF666666)
+                    : const Color(0xFF999999),
+              ),
+            ),
+          ],
+          if (isDownloaded && isSelected && isLoaded) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.check_circle, color: accent, size: 22),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _loadModel(BuildContext context, WidgetRef ref) async {
+    final settings = ref.read(settingsProvider);
+    final engineNotifier = ref.read(onDeviceEngineProvider.notifier);
+
+    final modelInfo = ModelInfo(
+      id: model.id,
+      name: model.name,
+      description: model.description,
+      parameterCount: int.tryParse(
+        model.parameterLabel.replaceAll(RegExp(r'[^0-9]'), ''),
+      ),
+      serverType: ServerType.onDevice,
+      serverId: '',
+    );
+
+    await engineNotifier.loadModel(model.id, settings.preferredBackend);
+
+    final engineState = ref.read(onDeviceEngineProvider);
+    if (engineState.loadedModelId == model.id) {
+      ref.read(selectedModelProvider.notifier).setModel(modelInfo);
+    }
+  }
+
+  void _unloadModel(BuildContext context, WidgetRef ref) async {
+    final engineNotifier = ref.read(onDeviceEngineProvider.notifier);
+    await engineNotifier.unloadModel();
+
+    final selectedModel = ref.read(selectedModelProvider);
+    if (selectedModel?.id == model.id) {
+      ref.read(selectedModelProvider.notifier).clear();
+    }
+  }
+
+  void _deleteModel(BuildContext context, WidgetRef ref) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Model'),
+        content: Text('Are you sure you want to delete ${model.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final engineState = ref.read(onDeviceEngineProvider);
+      if (engineState.loadedModelId == model.id) {
+        await ref.read(onDeviceEngineProvider.notifier).unloadModel();
+        ref.read(selectedModelProvider.notifier).clear();
+      }
+
+      final downloadService = ref.read(onDeviceDownloadServiceProvider);
+      await downloadService.deleteModel(model.id);
+      ref.invalidate(downloadedModelsProvider);
+    }
+  }
+}
+
+class _IconButton extends StatelessWidget {
+  const _IconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final Widget icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(padding: const EdgeInsets.all(4), child: icon),
       ),
     );
   }

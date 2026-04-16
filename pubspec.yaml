@@ -53,6 +53,7 @@ dependencies:
   objectbox: ^5.3.1
   objectbox_flutter_libs: ^5.3.1
   path: ^1.9.1
+  flutter_litert_lm: ^0.3.0
 
 dev_dependencies:
   flutter_test:
