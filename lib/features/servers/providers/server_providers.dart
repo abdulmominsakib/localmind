@@ -239,25 +239,43 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
 class ActiveServerNotifier extends Notifier<Server?> {
   @override
   Server? build() {
-    final serversAsync = ref.watch(serversProvider);
+    // Use ref.listen instead of ref.watch to avoid triggering invalidateSelf
+    // during a rebuild cycle, which causes a Riverpod assertion error on
+    // pausedActiveSubscriptionCount.
+    ref.listen<AsyncValue<List<Server>>>(serversProvider, (prev, next) {
+      if (next.hasValue) {
+        Future.microtask(() => _updateFromServers(next.value!));
+      }
+    });
+
+    final prefs = ref.read(sharedPreferencesProvider);
+    final serversAsync = ref.read(serversProvider);
     final servers = serversAsync.value ?? [];
+    return _resolveServer(servers, prefs.getString('defaultServerId'));
+  }
+
+  Server? _resolveServer(List<Server> servers, String? defaultServerId) {
     if (servers.isEmpty) return null;
 
-    final prefs = ref.watch(sharedPreferencesProvider);
-    final defaultServerId = prefs.getString('defaultServerId');
-
     if (defaultServerId != null && defaultServerId.isNotEmpty) {
-      final matchingServer = servers.where((s) => s.id == defaultServerId);
-      if (matchingServer.isNotEmpty) {
-        return matchingServer.first;
-      }
+      final matching = servers.where((s) => s.id == defaultServerId);
+      if (matching.isNotEmpty) return matching.first;
     }
 
-    if (servers.isNotEmpty) {
-      final defaultServer = servers.where((s) => s.isDefault);
-      return defaultServer.isNotEmpty ? defaultServer.first : servers.first;
+    final defaults = servers.where((s) => s.isDefault);
+    return defaults.isNotEmpty ? defaults.first : servers.first;
+  }
+
+  void _updateFromServers(List<Server> servers) {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final currentId = state?.id;
+    final resolved = _resolveServer(
+      servers,
+      currentId ?? prefs.getString('defaultServerId'),
+    );
+    if (resolved?.id != state?.id) {
+      state = resolved;
     }
-    return null;
   }
 
   void setActiveServer(Server? server) {
@@ -270,6 +288,7 @@ class ActiveServerNotifier extends Notifier<Server?> {
     }
   }
 }
+
 
 class ConnectionStatusNotifier extends Notifier<ConnectionStatus> {
   @override

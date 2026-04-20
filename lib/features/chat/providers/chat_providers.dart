@@ -47,7 +47,9 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
   final status = ref.watch(connectionStatusProvider);
 
   if (activeServer == null) {
-    Future.microtask(() => ref.read(selectedModelProvider.notifier).clear());
+    // Use await Future.value() to defer outside the current build frame.
+    await Future.value();
+    ref.read(selectedModelProvider.notifier).clear();
     return;
   }
 
@@ -58,7 +60,8 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
 
   // If a model is selected but belongs to a different server, clear it
   if (selectedModel != null && selectedModel.serverId != activeServer.id) {
-    Future.microtask(() => ref.read(selectedModelProvider.notifier).clear());
+    await Future.value();
+    ref.read(selectedModelProvider.notifier).clear();
     // Continue to try auto-selecting for the new server
   } else if (selectedModel != null) {
     // Already have a valid model selected for this server
@@ -94,9 +97,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
         .firstOrNull;
 
     if (firstLoadedModel != null) {
-      Future.microtask(() {
-        ref.read(selectedModelProvider.notifier).setModel(firstLoadedModel);
-      });
+      ref.read(selectedModelProvider.notifier).setModel(firstLoadedModel);
     }
   } catch (e) {
     // Silently fail auto-selection
