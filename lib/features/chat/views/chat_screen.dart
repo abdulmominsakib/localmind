@@ -15,6 +15,7 @@ import '../providers/chat_providers.dart';
 import 'components/chat_bubble.dart';
 import 'components/chat_input_bar.dart';
 import 'components/mcp_config_sheet.dart';
+import 'components/notification_permission_banner.dart';
 import '../../conversations/data/models/conversation.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
     as conv;
@@ -194,6 +195,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ],
           ),
         ),
+        const NotificationPermissionBanner(),
         if (connectionStatus == ConnectionStatus.disconnected ||
             connectionStatus == ConnectionStatus.error)
           _ConnectionBanner(status: connectionStatus),

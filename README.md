@@ -16,15 +16,6 @@ LocalMind is a premium Flutter mobile application designed to provide a beautifu
   </a>
 </p>
 
-
-## 🆕 What's New (v1.1.0)
-
-- 📲 **On-Device AI Support (Android)**: Private, fast, and offline. You can now run powerful AI models directly on your device. No internet required for conversations!
-- 📂 **All-New Model Manager**: Download and manage curated AI models like **Qwen 3 (0.6B)**, **DeepSeek R1**, and **Gemma 4** directly within the app.
-- 🎨 **Sidebar Revamped**: A more intuitive and feature-rich navigation experience.
-- ⚡ **Refactored Asset Management**: Improved efficiency and smaller app footprint for better performance.
-- 🐞 **General Bug Fixes**: Stability improvements and minor UI refinements.
-
 ## 🚀 Vision
 
 Built for those who value privacy and performance, LocalMind connects directly to your local inference servers like **LM Studio** or **Ollama**, as well as cloud providers like **OpenRouter**. No middleware, no tracking, and no hidden subscriptions. Just you and your models.

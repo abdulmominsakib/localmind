@@ -122,4 +122,46 @@ class DownloadNotificationService {
   Future<void> cancelNotification(int id) async {
     await _notifications.cancel(id);
   }
+
+  Future<bool> isPermissionGranted() async {
+    final androidImplementation = _notifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (androidImplementation != null) {
+      return await androidImplementation.areNotificationsEnabled() ?? false;
+    }
+
+    final iosImplementation = _notifications
+        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+    if (iosImplementation != null) {
+      // In flutter_local_notifications, there isn't a direct "check" method for iOS permissions
+      // that returns a bool without requesting. However, we can use the resolvePlatformSpecificImplementation
+      // or assume it's false if we haven't asked.
+      // For now, we return false to trigger the banner which will then call requestPermission.
+      return false; 
+    }
+
+    return false;
+  }
+
+  Future<bool> requestPermission() async {
+    final androidImplementation = _notifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (androidImplementation != null) {
+      final granted = await androidImplementation.requestNotificationsPermission();
+      return granted ?? false;
+    }
+
+    final iosImplementation = _notifications
+        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+    if (iosImplementation != null) {
+      final granted = await iosImplementation.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      return granted ?? false;
+    }
+
+    return false;
+  }
 }

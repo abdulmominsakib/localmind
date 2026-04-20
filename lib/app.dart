@@ -11,6 +11,7 @@ import 'features/chat/views/chat_screen.dart';
 import 'features/conversations/views/chat_history_screen.dart';
 import 'features/on_device/views/model_manager_screen.dart';
 import 'features/onboarding/screens/onboarding_model_download_screen.dart';
+import 'features/onboarding/screens/onboarding_notification_permission_screen.dart';
 import 'features/onboarding/screens/onboarding_server_setup_screen.dart';
 import 'features/onboarding/screens/onboarding_server_type_screen.dart';
 import 'features/onboarding/screens/onboarding_theme_screen.dart';
@@ -75,6 +76,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.onboardingTheme,
         pageBuilder: (context, state) =>
             const MaterialPage(child: OnboardingThemeScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.onboardingNotifications,
+        pageBuilder: (context, state) =>
+            const MaterialPage(child: OnboardingNotificationPermissionScreen()),
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,

@@ -25,6 +25,7 @@ class AppSettings {
   final bool streamingEnabled;
   final String? defaultPersonaId;
   final bool hasCompletedOnboarding;
+  final bool hasAskedForNotifications;
   final bool mcpEnabled;
   final SyntaxThemeName codeThemeDark;
   final SyntaxThemeName codeThemeLight;
@@ -46,6 +47,7 @@ class AppSettings {
     this.streamingEnabled = true,
     this.defaultPersonaId,
     this.hasCompletedOnboarding = false,
+    this.hasAskedForNotifications = false,
     this.mcpEnabled = true,
     this.codeThemeDark = SyntaxThemeName.dark,
     this.codeThemeLight = SyntaxThemeName.light,
@@ -68,6 +70,7 @@ class AppSettings {
     bool? streamingEnabled,
     String? defaultPersonaId,
     bool? hasCompletedOnboarding,
+    bool? hasAskedForNotifications,
     bool? mcpEnabled,
     SyntaxThemeName? codeThemeDark,
     SyntaxThemeName? codeThemeLight,
@@ -91,6 +94,8 @@ class AppSettings {
       defaultPersonaId: defaultPersonaId ?? this.defaultPersonaId,
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      hasAskedForNotifications:
+          hasAskedForNotifications ?? this.hasAskedForNotifications,
       mcpEnabled: mcpEnabled ?? this.mcpEnabled,
       codeThemeDark: codeThemeDark ?? this.codeThemeDark,
       codeThemeLight: codeThemeLight ?? this.codeThemeLight,
@@ -115,6 +120,7 @@ class AppSettings {
       'streamingEnabled': streamingEnabled,
       'defaultPersonaId': defaultPersonaId,
       'hasCompletedOnboarding': hasCompletedOnboarding,
+      'hasAskedForNotifications': hasAskedForNotifications,
       'mcpEnabled': mcpEnabled,
       'codeThemeDark': codeThemeDark.index,
       'codeThemeLight': codeThemeLight.index,
@@ -139,6 +145,7 @@ class AppSettings {
       streamingEnabled: map['streamingEnabled'] ?? true,
       defaultPersonaId: map['defaultPersonaId'],
       hasCompletedOnboarding: map['hasCompletedOnboarding'] ?? false,
+      hasAskedForNotifications: map['hasAskedForNotifications'] ?? false,
       mcpEnabled: map['mcpEnabled'] ?? true,
       codeThemeDark: SyntaxThemeName.values[map['codeThemeDark'] ?? 0],
       codeThemeLight: SyntaxThemeName.values[map['codeThemeLight'] ?? 1],

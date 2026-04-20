@@ -112,16 +112,8 @@ class _OnboardingThemeScreenState extends ConsumerState<OnboardingThemeScreen> {
               ShadButton(
                 width: double.infinity,
                 onPressed: () async {
-                  // Mark onboarding as complete
-                  final settings = ref.read(settingsProvider);
-                  await ref
-                      .read(settingsProvider.notifier)
-                      .updateSettings(
-                        settings.copyWith(hasCompletedOnboarding: true),
-                      );
-
                   if (context.mounted) {
-                    context.go(AppRoutes.home);
+                    context.push(AppRoutes.onboardingNotifications);
                   }
                 },
                 child: const Text(
