@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../../data/models/conversation.dart';
 
 class ConversationTile extends StatelessWidget {
@@ -125,6 +126,21 @@ class ConversationTile extends StatelessWidget {
                         ? const Color(0xFF666666)
                         : const Color(0xFF999999),
                   ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => _showContextMenu(context, isDark),
+                  icon: HugeIcon(
+                    icon: HugeIcons.strokeRoundedMoreVertical,
+                    size: 18,
+                    color: isDark
+                        ? const Color(0xFF888888)
+                        : const Color(0xFF666666),
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Options',
                 ),
               ],
             ),

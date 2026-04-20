@@ -22,6 +22,7 @@ import '../../conversations/data/models/conversation.dart';
 import '../data/chat_service.dart';
 import '../data/models/chat_parameters.dart';
 import '../data/models/message.dart';
+import '../../../core/providers/chat_background_service_provider.dart';
 
 final selectedModelProvider =
     NotifierProvider<SelectedModelNotifier, ModelInfo?>(() {
@@ -550,6 +551,9 @@ class ChatNotifier extends Notifier<ChatState> {
     await _saveMessage(userMessage);
     await _saveMessage(assistantMessage);
 
+    // Start background service to prevent suspension
+    ref.read(chatBackgroundServiceProvider).start();
+
     _resetCheckpointMetrics();
     _updateSavedMetrics(assistantMessage);
 
@@ -709,6 +713,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 }
               },
               onDone: () async {
+                ref.read(chatBackgroundServiceProvider).stop();
                 final streamConvId = assistantMessage.conversationId;
                 final isCurrentContext = _currentConversationId == streamConvId;
                 final streamingMessage = streamingAssistantMessage;
@@ -811,6 +816,8 @@ class ChatNotifier extends Notifier<ChatState> {
                 if (errorMessage != null) {
                   await _saveMessage(errorMessage);
 
+                  ref.read(chatBackgroundServiceProvider).stop();
+
                   final streamConvId = assistantMessage.conversationId;
                   if (_currentConversationId == streamConvId) {
                     final messageIndex = state.messages.indexWhere(
@@ -846,6 +853,7 @@ class ChatNotifier extends Notifier<ChatState> {
         errorMessage: e.toString(),
         clearStreaming: true,
       );
+      ref.read(chatBackgroundServiceProvider).stop();
     }
   }
 
@@ -959,6 +967,7 @@ class ChatNotifier extends Notifier<ChatState> {
     _streamSubscription?.cancel();
     _streamSubscription = null;
     ref.read(chatServiceProvider)?.cancelStream();
+    ref.read(chatBackgroundServiceProvider).stop();
 
     _chunkCount = 0;
     _lastCheckpointTime = null;

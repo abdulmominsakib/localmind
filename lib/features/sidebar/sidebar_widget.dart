@@ -21,7 +21,7 @@ class SidebarWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final location = GoRouterState.of(context).uri.toString();
-    
+
     final isServers = location.startsWith(AppRoutes.servers);
     final isPersonas = location.startsWith(AppRoutes.personas);
     final themeMode = ref.watch(themeModeProvider);
@@ -37,7 +37,7 @@ class SidebarWidget extends ConsumerWidget {
         child: Column(
           children: [
             const ConversationDrawerHeader(),
-            
+
             // New Chat Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -54,17 +54,28 @@ class SidebarWidget extends ConsumerWidget {
                 child: const Text('New Chat'),
               ),
             ),
-            
+
             const SidebarSearchButton(),
             const SizedBox(height: 8),
             const Divider(height: 1, indent: 16, endIndent: 16),
             const SizedBox(height: 12),
-            
+
             // Primary Navigation
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
+                    DrawerNavItem(
+                      iconData: HugeIcons.strokeRoundedChatting01,
+                      label: 'History',
+                      isSelected: isServers,
+                      onTap: () {
+                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                          Navigator.pop(context);
+                        }
+                        context.go(AppRoutes.chatHistory);
+                      },
+                    ),
                     DrawerNavItem(
                       iconData: HugeIcons.strokeRoundedServerStack01,
                       label: 'Servers',
@@ -106,16 +117,19 @@ class SidebarWidget extends ConsumerWidget {
                       label: 'Appearance: ${_getThemeLabel(themeMode)}',
                       isSelected: false,
                       onTap: () {
-                        final nextMode = AppThemeType.values[
-                            (themeMode.index + 1) % AppThemeType.values.length];
-                        ref.read(themeModeProvider.notifier).setThemeMode(nextMode);
+                        final nextMode =
+                            AppThemeType.values[(themeMode.index + 1) %
+                                AppThemeType.values.length];
+                        ref
+                            .read(themeModeProvider.notifier)
+                            .setThemeMode(nextMode);
                       },
                     ),
                   ],
                 ),
               ),
             ),
-            
+
             // Bottom Section
             const GitHubRepoCard(),
             const Divider(height: 1),

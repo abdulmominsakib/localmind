@@ -5,17 +5,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/models/enums.dart';
 
 enum SyntaxThemeName {
-  vscodeDark,
-  vscodeLight,
-  dracula,
-  monokaiSublime,
-  ayuLight,
-  ayuDark,
-  gravityLight,
-  gravityDark,
-  obsidian,
-  oceanSunset,
-  standard,
+  light,
+  dark,
 }
 
 class AppSettings {
@@ -56,8 +47,8 @@ class AppSettings {
     this.defaultPersonaId,
     this.hasCompletedOnboarding = false,
     this.mcpEnabled = true,
-    this.codeThemeDark = SyntaxThemeName.vscodeDark,
-    this.codeThemeLight = SyntaxThemeName.vscodeLight,
+    this.codeThemeDark = SyntaxThemeName.dark,
+    this.codeThemeLight = SyntaxThemeName.light,
     this.preferredBackend = LiteLmBackendType.cpu,
   });
 

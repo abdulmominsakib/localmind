@@ -15,6 +15,7 @@ class OnDeviceChatService implements ChatService {
   final OnDeviceEngineService _engineService;
   StreamSubscription<LiteLmMessage>? _currentSubscription;
   StreamController<ChatResponse>? _streamController;
+  LiteLmConversation? _activeConversation;
   bool _isCancelled = false;
 
   OnDeviceChatService(this._engineService);
@@ -28,6 +29,8 @@ class OnDeviceChatService implements ChatService {
     List<McpIntegration>? integrations,
     String? previousResponseId,
   }) {
+    // Cancel any previous inference before starting a new one
+    cancelStream();
     _isCancelled = false;
     _streamController = StreamController<ChatResponse>();
 
@@ -68,10 +71,13 @@ class OnDeviceChatService implements ChatService {
         samplerConfig: samplerConfig,
       );
 
+      // Store a reference so cancelStream can dispose it
+      _activeConversation = conversation;
+
       final liteMessages = _convertMessages(messages);
 
       if (_isCancelled) {
-        await conversation.dispose();
+        _disposeConversation(conversation);
         _streamController?.add(const ChatResponse(type: ChatResponseType.done));
         await _streamController?.close();
         return;
@@ -87,6 +93,7 @@ class OnDeviceChatService implements ChatService {
             content: 'No user message found',
           ),
         );
+        _disposeConversation(conversation);
         _streamController?.add(const ChatResponse(type: ChatResponseType.done));
         await _streamController?.close();
         return;
@@ -94,39 +101,71 @@ class OnDeviceChatService implements ChatService {
 
       final stream = conversation.sendMessageStream(lastUserMessage.text ?? '');
 
-      final buffer = StringBuffer();
-      await for (final delta in stream) {
-        if (_isCancelled) {
-          await conversation.dispose();
-          _streamController?.add(
-            const ChatResponse(type: ChatResponseType.done),
-          );
-          await _streamController?.close();
-          return;
-        }
+      // Use .listen() instead of `await for` so the subscription can be
+      // cancelled externally without waiting for the next native token.
+      final completer = Completer<void>();
 
-        if (delta.text.isNotEmpty) {
-          buffer.write(delta.text);
-          _streamController?.add(
-            ChatResponse(type: ChatResponseType.message, content: delta.text),
-          );
-        }
+      _currentSubscription = stream.listen(
+        (delta) {
+          if (_isCancelled) return;
 
-        if (delta.toolCalls.isNotEmpty) {
-          for (final tc in delta.toolCalls) {
+          if (delta.text.isNotEmpty) {
             _streamController?.add(
               ChatResponse(
-                type: ChatResponseType.toolCall,
-                toolCall: ToolCallData(tool: tc.name, arguments: tc.arguments),
+                type: ChatResponseType.message,
+                content: delta.text,
               ),
             );
           }
-        }
-      }
 
-      _streamController?.add(const ChatResponse(type: ChatResponseType.done));
-      await conversation.dispose();
-      await _streamController?.close();
+          if (delta.toolCalls.isNotEmpty) {
+            for (final tc in delta.toolCalls) {
+              _streamController?.add(
+                ChatResponse(
+                  type: ChatResponseType.toolCall,
+                  toolCall:
+                      ToolCallData(tool: tc.name, arguments: tc.arguments),
+                ),
+              );
+            }
+          }
+        },
+        onDone: () {
+          if (!_isCancelled) {
+            _streamController?.add(
+              const ChatResponse(type: ChatResponseType.done),
+            );
+            _disposeConversation(conversation);
+            _streamController?.close();
+          }
+          _activeConversation = null;
+          _currentSubscription = null;
+          if (!completer.isCompleted) completer.complete();
+        },
+        onError: (error) {
+          Log.error('OnDevice stream error: $error');
+          if (!_isCancelled &&
+              !(_streamController?.isClosed ?? true)) {
+            _streamController?.add(
+              ChatResponse(
+                type: ChatResponseType.error,
+                content: 'Inference error: ${error.toString()}',
+              ),
+            );
+            _streamController?.add(
+              const ChatResponse(type: ChatResponseType.done),
+            );
+            _streamController?.close();
+          }
+          _disposeConversation(conversation);
+          _activeConversation = null;
+          _currentSubscription = null;
+          if (!completer.isCompleted) completer.complete();
+        },
+        cancelOnError: true,
+      );
+
+      await completer.future;
     } catch (e) {
       Log.error('OnDevice inference error: $e');
       if (!(_streamController?.isClosed ?? true)) {
@@ -140,6 +179,13 @@ class OnDeviceChatService implements ChatService {
         await _streamController?.close();
       }
     }
+  }
+
+  /// Dispose a conversation without blocking — fire and forget.
+  void _disposeConversation(LiteLmConversation conversation) {
+    conversation.dispose().catchError((e) {
+      Log.error('Error disposing conversation: $e');
+    });
   }
 
   List<({String role, String? text})> _convertMessages(List<Message> messages) {
@@ -157,8 +203,20 @@ class OnDeviceChatService implements ChatService {
   @override
   void cancelStream() {
     _isCancelled = true;
+
+    // Cancel the native stream subscription first — this stops the
+    // EventChannel from delivering more tokens and unblocks the loop.
     _currentSubscription?.cancel();
     _currentSubscription = null;
+
+    // Dispose the active conversation (fire-and-forget to avoid blocking
+    // the UI thread if the native side is mid-inference).
+    final conversation = _activeConversation;
+    _activeConversation = null;
+    if (conversation != null) {
+      _disposeConversation(conversation);
+    }
+
     if (!(_streamController?.isClosed ?? true)) {
       _streamController?.add(const ChatResponse(type: ChatResponseType.done));
       _streamController?.close();

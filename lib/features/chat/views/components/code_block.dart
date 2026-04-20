@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_syntax_view/flutter_syntax_view.dart';
-import '../../../../core/providers/app_providers.dart';
-import '../../../settings/data/models/app_settings.dart';
+import 'package:syntax_highlight/syntax_highlight.dart';
+import '../../../../core/providers/highlighter_provider.dart';
 
 class CodeBlock extends ConsumerWidget {
   const CodeBlock({super.key, required this.code, this.language});
@@ -11,69 +10,61 @@ class CodeBlock extends ConsumerWidget {
   final String code;
   final String? language;
 
-  Syntax? _mapLanguage(String? lang) {
-    if (lang == null || lang.isEmpty) return null;
+  String _mapLanguage(String? lang) {
+    if (lang == null || lang.isEmpty) return '';
 
-    switch (lang.toLowerCase()) {
+    final lower = lang.toLowerCase();
+    switch (lower) {
       case 'dart':
       case 'flutter':
-        return Syntax.DART;
+        return 'dart';
       case 'c':
-        return Syntax.C;
+        return 'c';
       case 'cpp':
       case 'c++':
       case 'cxx':
-        return Syntax.CPP;
+        return 'cpp';
+      case 'csharp':
+      case 'cs':
+        return 'csharp';
+      case 'go':
+      case 'golang':
+        return 'go';
       case 'java':
-        return Syntax.JAVA;
+        return 'java';
       case 'javascript':
       case 'js':
-        return Syntax.JAVASCRIPT;
+        return 'javascript';
+      case 'typescript':
+      case 'ts':
+        return 'typescript';
       case 'kotlin':
       case 'kt':
-        return Syntax.KOTLIN;
+        return 'kotlin';
       case 'lua':
-        return Syntax.LUA;
+        return 'lua';
       case 'python':
       case 'py':
-        return Syntax.PYTHON;
+        return 'python';
       case 'rust':
       case 'rs':
-        return Syntax.RUST;
+        return 'rust';
       case 'swift':
-        return Syntax.SWIFT;
+        return 'swift';
       case 'yaml':
       case 'yml':
-        return Syntax.YAML;
+        return 'yaml';
+      case 'html':
+      case 'htm':
+        return 'html';
+      case 'css':
+        return 'css';
+      case 'json':
+        return 'json';
+      case 'sql':
+        return 'sql';
       default:
-        return null;
-    }
-  }
-
-  SyntaxTheme _getSyntaxTheme(SyntaxThemeName themeName) {
-    switch (themeName) {
-      case SyntaxThemeName.vscodeDark:
-        return SyntaxTheme.vscodeDark();
-      case SyntaxThemeName.vscodeLight:
-        return SyntaxTheme.vscodeLight();
-      case SyntaxThemeName.dracula:
-        return SyntaxTheme.dracula();
-      case SyntaxThemeName.monokaiSublime:
-        return SyntaxTheme.monokaiSublime();
-      case SyntaxThemeName.ayuLight:
-        return SyntaxTheme.ayuLight();
-      case SyntaxThemeName.ayuDark:
-        return SyntaxTheme.ayuDark();
-      case SyntaxThemeName.gravityLight:
-        return SyntaxTheme.gravityLight();
-      case SyntaxThemeName.gravityDark:
-        return SyntaxTheme.gravityDark();
-      case SyntaxThemeName.obsidian:
-        return SyntaxTheme.obsidian();
-      case SyntaxThemeName.oceanSunset:
-        return SyntaxTheme.oceanSunset();
-      case SyntaxThemeName.standard:
-        return SyntaxTheme.standard();
+        return lower;
     }
   }
 
@@ -86,9 +77,9 @@ class CodeBlock extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final settings = ref.watch(settingsProvider);
-    final themeName = isDark ? settings.codeThemeDark : settings.codeThemeLight;
-    final codeTheme = _getSyntaxTheme(themeName);
+    final themes = ref.watch(highlighterThemesProvider);
+
+    final languageName = _mapLanguage(language);
 
     final backgroundColor = isDark
         ? const Color(0xFF1E1E1E)
@@ -101,13 +92,6 @@ class CodeBlock extends ConsumerWidget {
     final borderColor = isDark
         ? const Color(0xFF3A3A3A)
         : const Color(0xFFE0E0E0);
-
-    final textColor = isDark
-        ? const Color(0xFF9CDCFE)
-        : const Color(0xFF001080);
-
-    final syntax = _mapLanguage(language);
-    final syntaxTheme = codeTheme.copyWith(backgroundColor: Colors.transparent);
 
     return Container(
       decoration: BoxDecoration(
@@ -144,31 +128,54 @@ class CodeBlock extends ConsumerWidget {
               ],
             ),
           ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(12),
-            child: syntax != null
-                ? SelectableText.rich(
-                    TextSpan(
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 13,
-                        height: 1.5,
-                      ),
-                      children: <TextSpan>[
-                        getSyntax(syntax, syntaxTheme).format(code),
-                      ],
-                    ),
-                  )
-                : SelectableText(
-                    code,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 13,
-                      height: 1.5,
-                      color: textColor,
-                    ),
-                  ),
+          themes.when(
+            data: (themesData) {
+    final loadedTheme = isDark ? themesData.dark : themesData.light;
+    final highlighter = Highlighter(
+      language: languageName.isNotEmpty ? languageName : 'dart',
+      theme: loadedTheme,
+    );
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.all(12),
+      child: SelectableText.rich(
+        TextSpan(
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 13,
+            height: 1.5,
+          ),
+          children: <TextSpan>[
+            highlighter.highlight(code),
+          ],
+        ),
+      ),
+    );
+            },
+            loading: () => SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.all(12),
+              child: SelectableText(
+                code,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            error: (e, _) => SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.all(12),
+              child: SelectableText(
+                code,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+            ),
           ),
         ],
       ),

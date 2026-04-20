@@ -230,11 +230,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   recentConversations: ref.watch(
                     conv.recentConversationsProvider,
                   ),
-                  onSeeAll: () {
-                    if (Scaffold.maybeOf(context)?.hasDrawer ?? false) {
-                      Scaffold.of(context).openDrawer();
-                    }
-                  },
+                  onSeeAll: () => context.push(AppRoutes.chatHistory),
                   selectedModel: selectedModel,
                   onModelTap: () => _showModelPicker(context),
                   selectedPersona: ref.watch(selectedPersonaProvider),

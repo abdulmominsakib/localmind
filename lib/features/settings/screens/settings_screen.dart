@@ -762,28 +762,10 @@ class _CodeThemeDropdown extends StatelessWidget {
 
   String _getDisplayName(SyntaxThemeName theme) {
     switch (theme) {
-      case SyntaxThemeName.vscodeDark:
-        return 'VS Code Dark';
-      case SyntaxThemeName.vscodeLight:
-        return 'VS Code Light';
-      case SyntaxThemeName.dracula:
-        return 'Dracula';
-      case SyntaxThemeName.monokaiSublime:
-        return 'Monokai';
-      case SyntaxThemeName.ayuLight:
-        return 'Ayu Light';
-      case SyntaxThemeName.ayuDark:
-        return 'Ayu Dark';
-      case SyntaxThemeName.gravityLight:
-        return 'Gravity Light';
-      case SyntaxThemeName.gravityDark:
-        return 'Gravity Dark';
-      case SyntaxThemeName.obsidian:
-        return 'Obsidian';
-      case SyntaxThemeName.oceanSunset:
-        return 'Ocean Sunset';
-      case SyntaxThemeName.standard:
-        return 'Standard';
+      case SyntaxThemeName.light:
+        return 'Light';
+      case SyntaxThemeName.dark:
+        return 'Dark';
     }
   }
 

@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/providers/highlighter_provider.dart';
 import 'core/providers/storage_providers.dart';
 import 'core/storage/objectbox_store.dart';
 import 'features/on_device/providers/on_device_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await initializeHighlighter();
 
   final prefs = await SharedPreferences.getInstance();
   final database = await ObjectBoxStore.create();
