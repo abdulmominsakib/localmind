@@ -149,7 +149,9 @@ class _ModelCard extends ConsumerWidget {
         (downloadProgress!.status == DownloadStatus.running ||
             downloadProgress!.status == DownloadStatus.pending);
 
-    final isPaused = downloadProgress?.status == DownloadStatus.paused;
+    final isPaused =
+        downloadProgress?.status == DownloadStatus.paused ||
+        downloadProgress?.status == DownloadStatus.canceled;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -294,30 +296,55 @@ class _ModelCard extends ConsumerWidget {
     }
 
     if (isDownloading) {
-      return Row(
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                LinearProgressIndicator(
-                  value: downloadProgress?.progress ?? 0.0,
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LinearProgressIndicator(
+                      value: downloadProgress?.progress ?? 0.0,
+                      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(1)}% • ${downloadProgress?.speedFormatted ?? '0 B/s'}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          'ETA: ${downloadProgress?.etaFormatted ?? 'Calculating...'}',
+                          style: theme.textTheme.labelSmall,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      downloadProgress?.progressFormatted ?? '',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Downloading - ${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(0)}%',
-                  style: theme.textTheme.labelSmall,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          ShadButton.outline(
-            size: ShadButtonSize.sm,
-            onPressed: () => ref
-                .read(foregroundDownloadNotifierProvider.notifier)
-                .cancelDownload(model.id),
-            child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 12),
+              ShadButton.outline(
+                size: ShadButtonSize.sm,
+                onPressed: () => ref
+                    .read(foregroundDownloadNotifierProvider.notifier)
+                    .pauseDownload(model.id),
+                child: const Text('Pause'),
+              ),
+            ],
           ),
         ],
       );
@@ -339,6 +366,23 @@ class _ModelCard extends ConsumerWidget {
                 .read(foregroundDownloadNotifierProvider.notifier)
                 .retryDownload(model.id),
             child: const Text('Retry'),
+          ),
+        ],
+      );
+    }
+
+    if (isPaused) {
+      return Row(
+        children: [
+          Text(
+            'Paused - ${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(0)}%',
+            style: theme.textTheme.bodySmall,
+          ),
+          const Spacer(),
+          ShadButton.outline(
+            size: ShadButtonSize.sm,
+            onPressed: () => _startDownload(ref),
+            child: const Text('Resume'),
           ),
         ],
       );

@@ -9,8 +9,10 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../on_device/data/models/on_device_model.dart';
-import '../../on_device/data/on_device_model_download_service.dart';
+import '../../on_device/data/models/download_status.dart';
+import '../../on_device/data/models/download_progress_info.dart';
 import '../../on_device/providers/on_device_providers.dart';
+import '../../on_device/providers/foreground_download_providers.dart';
 import '../../servers/data/models/server.dart';
 import '../../servers/providers/server_providers.dart';
 
@@ -24,16 +26,14 @@ class OnboardingModelDownloadScreen extends ConsumerStatefulWidget {
 
 class _OnboardingModelDownloadScreenState
     extends ConsumerState<OnboardingModelDownloadScreen> {
-  String? _downloadingModelId;
-  double _downloadProgress = 0.0;
   bool _isCreatingServer = false;
-  StreamSubscription<DownloadProgress>? _downloadSubscription;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final models = ref.watch(onDeviceModelsProvider);
     final downloadedModelsAsync = ref.watch(downloadedModelsProvider);
+    final downloadStates = ref.watch(foregroundDownloadNotifierProvider);
     final isAndroid = Platform.isAndroid;
 
     return Scaffold(
@@ -77,17 +77,14 @@ class _OnboardingModelDownloadScreenState
                 loading: () => false,
                 error: (_, _) => false,
               );
-              final isDownloading = _downloadingModelId == model.id;
+              final progressInfo = downloadStates[model.id];
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _ModelCard(
                   model: model,
                   isDownloaded: isDownloaded,
-                  isDownloading: isDownloading,
-                  downloadProgress: _downloadProgress,
-                  onDownload: isDownloaded || isDownloading
-                      ? null
-                      : () => _downloadModel(model),
+                  progressInfo: progressInfo,
                   theme: theme,
                 ),
               );
@@ -113,39 +110,6 @@ class _OnboardingModelDownloadScreenState
   bool _canContinue() {
     final downloadedSet = ref.read(downloadedModelsProvider).whenData((s) => s);
     return downloadedSet.hasValue && downloadedSet.value!.isNotEmpty;
-  }
-
-  Future<void> _downloadModel(OnDeviceModel model) async {
-    await _downloadSubscription?.cancel();
-    setState(() {
-      _downloadingModelId = model.id;
-      _downloadProgress = 0.0;
-    });
-
-    final downloadService = ref.read(onDeviceDownloadServiceProvider);
-    try {
-      await for (final progress in downloadService.downloadModel(model)) {
-        if (!mounted) return;
-        setState(() {
-          _downloadProgress = progress.fraction;
-        });
-      }
-      ref.invalidate(downloadedModelsProvider);
-      if (mounted) {
-        setState(() {
-          _downloadingModelId = null;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _downloadingModelId = null;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Download failed: ${e.toString()}')),
-        );
-      }
-    }
   }
 
   Future<void> _createOnDeviceServer() async {
@@ -186,25 +150,28 @@ class _OnboardingModelDownloadScreenState
   }
 }
 
-class _ModelCard extends StatelessWidget {
+class _ModelCard extends ConsumerWidget {
   final OnDeviceModel model;
   final bool isDownloaded;
-  final bool isDownloading;
-  final double downloadProgress;
-  final VoidCallback? onDownload;
+  final DownloadProgressInfo? progressInfo;
   final ThemeData theme;
 
   const _ModelCard({
     required this.model,
     required this.isDownloaded,
-    required this.isDownloading,
-    required this.downloadProgress,
-    this.onDownload,
+    this.progressInfo,
     required this.theme,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDownloading =
+        progressInfo?.status == DownloadStatus.running ||
+        progressInfo?.status == DownloadStatus.pending;
+    final isPaused =
+        progressInfo?.status == DownloadStatus.paused ||
+        progressInfo?.status == DownloadStatus.canceled;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -288,21 +255,63 @@ class _ModelCard extends StatelessWidget {
               ],
             )
           else if (isDownloading)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            Row(
               children: [
-                LinearProgressIndicator(value: downloadProgress),
-                const SizedBox(height: 4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      LinearProgressIndicator(value: progressInfo?.progress ?? 0),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${((progressInfo?.progress ?? 0) * 100).toStringAsFixed(0)}% • ${progressInfo?.speedFormatted ?? "0 B/s"}',
+                            style: theme.textTheme.labelSmall,
+                          ),
+                          Text(
+                            'ETA: ${progressInfo?.etaFormatted ?? "..."}',
+                            style: theme.textTheme.labelSmall,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ShadButton.outline(
+                  size: ShadButtonSize.sm,
+                  onPressed: () => ref
+                      .read(foregroundDownloadNotifierProvider.notifier)
+                      .pauseDownload(model.id),
+                  child: const Text('Pause'),
+                ),
+              ],
+            )
+          else if (isPaused)
+            Row(
+              children: [
                 Text(
-                  '${(downloadProgress * 100).toStringAsFixed(0)}%',
-                  style: theme.textTheme.labelSmall,
+                  'Paused - ${((progressInfo?.progress ?? 0) * 100).toStringAsFixed(0)}%',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const Spacer(),
+                ShadButton.outline(
+                  size: ShadButtonSize.sm,
+                  onPressed: () => ref
+                      .read(foregroundDownloadNotifierProvider.notifier)
+                      .startDownload(model.id),
+                  child: const Text('Resume'),
                 ),
               ],
             )
           else
             ShadButton.outline(
               size: ShadButtonSize.sm,
-              onPressed: onDownload,
+              onPressed: () => ref
+                  .read(foregroundDownloadNotifierProvider.notifier)
+                  .startDownload(model.id),
               child: const Text('Download'),
             ),
         ],

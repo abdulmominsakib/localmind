@@ -19,7 +19,6 @@ class ForegroundDownloadService {
   ForegroundDownloadService(this._downloadService);
 
   /// Returns a broadcast stream of status updates for [modelId].
-  /// Creates the stream controller if one doesn't exist yet.
   Stream<DownloadStatusUpdate> getStatusStream(String modelId) {
     return _progressControllers
         .putIfAbsent(
@@ -30,9 +29,6 @@ class ForegroundDownloadService {
   }
 
   /// Start downloading [model]. Progress is emitted via [getStatusStream].
-  ///
-  /// Call [getStatusStream] before this method to subscribe to progress updates.
-  /// Returns the absolute path to the downloaded file on success.
   Future<String> downloadModel(OnDeviceModel model, {String? token}) async {
     final modelsDir = await OnDeviceEngineService.getModelDirectory();
     final filePath = '$modelsDir/${model.fileName}';
@@ -40,7 +36,6 @@ class ForegroundDownloadService {
 
     if (await file.exists()) {
       Log.info('Model ${model.id} already downloaded at $filePath');
-      // Signal already downloaded via the stream
       final controller = _progressControllers[model.id];
       if (controller != null && !controller.isClosed) {
         controller.add(
@@ -56,13 +51,11 @@ class ForegroundDownloadService {
       return filePath;
     }
 
-    // Ensure the stream controller exists (created by getStatusStream)
     final controller = _progressControllers.putIfAbsent(
       model.id,
       () => StreamController<DownloadStatusUpdate>.broadcast(),
     );
 
-    // Emit initial pending status
     if (!controller.isClosed) {
       controller.add(
         DownloadStatusUpdate(
@@ -74,7 +67,6 @@ class ForegroundDownloadService {
       );
     }
 
-    // Listen to the underlying download stream
     final completer = Completer<String>();
 
     final subscription = _downloadService
@@ -82,15 +74,18 @@ class ForegroundDownloadService {
         .listen(
           (progress) {
             if (controller.isClosed) return;
-            final percent = progress.total > 0
-                ? (progress.received / progress.total * 100).round()
-                : 0;
+            final percent = (progress.fraction * 100).round();
             controller.add(
               DownloadStatusUpdate(
                 modelId: model.id,
                 taskId: model.id,
                 status: DownloadStatus.running,
                 progress: percent,
+                receivedBytes: progress.receivedBytes,
+                totalBytes: progress.totalBytes,
+                bytesPerSecond: progress.bytesPerSecond,
+                etaSeconds: progress.estimatedSecondsRemaining,
+                isResumed: progress.isResumed,
               ),
             );
           },
@@ -135,6 +130,7 @@ class ForegroundDownloadService {
   /// Cancel an in-flight download for [modelId].
   Future<void> cancelDownload(String modelId) async {
     _downloadService.cancelDownload(modelId);
+    _emitStatus(modelId, DownloadStatus.canceled);
     await _cleanup(modelId);
   }
 
@@ -144,17 +140,31 @@ class ForegroundDownloadService {
     await controller?.close();
   }
 
-  /// Pause is not supported — downloads are continuous streams.
   void pauseDownload(String modelId) {
-    Log.warning('Pause not supported for foreground downloads');
+    Log.info('Pausing download for $modelId');
+    _downloadService.cancelDownload(modelId);
+    _emitStatus(modelId, DownloadStatus.paused);
+    _cleanup(modelId);
   }
 
-  /// Resume is not supported — start a new download instead.
+  void _emitStatus(String modelId, DownloadStatus status) {
+    final controller = _progressControllers[modelId];
+    if (controller != null && !controller.isClosed) {
+      controller.add(
+        DownloadStatusUpdate(
+          modelId: modelId,
+          taskId: modelId,
+          status: status,
+          progress: 0, // Notifier should preserve existing progress
+        ),
+      );
+    }
+  }
+
   void resumeDownload(String modelId) {
-    Log.warning('Resume not supported for foreground downloads');
+    Log.warning('Resume UI should trigger downloadModel again for $modelId');
   }
 
-  /// Cancel and let the UI restart the download.
   Future<void> retryDownload(String modelId) async {
     await cancelDownload(modelId);
   }

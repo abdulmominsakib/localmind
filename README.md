@@ -17,17 +17,28 @@ LocalMind is a premium Flutter mobile application designed to provide a beautifu
 </p>
 
 
+## 🆕 What's New (v1.1.0)
+
+- 📲 **On-Device AI Support (Android)**: Private, fast, and offline. You can now run powerful AI models directly on your device. No internet required for conversations!
+- 📂 **All-New Model Manager**: Download and manage curated AI models like **Qwen 3 (0.6B)**, **DeepSeek R1**, and **Gemma 4** directly within the app.
+- 🎨 **Sidebar Revamped**: A more intuitive and feature-rich navigation experience.
+- ⚡ **Refactored Asset Management**: Improved efficiency and smaller app footprint for better performance.
+- 🐞 **General Bug Fixes**: Stability improvements and minor UI refinements.
+
 ## 🚀 Vision
 
 Built for those who value privacy and performance, LocalMind connects directly to your local inference servers like **LM Studio** or **Ollama**, as well as cloud providers like **OpenRouter**. No middleware, no tracking, and no hidden subscriptions. Just you and your models.
 
 ## ✨ Key Features
 
+- 📲 **On-Device AI Support (Android)**: Private, fast, and offline. Run powerful AI models directly on your device with no internet required.
+- 📂 **Model Manager**: Download and manage curated models like Qwen 3 (0.6B), DeepSeek R1, and Gemma 4 directly within the app.
 - 🖥️ **Multi-Server Connection**: Seamlessly connect to LM Studio, Ollama, or OpenRouter with real-time health monitoring.
 - 💬 **Premium Chat Experience**: A polished, ChatGPT/Claude-inspired interface with:
   - **Streaming Responses**: Real-time SSE support for instant feedback.
   - **Markdown Rendering**: Beautiful rendering of text and code with syntax highlighting.
   - **Message Actions**: Copy, retry, or delete individual messages with a long-press menu.
+- 🎨 **Revamped Sidebar**: A cleaner, more intuitive, and feature-rich navigation experience.
 - 🧠 **Persona Management**: Switch between specialized AI personas (Code Assistant, Math Tutor, etc.) or create your own with custom system prompts.
 - 🔄 **Live Model Swapping**: Change the active model mid-conversation without losing context.
 - 📦 **Conversation History**: Full-text search through your past chats, pinning important conversations, and local-only storage.
@@ -40,9 +51,10 @@ Built for those who value privacy and performance, LocalMind connects directly t
 LocalMind is built with modern, scalable technologies:
 
 - **Framework**: [Flutter](https://flutter.dev/) (Latest Stable)
+- **On-Device AI**: [LiteRT (TensorFlow Lite)](https://ai.google.dev/edge/litert) for high-performance localized inference.
 - **UI Components**: Shadcn-inspired design system (`shadcn_ui`)
 - **State Management**: [Riverpod](https://riverpod.dev/) for robust, testable state.
-- **Local Storage**: [Hive CE](https://pub.dev/packages/hive_ce) for high-performance on-device persistence.
+- **Local Storage**: [ObjectBox](https://objectbox.io/) (and Hive) for high-performance on-device persistence.
 - **Networking**: [Dio](https://pub.dev/packages/dio) for optimized REST API handling.
 - **Rendering**: `flutter_markdown` + `flutter_highlight` for rich content.
 

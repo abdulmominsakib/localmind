@@ -9,6 +9,8 @@ import '../data/models/on_device_model.dart';
 import '../data/on_device_engine_service.dart';
 import '../data/on_device_model_download_service.dart';
 import '../data/foreground_download_service.dart';
+import '../data/model_downloader.dart';
+import '../data/download_notification_service.dart';
 
 final onDeviceEngineProvider =
     NotifierProvider<OnDeviceEngineNotifier, OnDeviceEngineState>(() {
@@ -19,16 +21,29 @@ final onDeviceModelsProvider = Provider<List<OnDeviceModel>>((ref) {
   return OnDeviceModel.curatedModels;
 });
 
+final downloadNotificationServiceProvider =
+    Provider<DownloadNotificationService>((ref) {
+  return DownloadNotificationService();
+});
+
+final modelDownloaderProvider = Provider<ModelDownloader>((ref) {
+  final notificationService = ref.read(downloadNotificationServiceProvider);
+  return ModelDownloader(notificationService);
+});
+
 final onDeviceDownloadServiceProvider = Provider<OnDeviceModelDownloadService>((
   ref,
 ) {
-  return OnDeviceModelDownloadService();
+  final downloader = ref.read(modelDownloaderProvider);
+  return OnDeviceModelDownloadService(downloader);
 });
 
 final foregroundDownloadServiceProvider = Provider<ForegroundDownloadService>((
   ref,
 ) {
-  return ForegroundDownloadService(ref.read(onDeviceDownloadServiceProvider));
+  return ForegroundDownloadService(
+    ref.read(onDeviceDownloadServiceProvider),
+  );
 });
 
 final downloadedModelsProvider = FutureProvider<Set<String>>((ref) async {
