@@ -154,154 +154,156 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar>
         (_controller.text.trim().isNotEmpty || _attachedFiles.isNotEmpty) &&
         !widget.isStreaming;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1C1C) : Colors.white,
-        borderRadius: BorderRadius.circular(40),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1C1C1C) : Colors.white,
+          borderRadius: BorderRadius.circular(40),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: isDark ? const Color(0xFF2E2E2E) : const Color(0xFFE5E5E5),
+            width: 1.2,
           ),
-        ],
-        border: Border.all(
-          color: isDark ? const Color(0xFF2E2E2E) : const Color(0xFFE5E5E5),
-          width: 1.2,
         ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Attachment Preview Area
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            child: _attachedFiles.isEmpty
-                ? const SizedBox.shrink()
-                : Container(
-                    height: 70,
-                    padding: const EdgeInsets.only(
-                      left: 12,
-                      right: 12,
-                      top: 8,
-                      bottom: 4,
-                    ),
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _attachedFiles.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final file = _attachedFiles[index];
-                        return Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isDark
-                                      ? const Color(0xFF333333)
-                                      : const Color(0xFFE0E0E0),
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(11),
-                                child: Image.file(
-                                  file,
-                                  width: 48,
-                                  height: 48,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: -4,
-                              right: -4,
-                              child: GestureDetector(
-                                onTap: () => setState(
-                                  () => _attachedFiles.removeAt(index),
-                                ),
-                                child: Container(
-                                  width: 18,
-                                  height: 18,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black,
-                                    shape: BoxShape.circle,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Attachment Preview Area
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              child: _attachedFiles.isEmpty
+                  ? const SizedBox.shrink()
+                  : Container(
+                      height: 70,
+                      padding: const EdgeInsets.only(
+                        left: 12,
+                        right: 12,
+                        top: 8,
+                        bottom: 4,
+                      ),
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _attachedFiles.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          final file = _attachedFiles[index];
+                          return Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? const Color(0xFF333333)
+                                        : const Color(0xFFE0E0E0),
                                   ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    size: 10,
-                                    color: Colors.white,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(11),
+                                  child: Image.file(
+                                    file,
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      },
+                              Positioned(
+                                top: -4,
+                                right: -4,
+                                child: GestureDetector(
+                                  onTap: () => setState(
+                                    () => _attachedFiles.removeAt(index),
+                                  ),
+                                  child: Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      size: 10,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
+            ),
+            // Input Main Bar
+            Row(
+              children: [
+                // Add Attachment Button
+                IconButton(
+                  icon: HugeIcon(
+                    icon: HugeIcons.strokeRoundedPlusSign,
+                    color: isDark ? Colors.white70 : Colors.black87,
+                    size: 22,
                   ),
-          ),
-          // Input Main Bar
-          Row(
-            children: [
-              // Add Attachment Button
-              IconButton(
-                icon: HugeIcon(
-                  icon: HugeIcons.strokeRoundedPlusSign,
-                  color: isDark ? Colors.white70 : Colors.black87,
-                  size: 22,
+                  onPressed: isConnected ? _handleAttach : null,
+                  tooltip: 'Attach images',
                 ),
-                onPressed: isConnected ? _handleAttach : null,
-                tooltip: 'Attach images',
-              ),
-              const SizedBox(width: 4),
-              // Text Field
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  enabled: widget.enabled,
-                  maxLines: 5,
-                  minLines: 1,
-                  textInputAction: TextInputAction.newline,
-                  keyboardType: TextInputType.multiline,
-                  onChanged: (text) {
-                    setState(() {});
-                  },
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Ask anything',
-                    hintStyle: TextStyle(
-                      color: isDark ? Colors.white38 : Colors.black38,
+                const SizedBox(width: 4),
+                // Text Field
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    enabled: widget.enabled,
+                    maxLines: 5,
+                    minLines: 1,
+                    textInputAction: TextInputAction.newline,
+                    keyboardType: TextInputType.multiline,
+                    onChanged: (text) {
+                      setState(() {});
+                    },
+                    style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w400,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: InputDecoration(
+                      hintText: 'Ask anything',
+                      hintStyle: TextStyle(
+                        color: isDark ? Colors.white38 : Colors.black38,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              // Mic Icon (Visual only as per image)
-              // HugeIcon(
-              //   icon: HugeIcons.strokeRoundedMic01,
-              //   color: isDark ? Colors.white38 : Colors.black38,
-              //   size: 22,
-              // ),
-              // const SizedBox(width: 8),
-              // Action Button (Send/Stop)
-              _buildActionButton(canSend, isDark),
-            ],
-          ),
-        ],
+                const SizedBox(width: 8),
+                // Mic Icon (Visual only as per image)
+                // HugeIcon(
+                //   icon: HugeIcons.strokeRoundedMic01,
+                //   color: isDark ? Colors.white38 : Colors.black38,
+                //   size: 22,
+                // ),
+                // const SizedBox(width: 8),
+                // Action Button (Send/Stop)
+                _buildActionButton(canSend, isDark),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
