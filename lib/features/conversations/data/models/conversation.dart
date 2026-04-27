@@ -10,6 +10,10 @@ class Conversation {
   final int messageCount;
   final String? lastMessagePreview;
   final String? systemPrompt;
+  final double? temperature;
+  final double? topP;
+  final int? maxTokens;
+  final int? contextLength;
 
   Conversation({
     required this.id,
@@ -23,6 +27,10 @@ class Conversation {
     this.messageCount = 0,
     this.lastMessagePreview,
     this.systemPrompt,
+    this.temperature,
+    this.topP,
+    this.maxTokens,
+    this.contextLength,
   });
 
   Conversation copyWith({
@@ -39,6 +47,14 @@ class Conversation {
     String? lastMessagePreview,
     String? systemPrompt,
     bool clearSystemPrompt = false,
+    double? temperature,
+    bool clearTemperature = false,
+    double? topP,
+    bool clearTopP = false,
+    int? maxTokens,
+    bool clearMaxTokens = false,
+    int? contextLength,
+    bool clearContextLength = false,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -52,6 +68,10 @@ class Conversation {
       messageCount: messageCount ?? this.messageCount,
       lastMessagePreview: lastMessagePreview ?? this.lastMessagePreview,
       systemPrompt: clearSystemPrompt ? null : (systemPrompt ?? this.systemPrompt),
+      temperature: clearTemperature ? null : (temperature ?? this.temperature),
+      topP: clearTopP ? null : (topP ?? this.topP),
+      maxTokens: clearMaxTokens ? null : (maxTokens ?? this.maxTokens),
+      contextLength: clearContextLength ? null : (contextLength ?? this.contextLength),
     );
   }
 }

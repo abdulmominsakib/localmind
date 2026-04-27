@@ -22,7 +22,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 6060443518060866028),
     name: 'ConversationEntity',
-    lastPropertyId: const obx_int.IdUid(12, 768672924450595967),
+    lastPropertyId: const obx_int.IdUid(16, 9154328066006661329),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -96,6 +96,30 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(12, 768672924450595967),
         name: 'systemPrompt',
         type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 2024052842140577753),
+        name: 'temperature',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(14, 4666617501498182545),
+        name: 'topP',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(15, 6140239983637101227),
+        name: 'maxTokens',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(16, 9154328066006661329),
+        name: 'contextLength',
+        type: 6,
         flags: 0,
       ),
     ],
@@ -476,7 +500,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final systemPromptOffset = object.systemPrompt == null
             ? null
             : fbb.writeString(object.systemPrompt!);
-        fbb.startTable(13);
+        fbb.startTable(17);
         fbb.addInt64(0, object.internalId);
         fbb.addOffset(1, idOffset);
         fbb.addOffset(2, titleOffset);
@@ -489,6 +513,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addInt64(9, object.messageCount);
         fbb.addOffset(10, lastMessagePreviewOffset);
         fbb.addOffset(11, systemPromptOffset);
+        fbb.addFloat64(12, object.temperature);
+        fbb.addFloat64(13, object.topP);
+        fbb.addInt64(14, object.maxTokens);
+        fbb.addInt64(15, object.contextLength);
         fbb.finish(fbb.endTable());
         return object.internalId;
       },
@@ -540,6 +568,26 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final systemPromptParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 26);
+        final temperatureParam = const fb.Float64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          28,
+        );
+        final topPParam = const fb.Float64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          30,
+        );
+        final maxTokensParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          32,
+        );
+        final contextLengthParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          34,
+        );
         final object = ConversationEntity(
           internalId: internalIdParam,
           id: idParam,
@@ -553,6 +601,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
           messageCount: messageCountParam,
           lastMessagePreview: lastMessagePreviewParam,
           systemPrompt: systemPromptParam,
+          temperature: temperatureParam,
+          topP: topPParam,
+          maxTokens: maxTokensParam,
+          contextLength: contextLengthParam,
         );
         obx_int.InternalToManyAccess.setRelInfo<ConversationEntity>(
           object.messages,
@@ -979,6 +1031,26 @@ class ConversationEntity_ {
   /// See [ConversationEntity.systemPrompt].
   static final systemPrompt = obx.QueryStringProperty<ConversationEntity>(
     _entities[0].properties[11],
+  );
+
+  /// See [ConversationEntity.temperature].
+  static final temperature = obx.QueryDoubleProperty<ConversationEntity>(
+    _entities[0].properties[12],
+  );
+
+  /// See [ConversationEntity.topP].
+  static final topP = obx.QueryDoubleProperty<ConversationEntity>(
+    _entities[0].properties[13],
+  );
+
+  /// See [ConversationEntity.maxTokens].
+  static final maxTokens = obx.QueryIntegerProperty<ConversationEntity>(
+    _entities[0].properties[14],
+  );
+
+  /// See [ConversationEntity.contextLength].
+  static final contextLength = obx.QueryIntegerProperty<ConversationEntity>(
+    _entities[0].properties[15],
   );
 
   /// see [ConversationEntity.messages]

@@ -6,6 +6,7 @@ import 'app.dart';
 import 'core/providers/highlighter_provider.dart';
 import 'core/providers/storage_providers.dart';
 import 'core/storage/objectbox_store.dart';
+import 'features/chat/providers/tts_providers.dart';
 import 'features/on_device/providers/on_device_providers.dart';
 
 Future<void> main() async {
@@ -23,8 +24,14 @@ Future<void> main() async {
     ],
   );
 
-  // Initialize notification service
+  // Initialize services
   await container.read(downloadNotificationServiceProvider).init();
+  
+  // Pre-initialize KittenTTS (neural engine)
+  // Don't await it to avoid blocking app startup, but start the process
+  container.read(kittenTtsServiceProvider).initialize().catchError((e) {
+    print('Failed to pre-initialize KittenTTS: $e');
+  });
 
   runApp(
     UncontrolledProviderScope(

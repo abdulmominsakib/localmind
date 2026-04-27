@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:6060443518060866028",
-      "lastPropertyId": "12:768672924450595967",
+      "lastPropertyId": "16:9154328066006661329",
       "name": "ConversationEntity",
       "properties": [
         {
@@ -70,6 +70,26 @@
           "id": "12:768672924450595967",
           "name": "systemPrompt",
           "type": 9
+        },
+        {
+          "id": "13:2024052842140577753",
+          "name": "temperature",
+          "type": 8
+        },
+        {
+          "id": "14:4666617501498182545",
+          "name": "topP",
+          "type": 8
+        },
+        {
+          "id": "15:6140239983637101227",
+          "name": "maxTokens",
+          "type": 6
+        },
+        {
+          "id": "16:9154328066006661329",
+          "name": "contextLength",
+          "type": 6
         }
       ],
       "relations": []

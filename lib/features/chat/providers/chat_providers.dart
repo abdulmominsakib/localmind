@@ -175,10 +175,25 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
   final settings = ref.watch(settingsProvider);
   final activeConv = ref.watch(conv.activeConversationProvider);
 
+  // Start with app-level defaults
   double temperature = settings.temperature;
   double topP = settings.topP;
   int maxTokens = settings.maxTokens;
   int contextLength = settings.contextLength;
+
+  // Apply per-conversation overrides if they exist
+  if (activeConv?.temperature != null) {
+    temperature = activeConv!.temperature!;
+  }
+  if (activeConv?.topP != null) {
+    topP = activeConv!.topP!;
+  }
+  if (activeConv?.maxTokens != null) {
+    maxTokens = activeConv!.maxTokens!;
+  }
+  if (activeConv?.contextLength != null) {
+    contextLength = activeConv!.contextLength!;
+  }
 
   String? systemPrompt;
   if (activeConv?.personaId != null) {

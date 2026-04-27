@@ -31,46 +31,6 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
-          _SectionHeader(title: 'Chat Parameters'),
-          _SliderSetting(
-            label: 'Temperature',
-            value: settings.temperature,
-            min: 0.0,
-            max: 2.0,
-            divisions: 20,
-            description:
-                'Controls randomness. Lower = focused, Higher = creative.',
-            onChanged: (v) =>
-                ref.read(settingsProvider.notifier).setTemperature(v),
-            isDark: isDark,
-          ),
-          _SliderSetting(
-            label: 'Top P',
-            value: settings.topP,
-            min: 0.0,
-            max: 1.0,
-            divisions: 10,
-            description: 'Nucleus sampling threshold. Lower = more focused.',
-            onChanged: (v) => ref.read(settingsProvider.notifier).setTopP(v),
-            isDark: isDark,
-          ),
-          _IntInputSetting(
-            label: 'Max Tokens',
-            value: settings.maxTokens,
-            description: 'Maximum response length in tokens.',
-            onChanged: (v) =>
-                ref.read(settingsProvider.notifier).setMaxTokens(v),
-            isDark: isDark,
-          ),
-          _IntInputSetting(
-            label: 'Context Length',
-            value: settings.contextLength,
-            description: 'Conversation history window in tokens.',
-            onChanged: (v) =>
-                ref.read(settingsProvider.notifier).setContextLength(v),
-            isDark: isDark,
-          ),
-          const Divider(height: 32),
           _SectionHeader(title: 'Appearance'),
           _ThemeToggle(current: settings.themeMode, ref: ref),
           _SliderSetting(
@@ -100,6 +60,30 @@ class SettingsScreen extends ConsumerWidget {
                 ref.read(settingsProvider.notifier).setCodeThemeLight(v),
             isDark: isDark,
           ),
+          const Divider(height: 32),
+          _SectionHeader(title: 'Text-to-Speech'),
+          _TtsEngineToggle(current: settings.ttsEngine, ref: ref, isDark: isDark),
+          if (settings.ttsEngine == TtsEngine.kitten) ...[
+            const SizedBox(height: 8),
+            _KittenVoiceDropdown(
+              current: settings.kittenTtsVoice,
+              onChanged: (v) =>
+                  ref.read(settingsProvider.notifier).setKittenTtsVoice(v),
+              isDark: isDark,
+            ),
+            _SliderSetting(
+              label: 'Kitten TTS Speed',
+              value: settings.kittenTtsSpeed,
+              min: 0.5,
+              max: 2.0,
+              divisions: 15,
+              description: 'Adjust the playback rate of neural TTS.',
+              onChanged: (v) =>
+                  ref.read(settingsProvider.notifier).setKittenTtsSpeed(v),
+              isDark: isDark,
+              valueFormat: (v) => '${v.toStringAsFixed(2)}x',
+            ),
+          ],
           const Divider(height: 32),
           _SectionHeader(title: 'Behavior'),
           _ToggleSetting(
@@ -887,6 +871,228 @@ class _DangerousAction extends StatelessWidget {
           minimumSize: const Size(double.infinity, 44),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
+      ),
+    );
+  }
+}
+
+class _TtsEngineToggle extends StatelessWidget {
+  const _TtsEngineToggle({
+    required this.current,
+    required this.ref,
+    required this.isDark,
+  });
+
+  final TtsEngine current;
+  final WidgetRef ref;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'TTS Engine',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white : Colors.black,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => ref
+                      .read(settingsProvider.notifier)
+                      .setTtsEngine(TtsEngine.system),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: current == TtsEngine.system
+                          ? accent.withValues(alpha: 0.15)
+                          : (isDark
+                              ? const Color(0xFF1F1F1F)
+                              : const Color(0xFFF5F5F5)),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: current == TtsEngine.system
+                            ? accent
+                            : (isDark
+                                ? const Color(0xFF3A3A3A)
+                                : const Color(0xFFE5E5E5)),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.record_voice_over,
+                          size: 20,
+                          color: current == TtsEngine.system
+                              ? accent
+                              : (isDark
+                                  ? const Color(0xFF888888)
+                                  : const Color(0xFF999999)),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'System TTS',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: current == TtsEngine.system
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color: current == TtsEngine.system
+                                ? accent
+                                : (isDark
+                                    ? const Color(0xFF888888)
+                                    : const Color(0xFF999999)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => ref
+                      .read(settingsProvider.notifier)
+                      .setTtsEngine(TtsEngine.kitten),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: current == TtsEngine.kitten
+                          ? accent.withValues(alpha: 0.15)
+                          : (isDark
+                              ? const Color(0xFF1F1F1F)
+                              : const Color(0xFFF5F5F5)),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: current == TtsEngine.kitten
+                            ? accent
+                            : (isDark
+                                ? const Color(0xFF3A3A3A)
+                                : const Color(0xFFE5E5E5)),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.auto_awesome,
+                          size: 20,
+                          color: current == TtsEngine.kitten
+                              ? accent
+                              : (isDark
+                                  ? const Color(0xFF888888)
+                                  : const Color(0xFF999999)),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Kitten TTS',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: current == TtsEngine.kitten
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color: current == TtsEngine.kitten
+                                ? accent
+                                : (isDark
+                                    ? const Color(0xFF888888)
+                                    : const Color(0xFF999999)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            current == TtsEngine.system
+                ? 'Uses your device\'s built-in text-to-speech engine.'
+                : 'Uses the Kitten neural TTS model running locally on your device.',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? const Color(0xFF666666) : const Color(0xFF999999),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KittenVoiceDropdown extends StatelessWidget {
+  const _KittenVoiceDropdown({
+    required this.current,
+    required this.onChanged,
+    required this.isDark,
+  });
+
+  final KittenTtsVoice current;
+  final ValueChanged<KittenTtsVoice> onChanged;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Neural Voice',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white : Colors.black,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5),
+              ),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<KittenTtsVoice>(
+                value: current,
+                isExpanded: true,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                borderRadius: BorderRadius.circular(8),
+                dropdownColor: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+                items: KittenTtsVoice.values.map((voice) {
+                  return DropdownMenuItem(
+                    value: voice,
+                    child: Text(
+                      voice.displayName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (v) {
+                  if (v != null) onChanged(v);
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

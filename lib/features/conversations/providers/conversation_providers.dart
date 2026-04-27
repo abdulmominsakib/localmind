@@ -206,6 +206,50 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     }
   }
 
+  Future<void> updateChatParams(
+    String id, {
+    double? temperature,
+    bool clearTemperature = false,
+    double? topP,
+    bool clearTopP = false,
+    int? maxTokens,
+    bool clearMaxTokens = false,
+    int? contextLength,
+    bool clearContextLength = false,
+  }) async {
+    final db = ref.read(databaseProvider);
+    final conversations = state.value ?? [];
+    final existingIndex = conversations.indexWhere((c) => c.id == id);
+    if (existingIndex != -1) {
+      final existing = conversations[existingIndex];
+      final updated = existing.copyWith(
+        temperature: temperature,
+        clearTemperature: clearTemperature,
+        topP: topP,
+        clearTopP: clearTopP,
+        maxTokens: maxTokens,
+        clearMaxTokens: clearMaxTokens,
+        contextLength: contextLength,
+        clearContextLength: clearContextLength,
+        updatedAt: DateTime.now(),
+      );
+
+      final query = db.conversationBox
+          .query(ConversationEntity_.id.equals(id))
+          .build();
+      final existingEntity = query.findFirst();
+      query.close();
+
+      final entity = ConversationEntity.fromDomain(updated);
+      if (existingEntity != null) {
+        entity.internalId = existingEntity.internalId;
+      }
+      db.conversationBox.put(entity);
+
+      state = AsyncData(await _loadAll());
+    }
+  }
+
   Future<void> deleteAll() async {
     final db = ref.read(databaseProvider);
     db.messageBox.removeAll();

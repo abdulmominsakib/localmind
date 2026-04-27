@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
-import '../../data/tts_service.dart';
+import '../../providers/tts_providers.dart';
 
-class MessageActionBar extends StatefulWidget {
+class MessageActionBar extends ConsumerStatefulWidget {
   const MessageActionBar({
     super.key,
     required this.content,
@@ -22,32 +23,43 @@ class MessageActionBar extends StatefulWidget {
   final VoidCallback? onShare;
 
   @override
-  State<MessageActionBar> createState() => _MessageActionBarState();
+  ConsumerState<MessageActionBar> createState() => _MessageActionBarState();
 }
 
-class _MessageActionBarState extends State<MessageActionBar> {
-  final _tts = TtsService();
+class _MessageActionBarState extends ConsumerState<MessageActionBar> {
   bool _isSpeaking = false;
-
-  @override
-  void dispose() {
-    _tts.dispose();
-    super.dispose();
-  }
+  bool _isInitializing = false;
 
   void _toggleTts() async {
-    if (_isSpeaking) {
-      await _tts.stop();
-      setState(() => _isSpeaking = false);
+    final ttsNotifier = ref.read(unifiedTtsProvider.notifier);
+    final ttsState = ref.read(unifiedTtsProvider);
+
+    if (_isSpeaking || ttsState.isSpeaking) {
+      await ttsNotifier.stop();
+      if (mounted) setState(() => _isSpeaking = false);
     } else {
-      setState(() => _isSpeaking = true);
-      await _tts.speak(widget.content);
-      setState(() => _isSpeaking = false);
+      setState(() {
+        _isInitializing = true;
+        _isSpeaking = true;
+      });
+      try {
+        await ttsNotifier.speak(widget.content);
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isSpeaking = false;
+            _isInitializing = false;
+          });
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final ttsState = ref.watch(unifiedTtsProvider);
+    final isTtsActive = _isSpeaking || ttsState.isSpeaking;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -98,9 +110,13 @@ class _MessageActionBarState extends State<MessageActionBar> {
         ],
         const SizedBox(width: 4),
         _ActionButton(
-          icon: _isSpeaking ? Icons.stop_circle : Icons.volume_up,
-          label: _isSpeaking ? 'Stop' : 'Read Aloud',
-          onTap: _toggleTts,
+          icon: isTtsActive
+              ? Icons.stop_circle
+              : (_isInitializing ? Icons.hourglass_top : Icons.volume_up),
+          label: isTtsActive
+              ? 'Stop'
+              : (_isInitializing ? 'Loading TTS...' : 'Read Aloud'),
+          onTap: _isInitializing ? null : _toggleTts,
         ),
         const SizedBox(width: 4),
         _ActionButton(
@@ -136,6 +152,9 @@ class _MessageActionBarState extends State<MessageActionBar> {
   }
 
   void _showMoreOptions(BuildContext context) {
+    final ttsState = ref.read(unifiedTtsProvider);
+    final isTtsActive = _isSpeaking || ttsState.isSpeaking;
+
     showShadSheet(
       context: context,
       builder: (context) => ShadSheet(
@@ -155,8 +174,8 @@ class _MessageActionBarState extends State<MessageActionBar> {
               },
             ),
             ListTile(
-              leading: Icon(_isSpeaking ? Icons.stop : Icons.volume_up),
-              title: Text(_isSpeaking ? 'Stop Reading' : 'Read Aloud'),
+              leading: Icon(isTtsActive ? Icons.stop : Icons.volume_up),
+              title: Text(isTtsActive ? 'Stop Reading' : 'Read Aloud'),
               onTap: () {
                 Navigator.of(context).pop();
                 _toggleTts();

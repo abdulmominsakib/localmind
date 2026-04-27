@@ -175,6 +175,10 @@ class ConversationEntity {
   int messageCount;
   String? lastMessagePreview;
   String? systemPrompt;
+  double? temperature;
+  double? topP;
+  int? maxTokens;
+  int? contextLength;
 
   @Backlink()
   final messages = ToMany<MessageEntity>();
@@ -192,6 +196,10 @@ class ConversationEntity {
     this.messageCount = 0,
     this.lastMessagePreview,
     this.systemPrompt,
+    this.temperature,
+    this.topP,
+    this.maxTokens,
+    this.contextLength,
   });
 
   factory ConversationEntity.fromDomain(Conversation conversation) {
@@ -207,6 +215,10 @@ class ConversationEntity {
       messageCount: conversation.messageCount,
       lastMessagePreview: conversation.lastMessagePreview,
       systemPrompt: conversation.systemPrompt,
+      temperature: conversation.temperature,
+      topP: conversation.topP,
+      maxTokens: conversation.maxTokens,
+      contextLength: conversation.contextLength,
     );
   }
 
@@ -223,6 +235,10 @@ class ConversationEntity {
       messageCount: messageCount,
       lastMessagePreview: lastMessagePreview,
       systemPrompt: systemPrompt,
+      temperature: temperature,
+      topP: topP,
+      maxTokens: maxTokens,
+      contextLength: contextLength,
     );
   }
 }

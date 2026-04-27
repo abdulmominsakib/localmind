@@ -59,11 +59,11 @@ LocalMind is built with modern, scalable technologies:
 
 LocalMind is rapidly evolving. Here is what's coming next:
 
-- [ ] **AI Voice (Text-to-Speech)**: Listen to your AI's responses with high-quality TTS.
+- [x] **AI Voice (Text-to-Speech)**: Listen to your AI's responses with high-quality TTS.
 - [ ] **Context Smart Replies**: Integrated suggested follow-ups to keep the conversation flowing.
-- [ ] **Multimodal Support**: Attach images and documents for vision-capable models.
+- [x] **Multimodal Support**: Attach images and documents for vision-capable models.
 - [ ] **Tablet/Desktop Optimization**: A split-view layout for large-screen productivity.
-- [ ] **Export Options**: Export your chats to Markdown or PDF to share or archive.
+- [x] **Export Options**: Export your chats to Markdown or PDF to share or archive.
 - [ ] **Quick Shortcuts**: OS-level widgets and shortcuts for launching new chats instantly.
 
 ## 🛠️ Getting Started

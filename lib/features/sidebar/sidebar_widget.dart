@@ -22,10 +22,12 @@ class SidebarWidget extends ConsumerWidget {
     final theme = Theme.of(context);
     final location = GoRouterState.of(context).uri.toString();
 
+    final isHistory = location.startsWith(AppRoutes.chatHistory);
     final isServers = location.startsWith(AppRoutes.servers);
     final isPersonas = location.startsWith(AppRoutes.personas);
     final themeMode = ref.watch(themeModeProvider);
     final isLocalModels = location.startsWith(AppRoutes.onDeviceModels);
+    final isSettings = location.startsWith(AppRoutes.settings);
 
     return Container(
       width: 300,
@@ -68,7 +70,7 @@ class SidebarWidget extends ConsumerWidget {
                     DrawerNavItem(
                       iconData: HugeIcons.strokeRoundedChatting01,
                       label: 'History',
-                      isSelected: isServers,
+                      isSelected: isHistory,
                       onTap: () {
                         if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
                           Navigator.pop(context);
@@ -112,6 +114,17 @@ class SidebarWidget extends ConsumerWidget {
                     const SizedBox(height: 8),
                     const Divider(height: 1, indent: 16, endIndent: 16),
                     const SizedBox(height: 8),
+                    DrawerNavItem(
+                      iconData: HugeIcons.strokeRoundedSettings01,
+                      label: 'Settings',
+                      isSelected: isSettings,
+                      onTap: () {
+                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                          Navigator.pop(context);
+                        }
+                        context.go(AppRoutes.settings);
+                      },
+                    ),
                     DrawerNavItem(
                       iconData: _getThemeIcon(themeMode),
                       label: 'Appearance: ${_getThemeLabel(themeMode)}',

@@ -14,6 +14,7 @@ import '../data/models/message.dart';
 import '../providers/chat_providers.dart';
 import 'components/chat_bubble.dart';
 import 'components/chat_input_bar.dart';
+import 'components/chat_filter_sheet.dart';
 import 'components/mcp_config_sheet.dart';
 import 'components/notification_permission_banner.dart';
 import '../../conversations/data/models/conversation.dart';
@@ -143,9 +144,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: () => context.push(AppRoutes.settings),
-                tooltip: 'Settings',
+                icon: HugeIcon(
+                  icon: HugeIcons.strokeRoundedFilterHorizontal,
+                  size: 24,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                onPressed: () => showChatFilterSheet(context),
+                tooltip: 'Chat Parameters',
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert),

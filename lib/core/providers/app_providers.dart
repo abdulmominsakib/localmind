@@ -83,6 +83,12 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(codeThemeLight: value));
   void setPreferredBackend(LiteLmBackendType value) =>
       _update(state.copyWith(preferredBackend: value));
+  void setTtsEngine(TtsEngine value) =>
+      _update(state.copyWith(ttsEngine: value));
+  void setKittenTtsVoice(KittenTtsVoice value) =>
+      _update(state.copyWith(kittenTtsVoice: value));
+  void setKittenTtsSpeed(double value) =>
+      _update(state.copyWith(kittenTtsSpeed: value));
 
   Future<void> _update(AppSettings updated) async {
     state = updated;

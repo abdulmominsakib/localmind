@@ -30,6 +30,9 @@ class AppSettings {
   final SyntaxThemeName codeThemeDark;
   final SyntaxThemeName codeThemeLight;
   final LiteLmBackendType preferredBackend;
+  final TtsEngine ttsEngine;
+  final KittenTtsVoice kittenTtsVoice;
+  final double kittenTtsSpeed;
 
   AppSettings({
     this.temperature = 0.7,
@@ -52,6 +55,9 @@ class AppSettings {
     this.codeThemeDark = SyntaxThemeName.dark,
     this.codeThemeLight = SyntaxThemeName.light,
     this.preferredBackend = LiteLmBackendType.cpu,
+    this.ttsEngine = TtsEngine.system,
+    this.kittenTtsVoice = KittenTtsVoice.bella,
+    this.kittenTtsSpeed = 1.0,
   });
 
   AppSettings copyWith({
@@ -75,6 +81,9 @@ class AppSettings {
     SyntaxThemeName? codeThemeDark,
     SyntaxThemeName? codeThemeLight,
     LiteLmBackendType? preferredBackend,
+    TtsEngine? ttsEngine,
+    KittenTtsVoice? kittenTtsVoice,
+    double? kittenTtsSpeed,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -100,6 +109,9 @@ class AppSettings {
       codeThemeDark: codeThemeDark ?? this.codeThemeDark,
       codeThemeLight: codeThemeLight ?? this.codeThemeLight,
       preferredBackend: preferredBackend ?? this.preferredBackend,
+      ttsEngine: ttsEngine ?? this.ttsEngine,
+      kittenTtsVoice: kittenTtsVoice ?? this.kittenTtsVoice,
+      kittenTtsSpeed: kittenTtsSpeed ?? this.kittenTtsSpeed,
     );
   }
 
@@ -125,6 +137,9 @@ class AppSettings {
       'codeThemeDark': codeThemeDark.index,
       'codeThemeLight': codeThemeLight.index,
       'preferredBackend': preferredBackend.index,
+      'ttsEngine': ttsEngine.index,
+      'kittenTtsVoice': kittenTtsVoice.index,
+      'kittenTtsSpeed': kittenTtsSpeed,
     };
   }
 
@@ -150,6 +165,9 @@ class AppSettings {
       codeThemeDark: SyntaxThemeName.values[map['codeThemeDark'] ?? 0],
       codeThemeLight: SyntaxThemeName.values[map['codeThemeLight'] ?? 1],
       preferredBackend: LiteLmBackendType.values[map['preferredBackend'] ?? 0],
+      ttsEngine: TtsEngine.values[map['ttsEngine'] ?? 0],
+      kittenTtsVoice: KittenTtsVoice.values[map['kittenTtsVoice'] ?? 0],
+      kittenTtsSpeed: map['kittenTtsSpeed']?.toDouble() ?? 1.0,
     );
   }
 

@@ -1,0 +1,29 @@
+{
+  "name": "Kitten TTS Nano",
+  "version": "0.8",
+  "type": "ONNX2",
+  "model": "kitten-tts-nano-0.8",
+  "voices" : "voices.npz",
+  "model_file": "kitten_tts_nano_v0_8.onnx",
+  "speed_priors": {
+    "expr-voice-2-f": 0.8,
+    "expr-voice-2-m": 0.8,
+    "expr-voice-3-m": 0.8,
+    "expr-voice-3-f": 0.8,
+    "expr-voice-4-m": 0.9,
+    "expr-voice-4-f": 0.8,
+    "expr-voice-5-m": 0.8,
+    "expr-voice-5-f": 0.8
+  },
+  "voice_aliases": {
+    "Bella": "expr-voice-2-f",
+    "Jasper": "expr-voice-2-m",
+    "Luna": "expr-voice-3-f",
+    "Bruno": "expr-voice-3-m",
+    "Rosie": "expr-voice-4-f",
+    "Hugo": "expr-voice-4-m",
+    "Kiki": "expr-voice-5-f",
+    "Leo": "expr-voice-5-m"
+ }
+  
+}
