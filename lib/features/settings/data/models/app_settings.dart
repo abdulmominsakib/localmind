@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/enums.dart';
+import '../../../../features/tts/data/kitten_tts_model.dart';
 
 enum SyntaxThemeName {
   light,
@@ -34,6 +35,7 @@ class AppSettings {
   final TtsEngine ttsEngine;
   final KittenTtsVoice kittenTtsVoice;
   final double kittenTtsSpeed;
+  final KittenTtsModelVariant kittenTtsModelVariant;
 
   AppSettings({
     this.temperature = 0.7,
@@ -60,6 +62,7 @@ class AppSettings {
     this.ttsEngine = TtsEngine.system,
     this.kittenTtsVoice = KittenTtsVoice.bella,
     this.kittenTtsSpeed = 1.0,
+    this.kittenTtsModelVariant = KittenTtsModelVariant.nanoInt8,
   });
 
   AppSettings copyWith({
@@ -87,6 +90,7 @@ class AppSettings {
     TtsEngine? ttsEngine,
     KittenTtsVoice? kittenTtsVoice,
     double? kittenTtsSpeed,
+    KittenTtsModelVariant? kittenTtsModelVariant,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -116,6 +120,7 @@ class AppSettings {
       ttsEngine: ttsEngine ?? this.ttsEngine,
       kittenTtsVoice: kittenTtsVoice ?? this.kittenTtsVoice,
       kittenTtsSpeed: kittenTtsSpeed ?? this.kittenTtsSpeed,
+      kittenTtsModelVariant: kittenTtsModelVariant ?? this.kittenTtsModelVariant,
     );
   }
 
@@ -145,6 +150,7 @@ class AppSettings {
       'ttsEngine': ttsEngine.index,
       'kittenTtsVoice': kittenTtsVoice.index,
       'kittenTtsSpeed': kittenTtsSpeed,
+      'kittenTtsModelVariant': kittenTtsModelVariant.name,
     };
   }
 
@@ -174,7 +180,17 @@ class AppSettings {
       ttsEngine: TtsEngine.values[map['ttsEngine'] ?? 0],
       kittenTtsVoice: KittenTtsVoice.values[map['kittenTtsVoice'] ?? 0],
       kittenTtsSpeed: map['kittenTtsSpeed']?.toDouble() ?? 1.0,
+      kittenTtsModelVariant: _parseVariant(map['kittenTtsModelVariant']),
     );
+  }
+
+  static KittenTtsModelVariant _parseVariant(dynamic value) {
+    if (value is String) {
+      try {
+        return KittenTtsModelVariant.values.byName(value);
+      } catch (_) {}
+    }
+    return KittenTtsModelVariant.nanoInt8;
   }
 
   String toJson() => json.encode(toMap());

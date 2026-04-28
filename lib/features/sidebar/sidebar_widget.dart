@@ -27,6 +27,7 @@ class SidebarWidget extends ConsumerWidget {
     final isPersonas = location.startsWith(AppRoutes.personas);
     final themeMode = ref.watch(themeModeProvider);
     final isLocalModels = location.startsWith(AppRoutes.onDeviceModels);
+    final isTtsModels = location.startsWith(AppRoutes.ttsModels);
     final isSettings = location.startsWith(AppRoutes.settings);
 
     return Container(
@@ -98,6 +99,17 @@ class SidebarWidget extends ConsumerWidget {
                           Navigator.pop(context);
                         }
                         context.go(AppRoutes.onDeviceModels);
+                      },
+                    ),
+                    _SidebarNavItem(
+                      icon: const Icon(Icons.record_voice_over, size: 20),
+                      label: 'TTS Models',
+                      isSelected: isTtsModels,
+                      onTap: () {
+                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                          Navigator.pop(context);
+                        }
+                        context.go(AppRoutes.ttsModels);
                       },
                     ),
                     DrawerNavItem(
@@ -178,5 +190,62 @@ class SidebarWidget extends ConsumerWidget {
       case AppThemeType.claude:
         return 'Claude';
     }
+  }
+}
+
+/// A sidebar navigation item that accepts any Widget as an icon.
+/// Used when HugeIcons doesn't have a suitable icon.
+class _SidebarNavItem extends StatelessWidget {
+  const _SidebarNavItem({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final Widget icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark
+                    ? theme.colorScheme.primary.withAlpha(30)
+                    : theme.colorScheme.primary.withAlpha(20))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              icon,
+              const SizedBox(width: 16),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected
+                      ? (isDark ? Colors.white : theme.colorScheme.primary)
+                      : (isDark ? Colors.white70 : Colors.black87),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

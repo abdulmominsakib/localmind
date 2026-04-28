@@ -21,7 +21,8 @@ import 'features/servers/data/models/server.dart';
 import 'features/servers/providers/server_providers.dart';
 import 'features/servers/views/add_server_screen.dart';
 import 'features/servers/views/server_list_screen.dart';
-import 'features/settings/screens/settings_screen.dart';
+import 'features/tts/views/tts_model_manager_screen.dart';
+import 'features/settings/views/settings_screen.dart';
 import 'features/sidebar/sidebar_drawer.dart';
 import 'features/sidebar/sidebar_widget.dart';
 
@@ -122,7 +123,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.settings,
             pageBuilder: (context, state) =>
-                const NoTransitionPage(child: SettingsScreen()),
+                const NoTransitionPage(child: SettingsViews()),
           ),
           GoRoute(
             path: AppRoutes.chatHistory,
@@ -133,6 +134,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.onDeviceModels,
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: OnDeviceModelManagerScreen()),
+          ),
+          GoRoute(
+            path: AppRoutes.ttsModels,
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: TtsModelManagerScreen()),
           ),
         ],
       ),

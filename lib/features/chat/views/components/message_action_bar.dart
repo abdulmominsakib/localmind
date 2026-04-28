@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
-import '../../providers/tts_providers.dart';
+import '../../../tts/providers/tts_providers.dart';
 
 class MessageActionBar extends ConsumerStatefulWidget {
   const MessageActionBar({
