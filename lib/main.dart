@@ -30,7 +30,7 @@ Future<void> main() async {
   // Pre-initialize KittenTTS (neural engine)
   // Don't await it to avoid blocking app startup, but start the process
   container.read(kittenTtsServiceProvider).initialize().catchError((e) {
-    print('Failed to pre-initialize KittenTTS: $e');
+    debugPrint('Failed to pre-initialize KittenTTS: $e');
   });
 
   runApp(

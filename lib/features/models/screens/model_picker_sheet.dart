@@ -10,6 +10,8 @@ import '../../on_device/data/models/on_device_model.dart';
 import '../../on_device/data/models/download_status.dart';
 import '../../on_device/providers/on_device_providers.dart';
 import '../../on_device/providers/foreground_download_providers.dart';
+import '../../../core/providers/device_info_providers.dart';
+import '../../../core/device/device_memory_service.dart';
 
 final modelSearchQueryProvider = NotifierProvider<_ModelSearchNotifier, String>(
   _ModelSearchNotifier.new,
@@ -649,6 +651,7 @@ class _OnDeviceModelList extends ConsumerWidget {
     final downloadedAsync = ref.watch(downloadedModelsProvider);
     final engineState = ref.watch(onDeviceEngineProvider);
     final searchQuery = ref.watch(modelSearchQueryProvider);
+    final deviceMemoryAsync = ref.watch(deviceMemoryProvider);
 
     return downloadedAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -720,6 +723,7 @@ class _OnDeviceModelList extends ConsumerWidget {
               isCurrentlyLoading: isCurrentlyLoading,
               isSelected: isSelected,
               isDark: isDark,
+              deviceMemory: deviceMemoryAsync.value,
             );
           },
         );
@@ -736,6 +740,7 @@ class _OnDeviceModelTile extends ConsumerWidget {
     required this.isCurrentlyLoading,
     required this.isSelected,
     required this.isDark,
+    this.deviceMemory,
   });
 
   final OnDeviceModel model;
@@ -744,6 +749,7 @@ class _OnDeviceModelTile extends ConsumerWidget {
   final bool isCurrentlyLoading;
   final bool isSelected;
   final bool isDark;
+  final DeviceMemoryInfo? deviceMemory;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -770,190 +776,195 @@ class _OnDeviceModelTile extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         margin: const EdgeInsets.only(bottom: 4),
         decoration: BoxDecoration(
-          color: isSelected
-              ? accent.withValues(alpha: 0.1)
-              : Colors.transparent,
+          color: isSelected ? accent.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          border: isSelected
-              ? Border.all(color: accent.withValues(alpha: 0.3))
-              : null,
+          border: isSelected ? Border.all(color: accent.withValues(alpha: 0.3)) : null,
         ),
         child: Row(
           children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        model.name,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: isDownloaded
-                              ? (isDark ? Colors.white : Colors.black)
-                              : (isDark
-                                    ? const Color(0xFF555555)
-                                    : const Color(0xFF999999)),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (model.isRecommended)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
                         child: Text(
-                          'REC',
+                          model.name,
                           style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: accent,
+                            fontSize: 15,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: isDownloaded
+                                ? (isDark ? Colors.white : Colors.black)
+                                : (isDark ? const Color(0xFF555555) : const Color(0xFF999999)),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                  ],
-                ),
-                if (isDownloading || isPaused)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        LinearProgressIndicator(
-                          value: downloadProgress?.progress ?? 0.0,
-                          backgroundColor: isDark
-                              ? const Color(0xFF333333)
-                              : const Color(0xFFE0E0E0),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          isPaused
-                              ? 'Paused - ${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(0)}%'
-                              : 'Downloading - ${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(0)}%',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isDark
-                                ? const Color(0xFF888888)
-                                : const Color(0xFF999999),
+                      if (model.isRecommended)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'REC',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: accent,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: [
-                    _MetadataChip(
-                      label: model.fileSizeFormatted,
-                      isDark: isDark,
+                  if (deviceMemory != null && deviceMemory!.isOversized(model.minRamMb))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            'May be too large',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    _MetadataChip(label: model.license, isDark: isDark),
-                    _MetadataChip(label: model.parameterLabel, isDark: isDark),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          if (isCurrentlyLoading) ...[
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ] else if (isLoaded) ...[
-            Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: Color(0xFF4CAF50),
-                shape: BoxShape.circle,
+                  if (isDownloading || isPaused)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          LinearProgressIndicator(
+                            value: downloadProgress?.progress ?? 0.0,
+                            backgroundColor: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isPaused
+                                ? 'Paused - ${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(0)}%'
+                                : 'Downloading - ${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(0)}%',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isDark ? const Color(0xFF888888) : const Color(0xFF999999),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      _MetadataChip(
+                        label: model.fileSizeFormatted,
+                        isDark: isDark,
+                      ),
+                      _MetadataChip(label: model.license, isDark: isDark),
+                      _MetadataChip(label: model.parameterLabel, isDark: isDark),
+                    ],
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 8),
-            _IconButton(
-              icon: Icon(
-                Icons.power_settings_new_outlined,
+            if (isCurrentlyLoading) ...[
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ] else if (isLoaded) ...[
+              Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF4CAF50),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              _IconButton(
+                icon: Icon(
+                  Icons.power_settings_new_outlined,
+                  size: 18,
+                  color: Colors.red[400],
+                ),
+                tooltip: 'Unload model',
+                onPressed: () => _unloadModel(context, ref),
+              ),
+            ] else if (isDownloaded) ...[
+              _IconButton(
+                icon: Icon(Icons.play_arrow, size: 20, color: accent),
+                tooltip: 'Load model',
+                onPressed: () => _loadModel(context, ref),
+              ),
+              const SizedBox(width: 4),
+              _IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: isDark ? const Color(0xFF666666) : const Color(0xFF999999),
+                ),
+                tooltip: 'Delete model',
+                onPressed: () => _deleteModel(context, ref),
+              ),
+            ] else if (isDownloading) ...[
+              _IconButton(
+                icon: Icon(
+                  Icons.close,
+                  size: 16,
+                  color: isDark ? const Color(0xFF666666) : const Color(0xFF999999),
+                ),
+                tooltip: 'Cancel download',
+                onPressed: () => ref.read(foregroundDownloadNotifierProvider.notifier).cancelDownload(model.id),
+              ),
+            ] else ...[
+              Icon(
+                Icons.cloud_download_outlined,
                 size: 18,
-                color: Colors.red[400],
+                color: isDark ? const Color(0xFF555555) : const Color(0xFF999999),
               ),
-              tooltip: 'Unload model',
-              onPressed: () => _unloadModel(context, ref),
-            ),
-          ] else if (isDownloaded) ...[
-            _IconButton(
-              icon: Icon(Icons.play_arrow, size: 20, color: accent),
-              tooltip: 'Load model',
-              onPressed: () => _loadModel(context, ref),
-            ),
-            const SizedBox(width: 4),
-            _IconButton(
-              icon: Icon(
-                Icons.delete_outline,
-                size: 18,
-                color: isDark
-                    ? const Color(0xFF666666)
-                    : const Color(0xFF999999),
+              const SizedBox(width: 4),
+              Text(
+                'Not downloaded',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? const Color(0xFF666666) : const Color(0xFF999999),
+                ),
               ),
-              tooltip: 'Delete model',
-              onPressed: () => _deleteModel(context, ref),
-            ),
-          ] else if (isDownloading) ...[
-            _IconButton(
-              icon: Icon(
-                Icons.close,
-                size: 16,
-                color: isDark
-                    ? const Color(0xFF666666)
-                    : const Color(0xFF999999),
-              ),
-              tooltip: 'Cancel download',
-              onPressed: () => ref
-                  .read(foregroundDownloadNotifierProvider.notifier)
-                  .cancelDownload(model.id),
-            ),
-          ] else ...[
-            Icon(
-              Icons.cloud_download_outlined,
-              size: 18,
-              color: isDark ? const Color(0xFF555555) : const Color(0xFF999999),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              'Not downloaded',
-              style: TextStyle(
-                fontSize: 11,
-                color: isDark
-                    ? const Color(0xFF666666)
-                    : const Color(0xFF999999),
-              ),
-            ),
+            ],
+            if (isDownloaded && isSelected && isLoaded) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.check_circle, color: accent, size: 22),
+            ],
           ],
-          if (isDownloaded && isSelected && isLoaded) ...[
-            const SizedBox(width: 4),
-            Icon(Icons.check_circle, color: accent, size: 22),
-          ],
-        ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _loadModel(BuildContext context, WidgetRef ref) async {
+    if (deviceMemory != null) {
+      if (!deviceMemory!.hasEnoughRam(model.minRamMb)) {
+        final proceed = await _showRamWarning(context);
+        if (!proceed) return;
+      }
+    }
+
     final settings = ref.read(settingsProvider);
     final engineNotifier = ref.read(onDeviceEngineProvider.notifier);
 
@@ -977,6 +988,36 @@ class _OnDeviceModelTile extends ConsumerWidget {
         Navigator.pop(context);
       }
     }
+  }
+
+  Future<bool> _showRamWarning(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('RAM Warning'),
+          ],
+        ),
+        content: Text(
+          'Your device has ${deviceMemory!.availableMemoryFormatted} available RAM, but this model recommends at least ${model.minRamMb ~/ 1024 + 1} GB. Loading it might fail or cause instability.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            child: const Text('Proceed Anyway'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   void _selectModel(BuildContext context, WidgetRef ref) {

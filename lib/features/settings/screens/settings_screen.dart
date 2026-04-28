@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:localmind/features/sidebar/sidebar_widget.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/routes/app_routes.dart';
@@ -21,13 +22,8 @@ class SettingsScreen extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
+      drawer: SidebarWidget(),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
@@ -62,7 +58,11 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(height: 32),
           _SectionHeader(title: 'Text-to-Speech'),
-          _TtsEngineToggle(current: settings.ttsEngine, ref: ref, isDark: isDark),
+          _TtsEngineToggle(
+            current: settings.ttsEngine,
+            ref: ref,
+            isDark: isDark,
+          ),
           if (settings.ttsEngine == TtsEngine.kitten) ...[
             const SizedBox(height: 8),
             _KittenVoiceDropdown(
@@ -918,15 +918,15 @@ class _TtsEngineToggle extends StatelessWidget {
                       color: current == TtsEngine.system
                           ? accent.withValues(alpha: 0.15)
                           : (isDark
-                              ? const Color(0xFF1F1F1F)
-                              : const Color(0xFFF5F5F5)),
+                                ? const Color(0xFF1F1F1F)
+                                : const Color(0xFFF5F5F5)),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: current == TtsEngine.system
                             ? accent
                             : (isDark
-                                ? const Color(0xFF3A3A3A)
-                                : const Color(0xFFE5E5E5)),
+                                  ? const Color(0xFF3A3A3A)
+                                  : const Color(0xFFE5E5E5)),
                       ),
                     ),
                     child: Column(
@@ -937,8 +937,8 @@ class _TtsEngineToggle extends StatelessWidget {
                           color: current == TtsEngine.system
                               ? accent
                               : (isDark
-                                  ? const Color(0xFF888888)
-                                  : const Color(0xFF999999)),
+                                    ? const Color(0xFF888888)
+                                    : const Color(0xFF999999)),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -951,8 +951,8 @@ class _TtsEngineToggle extends StatelessWidget {
                             color: current == TtsEngine.system
                                 ? accent
                                 : (isDark
-                                    ? const Color(0xFF888888)
-                                    : const Color(0xFF999999)),
+                                      ? const Color(0xFF888888)
+                                      : const Color(0xFF999999)),
                           ),
                         ),
                       ],
@@ -972,15 +972,15 @@ class _TtsEngineToggle extends StatelessWidget {
                       color: current == TtsEngine.kitten
                           ? accent.withValues(alpha: 0.15)
                           : (isDark
-                              ? const Color(0xFF1F1F1F)
-                              : const Color(0xFFF5F5F5)),
+                                ? const Color(0xFF1F1F1F)
+                                : const Color(0xFFF5F5F5)),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: current == TtsEngine.kitten
                             ? accent
                             : (isDark
-                                ? const Color(0xFF3A3A3A)
-                                : const Color(0xFFE5E5E5)),
+                                  ? const Color(0xFF3A3A3A)
+                                  : const Color(0xFFE5E5E5)),
                       ),
                     ),
                     child: Column(
@@ -991,8 +991,8 @@ class _TtsEngineToggle extends StatelessWidget {
                           color: current == TtsEngine.kitten
                               ? accent
                               : (isDark
-                                  ? const Color(0xFF888888)
-                                  : const Color(0xFF999999)),
+                                    ? const Color(0xFF888888)
+                                    : const Color(0xFF999999)),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -1005,8 +1005,8 @@ class _TtsEngineToggle extends StatelessWidget {
                             color: current == TtsEngine.kitten
                                 ? accent
                                 : (isDark
-                                    ? const Color(0xFF888888)
-                                    : const Color(0xFF999999)),
+                                      ? const Color(0xFF888888)
+                                      : const Color(0xFF999999)),
                           ),
                         ),
                       ],
@@ -1064,7 +1064,9 @@ class _KittenVoiceDropdown extends StatelessWidget {
               color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5),
+                color: isDark
+                    ? const Color(0xFF3A3A3A)
+                    : const Color(0xFFE5E5E5),
               ),
             ),
             child: DropdownButtonHideUnderline(

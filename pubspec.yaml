@@ -61,6 +61,7 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   kitten_tts_flutter: ^0.0.1
   audioplayers: ^6.4.0
+  device_info_plus: ^12.4.0
 
 dev_dependencies:
   flutter_test:

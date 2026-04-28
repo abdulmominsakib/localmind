@@ -15,6 +15,8 @@ import '../../on_device/providers/on_device_providers.dart';
 import '../../on_device/providers/foreground_download_providers.dart';
 import '../../servers/data/models/server.dart';
 import '../../servers/providers/server_providers.dart';
+import '../../../core/providers/device_info_providers.dart';
+import '../../../core/device/device_memory_service.dart';
 
 class OnboardingModelDownloadScreen extends ConsumerStatefulWidget {
   const OnboardingModelDownloadScreen({super.key});
@@ -35,6 +37,7 @@ class _OnboardingModelDownloadScreenState
     final downloadedModelsAsync = ref.watch(downloadedModelsProvider);
     final downloadStates = ref.watch(foregroundDownloadNotifierProvider);
     final isAndroid = Platform.isAndroid;
+    final deviceMemoryAsync = ref.watch(deviceMemoryProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Download a Model')),
@@ -71,6 +74,7 @@ class _OnboardingModelDownloadScreenState
                   ],
                 ),
               ),
+            _buildMemoryInfo(context, ref, deviceMemoryAsync),
             ...models.map((model) {
               final isDownloaded = downloadedModelsAsync.when(
                 data: (set) => set.contains(model.id),
@@ -86,6 +90,7 @@ class _OnboardingModelDownloadScreenState
                   isDownloaded: isDownloaded,
                   progressInfo: progressInfo,
                   theme: theme,
+                  deviceMemory: deviceMemoryAsync.value,
                 ),
               );
             }),
@@ -148,6 +153,89 @@ class _OnboardingModelDownloadScreenState
       }
     }
   }
+
+  Widget _buildMemoryInfo(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<DeviceMemoryInfo> memoryAsync,
+  ) {
+    return memoryAsync.when(
+      data: (info) {
+        if (info.totalMemoryMb == 0) return const SizedBox.shrink();
+        final theme = Theme.of(context);
+        return Container(
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 24),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+          ),
+          child: Row(
+            children: [
+              _MemoryStat(
+                label: 'Total RAM',
+                value: info.totalMemoryFormatted,
+                icon: Icons.memory,
+              ),
+              const SizedBox(width: 24),
+              _MemoryStat(
+                label: 'Available',
+                value: info.availableMemoryFormatted,
+                icon: Icons.event_available,
+                color: info.availableMemoryMb < 1024 ? Colors.orange : null,
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _MemoryStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color? color;
+
+  const _MemoryStat({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color ?? theme.colorScheme.primary),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 class _ModelCard extends ConsumerWidget {
@@ -155,12 +243,14 @@ class _ModelCard extends ConsumerWidget {
   final bool isDownloaded;
   final DownloadProgressInfo? progressInfo;
   final ThemeData theme;
+  final DeviceMemoryInfo? deviceMemory;
 
   const _ModelCard({
     required this.model,
     required this.isDownloaded,
     this.progressInfo,
     required this.theme,
+    this.deviceMemory,
   });
 
   @override
@@ -217,6 +307,23 @@ class _ModelCard extends ConsumerWidget {
                 ),
             ],
           ),
+          if (deviceMemory != null && deviceMemory!.isOversized(model.minRamMb))
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 14),
+                  const SizedBox(width: 4),
+                  Text(
+                    'May be too large for this device',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 4),
           Text(
             model.description,
@@ -299,9 +406,7 @@ class _ModelCard extends ConsumerWidget {
                 const Spacer(),
                 ShadButton.outline(
                   size: ShadButtonSize.sm,
-                  onPressed: () => ref
-                      .read(foregroundDownloadNotifierProvider.notifier)
-                      .startDownload(model.id),
+                  onPressed: () => _startDownload(context, ref),
                   child: const Text('Resume'),
                 ),
               ],
@@ -309,13 +414,54 @@ class _ModelCard extends ConsumerWidget {
           else
             ShadButton.outline(
               size: ShadButtonSize.sm,
-              onPressed: () => ref
-                  .read(foregroundDownloadNotifierProvider.notifier)
-                  .startDownload(model.id),
+              onPressed: () => _startDownload(context, ref),
               child: const Text('Download'),
             ),
         ],
       ),
     );
+  }
+
+  Future<void> _startDownload(BuildContext context, WidgetRef ref) async {
+    if (deviceMemory != null) {
+      if (deviceMemory!.isOversized(model.minRamMb)) {
+        final proceed = await _showRamWarning(context);
+        if (!proceed) return;
+      }
+    }
+
+    await ref
+        .read(foregroundDownloadNotifierProvider.notifier)
+        .startDownload(model.id);
+  }
+
+  Future<bool> _showRamWarning(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('RAM Warning'),
+          ],
+        ),
+        content: Text(
+          'This model requires at least ${model.minRamMb ~/ 1024 + 1} GB RAM, but your device has ${deviceMemory!.totalMemoryFormatted}. It may not run correctly or could cause the app to crash.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            child: const Text('Proceed Anyway'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 }
