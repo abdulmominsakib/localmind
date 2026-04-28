@@ -39,6 +39,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     String? systemPrompt,
     String? serverId,
     String? modelId,
+    bool? mcpEnabled,
   }) async {
     final db = ref.read(databaseProvider);
     final now = DateTime.now();
@@ -56,11 +57,39 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       messageCount: 0,
       lastMessagePreview: null,
       systemPrompt: systemPrompt,
+      mcpEnabled: mcpEnabled,
     );
 
     db.conversationBox.put(ConversationEntity.fromDomain(conversation));
     state = AsyncData(await _loadAll());
     return conversation;
+  }
+
+  Future<void> updateMcpEnabled(String id, bool enabled) async {
+    final db = ref.read(databaseProvider);
+    final conversations = state.value ?? [];
+    final existingIndex = conversations.indexWhere((c) => c.id == id);
+    if (existingIndex != -1) {
+      final existing = conversations[existingIndex];
+      final updated = existing.copyWith(
+        mcpEnabled: enabled,
+        updatedAt: DateTime.now(),
+      );
+
+      final query = db.conversationBox
+          .query(ConversationEntity_.id.equals(id))
+          .build();
+      final existingEntity = query.findFirst();
+      query.close();
+
+      final entity = ConversationEntity.fromDomain(updated);
+      if (existingEntity != null) {
+        entity.internalId = existingEntity.internalId;
+      }
+      db.conversationBox.put(entity);
+
+      state = AsyncData(await _loadAll());
+    }
   }
 
   Future<void> renameConversation(String id, String newTitle) async {

@@ -11,6 +11,7 @@ import 'package:localmind/features/conversations/providers/conversation_provider
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/personas/providers/personas_providers.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
+import './chat_mcp_providers.dart';
 
 import '../../../core/models/enums.dart';
 import '../../../core/providers/service_providers.dart';
@@ -418,6 +419,11 @@ class ChatNotifier extends Notifier<ChatState> {
       ref
           .read(conv.activeConversationProvider.notifier)
           .setActiveConversation(conversation);
+
+      // Sync MCP config for this chat
+      ref
+          .read(chatMcpConfigProvider.notifier)
+          .setEnabled(conversation.mcpEnabled ?? true);
     } catch (e, stackTrace) {
       Log.fatal(error: e, stackTrace: stackTrace);
       state = state.copyWith(
@@ -434,6 +440,12 @@ class ChatNotifier extends Notifier<ChatState> {
     ref
         .read(conv.activeConversationProvider.notifier)
         .setActiveConversation(null);
+
+    // Sync MCP config for new chat
+    final settings = ref.read(settingsProvider);
+    ref
+        .read(chatMcpConfigProvider.notifier)
+        .setEnabled(settings.newChatMcpEnabled);
   }
 
   String generateUuid() {
@@ -487,6 +499,7 @@ class ChatNotifier extends Notifier<ChatState> {
     final selectedModel = ref.read(selectedModelProvider);
     final chatParams = ref.read(chatParamsProvider);
     final chatService = ref.read(chatServiceProvider);
+    final settings = ref.read(settingsProvider);
 
     if (server == null) {
       state = state.copyWith(errorMessage: 'No server connected');
@@ -509,11 +522,17 @@ class ChatNotifier extends Notifier<ChatState> {
             modelId: selectedModel?.id,
             personaId: selectedPersona?.id,
             systemPrompt: selectedPersona?.systemPrompt,
+            mcpEnabled: settings.newChatMcpEnabled,
           );
       _currentConversationId = conversation.id;
       ref
           .read(conv.activeConversationProvider.notifier)
           .setActiveConversation(conversation);
+
+      // Sync MCP config for the newly created chat
+      ref
+          .read(chatMcpConfigProvider.notifier)
+          .setEnabled(settings.newChatMcpEnabled);
 
       // Clear preselected persona after it's applied to the new conversation
       ref.read(selectedPersonaProvider.notifier).clear();

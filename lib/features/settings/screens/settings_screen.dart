@@ -128,6 +128,14 @@ class SettingsScreen extends ConsumerWidget {
                 ref.read(settingsProvider.notifier).setMcpEnabled(v),
             isDark: isDark,
           ),
+          if (settings.mcpEnabled)
+            _ToggleSetting(
+              label: 'New Chat MCP Default',
+              value: settings.newChatMcpEnabled,
+              onChanged: (v) =>
+                  ref.read(settingsProvider.notifier).setNewChatMcpEnabled(v),
+              isDark: isDark,
+            ),
           const Divider(height: 32),
           _SectionHeader(title: 'On-Device Inference'),
           Padding(

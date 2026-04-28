@@ -179,6 +179,7 @@ class ConversationEntity {
   double? topP;
   int? maxTokens;
   int? contextLength;
+  bool? mcpEnabled;
 
   @Backlink()
   final messages = ToMany<MessageEntity>();
@@ -200,6 +201,7 @@ class ConversationEntity {
     this.topP,
     this.maxTokens,
     this.contextLength,
+    this.mcpEnabled,
   });
 
   factory ConversationEntity.fromDomain(Conversation conversation) {
@@ -219,6 +221,7 @@ class ConversationEntity {
       topP: conversation.topP,
       maxTokens: conversation.maxTokens,
       contextLength: conversation.contextLength,
+      mcpEnabled: conversation.mcpEnabled,
     );
   }
 
@@ -239,8 +242,10 @@ class ConversationEntity {
       topP: topP,
       maxTokens: maxTokens,
       contextLength: contextLength,
+      mcpEnabled: mcpEnabled,
     );
   }
+
 }
 
 @Entity()

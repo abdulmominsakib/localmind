@@ -27,6 +27,7 @@ class AppSettings {
   final bool hasCompletedOnboarding;
   final bool hasAskedForNotifications;
   final bool mcpEnabled;
+  final bool newChatMcpEnabled;
   final SyntaxThemeName codeThemeDark;
   final SyntaxThemeName codeThemeLight;
   final LiteLmBackendType preferredBackend;
@@ -52,6 +53,7 @@ class AppSettings {
     this.hasCompletedOnboarding = false,
     this.hasAskedForNotifications = false,
     this.mcpEnabled = true,
+    this.newChatMcpEnabled = true,
     this.codeThemeDark = SyntaxThemeName.dark,
     this.codeThemeLight = SyntaxThemeName.light,
     this.preferredBackend = LiteLmBackendType.cpu,
@@ -78,6 +80,7 @@ class AppSettings {
     bool? hasCompletedOnboarding,
     bool? hasAskedForNotifications,
     bool? mcpEnabled,
+    bool? newChatMcpEnabled,
     SyntaxThemeName? codeThemeDark,
     SyntaxThemeName? codeThemeLight,
     LiteLmBackendType? preferredBackend,
@@ -106,6 +109,7 @@ class AppSettings {
       hasAskedForNotifications:
           hasAskedForNotifications ?? this.hasAskedForNotifications,
       mcpEnabled: mcpEnabled ?? this.mcpEnabled,
+      newChatMcpEnabled: newChatMcpEnabled ?? this.newChatMcpEnabled,
       codeThemeDark: codeThemeDark ?? this.codeThemeDark,
       codeThemeLight: codeThemeLight ?? this.codeThemeLight,
       preferredBackend: preferredBackend ?? this.preferredBackend,
@@ -134,6 +138,7 @@ class AppSettings {
       'hasCompletedOnboarding': hasCompletedOnboarding,
       'hasAskedForNotifications': hasAskedForNotifications,
       'mcpEnabled': mcpEnabled,
+      'newChatMcpEnabled': newChatMcpEnabled,
       'codeThemeDark': codeThemeDark.index,
       'codeThemeLight': codeThemeLight.index,
       'preferredBackend': preferredBackend.index,
@@ -162,6 +167,7 @@ class AppSettings {
       hasCompletedOnboarding: map['hasCompletedOnboarding'] ?? false,
       hasAskedForNotifications: map['hasAskedForNotifications'] ?? false,
       mcpEnabled: map['mcpEnabled'] ?? true,
+      newChatMcpEnabled: map['newChatMcpEnabled'] ?? true,
       codeThemeDark: SyntaxThemeName.values[map['codeThemeDark'] ?? 0],
       codeThemeLight: SyntaxThemeName.values[map['codeThemeLight'] ?? 1],
       preferredBackend: LiteLmBackendType.values[map['preferredBackend'] ?? 0],

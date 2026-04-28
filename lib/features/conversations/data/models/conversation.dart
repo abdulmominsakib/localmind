@@ -14,6 +14,7 @@ class Conversation {
   final double? topP;
   final int? maxTokens;
   final int? contextLength;
+  final bool? mcpEnabled;
 
   Conversation({
     required this.id,
@@ -31,6 +32,7 @@ class Conversation {
     this.topP,
     this.maxTokens,
     this.contextLength,
+    this.mcpEnabled,
   });
 
   Conversation copyWith({
@@ -55,6 +57,8 @@ class Conversation {
     bool clearMaxTokens = false,
     int? contextLength,
     bool clearContextLength = false,
+    bool? mcpEnabled,
+    bool clearMcpEnabled = false,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -67,11 +71,15 @@ class Conversation {
       modelId: modelId ?? this.modelId,
       messageCount: messageCount ?? this.messageCount,
       lastMessagePreview: lastMessagePreview ?? this.lastMessagePreview,
-      systemPrompt: clearSystemPrompt ? null : (systemPrompt ?? this.systemPrompt),
+      systemPrompt:
+          clearSystemPrompt ? null : (systemPrompt ?? this.systemPrompt),
       temperature: clearTemperature ? null : (temperature ?? this.temperature),
       topP: clearTopP ? null : (topP ?? this.topP),
       maxTokens: clearMaxTokens ? null : (maxTokens ?? this.maxTokens),
-      contextLength: clearContextLength ? null : (contextLength ?? this.contextLength),
+      contextLength:
+          clearContextLength ? null : (contextLength ?? this.contextLength),
+      mcpEnabled: clearMcpEnabled ? null : (mcpEnabled ?? this.mcpEnabled),
     );
   }
+
 }

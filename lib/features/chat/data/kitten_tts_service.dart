@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
@@ -64,9 +65,17 @@ class KittenTtsService {
       }
 
       // Copy assets to filesystem if not already present
-      final configPath = await _ensureAssetFile(ttsDir, _fileConfig, _assetConfig);
+      final configPath = await _ensureAssetFile(
+        ttsDir,
+        _fileConfig,
+        _assetConfig,
+      );
       final modelPath = await _ensureAssetFile(ttsDir, _fileModel, _assetModel);
-      final voicesPath = await _ensureAssetFile(ttsDir, _fileVoices, _assetVoices);
+      final voicesPath = await _ensureAssetFile(
+        ttsDir,
+        _fileVoices,
+        _assetVoices,
+      );
 
       Log.info(
         'KittenTTS assets ready: config=$configPath, model=$modelPath, voices=$voicesPath',
@@ -106,46 +115,81 @@ class KittenTtsService {
     double speed = 1.0,
   }) async {
     await initialize();
-    if (text.trim().isEmpty) return;
+    final trimmedText = text.trim();
+    if (trimmedText.isEmpty) return;
+
+    // If already speaking, stop first
+    if (_isSpeaking) {
+      await stop();
+    }
 
     _isSpeaking = true;
 
     try {
-      final phonemized = "${_phonemizer.phonemize(text)}  "; // Add trailing silence
-      Log.debug('Phonemized: "$text" → "$phonemized" (speed: $speed)');
+      // Split text into smaller chunks (sentences) to avoid ONNX sequence length limits
+      // The "Nano" model used by KittenTTS often crashes on inputs > ~200-300 chars.
+      final chunks = _splitIntoChunks(trimmedText);
+      Log.debug('Split text into ${chunks.length} chunks for TTS');
 
-      Uint8List wavBytes;
-      try {
-        wavBytes = await _tts!.generateWavBytes(
-          phonemizedText: phonemized,
-          language: 'en',
-          voice: voice.displayName,
-          speed: speed,
-        );
-      } catch (e) {
-        // If session is not initialized, try one re-initialization
-        if (e.toString().contains('Session not initialized')) {
-          Log.warning('KittenTTS session not initialized, attempting recovery...');
-          _isInitialized = false;
-          await initialize();
+      for (final chunk in chunks) {
+        if (!_isSpeaking) break;
+
+        final phonemized =
+            "${_phonemizer.phonemize(chunk)}  "; // Add trailing silence
+        Log.debug('Speaking chunk: "$chunk"');
+        Log.debug('Phonemized: "$phonemized" (speed: $speed)');
+
+        Uint8List wavBytes;
+        try {
           wavBytes = await _tts!.generateWavBytes(
             phonemizedText: phonemized,
             language: 'en',
             voice: voice.displayName,
             speed: speed,
           );
-        } else {
-          rethrow;
+        } catch (e) {
+          // If session is not initialized, try one re-initialization
+          if (e.toString().contains('Session not initialized')) {
+            Log.warning(
+              'KittenTTS session not initialized, attempting recovery...',
+            );
+            _isInitialized = false;
+            await initialize();
+            wavBytes = await _tts!.generateWavBytes(
+              phonemizedText: phonemized,
+              language: 'en',
+              voice: voice.displayName,
+              speed: speed,
+            );
+          } else {
+            rethrow;
+          }
         }
-      }
 
-      // Play the WAV bytes
-      await _audioPlayer!.stop();
-      await _audioPlayer!.play(BytesSource(wavBytes));
+        if (!_isSpeaking) break;
+
+        // Play the WAV bytes and wait for completion
+        final completer = Completer<void>();
+        StreamSubscription? completeSub;
+
+        completeSub = _audioPlayer!.onPlayerComplete.listen((_) {
+          if (!completer.isCompleted) completer.complete();
+        });
+
+        await _audioPlayer!.play(BytesSource(wavBytes));
+
+        // Wait until the chunk finishes playing or _isSpeaking becomes false (stopped manually)
+        while (_isSpeaking && !completer.isCompleted) {
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+
+        await completeSub.cancel();
+      }
     } catch (e, st) {
       Log.error('KittenTTS speak error: $e\n$st');
-      _isSpeaking = false;
       rethrow;
+    } finally {
+      _isSpeaking = false;
     }
   }
 
@@ -191,5 +235,53 @@ class KittenTtsService {
     final byteData = await rootBundle.load(assetPath);
     await file.writeAsBytes(byteData.buffer.asUint8List());
     return file.path;
+  }
+
+  /// Splits text into smaller chunks (ideally sentences) to avoid TTS engine limits.
+  List<String> _splitIntoChunks(String text, {int maxChars = 200}) {
+    final sentences = _splitIntoSentences(text);
+    final chunks = <String>[];
+    String currentChunk = "";
+
+    for (final sentence in sentences) {
+      // If adding this sentence exceeds maxChars, push currentChunk and start new
+      if (currentChunk.isNotEmpty &&
+          (currentChunk.length + sentence.length + 1) > maxChars) {
+        chunks.add(currentChunk.trim());
+        currentChunk = "";
+      }
+
+      // If the sentence itself is longer than maxChars, split it by words
+      if (sentence.length > maxChars) {
+        if (currentChunk.isNotEmpty) {
+          chunks.add(currentChunk.trim());
+          currentChunk = "";
+        }
+
+        final words = sentence.split(' ');
+        String subChunk = "";
+        for (final word in words) {
+          if (subChunk.isNotEmpty &&
+              (subChunk.length + word.length + 1) > maxChars) {
+            chunks.add(subChunk.trim());
+            subChunk = "";
+          }
+          subChunk += (subChunk.isEmpty ? "" : " ") + word;
+        }
+        if (subChunk.isNotEmpty) currentChunk = subChunk;
+      } else {
+        currentChunk += (currentChunk.isEmpty ? "" : " ") + sentence;
+      }
+    }
+
+    if (currentChunk.isNotEmpty) chunks.add(currentChunk.trim());
+    return chunks;
+  }
+
+  /// Splits text into sentences based on punctuation.
+  List<String> _splitIntoSentences(String text) {
+    // Split by . ! ? followed by space or end of string
+    final regex = RegExp(r'(?<=[.!?])\s+');
+    return text.split(regex).where((s) => s.trim().isNotEmpty).toList();
   }
 }

@@ -22,7 +22,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 6060443518060866028),
     name: 'ConversationEntity',
-    lastPropertyId: const obx_int.IdUid(16, 9154328066006661329),
+    lastPropertyId: const obx_int.IdUid(17, 8783340423572117942),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -120,6 +120,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(16, 9154328066006661329),
         name: 'contextLength',
         type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(17, 8783340423572117942),
+        name: 'mcpEnabled',
+        type: 1,
         flags: 0,
       ),
     ],
@@ -500,7 +506,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final systemPromptOffset = object.systemPrompt == null
             ? null
             : fbb.writeString(object.systemPrompt!);
-        fbb.startTable(17);
+        fbb.startTable(18);
         fbb.addInt64(0, object.internalId);
         fbb.addOffset(1, idOffset);
         fbb.addOffset(2, titleOffset);
@@ -517,6 +523,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addFloat64(13, object.topP);
         fbb.addInt64(14, object.maxTokens);
         fbb.addInt64(15, object.contextLength);
+        fbb.addBool(16, object.mcpEnabled);
         fbb.finish(fbb.endTable());
         return object.internalId;
       },
@@ -588,6 +595,11 @@ obx_int.ModelDefinition getObjectBoxModel() {
           rootOffset,
           34,
         );
+        final mcpEnabledParam = const fb.BoolReader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          36,
+        );
         final object = ConversationEntity(
           internalId: internalIdParam,
           id: idParam,
@@ -605,6 +617,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           topP: topPParam,
           maxTokens: maxTokensParam,
           contextLength: contextLengthParam,
+          mcpEnabled: mcpEnabledParam,
         );
         obx_int.InternalToManyAccess.setRelInfo<ConversationEntity>(
           object.messages,
@@ -1051,6 +1064,11 @@ class ConversationEntity_ {
   /// See [ConversationEntity.contextLength].
   static final contextLength = obx.QueryIntegerProperty<ConversationEntity>(
     _entities[0].properties[15],
+  );
+
+  /// See [ConversationEntity.mcpEnabled].
+  static final mcpEnabled = obx.QueryBooleanProperty<ConversationEntity>(
+    _entities[0].properties[16],
   );
 
   /// see [ConversationEntity.messages]

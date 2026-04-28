@@ -244,7 +244,16 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
           ShadSwitch(
             value: mcpConfig.enabled,
             onChanged: isGloballyEnabled
-                ? (v) => ref.read(chatMcpConfigProvider.notifier).toggleEnabled()
+                ? (v) {
+                    final convId = ref.read(conv.activeConversationProvider)?.id;
+                    if (convId != null) {
+                      ref
+                          .read(chatMcpConfigProvider.notifier)
+                          .updateEnabled(ref, convId, v);
+                    } else {
+                      ref.read(chatMcpConfigProvider.notifier).setEnabled(v);
+                    }
+                  }
                 : null,
             label: const Text('Enable MCP for this chat'),
           ),

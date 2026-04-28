@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:6060443518060866028",
-      "lastPropertyId": "16:9154328066006661329",
+      "lastPropertyId": "17:8783340423572117942",
       "name": "ConversationEntity",
       "properties": [
         {
@@ -90,6 +90,11 @@
           "id": "16:9154328066006661329",
           "name": "contextLength",
           "type": 6
+        },
+        {
+          "id": "17:8783340423572117942",
+          "name": "mcpEnabled",
+          "type": 1
         }
       ],
       "relations": []

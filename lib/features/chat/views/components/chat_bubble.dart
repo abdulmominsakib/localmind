@@ -16,6 +16,7 @@ class ChatBubble extends StatelessWidget {
     this.onCopy,
     this.onRetry,
     this.onDelete,
+    this.onEdit,
     this.isStreaming = false,
   });
 
@@ -23,6 +24,7 @@ class ChatBubble extends StatelessWidget {
   final VoidCallback? onCopy;
   final VoidCallback? onRetry;
   final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
   final bool isStreaming;
 
   @override
@@ -35,7 +37,12 @@ class ChatBubble extends StatelessWidget {
       case MessageRole.user:
         return _AnimatedBubble(
           alignment: Alignment.centerRight,
-          child: _UserBubble(message: message),
+          child: _UserBubble(
+            message: message,
+            onCopy: onCopy,
+            onDelete: onDelete,
+            onEdit: onEdit,
+          ),
         );
       case MessageRole.assistant:
         return _AnimatedBubble(
@@ -98,9 +105,17 @@ class _AnimatedBubble extends StatelessWidget {
 }
 
 class _UserBubble extends StatelessWidget {
-  const _UserBubble({required this.message});
+  const _UserBubble({
+    required this.message,
+    this.onCopy,
+    this.onDelete,
+    this.onEdit,
+  });
 
   final Message message;
+  final VoidCallback? onCopy;
+  final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -109,56 +124,73 @@ class _UserBubble extends StatelessWidget {
 
     return Align(
       alignment: Alignment.centerRight,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        margin: const EdgeInsets.only(left: 48, right: 8, top: 4, bottom: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
-          borderRadius: BorderRadius.circular(
-            18,
-          ).copyWith(bottomRight: const Radius.circular(4)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            if (message.attachmentPaths != null &&
-                message.attachmentPaths!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _AttachmentList(
-                  paths: message.attachmentPaths!,
-                  isUser: true,
-                ),
-              ),
-            MarkdownBody(
-              data: message.content,
-              styleSheet: MarkdownStyleSheet(
-                p: TextStyle(color: Colors.white, fontSize: 15, height: 1.4),
-              ),
-              shrinkWrap: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
-            const SizedBox(height: 4),
-            Row(
+            margin: const EdgeInsets.only(left: 48, right: 8, top: 4, bottom: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+              borderRadius: BorderRadius.circular(
+                18,
+              ).copyWith(bottomRight: const Radius.circular(4)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (message.attachmentPaths != null &&
+                    message.attachmentPaths!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _AttachmentList(
+                      paths: message.attachmentPaths!,
+                      isUser: true,
+                    ),
+                  ),
+                MarkdownBody(
+                  data: message.content,
+                  selectable: true,
+                  styleSheet: MarkdownStyleSheet(
+                    p: TextStyle(color: Colors.white, fontSize: 15, height: 1.4),
+                  ),
+                  shrinkWrap: true,
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12, bottom: 4),
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   _formatTime(message.createdAt),
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: isDark
+                        ? const Color(0xFF666666)
+                        : const Color(0xFF999999),
                   ),
                 ),
                 if (message.status == MessageStatus.error) ...[
                   const SizedBox(width: 4),
                   Icon(Icons.error_outline, size: 14, color: Colors.red[200]),
                 ],
+                const SizedBox(width: 8),
+                MessageActionBar(
+                  content: message.content,
+                  onCopy: onCopy,
+                  onDelete: onDelete,
+                  onEdit: onEdit,
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
