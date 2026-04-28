@@ -14,8 +14,8 @@ import '../data/models/message.dart';
 import '../providers/chat_providers.dart';
 import 'components/chat_bubble.dart';
 import 'components/chat_input_bar.dart';
-import 'components/chat_filter_sheet.dart';
-import 'components/mcp_config_sheet.dart';
+import '../providers/chat_mcp_providers.dart';
+import 'components/chat_settings_sheet.dart';
 import 'components/notification_permission_banner.dart';
 import '../../conversations/data/models/conversation.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
@@ -126,31 +126,41 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 builder: (context, ref, child) {
                   final settings = ref.watch(settingsProvider);
                   final mcpConfig = ref.watch(chatMcpConfigProvider);
-                  final isEnabled = settings.mcpEnabled && mcpConfig.enabled;
-                  return IconButton(
-                    icon: Icon(
-                      isEnabled
-                          ? Icons.extension
-                          : Icons.extension_off_outlined,
-                      color: isEnabled
-                          ? theme.colorScheme.primary
-                          : (isDark
-                                ? const Color(0xFF666666)
-                                : const Color(0xFF999999)),
-                    ),
-                    tooltip: isEnabled ? 'MCP Enabled' : 'MCP Disabled',
-                    onPressed: () => showMcpConfigSheet(context),
+                  final isMcpEnabled = settings.mcpEnabled && mcpConfig.enabled;
+
+                  return Stack(
+                    children: [
+                      IconButton(
+                        icon: HugeIcon(
+                          icon: HugeIcons.strokeRoundedFilterHorizontal,
+                          size: 24,
+                          color: isDark ? Colors.white70 : Colors.black87,
+                        ),
+                        onPressed: () => showChatSettingsSheet(
+                          context,
+                          initialTab: 'parameters',
+                        ),
+                        tooltip: 'Chat Parameters',
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: isMcpEnabled ? Colors.green : Colors.grey,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const HugeIcon(
+                            icon: HugeIcons.strokeRoundedTools,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 },
-              ),
-              IconButton(
-                icon: HugeIcon(
-                  icon: HugeIcons.strokeRoundedFilterHorizontal,
-                  size: 24,
-                  color: isDark ? Colors.white70 : Colors.black87,
-                ),
-                onPressed: () => showChatFilterSheet(context),
-                tooltip: 'Chat Parameters',
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert),
