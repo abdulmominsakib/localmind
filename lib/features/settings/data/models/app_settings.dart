@@ -44,6 +44,8 @@ class AppSettings {
   final String? localeCode;
   final String? huggingFaceToken;
   final bool unloadModelsBeforeLoad;
+  final bool tempChatKeyboardIncognito;
+  final bool resumeLastChat;
 
   AppSettings({
     this.temperature = 0.7,
@@ -79,6 +81,8 @@ class AppSettings {
     this.localeCode,
     this.huggingFaceToken,
     this.unloadModelsBeforeLoad = false,
+    this.tempChatKeyboardIncognito = true,
+    this.resumeLastChat = true,
   });
 
   AppSettings copyWith({
@@ -115,6 +119,8 @@ class AppSettings {
     Object? localeCode = _unset,
     Object? huggingFaceToken = _unset,
     bool? unloadModelsBeforeLoad,
+    bool? tempChatKeyboardIncognito,
+    bool? resumeLastChat,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -162,6 +168,9 @@ class AppSettings {
           : huggingFaceToken as String?,
       unloadModelsBeforeLoad:
           unloadModelsBeforeLoad ?? this.unloadModelsBeforeLoad,
+      tempChatKeyboardIncognito:
+          tempChatKeyboardIncognito ?? this.tempChatKeyboardIncognito,
+      resumeLastChat: resumeLastChat ?? this.resumeLastChat,
     );
   }
 
@@ -200,6 +209,8 @@ class AppSettings {
       'localeCode': localeCode,
       'huggingFaceToken': huggingFaceToken,
       'unloadModelsBeforeLoad': unloadModelsBeforeLoad,
+      'tempChatKeyboardIncognito': tempChatKeyboardIncognito,
+      'resumeLastChat': resumeLastChat,
     };
   }
 
@@ -238,6 +249,8 @@ class AppSettings {
       localeCode: map['localeCode'] as String?,
       huggingFaceToken: map['huggingFaceToken'] as String?,
       unloadModelsBeforeLoad: map['unloadModelsBeforeLoad'] ?? false,
+      tempChatKeyboardIncognito: map['tempChatKeyboardIncognito'] ?? true,
+      resumeLastChat: map['resumeLastChat'] ?? true,
     );
   }
 

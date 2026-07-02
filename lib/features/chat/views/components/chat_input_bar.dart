@@ -51,6 +51,8 @@ class ChatInputBar extends ConsumerStatefulWidget {
 
     this.focusNode,
 
+    this.keyboardIncognito = false,
+
   });
 
 
@@ -66,6 +68,8 @@ class ChatInputBar extends ConsumerStatefulWidget {
   final bool isStreaming;
 
   final FocusNode? focusNode;
+
+  final bool keyboardIncognito;
 
 
 
@@ -1052,6 +1056,24 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               textInputAction: TextInputAction.newline,
 
               keyboardType: TextInputType.multiline,
+
+              enableSuggestions: !widget.keyboardIncognito,
+
+              autocorrect: !widget.keyboardIncognito,
+
+              enableIMEPersonalizedLearning: !widget.keyboardIncognito,
+
+              smartDashesType: widget.keyboardIncognito
+
+                  ? SmartDashesType.disabled
+
+                  : SmartDashesType.enabled,
+
+              smartQuotesType: widget.keyboardIncognito
+
+                  ? SmartQuotesType.disabled
+
+                  : SmartQuotesType.enabled,
 
               onChanged: (_) => setState(() {}),
 

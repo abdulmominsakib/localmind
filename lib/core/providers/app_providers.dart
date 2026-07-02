@@ -112,6 +112,10 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(huggingFaceToken: value));
   void setUnloadModelsBeforeLoad(bool value) =>
       _update(state.copyWith(unloadModelsBeforeLoad: value));
+  void setTempChatKeyboardIncognito(bool value) =>
+      _update(state.copyWith(tempChatKeyboardIncognito: value));
+  void setResumeLastChat(bool value) =>
+      _update(state.copyWith(resumeLastChat: value));
 
   Future<void> _update(AppSettings updated) async {
     state = updated;

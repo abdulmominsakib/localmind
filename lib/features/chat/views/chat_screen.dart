@@ -841,6 +841,10 @@ class _ChatBottomBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isTemporary = ref.watch(chatProvider.select((s) => s.isTemporary));
+    final keyboardIncognito = isTemporary &&
+        ref.watch(settingsProvider.select((s) => s.tempChatKeyboardIncognito));
+
     return Positioned(
       bottom: 0,
       left: 0,
@@ -868,6 +872,7 @@ class _ChatBottomBar extends ConsumerWidget {
             ChatInputBar(
               focusNode: inputFocusNode,
               isStreaming: isStreaming,
+              keyboardIncognito: keyboardIncognito,
               onSend: (message, {attachments}) {
                 ref
                     .read(chatProvider.notifier)

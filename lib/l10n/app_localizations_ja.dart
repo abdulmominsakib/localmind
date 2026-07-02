@@ -1976,6 +1976,21 @@ class AppLocalizationsJa extends AppLocalizations {
       'Unload all models before loading a new one';
 
   @override
+  String get temp_chat_keyboard_incognito =>
+      'Incognito keyboard in temporary chat';
+
+  @override
+  String get temp_chat_keyboard_incognito_desc =>
+      'Disables keyboard learning and suggestions in temporary chats (e.g. SwiftKey incognito).';
+
+  @override
+  String get resume_last_chat => 'Resume last chat on launch';
+
+  @override
+  String get resume_last_chat_desc =>
+      'Restore your last open conversation when reopening the app.';
+
+  @override
   String get export_all_data => 'Export all data';
 
   @override

@@ -2520,6 +2520,22 @@
   "@unload_models_before_load": {
     "description": "Setting to unload every loaded model instance before loading another"
   },
+  "temp_chat_keyboard_incognito": "Incognito keyboard in temporary chat",
+  "@temp_chat_keyboard_incognito": {
+    "description": "Use private/incognito keyboard mode while in a temporary chat"
+  },
+  "temp_chat_keyboard_incognito_desc": "Disables keyboard learning and suggestions in temporary chats (e.g. SwiftKey incognito).",
+  "@temp_chat_keyboard_incognito_desc": {
+    "description": "Description for temporary chat incognito keyboard setting"
+  },
+  "resume_last_chat": "Resume last chat on launch",
+  "@resume_last_chat": {
+    "description": "Reopen the most recently active conversation when the app starts"
+  },
+  "resume_last_chat_desc": "Restore your last open conversation when reopening the app.",
+  "@resume_last_chat_desc": {
+    "description": "Description for resume last chat setting"
+  },
   "export_all_data": "Export all data",
   "@export_all_data": {
     "description": "Export conversations and personas to a JSON file"

@@ -235,6 +235,22 @@ class SettingsViews extends ConsumerWidget {
                           .read(settingsProvider.notifier)
                           .setNewChatMcpEnabled(value),
                     ),
+                  _ToggleSetting(
+                    label: l10n.temp_chat_keyboard_incognito,
+                    description: l10n.temp_chat_keyboard_incognito_desc,
+                    value: settings.tempChatKeyboardIncognito,
+                    onChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setTempChatKeyboardIncognito(value),
+                  ),
+                  _ToggleSetting(
+                    label: l10n.resume_last_chat,
+                    description: l10n.resume_last_chat_desc,
+                    value: settings.resumeLastChat,
+                    onChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setResumeLastChat(value),
+                  ),
                 ],
               );
 
@@ -890,6 +906,7 @@ class _LanguageSetting extends StatelessWidget {
     ('ar', 'العربية', 'assets/images/flag_sa.png', '🇸🇦'),
     ('bn', 'বাংলা', 'assets/images/flag_bd.png', '🇧🇩'),
     ('hi', 'हिन्दी', 'assets/images/flag_in.png', '🇮🇳'),
+    ('ru', 'Русский', 'assets/images/flag_ru.png', '🇷🇺'),
   ];
 
   final String? current;

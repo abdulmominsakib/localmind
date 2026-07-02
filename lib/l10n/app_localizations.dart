@@ -3791,6 +3791,30 @@ abstract class AppLocalizations {
   /// **'Unload all models before loading a new one'**
   String get unload_models_before_load;
 
+  /// Use private/incognito keyboard mode while in a temporary chat
+  ///
+  /// In en, this message translates to:
+  /// **'Incognito keyboard in temporary chat'**
+  String get temp_chat_keyboard_incognito;
+
+  /// Description for temporary chat incognito keyboard setting
+  ///
+  /// In en, this message translates to:
+  /// **'Disables keyboard learning and suggestions in temporary chats (e.g. SwiftKey incognito).'**
+  String get temp_chat_keyboard_incognito_desc;
+
+  /// Reopen the most recently active conversation when the app starts
+  ///
+  /// In en, this message translates to:
+  /// **'Resume last chat on launch'**
+  String get resume_last_chat;
+
+  /// Description for resume last chat setting
+  ///
+  /// In en, this message translates to:
+  /// **'Restore your last open conversation when reopening the app.'**
+  String get resume_last_chat_desc;
+
   /// Export conversations and personas to a JSON file
   ///
   /// In en, this message translates to:

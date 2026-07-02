@@ -51,7 +51,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get download => 'Скачать';
 
   @override
-  String get resume => 'Резюме';
+  String get resume => 'Продолжить';
 
   @override
   String get pause => 'Пауза';
@@ -2013,6 +2013,21 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get unload_models_before_load =>
       'Unload all models before loading a new one';
+
+  @override
+  String get temp_chat_keyboard_incognito =>
+      'Приватная клавиатура во временном чате';
+
+  @override
+  String get temp_chat_keyboard_incognito_desc =>
+      'Отключает обучение и подсказки клавиатуры во временных чатах (например, режим инкогнито SwiftKey).';
+
+  @override
+  String get resume_last_chat => 'Восстанавливать последний чат при запуске';
+
+  @override
+  String get resume_last_chat_desc =>
+      'Открывать последнюю активную беседу при повторном запуске приложения.';
 
   @override
   String get export_all_data => 'Export all data';
