@@ -14,6 +14,7 @@ import '../../on_device/data/on_device_gemma_service.dart';
 import '../../on_device/data/on_device_chat_service.dart';
 import 'tools/adapters/tool_transport_adapter.dart';
 import '../utils/attachment_helpers.dart';
+import '../utils/image_upload_utils.dart';
 import 'tools/adapters/openai_tool_adapter.dart';
 import 'tools/adapters/openrouter_tool_adapter.dart';
 import 'tools/adapters/ollama_tool_adapter.dart';
@@ -628,7 +629,7 @@ class LMStudioChatService implements ChatService {
           try {
             final file = File(path);
             if (!await file.exists()) continue;
-            final fileBytes = await file.readAsBytes();
+            final fileBytes = await ImageUploadUtils.prepareImageBytes(file);
             final base64Image = await Isolate.run(() {
               try {
                 return base64Encode(fileBytes);
@@ -638,7 +639,7 @@ class LMStudioChatService implements ChatService {
             });
 
             if (base64Image != null) {
-              final mimeType = AttachmentHelpers.mimeTypeForImage(path);
+              final mimeType = 'image/png';
               formattedInputs.add({
                 'type': 'image',
                 'data_url': 'data:$mimeType;base64,$base64Image',

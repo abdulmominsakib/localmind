@@ -29,6 +29,9 @@ import '../../../servers/providers/server_providers.dart';
 
 import '../../../stt/providers/stt_providers.dart';
 import '../../providers/chat_providers.dart';
+import '../../utils/attachment_helpers.dart';
+import '../../utils/image_upload_utils.dart';
+import 'image_preview_dialog.dart';
 import '../../../saved_messages/views/components/saved_message_picker_sheet.dart';
 
 
@@ -282,12 +285,13 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     if (images.isEmpty) return;
 
-
+    final compressed = <File>[];
+    for (final image in images) {
+      compressed.add(await ImageUploadUtils.prepareImageFile(File(image.path)));
+    }
 
     setState(() {
-
-      _attachedFiles.addAll(images.map((x) => File(x.path)));
-
+      _attachedFiles.addAll(compressed);
     });
 
     widget.onAttach?.call(_attachedFiles);
@@ -359,35 +363,20 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
           children: [
 
             ListTile(
-
-              leading: const Icon(Icons.image_outlined),
-
-              title: Text(l10n.attach_image),
-
-              onTap: () {
-
-                Navigator.pop(ctx);
-
-                _pickImages();
-
-              },
-
-            ),
-
-            ListTile(
-
               leading: const Icon(Icons.description_outlined),
-
               title: Text(l10n.attach_text_document),
-
               onTap: () {
-
                 Navigator.pop(ctx);
-
                 _pickTextDocument();
-
               },
-
+            ),
+            ListTile(
+              leading: const Icon(Icons.image_outlined),
+              title: Text(l10n.attach_image),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImages();
+              },
             ),
 
             ListTile(
@@ -945,10 +934,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                   itemBuilder: (context, index) {
 
                     final file = _attachedFiles[index];
-
-                    final ext = file.path.split('.').last.toLowerCase();
-
-                    final isImage = !['txt', 'md'].contains(ext);
+                    final isImage = AttachmentHelpers.isImagePath(file.path);
 
                     return Stack(
 
@@ -979,17 +965,15 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                             borderRadius: BorderRadius.circular(9),
 
                             child: isImage
-
-                                ? Image.file(
-
-                                    file,
-
-                                    width: 48,
-
-                                    height: 48,
-
-                                    fit: BoxFit.cover,
-
+                                ? GestureDetector(
+                                    onTap: () =>
+                                        showImagePreview(context, file.path),
+                                    child: Image.file(
+                                      file,
+                                      width: 48,
+                                      height: 48,
+                                      fit: BoxFit.cover,
+                                    ),
                                   )
 
                                 : Container(

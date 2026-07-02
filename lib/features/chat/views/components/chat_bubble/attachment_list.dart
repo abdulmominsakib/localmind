@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:localmind/core/theme/colors.dart';
+import 'package:localmind/features/chat/views/components/image_preview_dialog.dart';
 import 'package:localmind/features/chat/utils/attachment_helpers.dart';
 import 'package:localmind/features/chat/views/components/audio_player_widget.dart';
 
@@ -26,11 +27,7 @@ class _AttachmentItem extends StatelessWidget {
   final String path;
 
   void _viewImage(BuildContext context) {
-    showDialog(
-      context: context,
-      useSafeArea: false,
-      builder: (context) => _ImageViewer(path: path),
-    );
+    showImagePreview(context, path);
   }
 
   void _viewText(BuildContext context) async {
@@ -259,33 +256,6 @@ class _FilePlaceholder extends StatelessWidget {
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ImageViewer extends StatelessWidget {
-  const _ImageViewer({required this.path});
-  final String path;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Center(
-        child: InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 4.0,
-          child: Image.file(File(path)),
         ),
       ),
     );
