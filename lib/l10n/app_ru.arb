@@ -313,7 +313,7 @@
   "rename_conversation": "Переименовать беседу",
   "reset_defaults": "Сбросить настройки по умолчанию",
   "reset_settings_defaults": "Сброс настроек к значениям по умолчанию",
-  "resume": "Резюме",
+  "resume": "Продолжить",
   "retry": "Повторить попытку",
   "save": "Сохранять",
   "save_changes": "Сохранить изменения",
@@ -615,5 +615,9 @@
   "conversation_character_count": "{count} симв.",
   "generate_title_with_ai": "Сгенерировать с ИИ",
   "generating_title": "Генерация...",
-  "generate_title_failed": "Не удалось сгенерировать заголовок"
+  "generate_title_failed": "Не удалось сгенерировать заголовок",
+  "temp_chat_keyboard_incognito": "Приватная клавиатура во временном чате",
+  "temp_chat_keyboard_incognito_desc": "Отключает обучение и подсказки клавиатуры во временных чатах (например, режим инкогнито SwiftKey).",
+  "resume_last_chat": "Восстанавливать последний чат при запуске",
+  "resume_last_chat_desc": "Открывать последнюю активную беседу при повторном запуске приложения."
 }
