@@ -18,6 +18,7 @@ import 'package:localmind/features/conversations/providers/conversation_provider
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 import 'package:localmind/features/personas/providers/personas_providers.dart';
+import 'package:localmind/features/personas/utils/persona_prompt_utils.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/objectbox.g.dart';
@@ -562,14 +563,21 @@ class ChatNotifier extends Notifier<ChatState> {
                   : 'New Chat');
           initialTitle = titleService.truncateFirstMessageTitle(titleSource);
         }
+        final preselected = ref.read(selectedPersonasProvider);
         final conversation = await ref
             .read(conv.conversationsProvider.notifier)
             .createConversation(
               title: initialTitle,
               serverId: server.id,
               modelId: selectedModel?.id,
-              personaId: ref.read(selectedPersonaProvider)?.id,
-              systemPrompt: ref.read(selectedPersonaProvider)?.systemPrompt,
+              personaId: preselected.isEmpty
+                  ? null
+                  : PersonaPromptUtils.joinPersonaIds(
+                      preselected.map((p) => p.id).toList(),
+                    ),
+              systemPrompt: preselected.isEmpty
+                  ? null
+                  : PersonaPromptUtils.combineSystemPrompts(preselected),
               mcpEnabled: settings.newChatMcpEnabled,
               isTemporary: false,
             );
@@ -582,7 +590,7 @@ class ChatNotifier extends Notifier<ChatState> {
             .read(chatMcpConfigProvider.notifier)
             .setEnabled(settings.newChatMcpEnabled);
 
-        ref.read(selectedPersonaProvider.notifier).clear();
+        ref.read(selectedPersonasProvider.notifier).clear();
       }
     }
 
@@ -655,6 +663,24 @@ class ChatNotifier extends Notifier<ChatState> {
 
     await _saveMessage(userMessage);
     await _saveMessage(assistantMessage);
+
+    if (!_isInMemoryChat && _currentConversationId != null) {
+      final preview = trimmedContent.isNotEmpty
+          ? (trimmedContent.length > 100
+              ? '${trimmedContent.substring(0, 100)}...'
+              : trimmedContent)
+          : (attachments?.isNotEmpty == true ? '[attachment]' : 'New message');
+      final timeline = [...state.messages, userMessage];
+      await ref.read(conv.conversationsProvider.notifier).syncConversationStats(
+            _currentConversationId!,
+            messageCount: timeline.length,
+            characterCount: timeline.fold<int>(
+              0,
+              (sum, message) => sum + message.content.length,
+            ),
+            preview: preview,
+          );
+    }
 
     ref.read(chatBackgroundServiceProvider).start();
 
@@ -941,11 +967,11 @@ class ChatNotifier extends Notifier<ChatState> {
                     );
                     await ref
                         .read(conv.conversationsProvider.notifier)
-                        .updatePreview(
+                        .syncConversationStats(
                           _currentConversationId!,
-                          preview,
-                          DateTime.now(),
+                          messageCount: state.messages.length,
                           characterCount: totalChars,
+                          preview: preview,
                         );
 
                     final userMessage = state.messages
@@ -1079,24 +1105,20 @@ class ChatNotifier extends Notifier<ChatState> {
 
   String? _getPersonaSystemPrompt() {
     final conversation = ref.read(conv.activeConversationProvider);
-    final personaId = conversation?.personaId;
-    if (personaId == null) return null;
-
     if (conversation?.systemPrompt != null &&
-        conversation!.systemPrompt!.isNotEmpty) {
+        conversation!.systemPrompt!.trim().isNotEmpty) {
       return conversation.systemPrompt;
     }
 
+    final personaIds = conversation?.personaId;
+    if (personaIds == null || personaIds.isEmpty) return null;
+
     try {
-      final personasAsync = ref.read(personasNotifierProvider);
-      final personas = personasAsync.value ?? [];
-      final persona = personas.firstWhere(
-        (p) => p.id == personaId,
-        orElse: () => throw Exception('Persona not found'),
-      );
-      if (persona.systemPrompt.isNotEmpty) {
-        return persona.systemPrompt;
-      }
+      final personas = ref.read(personasNotifierProvider).value ?? [];
+      final selected =
+          PersonaPromptUtils.resolvePersonas(personaIds, personas);
+      if (selected.isEmpty) return null;
+      return PersonaPromptUtils.combineSystemPrompts(selected);
     } catch (_) {}
 
     return null;
@@ -1908,14 +1930,21 @@ class ChatNotifier extends Notifier<ChatState> {
               firstUser.isNotEmpty ? firstUser : 'New Chat',
             );
 
+    final preselected = ref.read(selectedPersonasProvider);
     final conversation = await ref
         .read(conv.conversationsProvider.notifier)
         .createConversation(
           title: title,
           serverId: server.id,
           modelId: ref.read(selectedModelProvider)?.id,
-          personaId: ref.read(selectedPersonaProvider)?.id,
-          systemPrompt: ref.read(selectedPersonaProvider)?.systemPrompt,
+          personaId: preselected.isEmpty
+              ? null
+              : PersonaPromptUtils.joinPersonaIds(
+                  preselected.map((p) => p.id).toList(),
+                ),
+          systemPrompt: preselected.isEmpty
+              ? null
+              : PersonaPromptUtils.combineSystemPrompts(preselected),
           mcpEnabled: settings.newChatMcpEnabled,
           isTemporary: false,
         );

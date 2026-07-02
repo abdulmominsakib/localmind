@@ -3,6 +3,7 @@ import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
     as conv;
 import 'package:localmind/features/personas/providers/personas_providers.dart';
+import 'package:localmind/features/personas/utils/persona_prompt_utils.dart';
 import '../data/models/chat_parameters.dart';
 
 final chatParamsProvider = Provider<ChatParameters>((ref) {
@@ -28,16 +29,19 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
   }
 
   String? systemPrompt;
-  if (activeConv?.personaId != null) {
-    final personaId = activeConv!.personaId;
-    try {
-      final personasAsync = ref.read(personasNotifierProvider);
-      final personas = personasAsync.value ?? [];
-      final persona = personas.firstWhere(
-        (p) => p.id == personaId,
-        orElse: () => throw Exception('Persona not found'),
-      );
-      systemPrompt = persona.systemPrompt;
+  if (activeConv?.systemPrompt != null &&
+      activeConv!.systemPrompt!.trim().isNotEmpty) {
+    systemPrompt = activeConv.systemPrompt;
+  } else if (activeConv?.personaId != null) {
+    final personasAsync = ref.read(personasNotifierProvider);
+    final personas = personasAsync.value ?? [];
+    final selected = PersonaPromptUtils.resolvePersonas(
+      activeConv!.personaId,
+      personas,
+    );
+    if (selected.isNotEmpty) {
+      systemPrompt = PersonaPromptUtils.combineSystemPrompts(selected);
+      final persona = selected.first;
       if (persona.preferredParams != null) {
         final params = persona.preferredParams as Map<String, dynamic>;
         if (params['temperature'] != null) {
@@ -48,7 +52,7 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
           maxTokens = (params['maxTokens'] as num).toInt();
         }
       }
-    } catch (_) {}
+    }
   }
 
   return ChatParameters(

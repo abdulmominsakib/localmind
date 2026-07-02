@@ -9,6 +9,8 @@ import '../data/message_search_service.dart';
 import '../data/models/message_search_hit.dart';
 import '../data/models/conversation.dart';
 import '../data/models/conversation_folder.dart';
+import '../../personas/data/models/persona.dart';
+import '../../personas/utils/persona_prompt_utils.dart';
 
 final conversationsProvider =
     AsyncNotifierProvider<ConversationsNotifier, List<Conversation>>(() {
@@ -32,8 +34,30 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
 
   static List<Conversation> _loadConversationsInBackground(Store store, _) {
     final convBox = store.box<ConversationEntity>();
+    final msgBox = store.box<MessageEntity>();
     final entities = convBox.getAll();
-    final conversations = entities.map((e) => e.toDomain()).toList();
+    final conversations = <Conversation>[];
+
+    for (final entity in entities) {
+      final domain = entity.toDomain();
+      final query = msgBox
+          .query(MessageEntity_.conversationUid.equals(domain.id))
+          .build();
+      final messages = query.find();
+      query.close();
+
+      final activeMessages =
+          messages.where((m) => m.isActiveVariant).toList(growable: false);
+      final count = activeMessages.length;
+      final chars = activeMessages.fold<int>(
+        0,
+        (sum, message) => sum + message.content.length,
+      );
+
+      conversations.add(
+        domain.copyWith(messageCount: count, characterCount: chars),
+      );
+    }
 
     conversations.sort((a, b) {
       if (a.isPinned != b.isPinned) {
@@ -276,7 +300,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       final updated = existing.copyWith(
         lastMessagePreview: preview,
         updatedAt: updatedAt,
-        messageCount: messageCount ?? existing.messageCount + 1,
+        messageCount: messageCount ?? existing.messageCount,
         characterCount: characterCount ??
             (characterCountDelta != null
                 ? existing.characterCount + characterCountDelta
@@ -297,6 +321,49 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
 
       state = AsyncData(await _loadAll());
     }
+  }
+
+  Future<void> syncConversationStats(
+    String id, {
+    required int messageCount,
+    required int characterCount,
+    String? preview,
+  }) async {
+    final db = ref.read(databaseProvider);
+    final conversations = state.value ?? [];
+    final existingIndex = conversations.indexWhere((c) => c.id == id);
+    if (existingIndex == -1) return;
+
+    final existing = conversations[existingIndex];
+    final updated = existing.copyWith(
+      messageCount: messageCount,
+      characterCount: characterCount,
+      lastMessagePreview: preview ?? existing.lastMessagePreview,
+      updatedAt: DateTime.now(),
+    );
+
+    final query = db.conversationBox
+        .query(ConversationEntity_.id.equals(id))
+        .build();
+    final existingEntity = query.findFirst();
+    query.close();
+
+    final entity = ConversationEntity.fromDomain(updated);
+    if (existingEntity != null) {
+      entity.internalId = existingEntity.internalId;
+    }
+    db.conversationBox.put(entity);
+    state = AsyncData(await _loadAll());
+  }
+
+  Future<void> updatePersonas(String id, List<Persona> personas) async {
+    final personaId = personas.isEmpty
+        ? null
+        : PersonaPromptUtils.joinPersonaIds(personas.map((p) => p.id).toList());
+    final systemPrompt = personas.isEmpty
+        ? null
+        : PersonaPromptUtils.combineSystemPrompts(personas);
+    await updatePersona(id, personaId, systemPrompt);
   }
 
   Future<void> updatePersona(

@@ -39,7 +39,6 @@ import 'components/message_list/empty_state.dart';
 import 'components/message_list/corrupted_state.dart';
 import 'components/top_bar/model_top_bar.dart';
 import 'components/top_bar/connection_banner.dart';
-import 'components/top_bar/persona_indicator.dart';
 import 'components/top_bar/smart_reply_chips.dart';
 import 'package:localmind/features/personas/views/components/persona_picker_sheet.dart';
 
@@ -130,7 +129,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         if (activeConv != null) {
           ref
               .read(conv.conversationsProvider.notifier)
-              .updatePersona(activeConv.id, null, null);
+              .updatePersonas(activeConv.id, const []);
         }
       case 'rename':
         final activeConv = ref.read(conv.activeConversationProvider);
@@ -317,10 +316,10 @@ class _ChatBody extends ConsumerWidget {
     final connectionStatus = ref.watch(connectionStatusProvider);
     final activeConversation = ref.watch(conv.activeConversationProvider);
     final isTemporary = ref.watch(chatProvider.select((s) => s.isTemporary));
-    final personaId = activeConversation?.personaId;
-    final persona = personaId != null
-        ? ref.watch(personaByIdProvider(personaId))
-        : null;
+    final personas = ref.watch(
+      personasForConversationProvider(activeConversation?.personaId),
+    );
+    final hasPersonas = personas.isNotEmpty;
     final keyboardBottomInset = bottomKeyboardInset(context);
     final systemBottomInset = bottomSystemInset(context);
     final effectiveBottomInset = keyboardBottomInset > 0
@@ -345,7 +344,7 @@ class _ChatBody extends ConsumerWidget {
         _ScreenAppBar(
           activeConversation: activeConversation,
           isDark: isDark,
-          persona: persona,
+          hasPersonas: hasPersonas,
           isTemporary: isTemporary,
           hasMessages: messages.isNotEmpty,
           onMenuAction: onMenuAction,
@@ -361,19 +360,6 @@ class _ChatBody extends ConsumerWidget {
         if (connectionStatus == ConnectionStatus.disconnected ||
             connectionStatus == ConnectionStatus.error)
           ConnectionBanner(status: connectionStatus),
-        if (persona != null)
-          PersonaIndicator(
-            persona: persona,
-            onTap: () => showPersonaPickerSheet(context),
-            onRemove: () {
-              final activeConv = ref.read(conv.activeConversationProvider);
-              if (activeConv != null) {
-                ref
-                    .read(conv.conversationsProvider.notifier)
-                    .updatePersona(activeConv.id, null, null);
-              }
-            },
-          ),
         const TtsPlayerBar(),
         Expanded(
           child: DecoratedBox(
@@ -474,7 +460,7 @@ class _MessageArea extends ConsumerWidget {
         onSeeAll: () => context.push(AppRoutes.chatHistory),
         selectedModel: selectedModel,
         onModelTap: onModelPicker,
-        selectedPersona: ref.watch(selectedPersonaProvider),
+        selectedPersonas: ref.watch(selectedPersonasProvider),
         onPersonaTap: () => showPersonaPickerSheet(
           context,
           mode: PersonaPickerMode.preselection,
@@ -594,7 +580,7 @@ class _ScreenAppBar extends ConsumerWidget {
   const _ScreenAppBar({
     required this.activeConversation,
     required this.isDark,
-    required this.persona,
+    required this.hasPersonas,
     required this.isTemporary,
     required this.hasMessages,
     required this.onMenuAction,
@@ -604,7 +590,7 @@ class _ScreenAppBar extends ConsumerWidget {
 
   final Conversation? activeConversation;
   final bool isDark;
-  final dynamic persona;
+  final bool hasPersonas;
   final bool isTemporary;
   final bool hasMessages;
   final void Function(String) onMenuAction;
@@ -724,17 +710,15 @@ class _ScreenAppBar extends ConsumerWidget {
                 value: 'persona',
                 child: ListTile(
                   leading: Icon(
-                    persona != null
-                        ? Icons.swap_horiz
-                        : Icons.smart_toy_outlined,
+                    hasPersonas ? Icons.swap_horiz : Icons.smart_toy_outlined,
                   ),
                   title: Text(
-                    persona != null ? l10n.change_persona : l10n.set_persona,
+                    hasPersonas ? l10n.change_persona : l10n.set_persona,
                   ),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
-              if (persona != null)
+              if (hasPersonas)
                 PopupMenuItem(
                   value: 'remove_persona',
                   child: ListTile(
