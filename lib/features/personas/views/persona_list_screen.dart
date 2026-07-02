@@ -77,6 +77,18 @@ class PersonaListScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Text(
+                  l10n.personas_combine_hint,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark
+                        ? AppColors.darkMutedText
+                        : AppColors.lightMutedText,
+                  ),
+                ),
+              ),
               SizedBox(
                 height: 44,
                 child: ListView(

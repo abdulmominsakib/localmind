@@ -543,6 +543,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get select_persona => 'चरित्र चुनें';
 
   @override
+  String get manage_personas => 'Manage personas';
+
+  @override
+  String get personas_combine_hint =>
+      'Select multiple personas in chat to stack their system prompts.';
+
+  @override
   String get start_conversation => 'बातचीत शुरू करें';
 
   @override
@@ -2396,6 +2403,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get lm_studio_downloads_title => 'Downloads';
+
+  @override
+  String get lm_studio_choose_quant => 'Choose a download option';
+
+  @override
+  String get lm_studio_use_default_quant => 'Use default';
 
   @override
   String get lm_studio_clear_downloads => 'Clear finished';

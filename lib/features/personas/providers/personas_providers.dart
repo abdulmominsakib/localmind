@@ -4,27 +4,42 @@ import '../../../core/providers/storage_providers.dart';
 import '../../../core/storage/entities.dart';
 import '../../../objectbox.g.dart';
 import '../data/models/persona.dart';
+import '../utils/persona_prompt_utils.dart';
 
 final personaSearchQueryProvider =
     NotifierProvider<_PersonaSearchNotifier, String>(
       _PersonaSearchNotifier.new,
     );
 
-final selectedPersonaProvider =
-    NotifierProvider<SelectedPersonaNotifier, Persona?>(
-      SelectedPersonaNotifier.new,
+final selectedPersonasProvider =
+    NotifierProvider<SelectedPersonasNotifier, List<Persona>>(
+      SelectedPersonasNotifier.new,
     );
 
-class SelectedPersonaNotifier extends Notifier<Persona?> {
-  @override
-  Persona? build() => null;
+/// First selected persona, if any (legacy convenience).
+final selectedPersonaProvider = Provider<Persona?>((ref) {
+  final personas = ref.watch(selectedPersonasProvider);
+  return personas.isEmpty ? null : personas.first;
+});
 
-  void select(Persona? persona) {
-    state = persona;
+class SelectedPersonasNotifier extends Notifier<List<Persona>> {
+  @override
+  List<Persona> build() => const [];
+
+  void setPersonas(List<Persona> personas) {
+    state = List.unmodifiable(personas);
+  }
+
+  void toggle(Persona persona) {
+    if (state.any((p) => p.id == persona.id)) {
+      state = state.where((p) => p.id != persona.id).toList();
+    } else {
+      state = [...state, persona];
+    }
   }
 
   void clear() {
-    state = null;
+    state = const [];
   }
 }
 
@@ -309,4 +324,10 @@ final personaByIdProvider = Provider.family<Persona?, String>((ref, id) {
   } catch (_) {
     return null;
   }
+});
+
+final personasForConversationProvider =
+    Provider.family<List<Persona>, String?>((ref, personaIdsRaw) {
+  final personas = ref.watch(personasNotifierProvider).value ?? [];
+  return PersonaPromptUtils.resolvePersonas(personaIdsRaw, personas);
 });

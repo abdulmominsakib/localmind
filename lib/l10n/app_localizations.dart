@@ -1121,6 +1121,18 @@ abstract class AppLocalizations {
   /// **'Select Persona'**
   String get select_persona;
 
+  /// No description provided for @manage_personas.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage personas'**
+  String get manage_personas;
+
+  /// Hint in persona manager about combining personas
+  ///
+  /// In en, this message translates to:
+  /// **'Select multiple personas in chat to stack their system prompts.'**
+  String get personas_combine_hint;
+
   /// Empty state heading
   ///
   /// In en, this message translates to:
@@ -4510,6 +4522,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Downloads'**
   String get lm_studio_downloads_title;
+
+  /// No description provided for @lm_studio_choose_quant.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a download option'**
+  String get lm_studio_choose_quant;
+
+  /// No description provided for @lm_studio_use_default_quant.
+  ///
+  /// In en, this message translates to:
+  /// **'Use default'**
+  String get lm_studio_use_default_quant;
 
   /// No description provided for @lm_studio_clear_downloads.
   ///
