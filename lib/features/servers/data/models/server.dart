@@ -123,6 +123,10 @@ class Server {
   final ConnectionStatus status;
   final String? iconName;
   final String? pathPrefix;
+  /// Optional system RAM in GB for model compatibility hints in the browser.
+  final int? availableRamGb;
+  /// Optional GPU VRAM in GB for model compatibility hints in the browser.
+  final int? availableVramGb;
 
   Server({
     required this.id,
@@ -137,6 +141,8 @@ class Server {
     this.status = ConnectionStatus.disconnected,
     this.iconName,
     this.pathPrefix,
+    this.availableRamGb,
+    this.availableVramGb,
   });
 
   String get apiPathPrefix => normalizeServerPathPrefix(pathPrefix);
@@ -246,7 +252,11 @@ class Server {
     ConnectionStatus? status,
     String? iconName,
     String? pathPrefix,
+    int? availableRamGb,
+    int? availableVramGb,
     bool clearPathPrefix = false,
+    bool clearAvailableRamGb = false,
+    bool clearAvailableVramGb = false,
   }) {
     return Server(
       id: id ?? this.id,
@@ -261,6 +271,10 @@ class Server {
       status: status ?? this.status,
       iconName: iconName ?? this.iconName,
       pathPrefix: clearPathPrefix ? null : (pathPrefix ?? this.pathPrefix),
+      availableRamGb:
+          clearAvailableRamGb ? null : (availableRamGb ?? this.availableRamGb),
+      availableVramGb:
+          clearAvailableVramGb ? null : (availableVramGb ?? this.availableVramGb),
     );
   }
 }

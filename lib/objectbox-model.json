@@ -353,7 +353,7 @@
     },
     {
       "id": "4:6971506781199819057",
-      "lastPropertyId": "13:6207430374144016939",
+      "lastPropertyId": "15:6058370228992885505",
       "name": "ServerEntity",
       "properties": [
         {
@@ -423,6 +423,16 @@
           "id": "13:6207430374144016939",
           "name": "pathPrefix",
           "type": 9
+        },
+        {
+          "id": "14:5253774322138008698",
+          "name": "availableRamGb",
+          "type": 6
+        },
+        {
+          "id": "15:6058370228992885505",
+          "name": "availableVramGb",
+          "type": 6
         }
       ],
       "relations": []

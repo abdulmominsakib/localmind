@@ -35,6 +35,8 @@ class ServerEntity {
 
   String? iconName;
   String? pathPrefix;
+  int? availableRamGb;
+  int? availableVramGb;
 
   ServerEntity({
     this.internalId = 0,
@@ -50,6 +52,8 @@ class ServerEntity {
     required     this.statusIndex,
     this.iconName,
     this.pathPrefix,
+    this.availableRamGb,
+    this.availableVramGb,
   });
 
   factory ServerEntity.fromDomain(Server server) {
@@ -66,6 +70,8 @@ class ServerEntity {
       statusIndex: server.status.index,
       iconName: server.iconName,
       pathPrefix: server.pathPrefix,
+      availableRamGb: server.availableRamGb,
+      availableVramGb: server.availableVramGb,
     );
   }
 
@@ -87,6 +93,8 @@ class ServerEntity {
           : ConnectionStatus.values.first,
       iconName: iconName,
       pathPrefix: pathPrefix,
+      availableRamGb: availableRamGb,
+      availableVramGb: availableVramGb,
     );
   }
 }

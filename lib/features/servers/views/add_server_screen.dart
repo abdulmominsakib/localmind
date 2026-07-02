@@ -29,6 +29,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   late TextEditingController _hostController;
   late TextEditingController _portController;
   late TextEditingController _apiKeyController;
+  late TextEditingController _ramGbController;
+  late TextEditingController _vramGbController;
 
   late ServerType _selectedType;
   String? _selectedIconName;
@@ -54,6 +56,12 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
           AppConstants.lmStudioDefaultPort.toString(),
     );
     _apiKeyController = TextEditingController(text: server?.apiKey ?? '');
+    _ramGbController = TextEditingController(
+      text: server?.availableRamGb?.toString() ?? '',
+    );
+    _vramGbController = TextEditingController(
+      text: server?.availableVramGb?.toString() ?? '',
+    );
   }
 
   @override
@@ -62,6 +70,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     _hostController.dispose();
     _portController.dispose();
     _apiKeyController.dispose();
+    _ramGbController.dispose();
+    _vramGbController.dispose();
     super.dispose();
   }
 
@@ -117,6 +127,12 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     }
   }
 
+  int? _parseOptionalGb(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    return int.tryParse(trimmed);
+  }
+
   Server _buildServer() {
     return Server(
       id:
@@ -136,6 +152,12 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       lastConnectedAt: widget.editServer?.lastConnectedAt ?? DateTime.now(),
       status: ConnectionStatus.disconnected,
       iconName: _selectedIconName,
+      availableRamGb: _selectedType == ServerType.lmStudio
+          ? _parseOptionalGb(_ramGbController.text)
+          : widget.editServer?.availableRamGb,
+      availableVramGb: _selectedType == ServerType.lmStudio
+          ? _parseOptionalGb(_vramGbController.text)
+          : widget.editServer?.availableVramGb,
     );
   }
 
@@ -410,6 +432,39 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                       validator: _validatePort,
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.next,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (_selectedType == ServerType.lmStudio) ...[
+              const SizedBox(height: 12),
+              _buildSectionCard(
+                context,
+                title: l10n.lm_studio_memory_settings_title,
+                subtitle: l10n.lm_studio_memory_settings_desc,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _ramGbController,
+                        decoration: InputDecoration(
+                          labelText: l10n.lm_studio_available_ram_gb,
+                          hintText: '32',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _vramGbController,
+                        decoration: InputDecoration(
+                          labelText: l10n.lm_studio_available_vram_gb,
+                          hintText: '6',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
                     ),
                   ],
                 ),

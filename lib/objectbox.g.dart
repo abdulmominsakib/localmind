@@ -437,7 +437,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(4, 6971506781199819057),
     name: 'ServerEntity',
-    lastPropertyId: const obx_int.IdUid(13, 6207430374144016939),
+    lastPropertyId: const obx_int.IdUid(15, 6058370228992885505),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -517,6 +517,18 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(13, 6207430374144016939),
         name: 'pathPrefix',
         type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(14, 5253774322138008698),
+        name: 'availableRamGb',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(15, 6058370228992885505),
+        name: 'availableVramGb',
+        type: 6,
         flags: 0,
       ),
     ],
@@ -1291,7 +1303,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final pathPrefixOffset = object.pathPrefix == null
             ? null
             : fbb.writeString(object.pathPrefix!);
-        fbb.startTable(14);
+        fbb.startTable(16);
         fbb.addInt64(0, object.internalId);
         fbb.addOffset(1, idOffset);
         fbb.addOffset(2, nameOffset);
@@ -1305,6 +1317,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addInt32(10, object.statusIndex);
         fbb.addOffset(11, iconNameOffset);
         fbb.addOffset(12, pathPrefixOffset);
+        fbb.addInt64(13, object.availableRamGb);
+        fbb.addInt64(14, object.availableVramGb);
         fbb.finish(fbb.endTable());
         return object.internalId;
       },
@@ -1365,6 +1379,16 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final pathPrefixParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 28);
+        final availableRamGbParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          30,
+        );
+        final availableVramGbParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          32,
+        );
         final object = ServerEntity(
           internalId: internalIdParam,
           id: idParam,
@@ -1379,6 +1403,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
           statusIndex: statusIndexParam,
           iconName: iconNameParam,
           pathPrefix: pathPrefixParam,
+          availableRamGb: availableRamGbParam,
+          availableVramGb: availableVramGbParam,
         );
 
         return object;
@@ -1982,6 +2008,16 @@ class ServerEntity_ {
   /// See [ServerEntity.pathPrefix].
   static final pathPrefix = obx.QueryStringProperty<ServerEntity>(
     _entities[3].properties[12],
+  );
+
+  /// See [ServerEntity.availableRamGb].
+  static final availableRamGb = obx.QueryIntegerProperty<ServerEntity>(
+    _entities[3].properties[13],
+  );
+
+  /// See [ServerEntity.availableVramGb].
+  static final availableVramGb = obx.QueryIntegerProperty<ServerEntity>(
+    _entities[3].properties[14],
   );
 }
 
