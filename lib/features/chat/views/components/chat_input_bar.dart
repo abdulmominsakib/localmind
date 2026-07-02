@@ -100,13 +100,101 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
   late AnimationController _micAnimController;
 
   String _preSpeechText = '';
+  int _inputSession = 0;
+  bool _resettingKeyboardMode = false;
 
 
 
   @override
 
-  void initState() {
+  void didUpdateWidget(ChatInputBar oldWidget) {
 
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.keyboardIncognito != widget.keyboardIncognito) {
+
+      _resetKeyboardInputConnection();
+
+    }
+
+  }
+
+
+
+  Future<void> _resetKeyboardInputConnection() async {
+
+    if (_resettingKeyboardMode) return;
+
+    _resettingKeyboardMode = true;
+
+    final hadFocus = _focusNode.hasFocus;
+
+    final savedText = _controller.text;
+
+    final savedSelection = _controller.selection;
+
+
+
+    _focusNode.unfocus();
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+
+
+    // Let the platform tear down the old IME connection before rebuilding.
+
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+
+    if (!mounted) {
+
+      _resettingKeyboardMode = false;
+
+      return;
+
+    }
+
+
+
+    setState(() => _inputSession++);
+
+
+
+    _controller.value = TextEditingValue(
+
+      text: savedText,
+
+      selection: savedSelection,
+
+    );
+
+
+
+    if (hadFocus) {
+
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+
+        if (mounted) {
+
+          _focusNode.requestFocus();
+
+        }
+
+        _resettingKeyboardMode = false;
+
+      });
+
+    } else {
+
+      _resettingKeyboardMode = false;
+
+    }
+
+  }
+
+  @override
+  void initState() {
     super.initState();
 
     _focusNode = widget.focusNode ?? FocusNode();
@@ -1043,6 +1131,12 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
             TextField(
 
+              key: ValueKey(
+
+                'chat-input-${widget.keyboardIncognito}-$_inputSession',
+
+              ),
+
               controller: _controller,
 
               focusNode: _focusNode,
@@ -1062,6 +1156,10 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               autocorrect: !widget.keyboardIncognito,
 
               enableIMEPersonalizedLearning: !widget.keyboardIncognito,
+
+              spellCheckConfiguration: widget.keyboardIncognito
+                  ? const SpellCheckConfiguration.disabled()
+                  : null,
 
               smartDashesType: widget.keyboardIncognito
 

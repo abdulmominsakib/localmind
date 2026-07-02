@@ -13,7 +13,7 @@ class LmStudioPromptFormatter {
   LmStudioPromptFormatter(this._dio);
 
   final Dio _dio;
-  static const _imEnd = String.fromCharCodes([
+  static final _imEnd = String.fromCharCodes([
     0x3C, 0x7C, 0x69, 0x6D, 0x5F, 0x65, 0x6E, 0x64, 0x7C, 0x3E,
   ]);
 

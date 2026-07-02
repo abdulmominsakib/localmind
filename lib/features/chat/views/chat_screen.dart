@@ -557,6 +557,7 @@ void _handleChatModeAction(
   final l10n = AppLocalizations.of(context)!;
 
   if (!hasMessages) {
+    FocusManager.instance.primaryFocus?.unfocus();
     ref.read(chatProvider.notifier).setTemporaryMode(!isTemporary);
     return;
   }
@@ -575,6 +576,7 @@ void _handleChatModeAction(
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
+              FocusManager.instance.primaryFocus?.unfocus();
               ref.read(chatProvider.notifier).startNewConversation();
             },
             child: Text(l10n.nav_new_chat),
@@ -585,6 +587,7 @@ void _handleChatModeAction(
     return;
   }
 
+  FocusManager.instance.primaryFocus?.unfocus();
   ref.read(chatProvider.notifier).startNewConversation();
 }
 
