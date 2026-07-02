@@ -113,6 +113,8 @@ class ChatNotifier extends Notifier<ChatState> {
   MessageSaveService? _saveService;
   bool _pendingTemporaryChat = false;
   String? _ephemeralConversationId;
+  bool _attemptedResume = false;
+  static const _lastActiveConversationKey = 'lastActiveConversationId';
   ChatStats? _streamStats;
   DateTime? _streamStartTime;
   DateTime? _firstTokenTime;
@@ -199,7 +201,44 @@ class ChatNotifier extends Notifier<ChatState> {
         pending.completer.complete(false);
       }
     });
+    if (!_attemptedResume) {
+      _attemptedResume = true;
+      Future.microtask(_tryResumeLastChat);
+    }
     return const ChatState();
+  }
+
+  Future<void> _tryResumeLastChat() async {
+    final settings = ref.read(settingsProvider);
+    if (!settings.resumeLastChat) return;
+    if (state.messages.isNotEmpty || _currentConversationId != null) return;
+
+    final prefs = ref.read(sharedPreferencesProvider);
+    final lastId = prefs.getString(_lastActiveConversationKey);
+    if (lastId == null || lastId.isEmpty) return;
+
+    try {
+      final conversations = await ref.read(conv.conversationsProvider.future);
+      Conversation? target;
+      for (final conversation in conversations) {
+        if (conversation.id == lastId && !conversation.isTemporary) {
+          target = conversation;
+          break;
+        }
+      }
+      if (target != null) {
+        await loadConversation(target);
+      }
+    } catch (e, st) {
+      Log.error('Failed to resume last chat: $e\n$st');
+    }
+  }
+
+  void _persistLastActiveConversation(String conversationId) {
+    if (!ref.read(settingsProvider).resumeLastChat) return;
+    ref
+        .read(sharedPreferencesProvider)
+        .setString(_lastActiveConversationKey, conversationId);
   }
 
   Future<void> loadConversation(Conversation conversation) async {
@@ -230,6 +269,10 @@ class ChatNotifier extends Notifier<ChatState> {
       ref
           .read(conv.activeConversationProvider.notifier)
           .setActiveConversation(conversation);
+
+      if (!conversation.isTemporary) {
+        _persistLastActiveConversation(conversation.id);
+      }
 
       ref
           .read(chatMcpConfigProvider.notifier)
@@ -1440,11 +1483,11 @@ class ChatNotifier extends Notifier<ChatState> {
   }) async {
     final selectedModel = ref.read(selectedModelProvider);
     final server = ref.read(activeServerProvider);
-    if (server == null || _currentConversationId == null) return;
+    if (server == null || _activeConversationId == null) return;
 
     final assistantMessage = Message(
       id: generateUuid(),
-      conversationId: _currentConversationId!,
+      conversationId: _activeConversationId!,
       role: MessageRole.assistant,
       content: '',
       createdAt: DateTime.now(),
