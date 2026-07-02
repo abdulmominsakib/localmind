@@ -17,6 +17,7 @@ import '../utils/attachment_helpers.dart';
 import 'tools/adapters/openai_tool_adapter.dart';
 import 'tools/adapters/openrouter_tool_adapter.dart';
 import 'tools/adapters/ollama_tool_adapter.dart';
+import 'chat_api_error.dart';
 
 abstract class ChatService {
   Stream<ChatResponse> sendMessage({
@@ -161,28 +162,17 @@ class LMStudioChatService implements ChatService {
   }) async* {
     _cancelToken = CancelToken();
 
-    final dynamic formattedInput;
-    if (continueGeneration &&
-        messages.isNotEmpty &&
-        messages.last.role == MessageRole.assistant) {
-      final assistantText = messages.last.content.trim();
-      final priorMessages = messages.sublist(0, messages.length - 1);
-      formattedInput = await _formatInputWithImages(priorMessages);
-      if (assistantText.isNotEmpty) {
-        formattedInput.add({
-          'type': 'text',
-          'content':
-              'Continue your previous assistant reply from exactly where it stopped. '
-              'Write ONLY the next part of the assistant reply. '
-              'Do not repeat earlier text, do not write a user message, '
-              'and do not restart the reply.\n\n'
-              'Assistant reply so far:\n<<<\n$assistantText\n>>>\n\n'
-              'Continuation:',
-        });
-      }
-    } else {
-      formattedInput = await _formatInputWithImages(messages);
+    if (continueGeneration) {
+      yield* _streamV0ChatCompletions(
+        server: server,
+        modelId: modelId,
+        messages: messages,
+        params: params,
+      );
+      return;
     }
+
+    final dynamic formattedInput = await _formatInputWithImages(messages);
 
     final body = <String, dynamic>{
       'model': modelId,
@@ -416,15 +406,119 @@ class LMStudioChatService implements ChatService {
       case 'error':
         final error = json['error'] as Map<String, dynamic>?;
         if (error != null) {
-          final type = error['type']?.toString();
-          final message = error['message']?.toString() ?? 'Unknown error';
+          final parsed = ChatApiError.fromErrorMap(error);
           yield ChatResponse(
             type: ChatResponseType.error,
-            content: type != null ? '$type: $message' : message,
+            content: parsed?.encode() ?? error['message']?.toString() ?? 'Unknown error',
           );
         }
         break;
     }
+  }
+
+  Stream<ChatResponse> _streamV0ChatCompletions({
+    required Server server,
+    required String modelId,
+    required List<Message> messages,
+    required ChatParameters params,
+  }) async* {
+    _cancelToken = CancelToken();
+
+    final apiMessages = messages.map(_messageToApiMap).toList();
+    if (apiMessages.isNotEmpty && apiMessages.last['role'] == 'assistant') {
+      final last = apiMessages.last;
+      last['content'] = (last['content'] as String?) ?? '';
+    }
+
+    final body = <String, dynamic>{
+      'model': modelId,
+      'messages': apiMessages,
+      'temperature': params.temperature,
+      'top_p': params.topP,
+      'max_tokens': params.maxTokens,
+      'stream': true,
+    };
+
+    final endpoint = '${server.baseUrl}/api/v0/chat/completions';
+
+    try {
+      final response = await _dio.post<ResponseBody>(
+        endpoint,
+        data: body,
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: {
+            'Content-Type': 'application/json',
+            ...buildServerAuthHeaders(server),
+          },
+        ),
+        cancelToken: _cancelToken,
+      );
+
+      final stream = response.data!.stream.cast<List<int>>().transform(
+        utf8.decoder,
+      );
+      String buffer = '';
+
+      await for (final chunk in stream) {
+        buffer += chunk;
+        final lines = buffer.split('\n');
+        buffer = lines.removeLast();
+
+        for (final line in lines) {
+          if (!line.startsWith('data: ')) continue;
+          final data = line.substring(6);
+          if (data == '[DONE]') {
+            yield const ChatResponse(type: ChatResponseType.done);
+            return;
+          }
+          if (data.isEmpty) continue;
+
+          try {
+            final json = jsonDecode(data) as Map<String, dynamic>;
+            if (json['error'] != null) {
+              yield ChatResponse(
+                type: ChatResponseType.error,
+                content: _formatApiErrorContent(json['error']),
+              );
+              return;
+            }
+
+            final choices = json['choices'] as List<dynamic>?;
+            if (choices == null || choices.isEmpty) continue;
+
+            final firstChoice = choices[0] as Map<String, dynamic>?;
+            if (firstChoice == null) continue;
+
+            final delta = firstChoice['delta'];
+            if (delta == null || delta is! Map<String, dynamic>) continue;
+
+            final content = (delta['content'] ?? delta['text']) as String?;
+            final reasoning =
+                (delta['reasoning'] ?? delta['reasoning_content']) as String?;
+
+            if (content != null && content.isNotEmpty) {
+              yield ChatResponse(type: ChatResponseType.message, content: content);
+            }
+            if (reasoning != null && reasoning.isNotEmpty) {
+              yield ChatResponse(
+                type: ChatResponseType.reasoning,
+                reasoningContent: reasoning,
+              );
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (e) {
+      Log.error('LMStudio v0 continue error: $e');
+      yield ChatResponse(
+        type: ChatResponseType.error,
+        content: _handleChatError(e),
+      );
+      return;
+    }
+
+    yield const ChatResponse(type: ChatResponseType.done);
   }
 
   Future<dynamic> _formatInputWithImages(List<Message> messages) async {
@@ -629,17 +723,11 @@ class OpenAICompatibleChatService implements ChatService {
                 // Check for errors in the response
                 if (json['error'] != null) {
                   _timeoutTimer?.cancel();
-                  final error = json['error'];
-                  String errorMsg;
-                  if (error is Map) {
-                    errorMsg = (error['message'] ?? 'Unknown API error') as String;
-                  } else {
-                    errorMsg = error.toString();
-                  }
-                  Log.error('OpenAICompatible mid-stream error: $errorMsg');
+                  final errorContent = _formatApiErrorContent(json['error']);
+                  Log.error('OpenAICompatible mid-stream error: $errorContent');
                   yield ChatResponse(
                     type: ChatResponseType.error,
-                    content: 'API Error: $errorMsg',
+                    content: errorContent,
                   );
                   return;
                 }
@@ -977,17 +1065,11 @@ class OpenRouterChatService implements ChatService {
               // Check for errors in the response
               if (json['error'] != null) {
                 _timeoutTimer?.cancel();
-                final error = json['error'];
-                String errorMsg;
-                if (error is Map) {
-                  errorMsg = (error['message'] ?? 'Unknown API error') as String;
-                } else {
-                  errorMsg = error.toString();
-                }
-                Log.error('OpenRouter mid-stream error: $errorMsg');
+                final errorContent = _formatApiErrorContent(json['error']);
+                Log.error('OpenRouter mid-stream error: $errorContent');
                 yield ChatResponse(
                   type: ChatResponseType.error,
-                  content: 'API Error: $errorMsg',
+                  content: errorContent,
                 );
                 return;
               }
@@ -1090,9 +1172,25 @@ class OpenRouterChatService implements ChatService {
   }
 }
 
+String _formatApiErrorContent(dynamic error) {
+  if (error is Map<String, dynamic>) {
+    final parsed = ChatApiError.fromErrorMap(error);
+    if (parsed != null) return parsed.encode();
+  } else if (error is Map) {
+    final parsed = ChatApiError.fromErrorMap(
+      Map<String, dynamic>.from(error),
+    );
+    if (parsed != null) return parsed.encode();
+  }
+  return error.toString();
+}
+
 String _handleChatError(dynamic e) {
   if (e is DioException) {
     if (e.response != null) {
+      final parsed = ChatApiError.fromResponseBody(e.response!.data);
+      if (parsed != null) return parsed.encode();
+
       final status = e.response!.statusCode;
 
       switch (status) {

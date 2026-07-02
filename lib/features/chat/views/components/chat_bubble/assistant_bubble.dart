@@ -11,6 +11,7 @@ import 'package:localmind/features/chat/views/components/message_action_bar.dart
 import 'package:localmind/features/chat/views/components/message_variant_navigator.dart';
 import 'markdown/themed_gpt_markdown.dart';
 import 'tool_bubble/tool_timeline.dart';
+import 'chat_error_display.dart';
 
 class AssistantBubble extends StatelessWidget {
   const AssistantBubble({
@@ -112,14 +113,7 @@ class AssistantBubble extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
                 ),
-                child: Text(
-                  message.errorMessage!,
-                  style: TextStyle(
-                    color: Colors.red[400],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                child: ChatErrorDisplay(errorMessage: message.errorMessage!),
               ),
             ),
           if (message.toolEvents != null && message.toolEvents!.isNotEmpty)
