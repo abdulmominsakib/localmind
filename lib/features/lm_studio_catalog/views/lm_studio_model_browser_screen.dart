@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
+import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
 import '../data/catalog_models.dart';
 import '../providers/lm_studio_catalog_providers.dart';
 import '../utils/memory_compatibility.dart';
 import 'lm_studio_download_widgets.dart';
+import 'lm_studio_quant_selector.dart';
 
 class LmStudioModelBrowserScreen extends ConsumerStatefulWidget {
   const LmStudioModelBrowserScreen({super.key, required this.server});
@@ -612,6 +614,18 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
                 availableRamGb: widget.server.availableRamGb,
                 availableVramGb: widget.server.availableVramGb,
               );
+              final serverModels =
+                  ref.watch(availableModelsProvider(widget.server.id));
+              final downloadedIds = serverModels.maybeWhen(
+                data: downloadedModelIdStrings,
+                orElse: () => const <String>[],
+              );
+              final selectedDownloaded = selectedQuant != null &&
+                  downloadedIds.any((id) {
+                    final q = selectedQuant!.quantization.toLowerCase();
+                    final file = selectedQuant.fileName.toLowerCase();
+                    return id.contains(q) || id.contains(file);
+                  });
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -761,92 +775,18 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
                             ),
                           )
                         else
-                          ...detail.quants.map((quant) {
-                            final selected =
-                                selectedQuant?.fileName == quant.fileName;
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Material(
-                                color: selected
-                                    ? (isDark
-                                            ? AppColors.darkAccent
-                                            : AppColors.lightAccent)
-                                        .withValues(alpha: 0.12)
-                                    : (isDark
-                                        ? AppColors.darkBackground
-                                        : AppColors.lightBackground),
-                                borderRadius: BorderRadius.circular(12),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(12),
-                                  onTap: () => setState(() {
-                                    _selectedQuant = quant;
-                                  }),
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: selected
-                                            ? (isDark
-                                                ? AppColors.darkAccent
-                                                : AppColors.lightAccent)
-                                            : (isDark
-                                                ? AppColors.darkBorder
-                                                : AppColors.lightBorder),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          selected
-                                              ? Icons.radio_button_checked
-                                              : Icons.radio_button_off,
-                                          size: 18,
-                                          color: selected
-                                              ? (isDark
-                                                  ? AppColors.darkAccent
-                                                  : AppColors.lightAccent)
-                                              : theme.hintColor,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                quant.quantization,
-                                                style: theme.textTheme.titleSmall
-                                                    ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              Text(
-                                                quant.fileName,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style:
-                                                    theme.textTheme.bodySmall,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Text(
-                                          formatBytes(quant.sizeBytes),
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                        if (compatibility != MemoryCompatibility.unknown) ...[
+                          LmStudioQuantSelector(
+                            quants: detail.quants,
+                            selected: selectedQuant,
+                            onSelected: (quant) =>
+                                setState(() => _selectedQuant = quant),
+                            serverRamGb: widget.server.availableRamGb,
+                            serverVramGb: widget.server.availableVramGb,
+                            downloadedModelIds: downloadedIds,
+                            modelCapabilities: widget.model,
+                          ),
+                        if (detail.quants.isEmpty &&
+                            compatibility != MemoryCompatibility.unknown) ...[
                           const SizedBox(height: 8),
                           _CompatibilityBadge(compatibility: compatibility),
                         ],
@@ -854,7 +794,7 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: FilledButton.icon(
-                            onPressed: activeJob != null
+                            onPressed: activeJob != null || selectedDownloaded
                                 ? null
                                 : () => _startDownload(detail),
                             icon: activeJob != null
@@ -866,18 +806,24 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
                                       value: activeJob.progressFraction,
                                     ),
                                   )
-                                : const Icon(Icons.download),
+                                : Icon(
+                                    selectedDownloaded
+                                        ? Icons.check
+                                        : Icons.download,
+                                  ),
                             label: Text(
                               activeJob != null
                                   ? l10n.lm_studio_downloading_percent(
                                       ((activeJob.progressFraction ?? 0) * 100)
                                           .round(),
                                     )
-                                  : selectedSize != null
-                                      ? l10n.lm_studio_download_size(
-                                          formatBytes(selectedSize),
-                                        )
-                                      : l10n.lm_studio_download,
+                                  : selectedDownloaded
+                                      ? l10n.downloaded
+                                      : selectedSize != null
+                                          ? l10n.lm_studio_download_size(
+                                              formatBytes(selectedSize),
+                                            )
+                                          : l10n.lm_studio_download,
                             ),
                           ),
                         ),

@@ -156,15 +156,17 @@ class SidebarWidget extends ConsumerWidget {
                         context.go(AppRoutes.mcpTools);
                       },
                     ),
-                    if (isLmStudio) ...[
+                    if (isLmStudio)
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Row(
                           children: [
                             Expanded(
-                              child: ShadButton.outline(
-                                leading: const Icon(Icons.explore_outlined, size: 18),
-                                onPressed: () {
+                              child: DrawerNavItem(
+                                iconData: HugeIcons.strokeRoundedCompass01,
+                                label: l10n.lm_studio_model_search,
+                                isSelected: false,
+                                onTap: () {
                                   if (Scaffold.maybeOf(context)?.isDrawerOpen ??
                                       false) {
                                     Navigator.pop(context);
@@ -174,19 +176,12 @@ class SidebarWidget extends ConsumerWidget {
                                     extra: activeServer,
                                   );
                                 },
-                                child: Text(
-                                  l10n.lm_studio_model_search,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
                               ),
                             ),
-                            const SizedBox(width: 8),
                             const LmDownloadIndicatorButton(compact: true),
                           ],
                         ),
                       ),
-                    ],
                     DrawerNavItem(
                       iconData: HugeIcons.strokeRoundedSmartPhone01,
                       label: l10n.nav_local_models,
