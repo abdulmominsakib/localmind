@@ -107,13 +107,14 @@ class TtsPlayerBar extends ConsumerWidget {
     final canJumpToMessage = ttsState.playingMessageId != null;
     final skipSeconds = ref.watch(settingsProvider).ttsSkipSeconds;
     final isSystemTts = ttsState.activeEngine == EngineId.system;
-    final hasTimeline =
-        !isSystemTts &&
-        ttsState.duration > Duration.zero &&
-        ttsState.canSeek;
-    final progress = hasTimeline
-        ? (ttsState.position.inMilliseconds / ttsState.duration.inMilliseconds)
-            .clamp(0.0, 1.0)
+    final showSeekControls = !isSystemTts;
+    final hasTimeline = showSeekControls && ttsState.duration > Duration.zero;
+    final progress = showSeekControls
+        ? (ttsState.duration > Duration.zero
+            ? (ttsState.position.inMilliseconds /
+                    ttsState.duration.inMilliseconds)
+                .clamp(0.0, 1.0)
+            : 0.0)
         : null;
     final speedLabel =
         '${ttsState.playbackSpeed.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '')}x';
@@ -211,8 +212,10 @@ class TtsPlayerBar extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                if (!ttsState.isInitializing)
+                if (!ttsState.isInitializing) ...[
                   _WaveformIndicator(isPlaying: !ttsState.isPaused),
+                  const SizedBox(width: 12),
+                ],
                 if (!ttsState.isInitializing)
                   TextButton(
                     onPressed: notifier.cyclePlaybackSpeed,
@@ -271,31 +274,31 @@ class TtsPlayerBar extends ConsumerWidget {
                 ),
               ],
             ),
-            if (!ttsState.isInitializing && hasTimeline) ...[
-              const SizedBox(height: 8),
+            if (showSeekControls) ...[
+              const SizedBox(height: 10),
               Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.fast_rewind_rounded, size: 22),
+                  _TtsSkipButton(
+                    icon: Icons.fast_rewind_rounded,
                     tooltip: '-${skipSeconds}s',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: ttsState.canSeek ? notifier.skipBackward : null,
+                    isLoading: ttsState.isSeekPending && !ttsState.canSeek,
+                    onPressed: notifier.skipBackward,
                   ),
                   Expanded(
                     child: _TtsSeekSlider(
                       progress: progress ?? 0,
                       position: ttsState.position,
                       duration: ttsState.duration,
-                      enabled: hasTimeline,
+                      enabled: hasTimeline && !ttsState.isSeekPending,
                       onSeek: notifier.seekTo,
                       formatDuration: _formatDuration,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.fast_forward_rounded, size: 22),
+                  _TtsSkipButton(
+                    icon: Icons.fast_forward_rounded,
                     tooltip: '+${skipSeconds}s',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: ttsState.canSeek ? notifier.skipForward : null,
+                    isLoading: ttsState.isSeekPending && !ttsState.canSeek,
+                    onPressed: notifier.skipForward,
                   ),
                 ],
               ),
@@ -303,6 +306,36 @@ class TtsPlayerBar extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TtsSkipButton extends StatelessWidget {
+  const _TtsSkipButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.isLoading = false,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final Future<void> Function() onPressed;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      onPressed: isLoading ? null : onPressed,
+      icon: isLoading
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(icon, size: 22),
     );
   }
 }
