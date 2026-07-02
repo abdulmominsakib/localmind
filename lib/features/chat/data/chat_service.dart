@@ -18,6 +18,7 @@ import 'tools/adapters/openai_tool_adapter.dart';
 import 'tools/adapters/openrouter_tool_adapter.dart';
 import 'tools/adapters/ollama_tool_adapter.dart';
 import 'chat_api_error.dart';
+import 'lm_studio_prompt_formatter.dart';
 
 abstract class ChatService {
   Stream<ChatResponse> sendMessage({
@@ -146,6 +147,8 @@ class ChatStats {
 class LMStudioChatService implements ChatService {
   final Dio _dio;
   CancelToken? _cancelToken;
+  late final LmStudioPromptFormatter _promptFormatter =
+      LmStudioPromptFormatter(_dio);
 
   LMStudioChatService(this._dio);
 
@@ -163,11 +166,12 @@ class LMStudioChatService implements ChatService {
     _cancelToken = CancelToken();
 
     if (continueGeneration) {
-      yield* _streamV0ChatCompletions(
+      yield* _streamV0Completions(
         server: server,
         modelId: modelId,
         messages: messages,
         params: params,
+        mode: LmStudioPromptMode.continueAssistant,
       );
       return;
     }
@@ -416,30 +420,91 @@ class LMStudioChatService implements ChatService {
     }
   }
 
-  Stream<ChatResponse> _streamV0ChatCompletions({
+  /// Single-shot `/api/v0/completions` for auxiliary generation (e.g. AI user turn).
+  Future<String?> completeWithV0Completions({
     required Server server,
     required String modelId,
     required List<Message> messages,
     required ChatParameters params,
-  }) async* {
+    required LmStudioPromptMode mode,
+  }) async {
     _cancelToken = CancelToken();
 
-    final apiMessages = messages.map(_messageToApiMap).toList();
-    if (apiMessages.isNotEmpty && apiMessages.last['role'] == 'assistant') {
-      final last = apiMessages.last;
-      last['content'] = (last['content'] as String?) ?? '';
-    }
+    final prompt = await _promptFormatter.formatForCompletion(
+      baseUrl: server.baseUrl,
+      authHeaders: buildServerAuthHeaders(server),
+      modelId: modelId,
+      messages: messages,
+      mode: mode,
+      systemPrompt: params.systemPrompt,
+    );
 
     final body = <String, dynamic>{
       'model': modelId,
-      'messages': apiMessages,
+      'prompt': prompt,
+      'temperature': params.temperature,
+      'top_p': params.topP,
+      'max_tokens': params.maxTokens,
+      'stream': false,
+    };
+
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '${server.baseUrl}/api/v0/completions',
+        data: body,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            ...buildServerAuthHeaders(server),
+          },
+        ),
+        cancelToken: _cancelToken,
+      );
+
+      final data = response.data;
+      if (data == null) return null;
+      if (data['error'] != null) {
+        throw Exception(_formatApiErrorContent(data['error']));
+      }
+
+      final choices = data['choices'] as List<dynamic>?;
+      if (choices == null || choices.isEmpty) return null;
+      final first = choices[0] as Map<String, dynamic>?;
+      return first?['text']?.toString().trim();
+    } catch (e) {
+      Log.error('LMStudio v0 completion error: $e');
+      rethrow;
+    }
+  }
+
+  Stream<ChatResponse> _streamV0Completions({
+    required Server server,
+    required String modelId,
+    required List<Message> messages,
+    required ChatParameters params,
+    required LmStudioPromptMode mode,
+  }) async* {
+    _cancelToken = CancelToken();
+
+    final prompt = await _promptFormatter.formatForCompletion(
+      baseUrl: server.baseUrl,
+      authHeaders: buildServerAuthHeaders(server),
+      modelId: modelId,
+      messages: messages,
+      mode: mode,
+      systemPrompt: params.systemPrompt,
+    );
+
+    final body = <String, dynamic>{
+      'model': modelId,
+      'prompt': prompt,
       'temperature': params.temperature,
       'top_p': params.topP,
       'max_tokens': params.maxTokens,
       'stream': true,
     };
 
-    final endpoint = '${server.baseUrl}/api/v0/chat/completions';
+    final endpoint = '${server.baseUrl}/api/v0/completions';
 
     try {
       final response = await _dio.post<ResponseBody>(
@@ -491,11 +556,17 @@ class LMStudioChatService implements ChatService {
             if (firstChoice == null) continue;
 
             final delta = firstChoice['delta'];
-            if (delta == null || delta is! Map<String, dynamic>) continue;
+            final text = firstChoice['text'] as String?;
+            String? content;
+            String? reasoning;
 
-            final content = (delta['content'] ?? delta['text']) as String?;
-            final reasoning =
-                (delta['reasoning'] ?? delta['reasoning_content']) as String?;
+            if (delta is Map<String, dynamic>) {
+              content = (delta['content'] ?? delta['text']) as String?;
+              reasoning =
+                  (delta['reasoning'] ?? delta['reasoning_content']) as String?;
+            } else if (text != null && text.isNotEmpty) {
+              content = text;
+            }
 
             if (content != null && content.isNotEmpty) {
               yield ChatResponse(type: ChatResponseType.message, content: content);
@@ -510,7 +581,7 @@ class LMStudioChatService implements ChatService {
         }
       }
     } catch (e) {
-      Log.error('LMStudio v0 continue error: $e');
+      Log.error('LMStudio v0 completions stream error: $e');
       yield ChatResponse(
         type: ChatResponseType.error,
         content: _handleChatError(e),
