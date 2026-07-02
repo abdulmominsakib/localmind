@@ -2694,5 +2694,47 @@
   },
   "generate_title_with_ai": "Generate with AI",
   "generating_title": "Generating...",
-  "generate_title_failed": "Could not generate a title"
+  "generate_title_failed": "Could not generate a title",
+  "lm_studio_model_browser_title": "Browse models",
+  "lm_studio_model_search_hint": "Search models by name or author…",
+  "lm_studio_staff_picks": "Staff picks",
+  "lm_studio_community_models": "Community models",
+  "lm_studio_no_models": "No models found",
+  "lm_studio_models_count": "{count} models",
+  "@lm_studio_models_count": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "lm_studio_browse_models": "Browse & download",
+  "lm_studio_staff_pick": "Staff pick",
+  "lm_studio_params": "PARAMS",
+  "lm_studio_arch": "ARCH",
+  "lm_studio_domain": "DOMAIN",
+  "lm_studio_format": "FORMAT",
+  "lm_studio_vision": "Vision",
+  "lm_studio_tool_use": "Tool use",
+  "lm_studio_reasoning": "Reasoning",
+  "lm_studio_download_options": "Download options",
+  "lm_studio_download": "Download",
+  "lm_studio_download_size": "Download {size}",
+  "@lm_studio_download_size": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "lm_studio_downloading_percent": "Downloading {percent}%",
+  "@lm_studio_downloading_percent": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
+  "lm_studio_readme_unavailable": "README not available for this model.",
+  "lm_studio_full_gpu_offload": "Full GPU offload possible",
+  "lm_studio_partial_gpu_offload": "Partial GPU offload possible",
+  "lm_studio_likely_too_large": "Likely too large",
+  "lm_studio_available_ram_gb": "Available RAM (GB, optional)",
+  "lm_studio_available_vram_gb": "Available VRAM (GB, optional)",
+  "lm_studio_memory_settings_title": "Memory for recommendations",
+  "lm_studio_memory_settings_desc": "Used to estimate whether models fit on your machine in the model browser."
 }

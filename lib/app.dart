@@ -30,6 +30,7 @@ import 'features/servers/views/server_list_screen.dart';
 import 'features/tts/views/tts_model_manager_screen.dart';
 import 'features/saved_messages/views/saved_messages_screen.dart';
 import 'features/settings/views/settings_screen.dart';
+import 'features/lm_studio_catalog/views/lm_studio_model_browser_screen.dart';
 import 'features/sidebar/sidebar_drawer.dart';
 import 'features/sidebar/sidebar_widget.dart';
 
@@ -161,6 +162,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.savedMessages,
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: SavedMessagesScreen()),
+          ),
+          GoRoute(
+            path: AppRoutes.lmStudioModelBrowser,
+            pageBuilder: (context, state) {
+              final server = state.extra as Server?;
+              if (server == null) {
+                return const MaterialPage(child: SizedBox.shrink());
+              }
+              return MaterialPage(
+                child: LmStudioModelBrowserScreen(server: server),
+              );
+            },
           ),
         ],
       ),

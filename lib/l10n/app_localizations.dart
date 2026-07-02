@@ -4456,6 +4456,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not generate a title'**
   String get generate_title_failed;
+
+  /// No description provided for @lm_studio_model_browser_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse models'**
+  String get lm_studio_model_browser_title;
+
+  /// No description provided for @lm_studio_model_search_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search models by name or author…'**
+  String get lm_studio_model_search_hint;
+
+  /// No description provided for @lm_studio_staff_picks.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff picks'**
+  String get lm_studio_staff_picks;
+
+  /// No description provided for @lm_studio_community_models.
+  ///
+  /// In en, this message translates to:
+  /// **'Community models'**
+  String get lm_studio_community_models;
+
+  /// No description provided for @lm_studio_no_models.
+  ///
+  /// In en, this message translates to:
+  /// **'No models found'**
+  String get lm_studio_no_models;
+
+  /// No description provided for @lm_studio_models_count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} models'**
+  String lm_studio_models_count(int count);
+
+  /// No description provided for @lm_studio_browse_models.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse & download'**
+  String get lm_studio_browse_models;
+
+  /// No description provided for @lm_studio_staff_pick.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff pick'**
+  String get lm_studio_staff_pick;
+
+  /// No description provided for @lm_studio_params.
+  ///
+  /// In en, this message translates to:
+  /// **'PARAMS'**
+  String get lm_studio_params;
+
+  /// No description provided for @lm_studio_arch.
+  ///
+  /// In en, this message translates to:
+  /// **'ARCH'**
+  String get lm_studio_arch;
+
+  /// No description provided for @lm_studio_domain.
+  ///
+  /// In en, this message translates to:
+  /// **'DOMAIN'**
+  String get lm_studio_domain;
+
+  /// No description provided for @lm_studio_format.
+  ///
+  /// In en, this message translates to:
+  /// **'FORMAT'**
+  String get lm_studio_format;
+
+  /// No description provided for @lm_studio_vision.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision'**
+  String get lm_studio_vision;
+
+  /// No description provided for @lm_studio_tool_use.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool use'**
+  String get lm_studio_tool_use;
+
+  /// No description provided for @lm_studio_reasoning.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning'**
+  String get lm_studio_reasoning;
+
+  /// No description provided for @lm_studio_download_options.
+  ///
+  /// In en, this message translates to:
+  /// **'Download options'**
+  String get lm_studio_download_options;
+
+  /// No description provided for @lm_studio_download.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get lm_studio_download;
+
+  /// No description provided for @lm_studio_download_size.
+  ///
+  /// In en, this message translates to:
+  /// **'Download {size}'**
+  String lm_studio_download_size(String size);
+
+  /// No description provided for @lm_studio_downloading_percent.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading {percent}%'**
+  String lm_studio_downloading_percent(int percent);
+
+  /// No description provided for @lm_studio_readme_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'README not available for this model.'**
+  String get lm_studio_readme_unavailable;
+
+  /// No description provided for @lm_studio_full_gpu_offload.
+  ///
+  /// In en, this message translates to:
+  /// **'Full GPU offload possible'**
+  String get lm_studio_full_gpu_offload;
+
+  /// No description provided for @lm_studio_partial_gpu_offload.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial GPU offload possible'**
+  String get lm_studio_partial_gpu_offload;
+
+  /// No description provided for @lm_studio_likely_too_large.
+  ///
+  /// In en, this message translates to:
+  /// **'Likely too large'**
+  String get lm_studio_likely_too_large;
+
+  /// No description provided for @lm_studio_available_ram_gb.
+  ///
+  /// In en, this message translates to:
+  /// **'Available RAM (GB, optional)'**
+  String get lm_studio_available_ram_gb;
+
+  /// No description provided for @lm_studio_available_vram_gb.
+  ///
+  /// In en, this message translates to:
+  /// **'Available VRAM (GB, optional)'**
+  String get lm_studio_available_vram_gb;
+
+  /// No description provided for @lm_studio_memory_settings_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory for recommendations'**
+  String get lm_studio_memory_settings_title;
+
+  /// No description provided for @lm_studio_memory_settings_desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Used to estimate whether models fit on your machine in the model browser.'**
+  String get lm_studio_memory_settings_desc;
 }
 
 class _AppLocalizationsDelegate

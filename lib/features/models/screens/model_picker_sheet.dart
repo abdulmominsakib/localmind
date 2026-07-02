@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/service_providers.dart';
+import 'package:localmind/core/routes/app_routes.dart';
 import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/on_device/components/on_device_picker_section.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
+import 'package:localmind/features/lm_studio_catalog/providers/lm_studio_catalog_providers.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import '../components/model_context_length_section.dart';
 import '../components/model_list.dart';
@@ -58,6 +61,10 @@ class ModelPickerSheet extends ConsumerWidget {
         servers.where((s) => s.id == activeServer?.id).firstOrNull;
     final isOnDevice =
         currentServer != null && currentServer.type == ServerType.onDevice;
+    final isLmStudio =
+        currentServer != null && currentServer.type == ServerType.lmStudio;
+    final activeDownloadCount = ref.watch(lmActiveDownloadCountProvider);
+    final downloadProgress = ref.watch(lmOverallDownloadProgressProvider);
 
     final loadedModelsAsync = activeServer != null
         ? ref.watch(loadedModelsProvider(activeServer))
@@ -94,6 +101,18 @@ class ModelPickerSheet extends ConsumerWidget {
             modelLoading: modelLoading,
             loadedCount: loadedCount,
             activeServer: activeServer,
+            activeDownloadCount: activeDownloadCount,
+            downloadProgress: downloadProgress,
+            showBrowseButton: isLmStudio,
+            onBrowseModels: isLmStudio
+                ? () {
+                    Navigator.of(context).pop();
+                    context.push(
+                      AppRoutes.lmStudioModelBrowser,
+                      extra: currentServer,
+                    );
+                  }
+                : null,
             onRefresh: activeServer != null
                 ? () {
                     ref.invalidate(availableModelsProvider(activeServer.id));
@@ -184,6 +203,10 @@ class _ModelPickerHeader extends StatelessWidget {
     required this.modelLoading,
     required this.loadedCount,
     required this.activeServer,
+    this.activeDownloadCount = 0,
+    this.downloadProgress,
+    this.showBrowseButton = false,
+    this.onBrowseModels,
     this.onRefresh,
     this.onUnloadAll,
   });
@@ -193,6 +216,10 @@ class _ModelPickerHeader extends StatelessWidget {
   final dynamic modelLoading;
   final int loadedCount;
   final dynamic activeServer;
+  final int activeDownloadCount;
+  final double? downloadProgress;
+  final bool showBrowseButton;
+  final VoidCallback? onBrowseModels;
   final VoidCallback? onRefresh;
   final VoidCallback? onUnloadAll;
 
@@ -269,6 +296,21 @@ class _ModelPickerHeader extends StatelessWidget {
               foregroundColor: Colors.red[400],
               padding: const EdgeInsets.symmetric(horizontal: 8),
             ),
+          ),
+        if (showBrowseButton && onBrowseModels != null)
+          TextButton.icon(
+            onPressed: onBrowseModels,
+            icon: activeDownloadCount > 0
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      value: downloadProgress,
+                    ),
+                  )
+                : const Icon(Icons.explore_outlined, size: 18),
+            label: Text(l10n.lm_studio_browse_models),
           ),
         if (onRefresh != null)
           IconButton(

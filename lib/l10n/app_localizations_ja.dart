@@ -2340,4 +2340,93 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get generate_title_failed => 'Could not generate a title';
+
+  @override
+  String get lm_studio_model_browser_title => 'Browse models';
+
+  @override
+  String get lm_studio_model_search_hint => 'Search models by name or author…';
+
+  @override
+  String get lm_studio_staff_picks => 'Staff picks';
+
+  @override
+  String get lm_studio_community_models => 'Community models';
+
+  @override
+  String get lm_studio_no_models => 'No models found';
+
+  @override
+  String lm_studio_models_count(int count) {
+    return '$count models';
+  }
+
+  @override
+  String get lm_studio_browse_models => 'Browse & download';
+
+  @override
+  String get lm_studio_staff_pick => 'Staff pick';
+
+  @override
+  String get lm_studio_params => 'PARAMS';
+
+  @override
+  String get lm_studio_arch => 'ARCH';
+
+  @override
+  String get lm_studio_domain => 'DOMAIN';
+
+  @override
+  String get lm_studio_format => 'FORMAT';
+
+  @override
+  String get lm_studio_vision => 'Vision';
+
+  @override
+  String get lm_studio_tool_use => 'Tool use';
+
+  @override
+  String get lm_studio_reasoning => 'Reasoning';
+
+  @override
+  String get lm_studio_download_options => 'Download options';
+
+  @override
+  String get lm_studio_download => 'Download';
+
+  @override
+  String lm_studio_download_size(String size) {
+    return 'Download $size';
+  }
+
+  @override
+  String lm_studio_downloading_percent(int percent) {
+    return 'Downloading $percent%';
+  }
+
+  @override
+  String get lm_studio_readme_unavailable =>
+      'README not available for this model.';
+
+  @override
+  String get lm_studio_full_gpu_offload => 'Full GPU offload possible';
+
+  @override
+  String get lm_studio_partial_gpu_offload => 'Partial GPU offload possible';
+
+  @override
+  String get lm_studio_likely_too_large => 'Likely too large';
+
+  @override
+  String get lm_studio_available_ram_gb => 'Available RAM (GB, optional)';
+
+  @override
+  String get lm_studio_available_vram_gb => 'Available VRAM (GB, optional)';
+
+  @override
+  String get lm_studio_memory_settings_title => 'Memory for recommendations';
+
+  @override
+  String get lm_studio_memory_settings_desc =>
+      'Used to estimate whether models fit on your machine in the model browser.';
 }
