@@ -118,7 +118,7 @@ class SidebarWidget extends ConsumerWidget {
                       },
                     ),
                     DrawerNavItem(
-                      iconData: HugeIcons.strokeRoundedBookmark01,
+                      iconData: HugeIcons.strokeRoundedBookmark02,
                       label: l10n.nav_saved_messages,
                       isSelected: isSavedMessages,
                       onTap: () {
