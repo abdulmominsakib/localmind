@@ -18,6 +18,7 @@ class ModelTile extends StatelessWidget {
     this.onUnload,
     this.isFavorite = false,
     this.note,
+    this.isLoading = false,
   });
 
   final ModelInfo model;
@@ -29,6 +30,7 @@ class ModelTile extends StatelessWidget {
   final Future<void> Function()? onUnload;
   final bool isFavorite;
   final String? note;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +38,8 @@ class ModelTile extends StatelessWidget {
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
     return InkWell(
-      onTap: onTap,
-      onLongPress: onLongPress,
+      onTap: isLoading ? null : onTap,
+      onLongPress: isLoading ? null : onLongPress,
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -150,7 +152,16 @@ class ModelTile extends StatelessWidget {
               ),
               const SizedBox(width: 8),
             ],
-            if (isSelected)
+            if (isLoading)
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: accent,
+                ),
+              )
+            else if (isSelected)
               Icon(Icons.check_circle, color: accent, size: 22)
             else
               Icon(

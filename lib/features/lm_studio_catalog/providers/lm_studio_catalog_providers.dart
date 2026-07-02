@@ -23,17 +23,125 @@ final lmStudioStaffPicksProvider =
   return service.fetchStaffPicks();
 });
 
-final lmStudioCatalogSearchProvider = FutureProvider.autoDispose
-    .family<List<LmCatalogModel>, String>((ref, query) async {
-  final service = ref.read(lmStudioCatalogServiceProvider);
-  final staffPicks = await ref.watch(lmStudioStaffPicksProvider.future);
-  return service.searchCatalog(query: query, staffPicks: staffPicks);
-});
+class LmCatalogSearchState {
+  const LmCatalogSearchState({
+    this.staffMatches = const [],
+    this.communityModels = const [],
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.error,
+    this.nextUrl,
+    this.hasMore = false,
+  });
 
-final lmStudioModelReadmeProvider =
-    FutureProvider.autoDispose.family<String?, LmCatalogModel>((ref, model) async {
+  final List<LmCatalogModel> staffMatches;
+  final List<LmCatalogModel> communityModels;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final String? error;
+  final String? nextUrl;
+  final bool hasMore;
+
+  List<LmCatalogModel> get allModels => [...staffMatches, ...communityModels];
+
+  LmCatalogSearchState copyWith({
+    List<LmCatalogModel>? staffMatches,
+    List<LmCatalogModel>? communityModels,
+    bool? isLoading,
+    bool? isLoadingMore,
+    String? error,
+    String? nextUrl,
+    bool? hasMore,
+    bool clearError = false,
+  }) {
+    return LmCatalogSearchState(
+      staffMatches: staffMatches ?? this.staffMatches,
+      communityModels: communityModels ?? this.communityModels,
+      isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      error: clearError ? null : (error ?? this.error),
+      nextUrl: nextUrl ?? this.nextUrl,
+      hasMore: hasMore ?? this.hasMore,
+    );
+  }
+}
+
+class LmCatalogSearchNotifier extends Notifier<LmCatalogSearchState> {
+  String _query = '';
+
+  @override
+  LmCatalogSearchState build() => const LmCatalogSearchState();
+
+  Future<void> search(String query) async {
+    final trimmed = query.trim();
+    if (trimmed == _query && state.allModels.isNotEmpty && !state.isLoading) {
+      return;
+    }
+    _query = trimmed;
+
+    if (trimmed.isEmpty) {
+      state = const LmCatalogSearchState();
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, clearError: true);
+    final service = ref.read(lmStudioCatalogServiceProvider);
+
+    try {
+      final staffPicks = await ref.read(lmStudioStaffPicksProvider.future);
+      final staffMatches =
+          staffPicks.where((m) => m.matchesQuery(trimmed)).toList();
+      final page = await service.searchHuggingFace(query: trimmed);
+      final staffIds = staffMatches.map((m) => m.id).toSet();
+      final community =
+          page.models.where((m) => !staffIds.contains(m.id)).toList();
+
+      state = LmCatalogSearchState(
+        staffMatches: staffMatches,
+        communityModels: community,
+        nextUrl: page.nextUrl,
+        hasMore: page.nextUrl != null,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || !state.hasMore || state.nextUrl == null) return;
+
+    state = state.copyWith(isLoadingMore: true);
+    final service = ref.read(lmStudioCatalogServiceProvider);
+
+    try {
+      final page = await service.searchHuggingFace(nextUrl: state.nextUrl);
+      final existingIds = state.allModels.map((m) => m.id).toSet();
+      final more =
+          page.models.where((m) => !existingIds.contains(m.id)).toList();
+
+      state = state.copyWith(
+        communityModels: [...state.communityModels, ...more],
+        nextUrl: page.nextUrl,
+        hasMore: page.nextUrl != null,
+        isLoadingMore: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false, error: e.toString());
+    }
+  }
+}
+
+final lmCatalogSearchProvider =
+    NotifierProvider<LmCatalogSearchNotifier, LmCatalogSearchState>(
+  LmCatalogSearchNotifier.new,
+);
+
+final lmModelDetailProvider =
+    FutureProvider.autoDispose.family<LmModelDetail, LmCatalogModel>(
+        (ref, model) async {
   final service = ref.read(lmStudioCatalogServiceProvider);
-  return service.fetchReadme(model);
+  return service.fetchModelDetail(model);
 });
 
 class LmDownloadManagerState {
@@ -45,14 +153,6 @@ class LmDownloadManagerState {
 
   List<LmDownloadJob> get activeJobs =>
       jobs.where((job) => job.status.isActive).toList();
-
-  List<LmDownloadJob> get completedJobs => jobs
-      .where(
-        (job) =>
-            job.status == LmDownloadStatus.completed ||
-            job.status == LmDownloadStatus.alreadyDownloaded,
-      )
-      .toList();
 
   double? get overallProgress {
     final active = activeJobs;
@@ -100,12 +200,24 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
   Future<void> startDownload({
     required Server server,
     required LmCatalogModel model,
+    required LmModelDetail detail,
+    LmModelQuantOption? quant,
   }) async {
-    final service = ref.read(lmStudioDownloadServiceProvider);
-    final job = await service.startDownload(server: server, model: model);
+    final downloadService = ref.read(lmStudioDownloadServiceProvider);
+    final request = downloadService.buildDownloadRequest(
+      model: model,
+      detail: detail,
+      quant: quant,
+    );
+    final job = await downloadService.startDownload(
+      server: server,
+      request: request,
+    );
 
     final updatedJobs = [...state.jobs];
-    updatedJobs.removeWhere((j) => j.jobId == job.jobId && job.jobId.isNotEmpty);
+    if (job.jobId.isNotEmpty) {
+      updatedJobs.removeWhere((j) => j.jobId == job.jobId);
+    }
     updatedJobs.insert(0, job);
     state = state.copyWith(jobs: updatedJobs);
 
@@ -145,7 +257,21 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
         _pollers.remove(jobId);
         await _notifyFailed(updated);
       }
+    } on LmDownloadJobNotFoundException {
+      _pollers[jobId]?.cancel();
+      _pollers.remove(jobId);
+      removeJob(jobId);
     } catch (_) {}
+  }
+
+  void removeJob(String jobId) {
+    final jobs = state.jobs.where((j) => j.jobId != jobId).toList();
+    state = state.copyWith(jobs: jobs);
+  }
+
+  void dismissFinishedJobs() {
+    final jobs = state.jobs.where((j) => j.status.isActive).toList();
+    state = state.copyWith(jobs: jobs);
   }
 
   void _replaceJob(LmDownloadJob updated) {
@@ -184,7 +310,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
     await _notifications.show(
       id: id,
       title: 'Download failed',
-      body: job.displayName,
+      body: job.errorMessage ?? job.displayName,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'lm_studio_downloads',
@@ -194,12 +320,6 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
         ),
         iOS: DarwinNotificationDetails(),
       ),
-    );
-  }
-
-  void clearCompleted() {
-    state = state.copyWith(
-      jobs: state.jobs.where((job) => job.status.isActive).toList(),
     );
   }
 

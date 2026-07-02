@@ -106,7 +106,11 @@ class TtsPlayerBar extends ConsumerWidget {
     final preview = _truncateContent(ttsState.playingContent);
     final canJumpToMessage = ttsState.playingMessageId != null;
     final skipSeconds = ref.watch(settingsProvider).ttsSkipSeconds;
-    final isSystemTts = ttsState.activeEngine == EngineId.system;
+    final settingsEngine =
+        ref.watch(settingsProvider.select((s) => s.ttsEngine));
+    final isSystemTts = ttsState.activeEngine == EngineId.system ||
+        settingsEngine == EngineId.system ||
+        (ttsState.activeEngine == null && settingsEngine == EngineId.system);
     final showSeekControls = !isSystemTts;
     final hasTimeline = showSeekControls && ttsState.duration > Duration.zero;
     final progress = showSeekControls

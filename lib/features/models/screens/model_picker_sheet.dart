@@ -9,7 +9,7 @@ import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/on_device/components/on_device_picker_section.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
-import 'package:localmind/features/lm_studio_catalog/providers/lm_studio_catalog_providers.dart';
+import 'package:localmind/features/lm_studio_catalog/views/lm_studio_download_widgets.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import '../components/model_context_length_section.dart';
 import '../components/model_list.dart';
@@ -27,7 +27,6 @@ class ModelPickerSheet extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
     final activeServer = ref.watch(activeServerProvider);
     final selectedModel = ref.watch(selectedModelProvider);
-    final modelLoading = ref.watch(modelLoadingProvider);
     final isThinking = ref.watch(modelThinkingProvider);
 
     ref.listen(onDeviceEngineProvider, (prev, next) {
@@ -63,8 +62,6 @@ class ModelPickerSheet extends ConsumerWidget {
         currentServer != null && currentServer.type == ServerType.onDevice;
     final isLmStudio =
         currentServer != null && currentServer.type == ServerType.lmStudio;
-    final activeDownloadCount = ref.watch(lmActiveDownloadCountProvider);
-    final downloadProgress = ref.watch(lmOverallDownloadProgressProvider);
 
     final loadedModelsAsync = activeServer != null
         ? ref.watch(loadedModelsProvider(activeServer))
@@ -98,11 +95,7 @@ class ModelPickerSheet extends ConsumerWidget {
           _ModelPickerHeader(
             isDark: isDark,
             isThinking: isThinking,
-            modelLoading: modelLoading,
             loadedCount: loadedCount,
-            activeServer: activeServer,
-            activeDownloadCount: activeDownloadCount,
-            downloadProgress: downloadProgress,
             showBrowseButton: isLmStudio,
             onBrowseModels: isLmStudio
                 ? () {
@@ -200,11 +193,7 @@ class _ModelPickerHeader extends StatelessWidget {
   const _ModelPickerHeader({
     required this.isDark,
     required this.isThinking,
-    required this.modelLoading,
     required this.loadedCount,
-    required this.activeServer,
-    this.activeDownloadCount = 0,
-    this.downloadProgress,
     this.showBrowseButton = false,
     this.onBrowseModels,
     this.onRefresh,
@@ -213,11 +202,7 @@ class _ModelPickerHeader extends StatelessWidget {
 
   final bool isDark;
   final bool isThinking;
-  final dynamic modelLoading;
   final int loadedCount;
-  final dynamic activeServer;
-  final int activeDownloadCount;
-  final double? downloadProgress;
   final bool showBrowseButton;
   final VoidCallback? onBrowseModels;
   final VoidCallback? onRefresh;
@@ -228,6 +213,7 @@ class _ModelPickerHeader extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Column(
@@ -275,84 +261,36 @@ class _ModelPickerHeader extends StatelessWidget {
                   ],
                 ],
               ),
-              if (modelLoading.isLoading)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: _ModelLoadingBar(
-                    isDark: isDark,
-                    modelId: modelLoading.modelId,
-                    progress: modelLoading.progress,
-                  ),
-                ),
             ],
           ),
         ),
-        if (onUnloadAll != null)
-          TextButton.icon(
-            onPressed: onUnloadAll,
-            icon: const Icon(Icons.power_settings_new_outlined, size: 16),
-            label: Text(l10n.unload_all_models),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red[400],
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-          ),
-        if (showBrowseButton && onBrowseModels != null)
-          TextButton.icon(
-            onPressed: onBrowseModels,
-            icon: activeDownloadCount > 0
-                ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      value: downloadProgress,
-                    ),
-                  )
-                : const Icon(Icons.explore_outlined, size: 18),
-            label: Text(l10n.lm_studio_browse_models),
-          ),
-        if (onRefresh != null)
-          IconButton(
-            icon: const Icon(Icons.refresh, size: 20),
-            onPressed: onRefresh,
-            tooltip: l10n.refresh_models,
-          ),
-      ],
-    );
-  }
-}
-
-class _ModelLoadingBar extends StatelessWidget {
-  const _ModelLoadingBar({
-    required this.isDark,
-    required this.modelId,
-    this.progress,
-  });
-
-  final bool isDark;
-  final String? modelId;
-  final double? progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.loading_model(modelId ?? 'model'),
-          style: TextStyle(
-            fontSize: 12,
-            color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
-          ),
-        ),
-        const SizedBox(height: 4),
-        LinearProgressIndicator(
-          value: progress,
-          backgroundColor:
-              isDark ? AppColors.darkBorder : AppColors.lightBorder,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onUnloadAll != null)
+              IconButton(
+                onPressed: onUnloadAll,
+                tooltip: l10n.unload_all_models,
+                icon: Icon(
+                  Icons.power_settings_new_outlined,
+                  size: 20,
+                  color: Colors.red[400],
+                ),
+              ),
+            if (showBrowseButton && onBrowseModels != null)
+              IconButton(
+                onPressed: onBrowseModels,
+                tooltip: l10n.lm_studio_browse_models,
+                icon: const Icon(Icons.explore_outlined, size: 20),
+              ),
+            const LmDownloadIndicatorButton(compact: true),
+            if (onRefresh != null)
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 20),
+                onPressed: onRefresh,
+                tooltip: l10n.refresh_models,
+              ),
+          ],
         ),
       ],
     );

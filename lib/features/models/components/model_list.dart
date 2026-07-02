@@ -204,6 +204,7 @@ class _ModelListState extends ConsumerState<ModelList> {
         );
 
         final modelList = models.cast<ModelInfo>();
+        final modelLoading = ref.watch(modelLoadingProvider);
         final filtered = searchQuery.isEmpty
             ? modelList
             : modelList
@@ -245,6 +246,7 @@ class _ModelListState extends ConsumerState<ModelList> {
               isSelected: isSelected,
               isLoaded: isLoaded,
               isDark: widget.isDark,
+              isLoading: modelLoading.isLoading && modelLoading.modelId == model.id,
               isFavorite: modelMeta?.isFavorite ?? false,
               note: modelMeta?.note,
               onLongPress: () => _showModelOptions(context, model),

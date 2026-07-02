@@ -3,7 +3,6 @@ class LmCatalogModel {
     required this.id,
     required this.owner,
     required this.name,
-    required this.displayName,
     this.description,
     this.revisionNumber = 1,
     this.downloads = 0,
@@ -14,12 +13,12 @@ class LmCatalogModel {
     this.metadata = const LmCatalogMetadata(),
     this.url,
     this.source = LmCatalogSource.lmStudio,
+    this.hfRepoId,
   });
 
   final String id;
   final String owner;
   final String name;
-  final String displayName;
   final String? description;
   final int revisionNumber;
   final int downloads;
@@ -30,14 +29,27 @@ class LmCatalogModel {
   final LmCatalogMetadata metadata;
   final String? url;
   final LmCatalogSource source;
+  /// Hugging Face repo used for quant listing / HF downloads.
+  final String? hfRepoId;
 
   String get catalogId => '$owner/$name';
+
+  String get displayLabel => name;
 
   String get thumbnailUrl =>
       'https://lmstudio.ai/api/v1/artifacts/$owner/$name/revision/$revisionNumber?action=thumbnail';
 
+  String get manifestUrl =>
+      'https://lmstudio.ai/api/v1/artifacts/$owner/$name/revision/-1?manifest=true';
+
   String get readmeUrl =>
       'https://lmstudio.ai/api/v1/artifacts/$owner/$name/revision/$revisionNumber?action=readme';
+
+  String? get hfDownloadBaseUrl {
+    final repo = hfRepoId ?? (source == LmCatalogSource.huggingFace ? id : null);
+    if (repo == null || repo.isEmpty) return null;
+    return 'https://huggingface.co/$repo';
+  }
 
   factory LmCatalogModel.fromStaffPickJson(Map<String, dynamic> json) {
     final owner = json['owner']?.toString() ?? '';
@@ -51,7 +63,6 @@ class LmCatalogModel {
       id: '$owner/$name',
       owner: owner,
       name: name,
-      displayName: _humanizeModelName(name),
       description: json['description']?.toString(),
       revisionNumber: (json['revisionNumber'] as num?)?.toInt() ?? 1,
       downloads: (json['downloads'] as num?)?.toInt() ?? 0,
@@ -79,14 +90,15 @@ class LmCatalogModel {
       id: modelId,
       owner: owner,
       name: name,
-      displayName: _humanizeModelName(name),
       description: null,
       revisionNumber: 1,
       downloads: (json['downloads'] as num?)?.toInt() ?? 0,
       likes: (json['likes'] as num?)?.toInt() ?? 0,
-      updatedAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : null,
+      updatedAt: json['lastModified'] != null
+          ? DateTime.tryParse(json['lastModified'].toString())
+          : (json['createdAt'] != null
+              ? DateTime.tryParse(json['createdAt'].toString())
+              : null),
       isStaffPick: false,
       isVerified: false,
       metadata: LmCatalogMetadata(
@@ -98,6 +110,31 @@ class LmCatalogModel {
       ),
       url: 'https://huggingface.co/$modelId',
       source: LmCatalogSource.huggingFace,
+      hfRepoId: modelId,
+    );
+  }
+
+  LmCatalogModel copyWith({
+    String? hfRepoId,
+    int? downloads,
+    int? likes,
+    LmCatalogMetadata? metadata,
+  }) {
+    return LmCatalogModel(
+      id: id,
+      owner: owner,
+      name: name,
+      description: description,
+      revisionNumber: revisionNumber,
+      downloads: downloads ?? this.downloads,
+      likes: likes ?? this.likes,
+      updatedAt: updatedAt,
+      isStaffPick: isStaffPick,
+      isVerified: isVerified,
+      metadata: metadata ?? this.metadata,
+      url: url,
+      source: source,
+      hfRepoId: hfRepoId ?? this.hfRepoId,
     );
   }
 
@@ -105,7 +142,7 @@ class LmCatalogModel {
     final q = query.toLowerCase().trim();
     if (q.isEmpty) return true;
     return id.toLowerCase().contains(q) ||
-        displayName.toLowerCase().contains(q) ||
+        name.toLowerCase().contains(q) ||
         owner.toLowerCase().contains(q) ||
         (description?.toLowerCase().contains(q) ?? false);
   }
@@ -150,6 +187,137 @@ class LmCatalogMetadata {
           const [],
     );
   }
+}
+
+class LmArtifactManifest {
+  const LmArtifactManifest({
+    this.hfRepoId,
+    this.downloadCount,
+    this.readme,
+  });
+
+  final String? hfRepoId;
+  final int? downloadCount;
+  final String? readme;
+
+  factory LmArtifactManifest.fromJson(Map<String, dynamic> json) {
+    String? hfRepo;
+    final manifest = json['manifest'];
+    if (manifest is Map<String, dynamic>) {
+      final deps = manifest['dependencies'] as List<dynamic>?;
+      if (deps != null) {
+        for (final dep in deps) {
+          if (dep is! Map<String, dynamic>) continue;
+          final sources = dep['sources'] as List<dynamic>?;
+          if (sources == null) continue;
+          for (final source in sources) {
+            if (source is! Map<String, dynamic>) continue;
+            if (source['type']?.toString() != 'huggingface') continue;
+            final user = source['user']?.toString();
+            final repo = source['repo']?.toString();
+            if (user != null && repo != null) {
+              hfRepo = '$user/$repo';
+              break;
+            }
+          }
+          if (hfRepo != null) break;
+        }
+      }
+    }
+
+    return LmArtifactManifest(
+      hfRepoId: hfRepo,
+      downloadCount: (json['downloadCount'] as num?)?.toInt(),
+    );
+  }
+}
+
+class LmModelQuantOption {
+  const LmModelQuantOption({
+    required this.fileName,
+    required this.quantization,
+    required this.sizeBytes,
+  });
+
+  final String fileName;
+  final String quantization;
+  final int sizeBytes;
+
+  static List<LmModelQuantOption> fromHfTree(List<dynamic> tree) {
+    final options = <LmModelQuantOption>[];
+    for (final entry in tree) {
+      if (entry is! Map<String, dynamic>) continue;
+      if (entry['type']?.toString() != 'file') continue;
+      final path = entry['path']?.toString() ?? '';
+      if (!path.toLowerCase().endsWith('.gguf')) continue;
+      final quant = extractQuantization(path);
+      if (quant == null) continue;
+      final size = _fileSize(entry);
+      if (size <= 0) continue;
+      options.add(
+        LmModelQuantOption(
+          fileName: path,
+          quantization: quant,
+          sizeBytes: size,
+        ),
+      );
+    }
+    options.sort((a, b) => a.sizeBytes.compareTo(b.sizeBytes));
+    return options;
+  }
+
+  static int _fileSize(Map<String, dynamic> entry) {
+    final lfs = entry['lfs'];
+    if (lfs is Map && lfs['size'] is num) {
+      return (lfs['size'] as num).toInt();
+    }
+    if (entry['size'] is num) {
+      return (entry['size'] as num).toInt();
+    }
+    return 0;
+  }
+
+  static String? extractQuantization(String fileName) {
+    final base = fileName.split('/').last;
+    final patterns = [
+      RegExp(r'-((?:iQ|IQ|Q|F|BF)\d[\w_]*)\.gguf$', caseSensitive: false),
+      RegExp(r'\.((?:iQ|IQ|Q|F|BF)\d[\w_]*)\.gguf$', caseSensitive: false),
+    ];
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(base);
+      if (match != null) {
+        return match.group(1)?.toUpperCase();
+      }
+    }
+    return null;
+  }
+}
+
+class LmModelDetail {
+  const LmModelDetail({
+    required this.model,
+    this.readme,
+    this.quants = const [],
+    this.hfRepoId,
+  });
+
+  final LmCatalogModel model;
+  final String? readme;
+  final List<LmModelQuantOption> quants;
+  final String? hfRepoId;
+}
+
+class LmDownloadRequest {
+  const LmDownloadRequest({
+    required this.model,
+    this.quantization,
+    this.displayName,
+  });
+
+  /// Catalog id (`owner/name`) or full Hugging Face model URL.
+  final String model;
+  final String? quantization;
+  final String? displayName;
 }
 
 enum LmCatalogSource { lmStudio, huggingFace }
@@ -241,6 +409,9 @@ class LmDownloadJob {
       startedAt: _parseIso(json['started_at']),
       completedAt: _parseIso(json['completed_at']),
       estimatedCompletion: _parseIso(json['estimated_completion']),
+      errorMessage: json['error'] is Map
+          ? (json['error'] as Map)['message']?.toString()
+          : null,
     );
   }
 }
@@ -273,6 +444,16 @@ enum LmDownloadStatus {
       this == LmDownloadStatus.downloading || this == LmDownloadStatus.paused;
 }
 
+class HfSearchPage {
+  const HfSearchPage({
+    required this.models,
+    this.nextUrl,
+  });
+
+  final List<LmCatalogModel> models;
+  final String? nextUrl;
+}
+
 List<String> _stringList(dynamic value) {
   if (value is! List) return const [];
   return value.map((e) => e.toString()).toList();
@@ -289,18 +470,4 @@ DateTime? _parseEpochMs(dynamic value) {
 DateTime? _parseIso(dynamic value) {
   if (value == null) return null;
   return DateTime.tryParse(value.toString());
-}
-
-String _humanizeModelName(String name) {
-  return name
-      .replaceAll('-', ' ')
-      .replaceAll('_', ' ')
-      .split(' ')
-      .where((part) => part.isNotEmpty)
-      .map((part) {
-        if (part.length <= 3 && part == part.toUpperCase()) return part;
-        if (RegExp(r'^\d').hasMatch(part)) return part.toUpperCase();
-        return part[0].toUpperCase() + part.substring(1);
-      })
-      .join(' ');
 }

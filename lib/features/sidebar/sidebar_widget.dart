@@ -6,8 +6,11 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../core/routes/app_routes.dart';
 import '../../core/components/app_sizes.dart';
+import '../../core/models/enums.dart';
 import '../../l10n/app_localizations.dart';
 import '../chat/providers/chat_providers.dart';
+import '../lm_studio_catalog/views/lm_studio_download_widgets.dart';
+import '../servers/providers/server_providers.dart';
 import 'components/active_server_indicator.dart';
 import 'components/conversation_drawer_header.dart';
 import 'components/drawer_nav_item.dart';
@@ -35,6 +38,9 @@ class SidebarWidget extends ConsumerWidget {
     final isHome = location == AppRoutes.home || location == '/';
     final hasActiveChat = ref.watch(hasActiveChatSessionProvider);
     final isTemporary = ref.watch(chatProvider.select((s) => s.isTemporary));
+    final activeServer = ref.watch(activeServerProvider);
+    final isLmStudio =
+        activeServer != null && activeServer.type == ServerType.lmStudio;
 
     return Container(
       width: AppSizes.sidebarWidth,
@@ -150,6 +156,37 @@ class SidebarWidget extends ConsumerWidget {
                         context.go(AppRoutes.mcpTools);
                       },
                     ),
+                    if (isLmStudio) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: ShadButton.outline(
+                                leading: const Icon(Icons.explore_outlined, size: 18),
+                                onPressed: () {
+                                  if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                      false) {
+                                    Navigator.pop(context);
+                                  }
+                                  context.push(
+                                    AppRoutes.lmStudioModelBrowser,
+                                    extra: activeServer,
+                                  );
+                                },
+                                child: Text(
+                                  l10n.lm_studio_model_search,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const LmDownloadIndicatorButton(compact: true),
+                          ],
+                        ),
+                      ),
+                    ],
                     DrawerNavItem(
                       iconData: HugeIcons.strokeRoundedSmartPhone01,
                       label: l10n.nav_local_models,

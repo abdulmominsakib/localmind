@@ -4499,6 +4499,30 @@ abstract class AppLocalizations {
   /// **'Browse & download'**
   String get lm_studio_browse_models;
 
+  /// No description provided for @lm_studio_model_search.
+  ///
+  /// In en, this message translates to:
+  /// **'LMS Model Search'**
+  String get lm_studio_model_search;
+
+  /// No description provided for @lm_studio_downloads_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads'**
+  String get lm_studio_downloads_title;
+
+  /// No description provided for @lm_studio_clear_downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear finished'**
+  String get lm_studio_clear_downloads;
+
+  /// No description provided for @lm_studio_no_downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'No downloads yet'**
+  String get lm_studio_no_downloads;
+
   /// No description provided for @lm_studio_staff_pick.
   ///
   /// In en, this message translates to:

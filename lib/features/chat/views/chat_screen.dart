@@ -557,7 +557,6 @@ void _handleChatModeAction(
   final l10n = AppLocalizations.of(context)!;
 
   if (!hasMessages) {
-    FocusManager.instance.primaryFocus?.unfocus();
     ref.read(chatProvider.notifier).setTemporaryMode(!isTemporary);
     return;
   }

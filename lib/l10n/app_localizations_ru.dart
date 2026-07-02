@@ -2406,6 +2406,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get lm_studio_browse_models => 'Browse & download';
 
   @override
+  String get lm_studio_model_search => 'LMS Model Search';
+
+  @override
+  String get lm_studio_downloads_title => 'Downloads';
+
+  @override
+  String get lm_studio_clear_downloads => 'Clear finished';
+
+  @override
+  String get lm_studio_no_downloads => 'No downloads yet';
+
+  @override
   String get lm_studio_staff_pick => 'Staff pick';
 
   @override

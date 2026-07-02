@@ -85,9 +85,16 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     with TickerProviderStateMixin {
 
-  final _controller = TextEditingController();
-
+  final _normalController = TextEditingController();
+  final _incognitoController = TextEditingController();
   late final FocusNode _focusNode;
+  late final FocusNode _incognitoFocus;
+
+  TextEditingController get _controller =>
+      widget.keyboardIncognito ? _incognitoController : _normalController;
+
+  FocusNode get _activeFocus =>
+      widget.keyboardIncognito ? _incognitoFocus : _focusNode;
 
   final List<File> _attachedFiles = [];
 
@@ -100,104 +107,15 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
   late AnimationController _micAnimController;
 
   String _preSpeechText = '';
-  int _inputSession = 0;
-  bool _resettingKeyboardMode = false;
 
 
-
-  @override
-
-  void didUpdateWidget(ChatInputBar oldWidget) {
-
-    super.didUpdateWidget(oldWidget);
-
-    if (oldWidget.keyboardIncognito != widget.keyboardIncognito) {
-
-      _resetKeyboardInputConnection();
-
-    }
-
-  }
-
-
-
-  Future<void> _resetKeyboardInputConnection() async {
-
-    if (_resettingKeyboardMode) return;
-
-    _resettingKeyboardMode = true;
-
-    final hadFocus = _focusNode.hasFocus;
-
-    final savedText = _controller.text;
-
-    final savedSelection = _controller.selection;
-
-
-
-    _focusNode.unfocus();
-
-    FocusManager.instance.primaryFocus?.unfocus();
-
-
-
-    // Let the platform tear down the old IME connection before rebuilding.
-
-    await Future<void>.delayed(const Duration(milliseconds: 80));
-
-    if (!mounted) {
-
-      _resettingKeyboardMode = false;
-
-      return;
-
-    }
-
-
-
-    setState(() => _inputSession++);
-
-
-
-    _controller.value = TextEditingValue(
-
-      text: savedText,
-
-      selection: savedSelection,
-
-    );
-
-
-
-    if (hadFocus) {
-
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-
-        await Future<void>.delayed(const Duration(milliseconds: 80));
-
-        if (mounted) {
-
-          _focusNode.requestFocus();
-
-        }
-
-        _resettingKeyboardMode = false;
-
-      });
-
-    } else {
-
-      _resettingKeyboardMode = false;
-
-    }
-
-  }
 
   @override
   void initState() {
     super.initState();
 
     _focusNode = widget.focusNode ?? FocusNode();
+    _incognitoFocus = FocusNode();
 
     _sendButtonAnimController = AnimationController(
 
@@ -226,16 +144,39 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
 
   @override
+  void didUpdateWidget(ChatInputBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.keyboardIncognito == widget.keyboardIncognito) return;
+
+    final text = _normalController.text;
+    final selection = _normalController.selection;
+
+    if (widget.keyboardIncognito) {
+      _incognitoController.value = TextEditingValue(text: text, selection: selection);
+      if (_focusNode.hasFocus) {
+        _incognitoFocus.requestFocus();
+      }
+    } else {
+      _normalController.value = TextEditingValue(text: text, selection: selection);
+      if (_incognitoFocus.hasFocus) {
+        _focusNode.requestFocus();
+      }
+    }
+  }
+
+
+
+  @override
 
   void dispose() {
 
-    _controller.dispose();
+    _normalController.dispose();
+    _incognitoController.dispose();
 
     if (widget.focusNode == null) {
-
       _focusNode.dispose();
-
     }
+    _incognitoFocus.dispose();
 
     _sendButtonAnimController.dispose();
 
@@ -267,7 +208,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     setState(() {});
 
-    _focusNode.requestFocus();
+    _activeFocus.requestFocus();
 
     _controller.selection = TextSelection.fromPosition(
 
@@ -1129,88 +1070,91 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
               ),
 
-            TextField(
-
-              key: ValueKey(
-
-                'chat-input-${widget.keyboardIncognito}-$_inputSession',
-
-              ),
-
-              controller: _controller,
-
-              focusNode: _focusNode,
-
-              enabled: widget.enabled,
-
-              maxLines: 6,
-
-              minLines: 1,
-
-              textInputAction: TextInputAction.newline,
-
-              keyboardType: TextInputType.multiline,
-
-              enableSuggestions: !widget.keyboardIncognito,
-
-              autocorrect: !widget.keyboardIncognito,
-
-              enableIMEPersonalizedLearning: !widget.keyboardIncognito,
-
-              spellCheckConfiguration: widget.keyboardIncognito
-                  ? const SpellCheckConfiguration.disabled()
-                  : null,
-
-              smartDashesType: widget.keyboardIncognito
-
-                  ? SmartDashesType.disabled
-
-                  : SmartDashesType.enabled,
-
-              smartQuotesType: widget.keyboardIncognito
-
-                  ? SmartQuotesType.disabled
-
-                  : SmartQuotesType.enabled,
-
-              onChanged: (_) => setState(() {}),
-
-              style: TextStyle(
-
-                fontSize: 15,
-
-                color: theme.colorScheme.onSurface,
-
-              ),
-
-              decoration: InputDecoration(
-
-                filled: false,
-
-                border: InputBorder.none,
-
-                enabledBorder: InputBorder.none,
-
-                focusedBorder: InputBorder.none,
-
-                disabledBorder: InputBorder.none,
-
-                hintText: l10n.chat_input_hint,
-
-                hintStyle: TextStyle(
-
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.38),
-
-                  fontSize: 15,
-
+            Stack(
+              children: [
+                IgnorePointer(
+                  ignoring: widget.keyboardIncognito,
+                  child: Opacity(
+                    opacity: widget.keyboardIncognito ? 0 : 1,
+                    child: TextField(
+                      controller: _normalController,
+                      focusNode: _focusNode,
+                      enabled: widget.enabled,
+                      maxLines: 6,
+                      minLines: 1,
+                      textInputAction: TextInputAction.newline,
+                      keyboardType: TextInputType.multiline,
+                      enableSuggestions: true,
+                      autocorrect: true,
+                      enableIMEPersonalizedLearning: true,
+                      onChanged: (_) => setState(() {}),
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        filled: false,
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        hintText: l10n.chat_input_hint,
+                        hintStyle: TextStyle(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.38),
+                          fontSize: 15,
+                        ),
+                        isDense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 4),
+                      ),
+                    ),
+                  ),
                 ),
-
-                isDense: true,
-
-                contentPadding: const EdgeInsets.symmetric(vertical: 4),
-
-              ),
-
+                IgnorePointer(
+                  ignoring: !widget.keyboardIncognito,
+                  child: Opacity(
+                    opacity: widget.keyboardIncognito ? 1 : 0,
+                    child: TextField(
+                      controller: _incognitoController,
+                      focusNode: _incognitoFocus,
+                      enabled: widget.enabled,
+                      maxLines: 6,
+                      minLines: 1,
+                      textInputAction: TextInputAction.newline,
+                      keyboardType: TextInputType.multiline,
+                      enableSuggestions: false,
+                      autocorrect: false,
+                      enableIMEPersonalizedLearning: false,
+                      spellCheckConfiguration:
+                          const SpellCheckConfiguration.disabled(),
+                      smartDashesType: SmartDashesType.disabled,
+                      smartQuotesType: SmartQuotesType.disabled,
+                      onChanged: (_) => setState(() {}),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    decoration: InputDecoration(
+                      filled: false,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      hintText: l10n.chat_input_hint,
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.38),
+                        fontSize: 15,
+                      ),
+                      isDense: true,
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 4),
+                    ),
+                    ),
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 6),

@@ -2707,6 +2707,10 @@
     }
   },
   "lm_studio_browse_models": "Browse & download",
+  "lm_studio_model_search": "LMS Model Search",
+  "lm_studio_downloads_title": "Downloads",
+  "lm_studio_clear_downloads": "Clear finished",
+  "lm_studio_no_downloads": "No downloads yet",
   "lm_studio_staff_pick": "Staff pick",
   "lm_studio_params": "PARAMS",
   "lm_studio_arch": "ARCH",
