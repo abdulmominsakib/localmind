@@ -532,7 +532,6 @@ class ChatNotifier extends Notifier<ChatState> {
   Future<void> sendMessage(String content, {List<File>? attachments}) async {
     final server = ref.read(activeServerProvider);
     final selectedModel = ref.read(selectedModelProvider);
-    final chatParams = ref.read(chatParamsProvider);
     final chatService = ref.read(chatServiceProvider);
     final settings = ref.read(settingsProvider);
 
@@ -605,6 +604,13 @@ class ChatNotifier extends Notifier<ChatState> {
         ref.read(selectedPersonasProvider.notifier).clear();
       }
     }
+
+    // Read after the conversation (and its persona system prompt) is
+    // created above — chatParamsProvider derives systemPrompt from
+    // activeConversationProvider, which doesn't have it yet if read at the
+    // top of this function, causing the very first message's request to
+    // go out with no persona system prompt.
+    final chatParams = ref.read(chatParamsProvider);
 
     final convId = _activeConversationId;
     if (convId == null) return;
