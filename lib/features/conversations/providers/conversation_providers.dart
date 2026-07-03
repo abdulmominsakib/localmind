@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/storage_providers.dart';
 import '../../../core/storage/entities.dart';
 import '../../../objectbox.g.dart';
+import '../../chat/utils/message_variants.dart';
 import '../data/message_search_service.dart';
 import '../data/models/message_search_hit.dart';
 import '../data/models/conversation.dart';
@@ -46,8 +47,13 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       final messages = query.find();
       query.close();
 
-      final activeMessages =
-          messages.where((m) => m.isActiveVariant).toList(growable: false);
+      // A flat `isActiveVariant` filter counts every message ever marked
+      // active within its own variant group, including messages hanging
+      // off a branch whose ancestor is no longer the active variant.
+      // Resolve the real connected timeline from the root instead.
+      final activeMessages = MessageVariants.resolveActiveTimeline(
+        messages.map((e) => e.toDomain()).toList(),
+      );
       final count = activeMessages.length;
       final chars = activeMessages.fold<int>(
         0,
