@@ -48,6 +48,15 @@ String formatBytes(int bytes) {
   return '${value.toStringAsFixed(unitIndex == 0 ? 0 : 2)} ${units[unitIndex]}';
 }
 
+String formatSpeed(int? bytesPerSecond) {
+  if (bytesPerSecond == null || bytesPerSecond <= 0) return '';
+  final mbPerSecond = bytesPerSecond / (1024 * 1024);
+  if (mbPerSecond < 0.1) {
+    return '${(bytesPerSecond / 1024).toStringAsFixed(0)} KB/s';
+  }
+  return '${mbPerSecond.toStringAsFixed(1)} MB/s';
+}
+
 String formatRelativeTime(DateTime? dateTime) {
   if (dateTime == null) return '';
   final diff = DateTime.now().difference(dateTime);

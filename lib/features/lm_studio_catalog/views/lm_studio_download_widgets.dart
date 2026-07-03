@@ -192,7 +192,11 @@ class _DownloadJobTile extends ConsumerWidget {
             LinearProgressIndicator(value: job.progressFraction),
             const SizedBox(height: 4),
             Text(
-              '${formatBytes(job.downloadedBytes ?? 0)} / ${formatBytes(job.totalSizeBytes!)}',
+              [
+                '${formatBytes(job.downloadedBytes ?? 0)} / ${formatBytes(job.totalSizeBytes!)}',
+                if (formatSpeed(job.bytesPerSecond).isNotEmpty)
+                  formatSpeed(job.bytesPerSecond),
+              ].join(' · '),
               style: theme.textTheme.labelSmall,
             ),
           ],
