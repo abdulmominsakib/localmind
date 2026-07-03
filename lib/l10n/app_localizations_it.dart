@@ -2422,10 +2422,17 @@ class AppLocalizationsIt extends AppLocalizations {
   String get lm_studio_use_default_quant => 'Use default';
 
   @override
+  String get lm_studio_recommended => 'Recommended';
+
+  @override
   String get lm_studio_clear_downloads => 'Clear finished';
 
   @override
   String get lm_studio_no_downloads => 'No downloads yet';
+
+  @override
+  String get lm_studio_downloads_disclaimer =>
+      'Downloads run on the LM Studio host. Pausing, stopping, and deleting models must be done on that computer — not from this app.';
 
   @override
   String get lm_studio_staff_pick => 'Staff pick';

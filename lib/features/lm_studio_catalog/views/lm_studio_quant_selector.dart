@@ -4,6 +4,7 @@ import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
 import '../data/catalog_models.dart';
+import '../utils/download_matching.dart';
 import '../utils/memory_compatibility.dart';
 
 class LmStudioQuantSelector extends StatefulWidget {
@@ -14,7 +15,7 @@ class LmStudioQuantSelector extends StatefulWidget {
     required this.onSelected,
     required this.serverRamGb,
     required this.serverVramGb,
-    required this.downloadedModelIds,
+    required this.downloadedModels,
     required this.modelCapabilities,
   });
 
@@ -23,7 +24,7 @@ class LmStudioQuantSelector extends StatefulWidget {
   final ValueChanged<LmModelQuantOption> onSelected;
   final int? serverRamGb;
   final int? serverVramGb;
-  final List<String> downloadedModelIds;
+  final List<ModelInfo> downloadedModels;
   final LmCatalogModel modelCapabilities;
 
   @override
@@ -34,13 +35,11 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
   bool _expanded = false;
 
   bool _isDownloaded(LmModelQuantOption quant) {
-    final q = quant.quantization.toLowerCase();
-    final file = quant.fileName.toLowerCase();
-    for (final id in widget.downloadedModelIds) {
-      final lower = id.toLowerCase();
-      if (lower.contains(q) || lower.contains(file)) return true;
-    }
-    return false;
+    return isQuantDownloaded(
+      model: widget.modelCapabilities,
+      quant: quant,
+      downloadedModels: widget.downloadedModels,
+    );
   }
 
   MemoryCompatibility _compat(LmModelQuantOption quant) {
@@ -111,6 +110,7 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final selected = widget.selected ?? widget.quants.first;
+    final recommended = LmModelQuantOption.recommended(widget.quants);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -175,17 +175,13 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
                         ),
                       ),
                       const Spacer(),
-                      TextButton(
-                        onPressed: () {
-                          widget.onSelected(
-                            widget.quants.firstWhere(
-                              (q) => q.quantization == 'Q4_K_M',
-                              orElse: () => widget.quants.first,
-                            ),
-                          );
-                        },
-                        child: Text(l10n.lm_studio_use_default_quant),
-                      ),
+                      if (recommended != null)
+                        TextButton(
+                          onPressed: () {
+                            widget.onSelected(recommended);
+                          },
+                          child: Text(l10n.lm_studio_use_default_quant),
+                        ),
                     ],
                   ),
                 ),
@@ -193,6 +189,8 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
                   final isSelected = quant.fileName == selected.fileName;
                   final downloaded = _isDownloaded(quant);
                   final compat = _compat(quant);
+                  final isRecommended =
+                      recommended != null && quant.fileName == recommended.fileName;
                   return Material(
                     color: isSelected
                         ? (isDark ? AppColors.darkAccent : AppColors.lightAccent)
@@ -244,6 +242,7 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
                                         _CapIcon(Icons.psychology_outlined, Colors.green),
                                       if (widget.modelCapabilities.metadata.trainedForToolUse)
                                         _CapIcon(Icons.build_outlined, Colors.blue),
+                                      if (isRecommended) _RecommendedTag(l10n: l10n),
                                     ],
                                   ),
                                   const SizedBox(height: 4),
@@ -344,14 +343,33 @@ class _CapIcon extends StatelessWidget {
   }
 }
 
-/// Collect model ids from server catalog for download detection.
-List<String> downloadedModelIdStrings(List<dynamic> models) {
-  return models
-      .whereType<ModelInfo>()
-      .map((m) => m.id)
-      .followedBy(
-        models.whereType<ModelInfo>().map((m) => m.name),
-      )
-      .map((s) => s.toLowerCase())
-      .toList();
+class _RecommendedTag extends StatelessWidget {
+  const _RecommendedTag({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        l10n.lm_studio_recommended,
+        style: TextStyle(
+          color: Colors.amber.shade700,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+/// Collect downloaded models from server catalog for download detection.
+List<ModelInfo> downloadedModelsList(List<dynamic> models) {
+  return models.whereType<ModelInfo>().toList();
 }

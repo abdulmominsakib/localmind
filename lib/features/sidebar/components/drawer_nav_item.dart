@@ -10,6 +10,7 @@ class DrawerNavItem extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.badgeText,
+    this.trailing,
   });
 
   final List<List<dynamic>> iconData;
@@ -17,6 +18,7 @@ class DrawerNavItem extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final String? badgeText;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +82,10 @@ class DrawerNavItem extends StatelessWidget {
                     ),
                   ),
                 ),
+              ],
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing!,
               ],
             ],
           ),

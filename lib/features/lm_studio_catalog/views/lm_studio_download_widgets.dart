@@ -19,6 +19,8 @@ class LmDownloadIndicatorButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final jobs = ref.watch(lmDownloadManagerProvider).jobs;
     final activeCount = ref.watch(lmActiveDownloadCountProvider);
     final progress = ref.watch(lmOverallDownloadProgressProvider);
@@ -41,6 +43,9 @@ class LmDownloadIndicatorButton extends ConsumerWidget {
               child: CircularProgressIndicator(
                 value: activeCount > 0 ? progress : null,
                 strokeWidth: compact ? 2 : 2.5,
+                color: theme.colorScheme.primary,
+                backgroundColor:
+                    isDark ? AppColors.darkBorder : AppColors.lightBorder,
               ),
             ),
             Text(
@@ -103,6 +108,15 @@ class _LmDownloadsSheet extends ConsumerWidget {
                   ),
               ],
             ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.lm_studio_downloads_disclaimer,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isDark
+                    ? AppColors.darkMutedText
+                    : AppColors.lightMutedText,
+              ),
+            ),
             const SizedBox(height: 8),
             if (jobs.isEmpty)
               Padding(
@@ -146,6 +160,7 @@ class _DownloadJobTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     late final String statusLabel;
     late final Color statusColor;
@@ -189,7 +204,16 @@ class _DownloadJobTile extends ConsumerWidget {
             ),
           if (job.status.isActive && job.totalSizeBytes != null) ...[
             const SizedBox(height: 6),
-            LinearProgressIndicator(value: job.progressFraction),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: job.progressFraction,
+                minHeight: 6,
+                color: theme.colorScheme.primary,
+                backgroundColor:
+                    isDark ? AppColors.darkBorder : AppColors.lightBorder,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               [

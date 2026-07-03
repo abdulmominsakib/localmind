@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/service_providers.dart';
 import '../../servers/data/models/server.dart';
+import '../../servers/providers/server_providers.dart';
 import '../data/catalog_models.dart';
 import '../data/lm_studio_catalog_service.dart';
 import '../data/lm_studio_download_service.dart';
@@ -221,8 +222,10 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
     updatedJobs.insert(0, job);
     state = state.copyWith(jobs: updatedJobs);
 
-    if (job.status == LmDownloadStatus.alreadyDownloaded) {
+    if (job.status == LmDownloadStatus.alreadyDownloaded ||
+        job.status == LmDownloadStatus.completed) {
       await _notifyCompleted(job);
+      ref.invalidate(availableModelsProvider(server.id));
       return;
     }
 
@@ -252,6 +255,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
         _pollers[jobId]?.cancel();
         _pollers.remove(jobId);
         await _notifyCompleted(updated);
+        ref.invalidate(availableModelsProvider(server.id));
       } else if (updated.status == LmDownloadStatus.failed) {
         _pollers[jobId]?.cancel();
         _pollers.remove(jobId);

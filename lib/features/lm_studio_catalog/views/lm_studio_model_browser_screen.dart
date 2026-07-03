@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:localmind/core/theme/colors.dart';
+import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
 import '../data/catalog_models.dart';
 import '../providers/lm_studio_catalog_providers.dart';
+import '../utils/download_matching.dart';
 import '../utils/memory_compatibility.dart';
 import 'lm_studio_download_widgets.dart';
 import 'lm_studio_quant_selector.dart';
@@ -101,7 +103,13 @@ class _LmStudioModelBrowserScreenState
         ? ref.watch(lmCatalogSearchProvider)
         : null;
 
-    return Scaffold(
+    return PopScope(
+      canPop: _selectedModel == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _closeDetails();
+      },
+      child: Scaffold(
       backgroundColor:
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
@@ -186,6 +194,7 @@ class _LmStudioModelBrowserScreenState
             ),
           ],
         ],
+      ),
       ),
     );
   }
@@ -518,22 +527,13 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
     }
   }
 
-  LmModelQuantOption? _pickDefaultQuant(List<LmModelQuantOption> quants) {
-    if (quants.isEmpty) return null;
-    for (final preferred in ['Q4_K_M', 'Q4_K_S', 'Q4_0', 'Q5_K_M']) {
-      final match = quants.where((q) => q.quantization == preferred).firstOrNull;
-      if (match != null) return match;
-    }
-    return quants.first;
-  }
-
   LmModelQuantOption? _effectiveQuant(List<LmModelQuantOption> quants) {
     if (quants.isEmpty) return null;
     if (_selectedQuant != null &&
         quants.any((q) => q.fileName == _selectedQuant!.fileName)) {
       return _selectedQuant;
     }
-    return _pickDefaultQuant(quants);
+    return LmModelQuantOption.recommended(quants);
   }
 
   LmDownloadJob? _activeJobFor(LmModelDetail detail) {
@@ -616,16 +616,16 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
               );
               final serverModels =
                   ref.watch(availableModelsProvider(widget.server.id));
-              final downloadedIds = serverModels.maybeWhen(
-                data: downloadedModelIdStrings,
-                orElse: () => const <String>[],
+              final downloadedModels = serverModels.maybeWhen(
+                data: downloadedModelsList,
+                orElse: () => const <ModelInfo>[],
               );
               final selectedDownloaded = selectedQuant != null &&
-                  downloadedIds.any((id) {
-                    final q = selectedQuant!.quantization.toLowerCase();
-                    final file = selectedQuant.fileName.toLowerCase();
-                    return id.contains(q) || id.contains(file);
-                  });
+                  isQuantDownloaded(
+                    model: widget.model,
+                    quant: selectedQuant,
+                    downloadedModels: downloadedModels,
+                  );
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -782,7 +782,7 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
                                 setState(() => _selectedQuant = quant),
                             serverRamGb: widget.server.availableRamGb,
                             serverVramGb: widget.server.availableVramGb,
-                            downloadedModelIds: downloadedIds,
+                            downloadedModels: downloadedModels,
                             modelCapabilities: widget.model,
                           ),
                         if (detail.quants.isEmpty &&

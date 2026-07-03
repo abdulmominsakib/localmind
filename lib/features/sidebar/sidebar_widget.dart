@@ -157,30 +157,20 @@ class SidebarWidget extends ConsumerWidget {
                       },
                     ),
                     if (isLmStudio)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: DrawerNavItem(
-                                iconData: HugeIcons.strokeRoundedCompass01,
-                                label: l10n.lm_studio_model_search,
-                                isSelected: false,
-                                onTap: () {
-                                  if (Scaffold.maybeOf(context)?.isDrawerOpen ??
-                                      false) {
-                                    Navigator.pop(context);
-                                  }
-                                  context.push(
-                                    AppRoutes.lmStudioModelBrowser,
-                                    extra: activeServer,
-                                  );
-                                },
-                              ),
-                            ),
-                            const LmDownloadIndicatorButton(compact: true),
-                          ],
-                        ),
+                      DrawerNavItem(
+                        iconData: HugeIcons.strokeRoundedAiSearch,
+                        label: l10n.lm_studio_model_search,
+                        isSelected: false,
+                        trailing: const LmDownloadIndicatorButton(compact: true),
+                        onTap: () {
+                          if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                            Navigator.pop(context);
+                          }
+                          context.push(
+                            AppRoutes.lmStudioModelBrowser,
+                            extra: activeServer,
+                          );
+                        },
                       ),
                     DrawerNavItem(
                       iconData: HugeIcons.strokeRoundedSmartPhone01,

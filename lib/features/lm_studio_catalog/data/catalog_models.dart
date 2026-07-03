@@ -250,6 +250,9 @@ class LmModelQuantOption {
       if (entry['type']?.toString() != 'file') continue;
       final path = entry['path']?.toString() ?? '';
       if (!path.toLowerCase().endsWith('.gguf')) continue;
+      // mmproj files are multimodal projector weights, not standalone
+      // model quants — they can't be selected/downloaded on their own.
+      if (path.toLowerCase().contains('mmproj')) continue;
       final quant = extractQuantization(path);
       if (quant == null) continue;
       final size = _fileSize(entry);
@@ -264,6 +267,20 @@ class LmModelQuantOption {
     }
     options.sort((a, b) => a.sizeBytes.compareTo(b.sizeBytes));
     return options;
+  }
+
+  /// Preferred quant order used to pick a sensible default/recommended
+  /// option when the user hasn't picked one explicitly.
+  static const preferredQuantOrder = ['Q4_K_M', 'Q4_K_S', 'Q4_0', 'Q5_K_M'];
+
+  static LmModelQuantOption? recommended(List<LmModelQuantOption> quants) {
+    if (quants.isEmpty) return null;
+    for (final preferred in preferredQuantOrder) {
+      final match =
+          quants.where((q) => q.quantization == preferred).firstOrNull;
+      if (match != null) return match;
+    }
+    return quants.first;
   }
 
   static int _fileSize(Map<String, dynamic> entry) {

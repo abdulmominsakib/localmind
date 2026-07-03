@@ -4535,6 +4535,12 @@ abstract class AppLocalizations {
   /// **'Use default'**
   String get lm_studio_use_default_quant;
 
+  /// No description provided for @lm_studio_recommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get lm_studio_recommended;
+
   /// No description provided for @lm_studio_clear_downloads.
   ///
   /// In en, this message translates to:
@@ -4546,6 +4552,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No downloads yet'**
   String get lm_studio_no_downloads;
+
+  /// No description provided for @lm_studio_downloads_disclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads run on the LM Studio host. Pausing, stopping, and deleting models must be done on that computer — not from this app.'**
+  String get lm_studio_downloads_disclaimer;
 
   /// No description provided for @lm_studio_staff_pick.
   ///
