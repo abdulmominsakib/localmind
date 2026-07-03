@@ -2,6 +2,7 @@ export 'chat_notifier.dart';
 export 'chat_origin_provider.dart';
 export 'chat_params_providers.dart';
 export 'chat_service_providers.dart';
+export 'message_selection_provider.dart';
 export 'model_loading_providers.dart';
 export 'model_selection_providers.dart';
 export 'smart_reply_providers.dart';

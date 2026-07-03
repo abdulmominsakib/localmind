@@ -6,6 +6,7 @@ import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/theme/colors.dart';
 import '../../../saved_messages/providers/saved_message_providers.dart';
 import '../../../tts/providers/tts_providers.dart' as tts;
+import '../../providers/message_selection_provider.dart';
 
 class MessageActionBar extends ConsumerStatefulWidget {
   const MessageActionBar({
@@ -289,6 +290,18 @@ class _MessageActionBarState extends ConsumerState<MessageActionBar> {
                   );
                 },
               ),
+              if (widget.messageId != null)
+                _CompactOptionTile(
+                  icon: Icons.checklist_outlined,
+                  label: sheetL10n.select,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ref.read(messageSelectionModeProvider.notifier).enable();
+                    ref
+                        .read(selectedMessageIdsProvider.notifier)
+                        .toggle(widget.messageId!);
+                  },
+                ),
               _CompactOptionTile(
                 icon: isThisActive
                     ? (isThisPlaying

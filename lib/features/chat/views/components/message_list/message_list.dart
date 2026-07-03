@@ -189,7 +189,7 @@ class _MessageListConsumerState extends ConsumerState<_MessageListConsumer> {
   }
 }
 
-class _MessageList extends StatelessWidget {
+class _MessageList extends ConsumerWidget {
   const _MessageList({
     required this.scrollController,
     required this.messages,
@@ -235,7 +235,9 @@ class _MessageList extends StatelessWidget {
   final double bottomInset;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectionMode = ref.watch(messageSelectionModeProvider);
+    final selectedIds = ref.watch(selectedMessageIdsProvider);
     final visibleMessages = <Message>[];
 
     for (final message in messages) {
@@ -274,39 +276,55 @@ class _MessageList extends StatelessWidget {
         final itemKey =
             messageKeys.putIfAbsent(message.id, GlobalKey.new);
 
+        final bubble = ChatBubble(
+          key: itemKey,
+          message: message,
+          allMessages: this.allMessages,
+          isStreaming:
+              isLast && isStreaming && message.id == streamingMessage?.id,
+          onRetry: () => onRetry(message.id),
+          onDelete: () => onDelete(message.id),
+          onEdit: message.role == MessageRole.user
+              ? () => onEdit(message.id, message.content)
+              : message.role == MessageRole.assistant
+                  ? () => onEditAssistant(message.id, message.content)
+                  : null,
+          onBranch: () => onBranch(message.id),
+          onContinue: message.role == MessageRole.assistant && isLast
+              ? () => onContinue(message.id)
+              : null,
+          onCycleVariant: (direction) =>
+              onCycleVariant(message.id, direction),
+          onModelTap: onModelPicker,
+          onModelLongPress: message.modelId != null &&
+                  message.role == MessageRole.assistant &&
+                  onModelLongPress != null
+              ? () => onModelLongPress!(message.modelId!)
+              : null,
+          onSave: onSave,
+          onShare: onShare == null
+              ? null
+              : () => onShare!(message),
+        );
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ChatBubble(
-              key: itemKey,
-              message: message,
-              allMessages: this.allMessages,
-              isStreaming:
-                  isLast && isStreaming && message.id == streamingMessage?.id,
-              onRetry: () => onRetry(message.id),
-              onDelete: () => onDelete(message.id),
-              onEdit: message.role == MessageRole.user
-                  ? () => onEdit(message.id, message.content)
-                  : message.role == MessageRole.assistant
-                      ? () => onEditAssistant(message.id, message.content)
-                      : null,
-              onBranch: () => onBranch(message.id),
-              onContinue: message.role == MessageRole.assistant && isLast
-                  ? () => onContinue(message.id)
-                  : null,
-              onCycleVariant: (direction) =>
-                  onCycleVariant(message.id, direction),
-              onModelTap: onModelPicker,
-              onModelLongPress: message.modelId != null &&
-                      message.role == MessageRole.assistant &&
-                      onModelLongPress != null
-                  ? () => onModelLongPress!(message.modelId!)
-                  : null,
-              onSave: onSave,
-              onShare: onShare == null
-                  ? null
-                  : () => onShare!(message),
-            ),
+            if (selectionMode)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: selectedIds.contains(message.id),
+                    onChanged: (_) => ref
+                        .read(selectedMessageIdsProvider.notifier)
+                        .toggle(message.id),
+                  ),
+                  Expanded(child: bubble),
+                ],
+              )
+            else
+              bubble,
             if (!isStreaming &&
                 isLast &&
                 message.role == MessageRole.user &&

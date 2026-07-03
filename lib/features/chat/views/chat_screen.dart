@@ -614,6 +614,44 @@ class _ScreenAppBar extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final mcpConfig = ref.watch(chatMcpConfigProvider);
     final isMcpEnabled = settings.mcpEnabled && mcpConfig.enabled;
+    final messageSelectionMode = ref.watch(messageSelectionModeProvider);
+    final selectedMessageIds = ref.watch(selectedMessageIdsProvider);
+
+    if (messageSelectionMode) {
+      return Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () =>
+                  ref.read(messageSelectionModeProvider.notifier).disable(),
+            ),
+            Expanded(
+              child: Text(
+                l10n.selected_count(selectedMessageIds.length),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.ios_share),
+              tooltip: l10n.export_conversation,
+              onPressed: selectedMessageIds.isEmpty
+                  ? null
+                  : () => _shareSelectedMessages(context, ref, selectedMessageIds),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              tooltip: l10n.delete,
+              onPressed: selectedMessageIds.isEmpty
+                  ? null
+                  : () => _deleteSelectedMessages(context, ref, selectedMessageIds),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       height: 56,
@@ -750,6 +788,56 @@ class _ScreenAppBar extends ConsumerWidget {
       return activeConversation!.title;
     }
     return l10n.nav_new_chat;
+  }
+
+  Future<void> _shareSelectedMessages(
+    BuildContext context,
+    WidgetRef ref,
+    Set<String> selectedIds,
+  ) async {
+    final messages = ref
+        .read(chatProvider)
+        .messages
+        .where((m) => selectedIds.contains(m.id))
+        .toList();
+    if (messages.isEmpty) return;
+    final text = ExportService.exportAsText(messages);
+    await ShareService.shareText(text);
+    ref.read(messageSelectionModeProvider.notifier).disable();
+  }
+
+  void _deleteSelectedMessages(
+    BuildContext context,
+    WidgetRef ref,
+    Set<String> selectedIds,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(l10n.delete_message_title),
+          content: Text(l10n.selected_count(selectedIds.length)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(l10n.cancel),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                for (final id in selectedIds) {
+                  await ref.read(chatProvider.notifier).deleteMessage(id);
+                }
+                ref.read(messageSelectionModeProvider.notifier).disable();
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: Text(l10n.delete),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

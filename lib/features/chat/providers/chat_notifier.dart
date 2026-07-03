@@ -32,6 +32,7 @@ import 'chat_mcp_providers.dart';
 import 'chat_origin_provider.dart';
 import 'chat_params_providers.dart';
 import 'chat_service_providers.dart';
+import 'message_selection_provider.dart';
 import 'model_selection_providers.dart';
 import 'tooling_providers.dart';
 import '../utils/message_variants.dart';
@@ -395,6 +396,7 @@ class ChatNotifier extends Notifier<ChatState> {
         .read(conv.activeConversationProvider.notifier)
         .setActiveConversation(null);
     ref.read(chatOriginProvider.notifier).clear();
+    ref.read(messageSelectionModeProvider.notifier).disable();
 
     final settings = ref.read(settingsProvider);
     ref
