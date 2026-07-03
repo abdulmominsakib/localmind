@@ -278,6 +278,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clear_personas => 'Clear personas';
 
   @override
+  String get enable_image_compression => 'Compress images before sending';
+
+  @override
+  String get enable_image_compression_desc =>
+      'Resize and compress attached images so uploads stay within server limits';
+
+  @override
+  String get image_compression_level => 'Compression aggressiveness';
+
+  @override
+  String get image_compression_level_desc =>
+      'Higher aggressiveness produces smaller uploads at lower quality';
+
+  @override
+  String get image_compression_level_low => 'Low';
+
+  @override
+  String get image_compression_level_medium => 'Medium';
+
+  @override
+  String get image_compression_level_high => 'High';
+
+  @override
   String get clear_conversation_title => 'Clear conversation?';
 
   @override

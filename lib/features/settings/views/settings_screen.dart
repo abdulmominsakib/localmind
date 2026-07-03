@@ -10,6 +10,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/system_insets.dart';
+import '../../chat/utils/image_upload_utils.dart';
 import '../../conversations/providers/conversation_providers.dart';
 import '../../on_device/providers/on_device_providers.dart';
 import '../../personas/providers/personas_providers.dart';
@@ -251,6 +252,21 @@ class SettingsViews extends ConsumerWidget {
                         .read(settingsProvider.notifier)
                         .setResumeLastChat(value),
                   ),
+                  _ToggleSetting(
+                    label: l10n.enable_image_compression,
+                    description: l10n.enable_image_compression_desc,
+                    value: settings.imageCompressionEnabled,
+                    onChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setImageCompressionEnabled(value),
+                  ),
+                  if (settings.imageCompressionEnabled)
+                    _ImageCompressionLevelSetting(
+                      value: settings.imageCompressionLevel,
+                      onChanged: (value) => ref
+                          .read(settingsProvider.notifier)
+                          .setImageCompressionLevel(value),
+                    ),
                 ],
               );
 
@@ -1189,6 +1205,68 @@ class _ToggleSetting extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Switch.adaptive(value: value, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImageCompressionLevelSetting extends StatelessWidget {
+  const _ImageCompressionLevelSetting({
+    required this.value,
+    required this.onChanged,
+  });
+
+  final ImageCompressionLevel value;
+  final ValueChanged<ImageCompressionLevel> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    String labelFor(ImageCompressionLevel level) {
+      switch (level) {
+        case ImageCompressionLevel.low:
+          return l10n.image_compression_level_low;
+        case ImageCompressionLevel.medium:
+          return l10n.image_compression_level_medium;
+        case ImageCompressionLevel.high:
+          return l10n.image_compression_level_high;
+      }
+    }
+
+    return _SettingPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.image_compression_level,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.image_compression_level_desc,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: ImageCompressionLevel.values.map((level) {
+              final selected = value == level;
+              return FilterChip(
+                label: Text(labelFor(level)),
+                selected: selected,
+                onSelected: (_) => onChanged(level),
+                showCheckmark: false,
+              );
+            }).toList(),
+          ),
         ],
       ),
     );

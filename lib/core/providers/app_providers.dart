@@ -2,6 +2,7 @@ import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../features/chat/utils/image_upload_utils.dart';
 import '../../features/settings/data/models/app_settings.dart';
 import '../models/enums.dart';
 import '../../features/tts/data/kitten_tts_model.dart';
@@ -116,6 +117,10 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(tempChatKeyboardIncognito: value));
   void setResumeLastChat(bool value) =>
       _update(state.copyWith(resumeLastChat: value));
+  void setImageCompressionEnabled(bool value) =>
+      _update(state.copyWith(imageCompressionEnabled: value));
+  void setImageCompressionLevel(ImageCompressionLevel value) =>
+      _update(state.copyWith(imageCompressionLevel: value));
 
   Future<void> _update(AppSettings updated) async {
     state = updated;

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 import '../../../../core/models/enums.dart';
+import '../../../../features/chat/utils/image_upload_utils.dart';
 import '../../../../features/tts/data/kitten_tts_model.dart';
 
 enum SyntaxThemeName { light, dark }
@@ -46,6 +47,8 @@ class AppSettings {
   final bool unloadModelsBeforeLoad;
   final bool tempChatKeyboardIncognito;
   final bool resumeLastChat;
+  final bool imageCompressionEnabled;
+  final ImageCompressionLevel imageCompressionLevel;
 
   AppSettings({
     this.temperature = 0.7,
@@ -83,6 +86,8 @@ class AppSettings {
     this.unloadModelsBeforeLoad = false,
     this.tempChatKeyboardIncognito = true,
     this.resumeLastChat = true,
+    this.imageCompressionEnabled = true,
+    this.imageCompressionLevel = ImageCompressionLevel.medium,
   });
 
   AppSettings copyWith({
@@ -121,6 +126,8 @@ class AppSettings {
     bool? unloadModelsBeforeLoad,
     bool? tempChatKeyboardIncognito,
     bool? resumeLastChat,
+    bool? imageCompressionEnabled,
+    ImageCompressionLevel? imageCompressionLevel,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -171,6 +178,10 @@ class AppSettings {
       tempChatKeyboardIncognito:
           tempChatKeyboardIncognito ?? this.tempChatKeyboardIncognito,
       resumeLastChat: resumeLastChat ?? this.resumeLastChat,
+      imageCompressionEnabled:
+          imageCompressionEnabled ?? this.imageCompressionEnabled,
+      imageCompressionLevel:
+          imageCompressionLevel ?? this.imageCompressionLevel,
     );
   }
 
@@ -211,6 +222,8 @@ class AppSettings {
       'unloadModelsBeforeLoad': unloadModelsBeforeLoad,
       'tempChatKeyboardIncognito': tempChatKeyboardIncognito,
       'resumeLastChat': resumeLastChat,
+      'imageCompressionEnabled': imageCompressionEnabled,
+      'imageCompressionLevel': imageCompressionLevel.name,
     };
   }
 
@@ -251,7 +264,19 @@ class AppSettings {
       unloadModelsBeforeLoad: map['unloadModelsBeforeLoad'] ?? false,
       tempChatKeyboardIncognito: map['tempChatKeyboardIncognito'] ?? true,
       resumeLastChat: map['resumeLastChat'] ?? true,
+      imageCompressionEnabled: map['imageCompressionEnabled'] ?? true,
+      imageCompressionLevel:
+          _parseImageCompressionLevel(map['imageCompressionLevel']),
     );
+  }
+
+  static ImageCompressionLevel _parseImageCompressionLevel(dynamic value) {
+    if (value is String) {
+      try {
+        return ImageCompressionLevel.values.byName(value);
+      } catch (_) {}
+    }
+    return ImageCompressionLevel.medium;
   }
 
   static PreferredBackend _parsePreferredBackend(dynamic value) {

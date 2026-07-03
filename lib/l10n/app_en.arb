@@ -384,6 +384,34 @@
   "@clear_personas": {
     "description": "Button to clear all selected personas in the picker"
   },
+  "enable_image_compression": "Compress images before sending",
+  "@enable_image_compression": {
+    "description": "Settings toggle to enable/disable automatic image compression"
+  },
+  "enable_image_compression_desc": "Resize and compress attached images so uploads stay within server limits",
+  "@enable_image_compression_desc": {
+    "description": "Description for the image compression toggle"
+  },
+  "image_compression_level": "Compression aggressiveness",
+  "@image_compression_level": {
+    "description": "Label for the image compression level selector"
+  },
+  "image_compression_level_desc": "Higher aggressiveness produces smaller uploads at lower quality",
+  "@image_compression_level_desc": {
+    "description": "Description for the image compression level selector"
+  },
+  "image_compression_level_low": "Low",
+  "@image_compression_level_low": {
+    "description": "Low image compression aggressiveness"
+  },
+  "image_compression_level_medium": "Medium",
+  "@image_compression_level_medium": {
+    "description": "Medium image compression aggressiveness"
+  },
+  "image_compression_level_high": "High",
+  "@image_compression_level_high": {
+    "description": "High image compression aggressiveness"
+  },
   "clear_conversation_title": "Clear conversation?",
   "@clear_conversation_title": {
     "description": "Clear conversation dialog title"

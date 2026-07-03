@@ -623,6 +623,48 @@ abstract class AppLocalizations {
   /// **'Clear personas'**
   String get clear_personas;
 
+  /// Settings toggle to enable/disable automatic image compression
+  ///
+  /// In en, this message translates to:
+  /// **'Compress images before sending'**
+  String get enable_image_compression;
+
+  /// Description for the image compression toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Resize and compress attached images so uploads stay within server limits'**
+  String get enable_image_compression_desc;
+
+  /// Label for the image compression level selector
+  ///
+  /// In en, this message translates to:
+  /// **'Compression aggressiveness'**
+  String get image_compression_level;
+
+  /// Description for the image compression level selector
+  ///
+  /// In en, this message translates to:
+  /// **'Higher aggressiveness produces smaller uploads at lower quality'**
+  String get image_compression_level_desc;
+
+  /// Low image compression aggressiveness
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get image_compression_level_low;
+
+  /// Medium image compression aggressiveness
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get image_compression_level_medium;
+
+  /// High image compression aggressiveness
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get image_compression_level_high;
+
   /// Clear conversation dialog title
   ///
   /// In en, this message translates to:

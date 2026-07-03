@@ -39,10 +39,16 @@ abstract class ChatService {
     ServerType type,
     Dio dio, {
     OnDeviceGemmaService? onDeviceGemma,
+    bool imageCompressionEnabled = true,
+    ImageCompressionLevel imageCompressionLevel = ImageCompressionLevel.medium,
   }) {
     switch (type) {
       case ServerType.lmStudio:
-        return LMStudioChatService(dio);
+        return LMStudioChatService(
+          dio,
+          imageCompressionEnabled: imageCompressionEnabled,
+          imageCompressionLevel: imageCompressionLevel,
+        );
       case ServerType.openAICompatible:
         return OpenAICompatibleChatService(dio);
       case ServerType.ollama:
@@ -147,11 +153,17 @@ class ChatStats {
 
 class LMStudioChatService implements ChatService {
   final Dio _dio;
+  final bool imageCompressionEnabled;
+  final ImageCompressionLevel imageCompressionLevel;
   CancelToken? _cancelToken;
   late final LmStudioPromptFormatter _promptFormatter =
       LmStudioPromptFormatter(_dio);
 
-  LMStudioChatService(this._dio);
+  LMStudioChatService(
+    this._dio, {
+    this.imageCompressionEnabled = true,
+    this.imageCompressionLevel = ImageCompressionLevel.medium,
+  });
 
   @override
   Stream<ChatResponse> sendMessage({
@@ -629,7 +641,11 @@ class LMStudioChatService implements ChatService {
           try {
             final file = File(path);
             if (!await file.exists()) continue;
-            final fileBytes = await ImageUploadUtils.prepareImageBytes(file);
+            final fileBytes = await ImageUploadUtils.prepareImageBytes(
+              file,
+              enabled: imageCompressionEnabled,
+              level: imageCompressionLevel,
+            );
             final base64Image = await Isolate.run(() {
               try {
                 return base64Encode(fileBytes);

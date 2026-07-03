@@ -285,9 +285,16 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     if (images.isEmpty) return;
 
+    final settings = ref.read(settingsProvider);
     final compressed = <File>[];
     for (final image in images) {
-      compressed.add(await ImageUploadUtils.prepareImageFile(File(image.path)));
+      compressed.add(
+        await ImageUploadUtils.prepareImageFile(
+          File(image.path),
+          enabled: settings.imageCompressionEnabled,
+          level: settings.imageCompressionLevel,
+        ),
+      );
     }
 
     setState(() {
