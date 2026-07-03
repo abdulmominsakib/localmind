@@ -4,6 +4,34 @@ import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/features/chat/views/components/audio_player_widget.dart';
 import 'deferred_markdown.dart';
 
+final _blockDollarLatex = RegExp(r'\$\$([\s\S]+?)\$\$');
+final _inlineDollarLatex = RegExp(r'\$([^\$\n]+?)\$');
+final _currencyLike = RegExp(r'^\s*\d[\d,]*(\.\d+)?\s*$');
+
+/// gpt_markdown only recognizes `\(...\)` / `\[...\]` for LaTeX, not the
+/// `$...$` / `$$...$$` delimiters models most commonly output. Convert the
+/// dollar forms to the ones gpt_markdown understands, skipping anything
+/// that looks like plain currency (e.g. "$5" or "$10.99") so ordinary
+/// prices aren't mistaken for math.
+String normalizeDollarLatex(String input) {
+  if (!input.contains(r'$')) return input;
+
+  var result = input.replaceAllMapped(
+    _blockDollarLatex,
+    (m) => '\\[${m[1]!.trim()}\\]',
+  );
+
+  result = result.replaceAllMapped(_inlineDollarLatex, (m) {
+    final inner = m[1]!;
+    if (inner.trim().isEmpty || _currencyLike.hasMatch(inner)) {
+      return m[0]!;
+    }
+    return '\\(${inner.trim()}\\)';
+  });
+
+  return result;
+}
+
 class ThemedGptMarkdown extends StatelessWidget {
   const ThemedGptMarkdown({
     super.key,
@@ -48,7 +76,7 @@ class ThemedGptMarkdown extends StatelessWidget {
     return GptMarkdownTheme(
       gptThemeData: gptTheme,
       child: GptMarkdown(
-        content,
+        normalizeDollarLatex(content),
         style: style,
         followLinkColor: true,
         imageBuilder: _buildImageOrAudio,
