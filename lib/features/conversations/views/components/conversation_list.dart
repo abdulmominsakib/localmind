@@ -67,6 +67,9 @@ class ConversationList extends ConsumerWidget {
                   ref
                       .read(chatProvider.notifier)
                       .loadConversation(conversation);
+                  ref
+                      .read(chatOriginProvider.notifier)
+                      .set(ChatOrigin.history);
                   if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
                     Navigator.pop(context);
                   }

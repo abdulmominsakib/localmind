@@ -29,6 +29,7 @@ import '../data/tools/tool_definition.dart';
 import '../data/tools/tool_execution_loop.dart';
 import '../data/tools/adapters/tool_transport_adapter.dart' show ParsedToolCall;
 import 'chat_mcp_providers.dart';
+import 'chat_origin_provider.dart';
 import 'chat_params_providers.dart';
 import 'chat_service_providers.dart';
 import 'model_selection_providers.dart';
@@ -393,6 +394,7 @@ class ChatNotifier extends Notifier<ChatState> {
     ref
         .read(conv.activeConversationProvider.notifier)
         .setActiveConversation(null);
+    ref.read(chatOriginProvider.notifier).clear();
 
     final settings = ref.read(settingsProvider);
     ref

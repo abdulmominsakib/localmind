@@ -291,7 +291,16 @@ class AppShell extends ConsumerWidget {
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         if (isHome && hasActiveChat) {
-          ref.read(chatProvider.notifier).startNewConversation();
+          final origin = ref.read(chatOriginProvider);
+          ref.read(chatOriginProvider.notifier).clear();
+          switch (origin) {
+            case ChatOrigin.history:
+              context.go(AppRoutes.chatHistory);
+            case ChatOrigin.savedMessages:
+              context.go(AppRoutes.savedMessages);
+            case ChatOrigin.none:
+              ref.read(chatProvider.notifier).startNewConversation();
+          }
           return;
         }
         if (!isHome) {

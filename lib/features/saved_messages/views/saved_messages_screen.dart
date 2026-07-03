@@ -154,6 +154,9 @@ class SavedMessagesScreen extends ConsumerWidget {
                       await ref
                           .read(chatProvider.notifier)
                           .loadConversation(conversation);
+                      ref
+                          .read(chatOriginProvider.notifier)
+                          .set(ChatOrigin.savedMessages);
                       if (context.mounted) {
                         if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
                           Navigator.pop(context);
