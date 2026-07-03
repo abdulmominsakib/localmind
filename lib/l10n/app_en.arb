@@ -364,6 +364,26 @@
   "@delete_persona_body": {
     "description": "Delete persona dialog body"
   },
+  "delete_builtin_persona_body": "This is a built-in persona. You can restore it later from Settings.",
+  "@delete_builtin_persona_body": {
+    "description": "Delete built-in persona dialog body"
+  },
+  "restore_builtin_personas": "Restore default personas",
+  "@restore_builtin_personas": {
+    "description": "Settings action to re-add any deleted built-in personas"
+  },
+  "restore_builtin_personas_desc": "Re-add any built-in personas you've deleted",
+  "@restore_builtin_personas_desc": {
+    "description": "Settings description for restore built-in personas"
+  },
+  "restore_builtin_personas_success": "Default personas restored",
+  "@restore_builtin_personas_success": {
+    "description": "Snackbar after restoring built-in personas"
+  },
+  "clear_personas": "Clear personas",
+  "@clear_personas": {
+    "description": "Button to clear all selected personas in the picker"
+  },
   "clear_conversation_title": "Clear conversation?",
   "@clear_conversation_title": {
     "description": "Clear conversation dialog title"

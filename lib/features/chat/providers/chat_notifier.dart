@@ -119,6 +119,8 @@ class ChatNotifier extends Notifier<ChatState> {
   ChatStats? _streamStats;
   DateTime? _streamStartTime;
   DateTime? _firstTokenTime;
+  bool _useFreshConversationSystemPrompt = false;
+  String? _freshConversationSystemPrompt;
 
   String? get _activeConversationId =>
       _currentConversationId ?? _ephemeralConversationId;
@@ -564,6 +566,9 @@ class ChatNotifier extends Notifier<ChatState> {
           initialTitle = titleService.truncateFirstMessageTitle(titleSource);
         }
         final preselected = ref.read(selectedPersonasProvider);
+        final newConversationSystemPrompt = preselected.isEmpty
+            ? null
+            : PersonaPromptUtils.combineSystemPrompts(preselected);
         final conversation = await ref
             .read(conv.conversationsProvider.notifier)
             .createConversation(
@@ -575,9 +580,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   : PersonaPromptUtils.joinPersonaIds(
                       preselected.map((p) => p.id).toList(),
                     ),
-              systemPrompt: preselected.isEmpty
-                  ? null
-                  : PersonaPromptUtils.combineSystemPrompts(preselected),
+              systemPrompt: newConversationSystemPrompt,
               mcpEnabled: settings.newChatMcpEnabled,
               isTemporary: false,
             );
@@ -585,6 +588,13 @@ class ChatNotifier extends Notifier<ChatState> {
         ref
             .read(conv.activeConversationProvider.notifier)
             .setActiveConversation(conversation);
+        // A conversationsProvider refresh triggered later in this same send
+        // (e.g. syncConversationStats) rebuilds activeConversationProvider
+        // from the reloaded list; use this captured value for this send so
+        // the persona system prompt is never missed on the very first
+        // message of a brand new conversation.
+        _useFreshConversationSystemPrompt = true;
+        _freshConversationSystemPrompt = newConversationSystemPrompt;
 
         ref
             .read(chatMcpConfigProvider.notifier)
@@ -1104,6 +1114,13 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   String? _getPersonaSystemPrompt() {
+    if (_useFreshConversationSystemPrompt) {
+      _useFreshConversationSystemPrompt = false;
+      final override = _freshConversationSystemPrompt;
+      _freshConversationSystemPrompt = null;
+      if (override != null && override.trim().isNotEmpty) return override;
+    }
+
     final conversation = ref.read(conv.activeConversationProvider);
     if (conversation?.systemPrompt != null &&
         conversation!.systemPrompt!.trim().isNotEmpty) {

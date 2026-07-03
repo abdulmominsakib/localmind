@@ -262,6 +262,23 @@ class AppLocalizationsBn extends AppLocalizations {
   String get delete_persona_body => 'এটি আর পূর্বাবস্থায় ফিরিয়ে আনা যাবে না।';
 
   @override
+  String get delete_builtin_persona_body =>
+      'This is a built-in persona. You can restore it later from Settings.';
+
+  @override
+  String get restore_builtin_personas => 'Restore default personas';
+
+  @override
+  String get restore_builtin_personas_desc =>
+      'Re-add any built-in personas you\'ve deleted';
+
+  @override
+  String get restore_builtin_personas_success => 'Default personas restored';
+
+  @override
+  String get clear_personas => 'Clear personas';
+
+  @override
   String get clear_conversation_title => 'কথোপকথন মুছে ফেলবেন?';
 
   @override

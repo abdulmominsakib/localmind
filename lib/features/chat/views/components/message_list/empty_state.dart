@@ -200,22 +200,28 @@ class _EmptyStateState extends State<EmptyState>
               isDark: isDark,
               theme: theme,
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize: widget.selectedPersonas.isEmpty
+                    ? MainAxisSize.min
+                    : MainAxisSize.max,
                 children: [
                   if (widget.selectedPersonas.isNotEmpty) ...[
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: widget.selectedPersonas.map((persona) {
-                        return Text(
-                          '${persona.emoji} ${persona.name}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
-                        );
-                      }).toList(),
+                    Flexible(
+                      child: Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: widget.selectedPersonas.map((persona) {
+                          return Text(
+                            '${persona.emoji} ${persona.name}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ] else ...[
                     Icon(Icons.smart_toy_outlined,

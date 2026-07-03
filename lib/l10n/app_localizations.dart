@@ -593,6 +593,36 @@ abstract class AppLocalizations {
   /// **'This cannot be undone.'**
   String get delete_persona_body;
 
+  /// Delete built-in persona dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'This is a built-in persona. You can restore it later from Settings.'**
+  String get delete_builtin_persona_body;
+
+  /// Settings action to re-add any deleted built-in personas
+  ///
+  /// In en, this message translates to:
+  /// **'Restore default personas'**
+  String get restore_builtin_personas;
+
+  /// Settings description for restore built-in personas
+  ///
+  /// In en, this message translates to:
+  /// **'Re-add any built-in personas you\'ve deleted'**
+  String get restore_builtin_personas_desc;
+
+  /// Snackbar after restoring built-in personas
+  ///
+  /// In en, this message translates to:
+  /// **'Default personas restored'**
+  String get restore_builtin_personas_success;
+
+  /// Button to clear all selected personas in the picker
+  ///
+  /// In en, this message translates to:
+  /// **'Clear personas'**
+  String get clear_personas;
+
   /// Clear conversation dialog title
   ///
   /// In en, this message translates to:

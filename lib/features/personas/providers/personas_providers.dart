@@ -89,21 +89,12 @@ class PersonasNotifier extends AsyncNotifier<List<Persona>> {
 
   Future<List<Persona>> _loadAndSeed() async {
     final db = ref.read(databaseProvider);
-    var entities = db.personaBox.getAll();
-
-    if (entities.isEmpty) {
+    if (db.personaBox.isEmpty()) {
       for (final preset in _builtInPersonas) {
         db.personaBox.put(PersonaEntity.fromDomain(preset));
       }
-      entities = db.personaBox.getAll();
     }
-
-    final personas = entities.map((e) => e.toDomain()).toList();
-    personas.sort((a, b) {
-      if (a.isBuiltIn != b.isBuiltIn) return a.isBuiltIn ? -1 : 1;
-      return a.name.compareTo(b.name);
-    });
-    return personas;
+    return _loadWithoutSeeding();
   }
 
   Future<Persona> createPersona({
@@ -153,19 +144,36 @@ class PersonasNotifier extends AsyncNotifier<List<Persona>> {
   }
 
   Future<void> deletePersona(String id) async {
-    final personas = state.value ?? [];
-    final persona = personas.firstWhere(
-      (p) => p.id == id,
-      orElse: () => throw Exception('Persona not found'),
-    );
-    if (persona.isBuiltIn) return;
-
     final db = ref.read(databaseProvider);
     final query = db.personaBox.query(PersonaEntity_.id.equals(id)).build();
     db.personaBox.removeMany(query.findIds());
     query.close();
 
-    state = AsyncData(await _loadAndSeed());
+    state = AsyncData(await _loadWithoutSeeding());
+  }
+
+  /// Re-adds any built-in personas that were deleted, without touching
+  /// custom ones or duplicating built-ins that are still present.
+  Future<void> restoreBuiltInPersonas() async {
+    final db = ref.read(databaseProvider);
+    final existingIds = db.personaBox.getAll().map((e) => e.id).toSet();
+    for (final preset in _builtInPersonas) {
+      if (!existingIds.contains(preset.id)) {
+        db.personaBox.put(PersonaEntity.fromDomain(preset));
+      }
+    }
+    state = AsyncData(await _loadWithoutSeeding());
+  }
+
+  Future<List<Persona>> _loadWithoutSeeding() async {
+    final db = ref.read(databaseProvider);
+    final entities = db.personaBox.getAll();
+    final personas = entities.map((e) => e.toDomain()).toList();
+    personas.sort((a, b) {
+      if (a.isBuiltIn != b.isBuiltIn) return a.isBuiltIn ? 1 : -1;
+      return a.name.compareTo(b.name);
+    });
+    return personas;
   }
 
   Future<Persona> clonePersona(String id) async {

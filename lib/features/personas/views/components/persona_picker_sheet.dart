@@ -57,7 +57,7 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
     return PersonaPromptUtils.parsePersonaIds(activeConv?.personaId);
   }
 
-  void _toggle(Persona persona) {
+  void _toggle(Persona persona, List<Persona> allPersonas) {
     setState(() {
       if (_selectedIds.contains(persona.id)) {
         _selectedIds.remove(persona.id);
@@ -65,10 +65,12 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
         _selectedIds.add(persona.id);
       }
     });
+    _apply(allPersonas);
   }
 
-  void _clear() {
+  void _clear(List<Persona> allPersonas) {
     setState(() => _selectedIds.clear());
+    _apply(allPersonas);
   }
 
   void _apply(List<Persona> allPersonas) {
@@ -88,7 +90,6 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
         ref.read(selectedPersonasProvider.notifier).setPersonas(selected);
       }
     }
-    Navigator.pop(context);
   }
 
   @override
@@ -97,6 +98,14 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final personasAsync = ref.watch(personasNotifierProvider);
+    final selectedCategory = ref.watch(personaCategoryFilterProvider);
+    final categories = [
+      l10n.all,
+      l10n.persona_category_general,
+      l10n.persona_category_coding,
+      l10n.persona_category_education,
+      l10n.persona_category_creative,
+    ];
 
     return SafeArea(
       child: Padding(
@@ -115,6 +124,12 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
                     ),
                   ),
                 ),
+                if (_selectedIds.isNotEmpty)
+                  TextButton(
+                    onPressed: () =>
+                        _clear(personasAsync.value ?? const []),
+                    child: Text(l10n.clear_personas),
+                  ),
                 TextButton(
                   onPressed: () => context.push(AppRoutes.personas),
                   child: Text(l10n.manage_personas),
@@ -135,11 +150,34 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
                     return InputChip(
                       avatar: Text(persona.emoji, style: const TextStyle(fontSize: 14)),
                       label: Text(persona.name),
-                      onDeleted: () => _toggle(persona),
+                      onDeleted: () =>
+                          _toggle(persona, personasAsync.value ?? const []),
                     );
                   }).toList(),
                 ),
               ),
+            SizedBox(
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: categories.map((cat) {
+                  final isActive =
+                      selectedCategory == (cat == l10n.all ? null : cat);
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: FilterChip(
+                      label: Text(cat, style: const TextStyle(fontSize: 12)),
+                      selected: isActive,
+                      showCheckmark: false,
+                      onSelected: (_) => ref
+                          .read(personaCategoryFilterProvider.notifier)
+                          .setCategory(cat == l10n.all ? null : cat),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 4),
             Flexible(
               child: personasAsync.when(
                 loading: () => const Padding(
@@ -150,7 +188,12 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
                   padding: const EdgeInsets.all(24),
                   child: Text(error.toString(), textAlign: TextAlign.center),
                 ),
-                data: (personas) {
+                data: (allPersonas) {
+                  final personas = selectedCategory == null
+                      ? allPersonas
+                      : allPersonas
+                          .where((p) => p.category == selectedCategory)
+                          .toList();
                   if (personas.isEmpty) {
                     return Padding(
                       padding: const EdgeInsets.all(24),
@@ -199,9 +242,9 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
                             : null,
                         trailing: Checkbox(
                           value: selected,
-                          onChanged: (_) => _toggle(persona),
+                          onChanged: (_) => _toggle(persona, allPersonas),
                         ),
-                        onTap: () => _toggle(persona),
+                        onTap: () => _toggle(persona, allPersonas),
                       );
                     },
                   );
@@ -209,22 +252,12 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
               ),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                if (_selectedIds.isNotEmpty)
-                  TextButton(
-                    onPressed: _clear,
-                    child: Text(l10n.remove_persona),
-                  ),
-                const Spacer(),
-                FilledButton(
-                  onPressed: personasAsync.maybeWhen(
-                    data: (personas) => () => _apply(personas),
-                    orElse: () => null,
-                  ),
-                  child: Text(l10n.done),
-                ),
-              ],
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.done),
+              ),
             ),
           ],
         ),

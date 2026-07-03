@@ -330,6 +330,24 @@ class SettingsViews extends ConsumerWidget {
                         .setDefaultPersona(value),
                     icon: Icons.smart_toy_outlined,
                   ),
+                  const SizedBox(height: 8),
+                  _SectionActionButton(
+                    icon: Icons.restore_rounded,
+                    label: l10n.restore_builtin_personas,
+                    onPressed: () async {
+                      await ref
+                          .read(personasNotifierProvider.notifier)
+                          .restoreBuiltInPersonas();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content:
+                                Text(l10n.restore_builtin_personas_success),
+                          ),
+                        );
+                      }
+                    },
+                  ),
                 ],
               );
 

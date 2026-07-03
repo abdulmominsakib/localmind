@@ -39,6 +39,7 @@ import 'components/message_list/empty_state.dart';
 import 'components/message_list/corrupted_state.dart';
 import 'components/top_bar/model_top_bar.dart';
 import 'components/top_bar/connection_banner.dart';
+import 'components/top_bar/persona_indicator.dart';
 import 'components/top_bar/smart_reply_chips.dart';
 import 'package:localmind/features/personas/views/components/persona_picker_sheet.dart';
 
@@ -124,13 +125,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         _shareConversation(context);
       case 'persona':
         showPersonaPickerSheet(context);
-      case 'remove_persona':
-        final activeConv = ref.read(conv.activeConversationProvider);
-        if (activeConv != null) {
-          ref
-              .read(conv.conversationsProvider.notifier)
-              .updatePersonas(activeConv.id, const []);
-        }
       case 'rename':
         final activeConv = ref.read(conv.activeConversationProvider);
         if (activeConv != null) {
@@ -356,6 +350,11 @@ class _ChatBody extends ConsumerWidget {
             isTemporary: isTemporary,
           ),
         ),
+        PersonaIndicator(
+          personas: personas,
+          onTap: () => showPersonaPickerSheet(context),
+          onClear: () => _clearPersonas(ref),
+        ),
         const NotificationPermissionBanner(),
         if (connectionStatus == ConnectionStatus.disconnected ||
             connectionStatus == ConnectionStatus.error)
@@ -531,6 +530,18 @@ class _MessageArea extends ConsumerWidget {
           (ref.watch(smartRepliesProvider).asData?.value.isNotEmpty ?? false),
       bottomInset: effectiveBottomInset,
     );
+  }
+}
+
+void _clearPersonas(WidgetRef ref) {
+  final activeConv = ref.read(conv.activeConversationProvider);
+  if (activeConv != null) {
+    ref.read(conv.conversationsProvider.notifier).updatePersonas(
+          activeConv.id,
+          const [],
+        );
+  } else {
+    ref.read(selectedPersonasProvider.notifier).clear();
   }
 }
 
@@ -718,15 +729,6 @@ class _ScreenAppBar extends ConsumerWidget {
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
-              if (hasPersonas)
-                PopupMenuItem(
-                  value: 'remove_persona',
-                  child: ListTile(
-                    leading: const Icon(Icons.person_remove_outlined),
-                    title: Text(l10n.remove_persona),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
               PopupMenuItem(
                 value: 'clear',
                 child: ListTile(
