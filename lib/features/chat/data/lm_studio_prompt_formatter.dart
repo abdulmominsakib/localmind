@@ -17,6 +17,29 @@ class LmStudioPromptFormatter {
     0x3C, 0x7C, 0x69, 0x6D, 0x5F, 0x65, 0x6E, 0x64, 0x7C, 0x3E,
   ]);
 
+  /// Turn-boundary control tokens across every template family this
+  /// formatter knows about. Since the model's actual architecture may be
+  /// unknown when a server-side template was used, or misdetected, this
+  /// union is passed as `stop` sequences for raw-completion requests
+  /// (continue / generate-user-turn) so a model that leaks its own
+  /// control tokens into the visible text gets truncated there instead
+  /// of showing them (e.g. `end_of_turn`) to the user.
+  static const List<String> turnBoundaryStopSequences = [
+    '<end_of_turn>',
+    '<start_of_turn>',
+    '<|eot_id|>',
+    '<|start_header_id|>',
+    '<|end_header_id|>',
+    '<|begin_of_text|>',
+    '[INST]',
+    '[/INST]',
+    '[SYSTEM_PROMPT]',
+    '[/SYSTEM_PROMPT]',
+    '</s>',
+    '<|im_start|>',
+    '<|im_end|>',
+  ];
+
   Future<String> formatForCompletion({
     required String baseUrl,
     required Map<String, String> authHeaders,

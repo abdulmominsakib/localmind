@@ -459,6 +459,7 @@ class LMStudioChatService implements ChatService {
       'top_p': params.topP,
       'max_tokens': params.maxTokens,
       'stream': false,
+      'stop': LmStudioPromptFormatter.turnBoundaryStopSequences,
     };
 
     try {
@@ -515,6 +516,7 @@ class LMStudioChatService implements ChatService {
       'top_p': params.topP,
       'max_tokens': params.maxTokens,
       'stream': true,
+      'stop': LmStudioPromptFormatter.turnBoundaryStopSequences,
     };
 
     final endpoint = '${server.baseUrl}/api/v0/completions';
