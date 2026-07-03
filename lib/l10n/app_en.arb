@@ -436,6 +436,29 @@
   "@sort_by_context_length": {
     "description": "Sort models by max context length, largest first"
   },
+  "bulk_ai_rename_progress": "Renaming {done}/{total}...",
+  "@bulk_ai_rename_progress": {
+    "description": "Progress text while AI-renaming multiple conversations",
+    "placeholders": {
+      "done": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "selected_count": "{count} selected",
+  "@selected_count": {
+    "description": "Header shown in selection mode",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "ai_rename_tooltip": "Rename selected with AI",
+  "@ai_rename_tooltip": {
+    "description": "Tooltip for bulk AI rename button"
+  },
+  "new_chat_in_folder_tooltip": "New chat in this folder",
+  "@new_chat_in_folder_tooltip": {
+    "description": "Tooltip for the history screen new-chat FAB"
+  },
   "clear_conversation_title": "Clear conversation?",
   "@clear_conversation_title": {
     "description": "Clear conversation dialog title"

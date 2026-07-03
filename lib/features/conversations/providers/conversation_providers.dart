@@ -83,6 +83,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     String? modelId,
     bool? mcpEnabled,
     bool isTemporary = false,
+    String? folderId,
   }) async {
     final db = ref.read(databaseProvider);
     final now = DateTime.now();
@@ -102,6 +103,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       systemPrompt: systemPrompt,
       mcpEnabled: mcpEnabled,
       isTemporary: isTemporary,
+      folderId: folderId,
     );
 
     db.conversationBox.put(ConversationEntity.fromDomain(conversation));
@@ -716,6 +718,41 @@ class HistoryFolderFilterNotifier extends Notifier<String?> {
   String? build() => null;
 
   void setFilter(String? folderId) => state = folderId;
+}
+
+final historySelectionModeProvider =
+    NotifierProvider<HistorySelectionModeNotifier, bool>(
+      HistorySelectionModeNotifier.new,
+    );
+
+class HistorySelectionModeNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void enable() => state = true;
+
+  void disable() {
+    state = false;
+    ref.read(historySelectedIdsProvider.notifier).clear();
+  }
+}
+
+final historySelectedIdsProvider =
+    NotifierProvider<HistorySelectedIdsNotifier, Set<String>>(
+      HistorySelectedIdsNotifier.new,
+    );
+
+class HistorySelectedIdsNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => const {};
+
+  void toggle(String id) {
+    final updated = {...state};
+    if (!updated.remove(id)) updated.add(id);
+    state = updated;
+  }
+
+  void clear() => state = const {};
 }
 
 final conversationFoldersProvider =

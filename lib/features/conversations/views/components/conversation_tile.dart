@@ -17,6 +17,9 @@ class ConversationTile extends StatelessWidget {
     required this.onMoveToFolder,
     required this.onExport,
     required this.onArchive,
+    this.selectionMode = false,
+    this.isSelected = false,
+    this.onEnterSelectionMode,
   });
 
   final Conversation conversation;
@@ -29,6 +32,9 @@ class ConversationTile extends StatelessWidget {
   final VoidCallback onMoveToFolder;
   final VoidCallback onExport;
   final VoidCallback onArchive;
+  final bool selectionMode;
+  final bool isSelected;
+  final VoidCallback? onEnterSelectionMode;
 
   String _formatTimestamp(AppLocalizations l10n, DateTime dateTime) {
     final now = DateTime.now();
@@ -96,11 +102,14 @@ class ConversationTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                Icon(
-                  conversation.isPinned
-                      ? Icons.push_pin
-                      : Icons.chat_bubble_outline,
-                  size: 20,
+                if (selectionMode)
+                  Checkbox(value: isSelected, onChanged: (_) => onTap())
+                else
+                  Icon(
+                    conversation.isPinned
+                        ? Icons.push_pin
+                        : Icons.chat_bubble_outline,
+                    size: 20,
                     color: isActive
                         ? (isDark
                               ? AppColors.darkAccent
@@ -108,7 +117,7 @@ class ConversationTile extends StatelessWidget {
                         : (isDark
                               ? AppColors.darkMutedText
                               : AppColors.lightMutedText),
-                ),
+                  ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -194,6 +203,15 @@ class ConversationTile extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (onEnterSelectionMode != null)
+                ListTile(
+                  leading: const Icon(Icons.checklist_outlined),
+                  title: Text(l10n.select),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onEnterSelectionMode!();
+                  },
+                ),
               ListTile(
                 leading: Icon(
                   conversation.isPinned

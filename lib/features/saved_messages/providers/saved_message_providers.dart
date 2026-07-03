@@ -34,6 +34,41 @@ class SavedMessageFolderFilterNotifier extends Notifier<String?> {
   void setFilter(String? folderId) => state = folderId;
 }
 
+final savedMessageSelectionModeProvider =
+    NotifierProvider<SavedMessageSelectionModeNotifier, bool>(
+      SavedMessageSelectionModeNotifier.new,
+    );
+
+class SavedMessageSelectionModeNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void enable() => state = true;
+
+  void disable() {
+    state = false;
+    ref.read(savedMessageSelectedIdsProvider.notifier).clear();
+  }
+}
+
+final savedMessageSelectedIdsProvider =
+    NotifierProvider<SavedMessageSelectedIdsNotifier, Set<String>>(
+      SavedMessageSelectedIdsNotifier.new,
+    );
+
+class SavedMessageSelectedIdsNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => const {};
+
+  void toggle(String id) {
+    final updated = {...state};
+    if (!updated.remove(id)) updated.add(id);
+    state = updated;
+  }
+
+  void clear() => state = const {};
+}
+
 final savedMessageFoldersProvider =
     AsyncNotifierProvider<SavedMessageFoldersNotifier, List<SavedMessageFolder>>(
       () => SavedMessageFoldersNotifier(),

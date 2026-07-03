@@ -320,6 +320,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sort_by_context_length => 'Context length';
 
   @override
+  String bulk_ai_rename_progress(int done, int total) {
+    return 'Renaming $done/$total...';
+  }
+
+  @override
+  String selected_count(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get ai_rename_tooltip => 'Rename selected with AI';
+
+  @override
+  String get new_chat_in_folder_tooltip => 'New chat in this folder';
+
+  @override
   String get clear_conversation_title => 'Ясный разговор?';
 
   @override

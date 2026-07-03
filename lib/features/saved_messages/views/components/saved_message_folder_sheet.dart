@@ -7,6 +7,14 @@ Future<void> showSavedMessageMoveToFolderSheet(
   BuildContext context,
   WidgetRef ref,
   String savedMessageId,
+) {
+  return showSavedMessagesBulkMoveToFolderSheet(context, ref, {savedMessageId});
+}
+
+Future<void> showSavedMessagesBulkMoveToFolderSheet(
+  BuildContext context,
+  WidgetRef ref,
+  Set<String> savedMessageIds,
 ) async {
   final l10n = AppLocalizations.of(context)!;
   final folders = ref.read(savedMessageFoldersProvider).value ?? [];
@@ -23,9 +31,11 @@ Future<void> showSavedMessageMoveToFolderSheet(
               title: Text(l10n.remove_from_folder),
               onTap: () async {
                 Navigator.pop(ctx);
-                await ref
-                    .read(savedMessagesProvider.notifier)
-                    .moveToFolder(savedMessageId, null);
+                for (final id in savedMessageIds) {
+                  await ref
+                      .read(savedMessagesProvider.notifier)
+                      .moveToFolder(id, null);
+                }
               },
             ),
             ...folders.map(
@@ -34,9 +44,11 @@ Future<void> showSavedMessageMoveToFolderSheet(
                 title: Text(folder.name),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ref
-                      .read(savedMessagesProvider.notifier)
-                      .moveToFolder(savedMessageId, folder.id);
+                  for (final id in savedMessageIds) {
+                    await ref
+                        .read(savedMessagesProvider.notifier)
+                        .moveToFolder(id, folder.id);
+                  }
                 },
               ),
             ),

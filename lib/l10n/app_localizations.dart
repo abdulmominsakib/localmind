@@ -701,6 +701,30 @@ abstract class AppLocalizations {
   /// **'Context length'**
   String get sort_by_context_length;
 
+  /// Progress text while AI-renaming multiple conversations
+  ///
+  /// In en, this message translates to:
+  /// **'Renaming {done}/{total}...'**
+  String bulk_ai_rename_progress(int done, int total);
+
+  /// Header shown in selection mode
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String selected_count(int count);
+
+  /// Tooltip for bulk AI rename button
+  ///
+  /// In en, this message translates to:
+  /// **'Rename selected with AI'**
+  String get ai_rename_tooltip;
+
+  /// Tooltip for the history screen new-chat FAB
+  ///
+  /// In en, this message translates to:
+  /// **'New chat in this folder'**
+  String get new_chat_in_folder_tooltip;
+
   /// Clear conversation dialog title
   ///
   /// In en, this message translates to:

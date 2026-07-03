@@ -584,6 +584,7 @@ class ChatNotifier extends Notifier<ChatState> {
               systemPrompt: newConversationSystemPrompt,
               mcpEnabled: settings.newChatMcpEnabled,
               isTemporary: false,
+              folderId: ref.read(pendingNewChatFolderIdProvider.notifier).consume(),
             );
         _currentConversationId = conversation.id;
         ref

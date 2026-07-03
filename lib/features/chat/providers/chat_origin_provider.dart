@@ -15,3 +15,24 @@ class ChatOriginNotifier extends Notifier<ChatOrigin> {
 
   void clear() => state = ChatOrigin.none;
 }
+
+/// Folder to auto-assign to the next conversation created by sendMessage,
+/// set by the history screen's "new chat in this folder" FAB and consumed
+/// once when that conversation is actually created.
+final pendingNewChatFolderIdProvider =
+    NotifierProvider<PendingNewChatFolderIdNotifier, String?>(
+      PendingNewChatFolderIdNotifier.new,
+    );
+
+class PendingNewChatFolderIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String? folderId) => state = folderId;
+
+  String? consume() {
+    final value = state;
+    state = null;
+    return value;
+  }
+}
