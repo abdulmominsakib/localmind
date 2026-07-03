@@ -383,6 +383,8 @@ class SavedMessageEntity {
   @Property(type: PropertyType.date)
   DateTime savedAt;
 
+  bool isArchived;
+
   SavedMessageEntity({
     this.internalId = 0,
     required this.id,
@@ -394,6 +396,7 @@ class SavedMessageEntity {
     this.modelId,
     this.folderId,
     required this.savedAt,
+    this.isArchived = false,
   });
 }
 

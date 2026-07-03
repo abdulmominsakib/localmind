@@ -89,6 +89,11 @@ class SavedMessagesScreen extends ConsumerWidget {
                     label: l10n.filter_assistant_messages,
                     icon: Icons.auto_awesome_outlined,
                   ),
+                  ListFilterOption(
+                    value: SavedMessageListFilter.archived,
+                    label: l10n.filter_archived,
+                    icon: Icons.archive_outlined,
+                  ),
                 ],
               ),
             ],
@@ -174,6 +179,9 @@ class SavedMessagesScreen extends ConsumerWidget {
                     onDelete: () => ref
                         .read(savedMessagesProvider.notifier)
                         .deleteSavedMessage(saved.id),
+                    onArchive: () => ref
+                        .read(savedMessagesProvider.notifier)
+                        .setArchived(saved.id, !saved.isArchived),
                   );
                 },
               );

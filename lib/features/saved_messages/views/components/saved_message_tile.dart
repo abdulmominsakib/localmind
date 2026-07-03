@@ -13,6 +13,7 @@ class SavedMessageTile extends StatelessWidget {
     required this.onCopy,
     required this.onMoveToFolder,
     required this.onDelete,
+    required this.onArchive,
   });
 
   final SavedMessage saved;
@@ -21,6 +22,7 @@ class SavedMessageTile extends StatelessWidget {
   final VoidCallback onCopy;
   final VoidCallback onMoveToFolder;
   final VoidCallback onDelete;
+  final VoidCallback onArchive;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +33,33 @@ class SavedMessageTile extends StatelessWidget {
     final mutedColor =
         isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
 
-    return Material(
+    return Dismissible(
+      key: Key(saved.id),
+      direction: DismissDirection.horizontal,
+      background: Container(
+        alignment: AlignmentDirectional.centerStart,
+        padding: const EdgeInsetsDirectional.only(start: 16),
+        color: Colors.blue,
+        child: Icon(
+          saved.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+          color: Colors.white,
+        ),
+      ),
+      secondaryBackground: Container(
+        alignment: AlignmentDirectional.centerEnd,
+        padding: const EdgeInsetsDirectional.only(end: 16),
+        color: Colors.red,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          onArchive();
+        } else {
+          onDelete();
+        }
+        return false;
+      },
+      child: Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
@@ -109,6 +137,7 @@ class SavedMessageTile extends StatelessWidget {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -138,6 +167,20 @@ class SavedMessageTile extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(ctx);
                   onMoveToFolder();
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  saved.isArchived
+                      ? Icons.unarchive_outlined
+                      : Icons.archive_outlined,
+                ),
+                title: Text(
+                  saved.isArchived ? l10n.unarchive_chat : l10n.archive_chat,
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onArchive();
                 },
               ),
               ListTile(

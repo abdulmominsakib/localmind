@@ -579,7 +579,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(6, 152573122645768072),
     name: 'SavedMessageEntity',
-    lastPropertyId: const obx_int.IdUid(10, 431621328894537301),
+    lastPropertyId: const obx_int.IdUid(11, 8907657125307211651),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -643,6 +643,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(10, 431621328894537301),
         name: 'savedAt',
         type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 8907657125307211651),
+        name: 'isArchived',
+        type: 1,
         flags: 0,
       ),
     ],
@@ -1488,7 +1494,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final folderIdOffset = object.folderId == null
             ? null
             : fbb.writeString(object.folderId!);
-        fbb.startTable(11);
+        fbb.startTable(12);
         fbb.addInt64(0, object.internalId);
         fbb.addOffset(1, idOffset);
         fbb.addOffset(2, sourceMessageIdOffset);
@@ -1499,6 +1505,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(7, modelIdOffset);
         fbb.addOffset(8, folderIdOffset);
         fbb.addInt64(9, object.savedAt.millisecondsSinceEpoch);
+        fbb.addBool(10, object.isArchived);
         fbb.finish(fbb.endTable());
         return object.internalId;
       },
@@ -1541,6 +1548,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final savedAtParam = DateTime.fromMillisecondsSinceEpoch(
           const fb.Int64Reader().vTableGet(buffer, rootOffset, 22, 0),
         );
+        final isArchivedParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          24,
+          false,
+        );
         final object = SavedMessageEntity(
           internalId: internalIdParam,
           id: idParam,
@@ -1552,6 +1565,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           modelId: modelIdParam,
           folderId: folderIdParam,
           savedAt: savedAtParam,
+          isArchived: isArchivedParam,
         );
 
         return object;
@@ -2099,6 +2113,11 @@ class SavedMessageEntity_ {
   /// See [SavedMessageEntity.savedAt].
   static final savedAt = obx.QueryDateProperty<SavedMessageEntity>(
     _entities[5].properties[9],
+  );
+
+  /// See [SavedMessageEntity.isArchived].
+  static final isArchived = obx.QueryBooleanProperty<SavedMessageEntity>(
+    _entities[5].properties[10],
   );
 }
 

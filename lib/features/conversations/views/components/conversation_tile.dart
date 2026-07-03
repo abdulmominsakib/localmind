@@ -57,15 +57,30 @@ class ConversationTile extends StatelessWidget {
 
     return Dismissible(
       key: Key(conversation.id),
-      direction: DismissDirection.endToStart,
+      direction: DismissDirection.horizontal,
       background: Container(
+        alignment: AlignmentDirectional.centerStart,
+        padding: const EdgeInsetsDirectional.only(start: 16),
+        color: Colors.blue,
+        child: Icon(
+          conversation.isArchived
+              ? Icons.unarchive_outlined
+              : Icons.archive_outlined,
+          color: Colors.white,
+        ),
+      ),
+      secondaryBackground: Container(
         alignment: AlignmentDirectional.centerEnd,
         padding: const EdgeInsetsDirectional.only(end: 16),
         color: Colors.red,
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       confirmDismiss: (direction) async {
-        onDelete();
+        if (direction == DismissDirection.startToEnd) {
+          onArchive();
+        } else {
+          onDelete();
+        }
         return false;
       },
       child: Material(

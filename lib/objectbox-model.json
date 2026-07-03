@@ -475,7 +475,7 @@
     },
     {
       "id": "6:152573122645768072",
-      "lastPropertyId": "10:431621328894537301",
+      "lastPropertyId": "11:8907657125307211651",
       "name": "SavedMessageEntity",
       "properties": [
         {
@@ -534,6 +534,11 @@
           "id": "10:431621328894537301",
           "name": "savedAt",
           "type": 10
+        },
+        {
+          "id": "11:8907657125307211651",
+          "name": "isArchived",
+          "type": 1
         }
       ],
       "relations": []

@@ -23,6 +23,7 @@ class SavedMessage {
     this.modelId,
     this.folderId,
     required this.savedAt,
+    this.isArchived = false,
   });
 
   final String id;
@@ -34,4 +35,5 @@ class SavedMessage {
   final String? modelId;
   final String? folderId;
   final DateTime savedAt;
+  final bool isArchived;
 }
