@@ -14,14 +14,29 @@ import 'package:localmind/l10n/app_localizations.dart';
 import '../components/model_context_length_section.dart';
 import '../components/model_list.dart';
 import '../components/model_search_field.dart';
+import '../components/model_sort_control.dart';
 import '../components/no_server_state.dart';
 import '../components/thinking_indicator.dart';
+import '../providers/model_picker_providers.dart';
 
-class ModelPickerSheet extends ConsumerWidget {
+class ModelPickerSheet extends ConsumerStatefulWidget {
   const ModelPickerSheet({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ModelPickerSheet> createState() => _ModelPickerSheetState();
+}
+
+class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
+  @override
+  void dispose() {
+    // Reset search when the sheet closes so the next open starts from a
+    // clean, matching state instead of an empty box that's still filtering.
+    ref.read(modelSearchQueryProvider.notifier).clear();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -130,7 +145,13 @@ class ModelPickerSheet extends ConsumerWidget {
           const SizedBox(height: 12),
           ModelContextLengthSection(isDark: isDark),
           const SizedBox(height: 12),
-          const ModelSearchField(),
+          Row(
+            children: [
+              const Expanded(child: ModelSearchField()),
+              const SizedBox(width: 8),
+              const ModelSortControl(),
+            ],
+          ),
           const SizedBox(height: 12),
           Expanded(
             child: activeServer == null

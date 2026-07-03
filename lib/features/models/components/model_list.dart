@@ -50,13 +50,38 @@ class _ModelListState extends ConsumerState<ModelList> {
 
   List<ModelInfo> _sortedModels(List<ModelInfo> models) {
     final metadata = ref.watch(modelMetadataProvider);
+    final sortOption = ref.watch(modelSortOptionProvider);
     final sorted = List<ModelInfo>.from(models);
-    sorted.sort((a, b) {
-      final aFavorite = metadata[a.id]?.isFavorite ?? false;
-      final bFavorite = metadata[b.id]?.isFavorite ?? false;
-      if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
-      return a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
-    });
+
+    int byName(ModelInfo a, ModelInfo b) =>
+        a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
+
+    switch (sortOption) {
+      case ModelSortOption.favorites:
+        sorted.sort((a, b) {
+          final aFavorite = metadata[a.id]?.isFavorite ?? false;
+          final bFavorite = metadata[b.id]?.isFavorite ?? false;
+          if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
+          return byName(a, b);
+        });
+      case ModelSortOption.nameAsc:
+        sorted.sort(byName);
+      case ModelSortOption.sizeAsc:
+        sorted.sort((a, b) {
+          final size = (a.fileSize ?? 0).compareTo(b.fileSize ?? 0);
+          return size != 0 ? size : byName(a, b);
+        });
+      case ModelSortOption.sizeDesc:
+        sorted.sort((a, b) {
+          final size = (b.fileSize ?? 0).compareTo(a.fileSize ?? 0);
+          return size != 0 ? size : byName(a, b);
+        });
+      case ModelSortOption.contextDesc:
+        sorted.sort((a, b) {
+          final ctx = (b.contextLength ?? 0).compareTo(a.contextLength ?? 0);
+          return ctx != 0 ? ctx : byName(a, b);
+        });
+    }
     return sorted;
   }
 

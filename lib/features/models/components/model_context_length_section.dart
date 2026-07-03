@@ -20,18 +20,33 @@ class ModelContextLengthSection extends ConsumerStatefulWidget {
 class _ModelContextLengthSectionState
     extends ConsumerState<ModelContextLengthSection> {
   late final TextEditingController _controller;
+  late final FocusNode _focusNode;
   int? _lastValue;
+  String? _activeConversationId;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController();
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
   }
 
   @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onFocusChange() {
+    // Most users dismiss the keyboard by tapping elsewhere rather than
+    // pressing a keyboard "done" action, which doesn't fire onSubmitted
+    // or onEditingComplete. Save on focus loss too so typed values apply.
+    if (!_focusNode.hasFocus) {
+      _saveValue(_controller.text, _activeConversationId);
+    }
   }
 
   void _syncController(int value) {
@@ -61,6 +76,7 @@ class _ModelContextLengthSectionState
     final settings = ref.watch(settingsProvider);
     final activeConv = ref.watch(conv.activeConversationProvider);
     final contextLength = activeConv?.contextLength ?? settings.contextLength;
+    _activeConversationId = activeConv?.id;
     _syncController(contextLength);
 
     return Column(
@@ -77,6 +93,7 @@ class _ModelContextLengthSectionState
         const SizedBox(height: 6),
         ShadInput(
           controller: _controller,
+          focusNode: _focusNode,
           keyboardType: TextInputType.number,
           onSubmitted: (value) =>
               _saveValue(value, activeConv?.id),

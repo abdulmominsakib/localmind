@@ -302,6 +302,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String get image_compression_level_high => 'High';
 
   @override
+  String get sort_models_tooltip => 'Sort models';
+
+  @override
+  String get sort_by_favorites => 'Favorites first';
+
+  @override
+  String get sort_by_name => 'Name (A-Z)';
+
+  @override
+  String get sort_by_size_smallest => 'Size (smallest first)';
+
+  @override
+  String get sort_by_size_largest => 'Size (largest first)';
+
+  @override
+  String get sort_by_context_length => 'Context length';
+
+  @override
   String get clear_conversation_title => 'Ясный разговор?';
 
   @override

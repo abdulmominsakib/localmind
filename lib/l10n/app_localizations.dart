@@ -665,6 +665,42 @@ abstract class AppLocalizations {
   /// **'High'**
   String get image_compression_level_high;
 
+  /// Tooltip for the model list sort button
+  ///
+  /// In en, this message translates to:
+  /// **'Sort models'**
+  String get sort_models_tooltip;
+
+  /// Sort models with favorites first, then alphabetically
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites first'**
+  String get sort_by_favorites;
+
+  /// Sort models alphabetically by name
+  ///
+  /// In en, this message translates to:
+  /// **'Name (A-Z)'**
+  String get sort_by_name;
+
+  /// Sort models by file size, smallest first
+  ///
+  /// In en, this message translates to:
+  /// **'Size (smallest first)'**
+  String get sort_by_size_smallest;
+
+  /// Sort models by file size, largest first
+  ///
+  /// In en, this message translates to:
+  /// **'Size (largest first)'**
+  String get sort_by_size_largest;
+
+  /// Sort models by max context length, largest first
+  ///
+  /// In en, this message translates to:
+  /// **'Context length'**
+  String get sort_by_context_length;
+
   /// Clear conversation dialog title
   ///
   /// In en, this message translates to:

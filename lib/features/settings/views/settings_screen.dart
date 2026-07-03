@@ -388,6 +388,8 @@ class SettingsViews extends ConsumerWidget {
                 icon: Icons.restore_page_outlined,
                 accent: const Color(0xFFEF4444),
                 children: [
+                  const DataBackupActions(),
+                  const SizedBox(height: 8),
                   _DangerousAction(
                     label: l10n.delete_all_conversations,
                     icon: Icons.delete_outline_rounded,

@@ -412,6 +412,30 @@
   "@image_compression_level_high": {
     "description": "High image compression aggressiveness"
   },
+  "sort_models_tooltip": "Sort models",
+  "@sort_models_tooltip": {
+    "description": "Tooltip for the model list sort button"
+  },
+  "sort_by_favorites": "Favorites first",
+  "@sort_by_favorites": {
+    "description": "Sort models with favorites first, then alphabetically"
+  },
+  "sort_by_name": "Name (A-Z)",
+  "@sort_by_name": {
+    "description": "Sort models alphabetically by name"
+  },
+  "sort_by_size_smallest": "Size (smallest first)",
+  "@sort_by_size_smallest": {
+    "description": "Sort models by file size, smallest first"
+  },
+  "sort_by_size_largest": "Size (largest first)",
+  "@sort_by_size_largest": {
+    "description": "Sort models by file size, largest first"
+  },
+  "sort_by_context_length": "Context length",
+  "@sort_by_context_length": {
+    "description": "Sort models by max context length, largest first"
+  },
   "clear_conversation_title": "Clear conversation?",
   "@clear_conversation_title": {
     "description": "Clear conversation dialog title"
