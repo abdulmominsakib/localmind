@@ -225,6 +225,20 @@ class ServerApiService {
     final endpoint = server.embeddingsEndpoint;
     if (endpoint.isEmpty) return null;
 
+    final count = await _countTokensAt(endpoint, server, modelId, text);
+    if (count != null) return count;
+
+    final fallback = server.fallbackEmbeddingsEndpoint;
+    if (fallback == null || fallback == endpoint) return null;
+    return _countTokensAt(fallback, server, modelId, text);
+  }
+
+  Future<int?> _countTokensAt(
+    String endpoint,
+    Server server,
+    String modelId,
+    String text,
+  ) async {
     try {
       final response = await _dio.post(
         endpoint,
@@ -249,7 +263,7 @@ class ServerApiService {
       }
       return null;
     } catch (e) {
-      Log.warning('Token count via embeddings failed: $e');
+      Log.warning('Token count via embeddings failed ($endpoint): $e');
       return null;
     }
   }
