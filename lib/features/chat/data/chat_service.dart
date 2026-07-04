@@ -1048,6 +1048,9 @@ String _handleChatError(dynamic e) {
           return 'Model not found or API endpoint is incorrect.';
         case 408:
           return 'Request timeout. The server took too long to respond.';
+        case 413:
+          return 'Image too large for the server to accept. Try enabling '
+              'image compression in Settings.';
         case 429:
           return 'Rate limit exceeded. Please wait a moment before trying again.';
         case 500:

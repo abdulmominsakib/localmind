@@ -89,7 +89,7 @@ class AppSettings {
     this.unloadModelsBeforeLoad = false,
     this.tempChatKeyboardIncognito = true,
     this.resumeLastChat = true,
-    this.imageCompressionEnabled = true,
+    this.imageCompressionEnabled = false,
     this.imageCompressionLevel = ImageCompressionLevel.medium,
     this.smartRepliesUsePersona = false,
     this.keepPersonaOnNewChat = false,
@@ -281,7 +281,7 @@ class AppSettings {
       unloadModelsBeforeLoad: map['unloadModelsBeforeLoad'] ?? false,
       tempChatKeyboardIncognito: map['tempChatKeyboardIncognito'] ?? true,
       resumeLastChat: map['resumeLastChat'] ?? true,
-      imageCompressionEnabled: map['imageCompressionEnabled'] ?? true,
+      imageCompressionEnabled: map['imageCompressionEnabled'] ?? false,
       imageCompressionLevel:
           _parseImageCompressionLevel(map['imageCompressionLevel']),
       smartRepliesUsePersona: map['smartRepliesUsePersona'] ?? false,
