@@ -179,10 +179,12 @@ class ChatNotifier extends Notifier<ChatState> {
   /// this is exactly the size of the context window the model saw on its
   /// last turn, so it doubles as an accurate "context used" figure without
   /// ever issuing an extra request just to count tokens.
-  void _recomputeConversationTotal(String conversationId) {
-    if (_isInMemoryChat) return;
-
-    final lastWithStats = state.messages.reversed
+  void _recomputeConversationTotal(
+    String conversationId, {
+    List<Message>? messages,
+  }) {
+    final timeline = messages ?? state.messages;
+    final lastWithStats = timeline.reversed
         .where(
           (m) =>
               m.role == MessageRole.assistant &&
@@ -197,6 +199,59 @@ class ChatNotifier extends Notifier<ChatState> {
           .read(conv.conversationsProvider.notifier)
           .updateTokenCount(conversationId, total),
     );
+  }
+
+  /// Syncs the history-list preview/message-count/char-count/token-total
+  /// for [conversationId] after a generation finishes. Generation runs in
+  /// the background even after the user switches to a different
+  /// conversation, so this must never assume `state.messages` belongs to
+  /// [conversationId] — when it isn't the conversation currently on screen,
+  /// the active timeline is re-read from the database instead. Without
+  /// this, a background reply could overwrite the *foreground* conversation's
+  /// history preview with its own content.
+  Future<void> _syncConversationStatsAfterGeneration(
+    String conversationId,
+    Message finalMessage, {
+    required bool isCurrentContext,
+  }) async {
+    final timeline = isCurrentContext
+        ? state.messages
+        : MessageVariants.resolveActiveTimeline(
+            await ref
+                .read(databaseProvider)
+                .store
+                .runInTransactionAsync(
+                  TxMode.read,
+                  _loadMessagesInBackground,
+                  conversationId,
+                ),
+          );
+
+    final preview = finalMessage.content.length > 100
+        ? '${finalMessage.content.substring(0, 100)}...'
+        : finalMessage.content;
+    final totalChars = timeline.fold<int>(
+      0,
+      (sum, message) => sum + message.content.length,
+    );
+
+    await ref
+        .read(conv.conversationsProvider.notifier)
+        .syncConversationStats(
+          conversationId,
+          messageCount: timeline.length,
+          characterCount: totalChars,
+          preview: preview,
+        );
+    _recomputeConversationTotal(conversationId, messages: timeline);
+
+    if (isCurrentContext) {
+      final lastUserMessage =
+          timeline.where((m) => m.role == MessageRole.user).firstOrNull;
+      if (lastUserMessage != null) {
+        _maybeAutoGenerateTitleAfterFirstReply();
+      }
+    }
   }
 
   void approveTool(bool approved) {
@@ -1017,31 +1072,12 @@ class ChatNotifier extends Notifier<ChatState> {
                   }
                   ref.read(isStreamingProvider.notifier).setStreaming(false);
                   _latestStreamingMessage = null;
-                    if (_currentConversationId != null) {
-                    final preview = finalMessage.content.length > 100
-                        ? '${finalMessage.content.substring(0, 100)}...'
-                        : finalMessage.content;
-                    final totalChars = state.messages.fold<int>(
-                      0,
-                      (sum, message) => sum + message.content.length,
-                    );
-                    await ref
-                        .read(conv.conversationsProvider.notifier)
-                        .syncConversationStats(
-                          _currentConversationId!,
-                          messageCount: state.messages.length,
-                          characterCount: totalChars,
-                          preview: preview,
-                        );
-                    _recomputeConversationTotal(_currentConversationId!);
 
-                    final lastUserMessage = state.messages
-                        .where((m) => m.role == MessageRole.user)
-                        .firstOrNull;
-                    if (lastUserMessage != null) {
-                      _maybeAutoGenerateTitleAfterFirstReply();
-                    }
-                  }
+                  await _syncConversationStatsAfterGeneration(
+                    streamConvId,
+                    finalMessage,
+                    isCurrentContext: isCurrentContext,
+                  );
 
                   _maybeRequestReviewAfterSuccessfulCompletion(
                     finalMessage: finalMessage,
@@ -1719,6 +1755,7 @@ class ChatNotifier extends Notifier<ChatState> {
     try {
       await _detachStreamSubscription();
       _uiUpdateTimer?.cancel();
+      _resetStreamMetrics();
 
       String reasoningContent = '';
       var streamingAssistantMessage = assistantMessage;
@@ -1764,9 +1801,8 @@ class ChatNotifier extends Notifier<ChatState> {
           .listen(
             (response) async {
               if (streamGeneration != _streamGeneration) return;
-              if (_activeConversationId != assistantMessage.conversationId) {
-                return;
-              }
+              final streamConvId = assistantMessage.conversationId;
+              final isCurrentContext = _activeConversationId == streamConvId;
 
               switch (response.type) {
                 case ChatResponseType.message:
@@ -1839,11 +1875,16 @@ class ChatNotifier extends Notifier<ChatState> {
                     stopReason: 'error',
                   );
                   await _saveMessage(streamingAssistantMessage);
-                  _replaceMessageInAll(
-                    streamingAssistantMessage,
-                    clearStreaming: true,
-                  );
-                  state = state.copyWith(isStreaming: false, clearStreaming: true);
+                  if (isCurrentContext) {
+                    _replaceMessageInAll(
+                      streamingAssistantMessage,
+                      clearStreaming: true,
+                    );
+                    state = state.copyWith(
+                      isStreaming: false,
+                      clearStreaming: true,
+                    );
+                  }
                   ref.read(isStreamingProvider.notifier).setStreaming(false);
                   ref.read(chatBackgroundServiceProvider).stop();
                   break;
@@ -1859,6 +1900,9 @@ class ChatNotifier extends Notifier<ChatState> {
             onDone: () async {
               _uiUpdateTimer?.cancel();
               _uiUpdateTimer = null;
+              final streamConvId = assistantMessage.conversationId;
+              final isCurrentContext = _activeConversationId == streamConvId;
+
               final finalMessage = _finalizeStreamMessage(
                 streamingAssistantMessage.copyWith(
                   status: MessageStatus.complete,
@@ -1867,13 +1911,17 @@ class ChatNotifier extends Notifier<ChatState> {
                 stopReason: 'complete',
               );
               await _saveMessage(finalMessage);
-              _replaceMessageInAll(finalMessage, clearStreaming: true);
-              state = state.copyWith(isStreaming: false, clearStreaming: true);
+              if (isCurrentContext) {
+                _replaceMessageInAll(finalMessage, clearStreaming: true);
+                state = state.copyWith(isStreaming: false, clearStreaming: true);
+              }
               ref.read(isStreamingProvider.notifier).setStreaming(false);
               ref.read(chatBackgroundServiceProvider).stop();
-              if (_currentConversationId != null) {
-                _recomputeConversationTotal(_currentConversationId!);
-              }
+              await _syncConversationStatsAfterGeneration(
+                streamConvId,
+                finalMessage,
+                isCurrentContext: isCurrentContext,
+              );
               _maybeRequestReviewAfterSuccessfulCompletion(
                 finalMessage: finalMessage,
                 server: server,
@@ -1884,18 +1932,22 @@ class ChatNotifier extends Notifier<ChatState> {
               Log.error('Stream error: $error');
               _uiUpdateTimer?.cancel();
               _uiUpdateTimer = null;
+              final isCurrentContext =
+                  _activeConversationId == assistantMessage.conversationId;
               final errorMessage = streamingAssistantMessage.copyWith(
                 status: MessageStatus.error,
                 errorMessage: error.toString(),
                 isProcessing: false,
               );
               await _saveMessage(errorMessage);
-              _replaceMessageInAll(errorMessage, clearStreaming: true);
-              state = state.copyWith(
-                isStreaming: false,
-                clearStreaming: true,
-                errorMessage: error.toString(),
-              );
+              if (isCurrentContext) {
+                _replaceMessageInAll(errorMessage, clearStreaming: true);
+                state = state.copyWith(
+                  isStreaming: false,
+                  clearStreaming: true,
+                  errorMessage: error.toString(),
+                );
+              }
               ref.read(isStreamingProvider.notifier).setStreaming(false);
               ref.read(chatBackgroundServiceProvider).stop();
             },
