@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:archive/archive.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/enums.dart';
@@ -337,7 +339,16 @@ class DataBackupService {
       throw FormatException('Invalid backup format');
     }
 
+    // Imported attachment paths are restored verbatim onto Message records
+    // and later opened directly as files (image/text preview), so a
+    // crafted backup could otherwise point them at arbitrary files already
+    // readable by this app. Only accept paths that resolve inside our own
+    // attachments directory.
+    final appDir = await getApplicationDocumentsDirectory();
+    final attachmentsDir = p.normalize(p.join(appDir.path, 'attachments'));
+
     await store.runInTransactionAsync(TxMode.write, (store, data) {
+      final (decoded, attachmentsDir) = data;
       final convBox = store.box<ConversationEntity>();
       final messageBox = store.box<MessageEntity>();
       final personaBox = store.box<PersonaEntity>();
@@ -345,7 +356,7 @@ class DataBackupService {
       final savedBox = store.box<SavedMessageEntity>();
       final savedFolderBox = store.box<SavedMessageFolderEntity>();
 
-      final personas = data['personas'];
+      final personas = decoded['personas'];
       if (personas is List) {
         for (final item in personas) {
           if (item is! Map) continue;
@@ -380,7 +391,7 @@ class DataBackupService {
         }
       }
 
-      final servers = data['servers'];
+      final servers = decoded['servers'];
       if (servers is List) {
         for (final item in servers) {
           if (item is! Map) continue;
@@ -419,7 +430,7 @@ class DataBackupService {
         }
       }
 
-      final savedFolders = data['savedMessageFolders'];
+      final savedFolders = decoded['savedMessageFolders'];
       if (savedFolders is List) {
         for (final item in savedFolders) {
           if (item is! Map) continue;
@@ -443,7 +454,7 @@ class DataBackupService {
         }
       }
 
-      final savedMessages = data['savedMessages'];
+      final savedMessages = decoded['savedMessages'];
       if (savedMessages is List) {
         for (final item in savedMessages) {
           if (item is! Map) continue;
@@ -477,7 +488,7 @@ class DataBackupService {
         }
       }
 
-      final conversations = data['conversations'];
+      final conversations = decoded['conversations'];
       if (conversations is List) {
         for (final item in conversations) {
           if (item is! Map) continue;
@@ -519,7 +530,7 @@ class DataBackupService {
         }
       }
 
-      final messages = data['messages'];
+      final messages = decoded['messages'];
       if (messages is List) {
         for (final item in messages) {
           if (item is! Map) continue;
@@ -548,9 +559,10 @@ class DataBackupService {
             modelId: item['modelId'] as String?,
             tokenCount: item['tokenCount'] as int?,
             errorMessage: item['errorMessage'] as String?,
-            attachmentPaths: item['attachmentPaths'] is List
-                ? List<String>.from(item['attachmentPaths'] as List)
-                : null,
+            attachmentPaths: _sanitizedAttachmentPaths(
+              item['attachmentPaths'],
+              attachmentsDir,
+            ),
             generationTimeMs: item['generationTimeMs'] as int?,
             reasoningContent: item['reasoningContent'] as String?,
             toolCallId: item['toolCallId'] as String?,
@@ -572,7 +584,20 @@ class DataBackupService {
           messageBox.put(entity);
         }
       }
-    }, decoded);
+    }, (decoded, attachmentsDir));
+  }
+
+  List<String>? _sanitizedAttachmentPaths(dynamic raw, String attachmentsDir) {
+    if (raw is! List) return null;
+    final sanitized = <String>[];
+    for (final entry in raw) {
+      if (entry is! String || entry.isEmpty) continue;
+      final normalized = p.normalize(entry);
+      if (normalized == attachmentsDir || p.isWithin(attachmentsDir, normalized)) {
+        sanitized.add(entry);
+      }
+    }
+    return sanitized.isEmpty ? null : sanitized;
   }
 
   Future<void> importZip(Store store, List<int> bytes) async {
