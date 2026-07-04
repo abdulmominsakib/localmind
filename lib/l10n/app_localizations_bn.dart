@@ -355,6 +355,22 @@ class AppLocalizationsBn extends AppLocalizations {
       'Don\'t clear the selected persona(s) after starting a new chat';
 
   @override
+  String get role_swap_button_enabled => 'Show role-swap button';
+
+  @override
+  String get role_swap_button_enabled_desc =>
+      'Show a button in the chat input to send your message as the assistant instead of the user, without generating a response';
+
+  @override
+  String get send_as_user_tooltip => 'Send as user';
+
+  @override
+  String get send_as_assistant_tooltip => 'Send as assistant (no response)';
+
+  @override
+  String get insert_without_generating_tooltip => 'Insert without generating';
+
+  @override
   String get export_choice_title => 'Export';
 
   @override

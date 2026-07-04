@@ -125,6 +125,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(smartRepliesUsePersona: value));
   void setKeepPersonaOnNewChat(bool value) =>
       _update(state.copyWith(keepPersonaOnNewChat: value));
+  void setRoleSwapButtonEnabled(bool value) =>
+      _update(state.copyWith(roleSwapButtonEnabled: value));
 
   Future<void> _update(AppSettings updated) async {
     state = updated;

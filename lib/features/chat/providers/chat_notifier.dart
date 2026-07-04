@@ -579,11 +579,76 @@ class ChatNotifier extends Notifier<ChatState> {
     _replaceMessageInAll(message, clearStreaming: clearStreaming);
   }
 
+  /// Creates a new conversation (or ephemeral in-memory chat) if one isn't
+  /// already active, mirroring the same persona/title/MCP setup [sendMessage]
+  /// has always done on the first message of a chat. Shared with
+  /// [insertMessageWithoutGenerating] so manually-inserted messages can also
+  /// start a brand new conversation.
+  Future<void> _ensureConversationExists(String titleSource) async {
+    if (_currentConversationId != null || _ephemeralConversationId != null) {
+      return;
+    }
+
+    final server = ref.read(activeServerProvider);
+    final selectedModel = ref.read(selectedModelProvider);
+    final settings = ref.read(settingsProvider);
+    if (server == null) return;
+
+    final isTemp = state.isTemporary || _pendingTemporaryChat;
+    if (isTemp) {
+      _ephemeralConversationId = generateUuid();
+      _pendingTemporaryChat = false;
+      state = state.copyWith(isTemporary: true);
+      return;
+    }
+
+    final titleService = ref.read(titleGenerationServiceProvider);
+    final initialTitle = settings.autoGenerateTitle
+        ? 'New Chat'
+        : titleService.truncateFirstMessageTitle(titleSource);
+    final preselected = ref.read(selectedPersonasProvider);
+    final newConversationSystemPrompt = preselected.isEmpty
+        ? null
+        : PersonaPromptUtils.combineSystemPrompts(preselected);
+    final conversation = await ref
+        .read(conv.conversationsProvider.notifier)
+        .createConversation(
+          title: initialTitle,
+          serverId: server.id,
+          modelId: selectedModel?.id,
+          personaId: preselected.isEmpty
+              ? null
+              : PersonaPromptUtils.joinPersonaIds(
+                  preselected.map((p) => p.id).toList(),
+                ),
+          systemPrompt: newConversationSystemPrompt,
+          mcpEnabled: settings.newChatMcpEnabled,
+          isTemporary: false,
+          folderId: ref.read(pendingNewChatFolderIdProvider.notifier).consume(),
+        );
+    _currentConversationId = conversation.id;
+    ref
+        .read(conv.activeConversationProvider.notifier)
+        .setActiveConversation(conversation);
+    // A conversationsProvider refresh triggered later in this same send
+    // (e.g. syncConversationStats) rebuilds activeConversationProvider
+    // from the reloaded list; use this captured value for this send so
+    // the persona system prompt is never missed on the very first
+    // message of a brand new conversation.
+    _useFreshConversationSystemPrompt = true;
+    _freshConversationSystemPrompt = newConversationSystemPrompt;
+
+    ref.read(chatMcpConfigProvider.notifier).setEnabled(settings.newChatMcpEnabled);
+
+    if (!settings.keepPersonaOnNewChat) {
+      ref.read(selectedPersonasProvider.notifier).clear();
+    }
+  }
+
   Future<void> sendMessage(String content, {List<File>? attachments}) async {
     final server = ref.read(activeServerProvider);
     final selectedModel = ref.read(selectedModelProvider);
     final chatService = ref.read(chatServiceProvider);
-    final settings = ref.read(settingsProvider);
 
     if (server == null) {
       state = state.copyWith(errorMessage: 'No server connected');
@@ -597,66 +662,12 @@ class ChatNotifier extends Notifier<ChatState> {
 
     final trimmedContent = content.trim();
 
-    if (_currentConversationId == null && _ephemeralConversationId == null) {
-      final isTemp = state.isTemporary || _pendingTemporaryChat;
-      if (isTemp) {
-        _ephemeralConversationId = generateUuid();
-        _pendingTemporaryChat = false;
-        state = state.copyWith(isTemporary: true);
-      } else {
-        final titleService = ref.read(titleGenerationServiceProvider);
-        final String initialTitle;
-        if (settings.autoGenerateTitle) {
-          initialTitle = 'New Chat';
-        } else {
-          final titleSource = trimmedContent.isNotEmpty
-              ? trimmedContent
-              : (attachments?.isNotEmpty == true
-                  ? attachments!.first.path.split(Platform.pathSeparator).last
-                  : 'New Chat');
-          initialTitle = titleService.truncateFirstMessageTitle(titleSource);
-        }
-        final preselected = ref.read(selectedPersonasProvider);
-        final newConversationSystemPrompt = preselected.isEmpty
-            ? null
-            : PersonaPromptUtils.combineSystemPrompts(preselected);
-        final conversation = await ref
-            .read(conv.conversationsProvider.notifier)
-            .createConversation(
-              title: initialTitle,
-              serverId: server.id,
-              modelId: selectedModel?.id,
-              personaId: preselected.isEmpty
-                  ? null
-                  : PersonaPromptUtils.joinPersonaIds(
-                      preselected.map((p) => p.id).toList(),
-                    ),
-              systemPrompt: newConversationSystemPrompt,
-              mcpEnabled: settings.newChatMcpEnabled,
-              isTemporary: false,
-              folderId: ref.read(pendingNewChatFolderIdProvider.notifier).consume(),
-            );
-        _currentConversationId = conversation.id;
-        ref
-            .read(conv.activeConversationProvider.notifier)
-            .setActiveConversation(conversation);
-        // A conversationsProvider refresh triggered later in this same send
-        // (e.g. syncConversationStats) rebuilds activeConversationProvider
-        // from the reloaded list; use this captured value for this send so
-        // the persona system prompt is never missed on the very first
-        // message of a brand new conversation.
-        _useFreshConversationSystemPrompt = true;
-        _freshConversationSystemPrompt = newConversationSystemPrompt;
-
-        ref
-            .read(chatMcpConfigProvider.notifier)
-            .setEnabled(settings.newChatMcpEnabled);
-
-        if (!settings.keepPersonaOnNewChat) {
-          ref.read(selectedPersonasProvider.notifier).clear();
-        }
-      }
-    }
+    final titleSource = trimmedContent.isNotEmpty
+        ? trimmedContent
+        : (attachments?.isNotEmpty == true
+            ? attachments!.first.path.split(Platform.pathSeparator).last
+            : 'New Chat');
+    await _ensureConversationExists(titleSource);
 
     // Read after the conversation (and its persona system prompt) is
     // created above — chatParamsProvider derives systemPrompt from
@@ -1121,6 +1132,100 @@ class ChatNotifier extends Notifier<ChatState> {
       ref.read(isStreamingProvider.notifier).setStreaming(false);
       _latestStreamingMessage = null;
       ref.read(chatBackgroundServiceProvider).stop();
+    }
+  }
+
+  /// Inserts [content] as a message with the given [role] without calling
+  /// the chat service or starting generation. Used by the send button's
+  /// long-press ("insert without generating") and the role-swap button
+  /// (which lets the user manually author an assistant-role turn).
+  Future<void> insertMessageWithoutGenerating(
+    String content, {
+    required MessageRole role,
+    List<File>? attachments,
+  }) async {
+    final server = ref.read(activeServerProvider);
+    if (server == null) {
+      state = state.copyWith(errorMessage: 'No server connected');
+      return;
+    }
+
+    final trimmedContent = content.trim();
+    if (trimmedContent.isEmpty && (attachments == null || attachments.isEmpty)) {
+      return;
+    }
+
+    final titleSource = trimmedContent.isNotEmpty
+        ? trimmedContent
+        : (attachments?.isNotEmpty == true
+            ? attachments!.first.path.split(Platform.pathSeparator).last
+            : 'New Chat');
+    await _ensureConversationExists(titleSource);
+
+    final convId = _activeConversationId;
+    if (convId == null) return;
+
+    final List<String> savedPaths = [];
+    if (attachments != null && attachments.isNotEmpty) {
+      final appDir = await ref.read(storageDirectoryProvider.future);
+      final attachmentsDir = Directory('${appDir.path}/attachments');
+      if (!await attachmentsDir.exists()) {
+        await attachmentsDir.create(recursive: true);
+      }
+
+      for (final file in attachments) {
+        final fileName = file.path.split('/').last;
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final newPath = '${attachmentsDir.path}/${timestamp}_$fileName';
+        await file.copy(newPath);
+        savedPaths.add(newPath);
+      }
+    }
+
+    final threadOrder = MessageVariants.nextThreadOrder(state.messages);
+    final groupId = generateUuid();
+    final lastInTimeline = state.messages.isNotEmpty ? state.messages.last : null;
+
+    final message = Message(
+      id: generateUuid(),
+      conversationId: convId,
+      role: role,
+      content: trimmedContent,
+      createdAt: DateTime.now(),
+      status: MessageStatus.complete,
+      attachmentPaths: savedPaths.isNotEmpty ? savedPaths : null,
+      variantGroupId: groupId,
+      variantIndex: 0,
+      threadOrder: threadOrder,
+      isActiveVariant: true,
+      parentMessageId: lastInTimeline?.id,
+    );
+
+    final updatedAll = [...state.allMessages, message];
+    state = state.copyWith(
+      allMessages: updatedAll,
+      messages: MessageVariants.resolveActiveTimeline(updatedAll),
+      clearError: true,
+    );
+
+    await _saveMessage(message);
+
+    if (!_isInMemoryChat && _currentConversationId != null) {
+      final preview = trimmedContent.isNotEmpty
+          ? (trimmedContent.length > 100
+              ? '${trimmedContent.substring(0, 100)}...'
+              : trimmedContent)
+          : (attachments?.isNotEmpty == true ? '[attachment]' : 'New message');
+      final timeline = state.messages;
+      await ref.read(conv.conversationsProvider.notifier).syncConversationStats(
+            _currentConversationId!,
+            messageCount: timeline.length,
+            characterCount: timeline.fold<int>(
+              0,
+              (sum, message) => sum + message.content.length,
+            ),
+            preview: preview,
+          );
     }
   }
 

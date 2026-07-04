@@ -51,6 +51,7 @@ class AppSettings {
   final ImageCompressionLevel imageCompressionLevel;
   final bool smartRepliesUsePersona;
   final bool keepPersonaOnNewChat;
+  final bool roleSwapButtonEnabled;
 
   AppSettings({
     this.temperature = 0.7,
@@ -92,6 +93,7 @@ class AppSettings {
     this.imageCompressionLevel = ImageCompressionLevel.medium,
     this.smartRepliesUsePersona = false,
     this.keepPersonaOnNewChat = false,
+    this.roleSwapButtonEnabled = false,
   });
 
   AppSettings copyWith({
@@ -134,6 +136,7 @@ class AppSettings {
     ImageCompressionLevel? imageCompressionLevel,
     bool? smartRepliesUsePersona,
     bool? keepPersonaOnNewChat,
+    bool? roleSwapButtonEnabled,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -191,6 +194,8 @@ class AppSettings {
       smartRepliesUsePersona:
           smartRepliesUsePersona ?? this.smartRepliesUsePersona,
       keepPersonaOnNewChat: keepPersonaOnNewChat ?? this.keepPersonaOnNewChat,
+      roleSwapButtonEnabled:
+          roleSwapButtonEnabled ?? this.roleSwapButtonEnabled,
     );
   }
 
@@ -235,6 +240,7 @@ class AppSettings {
       'imageCompressionLevel': imageCompressionLevel.name,
       'smartRepliesUsePersona': smartRepliesUsePersona,
       'keepPersonaOnNewChat': keepPersonaOnNewChat,
+      'roleSwapButtonEnabled': roleSwapButtonEnabled,
     };
   }
 
@@ -280,6 +286,7 @@ class AppSettings {
           _parseImageCompressionLevel(map['imageCompressionLevel']),
       smartRepliesUsePersona: map['smartRepliesUsePersona'] ?? false,
       keepPersonaOnNewChat: map['keepPersonaOnNewChat'] ?? false,
+      roleSwapButtonEnabled: map['roleSwapButtonEnabled'] ?? false,
     );
   }
 

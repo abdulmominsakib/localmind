@@ -102,6 +102,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
   final List<File> _attachedFiles = [];
 
   bool _isGeneratingAiUser = false;
+  bool _sendAsAssistant = false;
 
   late AnimationController _sendButtonAnimController;
 
@@ -580,16 +581,43 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     Haptics.vibrate(HapticsType.medium);
 
-    widget.onSend(text, attachments: List.from(_attachedFiles));
+    if (_sendAsAssistant) {
+      ref.read(chatProvider.notifier).insertMessageWithoutGenerating(
+            text,
+            role: MessageRole.assistant,
+            attachments: List.from(_attachedFiles),
+          );
+    } else {
+      widget.onSend(text, attachments: List.from(_attachedFiles));
+    }
 
     _controller.clear();
 
     setState(() {
 
       _attachedFiles.clear();
+      _sendAsAssistant = false;
 
     });
 
+  }
+
+  void _handleInsertWithoutGenerating() {
+    final text = _controller.text.trim();
+    if (text.isEmpty && _attachedFiles.isEmpty) return;
+
+    Haptics.vibrate(HapticsType.medium);
+    ref.read(chatProvider.notifier).insertMessageWithoutGenerating(
+          text,
+          role: _sendAsAssistant ? MessageRole.assistant : MessageRole.user,
+          attachments: List.from(_attachedFiles),
+        );
+
+    _controller.clear();
+    setState(() {
+      _attachedFiles.clear();
+      _sendAsAssistant = false;
+    });
   }
 
 
@@ -641,6 +669,32 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     );
   }
 
+  Widget _buildRoleSwapButton(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return IconButton(
+      visualDensity: VisualDensity.compact,
+      padding: const EdgeInsets.all(8),
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      tooltip: _sendAsAssistant
+          ? l10n.send_as_assistant_tooltip
+          : l10n.send_as_user_tooltip,
+      onPressed: widget.enabled
+          ? () {
+              Haptics.vibrate(HapticsType.light);
+              setState(() => _sendAsAssistant = !_sendAsAssistant);
+            }
+          : null,
+      icon: Icon(
+        Icons.swap_horiz_rounded,
+        size: 22,
+        color: _sendAsAssistant
+            ? theme.colorScheme.primary
+            : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+      ),
+    );
+  }
+
   Widget _buildActionButton(bool canSend, ThemeData theme) {
 
     final l10n = AppLocalizations.of(context)!;
@@ -666,6 +720,10 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
       onTapUp: canSend ? (_) => _sendButtonAnimController.reverse() : null,
 
       onTapCancel: canSend ? () => _sendButtonAnimController.reverse() : null,
+
+      onLongPress: (canSend && !widget.isStreaming)
+          ? _handleInsertWithoutGenerating
+          : null,
 
       child: ScaleTransition(
 
@@ -823,6 +881,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     final isConnected = connectionStatus == ConnectionStatus.connected;
     final showAiUserButton = ref.watch(settingsProvider).aiUserResponseEnabled;
+    final showRoleSwapButton =
+        ref.watch(settingsProvider).roleSwapButtonEnabled;
 
 
 
@@ -1186,6 +1246,11 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
                 if (showAiUserButton) ...[
                   _buildAiUserButton(isConnected, theme),
+                  const SizedBox(width: 6),
+                ],
+
+                if (showRoleSwapButton) ...[
+                  _buildRoleSwapButton(theme),
                   const SizedBox(width: 6),
                 ],
 

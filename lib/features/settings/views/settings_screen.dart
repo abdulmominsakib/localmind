@@ -261,6 +261,14 @@ class SettingsViews extends ConsumerWidget {
                         .setKeepPersonaOnNewChat(value),
                   ),
                   _ToggleSetting(
+                    label: l10n.role_swap_button_enabled,
+                    description: l10n.role_swap_button_enabled_desc,
+                    value: settings.roleSwapButtonEnabled,
+                    onChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setRoleSwapButtonEnabled(value),
+                  ),
+                  _ToggleSetting(
                     label: l10n.enable_image_compression,
                     description: l10n.enable_image_compression_desc,
                     value: settings.imageCompressionEnabled,

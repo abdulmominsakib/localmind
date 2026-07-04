@@ -755,6 +755,36 @@ abstract class AppLocalizations {
   /// **'Don\'t clear the selected persona(s) after starting a new chat'**
   String get keep_persona_on_new_chat_desc;
 
+  /// Settings toggle to show a button that lets the user send a message as the assistant role
+  ///
+  /// In en, this message translates to:
+  /// **'Show role-swap button'**
+  String get role_swap_button_enabled;
+
+  /// Description for the role-swap-button-enabled toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Show a button in the chat input to send your message as the assistant instead of the user, without generating a response'**
+  String get role_swap_button_enabled_desc;
+
+  /// Tooltip for the role-swap button when it will send as the user role
+  ///
+  /// In en, this message translates to:
+  /// **'Send as user'**
+  String get send_as_user_tooltip;
+
+  /// Tooltip for the role-swap button when it will send as the assistant role
+  ///
+  /// In en, this message translates to:
+  /// **'Send as assistant (no response)'**
+  String get send_as_assistant_tooltip;
+
+  /// Tooltip shown for long-pressing the send button to insert a message without generating a response
+  ///
+  /// In en, this message translates to:
+  /// **'Insert without generating'**
+  String get insert_without_generating_tooltip;
+
   /// Title for the copy-vs-share export choice dialog
   ///
   /// In en, this message translates to:

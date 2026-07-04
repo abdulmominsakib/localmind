@@ -482,6 +482,26 @@
   "@keep_persona_on_new_chat_desc": {
     "description": "Description for the keep-persona-on-new-chat toggle"
   },
+  "role_swap_button_enabled": "Show role-swap button",
+  "@role_swap_button_enabled": {
+    "description": "Settings toggle to show a button that lets the user send a message as the assistant role"
+  },
+  "role_swap_button_enabled_desc": "Show a button in the chat input to send your message as the assistant instead of the user, without generating a response",
+  "@role_swap_button_enabled_desc": {
+    "description": "Description for the role-swap-button-enabled toggle"
+  },
+  "send_as_user_tooltip": "Send as user",
+  "@send_as_user_tooltip": {
+    "description": "Tooltip for the role-swap button when it will send as the user role"
+  },
+  "send_as_assistant_tooltip": "Send as assistant (no response)",
+  "@send_as_assistant_tooltip": {
+    "description": "Tooltip for the role-swap button when it will send as the assistant role"
+  },
+  "insert_without_generating_tooltip": "Insert without generating",
+  "@insert_without_generating_tooltip": {
+    "description": "Tooltip shown for long-pressing the send button to insert a message without generating a response"
+  },
   "export_choice_title": "Export",
   "@export_choice_title": {
     "description": "Title for the copy-vs-share export choice dialog"
