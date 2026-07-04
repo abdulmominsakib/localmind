@@ -26,6 +26,7 @@ class LmStudioPromptFormatter {
   /// of showing them (e.g. `end_of_turn`) to the user.
   static const List<String> turnBoundaryStopSequences = [
     '<end_of_turn>',
+    '</end_of_turn>',
     '<start_of_turn>',
     '<|eot_id|>',
     '<|start_header_id|>',
