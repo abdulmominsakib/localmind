@@ -66,6 +66,7 @@ class RedirectInterceptor extends Interceptor {
 
   Future<Response<dynamic>> _performRedirect(RequestOptions requestOptions, String location) async {
     var redirectUrl = location;
+    final originalUri = requestOptions.uri;
     if (!redirectUrl.startsWith('http://') && !redirectUrl.startsWith('https://')) {
       final baseUri = Uri.parse(requestOptions.path);
       redirectUrl = baseUri.resolve(redirectUrl).toString();
@@ -82,13 +83,28 @@ class RedirectInterceptor extends Interceptor {
     }
     extra['redirectCount'] = redirectCount;
 
+    // Never replay credentials (API keys, auth tokens) to a different
+    // origin than the one the caller actually configured — a redirect
+    // response (e.g. from a compromised or misconfigured server) must not
+    // be able to exfiltrate them to an arbitrary host.
+    final redirectUri = Uri.parse(redirectUrl);
+    final sameOrigin = redirectUri.scheme == originalUri.scheme &&
+        redirectUri.host == originalUri.host &&
+        redirectUri.port == originalUri.port;
+    final headers = Map<String, dynamic>.from(requestOptions.headers);
+    if (!sameOrigin) {
+      headers.removeWhere(
+        (key, _) => key.toLowerCase() == 'authorization',
+      );
+    }
+
     return _dio.request(
       redirectUrl,
       data: requestOptions.data,
       queryParameters: requestOptions.queryParameters,
       options: Options(
         method: requestOptions.method,
-        headers: requestOptions.headers,
+        headers: headers,
         contentType: requestOptions.contentType,
         responseType: requestOptions.responseType,
         extra: extra,
