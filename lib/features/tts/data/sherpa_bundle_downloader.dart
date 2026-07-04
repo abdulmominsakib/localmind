@@ -30,11 +30,21 @@ void _extractTarBz2Sync(String archivePath, String targetDirPath) {
   final tarBytes = BZip2Decoder().decodeBytes(archiveBytes);
   final archive = TarDecoder().decodeBytes(tarBytes);
 
+  final normalizedTargetDir = p.normalize(targetDirPath);
+
   for (final file in archive) {
     final relativePath = file.name;
     if (relativePath.isEmpty) continue;
 
-    final outputPath = p.join(targetDirPath, relativePath);
+    final outputPath = p.normalize(p.join(targetDirPath, relativePath));
+    // Reject any entry whose resolved path would land outside the target
+    // directory (e.g. a `../` traversal sequence in the archive entry name)
+    // rather than trusting the archive's own file names.
+    if (outputPath != normalizedTargetDir &&
+        !p.isWithin(normalizedTargetDir, outputPath)) {
+      continue;
+    }
+
     if (file.isFile) {
       final outputFile = File(outputPath);
       outputFile.createSync(recursive: true);
