@@ -44,6 +44,11 @@ import 'components/top_bar/persona_indicator.dart';
 import 'components/top_bar/smart_reply_chips.dart';
 import 'package:localmind/features/personas/views/components/persona_picker_sheet.dart';
 
+/// Height the always-on token usage row adds below the input box (its own
+/// content height plus the padding around it) — added to the message list's
+/// bottom padding so streamed content never ends up hidden behind it.
+const double _tokenIndicatorRowHeight = 28;
+
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
@@ -298,9 +303,12 @@ class _ChatBody extends ConsumerWidget {
     final hasPersonas = personas.isNotEmpty;
     final keyboardBottomInset = bottomKeyboardInset(context);
     final systemBottomInset = bottomSystemInset(context);
+    // The token usage row (below the input box) is hidden while the
+    // keyboard is open, same as the smart-reply chips, so only reserve
+    // extra scroll space for it when it's actually visible.
     final effectiveBottomInset = keyboardBottomInset > 0
         ? 0.0
-        : systemBottomInset;
+        : systemBottomInset + _tokenIndicatorRowHeight;
 
     final needsScroll = autoScroll.checkAndUpdate(
       messageCount: messages.length,
@@ -951,12 +959,14 @@ class _ChatBottomBar extends ConsumerWidget {
               },
               onStop: () => ref.read(chatProvider.notifier).cancelStream(),
             ),
-            if (totalTokenCount != null && keyboardBottomInset == 0)
+            if (keyboardBottomInset == 0)
               Padding(
-                padding: const EdgeInsets.only(top: 2, bottom: 6, right: 10),
+                padding: const EdgeInsetsDirectional.only(bottom: 12, end: 10),
                 child: Align(
                   alignment: AlignmentDirectional.centerEnd,
-                  child: _TokenUsageIndicator(totalTokenCount: totalTokenCount),
+                  child: _TokenUsageIndicator(
+                    totalTokenCount: totalTokenCount ?? 0,
+                  ),
                 ),
               ),
           ],
@@ -980,8 +990,21 @@ class _TokenUsageIndicator extends ConsumerWidget {
     final fallbackContextLength =
         ref.watch(settingsProvider.select((s) => s.contextLength));
     final int contextLength = liveContextLength ?? fallbackContextLength;
+
+    // totalTokenCount only updates once a response finishes (it's the real
+    // server-reported count), so while one is streaming in, grow the ring
+    // with a rough chars-per-token estimate of the in-progress reply —
+    // corrected back to the exact figure the moment the stream ends.
+    final isStreaming = ref.watch(chatProvider.select((s) => s.isStreaming));
+    final streamingLength = ref.watch(
+      chatProvider.select((s) => s.streamingMessage?.content.length ?? 0),
+    );
+    final estimatedTokenCount = isStreaming
+        ? totalTokenCount + (streamingLength / 4).round()
+        : totalTokenCount;
+
     final ratio = contextLength > 0
-        ? (totalTokenCount / contextLength).clamp(0.0, 1.0)
+        ? (estimatedTokenCount / contextLength).clamp(0.0, 1.0)
         : 0.0;
     final ringColor = ratio >= 0.9 ? Colors.red : theme.colorScheme.primary;
 
