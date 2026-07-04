@@ -220,37 +220,6 @@ class Server {
     }
   }
 
-  /// Endpoint used purely to obtain an accurate tokenizer count via the
-  /// `usage` field of an embeddings response — the embedding vector itself
-  /// is discarded. Not supported for OpenRouter or on-device.
-  ///
-  /// LM Studio's native REST surface (used for chat/models/load elsewhere
-  /// in this app) is under `/api/v1/`, not the OpenAI-compatibility `/v1/`
-  /// surface — a model loaded via the native path isn't necessarily visible
-  /// to the compat surface, which reports "no models loaded" for it.
-  String get embeddingsEndpoint {
-    switch (type) {
-      case ServerType.lmStudio:
-        return '$baseUrl/api/v1/embeddings';
-      case ServerType.openAICompatible:
-        return '$baseUrl/v1/embeddings';
-      case ServerType.ollama:
-        return '$baseUrl${_apiPath('/api/embed')}';
-      case ServerType.openRouter:
-        return '';
-      case ServerType.onDevice:
-        return '';
-    }
-  }
-
-  /// Fallback embeddings endpoint tried if [embeddingsEndpoint] fails —
-  /// LM Studio's OpenAI-compatible surface, in case the native `/api/v1/`
-  /// route isn't available on a given server version.
-  String? get fallbackEmbeddingsEndpoint {
-    if (type == ServerType.lmStudio) return '$baseUrl/v1/embeddings';
-    return null;
-  }
-
   String get unloadModelEndpoint {
     switch (type) {
       case ServerType.lmStudio:

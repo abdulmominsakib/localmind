@@ -215,36 +215,48 @@ class ServerApiService {
     }
   }
 
-  /// Uses the embeddings endpoint purely to get an accurate tokenizer
-  /// count of [text] from the response's `usage` field — the embedding
-  /// vector itself is discarded. Returns null if the server/model doesn't
-  /// support embeddings or the request otherwise fails; callers should
-  /// treat that as "count unavailable", not an error.
+  /// Gets an accurate tokenizer count of [text] by issuing a minimal chat
+  /// completion (`max_tokens: 1`) and reading the server-computed
+  /// `usage.prompt_tokens` from the response — the one generated token is
+  /// discarded. This works on any server that implements chat completions,
+  /// unlike the embeddings endpoint (which needs a separate embeddings
+  /// model loaded and isn't guaranteed to share the chat model's tokenizer).
+  /// Returns null if the request fails; callers should treat that as
+  /// "count unavailable", not an error.
   Future<int?> countTokens(Server server, String modelId, String text) async {
     if (text.trim().isEmpty) return 0;
-    final endpoint = server.embeddingsEndpoint;
-    if (endpoint.isEmpty) return null;
+    if (server.chatEndpoint.isEmpty) return null;
 
-    final count = await _countTokensAt(endpoint, server, modelId, text);
-    if (count != null) return count;
+    final Map<String, dynamic> body;
+    if (server.type == ServerType.ollama) {
+      body = {
+        'model': modelId,
+        'messages': [
+          {'role': 'user', 'content': text},
+        ],
+        'stream': false,
+        'options': {'num_predict': 1},
+      };
+    } else {
+      body = {
+        'model': modelId,
+        'messages': [
+          {'role': 'user', 'content': text},
+        ],
+        'max_tokens': 1,
+        'stream': false,
+      };
+    }
 
-    final fallback = server.fallbackEmbeddingsEndpoint;
-    if (fallback == null || fallback == endpoint) return null;
-    return _countTokensAt(fallback, server, modelId, text);
-  }
-
-  Future<int?> _countTokensAt(
-    String endpoint,
-    Server server,
-    String modelId,
-    String text,
-  ) async {
     try {
       final response = await _dio.post(
-        endpoint,
-        data: {'model': modelId, 'input': text},
+        server.chatEndpoint,
+        data: body,
         options: Options(
-          headers: buildServerAuthHeaders(server),
+          headers: {
+            'Content-Type': 'application/json',
+            ...buildServerAuthHeaders(server),
+          },
           validateStatus: (status) => status != null && status < 500,
         ),
       );
@@ -258,12 +270,12 @@ class ServerApiService {
 
       final usage = data['usage'];
       if (usage is Map) {
-        final total = usage['total_tokens'] ?? usage['prompt_tokens'];
-        if (total is num) return total.toInt();
+        final promptTokens = usage['prompt_tokens'];
+        if (promptTokens is num) return promptTokens.toInt();
       }
       return null;
     } catch (e) {
-      Log.warning('Token count via embeddings failed ($endpoint): $e');
+      Log.warning('Token count via chat completions failed: $e');
       return null;
     }
   }
