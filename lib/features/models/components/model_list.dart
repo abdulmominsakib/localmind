@@ -21,11 +21,13 @@ class ModelList extends ConsumerStatefulWidget {
     required this.serverId,
     required this.selectedModelId,
     required this.isDark,
+    this.scrollController,
   });
 
   final String serverId;
   final String? selectedModelId;
   final bool isDark;
+  final ScrollController? scrollController;
 
   @override
   ConsumerState<ModelList> createState() => _ModelListState();
@@ -259,6 +261,7 @@ class _ModelListState extends ConsumerState<ModelList> {
         }
 
         return ListView.builder(
+          controller: widget.scrollController,
           itemCount: sorted.length,
           itemBuilder: (context, index) {
             final model = sorted[index];

@@ -24,10 +24,12 @@ class OnDevicePickerSection extends ConsumerWidget {
     super.key,
     required this.selectedModelId,
     required this.isDark,
+    this.scrollController,
   });
 
   final String? selectedModelId;
   final bool isDark;
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -121,6 +123,7 @@ class OnDevicePickerSection extends ConsumerWidget {
         }
 
         return ListView(
+          controller: scrollController,
           children: [
             if (importedModels.isNotEmpty) ...[
               const SizedBox(height: 4),

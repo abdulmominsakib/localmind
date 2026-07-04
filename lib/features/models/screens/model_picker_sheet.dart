@@ -86,89 +86,100 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
       orElse: () => 0,
     );
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkBackground : AppColors.lightSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.grey[600] : Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 1.0,
+      expand: false,
+      builder: (context, scrollController) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkBackground : AppColors.lightSurface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          const SizedBox(height: 16),
-          _ModelPickerHeader(
-            isDark: isDark,
-            isThinking: isThinking,
-            loadedCount: loadedCount,
-            showBrowseButton: isLmStudio,
-            onBrowseModels: isLmStudio
-                ? () {
-                    Navigator.of(context).pop();
-                    context.push(
-                      AppRoutes.lmStudioModelBrowser,
-                      extra: currentServer,
-                    );
-                  }
-                : null,
-            onRefresh: activeServer != null
-                ? () {
-                    ref.invalidate(availableModelsProvider(activeServer.id));
-                    ref.invalidate(loadedModelsProvider(activeServer));
-                  }
-                : null,
-            onUnloadAll: activeServer != null && loadedCount > 0
-                ? () => _unloadAllModels(context, ref, activeServer)
-                : null,
-          ),
-          if (activeServer != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                activeServer.name,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey[600] : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-          const SizedBox(height: 12),
-          ModelContextLengthSection(isDark: isDark),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Expanded(child: ModelSearchField()),
-              const SizedBox(width: 8),
-              const ModelSortControl(),
+              const SizedBox(height: 16),
+              _ModelPickerHeader(
+                isDark: isDark,
+                isThinking: isThinking,
+                loadedCount: loadedCount,
+                showBrowseButton: isLmStudio,
+                onBrowseModels: isLmStudio
+                    ? () {
+                        Navigator.of(context).pop();
+                        context.push(
+                          AppRoutes.lmStudioModelBrowser,
+                          extra: currentServer,
+                        );
+                      }
+                    : null,
+                onRefresh: activeServer != null
+                    ? () {
+                        ref.invalidate(availableModelsProvider(activeServer.id));
+                        ref.invalidate(loadedModelsProvider(activeServer));
+                      }
+                    : null,
+                onUnloadAll: activeServer != null && loadedCount > 0
+                    ? () => _unloadAllModels(context, ref, activeServer)
+                    : null,
+              ),
+              if (activeServer != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    activeServer.name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark
+                          ? AppColors.darkMutedText
+                          : AppColors.lightMutedText,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              ModelContextLengthSection(isDark: isDark),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Expanded(child: ModelSearchField()),
+                  const SizedBox(width: 8),
+                  const ModelSortControl(),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: activeServer == null
+                    ? NoServerState(isDark: isDark)
+                    : isOnDevice
+                        ? OnDevicePickerSection(
+                            selectedModelId: selectedModel?.id,
+                            isDark: isDark,
+                            scrollController: scrollController,
+                          )
+                        : ModelList(
+                            serverId: activeServer.id,
+                            selectedModelId: selectedModel?.id,
+                            isDark: isDark,
+                            scrollController: scrollController,
+                          ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: activeServer == null
-                ? NoServerState(isDark: isDark)
-                : isOnDevice
-                    ? OnDevicePickerSection(
-                        selectedModelId: selectedModel?.id,
-                        isDark: isDark,
-                      )
-                    : ModelList(
-                        serverId: activeServer.id,
-                        selectedModelId: selectedModel?.id,
-                        isDark: isDark,
-                      ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
