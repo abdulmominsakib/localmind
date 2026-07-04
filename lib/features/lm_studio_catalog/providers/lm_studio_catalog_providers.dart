@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/service_providers.dart';
+import '../../../core/providers/storage_providers.dart';
 import '../../servers/data/models/server.dart';
 import '../../servers/providers/server_providers.dart';
 import '../data/catalog_models.dart';
@@ -176,7 +178,10 @@ class LmDownloadManagerState {
 }
 
 class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
+  static const _storageKey = 'lm_studio_active_downloads';
+
   final Map<String, Timer> _pollers = {};
+  final Map<String, String> _jobServerIds = {};
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   bool _notificationsReady = false;
@@ -185,7 +190,93 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
   @override
   LmDownloadManagerState build() {
     ref.onDispose(_disposePollers);
+    unawaited(_restoreActiveDownloads());
     return const LmDownloadManagerState();
+  }
+
+  /// Re-attaches to any downloads that were still in progress when the app
+  /// was last closed, so a restart doesn't silently abandon tracking of a
+  /// download that's still running on the LM Studio server.
+  Future<void> _restoreActiveDownloads() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final raw = prefs.getString(_storageKey);
+    if (raw == null || raw.isEmpty) return;
+
+    List<dynamic> entries;
+    try {
+      entries = jsonDecode(raw) as List<dynamic>;
+    } catch (_) {
+      await prefs.remove(_storageKey);
+      return;
+    }
+
+    final servers = await ref.read(serversProvider.future);
+    final service = ref.read(lmStudioDownloadServiceProvider);
+
+    for (final entry in entries) {
+      if (entry is! Map) continue;
+      final serverId = entry['serverId'] as String?;
+      final jobId = entry['jobId'] as String?;
+      final modelId = entry['modelId'] as String?;
+      if (serverId == null || jobId == null || modelId == null) continue;
+      final displayName = entry['displayName'] as String? ?? modelId;
+
+      final server = servers.where((s) => s.id == serverId).firstOrNull;
+      if (server == null) continue;
+
+      final placeholder = LmDownloadJob(
+        jobId: jobId,
+        modelId: modelId,
+        displayName: displayName,
+        status: LmDownloadStatus.downloading,
+      );
+
+      try {
+        final updated = await service.fetchStatus(
+          server: server,
+          job: placeholder,
+        );
+        _jobServerIds[jobId] = serverId;
+        if (updated.status.isActive) {
+          _replaceJob(updated);
+          _startPolling(server: server, job: updated);
+        }
+      } on LmDownloadJobNotFoundException {
+        // Job no longer exists on the server; drop it.
+      } catch (_) {
+        // Couldn't reach the server right now — leave it persisted so the
+        // next restore attempt (or a manual refresh) can pick it back up.
+      }
+    }
+
+    await _persistActiveDownloads();
+  }
+
+  Future<void> _persistActiveDownloads() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final active = state.jobs.where((j) => j.status.isActive).toList();
+    if (active.isEmpty) {
+      await prefs.remove(_storageKey);
+      return;
+    }
+
+    final entries = active
+        .map(
+          (j) => {
+            'serverId': _jobServerIds[j.jobId],
+            'jobId': j.jobId,
+            'modelId': j.modelId,
+            'displayName': j.displayName,
+          },
+        )
+        .where((e) => e['serverId'] != null)
+        .toList();
+    await prefs.setString(_storageKey, jsonEncode(entries));
+  }
+
+  void _setJobs(List<LmDownloadJob> jobs) {
+    state = state.copyWith(jobs: jobs);
+    unawaited(_persistActiveDownloads());
   }
 
   Future<void> _ensureNotifications() async {
@@ -220,7 +311,10 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
       updatedJobs.removeWhere((j) => j.jobId == job.jobId);
     }
     updatedJobs.insert(0, job);
-    state = state.copyWith(jobs: updatedJobs);
+    if (job.jobId.isNotEmpty) {
+      _jobServerIds[job.jobId] = server.id;
+    }
+    _setJobs(updatedJobs);
 
     if (job.status == LmDownloadStatus.alreadyDownloaded ||
         job.status == LmDownloadStatus.completed) {
@@ -269,13 +363,14 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
   }
 
   void removeJob(String jobId) {
+    _jobServerIds.remove(jobId);
     final jobs = state.jobs.where((j) => j.jobId != jobId).toList();
-    state = state.copyWith(jobs: jobs);
+    _setJobs(jobs);
   }
 
   void dismissFinishedJobs() {
     final jobs = state.jobs.where((j) => j.status.isActive).toList();
-    state = state.copyWith(jobs: jobs);
+    _setJobs(jobs);
   }
 
   void _replaceJob(LmDownloadJob updated) {
@@ -286,7 +381,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
     } else {
       jobs.insert(0, updated);
     }
-    state = state.copyWith(jobs: jobs);
+    _setJobs(jobs);
   }
 
   Future<void> _notifyCompleted(LmDownloadJob job) async {
