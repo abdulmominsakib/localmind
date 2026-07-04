@@ -805,6 +805,103 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     );
   }
 
+  String _effortLabel(ReasoningEffort effort) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (effort) {
+      ReasoningEffort.low => l10n.reasoning_effort_low,
+      ReasoningEffort.medium => l10n.reasoning_effort_medium,
+      ReasoningEffort.high => l10n.reasoning_effort_high,
+    };
+  }
+
+  Widget _buildThinkButton(ThemeData theme) {
+    final selectedModel = ref.watch(selectedModelProvider);
+    if (selectedModel?.supportsReasoning != true) {
+      return const SizedBox.shrink();
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final reasoningConfig = ref.watch(chatReasoningConfigProvider);
+    final enabled = reasoningConfig.enabled;
+    final activeColor = theme.colorScheme.primary;
+    final fgColor = enabled
+        ? activeColor
+        : theme.colorScheme.onSurface.withValues(alpha: 0.6);
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: Container(
+        height: 32,
+        decoration: BoxDecoration(
+          color: enabled
+              ? activeColor.withValues(alpha: 0.15)
+              : theme.colorScheme.onSurface.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                Haptics.vibrate(HapticsType.light);
+                ref
+                    .read(chatReasoningConfigProvider.notifier)
+                    .setEnabled(!enabled);
+              },
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(
+                  start: 10,
+                  end: 4,
+                  top: 6,
+                  bottom: 6,
+                ),
+                child: Icon(
+                  enabled ? Icons.check_box : Icons.check_box_outline_blank,
+                  size: 18,
+                  color: fgColor,
+                ),
+              ),
+            ),
+            PopupMenuButton<ReasoningEffort>(
+              tooltip: '',
+              padding: EdgeInsets.zero,
+              onSelected: (effort) {
+                Haptics.vibrate(HapticsType.light);
+                ref
+                    .read(chatReasoningConfigProvider.notifier)
+                    .setEffort(effort);
+              },
+              itemBuilder: (context) => ReasoningEffort.values
+                  .map(
+                    (effort) => PopupMenuItem(
+                      value: effort,
+                      child: Text(_effortLabel(effort)),
+                    ),
+                  )
+                  .toList(),
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(
+                  end: 12,
+                  top: 6,
+                  bottom: 6,
+                ),
+                child: Text(
+                  '${l10n.think_button_label} (${_effortLabel(reasoningConfig.effort)})',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: fgColor,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionButton(bool canSend, ThemeData theme) {
 
     final l10n = AppLocalizations.of(context)!;
@@ -1349,6 +1446,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                 ),
 
                 _buildTokenUsageIndicator(theme),
+
+                _buildThinkButton(theme),
 
                 const Spacer(),
 

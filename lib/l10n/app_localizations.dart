@@ -4960,6 +4960,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Used to estimate whether models fit on your machine in the model browser.'**
   String get lm_studio_memory_settings_desc;
+
+  /// Label for the reasoning-toggle button shown for reasoning-capable models
+  ///
+  /// In en, this message translates to:
+  /// **'Think'**
+  String get think_button_label;
+
+  /// Low reasoning effort level
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get reasoning_effort_low;
+
+  /// Medium reasoning effort level
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get reasoning_effort_medium;
+
+  /// High reasoning effort level
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get reasoning_effort_high;
 }
 
 class _AppLocalizationsDelegate

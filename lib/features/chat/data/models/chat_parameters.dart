@@ -1,4 +1,5 @@
 import '../../../../core/constants/app_constants.dart';
+import '../../providers/chat_reasoning_providers.dart';
 
 class ChatParameters {
   final double temperature;
@@ -9,7 +10,10 @@ class ChatParameters {
   final int? topK;
   final double? minP;
   final double? repeatPenalty;
-  final String? reasoningLevel;
+  /// Null when the active model doesn't support reasoning (no reasoning
+  /// control fields should be sent); otherwise reflects the Think toggle.
+  final bool? reasoningEnabled;
+  final ReasoningEffort reasoningEffort;
 
   const ChatParameters({
     required this.temperature,
@@ -20,7 +24,8 @@ class ChatParameters {
     this.topK,
     this.minP,
     this.repeatPenalty,
-    this.reasoningLevel,
+    this.reasoningEnabled,
+    this.reasoningEffort = ReasoningEffort.low,
   });
 
   factory ChatParameters.defaults() => const ChatParameters(
@@ -39,7 +44,8 @@ class ChatParameters {
     int? topK,
     double? minP,
     double? repeatPenalty,
-    String? reasoningLevel,
+    bool? reasoningEnabled,
+    ReasoningEffort? reasoningEffort,
   }) {
     return ChatParameters(
       temperature: temperature ?? this.temperature,
@@ -50,7 +56,8 @@ class ChatParameters {
       topK: topK ?? this.topK,
       minP: minP ?? this.minP,
       repeatPenalty: repeatPenalty ?? this.repeatPenalty,
-      reasoningLevel: reasoningLevel ?? this.reasoningLevel,
+      reasoningEnabled: reasoningEnabled ?? this.reasoningEnabled,
+      reasoningEffort: reasoningEffort ?? this.reasoningEffort,
     );
   }
 }

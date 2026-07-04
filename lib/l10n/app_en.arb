@@ -2953,5 +2953,21 @@
   "lm_studio_available_ram_gb": "Available RAM (GB, optional)",
   "lm_studio_available_vram_gb": "Available VRAM (GB, optional)",
   "lm_studio_memory_settings_title": "Memory for recommendations",
-  "lm_studio_memory_settings_desc": "Used to estimate whether models fit on your machine in the model browser."
+  "lm_studio_memory_settings_desc": "Used to estimate whether models fit on your machine in the model browser.",
+  "think_button_label": "Think",
+  "@think_button_label": {
+    "description": "Label for the reasoning-toggle button shown for reasoning-capable models"
+  },
+  "reasoning_effort_low": "Low",
+  "@reasoning_effort_low": {
+    "description": "Low reasoning effort level"
+  },
+  "reasoning_effort_medium": "Medium",
+  "@reasoning_effort_medium": {
+    "description": "Medium reasoning effort level"
+  },
+  "reasoning_effort_high": "High",
+  "@reasoning_effort_high": {
+    "description": "High reasoning effort level"
+  }
 }

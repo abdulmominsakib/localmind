@@ -32,6 +32,7 @@ import '../utils/attachment_helpers.dart';
 import 'chat_mcp_providers.dart';
 import 'chat_origin_provider.dart';
 import 'chat_params_providers.dart';
+import 'chat_reasoning_providers.dart';
 import 'chat_service_providers.dart';
 import 'message_selection_provider.dart';
 import 'model_selection_providers.dart';
@@ -1241,26 +1242,33 @@ class ChatNotifier extends Notifier<ChatState> {
     final settings = ref.read(settingsProvider);
     final messages = <Message>[];
 
+    final reasoningConfig = ref.read(chatReasoningConfigProvider);
+    final shouldDisableThinking =
+        (selectedModel?.supportsReasoning ?? false) && !reasoningConfig.enabled;
+
     final personaPrompt = _getPersonaSystemPrompt();
-    if (personaPrompt != null) {
+    var systemContent = personaPrompt ??
+        (settings.showSystemMessages
+            ? 'You are LocalMind, a helpful AI assistant. Provide clear, accurate, and concise responses.'
+            : null);
+
+    if (shouldDisableThinking) {
+      // Hybrid reasoning models (Qwen3 and similar) key off this literal
+      // token in the prompt to skip their <think> block — send it whenever
+      // the model supports reasoning and the user has switched Think off,
+      // alongside the request-level reasoning-disable fields.
+      systemContent = (systemContent == null || systemContent.trim().isEmpty)
+          ? '/no_think'
+          : '$systemContent\n/no_think';
+    }
+
+    if (systemContent != null) {
       messages.add(
         Message(
           id: 'system-$_currentConversationId',
           conversationId: _currentConversationId ?? '',
           role: MessageRole.system,
-          content: personaPrompt,
-          createdAt: DateTime.now(),
-          status: MessageStatus.complete,
-        ),
-      );
-    } else if (settings.showSystemMessages) {
-      messages.add(
-        Message(
-          id: 'system-default-$_currentConversationId',
-          conversationId: _currentConversationId ?? '',
-          role: MessageRole.system,
-          content:
-              'You are LocalMind, a helpful AI assistant. Provide clear, accurate, and concise responses.',
+          content: systemContent,
           createdAt: DateTime.now(),
           status: MessageStatus.complete,
         ),

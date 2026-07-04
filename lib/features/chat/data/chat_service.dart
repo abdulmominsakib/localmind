@@ -219,6 +219,7 @@ class LMStudioChatService implements ChatService {
     if (params.repeatPenalty != null) {
       body['repeat_penalty'] = params.repeatPenalty;
     }
+    _applyReasoningControl(body, params);
 
     if (tools != null && tools.isNotEmpty) {
       final toolsPayload = toolAdapter.buildToolDefinitionPayload(tools);
@@ -471,7 +472,7 @@ class OpenAICompatibleChatService implements ChatService {
       last['content'] = (last['content'] as String?) ?? '';
     }
 
-    final body = {
+    final body = <String, dynamic>{
       'model': modelId,
       'messages': apiMessages,
       'temperature': params.temperature,
@@ -479,6 +480,7 @@ class OpenAICompatibleChatService implements ChatService {
       'max_tokens': params.maxTokens,
       'stream': true,
     };
+    _applyReasoningControl(body, params);
 
     if (tools != null && tools.isNotEmpty) {
       final toolsPayload = toolAdapter.buildToolDefinitionPayload(tools);
@@ -689,7 +691,7 @@ class OllamaChatService implements ChatService {
     _cancelToken = CancelToken();
     final toolAdapter = OllamaToolAdapter();
 
-    final body = {
+    final body = <String, dynamic>{
       'model': modelId,
       'messages': messages.map(_messageToApiMap).toList(),
       'stream': true,
@@ -699,6 +701,7 @@ class OllamaChatService implements ChatService {
         'num_predict': params.maxTokens,
       },
     };
+    _applyReasoningControl(body, params);
 
     if (tools != null && tools.isNotEmpty) {
       final toolsPayload = toolAdapter.buildToolDefinitionPayload(tools);
@@ -811,7 +814,7 @@ class OpenRouterChatService implements ChatService {
     _cancelToken = CancelToken();
     final toolAdapter = OpenRouterToolAdapter();
 
-    final body = {
+    final body = <String, dynamic>{
       'model': modelId,
       'messages': messages.map(_messageToApiMap).toList(),
       'temperature': params.temperature,
@@ -819,6 +822,7 @@ class OpenRouterChatService implements ChatService {
       'max_tokens': params.maxTokens,
       'stream': true,
     };
+    _applyReasoningControl(body, params);
 
     if (tools != null && tools.isNotEmpty) {
       final toolsPayload = toolAdapter.buildToolDefinitionPayload(tools);
@@ -1013,6 +1017,30 @@ class OpenRouterChatService implements ChatService {
   void cancelStream() {
     _timeoutTimer?.cancel();
     _cancelToken?.cancel('User cancelled');
+  }
+}
+
+/// Applies the Think toggle to a request body. Different local/hosted
+/// backends expose "disable reasoning for this hybrid model" a handful of
+/// different ways (a `reasoning` object, a top-level `reasoning_effort`,
+/// llama.cpp's `enable_thinking`, Ollama's `think`) — send all of them so
+/// whichever one the connected server actually understands takes effect.
+/// No-op when [ChatParameters.reasoningEnabled] is null, i.e. the active
+/// model doesn't support reasoning.
+void _applyReasoningControl(Map<String, dynamic> body, ChatParameters params) {
+  if (params.reasoningEnabled == false) {
+    body['reasoning'] = {
+      'enabled': false,
+      'type': 'disabled',
+      'effort': 'none',
+    };
+    body['reasoning_effort'] = 'none';
+    body['think'] = false;
+    body['enable_thinking'] = false;
+  } else if (params.reasoningEnabled == true) {
+    final effort = params.reasoningEffort.apiValue;
+    body['reasoning'] = {'effort': effort};
+    body['reasoning_effort'] = effort;
   }
 }
 

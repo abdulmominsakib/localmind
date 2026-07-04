@@ -5,10 +5,16 @@ import 'package:localmind/features/conversations/providers/conversation_provider
 import 'package:localmind/features/personas/providers/personas_providers.dart';
 import 'package:localmind/features/personas/utils/persona_prompt_utils.dart';
 import '../data/models/chat_parameters.dart';
+import 'chat_reasoning_providers.dart';
+import 'model_selection_providers.dart';
 
 final chatParamsProvider = Provider<ChatParameters>((ref) {
   final settings = ref.watch(settingsProvider);
   final activeConv = ref.watch(conv.activeConversationProvider);
+  final selectedModel = ref.watch(selectedModelProvider);
+  final reasoningConfig = ref.watch(chatReasoningConfigProvider);
+  final reasoningEnabled =
+      (selectedModel?.supportsReasoning ?? false) ? reasoningConfig.enabled : null;
 
   double temperature = settings.temperature;
   double topP = settings.topP;
@@ -61,5 +67,7 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
     maxTokens: maxTokens,
     contextLength: contextLength,
     systemPrompt: systemPrompt,
+    reasoningEnabled: reasoningEnabled,
+    reasoningEffort: reasoningConfig.effort,
   );
 });

@@ -2644,4 +2644,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get lm_studio_memory_settings_desc =>
       'Used to estimate whether models fit on your machine in the model browser.';
+
+  @override
+  String get think_button_label => 'Think';
+
+  @override
+  String get reasoning_effort_low => 'Low';
+
+  @override
+  String get reasoning_effort_medium => 'Medium';
+
+  @override
+  String get reasoning_effort_high => 'High';
 }
