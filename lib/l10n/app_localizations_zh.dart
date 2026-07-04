@@ -340,6 +340,20 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get smart_replies_use_persona => 'Use persona in smart replies';
+
+  @override
+  String get smart_replies_use_persona_desc =>
+      'Suggested replies match the tone of the active persona instead of a generic assistant';
+
+  @override
+  String get keep_persona_on_new_chat => 'Keep persona on new chat';
+
+  @override
+  String get keep_persona_on_new_chat_desc =>
+      'Don\'t clear the selected persona(s) after starting a new chat';
+
+  @override
   String get clear_conversation_title => '清除对话吗？';
 
   @override

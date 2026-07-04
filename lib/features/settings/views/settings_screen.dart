@@ -253,6 +253,14 @@ class SettingsViews extends ConsumerWidget {
                         .setResumeLastChat(value),
                   ),
                   _ToggleSetting(
+                    label: l10n.keep_persona_on_new_chat,
+                    description: l10n.keep_persona_on_new_chat_desc,
+                    value: settings.keepPersonaOnNewChat,
+                    onChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setKeepPersonaOnNewChat(value),
+                  ),
+                  _ToggleSetting(
                     label: l10n.enable_image_compression,
                     description: l10n.enable_image_compression_desc,
                     value: settings.imageCompressionEnabled,
@@ -282,6 +290,15 @@ class SettingsViews extends ConsumerWidget {
                         .read(settingsProvider.notifier)
                         .setSmartReplyEnabled(value),
                   ),
+                  if (settings.smartReplyEnabled)
+                    _ToggleSetting(
+                      label: l10n.smart_replies_use_persona,
+                      description: l10n.smart_replies_use_persona_desc,
+                      value: settings.smartRepliesUsePersona,
+                      onChanged: (value) => ref
+                          .read(settingsProvider.notifier)
+                          .setSmartRepliesUsePersona(value),
+                    ),
                   _ToggleSetting(
                     label: l10n.ai_user_response_enabled,
                     value: settings.aiUserResponseEnabled,

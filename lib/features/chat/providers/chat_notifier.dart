@@ -652,7 +652,9 @@ class ChatNotifier extends Notifier<ChatState> {
             .read(chatMcpConfigProvider.notifier)
             .setEnabled(settings.newChatMcpEnabled);
 
-        ref.read(selectedPersonasProvider.notifier).clear();
+        if (!settings.keepPersonaOnNewChat) {
+          ref.read(selectedPersonasProvider.notifier).clear();
+        }
       }
     }
 

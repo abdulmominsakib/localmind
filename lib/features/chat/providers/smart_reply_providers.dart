@@ -50,6 +50,8 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
         modelId: selectedModel.id,
         messages: messages,
         params: chatParams,
+        personaSystemPrompt:
+            settings.smartRepliesUsePersona ? chatParams.systemPrompt : null,
       );
       if (!ref.mounted) return [];
     }

@@ -121,6 +121,10 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(imageCompressionEnabled: value));
   void setImageCompressionLevel(ImageCompressionLevel value) =>
       _update(state.copyWith(imageCompressionLevel: value));
+  void setSmartRepliesUsePersona(bool value) =>
+      _update(state.copyWith(smartRepliesUsePersona: value));
+  void setKeepPersonaOnNewChat(bool value) =>
+      _update(state.copyWith(keepPersonaOnNewChat: value));
 
   Future<void> _update(AppSettings updated) async {
     state = updated;

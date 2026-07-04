@@ -731,6 +731,30 @@ abstract class AppLocalizations {
   /// **'{count} tokens'**
   String total_tokens_count(int count);
 
+  /// Settings toggle to include persona system prompt when generating smart reply suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'Use persona in smart replies'**
+  String get smart_replies_use_persona;
+
+  /// Description for the smart-replies-use-persona toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested replies match the tone of the active persona instead of a generic assistant'**
+  String get smart_replies_use_persona_desc;
+
+  /// Settings toggle to not clear persona selection when starting a new chat
+  ///
+  /// In en, this message translates to:
+  /// **'Keep persona on new chat'**
+  String get keep_persona_on_new_chat;
+
+  /// Description for the keep-persona-on-new-chat toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t clear the selected persona(s) after starting a new chat'**
+  String get keep_persona_on_new_chat_desc;
+
   /// Clear conversation dialog title
   ///
   /// In en, this message translates to:

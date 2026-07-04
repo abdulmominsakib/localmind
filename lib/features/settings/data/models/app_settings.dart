@@ -49,6 +49,8 @@ class AppSettings {
   final bool resumeLastChat;
   final bool imageCompressionEnabled;
   final ImageCompressionLevel imageCompressionLevel;
+  final bool smartRepliesUsePersona;
+  final bool keepPersonaOnNewChat;
 
   AppSettings({
     this.temperature = 0.7,
@@ -88,6 +90,8 @@ class AppSettings {
     this.resumeLastChat = true,
     this.imageCompressionEnabled = true,
     this.imageCompressionLevel = ImageCompressionLevel.medium,
+    this.smartRepliesUsePersona = false,
+    this.keepPersonaOnNewChat = false,
   });
 
   AppSettings copyWith({
@@ -128,6 +132,8 @@ class AppSettings {
     bool? resumeLastChat,
     bool? imageCompressionEnabled,
     ImageCompressionLevel? imageCompressionLevel,
+    bool? smartRepliesUsePersona,
+    bool? keepPersonaOnNewChat,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -182,6 +188,9 @@ class AppSettings {
           imageCompressionEnabled ?? this.imageCompressionEnabled,
       imageCompressionLevel:
           imageCompressionLevel ?? this.imageCompressionLevel,
+      smartRepliesUsePersona:
+          smartRepliesUsePersona ?? this.smartRepliesUsePersona,
+      keepPersonaOnNewChat: keepPersonaOnNewChat ?? this.keepPersonaOnNewChat,
     );
   }
 
@@ -224,6 +233,8 @@ class AppSettings {
       'resumeLastChat': resumeLastChat,
       'imageCompressionEnabled': imageCompressionEnabled,
       'imageCompressionLevel': imageCompressionLevel.name,
+      'smartRepliesUsePersona': smartRepliesUsePersona,
+      'keepPersonaOnNewChat': keepPersonaOnNewChat,
     };
   }
 
@@ -267,6 +278,8 @@ class AppSettings {
       imageCompressionEnabled: map['imageCompressionEnabled'] ?? true,
       imageCompressionLevel:
           _parseImageCompressionLevel(map['imageCompressionLevel']),
+      smartRepliesUsePersona: map['smartRepliesUsePersona'] ?? false,
+      keepPersonaOnNewChat: map['keepPersonaOnNewChat'] ?? false,
     );
   }
 

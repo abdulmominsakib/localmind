@@ -466,6 +466,22 @@
       "count": {"type": "int"}
     }
   },
+  "smart_replies_use_persona": "Use persona in smart replies",
+  "@smart_replies_use_persona": {
+    "description": "Settings toggle to include persona system prompt when generating smart reply suggestions"
+  },
+  "smart_replies_use_persona_desc": "Suggested replies match the tone of the active persona instead of a generic assistant",
+  "@smart_replies_use_persona_desc": {
+    "description": "Description for the smart-replies-use-persona toggle"
+  },
+  "keep_persona_on_new_chat": "Keep persona on new chat",
+  "@keep_persona_on_new_chat": {
+    "description": "Settings toggle to not clear persona selection when starting a new chat"
+  },
+  "keep_persona_on_new_chat_desc": "Don't clear the selected persona(s) after starting a new chat",
+  "@keep_persona_on_new_chat_desc": {
+    "description": "Description for the keep-persona-on-new-chat toggle"
+  },
   "clear_conversation_title": "Clear conversation?",
   "@clear_conversation_title": {
     "description": "Clear conversation dialog title"
