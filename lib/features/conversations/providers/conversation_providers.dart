@@ -565,10 +565,12 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     final db = ref.read(databaseProvider);
     final conversations = state.value ?? [];
     final existing = conversations.firstWhere((c) => c.id == id);
+    // Moving folders is a metadata edit, not conversation activity — don't
+    // bump updatedAt, since that's used as the "last modified" sort/section
+    // date.
     final updated = existing.copyWith(
       folderId: folderId,
       clearFolderId: folderId == null,
-      updatedAt: DateTime.now(),
     );
 
     final query = db.conversationBox.query(ConversationEntity_.id.equals(id)).build();

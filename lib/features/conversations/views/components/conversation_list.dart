@@ -108,7 +108,7 @@ class ConversationList extends ConsumerWidget {
                   );
                 },
                 onMoveToFolder: () {
-                  _showMoveToFolderSheet(context, ref, l10n, conversation);
+                  showMoveToFolderSheet(context, ref, l10n, conversation);
                 },
                 onExport: () {
                   _exportConversation(context, ref, l10n, conversation);
@@ -169,50 +169,6 @@ class ConversationList extends ConsumerWidget {
     );
   }
 
-  void _showMoveToFolderSheet(
-    BuildContext context,
-    WidgetRef ref,
-    AppLocalizations l10n,
-    Conversation conversation,
-  ) {
-    final folders = ref.read(conversationFoldersProvider).value ?? [];
-
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.folder_off_outlined),
-                title: Text(l10n.remove_from_folder),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  await ref
-                      .read(conversationsProvider.notifier)
-                      .moveConversationToFolder(conversation.id, null);
-                },
-              ),
-              ...folders.map(
-                (folder) => ListTile(
-                  leading: const Icon(Icons.folder_outlined),
-                  title: Text(folder.name),
-                  onTap: () async {
-                    Navigator.pop(ctx);
-                    await ref
-                        .read(conversationsProvider.notifier)
-                        .moveConversationToFolder(conversation.id, folder.id);
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Future<void> _exportConversation(
     BuildContext context,
     WidgetRef ref,
@@ -229,6 +185,52 @@ class ConversationList extends ConsumerWidget {
       subject: conversation.title,
     );
   }
+}
+
+/// Shown from a single conversation's overflow menu (in history, or from
+/// the chat screen itself) to move it into a folder or remove it from one.
+void showMoveToFolderSheet(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+  Conversation conversation,
+) {
+  final folders = ref.read(conversationFoldersProvider).value ?? [];
+
+  showModalBottomSheet<void>(
+    context: context,
+    builder: (ctx) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.folder_off_outlined),
+              title: Text(l10n.remove_from_folder),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await ref
+                    .read(conversationsProvider.notifier)
+                    .moveConversationToFolder(conversation.id, null);
+              },
+            ),
+            ...folders.map(
+              (folder) => ListTile(
+                leading: const Icon(Icons.folder_outlined),
+                title: Text(folder.name),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ref
+                      .read(conversationsProvider.notifier)
+                      .moveConversationToFolder(conversation.id, folder.id);
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }
 
 Future<void> showBulkMoveToFolderSheet(

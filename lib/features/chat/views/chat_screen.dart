@@ -17,6 +17,7 @@ import 'package:localmind/core/services/share_service.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
     as conv;
+import 'package:localmind/features/conversations/views/components/conversation_list.dart';
 import 'package:localmind/features/conversations/views/components/rename_conversation_dialog.dart';
 import 'package:localmind/features/models/screens/model_picker_sheet.dart';
 import 'package:localmind/features/personas/providers/personas_providers.dart';
@@ -128,6 +129,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         final activeConv = ref.read(conv.activeConversationProvider);
         if (activeConv != null) {
           _showRenameDialog(context, activeConv);
+        }
+      case 'move_to_folder':
+        final activeConv = ref.read(conv.activeConversationProvider);
+        if (activeConv != null) {
+          showMoveToFolderSheet(
+            context,
+            ref,
+            AppLocalizations.of(context)!,
+            activeConv,
+          );
         }
       case 'export_chat':
         _exportConversation(context);
@@ -698,7 +709,7 @@ class _ScreenAppBar extends ConsumerWidget {
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
-              if (activeConversation != null && !isTemporary)
+              if (activeConversation != null && !isTemporary) ...[
                 PopupMenuItem(
                   value: 'rename',
                   child: ListTile(
@@ -707,6 +718,15 @@ class _ScreenAppBar extends ConsumerWidget {
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
+                PopupMenuItem(
+                  value: 'move_to_folder',
+                  child: ListTile(
+                    leading: const Icon(Icons.folder_outlined),
+                    title: Text(l10n.move_to_folder),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
               if (hasMessages) ...[
                 PopupMenuItem(
                   value: 'export_chat',
