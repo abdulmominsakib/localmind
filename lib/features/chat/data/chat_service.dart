@@ -460,7 +460,13 @@ class LMStudioChatService implements ChatService {
       'max_tokens': params.maxTokens,
       'stream': false,
       'stop': LmStudioPromptFormatter.turnBoundaryStopSequences,
+      // Raw completion (no chat template) has no built-in turn boundary to
+      // stop degenerate loops the way chat mode does, so always send a
+      // repeat penalty here even if the user hasn't configured one.
+      'repeat_penalty': params.repeatPenalty ?? 1.1,
     };
+    if (params.topK != null) body['top_k'] = params.topK;
+    if (params.minP != null) body['min_p'] = params.minP;
 
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -517,7 +523,13 @@ class LMStudioChatService implements ChatService {
       'max_tokens': params.maxTokens,
       'stream': true,
       'stop': LmStudioPromptFormatter.turnBoundaryStopSequences,
+      // Raw completion (no chat template) has no built-in turn boundary to
+      // stop degenerate loops the way chat mode does, so always send a
+      // repeat penalty here even if the user hasn't configured one.
+      'repeat_penalty': params.repeatPenalty ?? 1.1,
     };
+    if (params.topK != null) body['top_k'] = params.topK;
+    if (params.minP != null) body['min_p'] = params.minP;
 
     final endpoint = '${server.baseUrl}/api/v0/completions';
 
