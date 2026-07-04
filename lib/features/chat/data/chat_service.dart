@@ -19,7 +19,6 @@ import 'tools/adapters/openai_tool_adapter.dart';
 import 'tools/adapters/openrouter_tool_adapter.dart';
 import 'tools/adapters/ollama_tool_adapter.dart';
 import 'chat_api_error.dart';
-import 'lm_studio_prompt_formatter.dart';
 
 abstract class ChatService {
   Stream<ChatResponse> sendMessage({
@@ -156,8 +155,6 @@ class LMStudioChatService implements ChatService {
   final bool imageCompressionEnabled;
   final ImageCompressionLevel imageCompressionLevel;
   CancelToken? _cancelToken;
-  late final LmStudioPromptFormatter _promptFormatter =
-      LmStudioPromptFormatter(_dio);
 
   LMStudioChatService(
     this._dio, {
@@ -177,365 +174,57 @@ class LMStudioChatService implements ChatService {
     bool continueGeneration = false,
   }) async* {
     _cancelToken = CancelToken();
+    final toolAdapter = OpenAiToolAdapter();
 
-    if (continueGeneration) {
-      yield* _streamV0Completions(
-        server: server,
-        modelId: modelId,
-        messages: messages,
-        params: params,
-        mode: LmStudioPromptMode.continueAssistant,
-      );
-      return;
+    final apiMessages = <Map<String, dynamic>>[];
+    for (final m in messages) {
+      apiMessages.add(await _messageToApiMapWithImages(m));
     }
 
-    final dynamic formattedInput = await _formatInputWithImages(messages);
+    // Strip trailing empty assistant messages to avoid "prefill incompatible
+    // with enable_thinking" errors from servers running thinking models.
+    if (!continueGeneration) {
+      while (apiMessages.isNotEmpty &&
+          apiMessages.last['role'] == 'assistant' &&
+          (apiMessages.last['content'] == null ||
+              (apiMessages.last['content'] is String &&
+                  (apiMessages.last['content'] as String).isEmpty))) {
+        apiMessages.removeLast();
+      }
+    } else if (apiMessages.isNotEmpty &&
+        apiMessages.last['role'] == 'assistant') {
+      // Keep the assistant prefill for continuation; ensure content is a
+      // string (the model continues from exactly where this cuts off, and
+      // the response contains only the newly generated continuation text).
+      final last = apiMessages.last;
+      last['content'] = (last['content'] as String?) ?? '';
+    }
 
     final body = <String, dynamic>{
       'model': modelId,
-      'input': formattedInput,
+      'messages': apiMessages,
       'temperature': params.temperature,
       'top_p': params.topP,
-      'max_output_tokens': params.maxTokens,
+      'max_tokens': params.maxTokens,
       'stream': true,
-      'store': true,
     };
 
-    if (params.systemPrompt != null && params.systemPrompt!.isNotEmpty) {
-      body['system_prompt'] = params.systemPrompt;
-    }
     if (params.topK != null) body['top_k'] = params.topK;
     if (params.minP != null) body['min_p'] = params.minP;
     if (params.repeatPenalty != null) {
       body['repeat_penalty'] = params.repeatPenalty;
     }
-    if (params.reasoningLevel != null) {
-      body['reasoning'] = params.reasoningLevel;
-    }
-    if (integrations != null && integrations.isNotEmpty) {
-      body['integrations'] = integrations.map((i) => i.toJson()).toList();
-    }
-    if (previousResponseId != null) {
-      body['previous_response_id'] = previousResponseId;
+
+    if (tools != null && tools.isNotEmpty) {
+      final toolsPayload = toolAdapter.buildToolDefinitionPayload(tools);
+      if (toolsPayload.containsKey('tools')) {
+        body['tools'] = toolsPayload['tools'];
+      }
     }
 
     try {
       final response = await _dio.post<ResponseBody>(
         server.chatEndpoint,
-        data: body,
-        options: Options(
-          responseType: ResponseType.stream,
-          headers: {
-            'Content-Type': 'application/json',
-            ...buildServerAuthHeaders(server),
-          },
-        ),
-        cancelToken: _cancelToken,
-      );
-
-      final stream = response.data!.stream.cast<List<int>>().transform(
-        utf8.decoder,
-      );
-      String buffer = '';
-      String currentEventType = '';
-
-      await for (final chunk in stream) {
-        buffer += chunk;
-        final lines = buffer.split('\n');
-        buffer = lines.removeLast();
-
-        for (final line in lines) {
-          final trimmedLine = line.trim();
-          if (trimmedLine.isEmpty) continue;
-
-          if (trimmedLine.startsWith('event: ')) {
-            currentEventType = trimmedLine.substring(7);
-          } else if (trimmedLine.startsWith('data: ')) {
-            final data = trimmedLine.substring(6);
-            if (data.isEmpty) continue;
-
-            try {
-              final json = jsonDecode(data) as Map<String, dynamic>;
-              await for (final response in _handleSseEvent(
-                currentEventType,
-                json,
-              )) {
-                yield response;
-              }
-              currentEventType = '';
-            } catch (e) {
-              currentEventType = '';
-            }
-          }
-        }
-      }
-    } catch (e) {
-      Log.error('LMStudio connection error: $e');
-      yield ChatResponse(
-        type: ChatResponseType.error,
-        content: _handleChatError(e),
-      );
-      return;
-    }
-    yield const ChatResponse(type: ChatResponseType.done);
-  }
-
-  Stream<ChatResponse> _handleSseEvent(
-    String eventType,
-    Map<String, dynamic> json,
-  ) async* {
-    switch (eventType) {
-      case 'message.delta':
-        final content = json['content'] as String?;
-        if (content != null && content.isNotEmpty) {
-          yield ChatResponse(type: ChatResponseType.message, content: content);
-        }
-        break;
-
-      case 'reasoning.delta':
-        final content = json['content'] as String?;
-        if (content != null && content.isNotEmpty) {
-          yield ChatResponse(
-            type: ChatResponseType.reasoning,
-            reasoningContent: content,
-          );
-        }
-        break;
-
-      case 'tool_call.start':
-        final tool = json['tool'] as String?;
-        final providerInfo = json['provider_info'] as Map<String, dynamic>?;
-        if (tool != null) {
-          yield ChatResponse(
-            type: ChatResponseType.toolCall,
-            toolCall: ToolCallData(
-              tool: tool,
-              arguments: {},
-              providerInfo: providerInfo != null
-                  ? ToolProviderInfo(
-                      type: providerInfo['type'] as String? ?? '',
-                      pluginId: providerInfo['plugin_id'] as String?,
-                      serverLabel: providerInfo['server_label'] as String?,
-                    )
-                  : null,
-            ),
-          );
-        }
-        break;
-
-      case 'tool_call.arguments':
-        final tool = json['tool'] as String?;
-        final arguments = json['arguments'] as Map<String, dynamic>?;
-        final providerInfo = json['provider_info'] as Map<String, dynamic>?;
-        if (tool != null && arguments != null) {
-          yield ChatResponse(
-            type: ChatResponseType.toolCall,
-            toolCall: ToolCallData(
-              tool: tool,
-              arguments: arguments,
-              providerInfo: providerInfo != null
-                  ? ToolProviderInfo(
-                      type: providerInfo['type'] as String? ?? '',
-                      pluginId: providerInfo['plugin_id'] as String?,
-                      serverLabel: providerInfo['server_label'] as String?,
-                    )
-                  : null,
-            ),
-          );
-        }
-        break;
-
-      case 'tool_call.success':
-        final tool = json['tool'] as String?;
-        final arguments = json['arguments'] as Map<String, dynamic>?;
-        final output = json['output'] as String?;
-        final providerInfo = json['provider_info'] as Map<String, dynamic>?;
-        if (tool != null) {
-          yield ChatResponse(
-            type: ChatResponseType.toolCall,
-            toolCall: ToolCallData(
-              tool: tool,
-              arguments: arguments ?? {},
-              output: output,
-              providerInfo: providerInfo != null
-                  ? ToolProviderInfo(
-                      type: providerInfo['type'] as String? ?? '',
-                      pluginId: providerInfo['plugin_id'] as String?,
-                      serverLabel: providerInfo['server_label'] as String?,
-                    )
-                  : null,
-            ),
-          );
-        }
-        break;
-
-      case 'tool_call.failure':
-        final reason = json['reason'] as String?;
-        final metadata = json['metadata'] as Map<String, dynamic>?;
-        if (reason != null) {
-          final providerInfo =
-              metadata?['provider_info'] as Map<String, dynamic>?;
-          yield ChatResponse(
-            type: ChatResponseType.invalidToolCall,
-            invalidToolCall: InvalidToolCallData(
-              reason: reason,
-              metadataType: metadata?['type'] as String?,
-              toolName: metadata?['tool_name'] as String?,
-              arguments: metadata?['arguments'] as Map<String, dynamic>?,
-              providerInfo: providerInfo != null
-                  ? ToolProviderInfo(
-                      type: providerInfo['type'] as String? ?? '',
-                      pluginId: providerInfo['plugin_id'] as String?,
-                      serverLabel: providerInfo['server_label'] as String?,
-                    )
-                  : null,
-            ),
-          );
-        }
-        break;
-
-      case 'chat.end':
-        final result = json['result'] as Map<String, dynamic>?;
-        if (result != null) {
-          final stats = result['stats'] as Map<String, dynamic>?;
-          yield ChatResponse(
-            type: ChatResponseType.done,
-            stats: stats != null
-                ? ChatStats(
-                    inputTokens: stats['input_tokens'] as int? ?? 0,
-                    totalOutputTokens:
-                        stats['total_output_tokens'] as int? ?? 0,
-                    reasoningOutputTokens:
-                        stats['reasoning_output_tokens'] as int?,
-                    tokensPerSecond: (stats['tokens_per_second'] as num?)
-                        ?.toDouble(),
-                    timeToFirstTokenSeconds:
-                        (stats['time_to_first_token_seconds'] as num?)
-                            ?.toDouble(),
-                    modelLoadTimeSeconds:
-                        (stats['model_load_time_seconds'] as num?)?.toDouble(),
-                  )
-                : null,
-          );
-        }
-        break;
-
-      case 'error':
-        final error = json['error'] as Map<String, dynamic>?;
-        if (error != null) {
-          final parsed = ChatApiError.fromErrorMap(error);
-          yield ChatResponse(
-            type: ChatResponseType.error,
-            content: parsed?.encode() ?? error['message']?.toString() ?? 'Unknown error',
-          );
-        }
-        break;
-    }
-  }
-
-  /// Single-shot `/api/v0/completions` for auxiliary generation (e.g. AI user turn).
-  Future<String?> completeWithV0Completions({
-    required Server server,
-    required String modelId,
-    required List<Message> messages,
-    required ChatParameters params,
-    required LmStudioPromptMode mode,
-  }) async {
-    _cancelToken = CancelToken();
-
-    final prompt = await _promptFormatter.formatForCompletion(
-      baseUrl: server.baseUrl,
-      authHeaders: buildServerAuthHeaders(server),
-      modelId: modelId,
-      messages: messages,
-      mode: mode,
-      systemPrompt: params.systemPrompt,
-    );
-
-    final body = <String, dynamic>{
-      'model': modelId,
-      'prompt': prompt,
-      'temperature': params.temperature,
-      'top_p': params.topP,
-      'max_tokens': params.maxTokens,
-      'stream': false,
-      'stop': LmStudioPromptFormatter.turnBoundaryStopSequences,
-      // Raw completion (no chat template) has no built-in turn boundary to
-      // stop degenerate loops the way chat mode does, so always send a
-      // repeat penalty here even if the user hasn't configured one.
-      'repeat_penalty': params.repeatPenalty ?? 1.1,
-    };
-    if (params.topK != null) body['top_k'] = params.topK;
-    if (params.minP != null) body['min_p'] = params.minP;
-
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '${server.baseUrl}/api/v0/completions',
-        data: body,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            ...buildServerAuthHeaders(server),
-          },
-        ),
-        cancelToken: _cancelToken,
-      );
-
-      final data = response.data;
-      if (data == null) return null;
-      if (data['error'] != null) {
-        throw Exception(_formatApiErrorContent(data['error']));
-      }
-
-      final choices = data['choices'] as List<dynamic>?;
-      if (choices == null || choices.isEmpty) return null;
-      final first = choices[0] as Map<String, dynamic>?;
-      return first?['text']?.toString().trim();
-    } catch (e) {
-      Log.error('LMStudio v0 completion error: $e');
-      rethrow;
-    }
-  }
-
-  Stream<ChatResponse> _streamV0Completions({
-    required Server server,
-    required String modelId,
-    required List<Message> messages,
-    required ChatParameters params,
-    required LmStudioPromptMode mode,
-  }) async* {
-    _cancelToken = CancelToken();
-
-    final prompt = await _promptFormatter.formatForCompletion(
-      baseUrl: server.baseUrl,
-      authHeaders: buildServerAuthHeaders(server),
-      modelId: modelId,
-      messages: messages,
-      mode: mode,
-      systemPrompt: params.systemPrompt,
-    );
-
-    final body = <String, dynamic>{
-      'model': modelId,
-      'prompt': prompt,
-      'temperature': params.temperature,
-      'top_p': params.topP,
-      'max_tokens': params.maxTokens,
-      'stream': true,
-      'stop': LmStudioPromptFormatter.turnBoundaryStopSequences,
-      // Raw completion (no chat template) has no built-in turn boundary to
-      // stop degenerate loops the way chat mode does, so always send a
-      // repeat penalty here even if the user hasn't configured one.
-      'repeat_penalty': params.repeatPenalty ?? 1.1,
-    };
-    if (params.topK != null) body['top_k'] = params.topK;
-    if (params.minP != null) body['min_p'] = params.minP;
-
-    final endpoint = '${server.baseUrl}/api/v0/completions';
-
-    try {
-      final response = await _dio.post<ResponseBody>(
-        endpoint,
         data: body,
         options: Options(
           responseType: ResponseType.stream,
@@ -561,6 +250,15 @@ class LMStudioChatService implements ChatService {
           if (!line.startsWith('data: ')) continue;
           final data = line.substring(6);
           if (data == '[DONE]') {
+            for (final call in toolAdapter.takeCompletedCalls()) {
+              yield ChatResponse(
+                type: ChatResponseType.toolCall,
+                toolCall: ToolCallData(
+                  tool: call.name,
+                  arguments: call.arguments,
+                ),
+              );
+            }
             yield const ChatResponse(type: ChatResponseType.done);
             return;
           }
@@ -568,6 +266,8 @@ class LMStudioChatService implements ChatService {
 
           try {
             final json = jsonDecode(data) as Map<String, dynamic>;
+            toolAdapter.consumeDynamicChunk(json);
+
             if (json['error'] != null) {
               yield ChatResponse(
                 type: ChatResponseType.error,
@@ -583,17 +283,11 @@ class LMStudioChatService implements ChatService {
             if (firstChoice == null) continue;
 
             final delta = firstChoice['delta'];
-            final text = firstChoice['text'] as String?;
-            String? content;
-            String? reasoning;
+            if (delta == null || delta is! Map<String, dynamic>) continue;
 
-            if (delta is Map<String, dynamic>) {
-              content = (delta['content'] ?? delta['text']) as String?;
-              reasoning =
-                  (delta['reasoning'] ?? delta['reasoning_content']) as String?;
-            } else if (text != null && text.isNotEmpty) {
-              content = text;
-            }
+            final content = (delta['content'] ?? delta['text']) as String?;
+            final reasoning =
+                (delta['reasoning'] ?? delta['reasoning_content']) as String?;
 
             if (content != null && content.isNotEmpty) {
               yield ChatResponse(type: ChatResponseType.message, content: content);
@@ -604,84 +298,116 @@ class LMStudioChatService implements ChatService {
                 reasoningContent: reasoning,
               );
             }
-          } catch (_) {}
+          } catch (e) {
+            Log.error('LMStudio chat parsing error: $e');
+          }
         }
       }
+
+      for (final call in toolAdapter.takeCompletedCalls()) {
+        yield ChatResponse(
+          type: ChatResponseType.toolCall,
+          toolCall: ToolCallData(
+            tool: call.name,
+            arguments: call.arguments,
+          ),
+        );
+      }
     } catch (e) {
-      Log.error('LMStudio v0 completions stream error: $e');
+      Log.error('LMStudio connection error: $e');
       yield ChatResponse(
         type: ChatResponseType.error,
         content: _handleChatError(e),
       );
       return;
     }
-
     yield const ChatResponse(type: ChatResponseType.done);
   }
 
-  Future<dynamic> _formatInputWithImages(List<Message> messages) async {
-    final formattedInputs = <Map<String, dynamic>>[];
-    for (final m in messages) {
-      if (m.role == MessageRole.system) continue;
+  Future<Map<String, dynamic>> _messageToApiMapWithImages(Message m) async {
+    var textContent = m.content;
+    final hasAttachments =
+        m.attachmentPaths != null && m.attachmentPaths!.isNotEmpty;
 
-      var textContent = m.content;
-      final hasAttachments =
-          m.attachmentPaths != null && m.attachmentPaths!.isNotEmpty;
-
-      if (hasAttachments) {
-        for (final path in m.attachmentPaths!) {
-          if (!AttachmentHelpers.isTextPath(path)) continue;
-          final text = await AttachmentHelpers.readTextFile(path);
-          if (text != null) {
-            textContent = AttachmentHelpers.appendTextAttachment(
-              textContent,
-              AttachmentHelpers.fileNameOf(path),
-              text,
-            );
-          }
-        }
-      }
-
-      final isEmptyAssistant =
-          m.role == MessageRole.assistant && textContent.trim().isEmpty;
-
-      if (textContent.trim().isNotEmpty && !isEmptyAssistant) {
-        formattedInputs.add({'type': 'text', 'content': textContent});
-      }
-
-      if (hasAttachments) {
-        for (final path in m.attachmentPaths!) {
-          if (!AttachmentHelpers.isImagePath(path)) continue;
-          try {
-            final file = File(path);
-            if (!await file.exists()) continue;
-            final fileBytes = await ImageUploadUtils.prepareImageBytes(
-              file,
-              enabled: imageCompressionEnabled,
-              level: imageCompressionLevel,
-            );
-            final base64Image = await Isolate.run(() {
-              try {
-                return base64Encode(fileBytes);
-              } catch (_) {
-                return null;
-              }
-            });
-
-            if (base64Image != null) {
-              final mimeType = 'image/png';
-              formattedInputs.add({
-                'type': 'image',
-                'data_url': 'data:$mimeType;base64,$base64Image',
-              });
-            }
-          } catch (e) {
-            Log.error('Failed to read attachment for LMStudio format: $e');
-          }
+    if (hasAttachments) {
+      for (final path in m.attachmentPaths!) {
+        if (!AttachmentHelpers.isTextPath(path)) continue;
+        final text = await AttachmentHelpers.readTextFile(path);
+        if (text != null) {
+          textContent = AttachmentHelpers.appendTextAttachment(
+            textContent,
+            AttachmentHelpers.fileNameOf(path),
+            text,
+          );
         }
       }
     }
-    return formattedInputs;
+
+    final imageParts = <Map<String, dynamic>>[];
+    if (hasAttachments) {
+      for (final path in m.attachmentPaths!) {
+        if (!AttachmentHelpers.isImagePath(path)) continue;
+        try {
+          final file = File(path);
+          if (!await file.exists()) continue;
+          final fileBytes = await ImageUploadUtils.prepareImageBytes(
+            file,
+            enabled: imageCompressionEnabled,
+            level: imageCompressionLevel,
+          );
+          final base64Image = await Isolate.run(() {
+            try {
+              return base64Encode(fileBytes);
+            } catch (_) {
+              return null;
+            }
+          });
+
+          if (base64Image != null) {
+            imageParts.add({
+              'type': 'image_url',
+              'image_url': {'url': 'data:image/png;base64,$base64Image'},
+            });
+          }
+        } catch (e) {
+          Log.error('Failed to read attachment for LMStudio format: $e');
+        }
+      }
+    }
+
+    dynamic content;
+    if (imageParts.isEmpty) {
+      content = textContent;
+    } else {
+      content = <Map<String, dynamic>>[
+        if (textContent.trim().isNotEmpty)
+          {'type': 'text', 'text': textContent},
+        ...imageParts,
+      ];
+    }
+
+    final map = <String, dynamic>{
+      'role': _roleToString(m.role),
+      'content': content,
+    };
+    if (m.role == MessageRole.tool && m.toolCallId != null) {
+      map['tool_call_id'] = m.toolCallId;
+    }
+    if (m.role == MessageRole.assistant &&
+        m.toolCalls != null &&
+        m.toolCalls!.isNotEmpty) {
+      map['tool_calls'] = m.toolCalls!.map((tc) {
+        return {
+          'id': tc.id,
+          'type': 'function',
+          'function': {
+            'name': tc.toolName,
+            'arguments': jsonEncode(tc.arguments),
+          },
+        };
+      }).toList();
+    }
+    return map;
   }
 
   @override

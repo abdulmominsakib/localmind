@@ -7,7 +7,6 @@ import '../../servers/data/models/server.dart';
 import 'chat_service.dart';
 import 'models/chat_parameters.dart';
 import 'models/message.dart';
-import 'lm_studio_prompt_formatter.dart';
 
 class SmartReplyService {
   Future<List<String>> suggestRepliesWithLLM({
@@ -118,17 +117,6 @@ class SmartReplyService {
   }) async {
     if (messages.isEmpty) return null;
 
-    if (server.type == ServerType.lmStudio &&
-        chatService is LMStudioChatService) {
-      return _generateUserMessageViaCompletions(
-        chatService: chatService,
-        server: server,
-        modelId: modelId,
-        messages: messages,
-        params: params,
-      );
-    }
-
     return _generateUserMessageViaChat(
       chatService: chatService,
       server: server,
@@ -136,37 +124,6 @@ class SmartReplyService {
       messages: messages,
       params: params,
     );
-  }
-
-  Future<String?> _generateUserMessageViaCompletions({
-    required LMStudioChatService chatService,
-    required Server server,
-    required String modelId,
-    required List<Message> messages,
-    required ChatParameters params,
-  }) async {
-    try {
-      final suggestionParams = params.copyWith(
-        temperature: 0.7,
-        maxTokens: 256,
-        systemPrompt:
-            'You write realistic user messages for chat conversations. '
-            'Output only the user message text with no quotes, labels, markdown, or explanation.',
-      );
-
-      final rawResponse = await chatService.completeWithV0Completions(
-        server: server,
-        modelId: modelId,
-        messages: messages,
-        params: suggestionParams,
-        mode: LmStudioPromptMode.generateUserTurn,
-      );
-
-      return _cleanGeneratedUserMessage(rawResponse);
-    } catch (e) {
-      Log.warning('AI user message generation failed: $e');
-      return null;
-    }
   }
 
   Future<String?> _generateUserMessageViaChat({

@@ -163,7 +163,7 @@ class Server {
   String get chatEndpoint {
     switch (type) {
       case ServerType.lmStudio:
-        return '$baseUrl/api/v1/chat';
+        return '$baseUrl/v1/chat/completions';
       case ServerType.openAICompatible:
         return '$baseUrl/v1/chat/completions';
       case ServerType.ollama:
