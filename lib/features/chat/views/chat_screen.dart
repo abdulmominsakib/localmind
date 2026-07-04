@@ -8,6 +8,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/routes/app_routes.dart';
+import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/core/utils/system_insets.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
@@ -911,6 +912,9 @@ class _ChatBottomBar extends ConsumerWidget {
     final isTemporary = ref.watch(chatProvider.select((s) => s.isTemporary));
     final keyboardIncognito = isTemporary &&
         ref.watch(settingsProvider.select((s) => s.tempChatKeyboardIncognito));
+    final totalTokenCount = ref.watch(
+      conv.activeConversationProvider.select((c) => c?.totalTokenCount),
+    );
 
     return Positioned(
       bottom: 0,
@@ -947,8 +951,124 @@ class _ChatBottomBar extends ConsumerWidget {
               },
               onStop: () => ref.read(chatProvider.notifier).cancelStream(),
             ),
+            if (totalTokenCount != null && keyboardBottomInset == 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 2, bottom: 6, right: 10),
+                child: Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: _TokenUsageIndicator(totalTokenCount: totalTokenCount),
+                ),
+              ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TokenUsageIndicator extends ConsumerWidget {
+  const _TokenUsageIndicator({required this.totalTokenCount});
+
+  final int totalTokenCount;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final liveContextLength =
+        ref.watch(activeModelContextLengthProvider).value;
+    final fallbackContextLength =
+        ref.watch(settingsProvider.select((s) => s.contextLength));
+    final int contextLength = liveContextLength ?? fallbackContextLength;
+    final ratio = contextLength > 0
+        ? (totalTokenCount / contextLength).clamp(0.0, 1.0)
+        : 0.0;
+    final ringColor = ratio >= 0.9 ? Colors.red : theme.colorScheme.primary;
+
+    return GestureDetector(
+      onTap: () => _showTokenUsageSheet(context, contextLength, ratio),
+      child: SizedBox(
+        height: 16,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                value: ratio,
+                strokeWidth: 2,
+                backgroundColor: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: 0.12),
+                valueColor: AlwaysStoppedAnimation<Color>(ringColor),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '${(ratio * 100).round()}%',
+              style: TextStyle(
+                fontSize: 10,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTokenUsageSheet(
+    BuildContext context,
+    int contextLength,
+    double ratio,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        final sheetTheme = Theme.of(ctx);
+        final isDark = sheetTheme.brightness == Brightness.dark;
+        final muted =
+            isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.token_usage_title,
+                  style: sheetTheme.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                _usageRow(l10n.total_tokens_label, '$totalTokenCount', muted),
+                _usageRow(l10n.context_length, '$contextLength', muted),
+                _usageRow(
+                  l10n.usage_percent_label,
+                  '${(ratio * 100).toStringAsFixed(1)}%',
+                  muted,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _usageRow(String label, String value, Color muted) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 13, color: muted)),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }

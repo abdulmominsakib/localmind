@@ -25,7 +25,6 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/models/enums.dart';
 
 import '../../../../core/providers/app_providers.dart';
-import '../../../conversations/providers/conversation_providers.dart' as conv;
 import '../../../servers/providers/server_providers.dart';
 
 import '../../../stt/providers/stt_providers.dart';
@@ -690,114 +689,6 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     );
   }
 
-  Widget _buildTokenUsageIndicator(ThemeData theme) {
-    final totalTokenCount = ref.watch(
-      conv.activeConversationProvider.select((c) => c?.totalTokenCount),
-    );
-    if (totalTokenCount == null) return const SizedBox.shrink();
-
-    final liveContextLength = ref.watch(activeModelContextLengthProvider).value;
-    final fallbackContextLength =
-        ref.watch(settingsProvider.select((s) => s.contextLength));
-    final int contextLength = liveContextLength ?? fallbackContextLength;
-    final ratio = contextLength > 0
-        ? (totalTokenCount / contextLength).clamp(0.0, 1.0)
-        : 0.0;
-    final isDark = theme.brightness == Brightness.dark;
-    final ringColor =
-        ratio >= 0.9 ? Colors.red : theme.colorScheme.primary;
-
-    return GestureDetector(
-      onTap: () => _showTokenUsageSheet(totalTokenCount, contextLength, ratio),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: SizedBox(
-          height: 16,
-          child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 12,
-              height: 12,
-              child: CircularProgressIndicator(
-                value: ratio,
-                strokeWidth: 2,
-                backgroundColor: (isDark ? Colors.white : Colors.black)
-                    .withValues(alpha: 0.12),
-                valueColor: AlwaysStoppedAnimation<Color>(ringColor),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '${(ratio * 100).round()}%',
-              style: TextStyle(
-                fontSize: 10,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-          ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showTokenUsageSheet(
-    int totalTokenCount,
-    int contextLength,
-    double ratio,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) {
-        final sheetTheme = Theme.of(ctx);
-        final isDark = sheetTheme.brightness == Brightness.dark;
-        final muted =
-            isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.token_usage_title,
-                  style: sheetTheme.textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                _usageRow(l10n.total_tokens_label, '$totalTokenCount', muted),
-                _usageRow(l10n.context_length, '$contextLength', muted),
-                _usageRow(
-                  l10n.usage_percent_label,
-                  '${(ratio * 100).toStringAsFixed(1)}%',
-                  muted,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _usageRow(String label, String value, Color muted) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: 13, color: muted)),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-  }
-
   String _effortLabel(ReasoningEffort effort) {
     final l10n = AppLocalizations.of(context)!;
     return switch (effort) {
@@ -961,129 +852,94 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
       _holdTriggered = false;
     }
 
-    return GestureDetector(
+    // Uses raw pointer callbacks instead of GestureDetector's onTapDown/
+    // onTapUp: those depend on winning the gesture arena, but a nested
+    // interactive descendant (the button's own tap target) can win instead,
+    // silently swallowing onTapUp and breaking the hold-timing logic below.
+    // Listener always fires regardless of who else claims the gesture.
+    return Listener(
 
-      onTapDown: (_) => handleTapDown(),
+      onPointerDown: (_) => handleTapDown(),
 
-      onTapUp: (_) => handleTapUp(),
+      onPointerUp: (_) => handleTapUp(),
 
-      onTapCancel: handleTapCancel,
+      onPointerCancel: (_) => handleTapCancel(),
 
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          AnimatedBuilder(
-            animation: _holdProgressController,
-            builder: (context, child) {
-              if (_holdProgressController.value <= 0) {
-                return const SizedBox(width: 44, height: 44);
-              }
-              return SizedBox(
-                width: 44,
-                height: 44,
-                child: CircularProgressIndicator(
-                  value: _holdProgressController.value,
-                  strokeWidth: 2.5,
-                  backgroundColor: Colors.transparent,
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
-                ),
-              );
-            },
-          ),
-
-      ScaleTransition(
-
-        scale: _sendButtonScale,
-
-        child: AnimatedContainer(
-
-          duration: const Duration(milliseconds: 200),
-
-          curve: Curves.easeOut,
-
-          width: 36,
-
-          height: 36,
-
-          decoration: BoxDecoration(
-
-            color: backgroundColor.withValues(
-
-              alpha: (canSend || widget.isStreaming) ? 1.0 : 0.2,
-
-            ),
-
-            shape: BoxShape.circle,
-
-          ),
-
-          child: IconButton(
-
-            padding: EdgeInsets.zero,
-
-            icon: AnimatedSwitcher(
-
-              duration: const Duration(milliseconds: 150),
-
-              transitionBuilder: (child, animation) {
-
-                return ScaleTransition(scale: animation, child: child);
-
-              },
-
-              child: _isGeneratingAiUser
-                  ? SizedBox(
-                      key: const ValueKey('ai-user-generating'),
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: iconColor,
-                      ),
-                    )
-                  : widget.isStreaming
-
-                  ? HugeIcon(
-
-                      icon: HugeIcons.strokeRoundedStop,
-
-                      key: const ValueKey('stop'),
-
-                      color: iconColor,
-
-                      size: 18,
-
-                    )
-
-                  : HugeIcon(
-
-                      icon: HugeIcons.strokeRoundedArrowUp01,
-
-                      key: ValueKey(canSend),
-
-                      color: iconColor,
-
-                      size: 18,
-
+      child: Tooltip(
+        message: widget.isStreaming
+            ? l10n.stop_generation_tooltip
+            : l10n.send_message_tooltip,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            AnimatedBuilder(
+              animation: _holdProgressController,
+              builder: (context, child) {
+                if (_holdProgressController.value <= 0) {
+                  return const SizedBox(width: 44, height: 44);
+                }
+                return SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: CircularProgressIndicator(
+                    value: _holdProgressController.value,
+                    strokeWidth: 2.5,
+                    backgroundColor: Colors.transparent,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      theme.colorScheme.primary,
                     ),
-
+                  ),
+                );
+              },
             ),
-
-            onPressed: () {},
-
-            tooltip: widget.isStreaming
-
-                ? l10n.stop_generation_tooltip
-
-                : l10n.send_message_tooltip,
-
-          ),
-
+            ScaleTransition(
+              scale: _sendButtonScale,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: backgroundColor.withValues(
+                    alpha: (canSend || widget.isStreaming) ? 1.0 : 0.2,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
+                    transitionBuilder: (child, animation) {
+                      return ScaleTransition(scale: animation, child: child);
+                    },
+                    child: _isGeneratingAiUser
+                        ? SizedBox(
+                            key: const ValueKey('ai-user-generating'),
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: iconColor,
+                            ),
+                          )
+                        : widget.isStreaming
+                            ? HugeIcon(
+                                icon: HugeIcons.strokeRoundedStop,
+                                key: const ValueKey('stop'),
+                                color: iconColor,
+                                size: 18,
+                              )
+                            : HugeIcon(
+                                icon: HugeIcons.strokeRoundedArrowUp01,
+                                key: ValueKey(canSend),
+                                color: iconColor,
+                                size: 18,
+                              ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-
-      ),
-        ],
       ),
 
     );
@@ -1482,11 +1338,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               ],
             ),
 
-            const SizedBox(height: 2),
-
-            _buildTokenUsageIndicator(theme),
-
-            const SizedBox(height: 2),
+            const SizedBox(height: 6),
 
             Row(
 
