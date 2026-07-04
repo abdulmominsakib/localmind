@@ -370,6 +370,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get insert_without_generating_tooltip => 'Insert without generating';
 
   @override
+  String get token_usage_title => 'Token Usage';
+
+  @override
+  String get total_tokens_label => 'Tokens used';
+
+  @override
+  String get usage_percent_label => 'Context used';
+
+  @override
   String get export_choice_title => 'Export';
 
   @override

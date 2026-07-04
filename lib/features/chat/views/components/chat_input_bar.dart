@@ -1240,10 +1240,6 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
                 const Spacer(),
 
-                _buildMicButton(isListening, theme),
-
-                const SizedBox(width: 6),
-
                 if (showAiUserButton) ...[
                   _buildAiUserButton(isConnected, theme),
                   const SizedBox(width: 6),
@@ -1253,6 +1249,10 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                   _buildRoleSwapButton(theme),
                   const SizedBox(width: 6),
                 ],
+
+                _buildMicButton(isListening, theme),
+
+                const SizedBox(width: 6),
 
                 _buildActionButton(canSend, theme),
 

@@ -1898,8 +1898,12 @@ class ChatNotifier extends Notifier<ChatState> {
               ref.read(isStreamingProvider.notifier).setStreaming(false);
               ref.read(chatBackgroundServiceProvider).stop();
               if (_currentConversationId != null) {
+                final parentUserMessage = state.allMessages
+                    .where((m) => m.id == finalMessage.parentMessageId)
+                    .firstOrNull;
                 _scheduleTokenRecount(
                   _currentConversationId!,
+                  userMessage: parentUserMessage,
                   assistantMessage: finalMessage,
                 );
               }
@@ -2056,6 +2060,10 @@ class ChatNotifier extends Notifier<ChatState> {
       allMessages: updatedAll,
       messages: MessageVariants.resolveActiveTimeline(updatedAll),
     );
+
+    if (_currentConversationId != null) {
+      _scheduleTokenRecount(_currentConversationId!);
+    }
   }
 
   Future<void> editMessageSaveOnly(String messageId, String newContent) async {

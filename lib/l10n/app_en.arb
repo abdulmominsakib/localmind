@@ -502,6 +502,18 @@
   "@insert_without_generating_tooltip": {
     "description": "Tooltip shown for long-pressing the send button to insert a message without generating a response"
   },
+  "token_usage_title": "Token Usage",
+  "@token_usage_title": {
+    "description": "Title of the sheet shown when tapping the token usage indicator"
+  },
+  "total_tokens_label": "Tokens used",
+  "@total_tokens_label": {
+    "description": "Label for the total token count row in the token usage sheet"
+  },
+  "usage_percent_label": "Context used",
+  "@usage_percent_label": {
+    "description": "Label for the percentage-of-context-length row in the token usage sheet"
+  },
   "export_choice_title": "Export",
   "@export_choice_title": {
     "description": "Title for the copy-vs-share export choice dialog"

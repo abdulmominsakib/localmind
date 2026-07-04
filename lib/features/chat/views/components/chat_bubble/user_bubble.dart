@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
@@ -113,6 +114,19 @@ class UserBubble extends StatelessWidget {
                 if (message.status == MessageStatus.error) ...[
                   const SizedBox(width: 4),
                   Icon(Icons.error_outline, size: 14, color: Colors.red[200]),
+                ],
+                if (message.contentTokenCount != null) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    AppLocalizations.of(context)!
+                        .total_tokens_count(message.contentTokenCount!),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark
+                          ? AppColors.darkMutedText
+                          : AppColors.lightMutedText,
+                    ),
+                  ),
                 ],
                 const SizedBox(width: 8),
                 MessageActionBar(

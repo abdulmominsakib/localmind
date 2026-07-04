@@ -785,6 +785,24 @@ abstract class AppLocalizations {
   /// **'Insert without generating'**
   String get insert_without_generating_tooltip;
 
+  /// Title of the sheet shown when tapping the token usage indicator
+  ///
+  /// In en, this message translates to:
+  /// **'Token Usage'**
+  String get token_usage_title;
+
+  /// Label for the total token count row in the token usage sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens used'**
+  String get total_tokens_label;
+
+  /// Label for the percentage-of-context-length row in the token usage sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Context used'**
+  String get usage_percent_label;
+
   /// Title for the copy-vs-share export choice dialog
   ///
   /// In en, this message translates to:
