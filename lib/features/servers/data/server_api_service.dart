@@ -215,6 +215,37 @@ class ServerApiService {
     }
   }
 
+  /// Returns the context length the currently loaded model was actually
+  /// loaded with — verified live against LM Studio's `/api/v0/models/{id}`,
+  /// which reports `loaded_context_length` (e.g. 15000) separately from
+  /// `max_context_length` (the model's architectural maximum, e.g. 131072).
+  /// The loaded value can be much smaller than the max if the user picked a
+  /// smaller context window at load time, so it's what "percent of context
+  /// used" should be measured against. Falls back to `max_context_length`
+  /// if the model isn't reported as loaded. Only supported for LM Studio;
+  /// other server types return null so callers can fall back to their own
+  /// configured context length.
+  Future<int?> fetchLoadedContextLength(Server server, String modelId) async {
+    if (server.type != ServerType.lmStudio) return null;
+
+    try {
+      final response = await _dio.get(
+        '${server.baseUrl}/api/v0/models/${Uri.encodeComponent(modelId)}',
+        options: Options(
+          headers: buildServerAuthHeaders(server),
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+      final data = response.data;
+      if (data is! Map) return null;
+      return _toInt(data['loaded_context_length']) ??
+          _toInt(data['max_context_length']);
+    } catch (e) {
+      Log.warning('Failed to fetch loaded context length: $e');
+      return null;
+    }
+  }
+
   Set<String> _parseRunningOpenAICompatibleModels(dynamic data) {
     final runningModels = <String>{};
     if (data == null) return runningModels;

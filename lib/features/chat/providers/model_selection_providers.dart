@@ -84,6 +84,19 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
   }
 });
 
+/// The actual context length the active model was loaded with, fetched
+/// live from the server (currently only LM Studio reports this — see
+/// [ServerApiService.fetchLoadedContextLength]). Re-fetches whenever the
+/// active server or selected model changes.
+final activeModelContextLengthProvider = FutureProvider<int?>((ref) async {
+  final server = ref.watch(activeServerProvider);
+  final model = ref.watch(selectedModelProvider);
+  if (server == null || model == null) return null;
+
+  final apiService = ref.read(serverApiServiceProvider);
+  return apiService.fetchLoadedContextLength(server, model.id);
+});
+
 final isStreamingProvider = NotifierProvider<IsStreamingNotifier, bool>(() {
   return IsStreamingNotifier();
 });

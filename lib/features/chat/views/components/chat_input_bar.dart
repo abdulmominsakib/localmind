@@ -706,8 +706,10 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     );
     if (totalTokenCount == null) return const SizedBox.shrink();
 
-    final contextLength =
+    final liveContextLength = ref.watch(activeModelContextLengthProvider).value;
+    final fallbackContextLength =
         ref.watch(settingsProvider.select((s) => s.contextLength));
+    final int contextLength = liveContextLength ?? fallbackContextLength;
     final ratio = contextLength > 0
         ? (totalTokenCount / contextLength).clamp(0.0, 1.0)
         : 0.0;
