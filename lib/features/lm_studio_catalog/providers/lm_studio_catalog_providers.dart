@@ -237,9 +237,16 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
           job: placeholder,
         );
         _jobServerIds[jobId] = serverId;
+        _replaceJob(updated);
+
         if (updated.status.isActive) {
-          _replaceJob(updated);
           _startPolling(server: server, job: updated);
+        } else if (updated.status == LmDownloadStatus.completed ||
+            updated.status == LmDownloadStatus.alreadyDownloaded) {
+          await _notifyCompleted(updated);
+          ref.invalidate(availableModelsProvider(server.id));
+        } else if (updated.status == LmDownloadStatus.failed) {
+          await _notifyFailed(updated);
         }
       } on LmDownloadJobNotFoundException {
         // Job no longer exists on the server; drop it.
