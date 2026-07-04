@@ -8,7 +8,6 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/routes/app_routes.dart';
-import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/core/utils/system_insets.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
@@ -892,9 +891,6 @@ class _ChatBottomBar extends ConsumerWidget {
     final isTemporary = ref.watch(chatProvider.select((s) => s.isTemporary));
     final keyboardIncognito = isTemporary &&
         ref.watch(settingsProvider.select((s) => s.tempChatKeyboardIncognito));
-    final totalTokenCount = ref.watch(
-      conv.activeConversationProvider.select((c) => c?.totalTokenCount),
-    );
 
     return Positioned(
       bottom: 0,
@@ -931,126 +927,8 @@ class _ChatBottomBar extends ConsumerWidget {
               },
               onStop: () => ref.read(chatProvider.notifier).cancelStream(),
             ),
-            if (totalTokenCount != null && keyboardBottomInset == 0)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: _TokenUsageIndicator(totalTokenCount: totalTokenCount),
-              ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _TokenUsageIndicator extends ConsumerWidget {
-  const _TokenUsageIndicator({required this.totalTokenCount});
-
-  final int totalTokenCount;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final contextLength = ref.watch(
-      settingsProvider.select((s) => s.contextLength),
-    );
-    final ratio = contextLength > 0
-        ? (totalTokenCount / contextLength).clamp(0.0, 1.0)
-        : 0.0;
-    final isNearLimit = ratio >= 0.9;
-    final ringColor = isNearLimit
-        ? Colors.red
-        : theme.colorScheme.primary;
-
-    return GestureDetector(
-      onTap: () => _showUsageSheet(context, contextLength, ratio),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(
-            value: ratio,
-            strokeWidth: 2.5,
-            backgroundColor: (isDark ? Colors.white : Colors.black)
-                .withValues(alpha: 0.12),
-            valueColor: AlwaysStoppedAnimation<Color>(ringColor),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showUsageSheet(BuildContext context, int contextLength, double ratio) {
-    final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) {
-        final theme = Theme.of(ctx);
-        final isDark = theme.brightness == Brightness.dark;
-        final muted =
-            isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.token_usage_title,
-                  style: theme.textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                _UsageRow(
-                  label: l10n.total_tokens_label,
-                  value: '$totalTokenCount',
-                  muted: muted,
-                ),
-                _UsageRow(
-                  label: l10n.context_length,
-                  value: '$contextLength',
-                  muted: muted,
-                ),
-                _UsageRow(
-                  label: l10n.usage_percent_label,
-                  value: '${(ratio * 100).toStringAsFixed(1)}%',
-                  muted: muted,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _UsageRow extends StatelessWidget {
-  const _UsageRow({
-    required this.label,
-    required this.value,
-    required this.muted,
-  });
-
-  final String label;
-  final String value;
-  final Color muted;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: 13, color: muted)),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ],
       ),
     );
   }

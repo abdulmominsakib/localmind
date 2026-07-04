@@ -25,6 +25,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/models/enums.dart';
 
 import '../../../../core/providers/app_providers.dart';
+import '../../../conversations/providers/conversation_providers.dart' as conv;
 import '../../../servers/providers/server_providers.dart';
 
 import '../../../stt/providers/stt_providers.dart';
@@ -646,51 +647,158 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     final l10n = AppLocalizations.of(context)!;
     final enabled = isConnected && widget.enabled && !widget.isStreaming;
 
-    return IconButton(
-      visualDensity: VisualDensity.compact,
-      padding: const EdgeInsets.all(8),
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-      tooltip: l10n.ai_user_response_tooltip,
-      onPressed: enabled && !_isGeneratingAiUser ? _handleGenerateAiUser : null,
-      icon: _isGeneratingAiUser
-          ? SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: theme.colorScheme.primary,
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        tooltip: l10n.ai_user_response_tooltip,
+        onPressed: enabled && !_isGeneratingAiUser ? _handleGenerateAiUser : null,
+        icon: _isGeneratingAiUser
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.primary,
+                ),
+              )
+            : Icon(
+                Icons.person_outline,
+                size: 20,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
-            )
-          : Icon(
-              Icons.person_outline,
-              size: 22,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
+      ),
     );
   }
 
   Widget _buildRoleSwapButton(ThemeData theme) {
     final l10n = AppLocalizations.of(context)!;
 
-    return IconButton(
-      visualDensity: VisualDensity.compact,
-      padding: const EdgeInsets.all(8),
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-      tooltip: _sendAsAssistant
-          ? l10n.send_as_assistant_tooltip
-          : l10n.send_as_user_tooltip,
-      onPressed: widget.enabled
-          ? () {
-              Haptics.vibrate(HapticsType.light);
-              setState(() => _sendAsAssistant = !_sendAsAssistant);
-            }
-          : null,
-      icon: Icon(
-        Icons.swap_horiz_rounded,
-        size: 22,
-        color: _sendAsAssistant
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        tooltip: _sendAsAssistant
+            ? l10n.send_as_assistant_tooltip
+            : l10n.send_as_user_tooltip,
+        onPressed: widget.enabled
+            ? () {
+                Haptics.vibrate(HapticsType.light);
+                setState(() => _sendAsAssistant = !_sendAsAssistant);
+              }
+            : null,
+        icon: Icon(
+          Icons.swap_horiz_rounded,
+          size: 20,
+          color: _sendAsAssistant
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTokenUsageIndicator(ThemeData theme) {
+    final totalTokenCount = ref.watch(
+      conv.activeConversationProvider.select((c) => c?.totalTokenCount),
+    );
+    if (totalTokenCount == null) return const SizedBox.shrink();
+
+    final contextLength =
+        ref.watch(settingsProvider.select((s) => s.contextLength));
+    final ratio = contextLength > 0
+        ? (totalTokenCount / contextLength).clamp(0.0, 1.0)
+        : 0.0;
+    final isDark = theme.brightness == Brightness.dark;
+    final ringColor =
+        ratio >= 0.9 ? Colors.red : theme.colorScheme.primary;
+
+    return GestureDetector(
+      onTap: () => _showTokenUsageSheet(totalTokenCount, contextLength, ratio),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                value: ratio,
+                strokeWidth: 2.5,
+                backgroundColor: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: 0.12),
+                valueColor: AlwaysStoppedAnimation<Color>(ringColor),
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              '${(ratio * 100).round()}%',
+              style: TextStyle(
+                fontSize: 11,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTokenUsageSheet(
+    int totalTokenCount,
+    int contextLength,
+    double ratio,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        final sheetTheme = Theme.of(ctx);
+        final isDark = sheetTheme.brightness == Brightness.dark;
+        final muted =
+            isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.token_usage_title,
+                  style: sheetTheme.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                _usageRow(l10n.total_tokens_label, '$totalTokenCount', muted),
+                _usageRow(l10n.context_length, '$contextLength', muted),
+                _usageRow(
+                  l10n.usage_percent_label,
+                  '${(ratio * 100).toStringAsFixed(1)}%',
+                  muted,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _usageRow(String label, String value, Color muted) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 13, color: muted)),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }
@@ -1237,6 +1345,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                   tooltip: l10n.add_attachment,
 
                 ),
+
+                _buildTokenUsageIndicator(theme),
 
                 const Spacer(),
 

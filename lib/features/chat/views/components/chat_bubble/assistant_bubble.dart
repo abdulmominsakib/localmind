@@ -143,14 +143,6 @@ class AssistantBubble extends StatelessWidget {
                 const SizedBox(width: 4),
                 Icon(Icons.error_outline, size: 14, color: Colors.red[400]),
               ],
-              if (!isStreaming && message.contentTokenCount != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  AppLocalizations.of(context)!
-                      .total_tokens_count(message.contentTokenCount!),
-                  style: TextStyle(fontSize: 11, color: muted),
-                ),
-              ],
               const Spacer(),
               if (!isStreaming)
                 MessageActionBar(
