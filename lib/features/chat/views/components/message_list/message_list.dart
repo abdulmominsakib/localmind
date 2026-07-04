@@ -240,14 +240,25 @@ class _MessageList extends ConsumerWidget {
     final selectedIds = ref.watch(selectedMessageIdsProvider);
     final visibleMessages = <Message>[];
 
+    // The streaming message only belongs at the end of the currently
+    // displayed branch if that branch's active timeline actually resolves
+    // to it — otherwise the user has cycled to a different variant while
+    // a sibling variant is still generating in the background, and the
+    // live bubble must not be appended to whatever branch is now on screen.
+    final streamingBelongsToActiveTimeline = streamingMessage != null &&
+        messages.any((m) => m.id == streamingMessage!.id);
+
     for (final message in messages) {
-      if (streamingMessage != null &&
+      if (streamingBelongsToActiveTimeline &&
           message.id == streamingMessage!.id &&
           isStreaming) {
         continue;
       }
       visibleMessages.add(message);
     }
+
+    final showTrailingStreamingBubble =
+        streamingBelongsToActiveTimeline && isStreaming;
 
     return ListView.builder(
       controller: scrollController,
@@ -257,11 +268,9 @@ class _MessageList extends ConsumerWidget {
       ),
       itemCount:
           visibleMessages.length +
-          (streamingMessage != null && isStreaming ? 1 : 0),
+          (showTrailingStreamingBubble ? 1 : 0),
       itemBuilder: (context, index) {
-        if (streamingMessage != null &&
-            isStreaming &&
-            index == visibleMessages.length) {
+        if (showTrailingStreamingBubble && index == visibleMessages.length) {
           return ChatBubble(
             key: ValueKey(streamingMessage!.id),
             message: streamingMessage!,
@@ -280,8 +289,9 @@ class _MessageList extends ConsumerWidget {
           key: itemKey,
           message: message,
           allMessages: this.allMessages,
-          isStreaming:
-              isLast && isStreaming && message.id == streamingMessage?.id,
+          isStreaming: isLast &&
+              showTrailingStreamingBubble &&
+              message.id == streamingMessage?.id,
           onRetry: () => onRetry(message.id),
           onDelete: () => onDelete(message.id),
           onEdit: message.role == MessageRole.user
