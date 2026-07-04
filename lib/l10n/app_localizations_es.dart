@@ -619,7 +619,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get enable_smart_reply => 'Respuestas inteligentes locales';
 
   @override
-  String get ai_user_response_enabled => 'AI user message button';
+  String get ai_user_response_enabled => 'AI user message (hold send)';
+
+  @override
+  String get ai_user_response_enabled_desc =>
+      'Hold the send button for 3 seconds to have the AI write and send your next message';
 
   @override
   String get ai_user_response_tooltip => 'Generate user message with AI';

@@ -318,6 +318,7 @@ class SettingsViews extends ConsumerWidget {
                     ),
                   _ToggleSetting(
                     label: l10n.ai_user_response_enabled,
+                    description: l10n.ai_user_response_enabled_desc,
                     value: settings.aiUserResponseEnabled,
                     badges: [_FeatureBadge(label: l10n.experimental_label)],
                     onChanged: (value) => ref

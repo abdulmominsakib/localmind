@@ -852,9 +852,13 @@
   "@enable_smart_reply": {
     "description": "Toggle for on-device smart reply suggestions"
   },
-  "ai_user_response_enabled": "AI user message button",
+  "ai_user_response_enabled": "AI user message (hold send)",
   "@ai_user_response_enabled": {
-    "description": "Settings toggle for AI-generated user message button in chat input"
+    "description": "Settings toggle for AI-generated user message triggered by holding the send button"
+  },
+  "ai_user_response_enabled_desc": "Hold the send button for 3 seconds to have the AI write and send your next message",
+  "@ai_user_response_enabled_desc": {
+    "description": "Description for the hold-to-generate-AI-user-message toggle"
   },
   "ai_user_response_tooltip": "Generate user message with AI",
   "@ai_user_response_tooltip": {

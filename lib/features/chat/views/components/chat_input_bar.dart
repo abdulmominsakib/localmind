@@ -104,12 +104,18 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
   bool _isGeneratingAiUser = false;
   bool _sendAsAssistant = false;
+  bool _holdTriggered = false;
 
   late AnimationController _sendButtonAnimController;
 
   late Animation<double> _sendButtonScale;
 
   late AnimationController _micAnimController;
+
+  /// Drives the clockwise ring drawn around the send button while it's held
+  /// down. Reaching the end (3s) triggers AI-generated-user-message instead
+  /// of the normal tap/short-hold actions.
+  late AnimationController _holdProgressController;
 
   String _preSpeechText = '';
 
@@ -143,6 +149,17 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
       vsync: this,
 
     );
+
+    _holdProgressController = AnimationController(
+      duration: _holdDuration,
+      vsync: this,
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _holdTriggered = true;
+          _holdProgressController.value = 0;
+          _handleGenerateAiUser();
+        }
+      });
 
   }
 
@@ -186,6 +203,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     _sendButtonAnimController.dispose();
 
     _micAnimController.dispose();
+
+    _holdProgressController.dispose();
 
     super.dispose();
 
@@ -643,35 +662,6 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     }
   }
 
-  Widget _buildAiUserButton(bool isConnected, ThemeData theme) {
-    final l10n = AppLocalizations.of(context)!;
-    final enabled = isConnected && widget.enabled && !widget.isStreaming;
-
-    return SizedBox(
-      width: 36,
-      height: 36,
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        tooltip: l10n.ai_user_response_tooltip,
-        onPressed: enabled && !_isGeneratingAiUser ? _handleGenerateAiUser : null,
-        icon: _isGeneratingAiUser
-            ? SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: theme.colorScheme.primary,
-                ),
-              )
-            : Icon(
-                Icons.person_outline,
-                size: 20,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-      ),
-    );
-  }
-
   Widget _buildRoleSwapButton(ThemeData theme) {
     final l10n = AppLocalizations.of(context)!;
 
@@ -720,30 +710,33 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     return GestureDetector(
       onTap: () => _showTokenUsageSheet(totalTokenCount, contextLength, ratio),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        child: Row(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: SizedBox(
+          height: 16,
+          child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 16,
-              height: 16,
+              width: 12,
+              height: 12,
               child: CircularProgressIndicator(
                 value: ratio,
-                strokeWidth: 2.5,
+                strokeWidth: 2,
                 backgroundColor: (isDark ? Colors.white : Colors.black)
                     .withValues(alpha: 0.12),
                 valueColor: AlwaysStoppedAnimation<Color>(ringColor),
               ),
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: 4),
             Text(
               '${(ratio * 100).round()}%',
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -902,6 +895,9 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     );
   }
 
+  static const _holdDuration = Duration(milliseconds: 3000);
+  static const _insertHoldThreshold = 500 / 3000;
+
   Widget _buildActionButton(bool canSend, ThemeData theme) {
 
     final l10n = AppLocalizations.of(context)!;
@@ -918,21 +914,85 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
         : theme.colorScheme.onPrimary;
 
+    final connectionStatus = ref.watch(connectionStatusProvider);
+    final isConnected = connectionStatus == ConnectionStatus.connected;
+    final aiUserHoldEnabled =
+        ref.watch(settingsProvider.select((s) => s.aiUserResponseEnabled)) &&
+            isConnected &&
+            widget.enabled;
 
+    void handleTapDown() {
+      _holdTriggered = false;
+      if (canSend) _sendButtonAnimController.forward();
+      if (!widget.isStreaming && !_isGeneratingAiUser && aiUserHoldEnabled) {
+        _holdProgressController.forward(from: 0);
+      }
+    }
+
+    void resetHold() {
+      _holdProgressController.stop();
+      _holdProgressController.value = 0;
+    }
+
+    void handleTapUp() {
+      if (canSend) _sendButtonAnimController.reverse();
+      final holdFraction = _holdProgressController.value;
+      final wasTriggered = _holdTriggered;
+      resetHold();
+      _holdTriggered = false;
+
+      if (wasTriggered || _isGeneratingAiUser) return;
+
+      if (widget.isStreaming) {
+        _handleStop();
+        return;
+      }
+
+      if (holdFraction >= _insertHoldThreshold) {
+        _handleInsertWithoutGenerating();
+      } else if (canSend) {
+        _handleSubmit();
+      }
+    }
+
+    void handleTapCancel() {
+      if (canSend) _sendButtonAnimController.reverse();
+      resetHold();
+      _holdTriggered = false;
+    }
 
     return GestureDetector(
 
-      onTapDown: canSend ? (_) => _sendButtonAnimController.forward() : null,
+      onTapDown: (_) => handleTapDown(),
 
-      onTapUp: canSend ? (_) => _sendButtonAnimController.reverse() : null,
+      onTapUp: (_) => handleTapUp(),
 
-      onTapCancel: canSend ? () => _sendButtonAnimController.reverse() : null,
+      onTapCancel: handleTapCancel,
 
-      onLongPress: (canSend && !widget.isStreaming)
-          ? _handleInsertWithoutGenerating
-          : null,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AnimatedBuilder(
+            animation: _holdProgressController,
+            builder: (context, child) {
+              if (_holdProgressController.value <= 0) {
+                return const SizedBox(width: 44, height: 44);
+              }
+              return SizedBox(
+                width: 44,
+                height: 44,
+                child: CircularProgressIndicator(
+                  value: _holdProgressController.value,
+                  strokeWidth: 2.5,
+                  backgroundColor: Colors.transparent,
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
+                ),
+              );
+            },
+          ),
 
-      child: ScaleTransition(
+      ScaleTransition(
 
         scale: _sendButtonScale,
 
@@ -972,7 +1032,17 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
               },
 
-              child: widget.isStreaming
+              child: _isGeneratingAiUser
+                  ? SizedBox(
+                      key: const ValueKey('ai-user-generating'),
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: iconColor,
+                      ),
+                    )
+                  : widget.isStreaming
 
                   ? HugeIcon(
 
@@ -1000,11 +1070,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
             ),
 
-            onPressed: widget.isStreaming
-
-                ? _handleStop
-
-                : (canSend ? _handleSubmit : null),
+            onPressed: () {},
 
             tooltip: widget.isStreaming
 
@@ -1016,6 +1082,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
         ),
 
+      ),
+        ],
       ),
 
     );
@@ -1087,7 +1155,6 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     final connectionStatus = ref.watch(connectionStatusProvider);
 
     final isConnected = connectionStatus == ConnectionStatus.connected;
-    final showAiUserButton = ref.watch(settingsProvider).aiUserResponseEnabled;
     final showRoleSwapButton =
         ref.watch(settingsProvider).roleSwapButtonEnabled;
 
@@ -1415,7 +1482,11 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               ],
             ),
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 2),
+
+            _buildTokenUsageIndicator(theme),
+
+            const SizedBox(height: 2),
 
             Row(
 
@@ -1445,16 +1516,9 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
                 ),
 
-                _buildTokenUsageIndicator(theme),
-
                 _buildThinkButton(theme),
 
                 const Spacer(),
-
-                if (showAiUserButton) ...[
-                  _buildAiUserButton(isConnected, theme),
-                  const SizedBox(width: 6),
-                ],
 
                 if (showRoleSwapButton) ...[
                   _buildRoleSwapButton(theme),

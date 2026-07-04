@@ -1241,11 +1241,17 @@ abstract class AppLocalizations {
   /// **'On-Device Smart Replies'**
   String get enable_smart_reply;
 
-  /// Settings toggle for AI-generated user message button in chat input
+  /// Settings toggle for AI-generated user message triggered by holding the send button
   ///
   /// In en, this message translates to:
-  /// **'AI user message button'**
+  /// **'AI user message (hold send)'**
   String get ai_user_response_enabled;
+
+  /// Description for the hold-to-generate-AI-user-message toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Hold the send button for 3 seconds to have the AI write and send your next message'**
+  String get ai_user_response_enabled_desc;
 
   /// Tooltip for the AI user message button next to send
   ///
