@@ -58,4 +58,21 @@ class AttachmentHelpers {
     if (content.trim().isEmpty) return block;
     return '$content\n\n$block';
   }
+
+  /// Copies [file] into [directory] under a timestamp-prefixed unique name
+  /// and returns the new path, or null if the copy fails (e.g. a locked
+  /// file or a permissions error) so callers can skip that one attachment
+  /// instead of aborting the whole send.
+  static Future<String?> saveAttachment(File file, Directory directory) async {
+    try {
+      final fileName = fileNameOf(file.path);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final newPath =
+          '${directory.path}${Platform.pathSeparator}${timestamp}_$fileName';
+      await file.copy(newPath);
+      return newPath;
+    } catch (_) {
+      return null;
+    }
+  }
 }
