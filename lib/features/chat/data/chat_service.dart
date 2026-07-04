@@ -207,6 +207,11 @@ class LMStudioChatService implements ChatService {
       'top_p': params.topP,
       'max_tokens': params.maxTokens,
       'stream': true,
+      // Requests a final chunk with an empty `choices` array and a
+      // `usage` object (prompt_tokens/completion_tokens) so tokens/sec and
+      // token counts can still be computed after switching off the native
+      // Responses-style endpoint's richer `chat.end` stats.
+      'stream_options': {'include_usage': true},
     };
 
     if (params.topK != null) body['top_k'] = params.topK;
@@ -274,6 +279,17 @@ class LMStudioChatService implements ChatService {
                 content: _formatApiErrorContent(json['error']),
               );
               return;
+            }
+
+            final usage = json['usage'] as Map<String, dynamic>?;
+            if (usage != null) {
+              yield ChatResponse(
+                type: ChatResponseType.done,
+                stats: ChatStats(
+                  inputTokens: usage['prompt_tokens'] as int? ?? 0,
+                  totalOutputTokens: usage['completion_tokens'] as int? ?? 0,
+                ),
+              );
             }
 
             final choices = json['choices'] as List<dynamic>?;
