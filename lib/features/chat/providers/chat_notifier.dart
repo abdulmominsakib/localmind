@@ -663,6 +663,7 @@ class ChatNotifier extends Notifier<ChatState> {
     ref
         .read(conv.activeConversationProvider.notifier)
         .setActiveConversation(conversation);
+    _persistLastActiveConversation(conversation.id);
     // A conversationsProvider refresh triggered later in this same send
     // (e.g. syncConversationStats) rebuilds activeConversationProvider
     // from the reloaded list; use this captured value for this send so
