@@ -146,10 +146,9 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       orElse: () => throw Exception('Conversation not found in state'),
     );
 
-    final updated = existing.copyWith(
-      title: newTitle,
-      updatedAt: DateTime.now(),
-    );
+    // Renaming is a metadata edit, not conversation activity — don't bump
+    // updatedAt, since that's used as the "last modified" sort/section date.
+    final updated = existing.copyWith(title: newTitle);
 
     final query = db.conversationBox
         .query(ConversationEntity_.id.equals(id))
@@ -636,6 +635,23 @@ class ConversationSearchNotifier extends Notifier<String> {
   }
 }
 
+enum HistorySortOption { modified, created }
+
+final historySortOptionProvider =
+    NotifierProvider<HistorySortOptionNotifier, HistorySortOption>(() {
+      return HistorySortOptionNotifier();
+    });
+
+class HistorySortOptionNotifier extends Notifier<HistorySortOption> {
+  @override
+  HistorySortOption build() => HistorySortOption.modified;
+
+  void setOption(HistorySortOption option) => state = option;
+}
+
+DateTime historySortDate(Conversation c, HistorySortOption option) =>
+    option == HistorySortOption.created ? c.createdAt : c.updatedAt;
+
 final filteredConversationsProvider = Provider<AsyncValue<List<Conversation>>>((
   ref,
 ) {
@@ -643,6 +659,7 @@ final filteredConversationsProvider = Provider<AsyncValue<List<Conversation>>>((
   final query = ref.watch(conversationSearchProvider).toLowerCase();
   final folderFilter = ref.watch(historyFolderFilterProvider);
   final listFilter = ref.watch(historyListFilterProvider);
+  final sortOption = ref.watch(historySortOptionProvider);
 
   return conversationsAsync.whenData((conversations) {
     var filtered = conversations.where((c) => !c.isTemporary).toList();
@@ -665,11 +682,20 @@ final filteredConversationsProvider = Provider<AsyncValue<List<Conversation>>>((
         filtered = filtered.where((c) => c.folderId == folderFilter).toList();
       }
     }
-    if (query.isEmpty) return filtered;
-    return filtered.where((c) {
-      return c.title.toLowerCase().contains(query) ||
-          (c.lastMessagePreview?.toLowerCase().contains(query) ?? false);
-    }).toList();
+    if (query.isNotEmpty) {
+      filtered = filtered.where((c) {
+        return c.title.toLowerCase().contains(query) ||
+            (c.lastMessagePreview?.toLowerCase().contains(query) ?? false);
+      }).toList();
+    }
+
+    filtered.sort((a, b) {
+      if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+      return historySortDate(b, sortOption).compareTo(
+        historySortDate(a, sortOption),
+      );
+    });
+    return filtered;
   });
 });
 
@@ -682,6 +708,7 @@ final recentConversationsProvider = Provider<List<Conversation>>((ref) {
 final groupedConversationsProvider =
     Provider<AsyncValue<Map<String, List<Conversation>>>>((ref) {
       final filteredAsync = ref.watch(filteredConversationsProvider);
+      final sortOption = ref.watch(historySortOptionProvider);
 
       return filteredAsync.whenData((conversations) {
         final now = DateTime.now();
@@ -693,10 +720,11 @@ final groupedConversationsProvider =
         final grouped = <String, List<Conversation>>{};
 
         for (final conversation in conversations) {
+          final sectionDate = historySortDate(conversation, sortOption);
           final convDate = DateTime(
-            conversation.updatedAt.year,
-            conversation.updatedAt.month,
-            conversation.updatedAt.day,
+            sectionDate.year,
+            sectionDate.month,
+            sectionDate.day,
           );
 
           String section;

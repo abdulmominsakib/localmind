@@ -482,6 +482,48 @@
   "@keep_persona_on_new_chat_desc": {
     "description": "Description for the keep-persona-on-new-chat toggle"
   },
+  "export_choice_title": "Export",
+  "@export_choice_title": {
+    "description": "Title for the copy-vs-share export choice dialog"
+  },
+  "export_choice_body": "How would you like to export this?",
+  "@export_choice_body": {
+    "description": "Body text for the copy-vs-share export choice dialog"
+  },
+  "copy_to_clipboard": "Copy to Clipboard",
+  "@copy_to_clipboard": {
+    "description": "Button to copy export content to the clipboard"
+  },
+  "bulk_export_conversations_success": "Exported {count} conversations",
+  "@bulk_export_conversations_success": {
+    "description": "Success message after bulk-exporting conversations",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "bulk_ai_rename_confirm_title": "Rename with AI?",
+  "@bulk_ai_rename_confirm_title": {
+    "description": "Title for the bulk AI rename confirmation dialog"
+  },
+  "bulk_ai_rename_confirm_body": "This will ask the AI to generate a new title for each of the {count} selected conversations, replacing their current titles. This can take a while and cannot be undone.",
+  "@bulk_ai_rename_confirm_body": {
+    "description": "Body text for the bulk AI rename confirmation dialog",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "sort_by_modified_date": "Last modified",
+  "@sort_by_modified_date": {
+    "description": "Sort history by last modified date"
+  },
+  "sort_by_created_date": "Date created",
+  "@sort_by_created_date": {
+    "description": "Sort history by creation date"
+  },
+  "sort_title": "Sort",
+  "@sort_title": {
+    "description": "Tooltip for the history sort button"
+  },
   "clear_conversation_title": "Clear conversation?",
   "@clear_conversation_title": {
     "description": "Clear conversation dialog title"

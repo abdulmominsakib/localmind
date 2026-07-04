@@ -1,13 +1,10 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
 import 'package:localmind/core/services/data_backup_service.dart';
+import 'package:localmind/core/services/export_choice_dialog.dart';
 import '../../../../core/routes/app_routes.dart';
 import '../../../chat/providers/chat_providers.dart';
 import '../../data/models/conversation.dart';
@@ -225,19 +222,12 @@ class ConversationList extends ConsumerWidget {
     final db = ref.read(databaseProvider);
     final json = DataBackupService()
         .exportConversationAsJson(db.store, conversation.id);
-    final saved = await FilePicker.saveFile(
-      dialogTitle: l10n.export_conversation,
-      fileName:
-          'localmind_${conversation.title.replaceAll(RegExp(r'[^\w\-]+'), '_')}_${DateTime.now().millisecondsSinceEpoch}.json',
-      type: FileType.custom,
-      allowedExtensions: const ['json'],
-      bytes: Uint8List.fromList(utf8.encode(json)),
+    if (!context.mounted) return;
+    await showExportChoiceDialog(
+      context,
+      content: json,
+      subject: conversation.title,
     );
-    if (saved != null && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.export_data_success)),
-      );
-    }
   }
 }
 
@@ -289,12 +279,52 @@ Future<void> showBulkMoveToFolderSheet(
   );
 }
 
+Future<void> runBulkExportConversations(
+  BuildContext context,
+  WidgetRef ref,
+  Set<String> conversationIds,
+) async {
+  final l10n = AppLocalizations.of(context)!;
+  final db = ref.read(databaseProvider);
+  final json = DataBackupService()
+      .exportConversationsForIdsAsJson(db.store, conversationIds);
+  if (!context.mounted) return;
+  await showExportChoiceDialog(
+    context,
+    content: json,
+    subject: l10n.bulk_export_conversations_success(conversationIds.length),
+  );
+}
+
 Future<void> runBulkAiRename(
   BuildContext context,
   WidgetRef ref,
   List<String> conversationIds,
 ) async {
   final l10n = AppLocalizations.of(context)!;
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(l10n.bulk_ai_rename_confirm_title),
+      content: Text(
+        l10n.bulk_ai_rename_confirm_body(conversationIds.length),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(l10n.confirm),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+  if (!context.mounted) return;
+
   final progress = ValueNotifier<int>(0);
 
   showDialog<void>(

@@ -755,6 +755,60 @@ abstract class AppLocalizations {
   /// **'Don\'t clear the selected persona(s) after starting a new chat'**
   String get keep_persona_on_new_chat_desc;
 
+  /// Title for the copy-vs-share export choice dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get export_choice_title;
+
+  /// Body text for the copy-vs-share export choice dialog
+  ///
+  /// In en, this message translates to:
+  /// **'How would you like to export this?'**
+  String get export_choice_body;
+
+  /// Button to copy export content to the clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to Clipboard'**
+  String get copy_to_clipboard;
+
+  /// Success message after bulk-exporting conversations
+  ///
+  /// In en, this message translates to:
+  /// **'Exported {count} conversations'**
+  String bulk_export_conversations_success(int count);
+
+  /// Title for the bulk AI rename confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Rename with AI?'**
+  String get bulk_ai_rename_confirm_title;
+
+  /// Body text for the bulk AI rename confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'This will ask the AI to generate a new title for each of the {count} selected conversations, replacing their current titles. This can take a while and cannot be undone.'**
+  String bulk_ai_rename_confirm_body(int count);
+
+  /// Sort history by last modified date
+  ///
+  /// In en, this message translates to:
+  /// **'Last modified'**
+  String get sort_by_modified_date;
+
+  /// Sort history by creation date
+  ///
+  /// In en, this message translates to:
+  /// **'Date created'**
+  String get sort_by_created_date;
+
+  /// Tooltip for the history sort button
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sort_title;
+
   /// Clear conversation dialog title
   ///
   /// In en, this message translates to:

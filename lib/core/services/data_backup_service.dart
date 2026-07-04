@@ -205,6 +205,48 @@ class DataBackupService {
     };
   }
 
+  Map<String, dynamic> exportConversationsForIds(
+    Store store,
+    Set<String> conversationIds,
+  ) {
+    final all = exportAll(store);
+    final conversations = (all['conversations'] as List)
+        .where((c) => conversationIds.contains((c as Map)['id']))
+        .toList();
+    final messages = (all['messages'] as List)
+        .where((m) => conversationIds.contains((m as Map)['conversationId']))
+        .toList();
+    final savedMessages = (all['savedMessages'] as List)
+        .where(
+          (m) => conversationIds.contains((m as Map)['conversationId']),
+        )
+        .toList();
+    final folderIds = savedMessages
+        .map((m) => (m as Map)['folderId'] as String?)
+        .whereType<String>()
+        .toSet();
+    final savedMessageFolders = (all['savedMessageFolders'] as List)
+        .where((f) => folderIds.contains((f as Map)['id']))
+        .toList();
+
+    return {
+      'version': 3,
+      'type': 'conversations',
+      'exportedAt': all['exportedAt'],
+      'conversations': conversations,
+      'messages': messages,
+      'savedMessages': savedMessages,
+      'savedMessageFolders': savedMessageFolders,
+    };
+  }
+
+  String exportConversationsForIdsAsJson(
+    Store store,
+    Set<String> conversationIds,
+  ) =>
+      const JsonEncoder.withIndent('  ')
+          .convert(exportConversationsForIds(store, conversationIds));
+
   Map<String, dynamic> exportPersonas(Store store) {
     final all = exportAll(store);
     return {

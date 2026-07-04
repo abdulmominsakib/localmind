@@ -354,6 +354,37 @@ class AppLocalizationsZh extends AppLocalizations {
       'Don\'t clear the selected persona(s) after starting a new chat';
 
   @override
+  String get export_choice_title => 'Export';
+
+  @override
+  String get export_choice_body => 'How would you like to export this?';
+
+  @override
+  String get copy_to_clipboard => 'Copy to Clipboard';
+
+  @override
+  String bulk_export_conversations_success(int count) {
+    return 'Exported $count conversations';
+  }
+
+  @override
+  String get bulk_ai_rename_confirm_title => 'Rename with AI?';
+
+  @override
+  String bulk_ai_rename_confirm_body(int count) {
+    return 'This will ask the AI to generate a new title for each of the $count selected conversations, replacing their current titles. This can take a while and cannot be undone.';
+  }
+
+  @override
+  String get sort_by_modified_date => 'Last modified';
+
+  @override
+  String get sort_by_created_date => 'Date created';
+
+  @override
+  String get sort_title => 'Sort';
+
+  @override
   String get clear_conversation_title => '清除对话吗？';
 
   @override

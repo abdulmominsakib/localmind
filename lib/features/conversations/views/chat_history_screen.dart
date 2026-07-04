@@ -79,6 +79,14 @@ class ChatHistoryScreen extends ConsumerWidget {
                                   context, ref, selectedIds),
                         ),
                         IconButton(
+                          icon: const Icon(Icons.ios_share),
+                          tooltip: l10n.export_conversation,
+                          onPressed: selectedIds.isEmpty
+                              ? null
+                              : () => runBulkExportConversations(
+                                  context, ref, selectedIds),
+                        ),
+                        IconButton(
                           icon: const Icon(Icons.auto_awesome_outlined),
                           tooltip: l10n.ai_rename_tooltip,
                           onPressed: selectedIds.isEmpty
@@ -117,6 +125,27 @@ class ChatHistoryScreen extends ConsumerWidget {
                           onPressed: () => ref
                               .read(historySelectionModeProvider.notifier)
                               .enable(),
+                        ),
+                        ListFilterButton<HistorySortOption>(
+                          tooltip: l10n.sort_title,
+                          icon: Icons.sort,
+                          showBadgeWhenNotDefault: false,
+                          selected: ref.watch(historySortOptionProvider),
+                          onChanged: (option) => ref
+                              .read(historySortOptionProvider.notifier)
+                              .setOption(option),
+                          options: [
+                            ListFilterOption(
+                              value: HistorySortOption.modified,
+                              label: l10n.sort_by_modified_date,
+                              icon: Icons.edit_calendar_outlined,
+                            ),
+                            ListFilterOption(
+                              value: HistorySortOption.created,
+                              label: l10n.sort_by_created_date,
+                              icon: Icons.calendar_today_outlined,
+                            ),
+                          ],
                         ),
                         ListFilterButton<HistoryListFilter>(
                           tooltip: l10n.filter_title,

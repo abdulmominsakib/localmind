@@ -1,7 +1,5 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +13,7 @@ import 'package:localmind/core/utils/system_insets.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
 import 'package:localmind/core/services/data_backup_service.dart';
+import 'package:localmind/core/services/export_choice_dialog.dart';
 import 'package:localmind/core/services/share_service.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
@@ -173,53 +172,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   }
 
   Future<void> _exportConversation(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
     final messages = ref.read(chatProvider).messages;
     if (messages.isEmpty) return;
 
     final activeConv = ref.read(conv.activeConversationProvider);
     final isTemporary = ref.read(chatProvider.select((s) => s.isTemporary));
     final title = isTemporary
-        ? l10n.temporary_chat
+        ? AppLocalizations.of(context)!.temporary_chat
         : activeConv?.title;
 
-    if (activeConv != null && !isTemporary) {
-      final db = ref.read(databaseProvider);
-      final json = DataBackupService()
-          .exportConversationAsJson(db.store, activeConv.id);
-      final saved = await FilePicker.saveFile(
-        dialogTitle: l10n.export_conversation,
-        fileName:
-            'localmind_${activeConv.title.replaceAll(RegExp(r'[^\w\-]+'), '_')}_${DateTime.now().millisecondsSinceEpoch}.json',
-        type: FileType.custom,
-        allowedExtensions: const ['json'],
-        bytes: Uint8List.fromList(utf8.encode(json)),
-      );
-      if (saved != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.export_data_success)),
-        );
-      }
-      return;
-    }
+    final content = activeConv != null && !isTemporary
+        ? DataBackupService().exportConversationAsJson(
+            ref.read(databaseProvider).store,
+            activeConv.id,
+          )
+        : await ExportService.exportAsMarkdown(messages, title: title);
 
-    final markdown = await ExportService.exportAsMarkdown(
-      messages,
-      title: title,
-    );
-    final saved = await FilePicker.saveFile(
-      dialogTitle: l10n.export_conversation,
-      fileName:
-          'localmind_${(title ?? 'chat').replaceAll(RegExp(r'[^\w\-]+'), '_')}_${DateTime.now().millisecondsSinceEpoch}.md',
-      type: FileType.custom,
-      allowedExtensions: const ['md'],
-      bytes: Uint8List.fromList(utf8.encode(markdown)),
-    );
-    if (saved != null && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.export_data_success)),
-      );
-    }
+    if (!context.mounted) return;
+    await showExportChoiceDialog(context, content: content, subject: title);
   }
 
   void _showRenameDialog(BuildContext context, Conversation conversation) {
@@ -803,8 +773,9 @@ class _ScreenAppBar extends ConsumerWidget {
         .toList();
     if (messages.isEmpty) return;
     final text = ExportService.exportAsText(messages);
-    await ShareService.shareText(text);
     ref.read(messageSelectionModeProvider.notifier).disable();
+    if (!context.mounted) return;
+    await showExportChoiceDialog(context, content: text);
   }
 
   void _deleteSelectedMessages(

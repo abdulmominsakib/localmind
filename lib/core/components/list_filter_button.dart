@@ -19,15 +19,19 @@ class ListFilterButton<T> extends StatelessWidget {
     required this.selected,
     required this.onChanged,
     this.tooltip,
+    this.icon = Icons.filter_list_rounded,
+    this.showBadgeWhenNotDefault = true,
   });
 
   final List<ListFilterOption<T>> options;
   final T selected;
   final ValueChanged<T> onChanged;
   final String? tooltip;
+  final IconData icon;
+  final bool showBadgeWhenNotDefault;
 
   bool get _hasActiveFilter {
-    if (options.isEmpty) return false;
+    if (!showBadgeWhenNotDefault || options.isEmpty) return false;
     return selected != options.first.value;
   }
 
@@ -42,7 +46,7 @@ class ListFilterButton<T> extends StatelessWidget {
         isLabelVisible: _hasActiveFilter,
         smallSize: 8,
         child: Icon(
-          Icons.filter_list_rounded,
+          icon,
           color: _hasActiveFilter
               ? theme.colorScheme.primary
               : theme.iconTheme.color,
