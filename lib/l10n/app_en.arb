@@ -872,9 +872,21 @@
   "@send_on_enter": {
     "description": "Toggle for send on enter behavior"
   },
-  "show_system_messages": "Show System Messages",
+  "show_system_messages": "Send Default System Prompt",
   "@show_system_messages": {
-    "description": "Toggle for system messages visibility"
+    "description": "Toggle for sending a default 'You are LocalMind' system prompt to the model when no persona is selected"
+  },
+  "show_system_messages_desc": "When no persona is selected, send a default assistant system prompt with each request",
+  "@show_system_messages_desc": {
+    "description": "Description for the send-default-system-prompt toggle"
+  },
+  "show_system_messages_in_chat": "Show System Messages in Chat",
+  "@show_system_messages_in_chat": {
+    "description": "Toggle for whether system-role messages are displayed as bubbles in the chat transcript"
+  },
+  "show_system_messages_in_chat_desc": "Display system messages (e.g. from an imported backup) as visible bubbles in the conversation",
+  "@show_system_messages_in_chat_desc": {
+    "description": "Description for the show-system-messages-in-chat toggle"
   },
   "haptic_feedback": "Haptic Feedback",
   "@haptic_feedback": {

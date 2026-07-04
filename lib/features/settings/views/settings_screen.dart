@@ -208,10 +208,19 @@ class SettingsViews extends ConsumerWidget {
                   ),
                   _ToggleSetting(
                     label: l10n.show_system_messages,
+                    description: l10n.show_system_messages_desc,
                     value: settings.showSystemMessages,
                     onChanged: (value) => ref
                         .read(settingsProvider.notifier)
                         .setShowSystemMessages(value),
+                  ),
+                  _ToggleSetting(
+                    label: l10n.show_system_messages_in_chat,
+                    description: l10n.show_system_messages_in_chat_desc,
+                    value: settings.showSystemMessagesInChat,
+                    onChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setShowSystemMessagesInChat(value),
                   ),
                   _ToggleSetting(
                     label: l10n.haptic_feedback,

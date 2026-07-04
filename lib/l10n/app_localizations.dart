@@ -1271,11 +1271,29 @@ abstract class AppLocalizations {
   /// **'Send on Enter'**
   String get send_on_enter;
 
-  /// Toggle for system messages visibility
+  /// Toggle for sending a default 'You are LocalMind' system prompt to the model when no persona is selected
   ///
   /// In en, this message translates to:
-  /// **'Show System Messages'**
+  /// **'Send Default System Prompt'**
   String get show_system_messages;
+
+  /// Description for the send-default-system-prompt toggle
+  ///
+  /// In en, this message translates to:
+  /// **'When no persona is selected, send a default assistant system prompt with each request'**
+  String get show_system_messages_desc;
+
+  /// Toggle for whether system-role messages are displayed as bubbles in the chat transcript
+  ///
+  /// In en, this message translates to:
+  /// **'Show System Messages in Chat'**
+  String get show_system_messages_in_chat;
+
+  /// Description for the show-system-messages-in-chat toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Display system messages (e.g. from an imported backup) as visible bubbles in the conversation'**
+  String get show_system_messages_in_chat_desc;
 
   /// Toggle for haptic feedback
   ///

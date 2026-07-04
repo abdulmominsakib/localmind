@@ -52,6 +52,7 @@ class AppSettings {
   final bool smartRepliesUsePersona;
   final bool keepPersonaOnNewChat;
   final bool roleSwapButtonEnabled;
+  final bool showSystemMessagesInChat;
 
   AppSettings({
     this.temperature = 0.7,
@@ -94,6 +95,7 @@ class AppSettings {
     this.smartRepliesUsePersona = false,
     this.keepPersonaOnNewChat = false,
     this.roleSwapButtonEnabled = false,
+    this.showSystemMessagesInChat = true,
   });
 
   AppSettings copyWith({
@@ -137,6 +139,7 @@ class AppSettings {
     bool? smartRepliesUsePersona,
     bool? keepPersonaOnNewChat,
     bool? roleSwapButtonEnabled,
+    bool? showSystemMessagesInChat,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -196,6 +199,8 @@ class AppSettings {
       keepPersonaOnNewChat: keepPersonaOnNewChat ?? this.keepPersonaOnNewChat,
       roleSwapButtonEnabled:
           roleSwapButtonEnabled ?? this.roleSwapButtonEnabled,
+      showSystemMessagesInChat:
+          showSystemMessagesInChat ?? this.showSystemMessagesInChat,
     );
   }
 
@@ -241,6 +246,7 @@ class AppSettings {
       'smartRepliesUsePersona': smartRepliesUsePersona,
       'keepPersonaOnNewChat': keepPersonaOnNewChat,
       'roleSwapButtonEnabled': roleSwapButtonEnabled,
+      'showSystemMessagesInChat': showSystemMessagesInChat,
     };
   }
 
@@ -287,6 +293,7 @@ class AppSettings {
       smartRepliesUsePersona: map['smartRepliesUsePersona'] ?? false,
       keepPersonaOnNewChat: map['keepPersonaOnNewChat'] ?? false,
       roleSwapButtonEnabled: map['roleSwapButtonEnabled'] ?? false,
+      showSystemMessagesInChat: map['showSystemMessagesInChat'] ?? true,
     );
   }
 

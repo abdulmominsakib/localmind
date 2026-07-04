@@ -635,6 +635,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get show_system_messages => 'إظهار رسائل النظام';
 
   @override
+  String get show_system_messages_desc =>
+      'When no persona is selected, send a default assistant system prompt with each request';
+
+  @override
+  String get show_system_messages_in_chat => 'Show System Messages in Chat';
+
+  @override
+  String get show_system_messages_in_chat_desc =>
+      'Display system messages (e.g. from an imported backup) as visible bubbles in the conversation';
+
+  @override
   String get haptic_feedback => 'الاستجابة اللمسية';
 
   @override

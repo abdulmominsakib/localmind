@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/models/enums.dart';
+import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart';
@@ -238,6 +239,8 @@ class _MessageList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectionMode = ref.watch(messageSelectionModeProvider);
     final selectedIds = ref.watch(selectedMessageIdsProvider);
+    final showSystemMessages =
+        ref.watch(settingsProvider.select((s) => s.showSystemMessagesInChat));
     final visibleMessages = <Message>[];
 
     // The streaming message only belongs at the end of the currently
@@ -249,6 +252,9 @@ class _MessageList extends ConsumerWidget {
         messages.any((m) => m.id == streamingMessage!.id);
 
     for (final message in messages) {
+      if (!showSystemMessages && message.role == MessageRole.system) {
+        continue;
+      }
       if (streamingBelongsToActiveTimeline &&
           message.id == streamingMessage!.id &&
           isStreaming) {
