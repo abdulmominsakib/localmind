@@ -215,6 +215,45 @@ class ServerApiService {
     }
   }
 
+  /// Uses the embeddings endpoint purely to get an accurate tokenizer
+  /// count of [text] from the response's `usage` field — the embedding
+  /// vector itself is discarded. Returns null if the server/model doesn't
+  /// support embeddings or the request otherwise fails; callers should
+  /// treat that as "count unavailable", not an error.
+  Future<int?> countTokens(Server server, String modelId, String text) async {
+    if (text.trim().isEmpty) return 0;
+    final endpoint = server.embeddingsEndpoint;
+    if (endpoint.isEmpty) return null;
+
+    try {
+      final response = await _dio.post(
+        endpoint,
+        data: {'model': modelId, 'input': text},
+        options: Options(
+          headers: buildServerAuthHeaders(server),
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+      final data = response.data;
+      if (data is! Map) return null;
+
+      if (server.type == ServerType.ollama) {
+        final count = data['prompt_eval_count'];
+        return count is num ? count.toInt() : null;
+      }
+
+      final usage = data['usage'];
+      if (usage is Map) {
+        final total = usage['total_tokens'] ?? usage['prompt_tokens'];
+        if (total is num) return total.toInt();
+      }
+      return null;
+    } catch (e) {
+      Log.warning('Token count via embeddings failed: $e');
+      return null;
+    }
+  }
+
   Set<String> _parseRunningOpenAICompatibleModels(dynamic data) {
     final runningModels = <String>{};
     if (data == null) return runningModels;

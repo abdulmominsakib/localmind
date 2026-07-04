@@ -725,6 +725,12 @@ abstract class AppLocalizations {
   /// **'New chat in this folder'**
   String get new_chat_in_folder_tooltip;
 
+  /// Total token count shown under the chat text field
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tokens'**
+  String total_tokens_count(int count);
+
   /// Clear conversation dialog title
   ///
   /// In en, this message translates to:

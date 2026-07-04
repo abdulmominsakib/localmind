@@ -173,6 +173,54 @@ class ChatNotifier extends Notifier<ChatState> {
     );
   }
 
+  /// Recomputes token counts via the server's embeddings endpoint (its
+  /// `usage` field gives an accurate tokenizer count without needing to
+  /// actually generate anything) for whichever of [userMessage] /
+  /// [assistantMessage] changed, plus the whole conversation's active
+  /// timeline. Runs in the background — failures are silently ignored
+  /// since not every server/model supports embeddings.
+  void _scheduleTokenRecount(
+    String conversationId, {
+    Message? userMessage,
+    Message? assistantMessage,
+  }) {
+    if (_isInMemoryChat) return;
+    final server = ref.read(activeServerProvider);
+    final selectedModel = ref.read(selectedModelProvider);
+    if (server == null || selectedModel == null) return;
+    final apiService = ref.read(serverApiServiceProvider);
+
+    Future<void> recountMessage(Message message) async {
+      final count =
+          await apiService.countTokens(server, selectedModel.id, message.content);
+      if (count == null) return;
+      final updated = message.copyWith(contentTokenCount: count);
+      await _saveMessage(updated);
+      _replaceMessageInAll(updated);
+    }
+
+    if (userMessage != null) unawaited(recountMessage(userMessage));
+    if (assistantMessage != null) unawaited(recountMessage(assistantMessage));
+
+    final combinedText = state.messages
+        .map((m) => m.content)
+        .where((c) => c.trim().isNotEmpty)
+        .join('\n\n');
+    if (combinedText.trim().isEmpty) return;
+
+    unawaited(() async {
+      final total = await apiService.countTokens(
+        server,
+        selectedModel.id,
+        combinedText,
+      );
+      if (total == null) return;
+      await ref
+          .read(conv.conversationsProvider.notifier)
+          .updateTokenCount(conversationId, total);
+    }());
+  }
+
   void approveTool(bool approved) {
     final pending = state.pendingToolApproval;
     if (pending != null && !pending.completer.isCompleted) {
@@ -994,11 +1042,16 @@ class ChatNotifier extends Notifier<ChatState> {
                           characterCount: totalChars,
                           preview: preview,
                         );
+                    _scheduleTokenRecount(
+                      _currentConversationId!,
+                      userMessage: userMessage,
+                      assistantMessage: finalMessage,
+                    );
 
-                    final userMessage = state.messages
+                    final lastUserMessage = state.messages
                         .where((m) => m.role == MessageRole.user)
                         .firstOrNull;
-                    if (userMessage != null) {
+                    if (lastUserMessage != null) {
                       _maybeAutoGenerateTitleAfterFirstReply();
                     }
                   }
@@ -1737,6 +1790,12 @@ class ChatNotifier extends Notifier<ChatState> {
               state = state.copyWith(isStreaming: false, clearStreaming: true);
               ref.read(isStreamingProvider.notifier).setStreaming(false);
               ref.read(chatBackgroundServiceProvider).stop();
+              if (_currentConversationId != null) {
+                _scheduleTokenRecount(
+                  _currentConversationId!,
+                  assistantMessage: finalMessage,
+                );
+              }
               _maybeRequestReviewAfterSuccessfulCompletion(
                 finalMessage: finalMessage,
                 server: server,
@@ -1800,6 +1859,9 @@ class ChatNotifier extends Notifier<ChatState> {
     );
     await _saveMessage(updated);
     _replaceMessageInAll(updated);
+    if (_currentConversationId != null) {
+      _scheduleTokenRecount(_currentConversationId!, assistantMessage: updated);
+    }
   }
 
   Future<void> branchFromMessage(String messageId) async {
@@ -1901,6 +1963,9 @@ class ChatNotifier extends Notifier<ChatState> {
     final updated = message.copyWith(content: newContent);
     await _saveMessage(updated);
     _replaceMessageInAll(updated);
+    if (_currentConversationId != null) {
+      _scheduleTokenRecount(_currentConversationId!, userMessage: updated);
+    }
   }
 
   Future<void> generateResponseForLastUser() async {

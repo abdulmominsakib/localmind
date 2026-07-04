@@ -220,6 +220,24 @@ class Server {
     }
   }
 
+  /// Endpoint used purely to obtain an accurate tokenizer count via the
+  /// `usage` field of an embeddings response — the embedding vector itself
+  /// is discarded. Not supported for OpenRouter or on-device.
+  String get embeddingsEndpoint {
+    switch (type) {
+      case ServerType.lmStudio:
+        return '$baseUrl/v1/embeddings';
+      case ServerType.openAICompatible:
+        return '$baseUrl/v1/embeddings';
+      case ServerType.ollama:
+        return '$baseUrl${_apiPath('/api/embed')}';
+      case ServerType.openRouter:
+        return '';
+      case ServerType.onDevice:
+        return '';
+    }
+  }
+
   String get unloadModelEndpoint {
     switch (type) {
       case ServerType.lmStudio:

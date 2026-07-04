@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:6060443518060866028",
-      "lastPropertyId": "23:3122805731877931734",
+      "lastPropertyId": "24:2324488738774851555",
       "name": "ConversationEntity",
       "properties": [
         {
@@ -125,13 +125,18 @@
           "id": "23:3122805731877931734",
           "name": "characterCount",
           "type": 6
+        },
+        {
+          "id": "24:2324488738774851555",
+          "name": "totalTokenCount",
+          "type": 6
         }
       ],
       "relations": []
     },
     {
       "id": "2:196881068437544233",
-      "lastPropertyId": "28:8162956617579414275",
+      "lastPropertyId": "29:6028398201373029019",
       "name": "MessageEntity",
       "properties": [
         {
@@ -281,6 +286,11 @@
           "id": "28:8162956617579414275",
           "name": "stopReason",
           "type": 9
+        },
+        {
+          "id": "29:6028398201373029019",
+          "name": "contentTokenCount",
+          "type": 6
         }
       ],
       "relations": []

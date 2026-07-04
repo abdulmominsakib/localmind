@@ -336,6 +336,11 @@ class AppLocalizationsBn extends AppLocalizations {
   String get new_chat_in_folder_tooltip => 'New chat in this folder';
 
   @override
+  String total_tokens_count(int count) {
+    return '$count tokens';
+  }
+
+  @override
   String get clear_conversation_title => 'কথোপকথন মুছে ফেলবেন?';
 
   @override

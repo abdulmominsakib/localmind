@@ -10,6 +10,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/routes/app_routes.dart';
+import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/core/utils/system_insets.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
@@ -920,6 +921,11 @@ class _ChatBottomBar extends ConsumerWidget {
     final isTemporary = ref.watch(chatProvider.select((s) => s.isTemporary));
     final keyboardIncognito = isTemporary &&
         ref.watch(settingsProvider.select((s) => s.tempChatKeyboardIncognito));
+    final totalTokenCount = ref.watch(
+      conv.activeConversationProvider.select((c) => c?.totalTokenCount),
+    );
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Positioned(
       bottom: 0,
@@ -956,6 +962,19 @@ class _ChatBottomBar extends ConsumerWidget {
               },
               onStop: () => ref.read(chatProvider.notifier).cancelStream(),
             ),
+            if (totalTokenCount != null && keyboardBottomInset == 0)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  AppLocalizations.of(context)!.total_tokens_count(totalTokenCount),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark
+                        ? AppColors.darkMutedText
+                        : AppColors.lightMutedText,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

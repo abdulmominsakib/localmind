@@ -151,7 +151,12 @@ class ConversationTile extends StatelessWidget {
                       ],
                       const SizedBox(height: 2),
                       Text(
-                        '${l10n.conversation_message_count(conversation.messageCount)} · ${l10n.conversation_character_count(conversation.characterCount)}',
+                        [
+                          l10n.conversation_message_count(conversation.messageCount),
+                          l10n.conversation_character_count(conversation.characterCount),
+                          if (conversation.totalTokenCount != null)
+                            l10n.total_tokens_count(conversation.totalTokenCount!),
+                        ].join(' · '),
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark

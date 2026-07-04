@@ -21,6 +21,7 @@ class Conversation {
   final bool isTemporary;
   final bool isArchived;
   final int characterCount;
+  final int? totalTokenCount;
 
   Conversation({
     required this.id,
@@ -45,6 +46,7 @@ class Conversation {
     this.isTemporary = false,
     this.isArchived = false,
     this.characterCount = 0,
+    this.totalTokenCount,
   });
 
   Conversation copyWith({
@@ -80,6 +82,7 @@ class Conversation {
     bool? isTemporary,
     bool? isArchived,
     int? characterCount,
+    int? totalTokenCount,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -108,6 +111,7 @@ class Conversation {
       isTemporary: isTemporary ?? this.isTemporary,
       isArchived: isArchived ?? this.isArchived,
       characterCount: characterCount ?? this.characterCount,
+      totalTokenCount: totalTokenCount ?? this.totalTokenCount,
     );
   }
 }

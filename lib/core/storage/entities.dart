@@ -213,6 +213,7 @@ class ConversationEntity {
   bool isTemporary;
   bool isArchived;
   int characterCount;
+  int? totalTokenCount;
 
   @Backlink()
   final messages = ToMany<MessageEntity>();
@@ -241,6 +242,7 @@ class ConversationEntity {
     this.isTemporary = false,
     this.isArchived = false,
     this.characterCount = 0,
+    this.totalTokenCount,
   });
 
   factory ConversationEntity.fromDomain(Conversation conversation) {
@@ -269,6 +271,7 @@ class ConversationEntity {
       isTemporary: conversation.isTemporary,
       isArchived: conversation.isArchived,
       characterCount: conversation.characterCount,
+      totalTokenCount: conversation.totalTokenCount,
     );
   }
 
@@ -308,6 +311,7 @@ class ConversationEntity {
       isTemporary: isTemporary,
       isArchived: isArchived,
       characterCount: characterCount,
+      totalTokenCount: totalTokenCount,
     );
   }
 
@@ -444,6 +448,7 @@ class MessageEntity {
   int threadOrder;
   bool isActiveVariant;
   String? parentMessageId;
+  int? contentTokenCount;
 
   MessageEntity({
     this.internalId = 0,
@@ -473,6 +478,7 @@ class MessageEntity {
     this.threadOrder = 0,
     this.isActiveVariant = true,
     this.parentMessageId,
+    this.contentTokenCount,
   });
 
   factory MessageEntity.fromDomain(Message message) {
@@ -509,6 +515,7 @@ class MessageEntity {
       threadOrder: message.threadOrder,
       isActiveVariant: message.isActiveVariant,
       parentMessageId: message.parentMessageId,
+      contentTokenCount: message.contentTokenCount,
     );
   }
 
@@ -582,6 +589,7 @@ class MessageEntity {
       threadOrder: threadOrder,
       isActiveVariant: isActiveVariant,
       parentMessageId: parentMessageId,
+      contentTokenCount: contentTokenCount,
     );
   }
 }

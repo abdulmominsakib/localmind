@@ -364,6 +364,33 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     state = AsyncData(await _loadAll());
   }
 
+  /// Updates just the embeddings-derived total token count without
+  /// touching `updatedAt` — this runs as a background recount after every
+  /// send/edit/regenerate and shouldn't bump the conversation's sort order
+  /// or last-modified time on its own.
+  Future<void> updateTokenCount(String id, int totalTokenCount) async {
+    final db = ref.read(databaseProvider);
+    final conversations = state.value ?? [];
+    final existingIndex = conversations.indexWhere((c) => c.id == id);
+    if (existingIndex == -1) return;
+
+    final existing = conversations[existingIndex];
+    final updated = existing.copyWith(totalTokenCount: totalTokenCount);
+
+    final query = db.conversationBox
+        .query(ConversationEntity_.id.equals(id))
+        .build();
+    final existingEntity = query.findFirst();
+    query.close();
+
+    final entity = ConversationEntity.fromDomain(updated);
+    if (existingEntity != null) {
+      entity.internalId = existingEntity.internalId;
+    }
+    db.conversationBox.put(entity);
+    state = AsyncData(await _loadAll());
+  }
+
   Future<void> updatePersonas(String id, List<Persona> personas) async {
     final personaId = personas.isEmpty
         ? null

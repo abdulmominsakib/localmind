@@ -30,6 +30,7 @@ class Message {
   final int threadOrder;
   final bool isActiveVariant;
   final String? parentMessageId;
+  final int? contentTokenCount;
 
   Message({
     required this.id,
@@ -58,6 +59,7 @@ class Message {
     this.threadOrder = 0,
     this.isActiveVariant = true,
     this.parentMessageId,
+    this.contentTokenCount,
   });
 
   Message copyWith({
@@ -87,6 +89,7 @@ class Message {
     int? threadOrder,
     bool? isActiveVariant,
     String? parentMessageId,
+    int? contentTokenCount,
   }) {
     return Message(
       id: id ?? this.id,
@@ -115,6 +118,7 @@ class Message {
       threadOrder: threadOrder ?? this.threadOrder,
       isActiveVariant: isActiveVariant ?? this.isActiveVariant,
       parentMessageId: parentMessageId ?? this.parentMessageId,
+      contentTokenCount: contentTokenCount ?? this.contentTokenCount,
     );
   }
 }

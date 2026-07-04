@@ -459,6 +459,13 @@
   "@new_chat_in_folder_tooltip": {
     "description": "Tooltip for the history screen new-chat FAB"
   },
+  "total_tokens_count": "{count} tokens",
+  "@total_tokens_count": {
+    "description": "Total token count shown under the chat text field",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "clear_conversation_title": "Clear conversation?",
   "@clear_conversation_title": {
     "description": "Clear conversation dialog title"
