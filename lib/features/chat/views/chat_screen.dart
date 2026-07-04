@@ -47,7 +47,7 @@ import 'package:localmind/features/personas/views/components/persona_picker_shee
 /// Height the always-on token usage row adds below the input box (its own
 /// content height plus the padding around it) — added to the message list's
 /// bottom padding so streamed content never ends up hidden behind it.
-const double _tokenIndicatorRowHeight = 28;
+const double _tokenIndicatorRowHeight = 22;
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -961,7 +961,7 @@ class _ChatBottomBar extends ConsumerWidget {
             ),
             if (keyboardBottomInset == 0)
               Padding(
-                padding: const EdgeInsetsDirectional.only(bottom: 12, end: 10),
+                padding: const EdgeInsetsDirectional.only(bottom: 6, end: 16),
                 child: Align(
                   alignment: AlignmentDirectional.centerEnd,
                   child: _TokenUsageIndicator(

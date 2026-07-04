@@ -1088,7 +1088,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
       child: Container(
 
-        margin: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 12),
+        margin: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 6),
 
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
 
