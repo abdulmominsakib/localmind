@@ -14,6 +14,7 @@ import '../core/models/enums.dart';
 import '../features/servers/data/models/server.dart';
 import '../features/servers/providers/server_providers.dart';
 import '../core/logger/app_logger.dart';
+import '../core/utils/locale_utils.dart';
 import 'bootstrap_screen.dart';
 import 'bootstrap_state.dart';
 
@@ -55,7 +56,7 @@ class _BootstrapHostState extends State<BootstrapHost> {
         if (settingsJson != null) {
           final settings = json.decode(settingsJson) as Map<String, dynamic>;
           final code = settings['localeCode'] as String?;
-          if (code != null) _savedLocale = Locale(code);
+          _savedLocale = parseLocaleCode(code);
         }
       } catch (_) {}
 
@@ -66,7 +67,10 @@ class _BootstrapHostState extends State<BootstrapHost> {
         ],
       );
 
-      _updateStage(BootstrapStage.initializingServices, 'Initializing services...');
+      _updateStage(
+        BootstrapStage.initializingServices,
+        'Initializing services...',
+      );
 
       final hfToken = container.read(
         settingsProvider.select((s) => s.huggingFaceToken),

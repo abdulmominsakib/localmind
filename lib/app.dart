@@ -9,9 +9,9 @@ import 'core/models/enums.dart';
 import 'core/providers/app_providers.dart';
 import 'core/routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
+import 'core/utils/locale_utils.dart';
 import 'features/chat/providers/chat_providers.dart';
-import 'features/conversations/providers/conversation_providers.dart'
-    as conv;
+import 'features/conversations/providers/conversation_providers.dart' as conv;
 import 'features/chat/views/chat_screen.dart';
 import 'features/conversations/views/chat_history_screen.dart';
 import 'features/mcp/views/mcp_tools_screen.dart';
@@ -189,6 +189,10 @@ class App extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     final appThemeType = ref.watch(themeModeProvider);
     final localeCode = ref.watch(settingsProvider.select((s) => s.localeCode));
+    final selectedLocale = findSupportedLocale(
+      localeCode,
+      AppLocalizations.supportedLocales,
+    );
 
     ThemeData theme = AppTheme.lightTheme;
     ThemeData darkTheme = AppTheme.darkTheme;
@@ -238,22 +242,11 @@ class App extends ConsumerWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [
-            Locale('en'),
-            Locale('ar'),
-            Locale('bn'),
-            Locale('zh'),
-            Locale('es'),
-            Locale('hi'),
-            Locale('it'),
-            Locale('ja'),
-            Locale('ru'),
-          ],
-          locale: localeCode != null ? Locale(localeCode) : null,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: selectedLocale,
           localeResolutionCallback: (locale, supportedLocales) {
-            if (localeCode != null) {
-              final langLocale = Locale(localeCode);
-              if (supportedLocales.contains(langLocale)) return langLocale;
+            if (selectedLocale != null) {
+              return selectedLocale;
             }
             for (final l in supportedLocales) {
               if (l.languageCode == locale?.languageCode) return l;
@@ -323,18 +316,13 @@ class AppShell extends ConsumerWidget {
                         ? const Color(0xFF1A1A1A)
                         : const Color(0xFFE5E5E5),
                   ),
-                  Expanded(
-                    child: child,
-                  ),
+                  Expanded(child: child),
                 ],
               ),
             );
           }
 
-          return Scaffold(
-            body: child,
-            drawer: const ConversationDrawer(),
-          );
+          return Scaffold(body: child, drawer: const ConversationDrawer());
         },
       ),
     );

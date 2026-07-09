@@ -73,6 +73,16 @@ const _languages = [
     gradient: [Color(0xFFEF4444), Color(0xFFDC2626)],
   ),
   _LanguageOption(
+    code: 'zh_TW',
+    nativeName: '繁體中文',
+    englishName: 'Traditional Chinese',
+    flag: '🇹🇼',
+    flagAsset: 'assets/images/flag_tw.png',
+    countryCode: 'TW',
+    shortText: 'Zh-TW',
+    gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+  ),
+  _LanguageOption(
     code: 'ar',
     nativeName: 'العربية',
     englishName: 'Arabic',
@@ -153,7 +163,6 @@ class _OnboardingLanguageScreenState
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -198,10 +207,7 @@ class _OnboardingLanguageScreenState
                   children: [
                     const SizedBox(height: 24),
                     Actor(
-                      acts: [
-                        .fadeIn(),
-                        .slideY(from: 0.08),
-                      ],
+                      acts: [.fadeIn(), .slideY(from: 0.08)],
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -227,7 +233,9 @@ class _OnboardingLanguageScreenState
                             l10n.onboarding_choose_language_desc,
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
                               height: 1.5,
                             ),
                           ),
@@ -237,15 +245,13 @@ class _OnboardingLanguageScreenState
                     const SizedBox(height: 32),
                     Actor(
                       delay: 60.ms,
-                      acts: [
-                        .fadeIn(),
-                        .slideY(from: 0.08),
-                      ],
+                      acts: [.fadeIn(), .slideY(from: 0.08)],
                       child: ListView.separated(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: _languages.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final lang = _languages[index];
                           final isSelected = _selectedCode == lang.code;
@@ -272,8 +278,9 @@ class _OnboardingLanguageScreenState
                                 border: Border.all(
                                   color: isSelected
                                       ? theme.colorScheme.primary
-                                      : theme.colorScheme.outline
-                                          .withValues(alpha: 0.15),
+                                      : theme.colorScheme.outline.withValues(
+                                          alpha: 0.15,
+                                        ),
                                   width: isSelected ? 2 : 1,
                                 ),
                                 boxShadow: isSelected
@@ -283,7 +290,7 @@ class _OnboardingLanguageScreenState
                                               .withValues(alpha: 0.1),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
-                                        )
+                                        ),
                                       ]
                                     : null,
                               ),
@@ -302,7 +309,9 @@ class _OnboardingLanguageScreenState
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.05),
+                                          color: Colors.black.withValues(
+                                            alpha: 0.05,
+                                          ),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
@@ -316,35 +325,42 @@ class _OnboardingLanguageScreenState
                                         width: 48,
                                         height: 32,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Text(
-                                            lang.flag,
-                                            style: const TextStyle(fontSize: 18),
-                                          );
-                                        },
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Text(
+                                                lang.flag,
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                ),
+                                              );
+                                            },
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
                                           lang.nativeName,
-                                          style:
-                                              theme.textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           '${lang.englishName} • ${lang.shortText.toUpperCase()}',
-                                          style: theme.textTheme.labelSmall?.copyWith(
-                                            color: theme.colorScheme.onSurface
-                                                .withValues(alpha: 0.5),
-                                          ),
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withValues(alpha: 0.5),
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -363,13 +379,13 @@ class _OnboardingLanguageScreenState
                                         color: isSelected
                                             ? theme.colorScheme.primary
                                             : theme.colorScheme.outline
-                                                .withValues(alpha: 0.3),
+                                                  .withValues(alpha: 0.3),
                                         width: 2,
                                       ),
                                     ),
                                     child: isSelected
-                                        ? const HugeIcon(icon: 
-                                            HugeIcons.strokeRoundedTick01,
+                                        ? const HugeIcon(
+                                            icon: HugeIcons.strokeRoundedTick01,
                                             color: Colors.white,
                                             size: 14,
                                           )
@@ -389,10 +405,7 @@ class _OnboardingLanguageScreenState
             ),
             Actor(
               delay: 120.ms,
-              acts: [
-                .fadeIn(),
-                .slideY(from: 0.08),
-              ],
+              acts: [.fadeIn(), .slideY(from: 0.08)],
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
@@ -435,9 +448,7 @@ class _OnboardingLanguageScreenState
                         ),
                       ),
                     ),
-                    SizedBox(
-                      height: MediaQuery.of(context).padding.bottom,
-                    ),
+                    SizedBox(height: MediaQuery.of(context).padding.bottom),
                   ],
                 ),
               ),
