@@ -5176,6 +5176,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Passphrases do not match'**
   String get cloud_sync_passphrase_mismatch;
+
+  /// Title shown on the crash error screen
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get crash_report_title;
+
+  /// Label for the expandable stack trace section on the crash screen
+  ///
+  /// In en, this message translates to:
+  /// **'Stack trace'**
+  String get crash_report_stack_trace;
+
+  /// Hint telling the user they can expand the stack trace section
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to expand'**
+  String get crash_report_tap_to_expand;
+
+  /// Button that opens GitHub to report the captured crash
+  ///
+  /// In en, this message translates to:
+  /// **'Report this crash'**
+  String get crash_report_button;
+
+  /// Button that clears the crash and attempts to reload the app
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get crash_try_again;
+
+  /// Placeholder shown when a crash stack trace is empty
+  ///
+  /// In en, this message translates to:
+  /// **'<empty>'**
+  String get crash_report_empty_stack;
+
+  /// Disclaimer below the crash report buttons explaining that the issue is not submitted automatically
+  ///
+  /// In en, this message translates to:
+  /// **'Reporting opens GitHub with diagnostics prefilled. You stay in control — nothing is submitted automatically. Please review and remove any sensitive content before submitting.'**
+  String get crash_report_disclaimer;
+
+  /// Snackbar message shown after the user copies the crash report to the clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get crash_report_copied;
+
+  /// Settings tile label that opens the generic feedback issue form
+  ///
+  /// In en, this message translates to:
+  /// **'Report a problem'**
+  String get report_a_problem;
 }
 
 class _AppLocalizationsDelegate

@@ -2778,4 +2778,32 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get cloud_sync_passphrase_mismatch => 'Пароли не совпадают';
+
+  @override
+  String get crash_report_title => 'Что-то пошло не так';
+
+  @override
+  String get crash_report_stack_trace => 'Трассировка стека';
+
+  @override
+  String get crash_report_tap_to_expand => 'Нажмите, чтобы развернуть';
+
+  @override
+  String get crash_report_button => 'Сообщить об этом сбое';
+
+  @override
+  String get crash_try_again => 'Попробовать снова';
+
+  @override
+  String get crash_report_empty_stack => '<пусто>';
+
+  @override
+  String get crash_report_disclaimer =>
+      'Отчёт откроет GitHub с уже заполненной диагностикой. Контроль остаётся за вами — ничего не отправляется автоматически. Перед отправкой проверьте и удалите конфиденциальные данные.';
+
+  @override
+  String get crash_report_copied => 'Скопировано в буфер обмена';
+
+  @override
+  String get report_a_problem => 'Сообщить о проблеме';
 }

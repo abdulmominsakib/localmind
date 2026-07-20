@@ -2751,4 +2751,32 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get cloud_sync_passphrase_mismatch => 'عبارتا المرور غير متطابقتين';
+
+  @override
+  String get crash_report_title => 'حدث خطأ ما';
+
+  @override
+  String get crash_report_stack_trace => 'تتبع المكدس';
+
+  @override
+  String get crash_report_tap_to_expand => 'اضغط للتوسيع';
+
+  @override
+  String get crash_report_button => 'الإبلاغ عن هذا العطل';
+
+  @override
+  String get crash_try_again => 'المحاولة مرة أخرى';
+
+  @override
+  String get crash_report_empty_stack => '<فارغ>';
+
+  @override
+  String get crash_report_disclaimer =>
+      'يفتح الإبلاغ GitHub مع بيانات التشخيص مملوءة مسبقًا. أنت المسؤول — لا يتم إرسال أي شيء تلقائيًا. يرجى المراجعة وإزالة أي محتوى حساس قبل الإرسال.';
+
+  @override
+  String get crash_report_copied => 'تم النسخ إلى الحافظة';
+
+  @override
+  String get report_a_problem => 'الإبلاغ عن مشكلة';
 }

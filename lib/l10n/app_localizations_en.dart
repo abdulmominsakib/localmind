@@ -2759,4 +2759,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloud_sync_passphrase_mismatch => 'Passphrases do not match';
+
+  @override
+  String get crash_report_title => 'Something went wrong';
+
+  @override
+  String get crash_report_stack_trace => 'Stack trace';
+
+  @override
+  String get crash_report_tap_to_expand => 'Tap to expand';
+
+  @override
+  String get crash_report_button => 'Report this crash';
+
+  @override
+  String get crash_try_again => 'Try again';
+
+  @override
+  String get crash_report_empty_stack => '<empty>';
+
+  @override
+  String get crash_report_disclaimer =>
+      'Reporting opens GitHub with diagnostics prefilled. You stay in control — nothing is submitted automatically. Please review and remove any sensitive content before submitting.';
+
+  @override
+  String get crash_report_copied => 'Copied to clipboard';
+
+  @override
+  String get report_a_problem => 'Report a problem';
 }

@@ -2711,4 +2711,32 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cloud_sync_passphrase_mismatch => 'パスフレーズが一致しません';
+
+  @override
+  String get crash_report_title => '問題が発生しました';
+
+  @override
+  String get crash_report_stack_trace => 'スタックトレース';
+
+  @override
+  String get crash_report_tap_to_expand => 'タップして展開';
+
+  @override
+  String get crash_report_button => 'このクラッシュを報告';
+
+  @override
+  String get crash_try_again => '再試行';
+
+  @override
+  String get crash_report_empty_stack => '<空>';
+
+  @override
+  String get crash_report_disclaimer =>
+      '報告すると、診断情報があらかじめ入力された状態で GitHub が開きます。自動送信はされません。送信前に機密性の高い内容を削除してください。';
+
+  @override
+  String get crash_report_copied => 'クリップボードにコピーしました';
+
+  @override
+  String get report_a_problem => '問題を報告';
 }

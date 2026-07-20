@@ -846,5 +846,14 @@
   "cloud_sync_last_synced": "Ultima sincronizzazione",
   "cloud_sync_never": "Mai",
   "cloud_sync_conflicts": "Conflitti conservati",
-  "cloud_sync_passphrase_mismatch": "Le passphrase non corrispondono"
+  "cloud_sync_passphrase_mismatch": "Le passphrase non corrispondono",
+  "crash_report_title": "Qualcosa è andato storto",
+  "crash_report_stack_trace": "Stack trace",
+  "crash_report_tap_to_expand": "Tocca per espandere",
+  "crash_report_button": "Segnala questo crash",
+  "crash_try_again": "Riprova",
+  "crash_report_empty_stack": "<vuoto>",
+  "crash_report_disclaimer": "Segnalare apre GitHub con le diagnostiche già compilate. Hai il controllo: non viene inviato nulla automaticamente. Rivedi e rimuovi eventuali contenuti sensibili prima di inviare.",
+  "crash_report_copied": "Copiato negli appunti",
+  "report_a_problem": "Segnala un problema"
 }

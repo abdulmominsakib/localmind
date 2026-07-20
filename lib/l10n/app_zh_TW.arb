@@ -846,5 +846,14 @@
   "cloud_sync_last_synced": "上次同步",
   "cloud_sync_never": "從未",
   "cloud_sync_conflicts": "已保留衝突",
-  "cloud_sync_passphrase_mismatch": "密碼片語不相符"
+  "cloud_sync_passphrase_mismatch": "密碼片語不相符",
+  "crash_report_title": "出了點問題",
+  "crash_report_stack_trace": "堆疊追蹤",
+  "crash_report_tap_to_expand": "點擊展開",
+  "crash_report_button": "回報此當機",
+  "crash_try_again": "重試",
+  "crash_report_empty_stack": "<空>",
+  "crash_report_disclaimer": "回報將開啟已預先填入診斷資訊的 GitHub。由您掌控 — 不會自動提交任何內容。請在提交前檢查並移除敏感內容。",
+  "crash_report_copied": "已複製到剪貼簿",
+  "report_a_problem": "回報問題"
 }

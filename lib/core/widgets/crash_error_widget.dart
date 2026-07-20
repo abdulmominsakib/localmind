@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../services/crash_report_service.dart';
 
 /// User-facing fallback shown when a crash is captured. Used both as
@@ -14,6 +17,7 @@ class CrashErrorWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final stackLines = crash.stackTrace.toString().split('\n');
     final previewLines = stackLines.take(40).join('\n');
 
@@ -37,15 +41,15 @@ class CrashErrorWidget extends StatelessWidget {
                       color: theme.colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Icon(
-                      Icons.error_outline,
+                    child: HugeIcon(
+                      icon: HugeIcons.strokeRoundedAlertCircle,
                       size: 36,
                       color: theme.colorScheme.onErrorContainer,
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Something went wrong',
+                    l10n?.crash_report_title ?? 'Something went wrong',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
@@ -78,8 +82,8 @@ class CrashErrorWidget extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(
-                              Icons.bug_report_outlined,
+                            HugeIcon(
+                              icon: HugeIcons.strokeRoundedBug01,
                               size: 18,
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -109,13 +113,13 @@ class CrashErrorWidget extends StatelessWidget {
                       tilePadding: EdgeInsets.zero,
                       childrenPadding: const EdgeInsets.only(bottom: 8),
                       title: Text(
-                        'Stack trace',
+                        l10n?.crash_report_stack_trace ?? 'Stack trace',
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       subtitle: Text(
-                        'Tap to expand',
+                        l10n?.crash_report_tap_to_expand ?? 'Tap to expand',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -133,7 +137,10 @@ class CrashErrorWidget extends StatelessWidget {
                             ),
                           ),
                           child: SelectableText(
-                            previewLines.isEmpty ? '<empty>' : previewLines,
+                            previewLines.isEmpty
+                                ? (l10n?.crash_report_empty_stack ??
+                                    '<empty>')
+                                : previewLines,
                             style: const TextStyle(
                               fontFamily: 'monospace',
                               fontSize: 11.5,
@@ -147,19 +154,34 @@ class CrashErrorWidget extends StatelessWidget {
                   const SizedBox(height: 20),
                   FilledButton.icon(
                     onPressed: () => _openGitHub(context),
-                    icon: const Icon(Icons.open_in_new),
-                    label: const Text('Report this crash'),
+                    icon: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedArrowUpRight01,
+                      size: 18,
+                    ),
+                    label: Text(
+                      l10n?.crash_report_button ?? 'Report this crash',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => _copyReport(context),
+                    icon: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedCopy01,
+                      size: 18,
+                    ),
+                    label: Text(l10n?.copy ?? 'Copy report'),
                   ),
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: () => _tryAgain(context),
-                    child: const Text('Try again'),
+                    child: Text(l10n?.crash_try_again ?? 'Try again'),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Reporting opens GitHub with diagnostics prefilled. '
-                    'You stay in control — nothing is submitted automatically. '
-                    'Please review and remove any sensitive content before submitting.',
+                    l10n?.crash_report_disclaimer ??
+                        'Reporting opens GitHub with diagnostics prefilled. '
+                            'You stay in control — nothing is submitted automatically. '
+                            'Please review and remove any sensitive content before submitting.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
@@ -178,13 +200,15 @@ class CrashErrorWidget extends StatelessWidget {
   Future<void> _openGitHub(BuildContext context) async {
     final uri = CrashReportService.instance.buildGitHubIssueUrl(crash);
     final messenger = ScaffoldMessenger.maybeOf(context);
+    final l10n = AppLocalizations.of(context);
     try {
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!ok && messenger != null) {
         messenger.showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Could not open GitHub. Please copy the URL manually.',
+              l10n?.could_not_open_github ??
+                  'Could not open GitHub. Please copy the URL manually.',
             ),
           ),
         );
@@ -193,6 +217,29 @@ class CrashErrorWidget extends StatelessWidget {
       if (messenger != null) {
         messenger.showSnackBar(
           SnackBar(content: Text('Failed to open URL: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _copyReport(BuildContext context) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final l10n = AppLocalizations.of(context);
+    try {
+      await Clipboard.setData(ClipboardData(text: crash.markdownBody));
+      if (messenger != null) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n?.crash_report_copied ?? 'Copied to clipboard',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (messenger != null) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Failed to copy: $e')),
         );
       }
     }

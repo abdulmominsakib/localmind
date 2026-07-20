@@ -843,5 +843,14 @@
   "cloud_sync_last_synced": "Последняя синхронизация",
   "cloud_sync_never": "Никогда",
   "cloud_sync_conflicts": "Сохранённые конфликты",
-  "cloud_sync_passphrase_mismatch": "Пароли не совпадают"
+  "cloud_sync_passphrase_mismatch": "Пароли не совпадают",
+  "crash_report_title": "Что-то пошло не так",
+  "crash_report_stack_trace": "Трассировка стека",
+  "crash_report_tap_to_expand": "Нажмите, чтобы развернуть",
+  "crash_report_button": "Сообщить об этом сбое",
+  "crash_try_again": "Попробовать снова",
+  "crash_report_empty_stack": "<пусто>",
+  "crash_report_disclaimer": "Отчёт откроет GitHub с уже заполненной диагностикой. Контроль остаётся за вами — ничего не отправляется автоматически. Перед отправкой проверьте и удалите конфиденциальные данные.",
+  "crash_report_copied": "Скопировано в буфер обмена",
+  "report_a_problem": "Сообщить о проблеме"
 }

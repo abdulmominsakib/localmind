@@ -2771,4 +2771,32 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get cloud_sync_passphrase_mismatch => 'পাসফ্রেজ মিলছে না';
+
+  @override
+  String get crash_report_title => 'কিছু ভুল হয়েছে';
+
+  @override
+  String get crash_report_stack_trace => 'স্ট্যাক ট্রেস';
+
+  @override
+  String get crash_report_tap_to_expand => 'সম্প্রসারণ করতে ট্যাপ করুন';
+
+  @override
+  String get crash_report_button => 'এই ক্র্যাশ রিপোর্ট করুন';
+
+  @override
+  String get crash_try_again => 'আবার চেষ্টা করুন';
+
+  @override
+  String get crash_report_empty_stack => '<খালি>';
+
+  @override
+  String get crash_report_disclaimer =>
+      'রিপোর্টিং GitHub খুলবে যেখানে ডায়াগনস্টিক্স পূর্বে পূরণ করা থাকবে। নিয়ন্ত্রণ আপনার হাতে — কিছুই স্বয়ংক্রিয়ভাবে জমা দেওয়া হয় না। জমা দেওয়ার আগে দয়া করে সংবেদনশীল তথ্য সরিয়ে দিন।';
+
+  @override
+  String get crash_report_copied => 'ক্লিপবোর্ডে কপি করা হয়েছে';
+
+  @override
+  String get report_a_problem => 'একটি সমস্যা রিপোর্ট করুন';
 }

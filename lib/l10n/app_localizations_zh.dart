@@ -2691,6 +2691,34 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cloud_sync_passphrase_mismatch => '密码短语不匹配';
+
+  @override
+  String get crash_report_title => '出了点问题';
+
+  @override
+  String get crash_report_stack_trace => '堆栈跟踪';
+
+  @override
+  String get crash_report_tap_to_expand => '点击展开';
+
+  @override
+  String get crash_report_button => '报告此崩溃';
+
+  @override
+  String get crash_try_again => '重试';
+
+  @override
+  String get crash_report_empty_stack => '<空>';
+
+  @override
+  String get crash_report_disclaimer =>
+      '报告将打开已预填诊断信息的 GitHub。由您掌控 — 不会自动提交任何内容。请在提交前检查并删除敏感内容。';
+
+  @override
+  String get crash_report_copied => '已复制到剪贴板';
+
+  @override
+  String get report_a_problem => '报告问题';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -5381,4 +5409,32 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get cloud_sync_passphrase_mismatch => '密碼片語不相符';
+
+  @override
+  String get crash_report_title => '出了點問題';
+
+  @override
+  String get crash_report_stack_trace => '堆疊追蹤';
+
+  @override
+  String get crash_report_tap_to_expand => '點擊展開';
+
+  @override
+  String get crash_report_button => '回報此當機';
+
+  @override
+  String get crash_try_again => '重試';
+
+  @override
+  String get crash_report_empty_stack => '<空>';
+
+  @override
+  String get crash_report_disclaimer =>
+      '回報將開啟已預先填入診斷資訊的 GitHub。由您掌控 — 不會自動提交任何內容。請在提交前檢查並移除敏感內容。';
+
+  @override
+  String get crash_report_copied => '已複製到剪貼簿';
+
+  @override
+  String get report_a_problem => '回報問題';
 }

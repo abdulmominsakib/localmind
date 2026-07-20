@@ -477,7 +477,7 @@ class SettingsViews extends ConsumerWidget {
                   ),
                   _SectionActionButton(
                     icon: HugeIcons.strokeRoundedAlertCircle,
-                    label: 'Report a problem',
+                    label: l10n.report_a_problem,
                     onPressed: () => _openFeedbackIssue(context),
                   ),
                 ],
@@ -2400,12 +2400,16 @@ String _languageLabel(String? localeCode, AppLocalizations l10n) {
 Future<void> _openFeedbackIssue(BuildContext context) async {
   final uri = CrashReportService.instance.buildFeedbackIssueUrl();
   final messenger = ScaffoldMessenger.maybeOf(context);
+  final l10n = AppLocalizations.of(context);
   try {
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && messenger != null) {
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Could not open GitHub. Please try again later.'),
+        SnackBar(
+          content: Text(
+            l10n?.could_not_open_github ??
+                'Could not open GitHub. Please try again later.',
+          ),
         ),
       );
     }

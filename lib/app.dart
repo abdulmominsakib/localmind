@@ -285,34 +285,44 @@ class AppShell extends ConsumerWidget {
     final isHome = location == AppRoutes.home;
     final hasActiveChat = ref.watch(conv.activeConversationProvider) != null;
 
-    return PopScope(
-      canPop: isHome && !hasActiveChat,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        if (isHome && hasActiveChat) {
-          final origin = ref.read(chatOriginProvider);
-          ref.read(chatOriginProvider.notifier).clear();
-          switch (origin) {
-            case ChatOrigin.history:
-              context.go(AppRoutes.chatHistory);
-            case ChatOrigin.savedMessages:
-              context.go(AppRoutes.savedMessages);
-            case ChatOrigin.none:
-              ref.read(chatProvider.notifier).startNewConversation();
-          }
-          return;
+    void handleBack() {
+      if (!isHome) {
+        context.go(AppRoutes.home);
+        return;
+      }
+      if (hasActiveChat) {
+        final origin = ref.read(chatOriginProvider);
+        ref.read(chatOriginProvider.notifier).clear();
+        switch (origin) {
+          case ChatOrigin.history:
+            context.go(AppRoutes.chatHistory);
+          case ChatOrigin.savedMessages:
+            context.go(AppRoutes.savedMessages);
+          case ChatOrigin.none:
+            ref.read(chatProvider.notifier).startNewConversation();
         }
-        if (!isHome) {
-          context.go(AppRoutes.home);
-        }
-      },
-      child: ShadResponsiveBuilder(
-        builder: (context, breakpoint) {
-          final isDesktop = breakpoint >= ShadTheme.of(context).breakpoints.md;
+      }
+      // On the empty home screen on mobile, the back press is handled
+      // by the inner PopScope below (which opens the drawer instead of
+      // exiting the app).
+    }
 
-          if (isDesktop) {
-            return Scaffold(
-              body: Row(
+    return ShadResponsiveBuilder(
+      builder: (context, breakpoint) {
+        final isDesktop = breakpoint >= ShadTheme.of(context).breakpoints.md;
+
+        if (isDesktop) {
+          return Scaffold(
+            body: PopScope(
+              // Always intercept back — never let it silently exit the
+              // app from inside the shell. The handler decides what back
+              // means for the current screen.
+              canPop: false,
+              onPopInvokedWithResult: (didPop, _) {
+                if (didPop) return;
+                handleBack();
+              },
+              child: Row(
                 children: [
                   const SidebarWidget(),
                   VerticalDivider(
@@ -325,12 +335,29 @@ class AppShell extends ConsumerWidget {
                   Expanded(child: child),
                 ],
               ),
-            );
-          }
+            ),
+          );
+        }
 
-          return Scaffold(body: child, drawer: const ConversationDrawer());
-        },
-      ),
+        return Scaffold(
+          body: PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, _) {
+              if (didPop) return;
+              if (isHome && !hasActiveChat) {
+                // On the empty home screen, open the side drawer instead
+                // of exiting the app — matches the menu icon on the
+                // top-left.
+                Scaffold.of(context).openDrawer();
+                return;
+              }
+              handleBack();
+            },
+            child: child,
+          ),
+          drawer: const ConversationDrawer(),
+        );
+      },
     );
   }
 }

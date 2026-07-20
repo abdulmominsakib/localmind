@@ -846,5 +846,14 @@
   "cloud_sync_last_synced": "آخر مزامنة",
   "cloud_sync_never": "أبدًا",
   "cloud_sync_conflicts": "التعارضات المحفوظة",
-  "cloud_sync_passphrase_mismatch": "عبارتا المرور غير متطابقتين"
+  "cloud_sync_passphrase_mismatch": "عبارتا المرور غير متطابقتين",
+  "crash_report_title": "حدث خطأ ما",
+  "crash_report_stack_trace": "تتبع المكدس",
+  "crash_report_tap_to_expand": "اضغط للتوسيع",
+  "crash_report_button": "الإبلاغ عن هذا العطل",
+  "crash_try_again": "المحاولة مرة أخرى",
+  "crash_report_empty_stack": "<فارغ>",
+  "crash_report_disclaimer": "يفتح الإبلاغ GitHub مع بيانات التشخيص مملوءة مسبقًا. أنت المسؤول — لا يتم إرسال أي شيء تلقائيًا. يرجى المراجعة وإزالة أي محتوى حساس قبل الإرسال.",
+  "crash_report_copied": "تم النسخ إلى الحافظة",
+  "report_a_problem": "الإبلاغ عن مشكلة"
 }

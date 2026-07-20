@@ -124,6 +124,7 @@ class ChatNotifier extends Notifier<ChatState> {
   DateTime? _streamStartTime;
   DateTime? _firstTokenTime;
   bool _useFreshConversationSystemPrompt = false;
+  bool _isRegenerating = false;
   String? _freshConversationSystemPrompt;
 
   String? get _activeConversationId =>
@@ -141,33 +142,39 @@ class ChatNotifier extends Notifier<ChatState> {
     _firstTokenTime ??= DateTime.now();
   }
 
-  Message _finalizeStreamMessage(Message msg, {String? stopReason}) {
-    final stats = _streamStats;
-    final start = _streamStartTime;
-    final firstToken = _firstTokenTime;
+  Message _finalizeStreamMessage(
+    Message msg, {
+    String? stopReason,
+    ChatStats? stats,
+    DateTime? startTime,
+    DateTime? firstTokenTime,
+  }) {
+    final effectiveStats = stats ?? _streamStats;
+    final effectiveStart = startTime ?? _streamStartTime;
+    final effectiveFirstToken = firstTokenTime ?? _firstTokenTime;
     final now = DateTime.now();
 
     int? ttftMs;
-    if (firstToken != null && start != null) {
-      ttftMs = firstToken.difference(start).inMilliseconds;
-    } else if (stats?.timeToFirstTokenSeconds != null) {
-      ttftMs = (stats!.timeToFirstTokenSeconds! * 1000).round();
+    if (effectiveFirstToken != null && effectiveStart != null) {
+      ttftMs = effectiveFirstToken.difference(effectiveStart).inMilliseconds;
+    } else if (effectiveStats?.timeToFirstTokenSeconds != null) {
+      ttftMs = (effectiveStats!.timeToFirstTokenSeconds! * 1000).round();
     }
 
     int? genMs;
-    if (start != null) {
-      genMs = now.difference(start).inMilliseconds;
+    if (effectiveStart != null) {
+      genMs = now.difference(effectiveStart).inMilliseconds;
     }
 
-    double? tps = stats?.tokensPerSecond;
-    final outputTokens = stats?.totalOutputTokens;
+    double? tps = effectiveStats?.tokensPerSecond;
+    final outputTokens = effectiveStats?.totalOutputTokens;
     if (tps == null && outputTokens != null && genMs != null && genMs > 0) {
       tps = outputTokens / (genMs / 1000);
     }
 
     return msg.copyWith(
       tokenCount: outputTokens ?? msg.tokenCount,
-      inputTokenCount: stats?.inputTokens ?? msg.inputTokenCount,
+      inputTokenCount: effectiveStats?.inputTokens ?? msg.inputTokenCount,
       tokensPerSecond: tps ?? msg.tokensPerSecond,
       generationTimeMs: genMs ?? msg.generationTimeMs,
       ttftMs: ttftMs ?? msg.ttftMs,
@@ -520,14 +527,45 @@ class ChatNotifier extends Notifier<ChatState> {
     _latestStreamingMessage = null;
 
     if (streamingMessage != null && convId != null) {
-      unawaited(_persistCancelledMessageInBackground(streamingMessage, convId));
+      // Capture the old stream's metrics before anything resets them for the
+      // next generation.
+      final stats = _streamStats;
+      final startTime = _streamStartTime;
+      final firstTokenTime = _firstTokenTime;
+
+      // Mark the in-memory copy as cancelled and inactive so it does not stay
+      // visible in the active timeline while the next stream starts.
+      final cancelled = streamingMessage.copyWith(
+        conversationId: convId,
+        status: MessageStatus.cancelled,
+        isProcessing: false,
+        isActiveVariant: false,
+      );
+      final updatedAll = state.allMessages.map((m) {
+        return m.id == cancelled.id ? cancelled : m;
+      }).toList();
+      state = state.copyWith(
+        allMessages: updatedAll,
+        messages: MessageVariants.resolveActiveTimeline(updatedAll),
+      );
+
+      unawaited(_persistCancelledMessageInBackground(
+        streamingMessage,
+        convId,
+        stats: stats,
+        startTime: startTime,
+        firstTokenTime: firstTokenTime,
+      ));
     }
   }
 
   Future<void> _persistCancelledMessageInBackground(
     Message streamingMessage,
-    String conversationId,
-  ) async {
+    String conversationId, {
+    ChatStats? stats,
+    DateTime? startTime,
+    DateTime? firstTokenTime,
+  }) async {
     try {
       final finalMessage = _finalizeStreamMessage(
         streamingMessage.copyWith(
@@ -536,6 +574,9 @@ class ChatNotifier extends Notifier<ChatState> {
           isProcessing: false,
         ),
         stopReason: 'cancelled',
+        stats: stats,
+        startTime: startTime,
+        firstTokenTime: firstTokenTime,
       );
       await _saveService?.flush();
       await _saveMessage(finalMessage);
@@ -800,6 +841,9 @@ class ChatNotifier extends Notifier<ChatState> {
 
     ref.read(chatBackgroundServiceProvider).start();
 
+    await _abortStreamImmediately();
+    ref.read(isStreamingProvider.notifier).setStreaming(true);
+
     _resetStreamMetrics();
     _resetCheckpointMetrics();
     _updateSavedMetrics(assistantMessage);
@@ -807,7 +851,6 @@ class ChatNotifier extends Notifier<ChatState> {
     final messagesForApi = _buildMessagesForApi(selectedModel);
 
     try {
-      await _abortStreamImmediately();
       _uiUpdateTimer?.cancel();
 
       String reasoningContent = '';
@@ -1678,34 +1721,40 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> retryMessage(String messageId) async {
-    final messageIndex = state.messages.indexWhere((m) => m.id == messageId);
-    if (messageIndex == -1) return;
+    if (state.isStreaming || _isRegenerating) return;
+    _isRegenerating = true;
+    try {
+      final messageIndex = state.messages.indexWhere((m) => m.id == messageId);
+      if (messageIndex == -1) return;
 
-    final message = state.messages[messageIndex];
-    if (message.role != MessageRole.assistant) return;
+      final message = state.messages[messageIndex];
+      if (message.role != MessageRole.assistant) return;
 
-    if (messageIndex > 0 &&
-        state.messages[messageIndex - 1].role == MessageRole.user) {
-      final userMessage = state.messages[messageIndex - 1];
-      final groupId = MessageVariants.groupId(message);
+      if (messageIndex > 0 &&
+          state.messages[messageIndex - 1].role == MessageRole.user) {
+        final userMessage = state.messages[messageIndex - 1];
+        final groupId = MessageVariants.groupId(message);
 
-      final deactivated = state.allMessages.map((m) {
-        if (MessageVariants.groupId(m) != groupId) return m;
-        return m.copyWith(isActiveVariant: false);
-      }).toList();
-      for (final m in deactivated.where(
-        (x) => MessageVariants.groupId(x) == groupId,
-      )) {
-        await _saveMessage(m);
+        final deactivated = state.allMessages.map((m) {
+          if (MessageVariants.groupId(m) != groupId) return m;
+          return m.copyWith(isActiveVariant: false);
+        }).toList();
+        for (final m in deactivated.where(
+          (x) => MessageVariants.groupId(x) == groupId,
+        )) {
+          await _saveMessage(m);
+        }
+        state = state.copyWith(allMessages: deactivated);
+
+        await _regenerateAssistant(
+          userMessage,
+          variantGroupId: groupId,
+          threadOrder: message.threadOrder,
+          variantIndex: _nextVariantIndex(groupId),
+        );
       }
-      state = state.copyWith(allMessages: deactivated);
-
-      await _regenerateAssistant(
-        userMessage,
-        variantGroupId: groupId,
-        threadOrder: message.threadOrder,
-        variantIndex: _nextVariantIndex(groupId),
-      );
+    } finally {
+      _isRegenerating = false;
     }
   }
 
@@ -1718,6 +1767,8 @@ class ChatNotifier extends Notifier<ChatState> {
     final selectedModel = ref.read(selectedModelProvider);
     final server = ref.read(activeServerProvider);
     if (server == null || _activeConversationId == null) return;
+
+    await _abortStreamImmediately();
 
     final assistantMessage = Message(
       id: generateUuid(),
@@ -1760,7 +1811,19 @@ class ChatNotifier extends Notifier<ChatState> {
     final server = ref.read(activeServerProvider);
     final chatParams = ref.read(chatParamsProvider);
     final chatService = ref.read(chatServiceProvider);
-    if (server == null || chatService == null) return;
+    if (server == null || chatService == null) {
+      final errorMessage = assistantMessage.copyWith(
+        status: MessageStatus.error,
+        errorMessage: 'No chat service available',
+        isProcessing: false,
+      );
+      await _saveMessage(errorMessage);
+      _replaceMessageInAll(errorMessage, clearStreaming: true);
+      state = state.copyWith(isStreaming: false, clearStreaming: true);
+      ref.read(isStreamingProvider.notifier).setStreaming(false);
+      ref.read(chatBackgroundServiceProvider).stop();
+      return;
+    }
 
     final messagesForApi = continueGeneration
         ? _buildMessagesForContinue(selectedModel, assistantMessage)
@@ -2111,17 +2174,22 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> generateResponseForLastUser() async {
-    if (state.isStreaming) return;
-    final messages = state.messages;
-    if (messages.isEmpty || messages.last.role != MessageRole.user) return;
+    if (state.isStreaming || _isRegenerating) return;
+    _isRegenerating = true;
+    try {
+      final messages = state.messages;
+      if (messages.isEmpty || messages.last.role != MessageRole.user) return;
 
-    final userMessage = messages.last;
-    await _regenerateAssistant(
-      userMessage,
-      variantGroupId: generateUuid(),
-      threadOrder: userMessage.threadOrder + 1,
-      variantIndex: 0,
-    );
+      final userMessage = messages.last;
+      await _regenerateAssistant(
+        userMessage,
+        variantGroupId: generateUuid(),
+        threadOrder: userMessage.threadOrder + 1,
+        variantIndex: 0,
+      );
+    } finally {
+      _isRegenerating = false;
+    }
   }
 
   Future<void> generateAiUserMessage() async {

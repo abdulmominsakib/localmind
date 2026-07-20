@@ -2775,4 +2775,32 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get cloud_sync_passphrase_mismatch => 'Las frases no coinciden';
+
+  @override
+  String get crash_report_title => 'Algo salió mal';
+
+  @override
+  String get crash_report_stack_trace => 'Seguimiento de pila';
+
+  @override
+  String get crash_report_tap_to_expand => 'Toca para expandir';
+
+  @override
+  String get crash_report_button => 'Informar de este error';
+
+  @override
+  String get crash_try_again => 'Intentar de nuevo';
+
+  @override
+  String get crash_report_empty_stack => '<vacío>';
+
+  @override
+  String get crash_report_disclaimer =>
+      'Informar abre GitHub con el diagnóstico rellenado de antemano. Tú tienes el control: no se envía nada automáticamente. Revisa y elimina cualquier contenido sensible antes de enviar.';
+
+  @override
+  String get crash_report_copied => 'Copiado al portapapeles';
+
+  @override
+  String get report_a_problem => 'Informar de un problema';
 }

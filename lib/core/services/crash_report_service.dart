@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:characters/characters.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -37,17 +38,21 @@ class CrashReport {
 
   /// First non-empty line of the error, truncated. Used for the issue title.
   String get shortError {
-    final raw = error.toString().trim();
+    final raw = _sanitizePaths(error.toString().trim());
     if (raw.isEmpty) return errorType;
     final firstLine = raw.split('\n').first.trim();
-    if (firstLine.length <= 80) return firstLine;
-    return '${firstLine.substring(0, 77)}...';
+    final chars = firstLine.characters;
+    if (chars.length <= 80) return firstLine;
+    return '${chars.take(77)}...';
   }
 
-  /// Issue body markdown for GitHub. Pre-built at capture time so URL
-  /// generation is synchronous and side-effect-free.
+  /// Issue body markdown for GitHub. Built lazily when accessed so URL
+  /// generation remains synchronous and side-effect-free.
   String get markdownBody {
-    final stack = _truncate(stackTrace.toString(), 6000);
+    final stack = _truncate(
+      _sanitizePaths(stackTrace.toString()),
+      3000,
+    );
     final cleanStack = _stripBackticks(stack);
     final ts = timestamp.toUtc().toIso8601String();
 
@@ -65,7 +70,7 @@ class CrashReport {
       ..writeln('## Crash Details')
       ..writeln()
       ..writeln('```text')
-      ..writeln(_stripBackticks(error.toString()))
+      ..writeln(_stripBackticks(_sanitizePaths(error.toString())))
       ..writeln('```');
 
     if (errorWidgetPayload != null && errorWidgetPayload!.isNotEmpty) {
@@ -74,7 +79,11 @@ class CrashReport {
         ..writeln('**FlutterErrorDetails:**')
         ..writeln()
         ..writeln('```text')
-        ..writeln(_stripBackticks(_truncate(errorWidgetPayload!, 2000)))
+        ..writeln(
+          _stripBackticks(
+            _truncate(_sanitizePaths(errorWidgetPayload!), 2000),
+          ),
+        )
         ..writeln('```');
     }
 
@@ -113,6 +122,29 @@ class CrashReport {
   }
 
   String _stripBackticks(String input) => input.replaceAll('```', "'''");
+
+  /// Replaces user-specific path segments (home directories, Android package
+  /// paths) with placeholders so that crash reports do not leak usernames or
+  /// absolute paths while preserving the structure of the stack trace.
+  String _sanitizePaths(String input) {
+    return input
+        .replaceAllMapped(
+          RegExp(r'/Users/[^/\s]+'),
+          (_) => '/Users/<user>',
+        )
+        .replaceAllMapped(
+          RegExp(r'/home/[^/\s]+'),
+          (_) => '/home/<user>',
+        )
+        .replaceAllMapped(
+          RegExp(r'/data/user/[^/\s]+'),
+          (_) => '/data/user/<user>',
+        )
+        .replaceAllMapped(
+          RegExp(r'C:\\Users\\[^\\\s]+'),
+          (_) => r'C:\Users\<user>',
+        );
+  }
 }
 
 /// Singleton that captures, dedupes, and exposes crashes for the UI layer.
@@ -186,6 +218,11 @@ class CrashReportService {
 
   /// Record a crash. Returns the captured `CrashReport` for the caller to use
   /// (e.g. `ErrorWidget.builder` rendering).
+  ///
+  /// Setting `_currentCrash.value` from inside `ErrorWidget.builder` is safe:
+  /// `ValueNotifier` schedules a rebuild via `markNeedsBuild` rather than
+  /// building synchronously, so it will not trigger a "dirty during build"
+  /// assertion.
   CrashReport capture(
     Object error,
     StackTrace stack, {
@@ -247,6 +284,21 @@ class CrashReportService {
         'template': issueTemplate,
       },
     );
+  }
+
+  /// Resets the singleton state. Intended for tests only.
+  @visibleForTesting
+  void resetForTesting() {
+    _initialized = false;
+    _packageInfo = null;
+    _appVersion = 'unknown';
+    _buildNumber = 'unknown';
+    _platformLabel = _platformFromDart();
+    _osVersion = 'unknown';
+    _deviceManufacturer = 'unknown';
+    _deviceModel = 'unknown';
+    _recentCrashes.clear();
+    _currentCrash.value = null;
   }
 
   bool _isDuplicate(CrashReport report) {

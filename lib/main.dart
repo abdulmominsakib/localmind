@@ -15,6 +15,10 @@ Future<void> main() async {
       final crashReports = CrashReportService.instance;
       await crashReports.initialize();
 
+      // Framework errors are reported both here and via ErrorWidget.builder
+      // (because FlutterError.presentError eventually builds an ErrorWidget).
+      // CrashReportService deduplicates identical errors within a 2-second
+      // window, so the user sees only one crash screen per incident.
       FlutterError.onError = (details) {
         FlutterError.presentError(details);
         crashReports.capture(

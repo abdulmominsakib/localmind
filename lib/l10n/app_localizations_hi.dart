@@ -2764,4 +2764,32 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get cloud_sync_passphrase_mismatch => 'पासफ़्रेज़ मेल नहीं खाते';
+
+  @override
+  String get crash_report_title => 'कुछ गलत हो गया';
+
+  @override
+  String get crash_report_stack_trace => 'स्टैक ट्रेस';
+
+  @override
+  String get crash_report_tap_to_expand => 'विस्तार करने के लिए टैप करें';
+
+  @override
+  String get crash_report_button => 'इस क्रैश की रिपोर्ट करें';
+
+  @override
+  String get crash_try_again => 'फिर से प्रयास करें';
+
+  @override
+  String get crash_report_empty_stack => '<खाली>';
+
+  @override
+  String get crash_report_disclaimer =>
+      'रिपोर्टिंग GitHub खोलेगी जिसमें निदान पहले से भरा होगा। नियंत्रण आपके पास है — कुछ भी स्वचालित रूप से सबमिट नहीं किया जाता। कृपया सबमिट करने से पहले संवेदनशील सामग्री की समीक्षा करें और हटा दें।';
+
+  @override
+  String get crash_report_copied => 'क्लिपबोर्ड पर कॉपी किया गया';
+
+  @override
+  String get report_a_problem => 'समस्या की रिपोर्ट करें';
 }

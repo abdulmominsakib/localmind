@@ -3031,5 +3031,41 @@
   "cloud_sync_last_synced": "Last synced",
   "cloud_sync_never": "Never",
   "cloud_sync_conflicts": "Conflicts preserved",
-  "cloud_sync_passphrase_mismatch": "Passphrases do not match"
+  "cloud_sync_passphrase_mismatch": "Passphrases do not match",
+  "crash_report_title": "Something went wrong",
+  "@crash_report_title": {
+    "description": "Title shown on the crash error screen"
+  },
+  "crash_report_stack_trace": "Stack trace",
+  "@crash_report_stack_trace": {
+    "description": "Label for the expandable stack trace section on the crash screen"
+  },
+  "crash_report_tap_to_expand": "Tap to expand",
+  "@crash_report_tap_to_expand": {
+    "description": "Hint telling the user they can expand the stack trace section"
+  },
+  "crash_report_button": "Report this crash",
+  "@crash_report_button": {
+    "description": "Button that opens GitHub to report the captured crash"
+  },
+  "crash_try_again": "Try again",
+  "@crash_try_again": {
+    "description": "Button that clears the crash and attempts to reload the app"
+  },
+  "crash_report_empty_stack": "<empty>",
+  "@crash_report_empty_stack": {
+    "description": "Placeholder shown when a crash stack trace is empty"
+  },
+  "crash_report_disclaimer": "Reporting opens GitHub with diagnostics prefilled. You stay in control — nothing is submitted automatically. Please review and remove any sensitive content before submitting.",
+  "@crash_report_disclaimer": {
+    "description": "Disclaimer below the crash report buttons explaining that the issue is not submitted automatically"
+  },
+  "crash_report_copied": "Copied to clipboard",
+  "@crash_report_copied": {
+    "description": "Snackbar message shown after the user copies the crash report to the clipboard"
+  },
+  "report_a_problem": "Report a problem",
+  "@report_a_problem": {
+    "description": "Settings tile label that opens the generic feedback issue form"
+  }
 }
