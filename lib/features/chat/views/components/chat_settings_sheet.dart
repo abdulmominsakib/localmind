@@ -366,13 +366,23 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
   void _addServer() {
     final label = _serverLabelController.text.trim();
     final url = _serverUrlController.text.trim();
-    if (label.isEmpty || url.isEmpty) return;
+    if (label.isEmpty && url.isEmpty) return;
 
-    final integration = McpIntegration(
-      type: McpIntegrationType.ephemeralMcp,
-      serverLabel: label,
-      serverUrl: url,
-    );
+    final McpIntegration integration;
+    if (label.startsWith('mcp/') || url.startsWith('mcp/')) {
+      final pluginId = label.startsWith('mcp/') ? label : url;
+      integration = McpIntegration(
+        type: McpIntegrationType.plugin,
+        pluginId: pluginId,
+      );
+    } else {
+      if (label.isEmpty || url.isEmpty) return;
+      integration = McpIntegration(
+        type: McpIntegrationType.ephemeralMcp,
+        serverLabel: label,
+        serverUrl: url,
+      );
+    }
 
     ref.read(chatMcpConfigProvider.notifier).addIntegration(integration);
 

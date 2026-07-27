@@ -16,6 +16,7 @@ import 'tools/adapters/tool_transport_adapter.dart';
 import '../utils/attachment_helpers.dart';
 import '../utils/image_upload_utils.dart';
 import 'tools/adapters/openai_tool_adapter.dart';
+import 'tools/adapters/lm_studio_tool_adapter.dart';
 import 'tools/adapters/openrouter_tool_adapter.dart';
 import 'tools/adapters/ollama_tool_adapter.dart';
 import 'chat_api_error.dart';
@@ -180,6 +181,7 @@ class LMStudioChatService implements ChatService {
   }) async* {
     _cancelToken = CancelToken();
     final toolAdapter = OpenAiToolAdapter();
+    final lmStudioToolAdapter = LmStudioToolAdapter();
 
     final apiMessages = <Map<String, dynamic>>[];
     for (final m in messages) {
@@ -226,6 +228,10 @@ class LMStudioChatService implements ChatService {
     }
     _applyReasoningControl(body, params);
 
+    if (integrations != null && integrations.isNotEmpty) {
+      body['integrations'] = integrations.map((i) => i.toJson()).toList();
+    }
+
     if (tools != null && tools.isNotEmpty) {
       final toolsPayload = toolAdapter.buildToolDefinitionPayload(tools);
       if (toolsPayload.containsKey('tools')) {
@@ -270,6 +276,15 @@ class LMStudioChatService implements ChatService {
                 ),
               );
             }
+            for (final call in lmStudioToolAdapter.takeServerExecutedCalls()) {
+              yield ChatResponse(
+                type: ChatResponseType.toolCall,
+                toolCall: ToolCallData(
+                  tool: call.name,
+                  arguments: call.arguments,
+                ),
+              );
+            }
             yield const ChatResponse(type: ChatResponseType.done);
             return;
           }
@@ -278,6 +293,20 @@ class LMStudioChatService implements ChatService {
           try {
             final json = jsonDecode(data) as Map<String, dynamic>;
             toolAdapter.consumeDynamicChunk(json);
+
+            final eventType = json['type'] as String?;
+            if (eventType != null) {
+              lmStudioToolAdapter.consumeEvent(eventType, json);
+              for (final call in lmStudioToolAdapter.takeServerExecutedCalls()) {
+                yield ChatResponse(
+                  type: ChatResponseType.toolCall,
+                  toolCall: ToolCallData(
+                    tool: call.name,
+                    arguments: call.arguments,
+                  ),
+                );
+              }
+            }
 
             if (json['error'] != null) {
               yield ChatResponse(
@@ -486,6 +515,10 @@ class OpenAICompatibleChatService implements ChatService {
       'stream': true,
     };
     _applyReasoningControl(body, params);
+
+    if (integrations != null && integrations.isNotEmpty) {
+      body['integrations'] = integrations.map((i) => i.toJson()).toList();
+    }
 
     if (tools != null && tools.isNotEmpty) {
       final toolsPayload = toolAdapter.buildToolDefinitionPayload(tools);
