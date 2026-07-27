@@ -136,6 +136,14 @@
   "@online": {
     "description": "Connection status online"
   },
+  "connected": "Connected",
+  "@connected": {
+    "description": "Server connection status when actively connected"
+  },
+  "checking": "Checking",
+  "@checking": {
+    "description": "Server connection status while being tested"
+  },
   "offline": "Offline",
   "@offline": {
     "description": "Connection status offline"

@@ -111,6 +111,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get online => 'متصل';
 
   @override
+  String get connected => 'Connected';
+
+  @override
+  String get checking => 'Checking';
+
+  @override
   String get offline => 'غير متصل';
 
   @override

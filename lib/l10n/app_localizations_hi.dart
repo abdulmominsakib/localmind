@@ -111,6 +111,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get online => 'ऑनलाइन';
 
   @override
+  String get connected => 'Connected';
+
+  @override
+  String get checking => 'Checking';
+
+  @override
   String get offline => 'ऑफ़लाइन';
 
   @override

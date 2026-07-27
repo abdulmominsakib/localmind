@@ -958,11 +958,13 @@ class ChatNotifier extends Notifier<ChatState> {
                     stateNeedsUpdate = true;
                     break;
                   case ChatResponseType.processing:
+                    final wasProcessing = streamingAssistantMessage.isProcessing;
                     streamingAssistantMessage = streamingAssistantMessage
                         .copyWith(isProcessing: true);
                     _latestStreamingMessage = streamingAssistantMessage;
                     stateNeedsUpdate = true;
-                    if (ref.read(settingsProvider).hapticFeedbackEnabled) {
+                    if (!wasProcessing &&
+                        ref.read(settingsProvider).hapticFeedbackEnabled) {
                       HapticFeedback.lightImpact();
                     }
                     break;

@@ -111,6 +111,12 @@ class AppLocalizationsBn extends AppLocalizations {
   String get online => 'অনলাইন';
 
   @override
+  String get connected => 'Connected';
+
+  @override
+  String get checking => 'Checking';
+
+  @override
   String get offline => 'অফলাইন';
 
   @override

@@ -111,6 +111,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get online => '在线';
 
   @override
+  String get connected => 'Connected';
+
+  @override
+  String get checking => 'Checking';
+
+  @override
   String get offline => '离线';
 
   @override

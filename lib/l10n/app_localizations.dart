@@ -317,6 +317,18 @@ abstract class AppLocalizations {
   /// **'Online'**
   String get online;
 
+  /// Server connection status when actively connected
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get connected;
+
+  /// Server connection status while being tested
+  ///
+  /// In en, this message translates to:
+  /// **'Checking'**
+  String get checking;
+
   /// Connection status offline
   ///
   /// In en, this message translates to:
