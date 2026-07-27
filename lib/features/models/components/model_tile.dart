@@ -62,7 +62,11 @@ class ModelTile extends StatelessWidget {
                   Row(
                     children: [
                       if (isFavorite) ...[
-                        HugeIcon(icon: HugeIcons.strokeRoundedStar, size: 16, color: Colors.amber[600]),
+                        HugeIcon(
+                          icon: HugeIcons.strokeRoundedStar,
+                          size: 16,
+                          color: Colors.amber[600],
+                        ),
                         const SizedBox(width: 6),
                       ],
                       Expanded(
@@ -134,8 +138,8 @@ class ModelTile extends StatelessWidget {
                     model.serverType == ServerType.ollama) &&
                 isLoaded) ...[
               IconButton(
-                icon: HugeIcon(icon: 
-                  HugeIcons.strokeRoundedPower,
+                icon: HugeIcon(
+                  icon: HugeIcons.strokeRoundedPower,
                   size: 18,
                   color: Colors.red[400],
                 ),
@@ -158,13 +162,14 @@ class ModelTile extends StatelessWidget {
                 height: 22,
                 child: CircularProgressIndicator(strokeWidth: 2, color: accent),
               )
-            else if (isSelected)
+            else if (isSelected) ...[
+              SizedBox(width: 4),
               HugeIcon(
                 icon: HugeIcons.strokeRoundedCheckmarkCircle01,
                 color: accent,
                 size: 22,
-              )
-            else
+              ),
+            ] else
               HugeIcon(
                 icon: HugeIcons.strokeRoundedArrowRight01,
                 size: 20,

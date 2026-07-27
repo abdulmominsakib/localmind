@@ -19,6 +19,7 @@ import 'tools/adapters/openai_tool_adapter.dart';
 import 'tools/adapters/openrouter_tool_adapter.dart';
 import 'tools/adapters/ollama_tool_adapter.dart';
 import 'chat_api_error.dart';
+import 'chat_error_formatter.dart';
 
 abstract class ChatService {
   Stream<ChatResponse> sendMessage({
@@ -675,6 +676,36 @@ class OpenAICompatibleChatService implements ChatService {
   }
 }
 
+String _formatOllamaErrorContent(dynamic error) {
+  if (error is String) {
+    return ChatErrorFormatter.formatBody(jsonEncode({'error': error}));
+  }
+  if (error is Map) {
+    return ChatErrorFormatter.formatBody(jsonEncode({'error': error}));
+  }
+  return ChatApiError(message: error.toString()).encode();
+}
+
+Future<String> _handleOllamaChatError(DioException e) async {
+  return ChatErrorFormatter.formatDioException(
+    e,
+    readBody: (data) async {
+      if (data is ResponseBody) {
+        return data.stream.cast<List<int>>().transform(utf8.decoder).join();
+      }
+      if (data is String) return data;
+      return '';
+    },
+  );
+}
+
+String? _extractOllamaErrorMessage(dynamic data) {
+  if (data == null) return null;
+  final raw = data is String ? data : jsonEncode(data);
+  if (raw.trim().isEmpty) return null;
+  return ChatErrorFormatter.formatBody(raw);
+}
+
 class OllamaChatService implements ChatService {
   final Dio _dio;
   final bool imageCompressionEnabled;
@@ -725,12 +756,25 @@ class OllamaChatService implements ChatService {
       }
     }
 
+    final imageCount = apiMessages.fold<int>(0, (count, message) {
+      final images = message['images'];
+      return count + (images is List ? images.length : 0);
+    });
+    Log.debug(
+      'Ollama request: endpoint=${server.chatEndpoint}, model=$modelId, '
+      'messages=${apiMessages.length}, images=$imageCount, '
+      'tools=${tools?.length ?? 0}',
+    );
+
     try {
       final response = await _dio.post<ResponseBody>(
         server.chatEndpoint,
         data: body,
         options: Options(
           responseType: ResponseType.stream,
+          // Ollama returns useful JSON error bodies for 4xx responses. Keep
+          // the stream available so the actual error reaches the UI.
+          validateStatus: (status) => status != null,
           headers: {
             'Content-Type': 'application/json',
             ...buildServerAuthHeaders(server),
@@ -739,7 +783,26 @@ class OllamaChatService implements ChatService {
         cancelToken: _cancelToken,
       );
 
-      final stream = response.data!.stream.cast<List<int>>().transform(
+      final responseBody = response.data!;
+      final statusCode = response.statusCode ?? 0;
+      if (statusCode < 200 || statusCode >= 300) {
+        final rawError = await responseBody.stream
+            .cast<List<int>>()
+            .transform(utf8.decoder)
+            .join();
+        final parsedError = _extractOllamaErrorMessage(rawError);
+        Log.error('Ollama HTTP $statusCode: ${parsedError ?? rawError}');
+        yield ChatResponse(
+          type: ChatResponseType.error,
+          content: parsedError ??
+              (rawError.trim().isNotEmpty
+                  ? rawError.trim()
+                  : 'Ollama request failed (HTTP $statusCode).'),
+        );
+        return;
+      }
+
+      final stream = responseBody.stream.cast<List<int>>().transform(
         utf8.decoder,
       );
       String buffer = '';
@@ -754,6 +817,21 @@ class OllamaChatService implements ChatService {
             try {
               final json = jsonDecode(line) as Map<String, dynamic>;
               toolAdapter.consumeDynamicChunk(json);
+
+              // Ollama surfaces mid-stream errors as a top-level `error`
+              // field, often alongside HTTP 200. Surface them so the UI
+              // shows something more specific than the generic
+              // "unknown error" fallback when — for instance — the
+              // selected model doesn't actually support images.
+              final errorField = json['error'];
+              if (errorField != null) {
+                yield ChatResponse(
+                  type: ChatResponseType.error,
+                  content: _formatOllamaErrorContent(errorField),
+                );
+                return;
+              }
+
               final message = json['message'];
               if (message != null && message is Map<String, dynamic>) {
                 final content = message['content'] as String?;
@@ -793,10 +871,10 @@ class OllamaChatService implements ChatService {
       }
     } catch (e) {
       Log.error('Ollama connection error: $e');
-      yield ChatResponse(
-        type: ChatResponseType.error,
-        content: _handleChatError(e),
-      );
+      final content = e is DioException
+          ? await _handleOllamaChatError(e)
+          : _handleChatError(e);
+      yield ChatResponse(type: ChatResponseType.error, content: content);
       return;
     }
     yield const ChatResponse(type: ChatResponseType.done);
@@ -1128,68 +1206,66 @@ void _applyReasoningControl(Map<String, dynamic> body, ChatParameters params) {
 }
 
 String _formatApiErrorContent(dynamic error) {
-  if (error is Map<String, dynamic>) {
-    final parsed = ChatApiError.fromErrorMap(error);
-    if (parsed != null) return parsed.encode();
-  } else if (error is Map) {
-    final parsed = ChatApiError.fromErrorMap(
-      Map<String, dynamic>.from(error),
-    );
-    if (parsed != null) return parsed.encode();
+  if (error is Map) {
+    final map = Map<String, dynamic>.from(error);
+    final parsed = ChatApiError.fromErrorMap(map);
+    if (parsed != null) {
+      // Use the unified formatter so the bubble benefits from humanising
+      // and structured metadata even when the body is already shaped like
+      // an OpenAI error.
+      try {
+        return ChatErrorFormatter.formatBody(jsonEncode(map));
+      } catch (_) {
+        return parsed.encode();
+      }
+    }
   }
-  return error.toString();
+  return ChatApiError(message: error.toString()).encode();
 }
 
 String _handleChatError(dynamic e) {
   if (e is DioException) {
     if (e.response != null) {
-      final parsed = ChatApiError.fromResponseBody(e.response!.data);
-      if (parsed != null) return parsed.encode();
-
       final status = e.response!.statusCode;
-
-      switch (status) {
-        case 401:
-          return 'Invalid API key or unauthorized.';
-        case 402:
-          return 'Monthly credit limit reached or insufficient balance.';
-        case 403:
-          return 'Access forbidden. Your API key might not have permission for this model.';
-        case 404:
-          return 'Model not found or API endpoint is incorrect.';
-        case 408:
-          return 'Request timeout. The server took too long to respond.';
-        case 413:
-          return 'Image too large for the server to accept. Try enabling '
-              'image compression in Settings.';
-        case 429:
-          return 'Rate limit exceeded. Please wait a moment before trying again.';
-        case 500:
-          return 'Internal server error from the AI provider.';
-        case 502:
-          return 'Bad gateway. The provider is having issues.';
-        case 503:
-          return 'Service unavailable. The provider might be overloaded.';
-        case 504:
-          return 'Gateway timeout. The model took too long to respond.';
+      final data = e.response!.data;
+      if (data is String && data.trim().isNotEmpty) {
+        return ChatErrorFormatter.formatBody(data, statusCode: status);
       }
-      return 'Server error ($status): ${e.message}';
+      final parsed = ChatApiError.fromResponseBody(data);
+      if (parsed != null) {
+        return parsed.copyWithCodeIfMissing(status?.toString()).encode();
+      }
+      // Let the unified formatter map known HTTP status codes.
+      return ChatErrorFormatter.formatBody('', statusCode: status);
     }
 
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return 'Connection timed out. Check your internet connection.';
+        return const ChatApiError(
+          message: 'The model took too long to respond.',
+          type: 'timeout',
+        ).encode();
       case DioExceptionType.connectionError:
-        return 'Connection failed. Check if the server is accessible.';
+        return const ChatApiError(
+          message:
+              'Could not reach the AI server. Confirm it is running and the address in Settings is correct.',
+          type: 'connection_error',
+        ).encode();
       case DioExceptionType.cancel:
-        return 'Request cancelled.';
+        return const ChatApiError(
+          message: 'Request cancelled.',
+          type: 'cancelled',
+        ).encode();
       default:
-        return 'Connection error: ${e.message}';
+        return ChatApiError(
+          message: e.message ?? 'Connection error.',
+          type: e.type.name,
+        ).encode();
     }
   }
-  return e.toString();
+  return ChatApiError(message: e.toString()).encode();
 }
 
 String _roleToString(MessageRole role) {

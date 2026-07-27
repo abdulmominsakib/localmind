@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/core/models/enums.dart';
+import 'package:localmind/features/chat/data/chat_api_error.dart';
 import 'package:localmind/features/chat/data/chat_service.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
 import 'package:localmind/features/chat/data/models/chat_parameters.dart';
@@ -16,7 +17,8 @@ import 'package:localmind/features/servers/data/models/server.dart';
 
 class StreamInterceptor extends Interceptor {
   final List<String> lines;
-  StreamInterceptor(this.lines);
+  final int statusCode;
+  StreamInterceptor(this.lines, {this.statusCode = 200});
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -25,12 +27,12 @@ class StreamInterceptor extends Interceptor {
       requestOptions: options,
       data: ResponseBody(
         controller.stream,
-        200,
+        statusCode,
         headers: {
           Headers.contentTypeHeader: ['application/json'],
         },
       ),
-      statusCode: 200,
+      statusCode: statusCode,
     ));
 
     // Emit lines asynchronously
@@ -309,6 +311,117 @@ void main() {
       expect(message.containsKey('images'), isFalse);
       expect(responses.last.type, ChatResponseType.done);
     });
+
+    test('surfaces Ollama native stream errors', () async {
+      final interceptor = CapturingStreamInterceptor([
+        '{"error":"this model does not support images"}',
+      ]);
+      final service = OllamaChatService(Dio()..interceptors.add(interceptor));
+
+      final responses = await service
+          .sendMessage(
+            server: _ollamaTestServer(),
+            modelId: 'vision-model',
+            messages: [
+              Message(
+                id: 'failed-vision-message',
+                conversationId: 'conversation',
+                role: MessageRole.user,
+                content: 'What is shown?',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      expect(responses, hasLength(1));
+      expect(responses.single.type, ChatResponseType.error);
+      final parsed = ChatApiError.tryParse(responses.single.content);
+      expect(parsed, isNotNull);
+      expect(
+        parsed!.message,
+        'The selected model does not support images. Choose a vision '
+            'model such as llava, qwen2.5vl, gemma3, or llama3.2-vision.',
+      );
+    });
+
+    test('decodes Ollama HTTP 400 error bodies', () async {
+      final interceptor = StreamInterceptor(
+        ['{"error":"unable to decode image"}'],
+        statusCode: 400,
+      );
+      final service = OllamaChatService(Dio()..interceptors.add(interceptor));
+
+      final responses = await service
+          .sendMessage(
+            server: _ollamaTestServer(),
+            modelId: 'qwen3-vl:2b',
+            messages: [
+              Message(
+                id: 'http-error-message',
+                conversationId: 'conversation',
+                role: MessageRole.user,
+                content: 'Describe the image',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      expect(responses, hasLength(1));
+      expect(responses.single.type, ChatResponseType.error);
+      final parsed = ChatApiError.tryParse(responses.single.content);
+      expect(parsed, isNotNull);
+      expect(
+        parsed!.message,
+        'The server could not decode the attached image. Try a smaller '
+            'or different-format image, or enable image compression in Settings.',
+      );
+    });
+
+    test(
+      'decodes structured Ollama HTTP 400 error envelope with type tag',
+      () async {
+        final interceptor = StreamInterceptor(
+          [
+            '{"error":{"code":400,"message":"request (4286 tokens) exceeds the available context size (4096 tokens), try increasing it","type":"exceed_context_size_error","n_prompt_tokens":4286,"n_ctx":4096}}',
+          ],
+          statusCode: 400,
+        );
+        final service = OllamaChatService(Dio()..interceptors.add(interceptor));
+
+        final responses = await service
+            .sendMessage(
+              server: _ollamaTestServer(),
+              modelId: 'qwen3-vl:2b',
+              messages: [
+                Message(
+                  id: 'context-error-message',
+                  conversationId: 'conversation',
+                  role: MessageRole.user,
+                  content: 'Tell me a story',
+                  createdAt: DateTime.now(),
+                ),
+              ],
+              params: ChatParameters.defaults(),
+            )
+            .toList();
+
+        expect(responses, hasLength(1));
+        expect(responses.single.type, ChatResponseType.error);
+        final parsed = ChatApiError.tryParse(responses.single.content);
+        expect(parsed, isNotNull);
+        expect(
+          parsed!.message,
+          'The conversation is longer than the model\'s context window. '
+              'Increase `num_ctx` for the model or start a new chat.',
+        );
+        expect(parsed.type, 'exceed_context_size_error');
+        expect(parsed.code, '400');
+      },
+    );
   });
 }
 

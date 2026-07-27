@@ -872,6 +872,7 @@ class ChatNotifier extends Notifier<ChatState> {
         final collectedToolCalls = <ToolCallData>[];
 
         bool stateNeedsUpdate = false;
+        bool streamHadError = false;
 
         void updateUiState() {
           if (!stateNeedsUpdate) return;
@@ -961,6 +962,7 @@ class ChatNotifier extends Notifier<ChatState> {
                     break;
                   case ChatResponseType.timeoutError:
                   case ChatResponseType.error:
+                    streamHadError = true;
                     _uiUpdateTimer?.cancel();
                     _uiUpdateTimer = null;
                     streamingAssistantMessage = streamingAssistantMessage.copyWith(
@@ -1006,6 +1008,17 @@ class ChatNotifier extends Notifier<ChatState> {
               _uiUpdateTimer?.cancel();
               _uiUpdateTimer = null;
               updateUiState();
+
+              if (streamHadError) {
+                // The error branch already finalised the message and
+                // stopped streaming — do not overwrite the error state
+                // with success/default text.
+                if (!_isInMemoryChat) {
+                  await _saveService?.flush();
+                }
+                ref.read(chatBackgroundServiceProvider).stop();
+                return;
+              }
 
               if (!_isInMemoryChat) {
                 await _saveService?.flush();
@@ -1851,6 +1864,7 @@ class ChatNotifier extends Notifier<ChatState> {
           : const <ToolDefinition>[];
 
       bool stateNeedsUpdate = false;
+      bool streamHadError = false;
 
       void updateUiState() {
         if (!stateNeedsUpdate) return;
@@ -1941,6 +1955,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   break;
                 case ChatResponseType.timeoutError:
                 case ChatResponseType.error:
+                  streamHadError = true;
                   _uiUpdateTimer?.cancel();
                   _uiUpdateTimer = null;
                   streamingAssistantMessage = _finalizeStreamMessage(
@@ -1977,6 +1992,12 @@ class ChatNotifier extends Notifier<ChatState> {
             onDone: () async {
               _uiUpdateTimer?.cancel();
               _uiUpdateTimer = null;
+              if (streamHadError) {
+                // The error branch already finalised the message and
+                // stopped streaming — do not overwrite the error state
+                // with a successful complete message.
+                return;
+              }
               final streamConvId = assistantMessage.conversationId;
               final isCurrentContext = _activeConversationId == streamConvId;
 

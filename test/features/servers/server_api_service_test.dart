@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/data/server_api_service.dart';
+import 'dart:convert';
 
 class TestInterceptor extends Interceptor {
   final dynamic responseData;
@@ -46,6 +47,68 @@ class FailingInterceptor extends Interceptor {
         message: 'connection refused',
       ),
     );
+  }
+}
+
+class RoutingInterceptor extends Interceptor {
+  RoutingInterceptor(this.responses);
+
+  /// Maps a request key ("METHOD /path" or "METHOD /path:body-name") to a
+  /// mock response body. Keys match against the request's path suffix so
+  /// tests don't need a baseUrl.
+  final Map<String, dynamic> responses;
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final key = _matchKey(options);
+    final body = key == null ? null : responses[key];
+    if (body == null) {
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.badResponse,
+          message: 'No mock for ${options.method} ${options.path}',
+        ),
+      );
+      return;
+    }
+    handler.resolve(
+      Response(requestOptions: options, statusCode: 200, data: body),
+    );
+  }
+
+  String? _matchKey(RequestOptions options) {
+    final method = options.method.toUpperCase();
+    final path = options.path;
+    final base = '$method $path';
+    final suffix = '$method ${_suffix(path)}';
+    for (final candidate in responses.keys) {
+      if (candidate == base || candidate == suffix) return candidate;
+    }
+    final name = _bodyName(options.data);
+    if (name == null) return null;
+    final baseKey = '$base:$name';
+    if (responses.containsKey(baseKey)) return baseKey;
+    return '$suffix:$name';
+  }
+
+  String _suffix(String path) {
+    final idx = path.indexOf('/api/');
+    if (idx < 0) return path;
+    return path.substring(idx);
+  }
+
+  String? _bodyName(dynamic data) {
+    if (data is Map) return data['name']?.toString();
+    if (data is String && data.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(data);
+        if (decoded is Map) return decoded['name']?.toString();
+      } catch (_) {
+        // Not JSON — leave name null.
+      }
+    }
+    return null;
   }
 }
 
@@ -362,6 +425,60 @@ void main() {
       expect(recorder.requests.first.data, containsPair('model', 'llama3.2:latest'));
       expect(recorder.requests.first.data, containsPair('prompt', ''));
     });
+
+    test(
+      'fetchModels enriches Ollama models with vision capability from /api/show',
+      () async {
+        final ollamaServer = Server(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          type: ServerType.ollama,
+          host: 'localhost',
+          port: 11434,
+          createdAt: DateTime.now(),
+          lastConnectedAt: DateTime.now(),
+        );
+
+        final interceptor = RoutingInterceptor({
+          'GET /api/tags': {
+            'models': [
+              {
+                'name': 'qwen3-vl:2b',
+                'size': 1800000000,
+                'details': {
+                  'parameter_size': '2.1B',
+                  'quantization_level': 'Q4_K_M',
+                  'family': 'qwen3',
+                },
+              },
+              {
+                'name': 'llama3.2:3b',
+                'size': 2000000000,
+                'details': {
+                  'parameter_size': '3B',
+                  'quantization_level': 'Q4_K_M',
+                  'family': 'llama',
+                },
+              },
+            ],
+          },
+          'POST /api/show:qwen3-vl:2b': {
+            'capabilities': ['completion', 'vision'],
+          },
+          'POST /api/show:llama3.2:3b': {
+            'capabilities': ['completion'],
+          },
+        });
+
+        final service = ServerApiService(Dio()..interceptors.add(interceptor));
+        final models = await service.fetchModels(ollamaServer);
+
+        expect(models, hasLength(2));
+        final byId = {for (final m in models) m.id: m};
+        expect(byId['qwen3-vl:2b']?.supportsVision, isTrue);
+        expect(byId['llama3.2:3b']?.supportsVision, isFalse);
+      },
+    );
 
     test('unloadModel for Ollama surfaces failures', () async {
       final ollamaServer = Server(

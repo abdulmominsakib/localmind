@@ -46,17 +46,23 @@ class ServerApiService {
         options: Options(headers: buildServerAuthHeaders(server)),
       );
 
+      List<ModelInfo> models;
       switch (server.type) {
         case ServerType.lmStudio:
         case ServerType.openAICompatible:
-          return _parseOpenAICompatibleModels(response.data, server);
+          models = _parseOpenAICompatibleModels(response.data, server);
+          break;
         case ServerType.ollama:
-          return _parseOllamaModels(response.data, server);
+          models = await _parseAndEnrichOllamaModels(response.data, server);
+          break;
         case ServerType.openRouter:
-          return _parseOpenRouterModels(response.data, server);
+          models = _parseOpenRouterModels(response.data, server);
+          break;
         case ServerType.onDevice:
-          return [];
+          models = [];
+          break;
       }
+      return models;
     } catch (e) {
       throw Exception('Failed to fetch models: $e');
     }
@@ -407,6 +413,55 @@ class ServerApiService {
       if (parsedDouble != null) return parsedDouble / 1000000000;
     }
     return null;
+  }
+
+  Future<List<ModelInfo>> _parseAndEnrichOllamaModels(
+    dynamic data,
+    Server server,
+  ) async {
+    final models = _parseOllamaModels(data, server);
+    if (models.isEmpty) return models;
+
+    return Future.wait(
+      models.map((model) async {
+        try {
+          final response = await _dio.post(
+            server.modelDetailsEndpoint,
+            data: {'name': model.id},
+            options: Options(headers: buildServerAuthHeaders(server)),
+          );
+          final capabilities = _parseOllamaCapabilityList(response.data);
+          return model.copyWith(
+            supportsVision: capabilities.supportsVision,
+            supportsToolUse: capabilities.supportsToolUse,
+          );
+        } catch (error) {
+          Log.warning(
+            'Unable to read Ollama capabilities for ${model.id}: $error',
+          );
+          return model;
+        }
+      }),
+    );
+  }
+
+  ({bool supportsVision, bool supportsToolUse}) _parseOllamaCapabilityList(
+    dynamic data,
+  ) {
+    if (data is! Map) {
+      return (supportsVision: false, supportsToolUse: false);
+    }
+    final rawCapabilities = data['capabilities'];
+    if (rawCapabilities is! List) {
+      return (supportsVision: false, supportsToolUse: false);
+    }
+    final capabilities = rawCapabilities
+        .map((value) => value.toString().trim().toLowerCase())
+        .toSet();
+    return (
+      supportsVision: capabilities.contains('vision'),
+      supportsToolUse: capabilities.contains('tools'),
+    );
   }
 
   List<ModelInfo> _parseOllamaModels(dynamic data, Server server) {

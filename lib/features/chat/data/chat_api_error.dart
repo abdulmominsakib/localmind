@@ -19,12 +19,37 @@ class ChatApiError {
       (code?.isNotEmpty ?? false) ||
       (param?.isNotEmpty ?? false);
 
-  String encode() => jsonEncode({
+  String encode() => jsonEncode(toMap());
+
+  Map<String, dynamic> toMap() => {
         'message': message,
         if (type != null && type!.isNotEmpty) 'type': type,
         if (code != null && code!.isNotEmpty) 'code': code,
         if (param != null && param!.isNotEmpty) 'param': param,
-      });
+      };
+
+  ChatApiError copyWithCodeIfMissing(String? newCode) {
+    if (code != null && code!.isNotEmpty) return this;
+    return ChatApiError(
+      message: message,
+      type: type,
+      code: newCode,
+      param: param,
+    );
+  }
+
+  ChatApiError copyWithTypeIfMissing(String? newType) {
+    if (type != null && type!.isNotEmpty) return this;
+    return ChatApiError(
+      message: message,
+      type: newType,
+      code: code,
+      param: param,
+    );
+  }
+
+  ChatApiError copyWithMessage(String newMessage) =>
+      ChatApiError(message: newMessage, type: type, code: code, param: param);
 
   static ChatApiError? tryParse(String? raw) {
     if (raw == null || raw.isEmpty) return null;

@@ -205,6 +205,18 @@ class Server {
     }
   }
 
+  String get modelDetailsEndpoint {
+    switch (type) {
+      case ServerType.ollama:
+        return '$baseUrl${_apiPath('/api/show')}';
+      case ServerType.lmStudio:
+      case ServerType.openAICompatible:
+      case ServerType.openRouter:
+      case ServerType.onDevice:
+        return '';
+    }
+  }
+
   String get loadModelEndpoint {
     switch (type) {
       case ServerType.lmStudio:
