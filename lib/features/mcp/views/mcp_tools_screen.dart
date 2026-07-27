@@ -1,4 +1,3 @@
-import "package:localmind/core/theme/colors.dart";
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -8,6 +7,8 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../chat/data/mcp_server_manager.dart';
 import '../../chat/data/tools/tool_definition.dart';
 import '../../chat/providers/tooling_providers.dart';
+import '../../../core/providers/app_providers.dart';
+import '../../../core/utils/system_insets.dart';
 
 class McpToolsScreen extends ConsumerStatefulWidget {
   const McpToolsScreen({super.key});
@@ -49,11 +50,12 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final settings = ref.watch(settingsProvider);
     final manager = ref.watch(mcpServerManagerProvider);
     final hasExampleServer = manager.hasExampleServer();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final topPadding = MediaQuery.of(context).padding.top;
+    final bottomInset = bottomSystemInset(context);
 
     return Column(
       children: [
@@ -95,142 +97,267 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
           ),
         ),
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async => _refreshTools(),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _ExampleServerPanel(
-                  enabled: hasExampleServer,
-                  onToggle: _toggleExampleServer,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  l10n.available_tools,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final useTwoColumns = constraints.maxWidth >= 1080;
+              final contentMaxWidth = useTwoColumns ? 1120.0 : 720.0;
+              final horizontalPadding = constraints.maxWidth >= 720
+                  ? 20.0
+                  : 12.0;
+
+              final mcpCard = _McpSectionCard(
+                title: l10n.mcp_tools_title,
+                children: [
+                  _McpToggleSetting(
+                    label: l10n.enable_mcp,
+                    value: settings.mcpEnabled,
+                    badges: [_FeatureBadge(label: l10n.experimental_label)],
+                    onChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setMcpEnabled(value),
                   ),
+                  if (settings.mcpEnabled) ...[
+                    _McpToggleSetting(
+                      label: l10n.new_chat_mcp_default,
+                      value: settings.newChatMcpEnabled,
+                      onChanged: (value) => ref
+                          .read(settingsProvider.notifier)
+                          .setNewChatMcpEnabled(value),
+                    ),
+                    _McpToggleSetting(
+                      label: l10n.enable_example_server,
+                      description: l10n.example_mcp_server_desc,
+                      value: hasExampleServer,
+                      onChanged: (_) => _toggleExampleServer(),
+                    ),
+                  ],
+                ],
+              );
+
+              final toolsCard = _McpSectionCard(
+                title: l10n.available_tools,
+                accent: const Color(0xFF22C55E),
+                icon: HugeIcons.strokeRoundedPuzzle,
+                children: [_buildToolsContent(l10n, settings.mcpEnabled)],
+              );
+
+              return ListView(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  12,
+                  horizontalPadding,
+                  24 + bottomInset,
                 ),
-                const SizedBox(height: 12),
-                FutureBuilder<List<ToolDefinition>>(
-                  future: _toolsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32),
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
-
-                    if (snapshot.hasError) {
-                      return _StatusPanel(
-                        icon: HugeIcons.strokeRoundedInformationCircle,
-                        title: l10n.unable_load_tools,
-                        body: snapshot.error.toString(),
-                      );
-                    }
-
-                    final tools = snapshot.data ?? const <ToolDefinition>[];
-                    if (tools.isEmpty) {
-                      return _StatusPanel(
-                        icon: HugeIcons.strokeRoundedPuzzle,
-                        title: l10n.no_tools_registered,
-                        body: l10n.no_tools_registered_desc,
-                      );
-                    }
-
-                    return Column(
-                      children: tools
-                          .map((tool) => _ToolRow(tool: tool))
-                          .toList(growable: false),
-                    );
-                  },
-                ),
-              ],
-            ),
+                children: [
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          mcpCard,
+                          const SizedBox(height: 16),
+                          toolsCard,
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
     );
   }
+
+  Widget _buildToolsContent(AppLocalizations l10n, bool mcpEnabled) {
+    if (!mcpEnabled) {
+      return _StatusPanel(
+        icon: HugeIcons.strokeRoundedAlertCircle,
+        title: l10n.mcp_disabled_warning,
+        body: l10n.no_tools_registered_desc,
+      );
+    }
+
+    return FutureBuilder<List<ToolDefinition>>(
+      future: _toolsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _McpPanel(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return _StatusPanel(
+            icon: HugeIcons.strokeRoundedInformationCircle,
+            title: l10n.unable_load_tools,
+            body: snapshot.error.toString(),
+          );
+        }
+
+        final tools = snapshot.data ?? const <ToolDefinition>[];
+        if (tools.isEmpty) {
+          return _StatusPanel(
+            icon: HugeIcons.strokeRoundedPuzzle,
+            title: l10n.no_tools_registered,
+            body: l10n.no_tools_registered_desc,
+          );
+        }
+
+        return Column(
+          children: tools
+              .map((tool) => _ToolRow(tool: tool))
+              .toList(growable: false),
+        );
+      },
+    );
+  }
 }
 
-class _ExampleServerPanel extends StatelessWidget {
-  const _ExampleServerPanel({required this.enabled, required this.onToggle});
+class _McpSectionCard extends StatelessWidget {
+  const _McpSectionCard({
+    required this.title,
+    required this.children,
+    this.icon = HugeIcons.strokeRoundedMcpServer,
+    this.accent = const Color(0xFF8B5CF6),
+  });
 
-  final bool enabled;
-  final VoidCallback onToggle;
+  final String title;
+  final List<List<dynamic>> icon;
+  final Color accent;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141414) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isDark ? AppColors.darkSurfaceCard : AppColors.lightSurface,
+        color: _surfaceColor(context),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _outlineColor(context, alpha: 0.9)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: HugeIcon(icon: icon, color: accent, size: 16),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ..._withVerticalSpacing(children, gap: 10),
+          ],
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+}
+
+class _McpPanel extends StatelessWidget {
+  const _McpPanel({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _panelColor(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _outlineColor(context)),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _McpToggleSetting extends StatelessWidget {
+  const _McpToggleSetting({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.description,
+    this.badges = const [],
+  });
+
+  final String label;
+  final String? description;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final List<Widget> badges;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return _McpPanel(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: HugeIcon(
-                  icon: HugeIcons.strokeRoundedMcpServer,
-                  color: theme.colorScheme.primary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
-                      l10n.example_mcp_server_title,
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      label,
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.example_mcp_server_desc,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                    ...badges,
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ShadButton(
-            onPressed: onToggle,
-            leading: HugeIcon(icon: enabled ? HugeIcons.strokeRoundedPower : HugeIcons.strokeRoundedAdd01),
-            child: Text(
-              enabled
-                  ? l10n.disable_example_server
-                  : l10n.enable_example_server,
+                if (description != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    description!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
+          const SizedBox(width: 8),
+          Switch.adaptive(value: value, onChanged: onChanged),
         ],
       ),
     );
@@ -247,70 +374,65 @@ class _ToolRow extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final isMcp = tool.providerType == ToolProviderType.mcp;
-    final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF111111) : Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isDark ? AppColors.darkSurfaceCard : AppColors.lightSurface,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          HugeIcon(icon: 
-            isMcp ? HugeIcons.strokeRoundedShare01 : HugeIcons.strokeRoundedCalculate,
-            size: 20,
-            color: isMcp
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outline,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tool.name,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (tool.description.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: _McpPanel(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            HugeIcon(
+              icon: isMcp
+                  ? HugeIcons.strokeRoundedShare01
+                  : HugeIcons.strokeRoundedCalculate,
+              size: 18,
+              color: isMcp
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outline,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    tool.description,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    tool.name,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
+                  ),
+                  if (tool.description.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      tool.description,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _ToolBadge(
+                        label: isMcp ? 'MCP' : l10n.built_in_label,
+                        color: isMcp
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.outline,
+                      ),
+                      if (tool.providerRef != null)
+                        _ToolBadge(
+                          label: tool.providerRef!,
+                          color: theme.colorScheme.secondary,
+                        ),
+                    ],
                   ),
                 ],
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _ToolBadge(
-                      label: isMcp ? 'MCP' : l10n.built_in_label,
-                      color: isMcp
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.outline,
-                    ),
-                    if (tool.providerRef != null)
-                      _ToolBadge(
-                        label: tool.providerRef!,
-                        color: theme.colorScheme.secondary,
-                      ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -356,33 +478,81 @@ class _StatusPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.outline),
-      ),
-      child: Column(
-        children: [
-          HugeIcon(icon: icon, size: 32, color: theme.colorScheme.outline),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+    return _McpPanel(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
+          children: [
+            HugeIcon(icon: icon, size: 28, color: theme.colorScheme.outline),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            body,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(height: 6),
+            Text(
+              body,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+class _FeatureBadge extends StatelessWidget {
+  const _FeatureBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.22)),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: const Color(0xFFB45309),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.45,
+            ),
+      ),
+    );
+  }
+}
+
+// Visual helpers, kept in sync with settings_screen.dart to ensure the
+// MCP screen matches the rest of the app's settings surfaces.
+List<Widget> _withVerticalSpacing(List<Widget> children, {double gap = 12}) {
+  if (children.isEmpty) return const [];
+  return [
+    for (var index = 0; index < children.length; index++) ...[
+      children[index],
+      if (index != children.length - 1) SizedBox(height: gap),
+    ],
+  ];
+}
+
+Color _panelColor(BuildContext context) {
+  return ShadTheme.of(context).colorScheme.secondary;
+}
+
+Color _surfaceColor(BuildContext context) {
+  return ShadTheme.of(context).colorScheme.card;
+}
+
+Color _outlineColor(BuildContext context, {double alpha = 0.6}) {
+  return ShadTheme.of(context).colorScheme.border.withValues(alpha: alpha);
 }

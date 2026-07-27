@@ -11,7 +11,8 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
   ChatMcpConfig build() {
     // We no longer watch settingsProvider here to avoid resetting per-chat state
     // when global settings change. Initial state is set via ChatNotifier.
-    return const ChatMcpConfig(enabled: true);
+    // Default to disabled so a fresh app launch does not silently enable MCP.
+    return const ChatMcpConfig(enabled: false);
   }
 
   void setConfig(ChatMcpConfig config) {
@@ -84,7 +85,9 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
 
   void clearAll() {
     final settings = ref.read(settingsProvider);
-    state = ChatMcpConfig(enabled: settings.newChatMcpEnabled);
+    state = ChatMcpConfig(
+      enabled: settings.mcpEnabled && settings.newChatMcpEnabled,
+    );
     ref.read(mcpServerManagerProvider).clear();
   }
 }

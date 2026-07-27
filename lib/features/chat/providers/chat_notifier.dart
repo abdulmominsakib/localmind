@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/logger/app_logger.dart';
 import 'package:localmind/core/models/enums.dart';
@@ -371,7 +372,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
       ref
           .read(chatMcpConfigProvider.notifier)
-          .setEnabled(conversation.mcpEnabled ?? true);
+          .setEnabled(conversation.mcpEnabled ?? false);
     } catch (e, stackTrace) {
       Log.fatal(error: e, stackTrace: stackTrace);
       state = state.copyWith(
@@ -491,7 +492,7 @@ class ChatNotifier extends Notifier<ChatState> {
     final settings = ref.read(settingsProvider);
     ref
         .read(chatMcpConfigProvider.notifier)
-        .setEnabled(settings.newChatMcpEnabled);
+        .setEnabled(settings.mcpEnabled && settings.newChatMcpEnabled);
   }
 
   void _invalidateStreamCallbacks() {
@@ -698,7 +699,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   preselected.map((p) => p.id).toList(),
                 ),
           systemPrompt: newConversationSystemPrompt,
-          mcpEnabled: settings.newChatMcpEnabled,
+          mcpEnabled: settings.mcpEnabled && settings.newChatMcpEnabled,
           isTemporary: false,
           folderId: ref.read(pendingNewChatFolderIdProvider.notifier).consume(),
         );
@@ -715,7 +716,9 @@ class ChatNotifier extends Notifier<ChatState> {
     _useFreshConversationSystemPrompt = true;
     _freshConversationSystemPrompt = newConversationSystemPrompt;
 
-    ref.read(chatMcpConfigProvider.notifier).setEnabled(settings.newChatMcpEnabled);
+    ref
+        .read(chatMcpConfigProvider.notifier)
+        .setEnabled(settings.mcpEnabled && settings.newChatMcpEnabled);
 
     if (!settings.keepPersonaOnNewChat) {
       ref.read(selectedPersonasProvider.notifier).clear();
@@ -959,6 +962,9 @@ class ChatNotifier extends Notifier<ChatState> {
                         .copyWith(isProcessing: true);
                     _latestStreamingMessage = streamingAssistantMessage;
                     stateNeedsUpdate = true;
+                    if (ref.read(settingsProvider).hapticFeedbackEnabled) {
+                      HapticFeedback.lightImpact();
+                    }
                     break;
                   case ChatResponseType.timeoutError:
                   case ChatResponseType.error:
@@ -2269,7 +2275,7 @@ class ChatNotifier extends Notifier<ChatState> {
           systemPrompt: preselected.isEmpty
               ? null
               : PersonaPromptUtils.combineSystemPrompts(preselected),
-          mcpEnabled: settings.newChatMcpEnabled,
+          mcpEnabled: settings.mcpEnabled && settings.newChatMcpEnabled,
           isTemporary: false,
         );
 
