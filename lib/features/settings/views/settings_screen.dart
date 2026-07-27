@@ -1,3 +1,4 @@
+import 'package:cue/cue.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -584,76 +585,99 @@ class _SettingsHero extends StatelessWidget {
     final theme = Theme.of(context);
     final primary = _primaryColor(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: _surfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _outlineColor(context, alpha: 0.9)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: primary.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: HugeIcon(
-                      icon: HugeIcons.strokeRoundedSettings01,
-                      size: 18,
-                      color: primary,
+    return Cue.onChange(
+      value: themeType,
+      motion: .smooth(),
+      child: Container(
+        decoration: BoxDecoration(
+          color: _surfaceColor(context),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _outlineColor(context, alpha: 0.9)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Actor(
+                acts: [.fadeIn(), .slideY(from: 0.05)],
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: primary.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: HugeIcon(
+                          icon: HugeIcons.strokeRoundedSettings01,
+                          size: 18,
+                          color: primary,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    l10n.settings_title,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        l10n.settings_title,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.app_tagline,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: _mutedColor(context),
-                height: 1.35,
               ),
-            ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _HeroStat(
-                  label: l10n.theme,
-                  value: _themeLabel(themeType, l10n),
-                  icon: HugeIcons.strokeRoundedSparkles,
+              const SizedBox(height: 6),
+              Actor(
+                delay: 60.ms,
+                acts: [.fadeIn(), .slideY(from: 0.05)],
+                child: Text(
+                  l10n.app_tagline,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: _mutedColor(context),
+                    height: 1.35,
+                  ),
                 ),
-                _HeroStat(
-                  label: l10n.settings_language,
-                  value: _languageLabel(settings.localeCode, l10n),
-                  icon: HugeIcons.strokeRoundedGlobe,
-                ),
-                _HeroStat(
-                  label: l10n.tts_engine,
-                  value: _engineLabel(settings.ttsEngine, l10n),
-                  icon: HugeIcons.strokeRoundedVoice,
-                ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Actor(
+                    delay: 120.ms,
+                    acts: [.fadeIn(), .slideY(from: 0.08), .scale(from: 0.96)],
+                    child: _HeroStat(
+                      label: l10n.theme,
+                      value: _themeLabel(themeType, l10n),
+                      icon: HugeIcons.strokeRoundedSparkles,
+                    ),
+                  ),
+                  Actor(
+                    delay: 180.ms,
+                    acts: [.fadeIn(), .slideY(from: 0.08), .scale(from: 0.96)],
+                    child: _HeroStat(
+                      label: l10n.settings_language,
+                      value: _languageLabel(settings.localeCode, l10n),
+                      icon: HugeIcons.strokeRoundedGlobe,
+                    ),
+                  ),
+                  Actor(
+                    delay: 240.ms,
+                    acts: [.fadeIn(), .slideY(from: 0.08), .scale(from: 0.96)],
+                    child: _HeroStat(
+                      label: l10n.tts_engine,
+                      value: _engineLabel(settings.ttsEngine, l10n),
+                      icon: HugeIcons.strokeRoundedVoice,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

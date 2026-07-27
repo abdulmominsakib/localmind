@@ -855,5 +855,10 @@
   "crash_report_empty_stack": "<vuoto>",
   "crash_report_disclaimer": "Segnalare apre GitHub con le diagnostiche già compilate. Hai il controllo: non viene inviato nulla automaticamente. Rivedi e rimuovi eventuali contenuti sensibili prima di inviare.",
   "crash_report_copied": "Copiato negli appunti",
-  "report_a_problem": "Segnala un problema"
+  "report_a_problem": "Segnala un problema",
+  "rename_folder": "Rinomina cartella",
+  "delete_folder": "Elimina cartella",
+  "delete_folder_title": "Eliminare la cartella?",
+  "delete_folder_body": "Sei sicuro di voler eliminare \"{name}\"? Le conversazioni o i messaggi salvati al suo interno verranno spostati in \"Senza cartella\". Operazione irreversibile.",
+  "folder_name_required": "Inserisci un nome per la cartella"
 }

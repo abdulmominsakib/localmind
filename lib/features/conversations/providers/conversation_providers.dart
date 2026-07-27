@@ -859,6 +859,19 @@ class ConversationFoldersNotifier extends AsyncNotifier<List<ConversationFolder>
     return folder;
   }
 
+  Future<void> renameFolder(String id, String name) async {
+    final db = ref.read(databaseProvider);
+    final query = db.conversationFolderBox
+        .query(ConversationFolderEntity_.id.equals(id))
+        .build();
+    final entity = query.findFirst();
+    query.close();
+    if (entity == null) return;
+    entity.name = name;
+    db.conversationFolderBox.put(entity);
+    state = AsyncData(await _loadAll());
+  }
+
   Future<void> deleteFolder(String id) async {
     final db = ref.read(databaseProvider);
     final query = db.conversationFolderBox

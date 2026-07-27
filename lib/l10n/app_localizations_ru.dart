@@ -2806,4 +2806,21 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get report_a_problem => 'Сообщить о проблеме';
+
+  @override
+  String get rename_folder => 'Переименовать папку';
+
+  @override
+  String get delete_folder => 'Удалить папку';
+
+  @override
+  String get delete_folder_title => 'Удалить папку?';
+
+  @override
+  String delete_folder_body(String name) {
+    return 'Удалить папку «$name»? Содержащиеся в ней беседы и сохранённые сообщения будут перенесены в «Без папки». Это действие нельзя отменить.';
+  }
+
+  @override
+  String get folder_name_required => 'Введите название папки';
 }

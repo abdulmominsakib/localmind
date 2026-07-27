@@ -1,3 +1,4 @@
+import 'package:cue/cue.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,7 +96,9 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
       maxChildSize: 1.0,
       expand: false,
       builder: (context, scrollController) {
-        return Container(
+        return Cue.onMount(
+          motion: .smooth(),
+          child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkBackground : AppColors.lightSurface,
@@ -179,6 +182,7 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
               ),
             ],
           ),
+        ),
         );
       },
     );

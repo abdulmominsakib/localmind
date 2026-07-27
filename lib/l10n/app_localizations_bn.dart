@@ -2799,4 +2799,21 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get report_a_problem => 'একটি সমস্যা রিপোর্ট করুন';
+
+  @override
+  String get rename_folder => 'ফোল্ডারের নাম পরিবর্তন';
+
+  @override
+  String get delete_folder => 'ফোল্ডার মুছুন';
+
+  @override
+  String get delete_folder_title => 'ফোল্ডার মুছে ফেলবেন?';
+
+  @override
+  String delete_folder_body(String name) {
+    return 'আপনি কি নিশ্চিত যে \"$name\" মুছে ফেলতে চান? ভিতরের কথোপকথন বা সংরক্ষিত বার্তা \"অবিভাজিত\"-এ ফিরে যাবে। এটি পূর্বাবস্থায় ফেরানো যাবে না।';
+  }
+
+  @override
+  String get folder_name_required => 'অনুগ্রহ করে একটি ফোল্ডারের নাম লিখুন';
 }

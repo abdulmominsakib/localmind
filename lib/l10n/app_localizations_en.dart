@@ -2787,4 +2787,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get report_a_problem => 'Report a problem';
+
+  @override
+  String get rename_folder => 'Rename folder';
+
+  @override
+  String get delete_folder => 'Delete folder';
+
+  @override
+  String get delete_folder_title => 'Delete folder?';
+
+  @override
+  String delete_folder_body(String name) {
+    return 'Are you sure you want to delete \"$name\"? Conversations or saved messages inside will be moved back to \"Unfiled\". This cannot be undone.';
+  }
+
+  @override
+  String get folder_name_required => 'Please enter a folder name';
 }

@@ -116,6 +116,19 @@ class SavedMessageFoldersNotifier
     return folder;
   }
 
+  Future<void> renameFolder(String id, String name) async {
+    final db = ref.read(databaseProvider);
+    final folderQuery = db.savedMessageFolderBox
+        .query(SavedMessageFolderEntity_.id.equals(id))
+        .build();
+    final entity = folderQuery.findFirst();
+    folderQuery.close();
+    if (entity == null) return;
+    entity.name = name;
+    db.savedMessageFolderBox.put(entity);
+    state = AsyncData(await _loadAll());
+  }
+
   Future<void> deleteFolder(String id) async {
     final db = ref.read(databaseProvider);
     final folderQuery = db.savedMessageFolderBox

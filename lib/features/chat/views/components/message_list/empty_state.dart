@@ -1,3 +1,4 @@
+import 'package:cue/cue.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'dart:async';
 
@@ -34,52 +35,13 @@ class EmptyState extends StatefulWidget {
   State<EmptyState> createState() => _EmptyStateState();
 }
 
-class _EmptyStateState extends State<EmptyState>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late List<Animation<double>> _fadeAnimations;
-  late List<Animation<Offset>> _slideAnimations;
+class _EmptyStateState extends State<EmptyState> {
   Timer? _welcomeTimer;
   int _welcomeIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-
-    _fadeAnimations = List.generate(widget.quickPrompts.length, (index) {
-      return Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Interval(
-            (index * 0.1).clamp(0.0, 0.7),
-            (0.3 + index * 0.1).clamp(0.2, 1.0),
-            curve: Curves.easeOut,
-          ),
-        ),
-      );
-    });
-
-    _slideAnimations = List.generate(widget.quickPrompts.length, (index) {
-      return Tween<Offset>(
-        begin: const Offset(0.0, 0.3),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Interval(
-            (index * 0.1).clamp(0.0, 0.7),
-            (0.3 + index * 0.1).clamp(0.2, 1.0),
-            curve: Curves.easeOutCubic,
-          ),
-        ),
-      );
-    });
-
-    _controller.forward();
     _welcomeTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
       setState(() => _welcomeIndex = (_welcomeIndex + 1) % 4);
@@ -89,7 +51,6 @@ class _EmptyStateState extends State<EmptyState>
   @override
   void dispose() {
     _welcomeTimer?.cancel();
-    _controller.dispose();
     super.dispose();
   }
 
@@ -106,43 +67,58 @@ class _EmptyStateState extends State<EmptyState>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(32, 8, 32, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            height: 72,
-            child: Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 400),
-                layoutBuilder: (current, previous) => Stack(
-                  alignment: Alignment.center,
-                  children: [...previous, ?current],
-                ),
-                child: Text(
-                  _welcomeMessages(l10n)[_welcomeIndex],
-                  key: ValueKey(_welcomeIndex),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : Colors.black87,
+    return Cue.onMount(
+      motion: .smooth(),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(32, 8, 32, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: 72,
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: Alignment.center,
+                    children: [...previous, ?current],
+                  ),
+                  child: Text(
+                    _welcomeMessages(l10n)[_welcomeIndex],
+                    key: ValueKey(_welcomeIndex),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          _buildModelAndPersonaSelectors(isDark, theme, l10n),
-          const SizedBox(height: 24),
-          _buildQuickPrompts(isDark),
-          if (widget.recentConversations.isNotEmpty) ...[
-            const SizedBox(height: 28),
-            _buildRecentSection(isDark, l10n),
+            const SizedBox(height: 8),
+            Actor(
+              delay: 80.ms,
+              acts: [.fadeIn(), .slideY(from: 0.1)],
+              child: _buildModelAndPersonaSelectors(isDark, theme, l10n),
+            ),
+            const SizedBox(height: 24),
+            Actor(
+              delay: 160.ms,
+              acts: [.fadeIn(), .slideY(from: 0.12)],
+              child: _buildQuickPrompts(isDark),
+            ),
+            if (widget.recentConversations.isNotEmpty) ...[
+              const SizedBox(height: 28),
+              Actor(
+                delay: 240.ms,
+                acts: [.fadeIn(), .slideY(from: 0.08)],
+                child: _buildRecentSection(isDark, l10n),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -152,35 +128,74 @@ class _EmptyStateState extends State<EmptyState>
     ThemeData theme,
     AppLocalizations l10n,
   ) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 20 * (1 - value)),
-            child: child,
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: widget.onModelTap,
+          child: _buildSelectorCard(
+            isDark: isDark,
+            theme: theme,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HugeIcon(icon: HugeIcons.strokeRoundedSettings01,
+                    size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    widget.selectedModel?.displayName ?? l10n.select_model,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, size: 16, color: Colors.grey),
+              ],
+            ),
           ),
-        );
-      },
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: widget.onModelTap,
-            child: _buildSelectorCard(
-              isDark: isDark,
-              theme: theme,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  HugeIcon(icon: HugeIcons.strokeRoundedSettings01,
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: widget.onPersonaTap,
+          child: _buildSelectorCard(
+            isDark: isDark,
+            theme: theme,
+            child: Row(
+              mainAxisSize: widget.selectedPersonas.isEmpty
+                  ? MainAxisSize.min
+                  : MainAxisSize.max,
+              children: [
+                if (widget.selectedPersonas.isNotEmpty) ...[
+                  Flexible(
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: widget.selectedPersonas.map((persona) {
+                        return Text(
+                          '${persona.emoji} ${persona.name}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ] else ...[
+                  HugeIcon(icon: HugeIcons.strokeRoundedRobot01,
                       size: 18, color: theme.colorScheme.primary),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      widget.selectedModel?.displayName ?? l10n.select_model,
+                      l10n.select_persona,
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -190,67 +205,14 @@ class _EmptyStateState extends State<EmptyState>
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, size: 16, color: Colors.grey),
                 ],
-              ),
+                const SizedBox(width: 4),
+                const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, size: 16, color: Colors.grey),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: widget.onPersonaTap,
-            child: _buildSelectorCard(
-              isDark: isDark,
-              theme: theme,
-              child: Row(
-                mainAxisSize: widget.selectedPersonas.isEmpty
-                    ? MainAxisSize.min
-                    : MainAxisSize.max,
-                children: [
-                  if (widget.selectedPersonas.isNotEmpty) ...[
-                    Flexible(
-                      child: Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: widget.selectedPersonas.map((persona) {
-                          return Text(
-                            '${persona.emoji} ${persona.name}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : Colors.black,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ] else ...[
-                    HugeIcon(icon: HugeIcons.strokeRoundedRobot01,
-                        size: 18, color: theme.colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        l10n.select_persona,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(width: 4),
-                  const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, size: 16, color: Colors.grey),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -280,24 +242,9 @@ class _EmptyStateState extends State<EmptyState>
       children: widget.quickPrompts.asMap().entries.map((entry) {
         final index = entry.key;
         final prompt = entry.value;
-        final fadeAnimation = index < _fadeAnimations.length
-            ? _fadeAnimations[index]
-            : const AlwaysStoppedAnimation(1.0);
-        final slideAnimation = index < _slideAnimations.length
-            ? _slideAnimations[index]
-            : const AlwaysStoppedAnimation(Offset.zero);
-
-        return AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: fadeAnimation,
-              child: SlideTransition(
-                position: slideAnimation,
-                child: child,
-              ),
-            );
-          },
+        return Actor(
+          delay: (180 + index * 35).ms,
+          acts: [.fadeIn(), .scale(from: 0.96), .slideY(from: 0.08)],
           child: ActionChip(
             label: Text(prompt),
             onPressed: () => widget.onQuickPrompt(prompt),
@@ -344,19 +291,9 @@ class _EmptyStateState extends State<EmptyState>
         const SizedBox(height: 12),
         ...List.generate(widget.recentConversations.take(5).length, (index) {
           final conv = widget.recentConversations.take(5).toList()[index];
-          return TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: Duration(milliseconds: 400 + (index * 50)),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: value,
-                child: Transform.translate(
-                  offset: Offset(0, 10 * (1 - value)),
-                  child: child,
-                ),
-              );
-            },
+          return Actor(
+            delay: (260 + index * 50).ms,
+            acts: [.fadeIn(), .slideY(from: 0.06)],
             child: Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: RecentConversationItem(conversation: conv),

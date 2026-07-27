@@ -2803,4 +2803,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get report_a_problem => 'Informar de un problema';
+
+  @override
+  String get rename_folder => 'Renombrar carpeta';
+
+  @override
+  String get delete_folder => 'Eliminar carpeta';
+
+  @override
+  String get delete_folder_title => '¿Eliminar carpeta?';
+
+  @override
+  String delete_folder_body(String name) {
+    return '¿Seguro que quieres eliminar \"$name\"? Las conversaciones o mensajes guardados dentro se moverán a \"Sin clasificar\". No se puede deshacer.';
+  }
+
+  @override
+  String get folder_name_required => 'Introduce un nombre de carpeta';
 }

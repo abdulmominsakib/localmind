@@ -1,3 +1,4 @@
+import 'package:cue/cue.dart';
 import 'package:flutter/material.dart';
 
 class AnimatedBubble extends StatelessWidget {
@@ -9,28 +10,22 @@ class AnimatedBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolvedAlignment = alignment.resolve(Directionality.of(context));
-    final offset = resolvedAlignment == Alignment.centerRight
-        ? const Offset(0.15, 0.0)
-        : resolvedAlignment == Alignment.centerLeft
-            ? const Offset(-0.15, 0.0)
-            : const Offset(0.0, 0.1);
+    final isUserRight = resolvedAlignment == Alignment.centerRight;
+    final isAssistantLeft = resolvedAlignment == Alignment.centerLeft;
 
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(
-              offset.dx * (1 - value) * 50,
-              offset.dy * (1 - value) * 30,
-            ),
-            child: child,
-          ),
-        );
-      },
+    final Offset translateOffset = isUserRight
+        ? const Offset(12, 0)
+        : isAssistantLeft
+            ? const Offset(-12, 0)
+            : const Offset(0, 8);
+
+    return Cue.onMount(
+      motion: .smooth(),
+      acts: [
+        .fadeIn(),
+        .translate(from: translateOffset),
+        .scale(from: 0.98),
+      ],
       child: child,
     );
   }

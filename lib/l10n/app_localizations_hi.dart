@@ -2792,4 +2792,21 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get report_a_problem => 'समस्या की रिपोर्ट करें';
+
+  @override
+  String get rename_folder => 'फ़ोल्डर का नाम बदलें';
+
+  @override
+  String get delete_folder => 'फ़ोल्डर हटाएँ';
+
+  @override
+  String get delete_folder_title => 'फ़ोल्डर हटाएँ?';
+
+  @override
+  String delete_folder_body(String name) {
+    return 'क्या आप वाकई \"$name\" हटाना चाहते हैं? अंदर की बातचीत या सहेजे गए संदेश \"अवर्गीकृत\" में वापस चले जाएंगे। इसे पूर्ववत नहीं किया जा सकता।';
+  }
+
+  @override
+  String get folder_name_required => 'कृपया फ़ोल्डर का नाम दर्ज करें';
 }

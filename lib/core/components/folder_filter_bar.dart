@@ -16,6 +16,7 @@ class FolderFilterBar extends StatelessWidget {
     required this.selectedFolderId,
     required this.onFilterChanged,
     required this.onCreateFolder,
+    this.onFolderAction,
     this.isLoading = false,
     this.showCreateFolder = true,
   });
@@ -25,6 +26,12 @@ class FolderFilterBar extends StatelessWidget {
   final String? selectedFolderId;
   final ValueChanged<String?> onFilterChanged;
   final VoidCallback onCreateFolder;
+
+  /// Called when the user invokes a secondary action on a folder chip
+  /// (long-press on touch devices, right-click on desktop). When `null`,
+  /// folder chips are not interactive for management actions.
+  final void Function(FolderFilterItem folder, Offset globalPosition)?
+      onFolderAction;
   final bool isLoading;
   final bool showCreateFolder;
 
@@ -62,18 +69,23 @@ class FolderFilterBar extends StatelessWidget {
           ...folders.map(
             (folder) => Padding(
               padding: const EdgeInsets.only(left: 6),
-              child: FilterChip(
-                avatar: HugeIcon(icon: 
-                  HugeIcons.strokeRoundedFolder01,
-                  size: 16,
-                  color: selectedFolderId == folder.id
-                      ? theme.colorScheme.onSecondaryContainer
-                      : theme.colorScheme.primary,
+              child: _FolderActionWrapper(
+                onAction: onFolderAction == null
+                    ? null
+                    : (globalPos) => onFolderAction!(folder, globalPos),
+                child: FilterChip(
+                  avatar: HugeIcon(icon: 
+                    HugeIcons.strokeRoundedFolder01,
+                    size: 16,
+                    color: selectedFolderId == folder.id
+                        ? theme.colorScheme.onSecondaryContainer
+                        : theme.colorScheme.primary,
+                  ),
+                  label: Text(folder.name),
+                  selected: selectedFolderId == folder.id,
+                  showCheckmark: false,
+                  onSelected: (_) => onFilterChanged(folder.id),
                 ),
-                label: Text(folder.name),
-                selected: selectedFolderId == folder.id,
-                showCheckmark: false,
-                onSelected: (_) => onFilterChanged(folder.id),
               ),
             ),
           ),
@@ -151,6 +163,34 @@ class SystemFolderFilterChip extends StatelessWidget {
       backgroundColor: bgColor,
       side: BorderSide(color: borderColor),
       onSelected: onSelected,
+    );
+  }
+}
+
+/// Wraps a folder chip with secondary-action gestures (long-press on touch
+/// devices, right-click on desktop/web). When [onAction] is null the wrapper
+/// is a no-op pass-through so callers can disable the feature cheaply.
+class _FolderActionWrapper extends StatelessWidget {
+  const _FolderActionWrapper({required this.child, required this.onAction});
+
+  final Widget child;
+  final void Function(Offset globalPosition)? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    if (onAction == null) return child;
+    return GestureDetector(
+      // Translucent lets taps fall through to the FilterChip so the primary
+      // selection callback still fires. Only long-press and secondary tap
+      // are claimed by this detector.
+      behavior: HitTestBehavior.translucent,
+      // Long-press for touch: standard mobile affordance.
+      onLongPressStart: (details) => onAction!(details.globalPosition),
+      // Secondary (right-click) tap for desktop, web and macOS trackpad.
+      onSecondaryTapDown: (details) => onAction!(details.globalPosition),
+      // Tap is intentionally not intercepted — the FilterChip's own tap
+      // continues to fire, so primary selection still works.
+      child: child,
     );
   }
 }

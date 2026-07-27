@@ -2719,6 +2719,23 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get report_a_problem => '报告问题';
+
+  @override
+  String get rename_folder => '重命名文件夹';
+
+  @override
+  String get delete_folder => '删除文件夹';
+
+  @override
+  String get delete_folder_title => '删除文件夹？';
+
+  @override
+  String delete_folder_body(String name) {
+    return '确定要删除\"$name\"吗？其中的对话或已保存的消息将移回\"未分类\"。此操作无法撤销。';
+  }
+
+  @override
+  String get folder_name_required => '请输入文件夹名称';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -5437,4 +5454,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get report_a_problem => '回報問題';
+
+  @override
+  String get rename_folder => '重新命名資料夾';
+
+  @override
+  String get delete_folder => '刪除資料夾';
+
+  @override
+  String get delete_folder_title => '刪除資料夾？';
+
+  @override
+  String delete_folder_body(String name) {
+    return '確定要刪除「$name」嗎?其中的對話或已儲存的訊息將移回「未分類」。此操作無法復原。';
+  }
+
+  @override
+  String get folder_name_required => '請輸入資料夾名稱';
 }

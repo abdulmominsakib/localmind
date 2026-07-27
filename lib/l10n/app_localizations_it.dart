@@ -2806,4 +2806,21 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get report_a_problem => 'Segnala un problema';
+
+  @override
+  String get rename_folder => 'Rinomina cartella';
+
+  @override
+  String get delete_folder => 'Elimina cartella';
+
+  @override
+  String get delete_folder_title => 'Eliminare la cartella?';
+
+  @override
+  String delete_folder_body(String name) {
+    return 'Sei sicuro di voler eliminare \"$name\"? Le conversazioni o i messaggi salvati al suo interno verranno spostati in \"Senza cartella\". Operazione irreversibile.';
+  }
+
+  @override
+  String get folder_name_required => 'Inserisci un nome per la cartella';
 }

@@ -855,5 +855,10 @@
   "crash_report_empty_stack": "<空>",
   "crash_report_disclaimer": "報告すると、診断情報があらかじめ入力された状態で GitHub が開きます。自動送信はされません。送信前に機密性の高い内容を削除してください。",
   "crash_report_copied": "クリップボードにコピーしました",
-  "report_a_problem": "問題を報告"
+  "report_a_problem": "問題を報告",
+  "rename_folder": "フォルダ名を変更",
+  "delete_folder": "フォルダを削除",
+  "delete_folder_title": "フォルダを削除しますか？",
+  "delete_folder_body": "「{name}」を削除してもよろしいですか？フォルダ内の会話や保存済みメッセージは「未分類」に戻されます。この操作は元に戻せません。",
+  "folder_name_required": "フォルダ名を入力してください"
 }

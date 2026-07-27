@@ -2779,4 +2779,21 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get report_a_problem => 'الإبلاغ عن مشكلة';
+
+  @override
+  String get rename_folder => 'إعادة تسمية المجلد';
+
+  @override
+  String get delete_folder => 'حذف المجلد';
+
+  @override
+  String get delete_folder_title => 'حذف المجلد؟';
+
+  @override
+  String delete_folder_body(String name) {
+    return 'هل أنت متأكد من رغبتك في حذف \"$name\"؟ سيتم نقل المحادثات أو الرسائل المحفوظة بداخله إلى \"غير مصنّف\". لا يمكن التراجع.';
+  }
+
+  @override
+  String get folder_name_required => 'الرجاء إدخال اسم المجلد';
 }

@@ -3067,5 +3067,31 @@
   "report_a_problem": "Report a problem",
   "@report_a_problem": {
     "description": "Settings tile label that opens the generic feedback issue form"
+  },
+  "rename_folder": "Rename folder",
+  "@rename_folder": {
+    "description": "Menu item and dialog title for renaming a chat history or saved messages folder"
+  },
+  "delete_folder": "Delete folder",
+  "@delete_folder": {
+    "description": "Menu item for deleting a chat history or saved messages folder"
+  },
+  "delete_folder_title": "Delete folder?",
+  "@delete_folder_title": {
+    "description": "Title of the confirmation dialog for deleting a folder"
+  },
+  "delete_folder_body": "Are you sure you want to delete \"{name}\"? Conversations or saved messages inside will be moved back to \"Unfiled\". This cannot be undone.",
+  "@delete_folder_body": {
+    "description": "Body of the confirmation dialog for deleting a folder. Names the folder and warns that contained items are moved to Unfiled.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Research"
+      }
+    }
+  },
+  "folder_name_required": "Please enter a folder name",
+  "@folder_name_required": {
+    "description": "Validation error when a folder name is empty"
   }
 }

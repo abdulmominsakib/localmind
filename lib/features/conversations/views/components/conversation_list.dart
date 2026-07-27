@@ -1,3 +1,4 @@
+import 'package:cue/cue.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,68 +60,74 @@ class ConversationList extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DateSectionHeader(title: section),
+            Cue.onScrollVisible(
+              acts: [.fadeIn(), .slideY(from: 0.05)],
+              child: DateSectionHeader(title: section),
+            ),
             ...conversations.map((conversation) {
-              return ConversationTile(
-                conversation: conversation,
-                isActive: activeConversation?.id == conversation.id,
-                selectionMode: selectionMode,
-                isSelected: selectedIds.contains(conversation.id),
-                onEnterSelectionMode: () {
-                  ref.read(historySelectionModeProvider.notifier).enable();
-                  ref
-                      .read(historySelectedIdsProvider.notifier)
-                      .toggle(conversation.id);
-                },
-                onTap: () {
-                  if (selectionMode) {
+              return Cue.onScrollVisible(
+                acts: [.fadeIn(), .slideX(from: -0.04)],
+                child: ConversationTile(
+                  conversation: conversation,
+                  isActive: activeConversation?.id == conversation.id,
+                  selectionMode: selectionMode,
+                  isSelected: selectedIds.contains(conversation.id),
+                  onEnterSelectionMode: () {
+                    ref.read(historySelectionModeProvider.notifier).enable();
                     ref
                         .read(historySelectedIdsProvider.notifier)
                         .toggle(conversation.id);
-                    return;
-                  }
-                  ref
-                      .read(chatProvider.notifier)
-                      .loadConversation(conversation);
-                  ref
-                      .read(chatOriginProvider.notifier)
-                      .set(ChatOrigin.history);
-                  if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                    Navigator.pop(context);
-                  }
-                  context.go(AppRoutes.home);
-                },
-                onRename: () {
-                  _showRenameDialog(context, ref, l10n, conversation);
-                },
-                onTogglePin: () {
-                  ref
-                      .read(conversationsProvider.notifier)
-                      .togglePin(conversation.id);
-                },
-                onDelete: () {
-                  _showDeleteConfirmation(context, ref, l10n, conversation);
-                },
-                onDuplicate: () {
-                  ref
-                      .read(conversationsProvider.notifier)
-                      .duplicateConversation(conversation.id);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.duplicate_chat_success)),
-                  );
-                },
-                onMoveToFolder: () {
-                  showMoveToFolderSheet(context, ref, l10n, conversation);
-                },
-                onExport: () {
-                  _exportConversation(context, ref, l10n, conversation);
-                },
-                onArchive: () {
-                  ref.read(conversationsProvider.notifier).setArchived(
-                        conversation.id,
-                        !conversation.isArchived,
-                      );
-                },
+                  },
+                  onTap: () {
+                    if (selectionMode) {
+                      ref
+                          .read(historySelectedIdsProvider.notifier)
+                          .toggle(conversation.id);
+                      return;
+                    }
+                    ref
+                        .read(chatProvider.notifier)
+                        .loadConversation(conversation);
+                    ref
+                        .read(chatOriginProvider.notifier)
+                        .set(ChatOrigin.history);
+                    if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                      Navigator.pop(context);
+                    }
+                    context.go(AppRoutes.home);
+                  },
+                  onRename: () {
+                    _showRenameDialog(context, ref, l10n, conversation);
+                  },
+                  onTogglePin: () {
+                    ref
+                        .read(conversationsProvider.notifier)
+                        .togglePin(conversation.id);
+                  },
+                  onDelete: () {
+                    _showDeleteConfirmation(context, ref, l10n, conversation);
+                  },
+                  onDuplicate: () {
+                    ref
+                        .read(conversationsProvider.notifier)
+                        .duplicateConversation(conversation.id);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.duplicate_chat_success)),
+                    );
+                  },
+                  onMoveToFolder: () {
+                    showMoveToFolderSheet(context, ref, l10n, conversation);
+                  },
+                  onExport: () {
+                    _exportConversation(context, ref, l10n, conversation);
+                  },
+                  onArchive: () {
+                    ref.read(conversationsProvider.notifier).setArchived(
+                          conversation.id,
+                          !conversation.isArchived,
+                        );
+                  },
+                ),
               );
             }),
           ],

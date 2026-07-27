@@ -1,3 +1,4 @@
+import 'package:cue/cue.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -52,211 +53,254 @@ class SidebarWidget extends ConsumerWidget {
             : Border(right: BorderSide(color: theme.colorScheme.outline)),
       ),
       child: SafeArea(
-        child: Column(
-          children: [
-            const ConversationDrawerHeader(),
-
-            // New Chat Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ShadButton(
-                width: double.infinity,
-                leading: const HugeIcon(
-                  icon: HugeIcons.strokeRoundedAdd01,
-                  size: 20,
-                ),
-                onPressed: () {
-                  ref.read(chatProvider.notifier).startNewConversation();
-                  context.go(AppRoutes.home);
-                  if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                    Navigator.pop(context);
-                  }
-                },
-                child: Text(l10n.nav_new_chat),
-              ),
-            ),
-
-            if (hasActiveChat)
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, isHome ? 8 : 8),
-                child: isTemporary
-                    ? ShadButton.outline(
-                        width: double.infinity,
-                        leading: const HugeIcon(
-                          icon: HugeIcons.strokeRoundedArrowLeft01,
-                          size: 18,
-                        ),
-                        onPressed: () {
-                          if (!isHome) context.go(AppRoutes.home);
-                          if (Scaffold.maybeOf(context)?.isDrawerOpen ??
-                              false) {
-                            Navigator.pop(context);
-                          }
-                        },
-                        child: Text(l10n.return_to_temp_chat),
-                      )
-                    : ShadButton.secondary(
-                        width: double.infinity,
-                        leading: const HugeIcon(
-                          icon: HugeIcons.strokeRoundedArrowLeft01,
-                          size: 18,
-                        ),
-                        onPressed: () {
-                          if (!isHome) context.go(AppRoutes.home);
-                          if (Scaffold.maybeOf(context)?.isDrawerOpen ??
-                              false) {
-                            Navigator.pop(context);
-                          }
-                        },
-                        child: Text(l10n.return_to_chat),
-                      ),
+        child: Cue.onMount(
+          motion: .smooth(),
+          child: Column(
+            children: [
+              Actor(
+                acts: [.fadeIn(), .slideX(from: -0.05)],
+                child: const ConversationDrawerHeader(),
               ),
 
-            const SidebarSearchButton(),
-            const SizedBox(height: 8),
-            const Divider(height: 1, indent: 16, endIndent: 16),
-            const SizedBox(height: 12),
-
-            // Primary Navigation
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    DrawerNavItem(
-                      iconData: HugeIcons.strokeRoundedChatting01,
-                      label: l10n.nav_history,
-                      isSelected: isHistory,
-                      onTap: () {
-                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                          Navigator.pop(context);
-                        }
-                        context.go(AppRoutes.chatHistory);
-                      },
+              // New Chat Button
+              Actor(
+                delay: 60.ms,
+                acts: [.fadeIn(), .slideX(from: -0.04)],
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ShadButton(
+                    width: double.infinity,
+                    leading: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedAdd01,
+                      size: 20,
                     ),
-                    DrawerNavItem(
-                      iconData: HugeIcons.strokeRoundedBookmark02,
-                      label: l10n.nav_saved_messages,
-                      isSelected: isSavedMessages,
-                      onTap: () {
-                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                          Navigator.pop(context);
-                        }
-                        context.go(AppRoutes.savedMessages);
-                      },
-                    ),
-                    DrawerNavItem(
-                      iconData: HugeIcons.strokeRoundedServerStack01,
-                      label: l10n.nav_servers,
-                      isSelected: isServers,
-                      onTap: () {
-                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                          Navigator.pop(context);
-                        }
-                        context.go(AppRoutes.servers);
-                      },
-                    ),
-                    DrawerNavItem(
-                      iconData: HugeIcons.strokeRoundedMcpServer,
-                      label: l10n.mcp_tools_title,
-                      isSelected: isMcpTools,
-                      onTap: () {
-                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                          Navigator.pop(context);
-                        }
-                        context.go(AppRoutes.mcpTools);
-                      },
-                    ),
-                    if (isLmStudio)
-                      DrawerNavItem(
-                        iconData: HugeIcons.strokeRoundedAiSearch,
-                        label: l10n.lm_studio_model_search,
-                        isSelected: false,
-                        trailing: const LmDownloadIndicatorButton(
-                          compact: true,
-                        ),
-                        onTap: () {
-                          if (Scaffold.maybeOf(context)?.isDrawerOpen ??
-                              false) {
-                            Navigator.pop(context);
-                          }
-                          context.push(
-                            AppRoutes.lmStudioModelBrowser,
-                            extra: activeServer,
-                          );
-                        },
-                      ),
-                    DrawerNavItem(
-                      iconData: HugeIcons.strokeRoundedSmartPhone01,
-                      label: l10n.nav_local_models,
-                      isSelected: isLocalModels,
-                      onTap: () {
-                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                          Navigator.pop(context);
-                        }
-                        context.go(AppRoutes.onDeviceModels);
-                      },
-                    ),
-                    DrawerNavItem(
-                      iconData: HugeIcons.strokeRoundedVoice,
-                      label: l10n.nav_tts,
-                      isSelected: isTtsModels,
-                      onTap: () {
-                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                          Navigator.pop(context);
-                        }
-                        context.go(AppRoutes.ttsModels);
-                      },
-                    ),
-                    DrawerNavItem(
-                      iconData: HugeIcons.strokeRoundedCompass01,
-                      label: l10n.nav_personas,
-                      isSelected: isPersonas,
-                      onTap: () {
-                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                          Navigator.pop(context);
-                        }
-                        context.go(AppRoutes.personas);
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    const Divider(height: 1, indent: 16, endIndent: 16),
-                    const SizedBox(height: 8),
-                    DrawerNavItem(
-                      iconData: HugeIcons.strokeRoundedCloudSavingDone02,
-                      label: l10n.cloud_sync,
-                      isSelected: isCloudSync,
-                      onTap: () {
-                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                          Navigator.pop(context);
-                        }
-                        context.go(AppRoutes.cloudSync);
-                      },
-                    ),
-                    DrawerNavItem(
-                      iconData: HugeIcons.strokeRoundedSettings01,
-                      label: l10n.nav_settings,
-                      isSelected: isSettings,
-                      onTap: () {
-                        if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-                          Navigator.pop(context);
-                        }
-                        context.go(AppRoutes.settings);
-                      },
-                    ),
-                  ],
+                    onPressed: () {
+                      ref.read(chatProvider.notifier).startNewConversation();
+                      context.go(AppRoutes.home);
+                      if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                        Navigator.pop(context);
+                      }
+                    },
+                    child: Text(l10n.nav_new_chat),
+                  ),
                 ),
               ),
-            ),
 
-            // Duplicate Player controls
-            const TtsPlayerBar(),
+              if (hasActiveChat)
+                Actor(
+                  delay: 120.ms,
+                  acts: [.fadeIn(), .slideX(from: -0.04)],
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, isHome ? 8 : 8),
+                    child: isTemporary
+                        ? ShadButton.outline(
+                            width: double.infinity,
+                            leading: const HugeIcon(
+                              icon: HugeIcons.strokeRoundedArrowLeft01,
+                              size: 18,
+                            ),
+                            onPressed: () {
+                              if (!isHome) context.go(AppRoutes.home);
+                              if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                  false) {
+                                Navigator.pop(context);
+                              }
+                            },
+                            child: Text(l10n.return_to_temp_chat),
+                          )
+                        : ShadButton.secondary(
+                            width: double.infinity,
+                            leading: const HugeIcon(
+                              icon: HugeIcons.strokeRoundedArrowLeft01,
+                              size: 18,
+                            ),
+                            onPressed: () {
+                              if (!isHome) context.go(AppRoutes.home);
+                              if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                  false) {
+                                Navigator.pop(context);
+                              }
+                            },
+                            child: Text(l10n.return_to_chat),
+                          ),
+                  ),
+                ),
 
-            // Bottom Section
-            const GitHubRepoCard(),
-            const Divider(height: 1),
-            const ActiveServerIndicator(),
-            const SizedBox(height: 16),
-          ],
+              Actor(
+                delay: 180.ms,
+                acts: [.fadeIn()],
+                child: const SidebarSearchButton(),
+              ),
+              const SizedBox(height: 8),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              const SizedBox(height: 12),
+
+              // Primary Navigation
+              Expanded(
+                child: Actor(
+                  delay: 220.ms,
+                  acts: [.fadeIn(), .slideY(from: 0.04)],
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        DrawerNavItem(
+                          iconData: HugeIcons.strokeRoundedChatting01,
+                          label: l10n.nav_history,
+                          isSelected: isHistory,
+                          onTap: () {
+                            if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                false) {
+                              Navigator.pop(context);
+                            }
+                            context.go(AppRoutes.chatHistory);
+                          },
+                        ),
+                        DrawerNavItem(
+                          iconData: HugeIcons.strokeRoundedBookmark02,
+                          label: l10n.nav_saved_messages,
+                          isSelected: isSavedMessages,
+                          onTap: () {
+                            if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                false) {
+                              Navigator.pop(context);
+                            }
+                            context.go(AppRoutes.savedMessages);
+                          },
+                        ),
+                        DrawerNavItem(
+                          iconData: HugeIcons.strokeRoundedServerStack01,
+                          label: l10n.nav_servers,
+                          isSelected: isServers,
+                          onTap: () {
+                            if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                false) {
+                              Navigator.pop(context);
+                            }
+                            context.go(AppRoutes.servers);
+                          },
+                        ),
+                        DrawerNavItem(
+                          iconData: HugeIcons.strokeRoundedMcpServer,
+                          label: l10n.mcp_tools_title,
+                          isSelected: isMcpTools,
+                          onTap: () {
+                            if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                false) {
+                              Navigator.pop(context);
+                            }
+                            context.go(AppRoutes.mcpTools);
+                          },
+                        ),
+                        if (isLmStudio)
+                          DrawerNavItem(
+                            iconData: HugeIcons.strokeRoundedAiSearch,
+                            label: l10n.lm_studio_model_search,
+                            isSelected: false,
+                            trailing: const LmDownloadIndicatorButton(
+                              compact: true,
+                            ),
+                            onTap: () {
+                              if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                  false) {
+                                Navigator.pop(context);
+                              }
+                              context.push(
+                                AppRoutes.lmStudioModelBrowser,
+                                extra: activeServer,
+                              );
+                            },
+                          ),
+                        DrawerNavItem(
+                          iconData: HugeIcons.strokeRoundedSmartPhone01,
+                          label: l10n.nav_local_models,
+                          isSelected: isLocalModels,
+                          onTap: () {
+                            if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                false) {
+                              Navigator.pop(context);
+                            }
+                            context.go(AppRoutes.onDeviceModels);
+                          },
+                        ),
+                        DrawerNavItem(
+                          iconData: HugeIcons.strokeRoundedVoice,
+                          label: l10n.nav_tts,
+                          isSelected: isTtsModels,
+                          onTap: () {
+                            if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                false) {
+                              Navigator.pop(context);
+                            }
+                            context.go(AppRoutes.ttsModels);
+                          },
+                        ),
+                        DrawerNavItem(
+                          iconData: HugeIcons.strokeRoundedCompass01,
+                          label: l10n.nav_personas,
+                          isSelected: isPersonas,
+                          onTap: () {
+                            if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                false) {
+                              Navigator.pop(context);
+                            }
+                            context.go(AppRoutes.personas);
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        const Divider(height: 1, indent: 16, endIndent: 16),
+                        const SizedBox(height: 8),
+                        DrawerNavItem(
+                          iconData: HugeIcons.strokeRoundedCloudSavingDone02,
+                          label: l10n.cloud_sync,
+                          isSelected: isCloudSync,
+                          onTap: () {
+                            if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                false) {
+                              Navigator.pop(context);
+                            }
+                            context.go(AppRoutes.cloudSync);
+                          },
+                        ),
+                        DrawerNavItem(
+                          iconData: HugeIcons.strokeRoundedSettings01,
+                          label: l10n.nav_settings,
+                          isSelected: isSettings,
+                          onTap: () {
+                            if (Scaffold.maybeOf(context)?.isDrawerOpen ??
+                                false) {
+                              Navigator.pop(context);
+                            }
+                            context.go(AppRoutes.settings);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              Actor(
+                delay: 320.ms,
+                acts: [.fadeIn(), .slideY(from: 0.06)],
+                child: const TtsPlayerBar(),
+              ),
+
+              // Bottom Section
+              Actor(
+                delay: 360.ms,
+                acts: [.fadeIn(), .slideY(from: 0.08)],
+                child: const GitHubRepoCard(),
+              ),
+              const Divider(height: 1),
+              Actor(
+                delay: 400.ms,
+                acts: [.fadeIn()],
+                child: const ActiveServerIndicator(),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );

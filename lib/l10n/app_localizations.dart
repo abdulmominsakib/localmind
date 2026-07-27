@@ -5230,6 +5230,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Report a problem'**
   String get report_a_problem;
+
+  /// Menu item and dialog title for renaming a chat history or saved messages folder
+  ///
+  /// In en, this message translates to:
+  /// **'Rename folder'**
+  String get rename_folder;
+
+  /// Menu item for deleting a chat history or saved messages folder
+  ///
+  /// In en, this message translates to:
+  /// **'Delete folder'**
+  String get delete_folder;
+
+  /// Title of the confirmation dialog for deleting a folder
+  ///
+  /// In en, this message translates to:
+  /// **'Delete folder?'**
+  String get delete_folder_title;
+
+  /// Body of the confirmation dialog for deleting a folder. Names the folder and warns that contained items are moved to Unfiled.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete \"{name}\"? Conversations or saved messages inside will be moved back to \"Unfiled\". This cannot be undone.'**
+  String delete_folder_body(String name);
+
+  /// Validation error when a folder name is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a folder name'**
+  String get folder_name_required;
 }
 
 class _AppLocalizationsDelegate

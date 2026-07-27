@@ -2739,4 +2739,21 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get report_a_problem => '問題を報告';
+
+  @override
+  String get rename_folder => 'フォルダ名を変更';
+
+  @override
+  String get delete_folder => 'フォルダを削除';
+
+  @override
+  String get delete_folder_title => 'フォルダを削除しますか？';
+
+  @override
+  String delete_folder_body(String name) {
+    return '「$name」を削除してもよろしいですか？フォルダ内の会話や保存済みメッセージは「未分類」に戻されます。この操作は元に戻せません。';
+  }
+
+  @override
+  String get folder_name_required => 'フォルダ名を入力してください';
 }

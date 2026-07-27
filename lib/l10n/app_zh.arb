@@ -855,5 +855,10 @@
   "crash_report_empty_stack": "<空>",
   "crash_report_disclaimer": "报告将打开已预填诊断信息的 GitHub。由您掌控 — 不会自动提交任何内容。请在提交前检查并删除敏感内容。",
   "crash_report_copied": "已复制到剪贴板",
-  "report_a_problem": "报告问题"
+  "report_a_problem": "报告问题",
+  "rename_folder": "重命名文件夹",
+  "delete_folder": "删除文件夹",
+  "delete_folder_title": "删除文件夹？",
+  "delete_folder_body": "确定要删除\"{name}\"吗？其中的对话或已保存的消息将移回\"未分类\"。此操作无法撤销。",
+  "folder_name_required": "请输入文件夹名称"
 }

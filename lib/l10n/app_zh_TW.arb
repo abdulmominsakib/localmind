@@ -855,5 +855,10 @@
   "crash_report_empty_stack": "<空>",
   "crash_report_disclaimer": "回報將開啟已預先填入診斷資訊的 GitHub。由您掌控 — 不會自動提交任何內容。請在提交前檢查並移除敏感內容。",
   "crash_report_copied": "已複製到剪貼簿",
-  "report_a_problem": "回報問題"
+  "report_a_problem": "回報問題",
+  "rename_folder": "重新命名資料夾",
+  "delete_folder": "刪除資料夾",
+  "delete_folder_title": "刪除資料夾？",
+  "delete_folder_body": "確定要刪除「{name}」嗎?其中的對話或已儲存的訊息將移回「未分類」。此操作無法復原。",
+  "folder_name_required": "請輸入資料夾名稱"
 }
