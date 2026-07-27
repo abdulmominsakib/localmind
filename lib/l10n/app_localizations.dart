@@ -5260,6 +5260,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter a folder name'**
   String get folder_name_required;
+
+  /// Toast shown when the user tries to send a message but no model is selected
+  ///
+  /// In en, this message translates to:
+  /// **'You need to select a model first'**
+  String get model_required_toast;
 }
 
 class _AppLocalizationsDelegate

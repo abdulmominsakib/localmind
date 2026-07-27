@@ -2756,4 +2756,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get folder_name_required => 'フォルダ名を入力してください';
+
+  @override
+  String get model_required_toast => 'You need to select a model first';
 }

@@ -2823,4 +2823,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get folder_name_required => 'Inserisci un nome per la cartella';
+
+  @override
+  String get model_required_toast => 'You need to select a model first';
 }

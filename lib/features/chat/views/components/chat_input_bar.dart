@@ -19,6 +19,7 @@ import '../../../stt/providers/stt_providers.dart';
 import '../../providers/chat_providers.dart';
 import '../../utils/attachment_helpers.dart';
 import '../../utils/image_upload_utils.dart';
+import '../../../models/views/model_picker_sheet.dart';
 import 'image_preview_dialog.dart';
 
 class ChatInputBar extends ConsumerStatefulWidget {
@@ -429,6 +430,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     if (text.isEmpty && _attachedFiles.isEmpty) return;
 
+    if (!_ensureModelSelected()) return;
+
     Haptics.vibrate(HapticsType.medium);
 
     if (_sendAsAssistant) {
@@ -455,6 +458,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     final text = _controller.text.trim();
     if (text.isEmpty && _attachedFiles.isEmpty) return;
 
+    if (!_ensureModelSelected()) return;
+
     Haptics.vibrate(HapticsType.medium);
     ref
         .read(chatProvider.notifier)
@@ -469,6 +474,24 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
       _attachedFiles.clear();
       _sendAsAssistant = false;
     });
+  }
+
+  /// Returns true if a model is currently selected. When no model is selected,
+  /// shows a SnackBar prompting the user to pick one and opens the model
+  /// picker sheet, then returns false so the caller can bail out.
+  bool _ensureModelSelected() {
+    if (ref.read(selectedModelProvider) != null) return true;
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.model_required_toast)),
+    );
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => const ModelPickerSheet(),
+    );
+    return false;
   }
 
   void _handleStop() {

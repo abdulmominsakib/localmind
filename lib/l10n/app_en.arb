@@ -3093,5 +3093,9 @@
   "folder_name_required": "Please enter a folder name",
   "@folder_name_required": {
     "description": "Validation error when a folder name is empty"
+  },
+  "model_required_toast": "You need to select a model first",
+  "@model_required_toast": {
+    "description": "Toast shown when the user tries to send a message but no model is selected"
   }
 }

@@ -2823,4 +2823,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get folder_name_required => 'Введите название папки';
+
+  @override
+  String get model_required_toast => 'You need to select a model first';
 }

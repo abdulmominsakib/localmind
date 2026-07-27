@@ -2736,6 +2736,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get folder_name_required => '请输入文件夹名称';
+
+  @override
+  String get model_required_toast => 'You need to select a model first';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

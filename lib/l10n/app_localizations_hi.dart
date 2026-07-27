@@ -2809,4 +2809,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get folder_name_required => 'कृपया फ़ोल्डर का नाम दर्ज करें';
+
+  @override
+  String get model_required_toast => 'You need to select a model first';
 }

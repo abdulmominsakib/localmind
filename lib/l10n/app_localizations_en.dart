@@ -2804,4 +2804,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get folder_name_required => 'Please enter a folder name';
+
+  @override
+  String get model_required_toast => 'You need to select a model first';
 }

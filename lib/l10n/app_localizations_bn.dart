@@ -2816,4 +2816,7 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get folder_name_required => 'অনুগ্রহ করে একটি ফোল্ডারের নাম লিখুন';
+
+  @override
+  String get model_required_toast => 'You need to select a model first';
 }
