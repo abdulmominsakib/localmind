@@ -4646,14 +4646,32 @@ abstract class AppLocalizations {
   /// No description provided for @attach_image.
   ///
   /// In en, this message translates to:
-  /// **'Image'**
+  /// **'Photos'**
   String get attach_image;
 
   /// No description provided for @attach_text_document.
   ///
   /// In en, this message translates to:
-  /// **'Text document'**
+  /// **'Documents'**
   String get attach_text_document;
+
+  /// No description provided for @attach_shortcut_images.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get attach_shortcut_images;
+
+  /// No description provided for @attach_shortcut_documents.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get attach_shortcut_documents;
+
+  /// No description provided for @attach_shortcut_saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get attach_shortcut_saved;
 
   /// No description provided for @add_attachment.
   ///
@@ -4661,11 +4679,35 @@ abstract class AppLocalizations {
   /// **'Add attachment'**
   String get add_attachment;
 
+  /// No description provided for @add_to_chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to chat'**
+  String get add_to_chat;
+
+  /// No description provided for @choose_what_to_attach.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like to add?'**
+  String get choose_what_to_attach;
+
+  /// No description provided for @choose_attachment_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a source to attach to your message'**
+  String get choose_attachment_subtitle;
+
   /// No description provided for @photo_permission_denied.
   ///
   /// In en, this message translates to:
   /// **'Photo access is required to attach images'**
   String get photo_permission_denied;
+
+  /// No description provided for @select_model_prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Select model'**
+  String get select_model_prompt;
 
   /// No description provided for @characters_label.
   ///

@@ -21,7 +21,6 @@ import '../data/export_service.dart';
 import '../providers/chat_providers.dart';
 import 'components/chat_auto_scroll_controller.dart';
 import 'components/notification_permission_banner.dart';
-import 'components/top_bar/model_top_bar.dart';
 import 'components/top_bar/connection_banner.dart';
 import 'components/top_bar/persona_indicator.dart';
 import 'components/top_bar/screen_app_bar.dart';
@@ -311,7 +310,6 @@ class _ChatBody extends ConsumerWidget {
 
     return Column(
       children: [
-        ModelTopBar(selectedModel: selectedModel, onModelTap: onModelPicker),
         ScreenAppBar(
           activeConversation: activeConversation,
           isDark: isDark,

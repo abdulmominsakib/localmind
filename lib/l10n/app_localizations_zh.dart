@@ -111,10 +111,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get online => '在线';
 
   @override
-  String get connected => 'Connected';
+  String get connected => '已连接';
 
   @override
-  String get checking => 'Checking';
+  String get checking => '正在检查';
 
   @override
   String get offline => '离线';
@@ -2420,10 +2420,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get attach_text_document => '附加文本文件';
 
   @override
+  String get attach_shortcut_images => '照片';
+
+  @override
+  String get attach_shortcut_documents => '文件';
+
+  @override
+  String get attach_shortcut_saved => '已保存';
+
+  @override
   String get add_attachment => '添加附件';
 
   @override
+  String get add_to_chat => '添加到聊天';
+
+  @override
+  String get choose_what_to_attach => '您想添加什么？';
+
+  @override
+  String get choose_attachment_subtitle => '选择要附加到消息的来源';
+
+  @override
   String get photo_permission_denied => '相册权限被拒绝';
+
+  @override
+  String get select_model_prompt => '选择模型';
 
   @override
   String get characters_label => '字符数';
@@ -2744,7 +2765,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get folder_name_required => '请输入文件夹名称';
 
   @override
-  String get model_required_toast => 'You need to select a model first';
+  String get model_required_toast => '您需要先选择一个模型';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -2852,6 +2873,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get online => '線上';
+
+  @override
+  String get connected => '已連線';
+
+  @override
+  String get checking => '正在檢查';
 
   @override
   String get offline => '離線';
@@ -5158,10 +5185,31 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get attach_text_document => '附加文字檔案';
 
   @override
+  String get attach_shortcut_images => '相片';
+
+  @override
+  String get attach_shortcut_documents => '檔案';
+
+  @override
+  String get attach_shortcut_saved => '已儲存';
+
+  @override
   String get add_attachment => '添加附件';
 
   @override
+  String get add_to_chat => '新增至聊天';
+
+  @override
+  String get choose_what_to_attach => '您想新增什麼？';
+
+  @override
+  String get choose_attachment_subtitle => '選擇要附加到訊息的來源';
+
+  @override
   String get photo_permission_denied => '相簿權限被拒絕';
+
+  @override
+  String get select_model_prompt => '選擇模型';
 
   @override
   String get characters_label => '字元數';
@@ -5480,4 +5528,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get folder_name_required => '請輸入資料夾名稱';
+
+  @override
+  String get model_required_toast => '您需要先選擇一個模型';
 }

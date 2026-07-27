@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:auto_size_text_plus/auto_size_text_plus.dart';
+import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
+import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/services/export_choice_dialog.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
@@ -11,6 +13,7 @@ import 'package:localmind/features/chat/views/components/chat_settings_sheet.dar
 import 'package:localmind/features/chat/providers/chat_mcp_providers.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/chat/data/export_service.dart';
+import 'package:localmind/features/servers/providers/server_providers.dart';
 
 class ScreenAppBar extends ConsumerWidget {
   const ScreenAppBar({
@@ -44,7 +47,10 @@ class ScreenAppBar extends ConsumerWidget {
     final selectedMessageIds = ref.watch(selectedMessageIdsProvider);
 
     if (messageSelectionMode) {
-      return Container(
+      return SafeArea(
+        top: true,
+        bottom: false,
+        child: Container(
         height: 56,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
@@ -87,10 +93,14 @@ class ScreenAppBar extends ConsumerWidget {
             ),
           ],
         ),
+        ),
       );
     }
 
-    return Container(
+    return SafeArea(
+      top: true,
+      bottom: false,
+      child: Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
@@ -108,11 +118,9 @@ class ScreenAppBar extends ConsumerWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: AutoSizeText(
-              _appBarTitle(l10n),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: _TitleBlock(
+              title: _appBarTitle(l10n),
+              isDark: isDark,
             ),
           ),
           Stack(
@@ -222,6 +230,7 @@ class ScreenAppBar extends ConsumerWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }
@@ -341,6 +350,78 @@ class ChatModeIconButton extends StatelessWidget {
         HugeIcons.strokeRoundedMessageAdd01,
         size: 22,
         color: isDark ? Colors.white70 : Colors.black87,
+      ),
+    );
+  }
+}
+
+/// Title block shown in the chat app bar — conversation title on top,
+/// active server name directly below it with a small status dot
+/// (green when connected, grey otherwise). The row is intentionally
+/// non-interactive; server switching still lives in the sidebar.
+class _TitleBlock extends ConsumerWidget {
+  const _TitleBlock({
+    required this.title,
+    required this.isDark,
+  });
+
+  final String title;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeServer = ref.watch(activeServerProvider);
+    final connectionStatus = ref.watch(connectionStatusProvider);
+    final mutedColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.lightMutedText;
+    final isConnected = connectionStatus == ConnectionStatus.connected;
+    final statusColor = isConnected ? Colors.green : Colors.grey;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AutoSizeText(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (activeServer != null)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    activeServer.name,
+                    style: TextStyle(fontSize: 11, color: mutedColor),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            )
+          else
+            Text(
+              '',
+              style: TextStyle(fontSize: 11, color: mutedColor),
+            ),
+        ],
       ),
     );
   }

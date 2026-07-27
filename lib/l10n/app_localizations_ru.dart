@@ -111,10 +111,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get online => 'Онлайн';
 
   @override
-  String get connected => 'Connected';
+  String get connected => 'Подключено';
 
   @override
-  String get checking => 'Checking';
+  String get checking => 'Проверка';
 
   @override
   String get offline => 'Оффлайн';
@@ -2496,10 +2496,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get attach_text_document => 'Прикрепить текстовый документ';
 
   @override
+  String get attach_shortcut_images => 'Фото';
+
+  @override
+  String get attach_shortcut_documents => 'Файлы';
+
+  @override
+  String get attach_shortcut_saved => 'Сохраненные';
+
+  @override
   String get add_attachment => 'Добавить вложение';
 
   @override
+  String get add_to_chat => 'Добавить в чат';
+
+  @override
+  String get choose_what_to_attach => 'Что вы хотите добавить?';
+
+  @override
+  String get choose_attachment_subtitle =>
+      'Выберите источник, чтобы прикрепить к сообщению';
+
+  @override
   String get photo_permission_denied => 'Доступ к фото отклонен';
+
+  @override
+  String get select_model_prompt => 'Выбрать модель';
 
   @override
   String get characters_label => 'Символы';
@@ -2831,5 +2853,5 @@ class AppLocalizationsRu extends AppLocalizations {
   String get folder_name_required => 'Введите название папки';
 
   @override
-  String get model_required_toast => 'You need to select a model first';
+  String get model_required_toast => 'Сначала выберите модель';
 }

@@ -20,7 +20,9 @@ import '../../providers/chat_providers.dart';
 import '../../utils/attachment_helpers.dart';
 import '../../utils/image_upload_utils.dart';
 import '../../../models/views/model_picker_sheet.dart';
+import 'attach_sheet.dart';
 import 'image_preview_dialog.dart';
+import 'model_chip.dart';
 
 class ChatInputBar extends ConsumerStatefulWidget {
   const ChatInputBar({
@@ -283,51 +285,17 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     }
   }
 
-  void _showAttachMenu() {
-    final l10n = AppLocalizations.of(context)!;
-
-    showModalBottomSheet(
-      context: context,
-
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-
-          children: [
-            ListTile(
-              leading: const HugeIcon(icon: HugeIcons.strokeRoundedFile01),
-              title: Text(l10n.attach_text_document),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickTextDocument();
-              },
-            ),
-            ListTile(
-              leading: const HugeIcon(icon: HugeIcons.strokeRoundedImage01),
-              title: Text(l10n.attach_image),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickImages();
-              },
-            ),
-
-            ListTile(
-              leading: const HugeIcon(icon: HugeIcons.strokeRoundedBookmark01),
-
-              title: Text(l10n.insert_saved_message),
-
-              onTap: () {
-                Navigator.pop(ctx);
-
-                _handleInsertSavedMessage();
-              },
-            ),
-
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
+  void _showAttachMenu() async {
+    final result = await showAttachSheet(context);
+    if (!mounted || result == null) return;
+    switch (result) {
+      case AttachAction.documents:
+        _pickTextDocument();
+      case AttachAction.images:
+        _pickImages();
+      case AttachAction.savedMessage:
+        _handleInsertSavedMessage();
+    }
   }
 
   Future<void> _handleMicToggle() async {
@@ -422,6 +390,31 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAddButton(bool isConnected, ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = theme.brightness == Brightness.dark;
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.black.withValues(alpha: 0.05),
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: HugeIcon(
+          icon: HugeIcons.strokeRoundedAdd01,
+          size: 22,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+        ),
+        onPressed: isConnected ? _showAttachMenu : null,
+        tooltip: l10n.add_attachment,
+      ),
     );
   }
 
@@ -637,6 +630,11 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
   static const _holdDuration = Duration(milliseconds: 3000);
   static const _insertHoldThreshold = 500 / 3000;
+
+  /// Reserve space on the right edge of the text field so long
+  /// messages never slide underneath the overlaid token-usage
+  /// indicator. Sized to comfortably fit a 6-digit token count.
+  static const double _tokenUsageReservedWidth = 70;
 
   Widget _buildActionButton(bool canSend, ThemeData theme) {
     final l10n = AppLocalizations.of(context)!;
@@ -883,19 +881,28 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
       top: false,
 
       child: Container(
-        margin: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
+        margin: const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
 
-        padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
 
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurfaceInput : AppColors.lightSurface,
 
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(26),
 
           border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            color: isDark
+                ? AppColors.darkBorder.withValues(alpha: 0.6)
+                : AppColors.lightBorder,
             width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+              blurRadius: 18,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
 
         child: Column(
@@ -1010,148 +1017,160 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               const SizedBox(height: 8),
             ],
 
-            if (selectedModel?.supportsReasoning == true ||
-                showRoleSwapButton) ...[
-              Padding(
-                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
-                child: Row(
-                  children: [
-                    if (selectedModel?.supportsReasoning == true)
-                      _buildThinkButton(theme),
-                    const Spacer(),
-                    if (showRoleSwapButton) _buildRoleSwapButton(theme),
-                  ],
-                ),
+            // Text input row. Sits on top of the action row so the action
+            // controls stay visually grouped below. The token usage
+            // indicator is overlaid on the right edge of the input so
+            // the bottom row stays focused on composer actions.
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Stack(
+                children: [
+                  IgnorePointer(
+                    ignoring: widget.keyboardIncognito,
+                    child: Opacity(
+                      opacity: widget.keyboardIncognito ? 0 : 1,
+                      child: TextField(
+                        controller: _normalController,
+                        focusNode: _focusNode,
+                        enabled: widget.enabled,
+                        maxLines: 6,
+                        minLines: 1,
+                        textInputAction: TextInputAction.newline,
+                        keyboardType: TextInputType.multiline,
+                        enableSuggestions: true,
+                        autocorrect: true,
+                        enableIMEPersonalizedLearning: true,
+                        onChanged: (_) => setState(() {}),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        decoration: InputDecoration(
+                          filled: false,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          hintText: l10n.chat_input_hint,
+                          hintStyle: TextStyle(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.38,
+                            ),
+                            fontSize: 16,
+                          ),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            4,
+                            8,
+                            // Leave room on the right for the token-usage
+                            // indicator so long messages don't slide
+                            // underneath it.
+                            _tokenUsageReservedWidth,
+                            8,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  IgnorePointer(
+                    ignoring: !widget.keyboardIncognito,
+                    child: Opacity(
+                      opacity: widget.keyboardIncognito ? 1 : 0,
+                      child: TextField(
+                        controller: _incognitoController,
+                        focusNode: _incognitoFocus,
+                        enabled: widget.enabled,
+                        maxLines: 6,
+                        minLines: 1,
+                        textInputAction: TextInputAction.newline,
+                        keyboardType: TextInputType.multiline,
+                        enableSuggestions: false,
+                        autocorrect: false,
+                        enableIMEPersonalizedLearning: false,
+                        spellCheckConfiguration:
+                            const SpellCheckConfiguration.disabled(),
+                        smartDashesType: SmartDashesType.disabled,
+                        smartQuotesType: SmartQuotesType.disabled,
+                        onChanged: (_) => setState(() {}),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        decoration: InputDecoration(
+                          filled: false,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          hintText: l10n.chat_input_hint,
+                          hintStyle: TextStyle(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.38,
+                            ),
+                            fontSize: 16,
+                          ),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            4,
+                            8,
+                            _tokenUsageReservedWidth,
+                            8,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_controller.text.isEmpty)
+                    Positioned(
+                      right: 4,
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: TokenUsageIndicator(
+                          totalTokenCount: widget.totalTokenCount,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(height: 4),
-            ],
+            ),
 
+            // Bottom action row: attach button, model picker chip, optional
+            // reasoning/role controls, mic, send. Mirrors the modern
+            // composer layout where composer actions sit in a single
+            // horizontal row directly below the text input.
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                IconButton(
-                  visualDensity: VisualDensity.compact,
+                _buildAddButton(isConnected, theme),
 
-                  padding: const EdgeInsets.all(8),
-
-                  constraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
-                  ),
-
-                  icon: HugeIcon(icon: 
-                    HugeIcons.strokeRoundedAdd01,
-
-                    size: 24,
-
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-
-                  onPressed: isConnected ? _showAttachMenu : null,
-
-                  tooltip: l10n.add_attachment,
-                ),
-
-                const SizedBox(width: 4),
-
-                Expanded(
-                  child: Stack(
-                    children: [
-                      IgnorePointer(
-                        ignoring: widget.keyboardIncognito,
-                        child: Opacity(
-                          opacity: widget.keyboardIncognito ? 0 : 1,
-                          child: TextField(
-                            controller: _normalController,
-                            focusNode: _focusNode,
-                            enabled: widget.enabled,
-                            maxLines: 6,
-                            minLines: 1,
-                            textInputAction: TextInputAction.newline,
-                            keyboardType: TextInputType.multiline,
-                            enableSuggestions: true,
-                            autocorrect: true,
-                            enableIMEPersonalizedLearning: true,
-                            onChanged: (_) => setState(() {}),
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                            decoration: InputDecoration(
-                              filled: false,
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                              hintText: l10n.chat_input_hint,
-                              hintStyle: TextStyle(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.38,
-                                ),
-                                fontSize: 16,
-                              ),
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 8,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      IgnorePointer(
-                        ignoring: !widget.keyboardIncognito,
-                        child: Opacity(
-                          opacity: widget.keyboardIncognito ? 1 : 0,
-                          child: TextField(
-                            controller: _incognitoController,
-                            focusNode: _incognitoFocus,
-                            enabled: widget.enabled,
-                            maxLines: 6,
-                            minLines: 1,
-                            textInputAction: TextInputAction.newline,
-                            keyboardType: TextInputType.multiline,
-                            enableSuggestions: false,
-                            autocorrect: false,
-                            enableIMEPersonalizedLearning: false,
-                            spellCheckConfiguration:
-                                const SpellCheckConfiguration.disabled(),
-                            smartDashesType: SmartDashesType.disabled,
-                            smartQuotesType: SmartQuotesType.disabled,
-                            onChanged: (_) => setState(() {}),
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                            decoration: InputDecoration(
-                              filled: false,
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                              hintText: l10n.chat_input_hint,
-                              hintStyle: TextStyle(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.38,
-                                ),
-                                fontSize: 16,
-                              ),
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 8,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                if (_controller.text.isEmpty) ...[
-                  const SizedBox(width: 8),
-                  TokenUsageIndicator(totalTokenCount: widget.totalTokenCount),
-                ],
                 const SizedBox(width: 8),
+
+                ModelChip(
+                  model: selectedModel,
+                  enabled: isConnected && widget.enabled,
+                  onTap: () {
+                    Haptics.vibrate(HapticsType.light);
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      useSafeArea: true,
+                      builder: (_) => const ModelPickerSheet(),
+                    );
+                  },
+                ),
+
+                if (selectedModel?.supportsReasoning == true) ...[
+                  const SizedBox(width: 6),
+                  _buildThinkButton(theme),
+                ],
+                if (showRoleSwapButton) ...[
+                  const SizedBox(width: 4),
+                  _buildRoleSwapButton(theme),
+                ],
+
+                const Spacer(),
+
                 _buildMicButton(isListening, theme),
 
                 const SizedBox(width: 8),

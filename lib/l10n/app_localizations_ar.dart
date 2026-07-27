@@ -111,10 +111,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get online => 'متصل';
 
   @override
-  String get connected => 'Connected';
+  String get connected => 'متصل';
 
   @override
-  String get checking => 'Checking';
+  String get checking => 'جاري التحقق';
 
   @override
   String get offline => 'غير متصل';
@@ -2470,10 +2470,31 @@ class AppLocalizationsAr extends AppLocalizations {
   String get attach_text_document => 'إرفاق مستند نصي';
 
   @override
+  String get attach_shortcut_images => 'الصور';
+
+  @override
+  String get attach_shortcut_documents => 'الملفات';
+
+  @override
+  String get attach_shortcut_saved => 'المحفوظات';
+
+  @override
   String get add_attachment => 'إضافة مرفق';
 
   @override
+  String get add_to_chat => 'إضافة إلى الدردشة';
+
+  @override
+  String get choose_what_to_attach => 'ما الذي ترغب في إضافته؟';
+
+  @override
+  String get choose_attachment_subtitle => 'اختر مصدرًا لإرفاقه برسالتك';
+
+  @override
   String get photo_permission_denied => 'تم رفض إذن الوصول إلى الصور';
+
+  @override
+  String get select_model_prompt => 'اختر النموذج';
 
   @override
   String get characters_label => 'الحروف';
@@ -2804,5 +2825,5 @@ class AppLocalizationsAr extends AppLocalizations {
   String get folder_name_required => 'الرجاء إدخال اسم المجلد';
 
   @override
-  String get model_required_toast => 'You need to select a model first';
+  String get model_required_toast => 'يجب عليك اختيار نموذج أولاً';
 }

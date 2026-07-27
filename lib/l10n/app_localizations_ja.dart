@@ -111,10 +111,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get online => 'オンライン';
 
   @override
-  String get connected => 'Connected';
+  String get connected => '接続済み';
 
   @override
-  String get checking => 'Checking';
+  String get checking => '確認中';
 
   @override
   String get offline => 'オフライン';
@@ -2436,10 +2436,31 @@ class AppLocalizationsJa extends AppLocalizations {
   String get attach_text_document => 'テキストファイルを添付';
 
   @override
+  String get attach_shortcut_images => '写真';
+
+  @override
+  String get attach_shortcut_documents => 'ファイル';
+
+  @override
+  String get attach_shortcut_saved => '保存済み';
+
+  @override
   String get add_attachment => '添付ファイルを追加';
 
   @override
+  String get add_to_chat => 'チャットに追加';
+
+  @override
+  String get choose_what_to_attach => '何を追加しますか？';
+
+  @override
+  String get choose_attachment_subtitle => 'メッセージに添付するソースを選択してください';
+
+  @override
   String get photo_permission_denied => '写真のアクセス許可が拒否されました';
+
+  @override
+  String get select_model_prompt => 'モデルを選択';
 
   @override
   String get characters_label => '文字数';
@@ -2764,5 +2785,5 @@ class AppLocalizationsJa extends AppLocalizations {
   String get folder_name_required => 'フォルダ名を入力してください';
 
   @override
-  String get model_required_toast => 'You need to select a model first';
+  String get model_required_toast => '最初にモデルを選択する必要があります';
 }

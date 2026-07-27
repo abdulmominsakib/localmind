@@ -111,10 +111,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get online => 'ऑनलाइन';
 
   @override
-  String get connected => 'Connected';
+  String get connected => 'कनेक्टेड';
 
   @override
-  String get checking => 'Checking';
+  String get checking => 'जाँच की जा रही है';
 
   @override
   String get offline => 'ऑफ़लाइन';
@@ -2484,10 +2484,32 @@ class AppLocalizationsHi extends AppLocalizations {
   String get attach_text_document => 'पाठ दस्तावेज़ संलग्न करें';
 
   @override
+  String get attach_shortcut_images => 'फ़ोटो';
+
+  @override
+  String get attach_shortcut_documents => 'फ़ाइलें';
+
+  @override
+  String get attach_shortcut_saved => 'सहेजे गए';
+
+  @override
   String get add_attachment => 'संलग्नक जोड़ें';
 
   @override
+  String get add_to_chat => 'चैट में जोड़ें';
+
+  @override
+  String get choose_what_to_attach => 'आप क्या जोड़ना चाहते हैं?';
+
+  @override
+  String get choose_attachment_subtitle =>
+      'अपने संदेश में संलग्न करने के लिए एक स्रोत चुनें';
+
+  @override
   String get photo_permission_denied => 'फ़ोटो अनुमति अस्वीकृत';
+
+  @override
+  String get select_model_prompt => 'मॉडल चुनें';
 
   @override
   String get characters_label => 'वर्ण (Characters)';
@@ -2817,5 +2839,5 @@ class AppLocalizationsHi extends AppLocalizations {
   String get folder_name_required => 'कृपया फ़ोल्डर का नाम दर्ज करें';
 
   @override
-  String get model_required_toast => 'You need to select a model first';
+  String get model_required_toast => 'आपको पहले एक मॉडल चुनना होगा';
 }

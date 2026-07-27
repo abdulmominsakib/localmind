@@ -111,10 +111,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get online => 'En línea';
 
   @override
-  String get connected => 'Connected';
+  String get connected => 'Conectado';
 
   @override
-  String get checking => 'Checking';
+  String get checking => 'Comprobando';
 
   @override
   String get offline => 'Sin conexión';
@@ -2496,10 +2496,32 @@ class AppLocalizationsEs extends AppLocalizations {
   String get attach_text_document => 'Adjuntar documento de texto';
 
   @override
+  String get attach_shortcut_images => 'Fotos';
+
+  @override
+  String get attach_shortcut_documents => 'Archivos';
+
+  @override
+  String get attach_shortcut_saved => 'Guardados';
+
+  @override
   String get add_attachment => 'Añadir adjunto';
 
   @override
+  String get add_to_chat => 'Añadir al chat';
+
+  @override
+  String get choose_what_to_attach => '¿Qué te gustaría añadir?';
+
+  @override
+  String get choose_attachment_subtitle =>
+      'Elige una fuente para adjuntar a tu mensaje';
+
+  @override
   String get photo_permission_denied => 'Permiso de fotos denegado';
+
+  @override
+  String get select_model_prompt => 'Seleccionar modelo';
 
   @override
   String get characters_label => 'Caracteres';
@@ -2828,5 +2850,5 @@ class AppLocalizationsEs extends AppLocalizations {
   String get folder_name_required => 'Introduce un nombre de carpeta';
 
   @override
-  String get model_required_toast => 'You need to select a model first';
+  String get model_required_toast => 'Primero debes seleccionar un modelo';
 }

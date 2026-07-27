@@ -111,10 +111,10 @@ class AppLocalizationsBn extends AppLocalizations {
   String get online => 'অনলাইন';
 
   @override
-  String get connected => 'Connected';
+  String get connected => 'সংযুক্ত';
 
   @override
-  String get checking => 'Checking';
+  String get checking => 'যাচাই করা হচ্ছে';
 
   @override
   String get offline => 'অফলাইন';
@@ -2491,10 +2491,32 @@ class AppLocalizationsBn extends AppLocalizations {
   String get attach_text_document => 'টেক্সট ডকুমেন্ট সংযুক্ত করুন';
 
   @override
+  String get attach_shortcut_images => 'ফটো';
+
+  @override
+  String get attach_shortcut_documents => 'ফাইল';
+
+  @override
+  String get attach_shortcut_saved => 'সংরক্ষিত';
+
+  @override
   String get add_attachment => 'সংযুক্তি যোগ করুন';
 
   @override
+  String get add_to_chat => 'চ্যাটে যোগ করুন';
+
+  @override
+  String get choose_what_to_attach => 'আপনি কি যোগ করতে চান?';
+
+  @override
+  String get choose_attachment_subtitle =>
+      'আপনার বার্তায় সংযুক্ত করার জন্য একটি উৎস বেছে নিন';
+
+  @override
   String get photo_permission_denied => 'ছবির অনুমতি অস্বীকার করা হয়েছে';
+
+  @override
+  String get select_model_prompt => 'মডেল নির্বাচন করুন';
 
   @override
   String get characters_label => 'অক্ষর (Characters)';
@@ -2824,5 +2846,6 @@ class AppLocalizationsBn extends AppLocalizations {
   String get folder_name_required => 'অনুগ্রহ করে একটি ফোল্ডারের নাম লিখুন';
 
   @override
-  String get model_required_toast => 'You need to select a model first';
+  String get model_required_toast =>
+      'আপনাকে প্রথমে একটি মডেল নির্বাচন করতে হবে';
 }

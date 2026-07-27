@@ -2467,17 +2467,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stream_generation_time => 'Generation time';
 
   @override
-  String get attach_image => 'Image';
+  String get attach_image => 'Photos';
 
   @override
-  String get attach_text_document => 'Text document';
+  String get attach_text_document => 'Documents';
+
+  @override
+  String get attach_shortcut_images => 'Photos';
+
+  @override
+  String get attach_shortcut_documents => 'Files';
+
+  @override
+  String get attach_shortcut_saved => 'Saved';
 
   @override
   String get add_attachment => 'Add attachment';
 
   @override
+  String get add_to_chat => 'Add to chat';
+
+  @override
+  String get choose_what_to_attach => 'What would you like to add?';
+
+  @override
+  String get choose_attachment_subtitle =>
+      'Pick a source to attach to your message';
+
+  @override
   String get photo_permission_denied =>
       'Photo access is required to attach images';
+
+  @override
+  String get select_model_prompt => 'Select model';
 
   @override
   String get characters_label => 'Characters';
