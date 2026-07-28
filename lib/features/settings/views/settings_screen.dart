@@ -175,6 +175,15 @@ class SettingsViews extends ConsumerWidget {
                         .read(settingsProvider.notifier)
                         .setTtsProcessMarkdown(value),
                   ),
+                  _ToggleSetting(
+                    label: 'Concise Voice Mode Responses',
+                    description:
+                        'Keep LLM responses brief (1 short paragraph) and ask follow-up questions in voice mode.',
+                    value: settings.conciseVoiceResponsesEnabled,
+                    onChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setConciseVoiceResponsesEnabled(value),
+                  ),
                   _TtsSkipSecondsSetting(
                     value: settings.ttsSkipSeconds,
                     onChanged: (value) => ref

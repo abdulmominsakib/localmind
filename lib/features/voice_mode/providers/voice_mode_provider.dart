@@ -1,0 +1,343 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/logger/app_logger.dart';
+import '../../chat/providers/chat_providers.dart';
+import '../../stt/providers/stt_providers.dart';
+import '../../tts/providers/tts_providers.dart';
+
+/// The phase of the voice-to-voice conversation loop.
+enum VoiceModePhase {
+  /// Overlay is open but idle — waiting for the user to start.
+  idle,
+
+  /// Actively listening for user speech via STT.
+  listening,
+
+  /// User speech captured; waiting for LLM response.
+  processing,
+
+  /// LLM response complete; TTS is speaking.
+  speaking,
+
+  /// An error occurred in one of the phases.
+  error,
+}
+
+class VoiceModeState {
+  final bool isActive;
+  final VoiceModePhase phase;
+  final String transcript;
+  final String response;
+  final bool autoListen;
+  final bool isMuted;
+  final String? error;
+
+  const VoiceModeState({
+    this.isActive = false,
+    this.phase = VoiceModePhase.idle,
+    this.transcript = '',
+    this.response = '',
+    this.autoListen = true,
+    this.isMuted = false,
+    this.error,
+  });
+
+  VoiceModeState copyWith({
+    bool? isActive,
+    VoiceModePhase? phase,
+    String? transcript,
+    String? response,
+    bool? autoListen,
+    bool? isMuted,
+    String? error,
+    bool clearError = false,
+  }) {
+    return VoiceModeState(
+      isActive: isActive ?? this.isActive,
+      phase: phase ?? this.phase,
+      transcript: transcript ?? this.transcript,
+      response: response ?? this.response,
+      autoListen: autoListen ?? this.autoListen,
+      isMuted: isMuted ?? this.isMuted,
+      error: clearError ? null : (error ?? this.error),
+    );
+  }
+}
+
+final voiceModeProvider = NotifierProvider<VoiceModeNotifier, VoiceModeState>(
+  () {
+    return VoiceModeNotifier();
+  },
+);
+
+class VoiceModeNotifier extends Notifier<VoiceModeState> {
+  /// Tracks whether we are currently orchestrating a voice session so
+  /// listeners don't fire after the session has been torn down.
+  bool _active = false;
+  bool _isSendingTranscript = false;
+
+  @override
+  VoiceModeState build() {
+    // Listen to chat streaming state changes.
+    ref.listen<bool>(
+      isStreamingProvider,
+      (previous, next) => _onStreamingChanged(previous ?? false, next),
+    );
+
+    // Listen to TTS speaking state changes.
+    ref.listen<TtsState>(
+      ttsProvider,
+      (previous, next) => _onTtsStateChanged(previous, next),
+    );
+
+    // Listen to STT errors and show them directly on the voice screen.
+    ref.listen<String?>(
+      sttProvider.select((s) => s.error),
+      (previous, next) {
+        if (!_active || next == null) return;
+        state = state.copyWith(
+          phase: VoiceModePhase.error,
+          error: _mapSttError(next),
+        );
+      },
+    );
+
+    return const VoiceModeState();
+  }
+
+  // ──────────────────────────────────────────────────────
+  // Public API
+  // ──────────────────────────────────────────────────────
+
+  /// Begin the voice mode session. Called when the overlay opens.
+  void startSession() {
+    _active = true;
+    state = const VoiceModeState(isActive: true, phase: VoiceModePhase.idle);
+    // Auto-start listening.
+    startListening();
+  }
+
+  /// Start listening for user speech.
+  Future<void> startListening() async {
+    if (!_active) return;
+
+    _isSendingTranscript = false;
+    state = state.copyWith(
+      isActive: true,
+      phase: VoiceModePhase.listening,
+      transcript: '',
+      response: '',
+      clearError: true,
+    );
+
+    final stt = ref.read(sttProvider.notifier);
+    await stt.startListening(
+      onResult: (words) {
+        if (!_active) return;
+        if (words.isNotEmpty) {
+          state = state.copyWith(transcript: words);
+        }
+      },
+      onFinal: (finalWords) async {
+        if (!_active) return;
+        if (!state.autoListen) return;
+        if (_isSendingTranscript) return;
+        final text = finalWords.trim().isNotEmpty
+            ? finalWords
+            : state.transcript;
+        if (text.trim().isEmpty) return;
+        _isSendingTranscript = true;
+        await stopListeningAndSend();
+      },
+    );
+  }
+
+  /// Stop listening and send the captured transcript to the LLM.
+  Future<void> stopListeningAndSend() async {
+    if (!_active) return;
+
+    final stt = ref.read(sttProvider.notifier);
+    await stt.stopListening();
+
+    final transcript = state.transcript.trim();
+    if (transcript.isEmpty) {
+      // Nothing was recognized — show error state directly on screen.
+      state = state.copyWith(
+        phase: VoiceModePhase.error,
+        error: 'No speech recognized. Tap to try again.',
+      );
+      return;
+    }
+
+    state = state.copyWith(phase: VoiceModePhase.processing, response: '');
+
+    // Send the transcript as a regular chat message. The streaming
+    // listener will handle the transition to speaking phase.
+    try {
+      await ref.read(chatProvider.notifier).sendMessage(transcript);
+    } catch (e) {
+      Log.error('Voice mode send error: $e');
+      state = state.copyWith(phase: VoiceModePhase.error, error: e.toString());
+    }
+  }
+
+  /// Toggle auto-listen after TTS completes.
+  void toggleAutoListen() {
+    state = state.copyWith(autoListen: !state.autoListen);
+  }
+
+  /// Toggle mute (pause listening without ending session).
+  void toggleMute() {
+    state = state.copyWith(isMuted: !state.isMuted);
+  }
+
+  /// End the entire voice session and reset everything.
+  Future<void> endSession() async {
+    _active = false;
+    _isSendingTranscript = false;
+
+    // Stop STT if still listening.
+    try {
+      final stt = ref.read(sttProvider.notifier);
+      await stt.cancelListening();
+    } catch (e) {
+      Log.error('Voice mode STT cancel error: $e');
+    }
+
+    // Stop TTS if still speaking.
+    try {
+      final tts = ref.read(ttsProvider.notifier);
+      await tts.stop();
+    } catch (e) {
+      Log.error('Voice mode TTS stop error: $e');
+    }
+
+    state = const VoiceModeState();
+  }
+
+  /// Manually interrupt speaking and re-listen.
+  Future<void> interrupt() async {
+    if (!_active) return;
+    try {
+      final tts = ref.read(ttsProvider.notifier);
+      await tts.stop();
+    } catch (_) {}
+
+    if (state.autoListen) {
+      startListening();
+    } else {
+      state = state.copyWith(phase: VoiceModePhase.idle);
+    }
+  }
+
+  // ──────────────────────────────────────────────────────
+  // Internal listeners
+  // ──────────────────────────────────────────────────────
+
+  void _onStreamingChanged(bool wasStreaming, bool isStreaming) {
+    if (!_active) return;
+    if (state.phase != VoiceModePhase.processing) return;
+
+    if (wasStreaming && !isStreaming) {
+      // Streaming just completed — grab the last assistant message content.
+      _handleStreamingComplete();
+    }
+  }
+
+  void _handleStreamingComplete() {
+    if (!_active) return;
+
+    final chatState = ref.read(chatProvider);
+    final messages = chatState.messages;
+    if (messages.isEmpty) return;
+
+    // The last message should be the assistant's response.
+    final lastMessage = messages.last;
+    final responseText = lastMessage.content.trim();
+
+    if (responseText.isEmpty) {
+      // No real content — try again or go idle.
+      if (state.autoListen) {
+        startListening();
+      } else {
+        state = state.copyWith(phase: VoiceModePhase.idle);
+      }
+      return;
+    }
+
+    state = state.copyWith(
+      phase: VoiceModePhase.speaking,
+      response: responseText,
+    );
+
+    // Trigger TTS to speak the response. Pass message/conversation IDs so
+    // TTS can cache and resume playback against the right message.
+    final tts = ref.read(ttsProvider.notifier);
+    () async {
+      try {
+        await tts.speak(
+          responseText,
+          messageId: lastMessage.id,
+          conversationId: lastMessage.conversationId,
+        );
+      } catch (e) {
+        if (!_active) return;
+        Log.error('Voice mode TTS speak failed: $e');
+        state = state.copyWith(
+          phase: VoiceModePhase.error,
+          error: e.toString(),
+        );
+      }
+    }();
+  }
+
+  void _onTtsStateChanged(TtsState? previous, TtsState next) {
+    if (!_active) return;
+    if (state.phase != VoiceModePhase.speaking) return;
+
+    final wasSpeaking = previous?.isSpeaking ?? false;
+    final isSpeaking = next.isSpeaking;
+
+    if (wasSpeaking && !isSpeaking && !next.isPaused) {
+      // TTS just finished speaking.
+      _onSpeakingComplete();
+    }
+  }
+
+  void _onSpeakingComplete() {
+    if (!_active) return;
+
+    if (state.autoListen) {
+      // Restart listening for the next turn.
+      startListening();
+    } else {
+      state = state.copyWith(phase: VoiceModePhase.idle);
+    }
+  }
+}
+
+String _mapSttError(String error) {
+  switch (error) {
+    case 'error_no_match':
+      return 'No speech recognized. Tap to try again.';
+    case 'error_speech_timeout':
+      return 'No speech detected. Tap to try again.';
+    case 'error_permission':
+      return 'Microphone permission denied.';
+    case 'error_busy':
+      return 'Speech recognition is busy. Please try again.';
+    case 'error_network':
+    case 'error_network_timeout':
+      return 'Network error. Please check your connection.';
+    case 'error_audio':
+      return 'Audio recording error. Please check your microphone.';
+    default:
+      if (error.startsWith('error_')) {
+        final cleanName = error.replaceFirst('error_', '').replaceAll('_', ' ');
+        return 'Speech recognition error: $cleanName';
+      }
+      return error;
+  }
+}

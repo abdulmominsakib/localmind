@@ -229,6 +229,7 @@ class CloudSyncSnapshot {
     'ttsSpeed',
     'kittenTtsModelVariant',
     'autoSpeakEnabled',
+    'conciseVoiceResponsesEnabled',
     'ttsProcessMarkdown',
     'ttsSkipSeconds',
     'smartReplyEnabled',

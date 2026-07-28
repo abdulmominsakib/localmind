@@ -39,6 +39,9 @@ import 'message_selection_provider.dart';
 import 'model_selection_providers.dart';
 import 'tooling_providers.dart';
 import '../utils/message_variants.dart';
+import '../../tts/providers/tts_providers.dart';
+import '../../stt/providers/stt_providers.dart' as stt;
+import '../../voice_mode/providers/voice_mode_provider.dart';
 
 class PendingToolApproval {
   final ParsedToolCall toolCall;
@@ -740,6 +743,17 @@ class ChatNotifier extends Notifier<ChatState> {
       return;
     }
 
+    await _abortStreamImmediately();
+
+    // Stop the STT listener so the mic doesn't stay red while the model
+    // thinks. The chat input bar's `ref.listen` will re-start it once TTS
+    // (if any) finishes.
+    try {
+      ref.read(stt.sttProvider.notifier).stopListening();
+    } catch (_) {
+      // STT may not be initialised — non-fatal.
+    }
+
     final trimmedContent = content.trim();
 
     final titleSource = trimmedContent.isNotEmpty
@@ -843,9 +857,6 @@ class ChatNotifier extends Notifier<ChatState> {
     }
 
     ref.read(chatBackgroundServiceProvider).start();
-
-    await _abortStreamImmediately();
-    ref.read(isStreamingProvider.notifier).setStreaming(true);
 
     _resetStreamMetrics();
     _resetCheckpointMetrics();
@@ -1154,6 +1165,18 @@ class ChatNotifier extends Notifier<ChatState> {
                   _lastCheckpointTime = null;
                   _lastSavedContentLength = 0;
                   _lastSavedReasoningLength = 0;
+
+                  // Auto-speak: read the response aloud if the setting
+                  // is enabled and voice mode is not already handling TTS.
+                  final autoSpeak = ref.read(settingsProvider).autoSpeakEnabled;
+                  final voiceActive = ref.read(voiceModeProvider).phase != VoiceModePhase.idle;
+                  if (autoSpeak && !voiceActive && finalMessage.content.trim().isNotEmpty) {
+                    ref.read(ttsProvider.notifier).speak(
+                      finalMessage.content,
+                      messageId: finalMessage.id,
+                      conversationId: finalMessage.conversationId,
+                    );
+                  }
                 }
               },
               onError: (error) async {
@@ -1315,6 +1338,15 @@ class ChatNotifier extends Notifier<ChatState> {
         (settings.showSystemMessages
             ? 'You are LocalMind, a helpful AI assistant. Provide clear, accurate, and concise responses.'
             : null);
+
+    final isVoiceActive = ref.read(voiceModeProvider).isActive;
+    if (isVoiceActive && settings.conciseVoiceResponsesEnabled) {
+      const conciseInstruction =
+          'Respond concisely in a single short paragraph and end with a relevant follow-up question to keep the spoken conversation engaging.';
+      systemContent = (systemContent == null || systemContent.trim().isEmpty)
+          ? conciseInstruction
+          : '$systemContent\n$conciseInstruction';
+    }
 
     if (shouldDisableThinking) {
       // Hybrid reasoning models (Qwen3 and similar) key off this literal
@@ -2033,6 +2065,21 @@ class ChatNotifier extends Notifier<ChatState> {
                 server: server,
                 selectedModel: selectedModel,
               );
+
+              // Auto-speak: read the response aloud if the setting is
+              // enabled and voice mode is not already handling TTS.
+              final autoSpeak = ref.read(settingsProvider).autoSpeakEnabled;
+              final voiceActive = ref.read(voiceModeProvider).phase !=
+                  VoiceModePhase.idle;
+              if (autoSpeak &&
+                  !voiceActive &&
+                  finalMessage.content.trim().isNotEmpty) {
+                ref.read(ttsProvider.notifier).speak(
+                      finalMessage.content,
+                      messageId: finalMessage.id,
+                      conversationId: finalMessage.conversationId,
+                    );
+              }
             },
             onError: (Object error, StackTrace stackTrace) async {
               Log.error('Stream error: $error');

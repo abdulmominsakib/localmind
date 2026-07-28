@@ -54,3 +54,5 @@ skills-lock.json
 notes.txt
 docs/raw_ss/
 docs/marketing/
+.puku-cli/
+.puku/

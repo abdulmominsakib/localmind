@@ -40,6 +40,7 @@ class DataBackupService {
     'ttsSpeed',
     'kittenTtsModelVariant',
     'autoSpeakEnabled',
+    'conciseVoiceResponsesEnabled',
     'ttsProcessMarkdown',
     'ttsSkipSeconds',
     'smartReplyEnabled',

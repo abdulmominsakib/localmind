@@ -99,6 +99,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(kittenTtsModelVariant: value));
   void setAutoSpeakEnabled(bool value) =>
       _update(state.copyWith(autoSpeakEnabled: value));
+  void setConciseVoiceResponsesEnabled(bool value) =>
+      _update(state.copyWith(conciseVoiceResponsesEnabled: value));
   void setTtsProcessMarkdown(bool value) =>
       _update(state.copyWith(ttsProcessMarkdown: value));
   void setTtsSkipSeconds(int value) =>

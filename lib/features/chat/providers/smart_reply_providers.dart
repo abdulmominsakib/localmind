@@ -6,6 +6,7 @@ import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
     as conv;
 import 'package:localmind/features/servers/providers/server_providers.dart';
+import 'package:localmind/features/voice_mode/providers/voice_mode_provider.dart';
 import 'chat_notifier.dart';
 import 'chat_params_providers.dart';
 import 'chat_service_providers.dart';
@@ -14,8 +15,10 @@ import 'model_selection_providers.dart';
 final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
   final isStreaming = ref.watch(chatProvider.select((s) => s.isStreaming));
   final settings = ref.watch(settingsProvider);
+  final voiceState = ref.watch(voiceModeProvider);
 
   if (isStreaming) return [];
+  if (voiceState.isActive || voiceState.phase != VoiceModePhase.idle) return [];
 
   final messages = ref.watch(chatProvider.select((s) => s.messages));
   if (messages.isEmpty) return [];
@@ -50,8 +53,9 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
         modelId: selectedModel.id,
         messages: messages,
         params: chatParams,
-        personaSystemPrompt:
-            settings.smartRepliesUsePersona ? chatParams.systemPrompt : null,
+        personaSystemPrompt: settings.smartRepliesUsePersona
+            ? chatParams.systemPrompt
+            : null,
       );
       if (!ref.mounted) return [];
     }

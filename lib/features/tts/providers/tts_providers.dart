@@ -130,6 +130,7 @@ class TtsNotifier extends Notifier<TtsState> {
   final Map<int, AudioSource> _playlistBuffer = {};
   int _nextPlaylistIndexToAdd = 0;
   StreamSubscription<int?>? _currentIndexSubscription;
+  StreamSubscription<PlaybackEvent>? _playerEventSubscription;
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<Duration?>? _durationSubscription;
   Timer? _systemProgressTimer;
@@ -177,6 +178,16 @@ class TtsNotifier extends Notifier<TtsState> {
       _onPlaybackFinished();
     });
 
+    _playerEventSubscription = _player.playbackEventStream.listen(
+      (_) {},
+      onError: (Object error) {
+        Log.warning('TTS player event error: $error');
+        if (state.isSpeaking && !_isStopping) {
+          _onPlaybackFinished();
+        }
+      },
+    );
+
     _currentIndexSubscription = _player.currentIndexStream.listen((index) {
       if (index != null && index != _currentChunkIndex) {
         _currentChunkIndex = index;
@@ -203,6 +214,7 @@ class TtsNotifier extends Notifier<TtsState> {
       _workerIsolate?.kill();
       _mainReceivePort.close();
       _playerCompleteSubscription?.cancel();
+      _playerEventSubscription?.cancel();
       _currentIndexSubscription?.cancel();
       _positionSubscription?.cancel();
       _durationSubscription?.cancel();
@@ -375,12 +387,16 @@ class TtsNotifier extends Notifier<TtsState> {
 
   void _deleteChunkFile(int sessionId, int chunkIndex) {
     if (chunkIndex < 0) return;
-    try {
-      final tempFile = File(
-        '${Directory.systemTemp.path}/tts_chunk_${sessionId}_$chunkIndex.wav',
-      );
-      if (tempFile.existsSync()) tempFile.deleteSync();
-    } catch (_) {}
+    Future.microtask(() async {
+      try {
+        final tempFile = File(
+          '${Directory.systemTemp.path}/tts_chunk_${sessionId}_$chunkIndex.wav',
+        );
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+      } catch (_) {}
+    });
   }
 
   void _cleanupSessionFiles(int sessionId, int chunkCount) {
@@ -405,6 +421,19 @@ class TtsNotifier extends Notifier<TtsState> {
       resetProgress: true,
       canSeek: false,
     );
+    // Hand the iOS audio session back to record so a follow-up
+    // STT startListening() can capture audio immediately.
+    _configureAudioSessionForSpeech();
+  }
+
+  void _configureAudioSessionForSpeech() {
+    try {
+      AudioSession.instance.then((session) {
+        session.configure(const AudioSessionConfiguration.speech());
+      });
+    } catch (e) {
+      Log.error('Error configuring audio session for speech: $e');
+    }
   }
 
   List<String> _splitText(String text) {
@@ -963,6 +992,7 @@ class TtsNotifier extends Notifier<TtsState> {
       resetProgress: true,
       canSeek: false,
     );
+    _configureAudioSessionForSpeech();
     _isStopping = false;
   }
 

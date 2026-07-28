@@ -38,6 +38,7 @@ class AppSettings {
   final double ttsSpeed;
   final KittenTtsModelVariant kittenTtsModelVariant;
   final bool autoSpeakEnabled;
+  final bool conciseVoiceResponsesEnabled;
   final bool ttsProcessMarkdown;
   final int ttsSkipSeconds;
   final bool smartReplyEnabled;
@@ -81,6 +82,7 @@ class AppSettings {
     this.ttsSpeed = 1.0,
     this.kittenTtsModelVariant = KittenTtsModelVariant.nanoInt8,
     this.autoSpeakEnabled = false,
+    this.conciseVoiceResponsesEnabled = true,
     this.ttsProcessMarkdown = true,
     this.ttsSkipSeconds = 10,
     this.smartReplyEnabled = true,
@@ -125,6 +127,7 @@ class AppSettings {
     double? ttsSpeed,
     KittenTtsModelVariant? kittenTtsModelVariant,
     bool? autoSpeakEnabled,
+    bool? conciseVoiceResponsesEnabled,
     bool? ttsProcessMarkdown,
     int? ttsSkipSeconds,
     bool? smartReplyEnabled,
@@ -174,6 +177,8 @@ class AppSettings {
       kittenTtsModelVariant:
           kittenTtsModelVariant ?? this.kittenTtsModelVariant,
       autoSpeakEnabled: autoSpeakEnabled ?? this.autoSpeakEnabled,
+      conciseVoiceResponsesEnabled:
+          conciseVoiceResponsesEnabled ?? this.conciseVoiceResponsesEnabled,
       ttsProcessMarkdown: ttsProcessMarkdown ?? this.ttsProcessMarkdown,
       ttsSkipSeconds: ttsSkipSeconds ?? this.ttsSkipSeconds,
       smartReplyEnabled: smartReplyEnabled ?? this.smartReplyEnabled,
@@ -232,6 +237,7 @@ class AppSettings {
       'ttsSpeed': ttsSpeed,
       'kittenTtsModelVariant': kittenTtsModelVariant.name,
       'autoSpeakEnabled': autoSpeakEnabled,
+      'conciseVoiceResponsesEnabled': conciseVoiceResponsesEnabled,
       'ttsProcessMarkdown': ttsProcessMarkdown,
       'ttsSkipSeconds': ttsSkipSeconds,
       'smartReplyEnabled': smartReplyEnabled,
@@ -278,6 +284,8 @@ class AppSettings {
       ttsSpeed: map['ttsSpeed']?.toDouble() ?? 1.0,
       kittenTtsModelVariant: _parseKittenVariant(map['kittenTtsModelVariant']),
       autoSpeakEnabled: map['autoSpeakEnabled'] ?? false,
+      conciseVoiceResponsesEnabled:
+          map['conciseVoiceResponsesEnabled'] ?? true,
       ttsProcessMarkdown: map['ttsProcessMarkdown'] ?? true,
       ttsSkipSeconds: _parseTtsSkipSeconds(map['ttsSkipSeconds']),
       smartReplyEnabled: map['smartReplyEnabled'] ?? true,

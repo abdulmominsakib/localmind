@@ -16,6 +16,8 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../saved_messages/views/components/saved_message_picker_sheet.dart';
 import '../../../servers/providers/server_providers.dart';
 import '../../../stt/providers/stt_providers.dart';
+import '../../../tts/providers/tts_providers.dart';
+import '../../../voice_mode/providers/voice_mode_provider.dart';
 import '../../providers/chat_providers.dart';
 import '../../utils/attachment_helpers.dart';
 import '../../utils/image_upload_utils.dart';
@@ -23,6 +25,8 @@ import '../../../models/views/model_picker_sheet.dart';
 import 'attach_sheet.dart';
 import 'image_preview_dialog.dart';
 import 'model_chip.dart';
+import '../../../on_device/providers/on_device_providers.dart';
+import '../../../voice_mode/views/voice_mode_overlay.dart';
 
 class ChatInputBar extends ConsumerStatefulWidget {
   const ChatInputBar({
@@ -310,24 +314,23 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     } else {
       _preSpeechText = _controller.text;
 
-      await stt.startListening(
-        onResult: (words) {
-          if (words.isNotEmpty && mounted) {
-            setState(() {
-              if (_preSpeechText.isEmpty) {
-                _controller.text = words;
-              } else {
-                _controller.text = '$_preSpeechText $words';
-              }
-
-              _controller.selection = TextSelection.fromPosition(
-                TextPosition(offset: _controller.text.length),
-              );
-            });
-          }
-        },
-      );
+      await stt.startListening(onResult: _onSpeechResult);
     }
+  }
+
+  void _onSpeechResult(String words) {
+    if (words.isEmpty || !mounted) return;
+    setState(() {
+      if (_preSpeechText.isEmpty) {
+        _controller.text = words;
+      } else {
+        _controller.text = '$_preSpeechText $words';
+      }
+
+      _controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: _controller.text.length),
+      );
+    });
   }
 
   Widget _buildMicButton(bool isListening, ThemeData theme) {
@@ -390,6 +393,58 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildVoiceModeButton(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final onDeviceLoaded = ref.watch(
+      onDeviceEngineProvider.select(
+        (s) => s.status == OnDeviceEngineStatus.loaded,
+      ),
+    );
+    final connectionStatus = ref.watch(connectionStatusProvider);
+    final isConnected = connectionStatus == ConnectionStatus.connected;
+    final hasRemoteModel =
+        isConnected && ref.watch(selectedModelProvider) != null;
+    final modelReady = onDeviceLoaded || hasRemoteModel;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF6366F1).withValues(alpha: 0.15)
+            : const Color(0xFF4F46E5).withValues(alpha: 0.1),
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: HugeIcon(
+          icon: HugeIcons.strokeRoundedAudioWave01,
+          size: 20,
+          color: isDark ? const Color(0xFF6366F1) : const Color(0xFF4F46E5),
+        ),
+        onPressed: !modelReady
+            ? () {
+                Haptics.vibrate(HapticsType.light);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.model_required_toast)),
+                );
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  builder: (_) => const ModelPickerSheet(),
+                );
+              }
+            : () {
+                Haptics.vibrate(HapticsType.light);
+                VoiceModeOverlay.show(context);
+              },
+        tooltip: modelReady ? 'Voice mode' : l10n.model_required_toast,
+      ),
     );
   }
 
@@ -475,9 +530,9 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
   bool _ensureModelSelected() {
     if (ref.read(selectedModelProvider) != null) return true;
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.model_required_toast)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.model_required_toast)));
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -520,8 +575,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                 setState(() => _sendAsAssistant = !_sendAsAssistant);
               }
             : null,
-        icon: HugeIcon(icon: 
-          HugeIcons.strokeRoundedExchange01,
+        icon: HugeIcon(
+          icon: HugeIcons.strokeRoundedExchange01,
           size: 20,
           color: _sendAsAssistant
               ? theme.colorScheme.primary
@@ -582,8 +637,10 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                   top: 6,
                   bottom: 6,
                 ),
-                child: HugeIcon(icon: 
-                  enabled ? HugeIcons.strokeRoundedTick01 : HugeIcons.strokeRoundedSquare01,
+                child: HugeIcon(
+                  icon: enabled
+                      ? HugeIcons.strokeRoundedTick01
+                      : HugeIcons.strokeRoundedSquare01,
                   size: 18,
                   color: fgColor,
                 ),
@@ -861,6 +918,11 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     ref.listen<String?>(sttProvider.select((s) => s.error), (previous, next) {
       if (next != null) {
+        final voiceState = ref.read(voiceModeProvider);
+        final voiceActive =
+            voiceState.isActive || voiceState.phase != VoiceModePhase.idle;
+        if (voiceActive) return;
+
         final message = _mapSttError(next);
 
         if (message != null) {
@@ -868,6 +930,34 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
             context,
           ).showSnackBar(SnackBar(content: Text(message)));
         }
+      }
+    });
+
+    // Voice-to-voice: when the LLM stops producing output and any auto-TTS
+    // playback has finished (or was never scheduled), restart the mic so the
+    // user can speak again without pressing the mic button.
+    ref.listen<bool>(isStreamingProvider, (previous, next) async {
+      if (previous == true && next == false && mounted) {
+        if (!ref.read(settingsProvider).autoSpeakEnabled) return;
+        final voiceState = ref.read(voiceModeProvider);
+        final voiceActive =
+            voiceState.isActive || voiceState.phase != VoiceModePhase.idle;
+        if (voiceActive) return;
+        final ttsSpeaking = ref.read(ttsProvider).isSpeaking;
+        final sttActive = ref.read(sttProvider).isListening;
+        if (ttsSpeaking || sttActive) return;
+
+        // Small delay so the OS finishes releasing the audio session before
+        // we ask for the microphone again.
+        await Future.delayed(const Duration(milliseconds: 200));
+        if (!mounted) return;
+        if (ref.read(sttProvider).isListening) return;
+        if (ref.read(isStreamingProvider)) return;
+
+        _preSpeechText = _controller.text;
+        await ref.read(sttProvider.notifier).startListening(
+              onResult: _onSpeechResult,
+            );
       }
     });
 
@@ -966,8 +1056,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                                           .colorScheme
                                           .surfaceContainerHighest,
 
-                                      child: HugeIcon(icon: 
-                                        HugeIcons.strokeRoundedFile01,
+                                      child: HugeIcon(
+                                        icon: HugeIcons.strokeRoundedFile01,
 
                                         size: 22,
 
@@ -998,8 +1088,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                                   shape: BoxShape.circle,
                                 ),
 
-                                child: const HugeIcon(icon: 
-                                  HugeIcons.strokeRoundedCancel01,
+                                child: const HugeIcon(
+                                  icon: HugeIcons.strokeRoundedCancel01,
 
                                   size: 10,
 
@@ -1172,6 +1262,10 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                 const Spacer(),
 
                 _buildMicButton(isListening, theme),
+
+                const SizedBox(width: 4),
+
+                _buildVoiceModeButton(theme),
 
                 const SizedBox(width: 8),
 
