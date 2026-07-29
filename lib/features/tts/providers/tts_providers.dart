@@ -39,6 +39,13 @@ class TtsState {
   final bool isSeekPending;
   final double playbackSpeed;
 
+  /// Text chunks currently being read aloud, in order. Cleared when
+  /// playback stops. Useful for word-level progress UI.
+  final List<String> chunks;
+
+  /// Index of the chunk currently being read. -1 when nothing is playing.
+  final int currentChunkIndex;
+
   const TtsState({
     this.isSpeaking = false,
     this.isPaused = false,
@@ -54,6 +61,8 @@ class TtsState {
     this.canSeek = false,
     this.isSeekPending = false,
     this.playbackSpeed = 1.0,
+    this.chunks = const [],
+    this.currentChunkIndex = -1,
   });
 
   TtsState copyWith({
@@ -73,6 +82,8 @@ class TtsState {
     double? playbackSpeed,
     bool clearPlayingTarget = false,
     bool resetProgress = false,
+    List<String>? chunks,
+    int? currentChunkIndex,
   }) {
     return TtsState(
       isSpeaking: isSpeaking ?? this.isSpeaking,
@@ -92,6 +103,8 @@ class TtsState {
       canSeek: canSeek ?? this.canSeek,
       isSeekPending: isSeekPending ?? this.isSeekPending,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
+      chunks: chunks ?? this.chunks,
+      currentChunkIndex: currentChunkIndex ?? this.currentChunkIndex,
     );
   }
 }
@@ -191,6 +204,7 @@ class TtsNotifier extends Notifier<TtsState> {
     _currentIndexSubscription = _player.currentIndexStream.listen((index) {
       if (index != null && index != _currentChunkIndex) {
         _currentChunkIndex = index;
+        state = state.copyWith(currentChunkIndex: index);
         _updateChunkOffset();
         _onChunkChanged.add(null);
         _enqueueNextChunks();
@@ -419,6 +433,8 @@ class TtsNotifier extends Notifier<TtsState> {
       isPreview: false,
       clearPlayingTarget: true,
       resetProgress: true,
+      chunks: const [],
+      currentChunkIndex: -1,
       canSeek: false,
     );
     // Hand the iOS audio session back to record so a follow-up
@@ -707,6 +723,7 @@ class TtsNotifier extends Notifier<TtsState> {
     _resetProgress();
     _chunks = _splitText(text);
     _currentChunkIndex = 0;
+    state = state.copyWith(chunks: _chunks, currentChunkIndex: 0);
     _currentVoice = resolvedVoiceId;
     _synthesizedChunks.clear();
     _lastEnqueuedChunk = -1;
@@ -886,6 +903,7 @@ class TtsNotifier extends Notifier<TtsState> {
         await _player.seek(Duration.zero);
       }
       _currentChunkIndex = targetChunk;
+      state = state.copyWith(currentChunkIndex: targetChunk);
       _updateChunkOffset();
       _updatePlaybackProgress();
     } finally {
@@ -990,6 +1008,8 @@ class TtsNotifier extends Notifier<TtsState> {
       isPreview: false,
       clearPlayingTarget: true,
       resetProgress: true,
+      chunks: const [],
+      currentChunkIndex: -1,
       canSeek: false,
     );
     _configureAudioSessionForSpeech();
@@ -1037,6 +1057,7 @@ class TtsNotifier extends Notifier<TtsState> {
     _resetProgress();
     _chunks = List<String>.from(cache.chunks);
     _currentChunkIndex = 0;
+    state = state.copyWith(chunks: _chunks, currentChunkIndex: 0);
     _currentVoice = cache.voice;
     _synthesizedChunks.clear();
     _synthesizedChunks.addAll(cache.synthesizedChunks);

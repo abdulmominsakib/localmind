@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../../../core/logger/app_logger.dart';
 
+/// Double in dB-ish units (iOS) or 0..1-ish (Android) reported by the
+/// speech_to_text plugin via `onSoundLevelChange`. Higher = louder.
+typedef SoundLevelChange = void Function(double level);
+
 class SttState {
   final bool isListening;
   final bool isAvailable;
@@ -89,6 +93,7 @@ class SttNotifier extends Notifier<SttState> {
   Future<void> startListening({
     required void Function(String) onResult,
     void Function(String)? onFinal,
+    SoundLevelChange? onSoundLevelChange,
   }) async {
     final available = await initSpeech();
     if (!available) {
@@ -114,6 +119,13 @@ class SttNotifier extends Notifier<SttState> {
           if (result.finalResult && onFinal != null) {
             onFinal(result.recognizedWords);
           }
+        },
+        onSoundLevelChange: (level) {
+          // iOS reports negative dB (-2 quiet, 10 loud), Android ~0..1.
+          final normalised = level <= 0
+              ? ((level + 2) / 12).clamp(0.0, 1.0)
+              : level.clamp(0.0, 1.0);
+          onSoundLevelChange?.call(normalised);
         },
         listenOptions: SpeechListenOptions(
           listenFor: const Duration(seconds: 30),

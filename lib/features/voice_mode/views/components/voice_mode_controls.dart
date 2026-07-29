@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
 import '../../providers/voice_mode_provider.dart';
+import '../../voice_mode_palette.dart';
 
 /// Bottom control bar for voice mode overlay:
-/// end call button, mute toggle, auto-listen toggle.
+/// auto-listen toggle, end-call button, primary mic action.
 class VoiceModeControls extends StatelessWidget {
   final VoiceModePhase phase;
   final bool autoListen;
@@ -27,33 +28,30 @@ class VoiceModeControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Auto-listen toggle.
-          _ControlButton(
+          _PillControl(
             icon: autoListen
                 ? HugeIcons.strokeRoundedRepeat
                 : HugeIcons.strokeRoundedRepeatOff,
             label: autoListen ? 'Auto' : 'Manual',
             isActive: autoListen,
-            activeColor: isDark
-                ? const Color(0xFF6366F1)
-                : const Color(0xFF4F46E5),
-            isDark: isDark,
+            activeColor: VoiceModePalette.accentFor(
+              VoiceModePhase.speaking,
+              isDark: isDark,
+            ),
             onTap: onToggleAutoListen,
           ),
 
-          // Main action — end session (red).
           _EndCallButton(onTap: onEnd),
 
-          // Send / interrupt based on phase.
-          _ControlButton(
+          _PillControl(
             icon: phase == VoiceModePhase.listening
                 ? HugeIcons.strokeRoundedSent
                 : phase == VoiceModePhase.speaking
@@ -66,10 +64,10 @@ class VoiceModeControls extends StatelessWidget {
                     : 'Speak',
             isActive: phase == VoiceModePhase.listening ||
                 phase == VoiceModePhase.speaking,
-            activeColor: isDark
-                ? const Color(0xFF34D399)
-                : const Color(0xFF059669),
-            isDark: isDark,
+            activeColor: VoiceModePalette.accentFor(
+              VoiceModePhase.listening,
+              isDark: isDark,
+            ),
             onTap: onTapCenter,
           ),
         ],
@@ -88,15 +86,15 @@ class _EndCallButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 64,
-        height: 64,
+        width: 68,
+        height: 68,
         decoration: BoxDecoration(
           color: const Color(0xFFEF4444),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFEF4444).withValues(alpha: 0.4),
-              blurRadius: 16,
+              color: const Color(0xFFEF4444).withValues(alpha: 0.45),
+              blurRadius: 18,
               spreadRadius: 2,
             ),
           ],
@@ -104,7 +102,7 @@ class _EndCallButton extends StatelessWidget {
         child: const Center(
           child: HugeIcon(
             icon: HugeIcons.strokeRoundedCallEnd01,
-            size: 28,
+            size: 30,
             color: Colors.white,
           ),
         ),
@@ -113,75 +111,77 @@ class _EndCallButton extends StatelessWidget {
   }
 }
 
-class _ControlButton extends StatelessWidget {
+class _PillControl extends StatelessWidget {
   final List<List<dynamic>> icon;
   final String label;
   final bool isActive;
   final Color activeColor;
-  final bool isDark;
   final VoidCallback onTap;
 
-  const _ControlButton({
+  const _PillControl({
     required this.icon,
     required this.label,
     required this.isActive,
     required this.activeColor,
-    required this.isDark,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isActive
-        ? activeColor.withValues(alpha: 0.15)
+        ? activeColor.withValues(alpha: 0.14)
         : (isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : Colors.black.withValues(alpha: 0.05));
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.black.withValues(alpha: 0.04));
 
     final iconColor = isActive
         ? activeColor
         : (isDark
-            ? Colors.white.withValues(alpha: 0.6)
-            : Colors.black.withValues(alpha: 0.5));
+            ? Colors.white.withValues(alpha: 0.7)
+            : Colors.black.withValues(alpha: 0.55));
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
-              border: Border.all(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isActive
+                ? activeColor.withValues(alpha: 0.3)
+                : Colors.transparent,
+            width: 1.2,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            HugeIcon(
+              icon: icon,
+              size: 22,
+              color: iconColor,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
                 color: isActive
-                    ? activeColor.withValues(alpha: 0.3)
-                    : Colors.transparent,
-                width: 1.5,
+                    ? activeColor
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.55)
+                        : Colors.black.withValues(alpha: 0.5)),
               ),
             ),
-            child: Center(
-              child: HugeIcon(
-                icon: icon,
-                size: 24,
-                color: iconColor,
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.5)
-                  : Colors.black.withValues(alpha: 0.45),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

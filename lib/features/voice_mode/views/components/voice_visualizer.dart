@@ -1,20 +1,29 @@
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../../providers/voice_mode_provider.dart';
+import '../../voice_mode_palette.dart';
 
-/// Animated visual indicator that changes appearance based on the
-/// current [VoiceModePhase]. Uses [CustomPainter] for smooth,
-/// GPU-friendly rendering.
+/// Real-time waveform visualizer.
+///
+/// While [VoiceModePhase.listening] the bars animate from the live
+/// microphone level. While [VoiceModePhase.speaking] (AI playback) we
+/// drive a procedural envelope because we can't read amplitude from the
+/// TTS audio stream.
 class VoiceVisualizer extends StatefulWidget {
   final VoiceModePhase phase;
   final double size;
+
+  /// Current microphone input level in 0..1 (only meaningful while
+  /// listening).
+  final double micLevel;
 
   const VoiceVisualizer({
     super.key,
     required this.phase,
     this.size = 220,
+    this.micLevel = 0,
   });
 
   @override
@@ -22,88 +31,43 @@ class VoiceVisualizer extends StatefulWidget {
 }
 
 class _VoiceVisualizerState extends State<VoiceVisualizer>
-    with TickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late AnimationController _orbitController;
-  late AnimationController _waveController;
+    with SingleTickerProviderStateMixin {
+  /// Always running — even during listening we need per-frame ticks so the
+  /// procedural noise modulation keeps moving while the user speaks. During
+  /// speaking the same controller drives the AI envelope.
+  late final AnimationController _ticker;
 
   @override
   void initState() {
     super.initState();
-
-    _pulseController = AnimationController(
+    _ticker = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
-    );
-
-    _orbitController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    );
-
-    _waveController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-
-    _syncAnimations(widget.phase);
-  }
-
-  @override
-  void didUpdateWidget(VoiceVisualizer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.phase != widget.phase) {
-      _syncAnimations(widget.phase);
-    }
-  }
-
-  void _syncAnimations(VoiceModePhase phase) {
-    // Stop all first.
-    _pulseController.stop();
-    _orbitController.stop();
-    _waveController.stop();
-
-    switch (phase) {
-      case VoiceModePhase.listening:
-        _pulseController.repeat(reverse: true);
-      case VoiceModePhase.processing:
-        _orbitController.repeat();
-      case VoiceModePhase.speaking:
-        _waveController.repeat();
-      case VoiceModePhase.idle:
-      case VoiceModePhase.error:
-        // Gentle idle pulse.
-        _pulseController.repeat(reverse: true);
-    }
+    )..repeat();
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
-    _orbitController.dispose();
-    _waveController.dispose();
+    _ticker.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SizedBox(
       width: widget.size,
       height: widget.size,
       child: AnimatedBuilder(
-        animation: Listenable.merge([
-          _pulseController,
-          _orbitController,
-          _waveController,
-        ]),
+        animation: _ticker,
         builder: (context, _) {
           return CustomPaint(
-            painter: _VoicePainter(
+            painter: _WaveformPainter(
               phase: widget.phase,
-              pulseValue: _pulseController.value,
-              orbitValue: _orbitController.value,
-              waveValue: _waveController.value,
-              isDark: Theme.of(context).brightness == Brightness.dark,
+              micLevel: widget.micLevel.clamp(0.0, 1.0),
+              aiValue: _ticker.value,
+              isDark: isDark,
             ),
           );
         },
@@ -112,196 +76,174 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
   }
 }
 
-class _VoicePainter extends CustomPainter {
+class _WaveformPainter extends CustomPainter {
+  static const _barCount = 28;
+
   final VoiceModePhase phase;
-  final double pulseValue;
-  final double orbitValue;
-  final double waveValue;
+  final double micLevel;
+  final double aiValue;
   final bool isDark;
 
-  _VoicePainter({
+  // Pre-allocated scratch values to keep the per-frame loop tight.
+  static final Paint _barPaint = Paint()..strokeCap = StrokeCap.round;
+  static final Paint _haloPaint = Paint()
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 28);
+  static final Paint _corePaint = Paint()
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+
+  _WaveformPainter({
     required this.phase,
-    required this.pulseValue,
-    required this.orbitValue,
-    required this.waveValue,
+    required this.micLevel,
+    required this.aiValue,
     required this.isDark,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final maxRadius = size.width / 2;
+    final accent = VoiceModePalette.accentFor(phase, isDark: isDark);
+
+    // The halo keeps the surface feeling alive even when there's no audio.
+    _paintHalo(canvas, center, size, accent);
 
     switch (phase) {
       case VoiceModePhase.listening:
-        _paintListening(canvas, center, maxRadius);
-      case VoiceModePhase.processing:
-        _paintProcessing(canvas, center, maxRadius);
+        _paintBars(canvas, size, accent, amp: micLevel);
       case VoiceModePhase.speaking:
-        _paintSpeaking(canvas, center, maxRadius);
+        _paintBars(canvas, size, accent, amp: _aiEnvelope());
+      case VoiceModePhase.processing:
+        _paintProcessingBars(canvas, size, accent);
       case VoiceModePhase.idle:
-        _paintIdle(canvas, center, maxRadius);
+        _paintBars(canvas, size, accent, amp: 0.06 + 0.04 * aiValue);
       case VoiceModePhase.error:
-        _paintError(canvas, center, maxRadius);
+        _paintBars(canvas, size, accent, amp: 0.05);
     }
   }
 
-  void _paintListening(Canvas canvas, Offset center, double maxRadius) {
-    final baseColor = isDark
-        ? const Color(0xFF6366F1) // Indigo
-        : const Color(0xFF4F46E5);
+  void _paintBars(
+    Canvas canvas,
+    Size size,
+    Color color, {
+    required double amp,
+  }) {
+    const half = _barCount ~/ 2;
+    final width = size.width;
+    final height = size.height;
+    final centerY = height / 2;
+    final maxBarHeight = height * 0.42;
+    final minBarHeight = height * 0.04;
+    final barWidth = (width / (_barCount * 2)).clamp(2.0, 4.0);
+    final gap = (width - barWidth * _barCount * 2) / (_barCount * 2 + 1);
+    final baseX = centerY - (half * (barWidth + gap)) + gap / 2;
+    final stride = barWidth + gap;
+    final t = aiValue * 2 * math.pi;
+    final ampScale = 0.45 + amp * 1.35;
 
-    // Concentric pulsing rings.
-    for (int i = 0; i < 4; i++) {
-      final progress = (pulseValue + i * 0.2) % 1.0;
-      final radius = maxRadius * 0.3 + maxRadius * 0.6 * progress;
-      final alpha = (1.0 - progress) * 0.4;
+    _barPaint.strokeWidth = barWidth;
 
-      final paint = Paint()
-        ..color = baseColor.withValues(alpha: alpha)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5 - (progress * 1.5);
+    for (int i = 0; i < _barCount; i++) {
+      final dist = ((i - half).abs() / half).clamp(0.0, 1.0);
+      final envelope = math.cos(dist * math.pi / 2);
+      final noise = _waveNoise(i - half, phase, t);
+      final normalised = (envelope * ampScale * (0.6 + 0.4 * noise))
+          .clamp(0.0, 1.0);
+      final barHeight = minBarHeight + (maxBarHeight - minBarHeight) * normalised;
 
-      canvas.drawCircle(center, radius, paint);
+      _barPaint.color = color.withValues(alpha: 0.35 + 0.55 * normalised);
+      canvas.drawLine(
+        Offset(baseX + i * stride, centerY - barHeight / 2),
+        Offset(baseX + i * stride, centerY + barHeight / 2),
+        _barPaint,
+      );
     }
 
-    // Inner glowing core.
-    final corePaint = Paint()
-      ..color = baseColor.withValues(alpha: 0.6 + pulseValue * 0.3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
-    canvas.drawCircle(center, maxRadius * 0.18, corePaint);
-
-    final solidCore = Paint()..color = baseColor;
-    canvas.drawCircle(center, maxRadius * 0.12, solidCore);
+    _corePaint.color = color.withValues(alpha: 0.6 + 0.4 * amp);
+    canvas.drawCircle(
+      Offset(width / 2, height / 2),
+      4 + 6 * amp,
+      _corePaint,
+    );
   }
 
-  void _paintProcessing(Canvas canvas, Offset center, double maxRadius) {
-    final baseColor = isDark
-        ? const Color(0xFFA78BFA) // Violet
-        : const Color(0xFF7C3AED);
+  void _paintProcessingBars(Canvas canvas, Size size, Color color) {
+    const half = _barCount ~/ 2;
+    final centerY = size.height / 2;
+    final maxBarHeight = size.height * 0.28;
+    final minBarHeight = size.height * 0.03;
+    final barWidth = (size.width / (_barCount * 2)).clamp(2.0, 4.0);
+    final gap = (size.width - barWidth * _barCount * 2) / (_barCount * 2 + 1);
+    final baseX = centerY - (half * (barWidth + gap)) + gap / 2;
+    final stride = barWidth + gap;
 
-    // Orbiting dots.
-    const dotCount = 8;
-    for (int i = 0; i < dotCount; i++) {
-      final angle = (orbitValue * 2 * pi) + (i * 2 * pi / dotCount);
-      final orbitRadius = maxRadius * 0.45;
-      final dotX = center.dx + cos(angle) * orbitRadius;
-      final dotY = center.dy + sin(angle) * orbitRadius;
+    _barPaint.strokeWidth = barWidth;
 
-      final trailAlpha = 0.3 + (0.7 * (i / dotCount));
-      final dotRadius = 4.0 + (3.0 * (i / dotCount));
+    for (int i = 0; i < _barCount; i++) {
+      final dist = ((i - half).abs() / half).clamp(0.0, 1.0);
+      final progress = ((aiValue + dist * 0.6) % 1.0);
+      final wave = math.sin(progress * math.pi);
+      final h = minBarHeight + (maxBarHeight - minBarHeight) * wave;
 
-      final paint = Paint()
-        ..color = baseColor.withValues(alpha: trailAlpha)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, dotRadius * 0.5);
-
-      canvas.drawCircle(Offset(dotX, dotY), dotRadius, paint);
+      _barPaint.color = color.withValues(alpha: 0.25 + 0.55 * wave);
+      canvas.drawLine(
+        Offset(baseX + i * stride, centerY - h / 2),
+        Offset(baseX + i * stride, centerY + h / 2),
+        _barPaint,
+      );
     }
 
-    // Second ring going the opposite direction.
-    for (int i = 0; i < 5; i++) {
-      final angle = -(orbitValue * 1.5 * 2 * pi) + (i * 2 * pi / 5);
-      final orbitRadius = maxRadius * 0.65;
-      final dotX = center.dx + cos(angle) * orbitRadius;
-      final dotY = center.dy + sin(angle) * orbitRadius;
-
-      final trailAlpha = 0.15 + (0.35 * (i / 5));
-
-      final paint = Paint()
-        ..color = baseColor.withValues(alpha: trailAlpha)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-
-      canvas.drawCircle(Offset(dotX, dotY), 3, paint);
-    }
-
-    // Center pulse.
-    final corePulse = (sin(orbitValue * 2 * pi) + 1) / 2;
-    final corePaint = Paint()
-      ..color = baseColor.withValues(alpha: 0.3 + corePulse * 0.2)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16);
-    canvas.drawCircle(center, maxRadius * 0.15, corePaint);
-  }
-
-  void _paintSpeaking(Canvas canvas, Offset center, double maxRadius) {
-    final baseColor = isDark
-        ? const Color(0xFF34D399) // Emerald
-        : const Color(0xFF059669);
-
-    // Equalizer-style bars arranged in a circular pattern.
-    const barCount = 24;
-    for (int i = 0; i < barCount; i++) {
-      final angle = (i * 2 * pi / barCount) - pi / 2;
-      final phaseOffset = sin(waveValue * 2 * pi + i * 0.5);
-      final barHeight = maxRadius * 0.15 + maxRadius * 0.3 * ((phaseOffset + 1) / 2);
-
-      final innerRadius = maxRadius * 0.3;
-      final outerRadius = innerRadius + barHeight;
-
-      final startX = center.dx + cos(angle) * innerRadius;
-      final startY = center.dy + sin(angle) * innerRadius;
-      final endX = center.dx + cos(angle) * outerRadius;
-      final endY = center.dy + sin(angle) * outerRadius;
-
-      final barAlpha = 0.3 + 0.6 * ((phaseOffset + 1) / 2);
-
-      final paint = Paint()
-        ..color = baseColor.withValues(alpha: barAlpha)
-        ..strokeWidth = 3.5
-        ..strokeCap = StrokeCap.round;
-
-      canvas.drawLine(Offset(startX, startY), Offset(endX, endY), paint);
-    }
-
-    // Inner glow.
-    final corePaint = Paint()
-      ..color = baseColor.withValues(alpha: 0.4)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
-    canvas.drawCircle(center, maxRadius * 0.2, corePaint);
-
-    final solidCore = Paint()..color = baseColor.withValues(alpha: 0.8);
-    canvas.drawCircle(center, maxRadius * 0.1, solidCore);
-  }
-
-  void _paintIdle(Canvas canvas, Offset center, double maxRadius) {
-    final baseColor = isDark
-        ? Colors.white.withValues(alpha: 0.3)
-        : Colors.black.withValues(alpha: 0.15);
-
-    // Gentle breathing circle.
-    final radius = maxRadius * 0.2 + maxRadius * 0.05 * pulseValue;
-    final paint = Paint()
-      ..color = baseColor
+    final breath = 0.5 + 0.5 * math.sin(aiValue * 2 * math.pi);
+    _corePaint
+      ..color = color.withValues(alpha: 0.5 + 0.4 * breath)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-    canvas.drawCircle(center, radius, paint);
-
-    // Thin outer ring.
-    final ringPaint = Paint()
-      ..color = baseColor.withValues(alpha: 0.15 + pulseValue * 0.1)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    canvas.drawCircle(center, maxRadius * 0.5, ringPaint);
+    canvas.drawCircle(
+      Offset(size.width / 2, size.height / 2),
+      6 + 4 * breath,
+      _corePaint,
+    );
+    // Restore the original blur radius for the next caller.
+    _corePaint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
   }
 
-  void _paintError(Canvas canvas, Offset center, double maxRadius) {
-    final baseColor = const Color(0xFFEF4444);
+  void _paintHalo(
+    Canvas canvas,
+    Offset center,
+    Size size,
+    Color color,
+  ) {
+    _haloPaint.color = color.withValues(alpha: isDark ? 0.18 : 0.12);
+    canvas.drawCircle(center, size.width * 0.32, _haloPaint);
+  }
 
-    // Pulsing red glow.
-    final radius = maxRadius * 0.2 + maxRadius * 0.05 * pulseValue;
-    final paint = Paint()
-      ..color = baseColor.withValues(alpha: 0.4 + pulseValue * 0.2)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
-    canvas.drawCircle(center, radius, paint);
+  /// Two-sine envelope that mimics natural speech rhythm.
+  double _waveNoise(int barIndex, VoiceModePhase phase, double t) {
+    final phaseOffset = barIndex * 0.45;
+    switch (phase) {
+      case VoiceModePhase.listening:
+        return 0.5 + 0.5 * math.sin(t * 0.6 + phaseOffset);
+      case VoiceModePhase.speaking:
+        final a = math.sin(t * 1.3 + phaseOffset);
+        final b = math.sin(t * 2.7 + phaseOffset * 1.7);
+        return 0.5 + 0.35 * a + 0.25 * b;
+      case VoiceModePhase.idle:
+        return 0.5 + 0.5 * math.sin(t + phaseOffset);
+      case VoiceModePhase.error:
+      case VoiceModePhase.processing:
+        return 0.5;
+    }
+  }
 
-    final solidCore = Paint()..color = baseColor.withValues(alpha: 0.7);
-    canvas.drawCircle(center, maxRadius * 0.1, solidCore);
+  double _aiEnvelope() {
+    final t = aiValue;
+    final wave = 0.55 + 0.45 * math.sin(t * 2 * math.pi * 4);
+    final breath = 0.4 + 0.6 * math.sin(t * 2 * math.pi);
+    return (wave * breath).clamp(0.05, 1.0);
   }
 
   @override
-  bool shouldRepaint(covariant _VoicePainter oldDelegate) {
+  bool shouldRepaint(covariant _WaveformPainter oldDelegate) {
     return phase != oldDelegate.phase ||
-        pulseValue != oldDelegate.pulseValue ||
-        orbitValue != oldDelegate.orbitValue ||
-        waveValue != oldDelegate.waveValue ||
+        micLevel != oldDelegate.micLevel ||
+        aiValue != oldDelegate.aiValue ||
         isDark != oldDelegate.isDark;
   }
 }

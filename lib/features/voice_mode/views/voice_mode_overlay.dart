@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:hugeicons/hugeicons.dart';
 
@@ -10,14 +11,15 @@ import '../../../../core/providers/app_providers.dart';
 import '../../chat/providers/chat_notifier.dart';
 import '../../tts/views/tts_model_manager_screen.dart';
 import '../providers/voice_mode_provider.dart';
+import '../voice_mode_palette.dart';
 import 'components/voice_mode_controls.dart';
 import 'components/voice_transcript.dart';
 import 'components/voice_visualizer.dart';
 
 /// Full-screen voice-to-voice conversation overlay.
 ///
-/// Presents an animated visual indicator and transcript text across
-/// Listen → Process → Speak phases, looping hands-free when
+/// Presents a real-time waveform visualizer and auto-scrolling transcript
+/// across Listen → Process → Speak phases, looping hands-free when
 /// auto-listen is enabled.
 ///
 /// Usage:
@@ -33,7 +35,7 @@ class VoiceModeOverlay extends ConsumerStatefulWidget {
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.transparent,
-      transitionDuration: const Duration(milliseconds: 400),
+      transitionDuration: const Duration(milliseconds: 420),
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         final curve = CurvedAnimation(
           parent: animation,
@@ -42,7 +44,7 @@ class VoiceModeOverlay extends ConsumerStatefulWidget {
         return FadeTransition(
           opacity: curve,
           child: ScaleTransition(
-            scale: Tween<double>(begin: 0.92, end: 1.0).animate(curve),
+            scale: Tween<double>(begin: 0.94, end: 1.0).animate(curve),
             child: child,
           ),
         );
@@ -68,30 +70,24 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
   }
 
   Future<void> _endSession() async {
-    Haptics.vibrate(HapticsType.medium);
     await ref.read(voiceModeProvider.notifier).endSession();
     if (mounted) {
-      Navigator.of(context).pop();
+      context.pop();
     }
   }
 
   void _handleCenterAction() {
     final phase = ref.read(voiceModeProvider).phase;
-    Haptics.vibrate(HapticsType.light);
 
     switch (phase) {
       case VoiceModePhase.listening:
-        // Send current transcript.
         ref.read(voiceModeProvider.notifier).stopListeningAndSend();
       case VoiceModePhase.speaking:
-        // Interrupt and potentially re-listen.
         ref.read(voiceModeProvider.notifier).interrupt();
       case VoiceModePhase.idle:
       case VoiceModePhase.error:
-        // Start listening.
         ref.read(voiceModeProvider.notifier).startListening();
       case VoiceModePhase.processing:
-        // Can't interrupt processing — do nothing.
         break;
     }
   }
@@ -120,18 +116,18 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
           builder: (_) => const TtsModelManagerScreen(),
         );
       },
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(999),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(20),
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: isDark
-                ? Colors.white.withValues(alpha: 0.12)
-                : Colors.black.withValues(alpha: 0.1),
+                ? Colors.white.withValues(alpha: 0.10)
+                : Colors.black.withValues(alpha: 0.08),
           ),
         ),
         child: Row(
@@ -142,23 +138,24 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
               size: 13,
               color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
+                letterSpacing: 0.1,
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.85)
                     : Colors.black87,
               ),
             ),
-            const SizedBox(width: 3),
+            const SizedBox(width: 2),
             Icon(
-              Icons.chevron_right,
-              size: 14,
+              Icons.chevron_right_rounded,
+              size: 16,
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.4)
+                  ? Colors.white.withValues(alpha: 0.45)
                   : Colors.black.withValues(alpha: 0.4),
             ),
           ],
@@ -173,9 +170,9 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final bgColor = isDark
-        ? const Color(0xFF0A0A0A)
-        : const Color(0xFFFAFAFA);
+    final bgColor = isDark ? const Color(0xFF0B0B10) : const Color(0xFFF7F7FB);
+
+    final accent = VoiceModePalette.accentFor(state.phase, isDark: isDark);
 
     return PopScope(
       canPop: false,
@@ -184,87 +181,109 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
       },
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: Container(
-          decoration: BoxDecoration(
-            color: bgColor.withValues(alpha: 0.92),
-          ),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-            child: SafeArea(
+        body: Stack(
+          children: [
+            // RepaintBoundary so the gradient + blur aren't re-rasterised
+            // when the lower subtree (transcript/visualizer/controls)
+            // rebuilds on streamed tokens or mic-level changes.
+            Positioned.fill(
+              child: RepaintBoundary(
+                child: Stack(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 600),
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          center: const Alignment(0, -0.2),
+                          radius: 1.1,
+                          colors: [
+                            accent.withValues(alpha: isDark ? 0.18 : 0.22),
+                            bgColor,
+                          ],
+                          stops: const [0.0, 0.85],
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                        child: Container(
+                          color: bgColor.withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            SafeArea(
               child: Column(
                 children: [
-                  // Top bar — title, TTS chip, close button.
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
                     child: Row(
                       children: [
-                        // Title.
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: accent,
+                            boxShadow: [
+                              BoxShadow(
+                                color: accent.withValues(alpha: 0.6),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
                         Text(
                           'Voice Mode',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
                             color: isDark
-                                ? Colors.white.withValues(alpha: 0.7)
-                                : Colors.black.withValues(alpha: 0.6),
+                                ? Colors.white.withValues(alpha: 0.85)
+                                : Colors.black.withValues(alpha: 0.8),
                           ),
                         ),
                         const Spacer(),
-                        // TTS Model Chip.
                         _buildTtsChip(context, theme, isDark),
-                        const SizedBox(width: 8),
-                        // Close button.
-                        IconButton(
-                          onPressed: _endSession,
-                          icon: Icon(
-                            Icons.close,
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.6)
-                                : Colors.black.withValues(alpha: 0.5),
-                          ),
-                        ),
+                        const SizedBox(width: 4),
+                        _CloseButton(isDark: isDark, onPressed: _endSession),
                       ],
                     ),
                   ),
 
-                  // Expanding space.
                   const Spacer(flex: 2),
 
-                  // Animated visualizer.
                   GestureDetector(
                     onTap: _handleCenterAction,
                     child: VoiceVisualizer(
                       phase: state.phase,
-                      size: 220,
+                      micLevel: state.micLevel,
+                      size: 240,
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
-                  // Transcript / status text.
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: VoiceTranscript(
+                    child: _StreamingTranscript(
                       phase: state.phase,
                       transcript: state.transcript,
-                      response: state.phase == VoiceModePhase.processing
-                          ? (ref.watch(
-                                chatProvider.select(
-                                  (s) => s.streamingMessage?.content,
-                                ),
-                              ) ??
-                              state.response)
-                          : state.response,
+                      response: state.response,
                       error: state.error,
                     ),
                   ),
 
                   const Spacer(flex: 3),
 
-                  // Bottom controls.
                   VoiceModeControls(
                     phase: state.phase,
                     autoListen: state.autoListen,
@@ -274,16 +293,82 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
                       ref.read(voiceModeProvider.notifier).toggleMute();
                     },
                     onToggleAutoListen: () {
-                      Haptics.vibrate(HapticsType.light);
                       ref.read(voiceModeProvider.notifier).toggleAutoListen();
                     },
                     onTapCenter: _handleCenterAction,
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Subscribes to the chat streaming message and feeds its content into
+/// [VoiceTranscript] during the processing phase. Lives in its own
+/// Consumer so streamed tokens only rebuild this subtree, not the
+/// gradient/BackdropFilter above it.
+class _StreamingTranscript extends ConsumerWidget {
+  final VoiceModePhase phase;
+  final String transcript;
+  final String response;
+  final String? error;
+
+  const _StreamingTranscript({
+    required this.phase,
+    required this.transcript,
+    required this.response,
+    required this.error,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final streamed = phase == VoiceModePhase.processing
+        ? (ref.watch(chatProvider.select((s) => s.streamingMessage?.content)) ??
+              response)
+        : response;
+    return VoiceTranscript(
+      phase: phase,
+      transcript: transcript,
+      response: streamed,
+      error: error,
+    );
+  }
+}
+
+class _CloseButton extends StatelessWidget {
+  final bool isDark;
+  final VoidCallback onPressed;
+
+  const _CloseButton({required this.isDark, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onPressed,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.05),
+          ),
+          child: Icon(
+            Icons.close_rounded,
+            size: 18,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.7)
+                : Colors.black.withValues(alpha: 0.55),
           ),
         ),
       ),

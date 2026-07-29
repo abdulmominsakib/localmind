@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/logger/app_logger.dart';
+import '../../../services/voice_feedback_service.dart';
 import '../../chat/providers/chat_providers.dart';
 import '../../stt/providers/stt_providers.dart';
 import '../../tts/providers/tts_providers.dart';
@@ -34,6 +35,10 @@ class VoiceModeState {
   final bool isMuted;
   final String? error;
 
+  /// Live microphone input level in 0..1, set from the STT
+  /// `onSoundLevelChange` callback. 0 when not listening.
+  final double micLevel;
+
   const VoiceModeState({
     this.isActive = false,
     this.phase = VoiceModePhase.idle,
@@ -42,6 +47,7 @@ class VoiceModeState {
     this.autoListen = true,
     this.isMuted = false,
     this.error,
+    this.micLevel = 0,
   });
 
   VoiceModeState copyWith({
@@ -53,6 +59,7 @@ class VoiceModeState {
     bool? isMuted,
     String? error,
     bool clearError = false,
+    double? micLevel,
   }) {
     return VoiceModeState(
       isActive: isActive ?? this.isActive,
@@ -62,6 +69,7 @@ class VoiceModeState {
       autoListen: autoListen ?? this.autoListen,
       isMuted: isMuted ?? this.isMuted,
       error: clearError ? null : (error ?? this.error),
+      micLevel: micLevel ?? this.micLevel,
     );
   }
 }
@@ -77,6 +85,12 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
   /// listeners don't fire after the session has been torn down.
   bool _active = false;
   bool _isSendingTranscript = false;
+
+  /// Whether the "generating" feedback cue has already fired for the
+  /// current streamed response. Reset on session start; consumed once
+  /// in `_handleStreamingComplete` so haptic only fires on the first
+  /// chunk arrival, not on every token.
+  bool _generatingFired = false;
 
   @override
   VoiceModeState build() {
@@ -101,6 +115,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
           phase: VoiceModePhase.error,
           error: _mapSttError(next),
         );
+        ref.read(voiceFeedbackProvider).playDisconnected();
       },
     );
 
@@ -114,7 +129,9 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
   /// Begin the voice mode session. Called when the overlay opens.
   void startSession() {
     _active = true;
+    _generatingFired = false;
     state = const VoiceModeState(isActive: true, phase: VoiceModePhase.idle);
+    ref.read(voiceFeedbackProvider).playConnected();
     // Auto-start listening.
     startListening();
   }
@@ -129,8 +146,11 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
       phase: VoiceModePhase.listening,
       transcript: '',
       response: '',
+      micLevel: 0,
       clearError: true,
     );
+
+    ref.read(voiceFeedbackProvider).playListening();
 
     final stt = ref.read(sttProvider.notifier);
     await stt.startListening(
@@ -150,6 +170,13 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
         if (text.trim().isEmpty) return;
         _isSendingTranscript = true;
         await stopListeningAndSend();
+      },
+      onSoundLevelChange: (level) {
+        if (!_active) return;
+        // Skip the rebuild when the value hasn't materially changed
+        // (riverpod notifies listeners on every distinct copyWith).
+        if ((state.micLevel - level).abs() < 0.01) return;
+        state = state.copyWith(micLevel: level);
       },
     );
   }
@@ -171,7 +198,13 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
       return;
     }
 
-    state = state.copyWith(phase: VoiceModePhase.processing, response: '');
+    // Reset the mic level so the waveform visualizer doesn't keep
+    // dancing on a stale value once we leave the listening phase.
+    state = state.copyWith(
+      phase: VoiceModePhase.processing,
+      response: '',
+      micLevel: 0,
+    );
 
     // Send the transcript as a regular chat message. The streaming
     // listener will handle the transition to speaking phase.
@@ -197,6 +230,9 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
   Future<void> endSession() async {
     _active = false;
     _isSendingTranscript = false;
+    _generatingFired = false;
+
+    ref.read(voiceFeedbackProvider).playDisconnected();
 
     // Stop STT if still listening.
     try {
@@ -271,6 +307,13 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
       phase: VoiceModePhase.speaking,
       response: responseText,
     );
+
+    // Fire the generating cue only on the first chunk of this response —
+    // repeated taps during streaming feel glitchy.
+    if (!_generatingFired) {
+      _generatingFired = true;
+      ref.read(voiceFeedbackProvider).playGenerating();
+    }
 
     // Trigger TTS to speak the response. Pass message/conversation IDs so
     // TTS can cache and resume playback against the right message.
