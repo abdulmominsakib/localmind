@@ -67,13 +67,18 @@ class ThinkingModeChip extends ConsumerWidget {
         ? accent.withValues(alpha: 0.4)
         : (isDark ? AppColors.darkBorder : AppColors.lightBorder);
 
-    final hPad = compact ? 10.0 : 12.0;
-    final vPad = compact ? 6.0 : 8.0;
+    final hPad = compact ? 8.0 : 12.0;
+    final vPad = compact ? 3.0 : 8.0;
     final borderRadius = BorderRadius.circular(999);
 
-    final labelText = fullWidth
-        ? l10n.thinking_mode_title
-        : l10n.think_button_label;
+    final String labelText;
+    if (fullWidth) {
+      labelText = l10n.thinking_mode_title;
+    } else if (config.enabled) {
+      labelText = _effortShortLabel(l10n, config.effort);
+    } else {
+      labelText = 'Off';
+    }
 
     final toggleSide = InkWell(
       onTap: () {
@@ -81,34 +86,39 @@ class ThinkingModeChip extends ConsumerWidget {
       },
       borderRadius: borderRadius,
       child: Padding(
-        padding: EdgeInsetsDirectional.fromSTEB(hPad, vPad, hPad, vPad),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          hPad,
+          vPad,
+          (!fullWidth || !config.enabled) ? hPad : 4.0,
+          vPad,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             HugeIcon(
               icon: HugeIcons.strokeRoundedBrain,
-              size: compact ? 14 : 16,
+              size: compact ? 12 : 16,
               color: fgColor,
             ),
-            SizedBox(width: compact ? 4 : 6),
+            SizedBox(width: compact ? 3 : 6),
             Flexible(
               child: Text(
                 labelText,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: compact ? 12 : 13,
+                  fontSize: compact ? 11 : 13,
                   fontWeight: FontWeight.w600,
                   color: fgColor,
                 ),
               ),
             ),
-            if (config.enabled) ...[
-              SizedBox(width: compact ? 4 : 6),
+            if (fullWidth && config.enabled) ...[
+              SizedBox(width: compact ? 3 : 6),
               Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: compact ? 6 : 8,
-                  vertical: 2,
+                  horizontal: compact ? 5 : 8,
+                  vertical: compact ? 1 : 2,
                 ),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.18),
@@ -117,7 +127,7 @@ class ThinkingModeChip extends ConsumerWidget {
                 child: Text(
                   _effortShortLabel(l10n, config.effort),
                   style: TextStyle(
-                    fontSize: compact ? 10 : 11,
+                    fontSize: compact ? 9 : 11,
                     fontWeight: FontWeight.w700,
                     color: enabledFg,
                   ),
@@ -165,13 +175,18 @@ class ThinkingModeChip extends ConsumerWidget {
             )
             .toList(),
         child: Padding(
-          padding: EdgeInsetsDirectional.fromSTEB(2, vPad, hPad, vPad),
+          padding: EdgeInsetsDirectional.fromSTEB(
+            0,
+            vPad,
+            compact ? 6.0 : hPad,
+            vPad,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               HugeIcon(
                 icon: HugeIcons.strokeRoundedArrowDown01,
-                size: compact ? 12 : 14,
+                size: compact ? 10 : 14,
                 color: fgColor.withValues(alpha: 0.7),
               ),
             ],

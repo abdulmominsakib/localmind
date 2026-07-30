@@ -429,47 +429,58 @@ class _DownloadedActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLoaded = engineState.loadedModelId == model.id;
 
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        HugeIcon(icon: 
-          isLoaded ? HugeIcons.strokeRoundedCheckmarkCircle01 : HugeIcons.strokeRoundedCheckmarkCircle01,
-          color: isLoaded ? Colors.green : Colors.grey,
-          size: 18,
+        Row(
+          children: [
+            HugeIcon(icon: 
+              isLoaded ? HugeIcons.strokeRoundedCheckmarkCircle01 : HugeIcons.strokeRoundedCheckmarkCircle01,
+              color: isLoaded ? Colors.green : Colors.grey,
+              size: 18,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              isLoaded ? l10n.loaded_status : l10n.downloaded,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isLoaded ? Colors.green : Colors.grey,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            if (isLoaded)
+              ShadButton.outline(
+                size: ShadButtonSize.sm,
+                onPressed: () =>
+                    ref.read(onDeviceEngineProvider.notifier).unloadModel(),
+                child: Text(l10n.unload),
+              )
+            else if (!isLoading)
+              ShadButton.outline(
+                size: ShadButtonSize.sm,
+                onPressed: () => _loadModel(context, ref),
+                child: Text(l10n.load),
+              ),
+            const SizedBox(width: 8),
+            ShadButton.outline(
+              size: ShadButtonSize.sm,
+              onPressed: () => _deleteModel(context, ref),
+              child: Text(l10n.delete),
+            ),
+          ],
         ),
-        const SizedBox(width: 4),
-        Text(
-          isLoaded ? l10n.loaded_status : l10n.downloaded,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: isLoaded ? Colors.green : Colors.grey,
-            fontWeight: FontWeight.w600,
+        if (isLoading) ...[
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              minHeight: 3,
+              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
+            ),
           ),
-        ),
-        const Spacer(),
-        if (isLoading)
-          const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-        else if (isLoaded)
-          ShadButton.outline(
-            size: ShadButtonSize.sm,
-            onPressed: () =>
-                ref.read(onDeviceEngineProvider.notifier).unloadModel(),
-            child: Text(l10n.unload),
-          )
-        else
-          ShadButton.outline(
-            size: ShadButtonSize.sm,
-            onPressed: () => _loadModel(context, ref),
-            child: Text(l10n.load),
-          ),
-        const SizedBox(width: 8),
-        ShadButton.outline(
-          size: ShadButtonSize.sm,
-          onPressed: () => _deleteModel(context, ref),
-          child: Text(l10n.delete),
-        ),
+        ],
       ],
     );
   }

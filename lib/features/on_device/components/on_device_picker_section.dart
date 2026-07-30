@@ -19,6 +19,7 @@ import 'package:localmind/features/on_device/providers/foreground_download_provi
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/routes/app_routes.dart';
 import 'package:localmind/features/models/components/metadata_chip.dart';
+import 'package:localmind/features/models/components/inline_thinking_selector.dart';
 
 class OnDevicePickerSection extends ConsumerWidget {
   const OnDevicePickerSection({
@@ -230,256 +231,281 @@ class _OnDeviceModelTile extends ConsumerWidget {
               ? Border.all(color: accent.withValues(alpha: 0.3))
               : null,
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          model.name,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.w500,
-                            color: isDownloaded
-                                ? (isDark ? Colors.white : Colors.black)
-                                : (isDark
-                                      ? AppColors.darkMutedText
-                                      : AppColors.lightMutedText),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              model.name,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color: isDownloaded
+                                    ? (isDark ? Colors.white : Colors.black)
+                                    : (isDark
+                                          ? AppColors.darkMutedText
+                                          : AppColors.lightMutedText),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                          if (model.isRecommended)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                l10n.recommended,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: accent,
+                                ),
+                              ),
+                            ),
+                          if (model.isImported)
+                            Container(
+                              margin: const EdgeInsets.only(left: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                model.importedSourceLabel ?? 'Imported',
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                      if (model.isRecommended)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: accent.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            l10n.recommended,
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: accent,
-                            ),
+                      if (!Platform.isIOS &&
+                          deviceMemory != null &&
+                          deviceMemory!.isOversized(model.minRamMb))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Row(
+                            children: [
+                              const HugeIcon(icon: 
+                                HugeIcons.strokeRoundedAlertCircle,
+                                color: Colors.orange,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                l10n.may_be_large,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      if (model.isImported)
-                        Container(
-                          margin: const EdgeInsets.only(left: 6),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                      if (isDownloading || isPaused)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              LinearProgressIndicator(
+                                value: downloadProgress?.progress ?? 0.0,
+                                backgroundColor: isDark
+                                    ? AppColors.darkBorder
+                                    : AppColors.lightBorder,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isPaused
+                                    ? l10n.paused_progress(
+                                        ((downloadProgress?.progress ?? 0) * 100)
+                                            .toStringAsFixed(0),
+                                      )
+                                    : '${l10n.downloading_status} ${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(0)}%',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isDark
+                                      ? AppColors.darkMutedText
+                                      : AppColors.lightMutedText,
+                                ),
+                              ),
+                            ],
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
+                        ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          MetadataChip(
+                            label: model.fileSizeFormatted,
+                            isDark: isDark,
                           ),
-                          child: Text(
-                            model.importedSourceLabel ?? 'Imported',
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
+                          if (model.format == OnDeviceModelFormat.gguf)
+                            MetadataChip(
+                              label: l10n.gguf_format_label,
+                              isDark: isDark,
                             ),
-                          ),
+                          if (model.runtime == OnDeviceModelRuntime.llamaCpp)
+                            MetadataChip(label: 'llama.cpp', isDark: isDark),
+                          if (!model.isImported)
+                            MetadataChip(label: model.license, isDark: isDark),
+                          if (!model.isImported)
+                            MetadataChip(
+                              label: model.parameterLabel,
+                              isDark: isDark,
+                            ),
+                        ],
+                      ),
+                      if (model.supportsThinking)
+                        InlineThinkingSelector(
+                          isDark: isDark,
+                          isSelected: isSelected,
+                          onSelectModel: () {
+                            if (isLoaded) {
+                              _selectModel(context, ref);
+                            } else if (isDownloaded &&
+                                !isCurrentlyLoading &&
+                                !isDownloading) {
+                              _loadModel(context, ref);
+                            }
+                          },
                         ),
                     ],
                   ),
-                  if (!Platform.isIOS &&
-                      deviceMemory != null &&
-                      deviceMemory!.isOversized(model.minRamMb))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Row(
-                        children: [
-                          const HugeIcon(icon: 
-                            HugeIcons.strokeRoundedAlertCircle,
-                            color: Colors.orange,
-                            size: 12,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            l10n.may_be_large,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.orange,
-                              fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(width: 8),
+                if (isLoaded) ...[
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: AppColors.darkAccent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _IconButton(
+                    icon: HugeIcon(icon: 
+                      HugeIcons.strokeRoundedPower,
+                      size: 18,
+                      color: Colors.red[400],
+                    ),
+                    tooltip: l10n.unload,
+                    onPressed: () => _unloadModel(context, ref),
+                  ),
+                ] else if (isDownloaded && !isCurrentlyLoading) ...[
+                  _IconButton(
+                    icon: HugeIcon(icon: HugeIcons.strokeRoundedPlay, size: 20, color: accent),
+                    tooltip: l10n.load,
+                    onPressed: () => _loadModel(context, ref),
+                  ),
+                  const SizedBox(width: 4),
+                  _IconButton(
+                    icon: HugeIcon(icon: 
+                      HugeIcons.strokeRoundedDelete01,
+                      size: 18,
+                      color: isDark
+                          ? AppColors.darkMutedText
+                          : AppColors.lightMutedText,
+                    ),
+                    tooltip: l10n.delete,
+                    onPressed: () => _deleteModel(context, ref),
+                  ),
+                ] else if (isDownloading) ...[
+                  _IconButton(
+                    icon: HugeIcon(icon: 
+                      HugeIcons.strokeRoundedCancel01,
+                      size: 16,
+                      color: isDark
+                          ? AppColors.darkMutedText
+                          : AppColors.lightMutedText,
+                    ),
+                    tooltip: l10n.cancel,
+                    onPressed: () => ref
+                        .read(foregroundDownloadNotifierProvider.notifier)
+                        .cancelDownload(model.id),
+                  ),
+                ] else if (!isCurrentlyLoading) ...[
+                  _IconButton(
+                    icon: HugeIcon(icon: 
+                      HugeIcons.strokeRoundedCloudDownload,
+                      size: 18,
+                      color: isDark
+                          ? AppColors.darkMutedText
+                          : AppColors.lightMutedText,
+                    ),
+                    tooltip: l10n.download,
+                    onPressed: () async {
+                      final result = await ref
+                          .read(foregroundDownloadNotifierProvider.notifier)
+                          .startDownload(model.id);
+                      if (result == 'missing_huggingface_token' &&
+                          context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(l10n.model_missing_huggingface_token),
+                            duration: const Duration(seconds: 6),
+                            action: SnackBarAction(
+                              label: l10n.settings_title,
+                              onPressed: () => context.push(AppRoutes.settings),
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    l10n.not_downloaded,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark
+                          ? AppColors.darkMutedText
+                          : AppColors.lightMutedText,
                     ),
-                  if (isDownloading || isPaused)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          LinearProgressIndicator(
-                            value: downloadProgress?.progress ?? 0.0,
-                            backgroundColor: isDark
-                                ? AppColors.darkBorder
-                                : AppColors.lightBorder,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            isPaused
-                                ? l10n.paused_progress(
-                                    ((downloadProgress?.progress ?? 0) * 100)
-                                        .toStringAsFixed(0),
-                                  )
-                                : '${l10n.downloading_status} ${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(0)}%',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: isDark
-                                  ? AppColors.darkMutedText
-                                  : AppColors.lightMutedText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: [
-                      MetadataChip(
-                        label: model.fileSizeFormatted,
-                        isDark: isDark,
-                      ),
-                      if (model.format == OnDeviceModelFormat.gguf)
-                        MetadataChip(
-                          label: l10n.gguf_format_label,
-                          isDark: isDark,
-                        ),
-                      if (model.runtime == OnDeviceModelRuntime.llamaCpp)
-                        MetadataChip(label: 'llama.cpp', isDark: isDark),
-                      if (!model.isImported)
-                        MetadataChip(label: model.license, isDark: isDark),
-                      if (!model.isImported)
-                        MetadataChip(
-                          label: model.parameterLabel,
-                          isDark: isDark,
-                        ),
-                    ],
                   ),
                 ],
-              ),
+                if (isDownloaded && isSelected && isLoaded) ...[
+                  const SizedBox(width: 4),
+                  HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01, color: accent, size: 22),
+                ],
+              ],
             ),
-            const SizedBox(width: 8),
             if (isCurrentlyLoading) ...[
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ] else if (isLoaded) ...[
-              Container(
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: AppColors.darkAccent,
-                  shape: BoxShape.circle,
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  minHeight: 3,
+                  backgroundColor: accent.withValues(alpha: 0.15),
+                  valueColor: AlwaysStoppedAnimation<Color>(accent),
                 ),
               ),
-              const SizedBox(width: 8),
-              _IconButton(
-                icon: HugeIcon(icon: 
-                  HugeIcons.strokeRoundedPower,
-                  size: 18,
-                  color: Colors.red[400],
-                ),
-                tooltip: l10n.unload,
-                onPressed: () => _unloadModel(context, ref),
-              ),
-            ] else if (isDownloaded) ...[
-              _IconButton(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedPlay, size: 20, color: accent),
-                tooltip: l10n.load,
-                onPressed: () => _loadModel(context, ref),
-              ),
-              const SizedBox(width: 4),
-              _IconButton(
-                icon: HugeIcon(icon: 
-                  HugeIcons.strokeRoundedDelete01,
-                  size: 18,
-                  color: isDark
-                      ? AppColors.darkMutedText
-                      : AppColors.lightMutedText,
-                ),
-                tooltip: l10n.delete,
-                onPressed: () => _deleteModel(context, ref),
-              ),
-            ] else if (isDownloading) ...[
-              _IconButton(
-                icon: HugeIcon(icon: 
-                  HugeIcons.strokeRoundedCancel01,
-                  size: 16,
-                  color: isDark
-                      ? AppColors.darkMutedText
-                      : AppColors.lightMutedText,
-                ),
-                tooltip: l10n.cancel,
-                onPressed: () => ref
-                    .read(foregroundDownloadNotifierProvider.notifier)
-                    .cancelDownload(model.id),
-              ),
-            ] else ...[
-              _IconButton(
-                icon: HugeIcon(icon: 
-                  HugeIcons.strokeRoundedCloudDownload,
-                  size: 18,
-                  color: isDark
-                      ? AppColors.darkMutedText
-                      : AppColors.lightMutedText,
-                ),
-                tooltip: l10n.download,
-                onPressed: () async {
-                  final result = await ref
-                      .read(foregroundDownloadNotifierProvider.notifier)
-                      .startDownload(model.id);
-                  if (result == 'missing_huggingface_token' &&
-                      context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.model_missing_huggingface_token),
-                        duration: const Duration(seconds: 6),
-                        action: SnackBarAction(
-                          label: l10n.settings_title,
-                          onPressed: () => context.push(AppRoutes.settings),
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(width: 4),
-              Text(
-                l10n.not_downloaded,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isDark
-                      ? AppColors.darkMutedText
-                      : AppColors.lightMutedText,
-                ),
-              ),
-            ],
-            if (isDownloaded && isSelected && isLoaded) ...[
-              const SizedBox(width: 4),
-              HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01, color: accent, size: 22),
             ],
           ],
         ),

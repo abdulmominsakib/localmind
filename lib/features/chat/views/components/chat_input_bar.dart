@@ -1137,53 +1137,63 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
             // the model name gets.
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildAddButton(isConnected, theme),
-
-                const SizedBox(width: 8),
-
-                Flexible(
-                  child: ModelChip(
-                    model: selectedModel,
-                    enabled: isConnected && widget.enabled,
-                    onTap: () {
-                      Haptics.vibrate(HapticsType.light);
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        useSafeArea: true,
-                        builder: (_) => const ModelPickerSheet(),
-                      );
-                    },
+                Expanded(
+                  child: Row(
+                    children: [
+                      _buildAddButton(isConnected, theme),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            ModelChip(
+                              model: selectedModel,
+                              enabled: isConnected && widget.enabled,
+                              isCompactFont:
+                                  selectedModel?.supportsReasoning == true,
+                              onTap: () {
+                                Haptics.vibrate(HapticsType.light);
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  useSafeArea: true,
+                                  builder: (_) => const ModelPickerSheet(),
+                                );
+                              },
+                            ),
+                            if (selectedModel?.supportsReasoning == true)
+                              ThinkingModeChip(
+                                model: selectedModel,
+                                isDark: isDark,
+                                compact: true,
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (showRoleSwapButton) ...[
+                        const SizedBox(width: 4),
+                        _buildRoleSwapButton(theme),
+                      ],
+                    ],
                   ),
                 ),
-
-                if (selectedModel?.supportsReasoning == true) ...[
-                  const SizedBox(width: 6),
-                  ThinkingModeChip(
-                    model: selectedModel,
-                    isDark: isDark,
-                    compact: true,
-                  ),
-                ],
-                if (showRoleSwapButton) ...[
-                  const SizedBox(width: 4),
-                  _buildRoleSwapButton(theme),
-                ],
-
-                // Fixed gap so we never collapse the right-side cluster
-                // against the chips, even when the model name is short.
-                const SizedBox(width: 8),
-
-                _buildMicButton(isListening, theme),
-
                 const SizedBox(width: 4),
 
-                _buildVoiceModeButton(theme),
+                Row(
+                  children: [
+                    _buildMicButton(isListening, theme),
 
-                const SizedBox(width: 8),
+                    const SizedBox(width: 6),
 
-                _buildActionButton(canSend, theme),
+                    _buildVoiceModeButton(theme),
+
+                    _buildActionButton(canSend, theme),
+                  ],
+                ),
               ],
             ),
           ],

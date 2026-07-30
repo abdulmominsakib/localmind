@@ -17,11 +17,13 @@ class ModelChip extends StatelessWidget {
     required this.model,
     required this.onTap,
     required this.enabled,
+    this.isCompactFont = false,
   });
 
   final ModelInfo? model;
   final VoidCallback onTap;
   final bool enabled;
+  final bool isCompactFont;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +46,12 @@ class ModelChip extends StatelessWidget {
 
     final label = hasModel ? model!.displayName : l10n.select_model_prompt;
 
+    final fontSize = isCompactFont ? 11.0 : 13.0;
+    final iconSize = isCompactFont ? 10.0 : 12.0;
+    final padding = isCompactFont
+        ? const EdgeInsetsDirectional.fromSTEB(8, 3, 6, 3)
+        : const EdgeInsetsDirectional.fromSTEB(12, 6, 10, 6);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -54,7 +62,7 @@ class ModelChip extends StatelessWidget {
           // lets longer model names be readable while Flexible in the parent
           // row still protects the fixed-size action buttons on the right.
           constraints: const BoxConstraints(minWidth: 0, maxWidth: 280),
-          padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 10, 6),
+          padding: padding,
           decoration: BoxDecoration(
             color: bg,
             border: Border.all(color: borderColor),
@@ -69,16 +77,16 @@ class ModelChip extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: fontSize,
                     fontWeight: FontWeight.w600,
                     color: fg,
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               HugeIcon(
                 icon: HugeIcons.strokeRoundedArrowDown01,
-                size: 12,
+                size: iconSize,
                 color: fg.withValues(alpha: 0.7),
               ),
             ],

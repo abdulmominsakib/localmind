@@ -21,7 +21,6 @@ import '../components/model_search_field.dart';
 import '../components/model_sort_control.dart';
 import '../components/no_server_state.dart';
 import '../components/thinking_indicator.dart';
-import '../components/thinking_mode_chip.dart';
 import '../providers/model_picker_providers.dart';
 
 class ModelPickerSheet extends ConsumerStatefulWidget {
@@ -159,17 +158,6 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
                       ),
                     ),
                   ),
-                // Thinking-mode selector surfaces only when the currently
-                // selected model can actually reason. Renders nothing
-                // otherwise so it never adds dead space.
-                if (selectedModel?.supportsReasoning == true) ...[
-                  const SizedBox(height: 12),
-                  ThinkingModeChip(
-                    model: selectedModel,
-                    isDark: isDark,
-                    fullWidth: true,
-                  ),
-                ],
                 const SizedBox(height: 12),
                 Row(
                   children: [

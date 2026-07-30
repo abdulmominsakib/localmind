@@ -188,31 +188,12 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
             // rebuilds on streamed tokens or mic-level changes.
             Positioned.fill(
               child: RepaintBoundary(
-                child: Stack(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 600),
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          center: const Alignment(0, -0.2),
-                          radius: 1.1,
-                          colors: [
-                            accent.withValues(alpha: isDark ? 0.18 : 0.22),
-                            bgColor,
-                          ],
-                          stops: const [0.0, 0.85],
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-                        child: Container(
-                          color: bgColor.withValues(alpha: 0.55),
-                        ),
-                      ),
-                    ),
-                  ],
+                child: _PulsingBackgroundGlow(
+                  phase: state.phase,
+                  micLevel: state.micLevel,
+                  isDark: isDark,
+                  accent: accent,
+                  bgColor: bgColor,
                 ),
               ),
             ),
@@ -375,3 +356,99 @@ class _CloseButton extends StatelessWidget {
     );
   }
 }
+
+class _PulsingBackgroundGlow extends StatefulWidget {
+  final VoiceModePhase phase;
+  final double micLevel;
+  final bool isDark;
+  final Color accent;
+  final Color bgColor;
+
+  const _PulsingBackgroundGlow({
+    required this.phase,
+    required this.micLevel,
+    required this.isDark,
+    required this.accent,
+    required this.bgColor,
+  });
+
+  @override
+  State<_PulsingBackgroundGlow> createState() => _PulsingBackgroundGlowState();
+}
+
+class _PulsingBackgroundGlowState extends State<_PulsingBackgroundGlow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ticker,
+      builder: (context, _) {
+        final breath = _ticker.value;
+        final double pulse;
+
+        switch (widget.phase) {
+          case VoiceModePhase.listening:
+            pulse = 0.15 + 0.5 * widget.micLevel.clamp(0.0, 1.0) + 0.1 * breath;
+          case VoiceModePhase.speaking:
+            pulse = 0.20 + 0.25 * breath;
+          case VoiceModePhase.error:
+            pulse = 0.18 + 0.22 * breath;
+          case VoiceModePhase.processing:
+            pulse = 0.16 + 0.18 * breath;
+          case VoiceModePhase.idle:
+            pulse = 0.06 + 0.06 * breath;
+        }
+
+        final baseAlpha = widget.isDark ? 0.12 : 0.16;
+        final alpha = (baseAlpha + pulse * 0.16).clamp(0.05, 0.40);
+        final radius = 0.95 + pulse * 0.35;
+
+        return Stack(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 450),
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.2),
+                  radius: radius,
+                  colors: [
+                    widget.accent.withValues(alpha: alpha),
+                    widget.accent.withValues(alpha: alpha * 0.35),
+                    widget.bgColor,
+                  ],
+                  stops: const [0.0, 0.55, 0.95],
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+                child: Container(
+                  color: widget.bgColor.withValues(alpha: 0.50),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
