@@ -118,6 +118,10 @@ flutter:
     - assets/google_fonts/
     - assets/images/
     - assets/sounds/
+
+  shaders:
+    - assets/shaders/orb.frag
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

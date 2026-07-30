@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
@@ -18,14 +19,8 @@ import 'components/voice_visualizer.dart';
 
 /// Full-screen voice-to-voice conversation overlay.
 ///
-/// Presents a real-time waveform visualizer and auto-scrolling transcript
-/// across Listen → Process → Speak phases, looping hands-free when
-/// auto-listen is enabled.
-///
-/// Usage:
-/// ```dart
-/// VoiceModeOverlay.show(context);
-/// ```
+/// Features a real-time glowing 3D crystal visualizer and auto-scrolling transcript
+/// set against a sleek dark obsidian atmospheric backdrop in both light and dark modes.
 class VoiceModeOverlay extends ConsumerStatefulWidget {
   const VoiceModeOverlay({super.key});
 
@@ -92,7 +87,7 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
     }
   }
 
-  Widget _buildTtsChip(BuildContext context, ThemeData theme, bool isDark) {
+  Widget _buildTtsChip(BuildContext context, ThemeData theme) {
     final settings = ref.watch(settingsProvider);
     final String label;
 
@@ -120,14 +115,10 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.black.withValues(alpha: 0.05),
+          color: Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.10)
-                : Colors.black.withValues(alpha: 0.08),
+            color: Colors.white.withValues(alpha: 0.14),
           ),
         ),
         child: Row(
@@ -136,7 +127,7 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
             HugeIcon(
               icon: HugeIcons.strokeRoundedVolumeHigh,
               size: 13,
-              color: theme.colorScheme.primary,
+              color: Colors.white.withValues(alpha: 0.90),
             ),
             const SizedBox(width: 6),
             Text(
@@ -145,18 +136,14 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.1,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.85)
-                    : Colors.black87,
+                color: Colors.white.withValues(alpha: 0.90),
               ),
             ),
             const SizedBox(width: 2),
             Icon(
               Icons.chevron_right_rounded,
               size: 16,
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.45)
-                  : Colors.black.withValues(alpha: 0.4),
+              color: Colors.white.withValues(alpha: 0.50),
             ),
           ],
         ),
@@ -168,122 +155,133 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
   Widget build(BuildContext context) {
     final state = ref.watch(voiceModeProvider);
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF0B0B10) : const Color(0xFFF7F7FB);
-
-    final accent = VoiceModePalette.accentFor(state.phase, isDark: isDark);
+    // Voice mode presents a dark obsidian atmospheric theme in both light and dark modes
+    const bgColor = Color(0xFF090A10);
+    final accent = VoiceModePalette.accentFor(state.phase, isDark: true);
+    final secondary = VoiceModePalette.secondaryFor(state.phase, isDark: true);
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _endSession();
       },
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Stack(
-          children: [
-            // RepaintBoundary so the gradient + blur aren't re-rasterised
-            // when the lower subtree (transcript/visualizer/controls)
-            // rebuilds on streamed tokens or mic-level changes.
-            Positioned.fill(
-              child: RepaintBoundary(
-                child: _PulsingBackgroundGlow(
-                  phase: state.phase,
-                  micLevel: state.micLevel,
-                  isDark: isDark,
-                  accent: accent,
-                  bgColor: bgColor,
-                ),
-              ),
-            ),
-
-            SafeArea(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: accent,
-                            boxShadow: [
-                              BoxShadow(
-                                color: accent.withValues(alpha: 0.6),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Voice Mode',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.2,
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.85)
-                                : Colors.black.withValues(alpha: 0.8),
-                          ),
-                        ),
-                        const Spacer(),
-                        _buildTtsChip(context, theme, isDark),
-                        const SizedBox(width: 4),
-                        _CloseButton(isDark: isDark, onPressed: _endSession),
-                      ],
-                    ),
-                  ),
-
-                  const Spacer(flex: 2),
-
-                  GestureDetector(
-                    onTap: _handleCenterAction,
-                    child: VoiceVisualizer(
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light, // White icons on Android
+          statusBarBrightness: Brightness.dark,       // White text/icons on iOS
+          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarIconBrightness: Brightness.light,
+        ),
+        child: Theme(
+          data: theme.copyWith(
+            brightness: Brightness.dark,
+            colorScheme: const ColorScheme.dark(),
+          ),
+          child: Scaffold(
+            backgroundColor: bgColor,
+            body: Stack(
+              children: [
+                // Dynamic pulsing ambient background glow
+                Positioned.fill(
+                  child: RepaintBoundary(
+                    child: _PulsingBackgroundGlow(
                       phase: state.phase,
                       micLevel: state.micLevel,
-                      size: 240,
+                      accent: accent,
+                      secondary: secondary,
+                      bgColor: bgColor,
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 28),
+                SafeArea(
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: accent,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: accent.withValues(alpha: 0.7),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Voice Mode',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.2,
+                                color: Colors.white.withValues(alpha: 0.90),
+                              ),
+                            ),
+                            const Spacer(),
+                            _buildTtsChip(context, theme),
+                            const SizedBox(width: 4),
+                            _CloseButton(onPressed: _endSession),
+                          ],
+                        ),
+                      ),
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: _StreamingTranscript(
-                      phase: state.phase,
-                      transcript: state.transcript,
-                      response: state.response,
-                      error: state.error,
-                    ),
+                      const Spacer(flex: 2),
+
+                      GestureDetector(
+                        onTap: _handleCenterAction,
+                        child: VoiceVisualizer(
+                          phase: state.phase,
+                          micLevel: state.micLevel,
+                          size: 240,
+                        ),
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: _StreamingTranscript(
+                          phase: state.phase,
+                          transcript: state.transcript,
+                          response: state.response,
+                          error: state.error,
+                        ),
+                      ),
+
+                      const Spacer(flex: 3),
+
+                      VoiceModeControls(
+                        phase: state.phase,
+                        autoListen: state.autoListen,
+                        isMuted: state.isMuted,
+                        onEnd: _endSession,
+                        onToggleMute: () {
+                          ref.read(voiceModeProvider.notifier).toggleMute();
+                        },
+                        onToggleAutoListen: () {
+                          ref.read(voiceModeProvider.notifier).toggleAutoListen();
+                        },
+                        onTapCenter: _handleCenterAction,
+                      ),
+
+                      const SizedBox(height: 18),
+                    ],
                   ),
-
-                  const Spacer(flex: 3),
-
-                  VoiceModeControls(
-                    phase: state.phase,
-                    autoListen: state.autoListen,
-                    isMuted: state.isMuted,
-                    onEnd: _endSession,
-                    onToggleMute: () {
-                      ref.read(voiceModeProvider.notifier).toggleMute();
-                    },
-                    onToggleAutoListen: () {
-                      ref.read(voiceModeProvider.notifier).toggleAutoListen();
-                    },
-                    onTapCenter: _handleCenterAction,
-                  ),
-
-                  const SizedBox(height: 18),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -291,9 +289,7 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
 }
 
 /// Subscribes to the chat streaming message and feeds its content into
-/// [VoiceTranscript] during the processing phase. Lives in its own
-/// Consumer so streamed tokens only rebuild this subtree, not the
-/// gradient/BackdropFilter above it.
+/// [VoiceTranscript] during the processing phase.
 class _StreamingTranscript extends ConsumerWidget {
   final VoiceModePhase phase;
   final String transcript;
@@ -323,10 +319,9 @@ class _StreamingTranscript extends ConsumerWidget {
 }
 
 class _CloseButton extends StatelessWidget {
-  final bool isDark;
   final VoidCallback onPressed;
 
-  const _CloseButton({required this.isDark, required this.onPressed});
+  const _CloseButton({required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -340,16 +335,12 @@ class _CloseButton extends StatelessWidget {
           height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : Colors.black.withValues(alpha: 0.05),
+            color: Colors.white.withValues(alpha: 0.08),
           ),
           child: Icon(
             Icons.close_rounded,
             size: 18,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.7)
-                : Colors.black.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.80),
           ),
         ),
       ),
@@ -360,15 +351,15 @@ class _CloseButton extends StatelessWidget {
 class _PulsingBackgroundGlow extends StatefulWidget {
   final VoiceModePhase phase;
   final double micLevel;
-  final bool isDark;
   final Color accent;
+  final Color secondary;
   final Color bgColor;
 
   const _PulsingBackgroundGlow({
     required this.phase,
     required this.micLevel,
-    required this.isDark,
     required this.accent,
+    required this.secondary,
     required this.bgColor,
   });
 
@@ -385,7 +376,7 @@ class _PulsingBackgroundGlowState extends State<_PulsingBackgroundGlow>
     super.initState();
     _ticker = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
+      duration: const Duration(milliseconds: 3200),
     )..repeat(reverse: true);
   }
 
@@ -405,43 +396,49 @@ class _PulsingBackgroundGlowState extends State<_PulsingBackgroundGlow>
 
         switch (widget.phase) {
           case VoiceModePhase.listening:
-            pulse = 0.15 + 0.5 * widget.micLevel.clamp(0.0, 1.0) + 0.1 * breath;
+            pulse = 0.18 + 0.45 * widget.micLevel.clamp(0.0, 1.0) + 0.12 * breath;
           case VoiceModePhase.speaking:
-            pulse = 0.20 + 0.25 * breath;
+            pulse = 0.22 + 0.28 * breath;
           case VoiceModePhase.error:
-            pulse = 0.18 + 0.22 * breath;
+            pulse = 0.18 + 0.20 * breath;
           case VoiceModePhase.processing:
             pulse = 0.16 + 0.18 * breath;
           case VoiceModePhase.idle:
             pulse = 0.06 + 0.06 * breath;
         }
 
-        final baseAlpha = widget.isDark ? 0.12 : 0.16;
-        final alpha = (baseAlpha + pulse * 0.16).clamp(0.05, 0.40);
-        final radius = 0.95 + pulse * 0.35;
+        final alpha = (0.16 + pulse * 0.18).clamp(0.08, 0.45);
+        final radius = 0.85 + pulse * 0.40;
 
         return Stack(
           children: [
+            // Deep obsidian background base
+            Container(color: widget.bgColor),
+
+            // Top ambient gradient light pool
             AnimatedContainer(
               duration: const Duration(milliseconds: 450),
               decoration: BoxDecoration(
                 gradient: RadialGradient(
-                  center: const Alignment(0, -0.2),
+                  center: const Alignment(0, -0.25),
                   radius: radius,
                   colors: [
-                    widget.accent.withValues(alpha: alpha),
-                    widget.accent.withValues(alpha: alpha * 0.35),
+                    widget.accent.withValues(alpha: alpha * 1.1),
+                    widget.secondary.withValues(alpha: alpha * 0.45),
+                    widget.bgColor.withValues(alpha: 0.85),
                     widget.bgColor,
                   ],
-                  stops: const [0.0, 0.55, 0.95],
+                  stops: const [0.0, 0.45, 0.78, 1.0],
                 ),
               ),
             ),
+
+            // Soft blur overlay for smooth diffusion
             Positioned.fill(
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+                filter: ImageFilter.blur(sigmaX: 55, sigmaY: 55),
                 child: Container(
-                  color: widget.bgColor.withValues(alpha: 0.50),
+                  color: Colors.black.withValues(alpha: 0.15),
                 ),
               ),
             ),
@@ -451,4 +448,3 @@ class _PulsingBackgroundGlowState extends State<_PulsingBackgroundGlow>
     );
   }
 }
-

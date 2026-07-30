@@ -6,11 +6,15 @@ import 'package:flutter/material.dart';
 import '../../providers/voice_mode_provider.dart';
 import '../../voice_mode_palette.dart';
 
-/// Real-time glowing orb visualizer with organic wave rings.
+/// Premium 3D glowing orb visualizer with hardware-accelerated GLSL shader
+/// support and high-performance multi-layer CustomPainter fallback.
 ///
-/// Displays a 3D gradient spherical orb surrounded by fluid, morphing wave
-/// layers that pulse and rotate in response to speech (listening/speaking).
-/// Features frame-by-frame smoothing to prevent flickering during listening.
+/// Features:
+/// - 4-tier layered glow architecture with additive (`BlendMode.plus`) wave intersections.
+/// - Fluid cubic Bezier wave morphing driven by asynchronous harmonic rotation.
+/// - Exponential moving average audio reactivity smoothing for jitter-free response.
+/// - Smooth phase state transition cross-fading (450ms color & physics interpolation).
+/// - Physics-based state behaviors: elastic snap for processing, deflation + shake for error.
 class VoiceVisualizer extends StatefulWidget {
   final VoiceModePhase phase;
   final double size;
@@ -30,22 +34,63 @@ class VoiceVisualizer extends StatefulWidget {
 }
 
 class _VoiceVisualizerState extends State<VoiceVisualizer>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _ticker;
+  late final AnimationController _transitionController;
+
+  VoiceModePhase _oldPhase = VoiceModePhase.idle;
+  VoiceModePhase _currentPhase = VoiceModePhase.idle;
+
   double _smoothedMicLevel = 0.0;
+  FragmentProgram? _shaderProgram;
 
   @override
   void initState() {
     super.initState();
+    _oldPhase = widget.phase;
+    _currentPhase = widget.phase;
+
     _ticker = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 4000),
     )..repeat();
+
+    _transitionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+      value: 1.0,
+    );
+
+    _loadShader();
+  }
+
+  Future<void> _loadShader() async {
+    try {
+      final program = await FragmentProgram.fromAsset('assets/shaders/orb.frag');
+      if (mounted) {
+        setState(() {
+          _shaderProgram = program;
+        });
+      }
+    } catch (_) {
+      // Shader unavailable or uncompiled on target platform; falls back gracefully to CustomPainter.
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant VoiceVisualizer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.phase != widget.phase) {
+      _oldPhase = oldWidget.phase;
+      _currentPhase = widget.phase;
+      _transitionController.forward(from: 0.0);
+    }
   }
 
   @override
   void dispose() {
     _ticker.dispose();
+    _transitionController.dispose();
     super.dispose();
   }
 
@@ -57,21 +102,29 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
       width: widget.size,
       height: widget.size,
       child: AnimatedBuilder(
-        animation: _ticker,
+        animation: Listenable.merge([_ticker, _transitionController]),
         builder: (context, _) {
           // Smooth the mic level frame-by-frame to eliminate jitter/flicker.
           final targetMic = widget.phase == VoiceModePhase.listening
               ? widget.micLevel.clamp(0.0, 1.0)
               : 0.0;
           _smoothedMicLevel =
-              lerpDouble(_smoothedMicLevel, targetMic, 0.14) ?? 0.0;
+              lerpDouble(_smoothedMicLevel, targetMic, 0.12) ?? 0.0;
+
+          final transitionProgress = CurvedAnimation(
+            parent: _transitionController,
+            curve: Curves.easeInOutCubic,
+          ).value;
 
           return CustomPaint(
             painter: _OrbWavePainter(
-              phase: widget.phase,
+              oldPhase: _oldPhase,
+              targetPhase: _currentPhase,
+              transitionProgress: transitionProgress,
               micLevel: _smoothedMicLevel,
               progress: _ticker.value,
               isDark: isDark,
+              shaderProgram: _shaderProgram,
             ),
           );
         },
@@ -81,295 +134,417 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
 }
 
 class _OrbWavePainter extends CustomPainter {
-  final VoiceModePhase phase;
+  final VoiceModePhase oldPhase;
+  final VoiceModePhase targetPhase;
+  final double transitionProgress;
   final double micLevel;
   final double progress;
   final bool isDark;
+  final FragmentProgram? shaderProgram;
 
   _OrbWavePainter({
-    required this.phase,
+    required this.oldPhase,
+    required this.targetPhase,
+    required this.transitionProgress,
     required this.micLevel,
     required this.progress,
     required this.isDark,
+    this.shaderProgram,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final baseRadius = size.width * 0.28;
+    final rawCenter = Offset(size.width / 2, size.height / 2);
     final time = progress * 2 * math.pi;
 
-    final amp = _computeAmplitude();
-    final accent = VoiceModePalette.accentFor(phase, isDark: isDark);
+    // 1. Calculate Phase Colors with Smooth 450ms Cross-Fade
+    final oldAccent = VoiceModePalette.accentFor(oldPhase, isDark: isDark);
+    final targetAccent = VoiceModePalette.accentFor(targetPhase, isDark: isDark);
+    final accent = Color.lerp(oldAccent, targetAccent, transitionProgress)!;
 
-    // 1. Paint background ambient glow halo
-    _paintHalo(canvas, center, baseRadius, amp, accent);
+    final oldSecondary = VoiceModePalette.secondaryFor(oldPhase, isDark: isDark);
+    final targetSecondary = VoiceModePalette.secondaryFor(targetPhase, isDark: isDark);
+    final secondary = Color.lerp(oldSecondary, targetSecondary, transitionProgress)!;
 
-    // 2. Paint outer organic translucent wave rings
-    _paintOuterWaveRings(canvas, center, baseRadius, time, amp);
+    // 2. Physics & Scale State Changes
+    final oldAmp = _computeAmplitudeFor(oldPhase, progress, micLevel);
+    final targetAmp = _computeAmplitudeFor(targetPhase, progress, micLevel);
+    final amp = lerpDouble(oldAmp, targetAmp, transitionProgress)!;
 
-    // 3. Paint main 3D gradient orb core with inner fluid waves & highlights
-    _paintOrbCore(canvas, center, baseRadius, time, amp);
+    // Base radius scale factor
+    double scaleFactor = 1.0;
+    Offset center = rawCenter;
+
+    // Error Deflation & Horizontal Shake Oscillation
+    if (targetPhase == VoiceModePhase.error || oldPhase == VoiceModePhase.error) {
+      final errorWeight = targetPhase == VoiceModePhase.error
+          ? transitionProgress
+          : (1.0 - transitionProgress);
+      scaleFactor = lerpDouble(1.0, 0.84, errorWeight)!;
+      final shake = math.sin(time * 7.5) * 6.5 * errorWeight;
+      center = Offset(rawCenter.dx + shake, rawCenter.dy);
+    }
+
+    // Thinking / Processing Inward Elastic Snap Pulse
+    if (targetPhase == VoiceModePhase.processing && transitionProgress < 1.0) {
+      final elasticSnap = math.sin(transitionProgress * math.pi) * 0.14;
+      scaleFactor -= elasticSnap;
+    }
+
+    final baseRadius = (size.width * 0.27) * scaleFactor;
+
+    // 3. Render GPU Shader if Available
+    if (shaderProgram != null) {
+      final shader = shaderProgram!.fragmentShader();
+      shader.setFloat(0, size.width);
+      shader.setFloat(1, size.height);
+      shader.setFloat(2, time);
+      shader.setFloat(3, micLevel);
+      shader.setFloat(4, _phaseToDouble(targetPhase));
+
+      shader.setFloat(5, accent.r);
+      shader.setFloat(6, accent.g);
+      shader.setFloat(7, accent.b);
+      shader.setFloat(8, accent.a);
+
+      shader.setFloat(9, secondary.r);
+      shader.setFloat(10, secondary.g);
+      shader.setFloat(11, secondary.b);
+      shader.setFloat(12, secondary.a);
+
+      final shaderPaint = Paint()..shader = shader;
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), shaderPaint);
+      return;
+    }
+
+    // 4. CustomPainter Rendering Pipeline
+    // A. Multi-Tier Layered Ambient Glow Halos
+    _paintMultiLayerHalo(canvas, center, baseRadius, time, amp, accent, secondary);
+
+    // B. Outer Organic Translucent Wave Rings with Additive Blend Modes
+    _paintAdditiveOuterWaveRings(
+      canvas,
+      center,
+      baseRadius,
+      time,
+      amp,
+      accent,
+      secondary,
+      size,
+    );
+
+    // C. Central 3D Gradient Orb Core with specular light & inner liquid shimmer
+    _paint3DOrbCore(canvas, center, baseRadius, time, amp, accent, secondary);
   }
 
-  double _computeAmplitude() {
+  double _phaseToDouble(VoiceModePhase phase) {
     switch (phase) {
-      case VoiceModePhase.listening:
-        return micLevel;
-      case VoiceModePhase.speaking:
-        // Speech rhythm simulation with dual sine waves
-        final wave = 0.5 + 0.5 * math.sin(progress * 2 * math.pi * 3.5);
-        final breath = 0.4 + 0.6 * math.sin(progress * 2 * math.pi * 1.2);
-        return (wave * breath).clamp(0.1, 1.0);
-      case VoiceModePhase.processing:
-        return 0.2 + 0.15 * math.sin(progress * 2 * math.pi * 2.0);
       case VoiceModePhase.idle:
-        return 0.06 + 0.04 * math.sin(progress * 2 * math.pi);
+        return 0.0;
+      case VoiceModePhase.listening:
+        return 1.0;
+      case VoiceModePhase.processing:
+        return 2.0;
+      case VoiceModePhase.speaking:
+        return 3.0;
       case VoiceModePhase.error:
-        return 0.08 + 0.04 * math.sin(progress * 2 * math.pi * 1.5);
+        return 4.0;
     }
   }
 
-  void _paintHalo(
-    Canvas canvas,
-    Offset center,
-    double baseRadius,
-    double amp,
-    Color accent,
-  ) {
-    final haloRadius = baseRadius * (1.4 + 0.3 * amp);
-    final isError = phase == VoiceModePhase.error;
-    final haloPaint = Paint()
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, baseRadius * 0.6)
-      ..shader = RadialGradient(
-        colors: isError
-            ? [
-                const Color(0xFFEF4444).withValues(alpha: isDark ? 0.25 : 0.20),
-                const Color(0xFFF87171).withValues(alpha: 0.12),
-                const Color(0xFFFECDD3).withValues(alpha: 0.06),
-                Colors.transparent,
-              ]
-            : [
-                accent.withValues(alpha: isDark ? 0.35 : 0.28),
-                const Color(0xFFE879F9).withValues(alpha: 0.20),
-                const Color(0xFF38BDF8).withValues(alpha: 0.12),
-                Colors.transparent,
-              ],
-        stops: const [0.0, 0.4, 0.7, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: haloRadius));
-
-    canvas.drawCircle(center, haloRadius, haloPaint);
+  double _computeAmplitudeFor(VoiceModePhase phase, double p, double mic) {
+    switch (phase) {
+      case VoiceModePhase.listening:
+        return mic;
+      case VoiceModePhase.speaking:
+        final wave = 0.5 + 0.5 * math.sin(p * 2 * math.pi * 3.8);
+        final breath = 0.45 + 0.55 * math.sin(p * 2 * math.pi * 1.4);
+        return (wave * breath).clamp(0.12, 1.0);
+      case VoiceModePhase.processing:
+        return 0.22 + 0.18 * math.sin(p * 2 * math.pi * 3.0);
+      case VoiceModePhase.idle:
+        return 0.06 + 0.04 * math.sin(p * 2 * math.pi);
+      case VoiceModePhase.error:
+        return 0.08 + 0.05 * math.sin(p * 2 * math.pi * 1.8);
+    }
   }
 
-  void _paintOuterWaveRings(
+  void _paintMultiLayerHalo(
     Canvas canvas,
     Offset center,
     double baseRadius,
     double time,
     double amp,
+    Color accent,
+    Color secondary,
   ) {
-    final isError = phase == VoiceModePhase.error;
+    final breathingGlow = 0.35 + 0.15 * math.sin(time * 0.7);
 
-    // 3 distinct wave rings with different rotation speeds, harmonic frequencies, and soft pastel gradients
+    // Layer 1: Atmospheric Wide Ambient Halo
+    final wideRadius = baseRadius * (1.75 + 0.35 * amp);
+    final widePaint = Paint()
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, baseRadius * 0.85)
+      ..shader = RadialGradient(
+        colors: [
+          accent.withValues(alpha: (isDark ? 0.28 : 0.22) * breathingGlow),
+          secondary.withValues(alpha: 0.14 * breathingGlow),
+          accent.withValues(alpha: 0.06),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.45, 0.75, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: wideRadius));
+    canvas.drawCircle(center, wideRadius, widePaint);
+
+    // Layer 2: Saturated Mid-Glow Aura
+    final midRadius = baseRadius * (1.4 + 0.25 * amp);
+    final midPaint = Paint()
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, baseRadius * 0.48)
+      ..shader = RadialGradient(
+        colors: [
+          secondary.withValues(alpha: isDark ? 0.38 : 0.30),
+          accent.withValues(alpha: 0.22),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.55, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: midRadius));
+    canvas.drawCircle(center, midRadius, midPaint);
+
+    // Layer 3: Tight High-Intensity Inner Core Glow
+    final tightRadius = baseRadius * (1.15 + 0.15 * amp);
+    final tightPaint = Paint()
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, baseRadius * 0.22)
+      ..shader = RadialGradient(
+        colors: [
+          Colors.white.withValues(alpha: 0.40),
+          accent.withValues(alpha: 0.35),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.4, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: tightRadius));
+    canvas.drawCircle(center, tightRadius, tightPaint);
+  }
+
+  void _paintAdditiveOuterWaveRings(
+    Canvas canvas,
+    Offset center,
+    double baseRadius,
+    double time,
+    double amp,
+    Color accent,
+    Color secondary,
+    Size canvasSize,
+  ) {
+    // 4 Asynchronous Counter-Rotating Organic Wave Rings
     final rings = [
       _RingConfig(
-        baseScale: 1.12,
-        waveAmp: 14.0 * (0.3 + 0.7 * amp),
+        baseScale: 1.14,
+        waveAmp: 15.0 * (0.3 + 0.7 * amp),
         frequency: 3,
-        rotSpeed: 0.6,
+        rotSpeed: 0.65,
         timeScale: 1.2,
-        colors: isError
-            ? [
-                const Color(0xFFFECDD3).withValues(alpha: 0.40),
-                const Color(0xFFF87171).withValues(alpha: 0.30),
-                const Color(0xFFEF4444).withValues(alpha: 0.18),
-              ]
-            : [
-                const Color(0xFF38BDF8).withValues(alpha: 0.45),
-                const Color(0xFFE879F9).withValues(alpha: 0.35),
-                const Color(0xFF818CF8).withValues(alpha: 0.25),
-              ],
-        strokeColor: isError
-            ? const Color(0xFFF87171).withValues(alpha: 0.50)
-            : const Color(0xFF38BDF8).withValues(alpha: 0.6),
+        colors: [
+          secondary.withValues(alpha: 0.45),
+          accent.withValues(alpha: 0.35),
+          const Color(0xFF818CF8).withValues(alpha: 0.20),
+        ],
+        strokeColor: secondary.withValues(alpha: 0.65),
       ),
       _RingConfig(
-        baseScale: 1.22,
-        waveAmp: 18.0 * (0.3 + 0.7 * amp),
+        baseScale: 1.25,
+        waveAmp: 19.0 * (0.3 + 0.7 * amp),
         frequency: 2,
-        rotSpeed: -0.8,
+        rotSpeed: -0.90,
         timeScale: 1.6,
-        colors: isError
-            ? [
-                const Color(0xFFFCA5A5).withValues(alpha: 0.35),
-                const Color(0xFFEF4444).withValues(alpha: 0.25),
-                const Color(0xFFDC2626).withValues(alpha: 0.15),
-              ]
-            : [
-                const Color(0xFFF472B6).withValues(alpha: 0.40),
-                const Color(0xFFA78BFA).withValues(alpha: 0.30),
-                const Color(0xFF34D399).withValues(alpha: 0.20),
-              ],
-        strokeColor: isError
-            ? const Color(0xFFFCA5A5).withValues(alpha: 0.45)
-            : const Color(0xFFF472B6).withValues(alpha: 0.55),
+        colors: [
+          accent.withValues(alpha: 0.40),
+          secondary.withValues(alpha: 0.30),
+          const Color(0xFFF472B6).withValues(alpha: 0.18),
+        ],
+        strokeColor: accent.withValues(alpha: 0.60),
       ),
       _RingConfig(
-        baseScale: 1.34,
-        waveAmp: 22.0 * (0.2 + 0.8 * amp),
+        baseScale: 1.36,
+        waveAmp: 23.0 * (0.2 + 0.8 * amp),
         frequency: 4,
-        rotSpeed: 0.4,
-        timeScale: 0.9,
-        colors: isError
-            ? [
-                const Color(0xFFF87171).withValues(alpha: 0.30),
-                const Color(0xFFFECDD3).withValues(alpha: 0.22),
-                const Color(0xFFEF4444).withValues(alpha: 0.12),
-              ]
-            : [
-                const Color(0xFF818CF8).withValues(alpha: 0.35),
-                const Color(0xFF38BDF8).withValues(alpha: 0.30),
-                const Color(0xFFFFAEE2).withValues(alpha: 0.20),
-              ],
-        strokeColor: isError
-            ? const Color(0xFFF87171).withValues(alpha: 0.40)
-            : const Color(0xFF818CF8).withValues(alpha: 0.5),
+        rotSpeed: 0.45,
+        timeScale: 0.95,
+        colors: [
+          const Color(0xFF38BDF8).withValues(alpha: 0.35),
+          accent.withValues(alpha: 0.28),
+          secondary.withValues(alpha: 0.15),
+        ],
+        strokeColor: const Color(0xFF38BDF8).withValues(alpha: 0.55),
+      ),
+      _RingConfig(
+        baseScale: 1.48,
+        waveAmp: 27.0 * (0.15 + 0.85 * amp),
+        frequency: 5,
+        rotSpeed: -0.30,
+        timeScale: 1.3,
+        colors: [
+          secondary.withValues(alpha: 0.30),
+          accent.withValues(alpha: 0.22),
+          Colors.transparent,
+        ],
+        strokeColor: secondary.withValues(alpha: 0.45),
       ),
     ];
 
+    // Save Layer with BlendMode.plus for Additive Wave Intersections
+    final layerRect = Rect.fromLTWH(0, 0, canvasSize.width, canvasSize.height);
+    canvas.saveLayer(layerRect, Paint());
+
     for (final ring in rings) {
-      final path = Path();
-      const points = 72;
-      final ringRadius = baseRadius * ring.baseScale;
+      final path = _generateOrganicCubicBezierPath(
+        center,
+        baseRadius * ring.baseScale,
+        ring.waveAmp,
+        ring.frequency,
+        ring.rotSpeed,
+        ring.timeScale,
+        time,
+      );
 
-      for (int i = 0; i <= points; i++) {
-        final theta = (i / points) * 2 * math.pi;
-        final rotAngle = time * ring.rotSpeed;
-        final angle = theta + rotAngle;
-
-        final wave1 = math.sin(theta * ring.frequency + time * ring.timeScale);
-        final wave2 = math.cos(
-          theta * (ring.frequency + 1) - time * ring.timeScale * 0.7,
-        );
-        final r = ringRadius + (wave1 * 0.6 + wave2 * 0.4) * ring.waveAmp;
-
-        final x = center.dx + r * math.cos(angle);
-        final y = center.dy + r * math.sin(angle);
-
-        if (i == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
-      }
-      path.close();
-
-      // Draw translucent gradient fill
       final bounds = path.getBounds();
       final fillPaint = Paint()
         ..style = PaintingStyle.fill
+        ..blendMode = BlendMode.plus
         ..shader = LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: ring.colors,
-        ).createShader(bounds);
+        ).createShader(bounds.isEmpty ? layerRect : bounds);
       canvas.drawPath(path, fillPaint);
 
-      // Draw glowing stroke outline
       final strokePaint = Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6
+        ..strokeWidth = 1.8
         ..color = ring.strokeColor;
       canvas.drawPath(path, strokePaint);
     }
+
+    canvas.restore(); // Restore layer
   }
 
-  void _paintOrbCore(
+  Path _generateOrganicCubicBezierPath(
+    Offset center,
+    double ringRadius,
+    double waveAmp,
+    int frequency,
+    double rotSpeed,
+    double timeScale,
+    double time,
+  ) {
+    final path = Path();
+    const count = 16; // Control point anchors along full circle
+    final points = <Offset>[];
+
+    for (int i = 0; i < count; i++) {
+      final theta = (i / count) * 2 * math.pi;
+      final angle = theta + (time * rotSpeed);
+
+      final w1 = math.sin(theta * frequency + time * timeScale);
+      final w2 = math.cos(theta * (frequency + 1) - time * timeScale * 0.75);
+      final r = ringRadius + (w1 * 0.6 + w2 * 0.4) * waveAmp;
+
+      final x = center.dx + r * math.cos(angle);
+      final y = center.dy + r * math.sin(angle);
+      points.add(Offset(x, y));
+    }
+
+    // Smooth Cubic Bezier Loop through Control Points
+    path.moveTo(points[0].dx, points[0].dy);
+
+    for (int i = 0; i < count; i++) {
+      final p0 = points[(i - 1 + count) % count];
+      final p1 = points[i];
+      final p2 = points[(i + 1) % count];
+      final p3 = points[(i + 2) % count];
+
+      // Catmull-Rom to Cubic Bezier Conversion for Smooth Liquid Curve
+      final control1 = p1 + (p2 - p0) * 0.1666;
+      final control2 = p2 - (p3 - p1) * 0.1666;
+
+      path.cubicTo(
+        control1.dx, control1.dy,
+        control2.dx, control2.dy,
+        p2.dx, p2.dy,
+      );
+    }
+
+    path.close();
+    return path;
+  }
+
+  void _paint3DOrbCore(
     Canvas canvas,
     Offset center,
     double baseRadius,
     double time,
     double amp,
+    Color accent,
+    Color secondary,
   ) {
     final orbRadius = baseRadius * (0.95 + 0.15 * amp);
     final orbRect = Rect.fromCircle(center: center, radius: orbRadius);
-    final isError = phase == VoiceModePhase.error;
 
-    // Primary 3D gradient sphere shader with reduced opacity for error mode
+    final gradientStops = VoiceModePalette.sphereGradientFor(targetPhase, isDark: isDark);
     final orbGradient = RadialGradient(
       center: const Alignment(-0.35, -0.45),
       radius: 1.15,
-      colors: isError
+      colors: gradientStops.length >= 4
           ? [
-              const Color(0xFFFECDD3).withValues(alpha: 0.65), // Translucent soft rose top
-              const Color(0xFFF87171).withValues(alpha: 0.55), // Coral red
-              const Color(0xFFEF4444).withValues(alpha: 0.45), // Soft red
-              const Color(0xFFDC2626).withValues(alpha: 0.35), // Translucent crimson edge
+              Color.lerp(gradientStops[0], accent, 0.1)!,
+              gradientStops[1],
+              gradientStops[2],
+              gradientStops[3],
             ]
-          : const [
-              Color(0xFFFFAEE2), // Light peach pink top highlight
-              Color(0xFFF472B6), // Vibrant pink
-              Color(0xFFE879F9), // Soft orchid / magenta
-              Color(0xFFA78BFA), // Rich lavender purple
-              Color(0xFF38BDF8), // Electric cyan bottom
-              Color(0xFF0284C7), // Deep blue edge
-            ],
-      stops: isError
-          ? const [0.0, 0.35, 0.70, 1.0]
-          : const [0.0, 0.22, 0.45, 0.68, 0.88, 1.0],
+          : [accent, secondary],
+      stops: const [0.0, 0.32, 0.68, 1.0],
     );
 
-    final orbPaint = Paint()
-      ..shader = orbGradient.createShader(orbRect);
+    final orbPaint = Paint()..shader = orbGradient.createShader(orbRect);
 
     // Save layer for clipping inner liquid waves
     canvas.save();
     final orbPath = Path()..addOval(orbRect);
     canvas.clipPath(orbPath);
 
-    // Draw main gradient sphere body
+    // Main 3D gradient sphere body
     canvas.drawCircle(center, orbRadius, orbPaint);
 
-    // Draw inner morphing liquid wave shimmer
-    _paintInnerLiquidWaves(canvas, center, orbRadius, time, amp);
+    // Inner morphing liquid wave shimmer
+    _paintInnerLiquidWaves(canvas, center, orbRadius, time, amp, accent, secondary);
 
-    // Draw top specular 3D light reflection
+    // Specular 3D light reflection highlight
     final specularPaint = Paint()
       ..shader = RadialGradient(
         center: const Alignment(-0.45, -0.55),
         radius: 0.65,
         colors: [
-          Colors.white.withValues(alpha: 0.65),
-          Colors.white.withValues(alpha: 0.20),
+          Colors.white.withValues(alpha: 0.68),
+          Colors.white.withValues(alpha: 0.22),
           Colors.white.withValues(alpha: 0.0),
         ],
         stops: const [0.0, 0.45, 1.0],
       ).createShader(orbRect);
 
     canvas.drawCircle(center, orbRadius, specularPaint);
-
     canvas.restore(); // Restore clip
 
-    // Crisp outer edge glow ring
+    // Crisp outer edge glow rim ring
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.8
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: isError
-            ? [
-                Colors.white.withValues(alpha: 0.60),
-                const Color(0xFFF87171).withValues(alpha: 0.45),
-                const Color(0xFFEF4444).withValues(alpha: 0.30),
-                Colors.white.withValues(alpha: 0.20),
-              ]
-            : [
-                Colors.white.withValues(alpha: 0.70),
-                const Color(0xFF38BDF8).withValues(alpha: 0.50),
-                const Color(0xFFE879F9).withValues(alpha: 0.40),
-                Colors.white.withValues(alpha: 0.20),
-              ],
+        colors: [
+          Colors.white.withValues(alpha: 0.75),
+          accent.withValues(alpha: 0.55),
+          secondary.withValues(alpha: 0.40),
+          Colors.white.withValues(alpha: 0.25),
+        ],
       ).createShader(orbRect);
 
     canvas.drawCircle(center, orbRadius, borderPaint);
@@ -381,11 +556,12 @@ class _OrbWavePainter extends CustomPainter {
     double radius,
     double time,
     double amp,
+    Color accent,
+    Color secondary,
   ) {
-    final isError = phase == VoiceModePhase.error;
     final wavePath = Path();
     final yOffset = center.dy + radius * 0.15 * math.sin(time * 1.5);
-    final waveHeight = radius * (0.25 + 0.3 * amp);
+    final waveHeight = radius * (0.25 + 0.35 * amp);
 
     wavePath.moveTo(center.dx - radius, center.dy + radius);
     wavePath.lineTo(center.dx - radius, yOffset);
@@ -407,17 +583,11 @@ class _OrbWavePainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: isError
-            ? [
-                const Color(0xFFF87171).withValues(alpha: 0.30),
-                const Color(0xFFFECDD3).withValues(alpha: 0.20),
-                Colors.transparent,
-              ]
-            : [
-                const Color(0xFF38BDF8).withValues(alpha: 0.35),
-                const Color(0xFFE879F9).withValues(alpha: 0.25),
-                Colors.transparent,
-              ],
+        colors: [
+          secondary.withValues(alpha: 0.35),
+          accent.withValues(alpha: 0.20),
+          Colors.transparent,
+        ],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
 
     canvas.drawPath(wavePath, liquidPaint);
@@ -425,10 +595,13 @@ class _OrbWavePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _OrbWavePainter oldDelegate) {
-    return phase != oldDelegate.phase ||
+    return oldPhase != oldDelegate.oldPhase ||
+        targetPhase != oldDelegate.targetPhase ||
+        transitionProgress != oldDelegate.transitionProgress ||
         micLevel != oldDelegate.micLevel ||
         progress != oldDelegate.progress ||
-        isDark != oldDelegate.isDark;
+        isDark != oldDelegate.isDark ||
+        shaderProgram != oldDelegate.shaderProgram;
   }
 }
 
