@@ -1922,7 +1922,7 @@ abstract class AppLocalizations {
   /// Onboarding server connection description
   ///
   /// In en, this message translates to:
-  /// **'Connect to LM Studio, Ollama, or\nOpenRouter to start your private AI\nexperience.'**
+  /// **'Connect to LM Studio, Ollama,\nOllama Cloud, or OpenRouter to\nstart your private AI experience.'**
   String get onboarding_connect_desc;
 
   /// Subtitle for the OpenAI compatible server card in onboarding
@@ -1966,6 +1966,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ollama'**
   String get server_type_ollama;
+
+  /// Ollama Cloud server type card title
+  ///
+  /// In en, this message translates to:
+  /// **'Ollama Cloud'**
+  String get server_type_ollama_cloud;
+
+  /// Ollama Cloud server type card subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'CLOUD MANAGED'**
+  String get server_type_ollama_cloud_sub;
+
+  /// Ollama Cloud server type display
+  ///
+  /// In en, this message translates to:
+  /// **'Ollama Cloud'**
+  String get server_type_ollama_cloud_display;
+
+  /// Ollama Cloud default address
+  ///
+  /// In en, this message translates to:
+  /// **'ollama.com'**
+  String get server_address_ollama_cloud;
+
+  /// Disclosure shown when connecting to Ollama Cloud about data being sent to their servers
+  ///
+  /// In en, this message translates to:
+  /// **'By connecting Ollama Cloud, your chat messages and inputs are sent to Ollama\'s managed servers for inference. LocalMind does not track or store your conversations. You can revoke this key any time at ollama.com/settings/keys.'**
+  String get ollama_cloud_disclosure;
+
+  /// Validation: API key required for Ollama Cloud
+  ///
+  /// In en, this message translates to:
+  /// **'API Key required for Ollama Cloud'**
+  String get api_key_required_ollama_cloud;
+
+  /// Hint for the Ollama Cloud API key input
+  ///
+  /// In en, this message translates to:
+  /// **'Paste your Ollama Cloud API key'**
+  String get api_key_hint_ollama_cloud;
+
+  /// Add server screen subtitle for Ollama Cloud
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to Ollama Cloud with an API key from ollama.com/settings/keys to access managed cloud models.'**
+  String get add_server_ollama_cloud_subtitle;
+
+  /// Add server screen subtitle for OpenRouter
+  ///
+  /// In en, this message translates to:
+  /// **'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.'**
+  String get add_server_openrouter_subtitle;
+
+  /// Add server screen subtitle for endpoint-based servers
+  ///
+  /// In en, this message translates to:
+  /// **'Configure a local or self-hosted endpoint, then verify the connection before saving.'**
+  String get add_server_endpoint_subtitle;
 
   /// OpenRouter server type card title
   ///
@@ -5026,6 +5086,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Think'**
   String get think_button_label;
+
+  /// Title for the reasoning mode selector shown in the model picker
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking mode'**
+  String get thinking_mode_title;
 
   /// Low reasoning effort level
   ///

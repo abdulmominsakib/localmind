@@ -44,6 +44,8 @@ class ServerCard extends StatelessWidget {
         return l10n.server_type_openai_display;
       case ServerType.ollama:
         return l10n.server_type_ollama_display;
+      case ServerType.ollamaCloud:
+        return l10n.server_type_ollama_cloud_display;
       case ServerType.openRouter:
         return l10n.server_type_openrouter_display;
       case ServerType.onDevice:
@@ -54,6 +56,9 @@ class ServerCard extends StatelessWidget {
   String _serverAddress(AppLocalizations l10n) {
     if (server.type == ServerType.openRouter) {
       return l10n.server_address_openrouter;
+    }
+    if (server.type == ServerType.ollamaCloud) {
+      return l10n.server_address_ollama_cloud;
     }
     if (server.type == ServerType.onDevice) {
       return l10n.server_address_on_device;
@@ -95,6 +100,8 @@ class ServerCard extends StatelessWidget {
         return HugeIcons.strokeRoundedAiChat01;
       case ServerType.ollama:
         return HugeIcons.strokeRoundedRobot01;
+      case ServerType.ollamaCloud:
+        return HugeIcons.strokeRoundedAiCloud;
       case ServerType.openRouter:
         return HugeIcons.strokeRoundedCloud;
       case ServerType.onDevice:

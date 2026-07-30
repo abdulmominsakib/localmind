@@ -39,8 +39,12 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   String? _testResult;
 
   bool get _isEditing => widget.editServer != null;
-  bool get _requiresEndpoint => _selectedType != ServerType.openRouter;
-  bool get _requiresMandatoryApiKey => _selectedType == ServerType.openRouter;
+  bool get _requiresEndpoint =>
+      _selectedType != ServerType.openRouter &&
+      _selectedType != ServerType.ollamaCloud;
+  bool get _requiresMandatoryApiKey =>
+      _selectedType == ServerType.openRouter ||
+      _selectedType == ServerType.ollamaCloud;
 
   @override
   void initState() {
@@ -82,6 +86,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
 
       if (type == ServerType.openRouter) {
         _portController.text = '443';
+      } else if (type == ServerType.ollamaCloud) {
+        _portController.text = AppConstants.ollamaCloudDefaultPort.toString();
+        _hostController.text = AppConstants.ollamaCloudBaseUrl;
       } else if (type == ServerType.lmStudio) {
         _portController.text = AppConstants.lmStudioDefaultPort.toString();
       } else if (type == ServerType.openAICompatible) {
@@ -134,15 +141,24 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   }
 
   Server _buildServer() {
+    final rawHost = _hostController.text.trim();
+    final rawPort = _portController.text.trim();
+    final host = _selectedType == ServerType.ollamaCloud
+        ? AppConstants.ollamaCloudBaseUrl
+        : rawHost;
+    final port = _selectedType == ServerType.ollamaCloud
+        ? AppConstants.ollamaCloudDefaultPort
+        : int.parse(rawPort);
+
     return Server(
       id:
           widget.editServer?.id ??
           DateTime.now().millisecondsSinceEpoch.toString(),
       name: _nameController.text.trim(),
       type: _selectedType,
-      host: _hostController.text.trim(),
-      port: int.parse(_portController.text.trim()),
-      apiKey: _selectedType == ServerType.openRouter
+      host: host,
+      port: port,
+      apiKey: _requiresMandatoryApiKey
           ? _apiKeyController.text.trim()
           : (_apiKeyController.text.trim().isNotEmpty
                 ? _apiKeyController.text.trim()
@@ -252,9 +268,12 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     if (_requiresMandatoryApiKey) {
       final l10n = AppLocalizations.of(context)!;
       if (value == null || value.trim().isEmpty) {
-        return l10n.api_key_required_openrouter;
+        return _selectedType == ServerType.ollamaCloud
+            ? l10n.api_key_required_ollama_cloud
+            : l10n.api_key_required_openrouter;
       }
-      if (!value.trim().startsWith('sk-')) {
+      if (_selectedType == ServerType.openRouter &&
+          !value.trim().startsWith('sk-')) {
         return l10n.api_key_format;
       }
     }
@@ -486,7 +505,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                           ? l10n.api_key_required
                           : l10n.api_key_optional,
                       hintText: _requiresMandatoryApiKey
-                          ? l10n.api_key_hint_openrouter
+                          ? (_selectedType == ServerType.ollamaCloud
+                                ? l10n.api_key_hint_ollama_cloud
+                                : l10n.api_key_hint_openrouter)
                           : l10n.api_key_hint_generic,
                     ),
                     validator: _validateApiKey,
@@ -515,7 +536,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              l10n.openrouter_disclosure,
+                              _selectedType == ServerType.ollamaCloud
+                                  ? l10n.ollama_cloud_disclosure
+                                  : l10n.openrouter_disclosure,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                                 height: 1.4,
@@ -576,9 +599,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            _requiresEndpoint
-                ? 'Configure a local or self-hosted endpoint, then verify the connection before saving.'
-                : 'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.',
+            _addServerHeaderSubtitle(l10n),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
               height: 1.4,
@@ -801,8 +822,23 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       ServerType.lmStudio => l10n.server_type_lm_studio,
       ServerType.openAICompatible => l10n.server_type_openai_display,
       ServerType.ollama => l10n.server_type_ollama,
+      ServerType.ollamaCloud => l10n.server_type_ollama_cloud,
       ServerType.openRouter => l10n.server_type_openrouter,
       ServerType.onDevice => l10n.server_type_on_device_display,
     };
+  }
+
+  String _addServerHeaderSubtitle(AppLocalizations l10n) {
+    switch (_selectedType) {
+      case ServerType.lmStudio:
+      case ServerType.openAICompatible:
+      case ServerType.ollama:
+      case ServerType.onDevice:
+        return l10n.add_server_endpoint_subtitle;
+      case ServerType.ollamaCloud:
+        return l10n.add_server_ollama_cloud_subtitle;
+      case ServerType.openRouter:
+        return l10n.add_server_openrouter_subtitle;
+    }
   }
 }

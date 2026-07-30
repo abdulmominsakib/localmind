@@ -819,6 +819,7 @@
   "lm_studio_memory_settings_title": "সুপারিশের জন্য মেমরি",
   "lm_studio_memory_settings_desc": "মডেল ব্রাউজারে মডেলগুলি আপনার ডিভাইসে চলবে কিনা তা অনুমান করতে ব্যবহৃত হয়।",
   "think_button_label": "চিন্তা করুন",
+  "thinking_mode_title": "চিন্তার মোড",
   "reasoning_effort_low": "কম",
   "reasoning_effort_medium": "মাঝারি",
   "reasoning_effort_high": "উচ্চ",

@@ -53,6 +53,7 @@ abstract class ChatService {
       case ServerType.openAICompatible:
         return OpenAICompatibleChatService(dio);
       case ServerType.ollama:
+      case ServerType.ollamaCloud:
         return OllamaChatService(
           dio,
           imageCompressionEnabled: imageCompressionEnabled,
@@ -1351,4 +1352,5 @@ ToolTransportAdapter createAdapterForServerType(ServerType type) => switch (type
   ServerType.lmStudio => OpenAiToolAdapter(),
   ServerType.onDevice => OpenAiToolAdapter(),
   ServerType.ollama => OllamaToolAdapter(),
+  ServerType.ollamaCloud => OllamaToolAdapter(),
 };

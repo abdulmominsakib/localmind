@@ -819,6 +819,7 @@
   "lm_studio_memory_settings_title": "Память для рекомендаций",
   "lm_studio_memory_settings_desc": "Используется для оценки того, подходят ли модели для вашего устройства.",
   "think_button_label": "Мыслить",
+  "thinking_mode_title": "Режим мышления",
   "reasoning_effort_low": "Низкая",
   "reasoning_effort_medium": "Средняя",
   "reasoning_effort_high": "Высокая",

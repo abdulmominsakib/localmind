@@ -13,13 +13,15 @@ import 'package:localmind/features/on_device/providers/on_device_providers.dart'
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/lm_studio_catalog/views/lm_studio_download_widgets.dart';
 import 'package:localmind/core/providers/app_providers.dart';
-import 'package:localmind/features/conversations/providers/conversation_providers.dart' as conv;
+import 'package:localmind/features/conversations/providers/conversation_providers.dart'
+    as conv;
 import 'package:localmind/l10n/app_localizations.dart';
 import '../components/model_list.dart';
 import '../components/model_search_field.dart';
 import '../components/model_sort_control.dart';
 import '../components/no_server_state.dart';
 import '../components/thinking_indicator.dart';
+import '../components/thinking_mode_chip.dart';
 import '../providers/model_picker_providers.dart';
 
 class ModelPickerSheet extends ConsumerStatefulWidget {
@@ -63,10 +65,7 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              l10n.model_loaded(
-                loadedName,
-                next.backend?.name ?? 'CPU',
-              ),
+              l10n.model_loaded(loadedName, next.backend?.name ?? 'CPU'),
             ),
           ),
         );
@@ -75,8 +74,9 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
 
     final serversAsync = ref.watch(serversProvider);
     final servers = serversAsync.value ?? [];
-    final currentServer =
-        servers.where((s) => s.id == activeServer?.id).firstOrNull;
+    final currentServer = servers
+        .where((s) => s.id == activeServer?.id)
+        .firstOrNull;
     final isOnDevice =
         currentServer != null && currentServer.type == ServerType.onDevice;
     final isLmStudio =
@@ -99,90 +99,105 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
         return Cue.onMount(
           motion: .smooth(),
           child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkBackground : AppColors.lightSurface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.grey[600] : Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkBackground : AppColors.lightSurface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
               ),
-              const SizedBox(height: 16),
-              _ModelPickerHeader(
-                isDark: isDark,
-                isThinking: isThinking,
-                loadedCount: loadedCount,
-                showBrowseButton: isLmStudio,
-                onBrowseModels: isLmStudio
-                    ? () {
-                        Navigator.of(context).pop();
-                        context.push(
-                          AppRoutes.lmStudioModelBrowser,
-                          extra: currentServer,
-                        );
-                      }
-                    : null,
-                onRefresh: activeServer != null
-                    ? () {
-                        ref.invalidate(availableModelsProvider(activeServer.id));
-                        ref.invalidate(loadedModelsProvider(activeServer));
-                      }
-                    : null,
-                onUnloadAll: activeServer != null && loadedCount > 0
-                    ? () => _unloadAllModels(context, ref, activeServer)
-                    : null,
-              ),
-              if (activeServer != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    activeServer.name,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark
-                          ? AppColors.darkMutedText
-                          : AppColors.lightMutedText,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey[600] : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Expanded(child: ModelSearchField()),
-                  const SizedBox(width: 8),
-                  const ModelSortControl(),
+                const SizedBox(height: 16),
+                _ModelPickerHeader(
+                  isDark: isDark,
+                  isThinking: isThinking,
+                  loadedCount: loadedCount,
+                  showBrowseButton: isLmStudio,
+                  onBrowseModels: isLmStudio
+                      ? () {
+                          Navigator.of(context).pop();
+                          context.push(
+                            AppRoutes.lmStudioModelBrowser,
+                            extra: currentServer,
+                          );
+                        }
+                      : null,
+                  onRefresh: activeServer != null
+                      ? () {
+                          ref.invalidate(
+                            availableModelsProvider(activeServer.id),
+                          );
+                          ref.invalidate(loadedModelsProvider(activeServer));
+                        }
+                      : null,
+                  onUnloadAll: activeServer != null && loadedCount > 0
+                      ? () => _unloadAllModels(context, ref, activeServer)
+                      : null,
+                ),
+                if (activeServer != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      activeServer.name,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark
+                            ? AppColors.darkMutedText
+                            : AppColors.lightMutedText,
+                      ),
+                    ),
+                  ),
+                // Thinking-mode selector surfaces only when the currently
+                // selected model can actually reason. Renders nothing
+                // otherwise so it never adds dead space.
+                if (selectedModel?.supportsReasoning == true) ...[
+                  const SizedBox(height: 12),
+                  ThinkingModeChip(
+                    model: selectedModel,
+                    isDark: isDark,
+                    fullWidth: true,
+                  ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: activeServer == null
-                    ? NoServerState(isDark: isDark)
-                    : isOnDevice
-                        ? OnDevicePickerSection(
-                            selectedModelId: selectedModel?.id,
-                            isDark: isDark,
-                            scrollController: scrollController,
-                          )
-                        : ModelList(
-                            serverId: activeServer.id,
-                            selectedModelId: selectedModel?.id,
-                            isDark: isDark,
-                            scrollController: scrollController,
-                          ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Expanded(child: ModelSearchField()),
+                    const SizedBox(width: 8),
+                    const ModelSortControl(),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: activeServer == null
+                      ? NoServerState(isDark: isDark)
+                      : isOnDevice
+                      ? OnDevicePickerSection(
+                          selectedModelId: selectedModel?.id,
+                          isDark: isDark,
+                          scrollController: scrollController,
+                        )
+                      : ModelList(
+                          serverId: activeServer.id,
+                          selectedModelId: selectedModel?.id,
+                          isDark: isDark,
+                          scrollController: scrollController,
+                        ),
+                ),
+              ],
+            ),
           ),
-        ),
         );
       },
     );
@@ -199,8 +214,9 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
       if (activeServer.type == ServerType.onDevice) {
         await ref.read(onDeviceEngineProvider.notifier).unloadModel();
       } else {
-        final loadedInstances =
-            await ref.read(loadedModelsProvider(activeServer).future);
+        final loadedInstances = await ref.read(
+          loadedModelsProvider(activeServer).future,
+        );
         final apiService = ref.read(serverApiServiceProvider);
         await apiService.unloadAllInstances(activeServer, loadedInstances);
       }
@@ -209,9 +225,9 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
       ref.read(selectedModelProvider.notifier).clear();
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.all_models_unloaded)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.all_models_unloaded)));
       }
     } catch (e) {
       if (context.mounted) {
@@ -277,10 +293,11 @@ class _ModelPickerHeader extends ConsumerWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: (isDark
-                                ? AppColors.darkAccent
-                                : AppColors.lightAccent)
-                            .withValues(alpha: 0.15),
+                        color:
+                            (isDark
+                                    ? AppColors.darkAccent
+                                    : AppColors.lightAccent)
+                                .withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
@@ -318,7 +335,10 @@ class _ModelPickerHeader extends ConsumerWidget {
                 ),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     border: Border.all(
                       color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
@@ -329,8 +349,8 @@ class _ModelPickerHeader extends ConsumerWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      HugeIcon(icon: 
-                        HugeIcons.strokeRoundedLayers01,
+                      HugeIcon(
+                        icon: HugeIcons.strokeRoundedLayers01,
                         size: 14,
                         color: isDark ? Colors.grey[400] : Colors.grey[600],
                       ),
@@ -353,8 +373,8 @@ class _ModelPickerHeader extends ConsumerWidget {
               IconButton(
                 onPressed: onUnloadAll,
                 tooltip: l10n.unload_all_models,
-                icon: HugeIcon(icon: 
-                  HugeIcons.strokeRoundedPower,
+                icon: HugeIcon(
+                  icon: HugeIcons.strokeRoundedPower,
                   size: 20,
                   color: Colors.red[400],
                 ),
@@ -363,12 +383,18 @@ class _ModelPickerHeader extends ConsumerWidget {
               IconButton(
                 onPressed: onBrowseModels,
                 tooltip: l10n.lm_studio_browse_models,
-                icon: const HugeIcon(icon: HugeIcons.strokeRoundedCompass01, size: 20),
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedCompass01,
+                  size: 20,
+                ),
               ),
             const LmDownloadIndicatorButton(compact: true),
             if (onRefresh != null)
               IconButton(
-                icon: const HugeIcon(icon: HugeIcons.strokeRoundedRefresh, size: 20),
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedRefresh,
+                  size: 20,
+                ),
                 onPressed: onRefresh,
                 tooltip: l10n.refresh_models,
               ),
@@ -433,7 +459,9 @@ class __ContextLengthEditDialogState
       if (widget.activeConversationId == null) {
         ref.read(settingsProvider.notifier).setContextLength(parsed);
       } else {
-        ref.read(conv.conversationsProvider.notifier).updateChatParams(
+        ref
+            .read(conv.conversationsProvider.notifier)
+            .updateChatParams(
               widget.activeConversationId!,
               contextLength: parsed,
             );
@@ -451,7 +479,9 @@ class __ContextLengthEditDialogState
     final suggestions = [2048, 4096, 8192, 16384, 32768, 65536, 131072];
 
     return Dialog(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightSurface,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightSurface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: SingleChildScrollView(
         child: Padding(
@@ -481,7 +511,10 @@ class __ContextLengthEditDialogState
                     borderRadius: BorderRadius.circular(10),
                   ),
                   suffixIcon: IconButton(
-                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, size: 18),
+                    icon: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedCancel01,
+                      size: 18,
+                    ),
                     onPressed: () => _controller.clear(),
                   ),
                 ),
@@ -502,7 +535,9 @@ class __ContextLengthEditDialogState
                           fontWeight: FontWeight.w500,
                           color: isDark ? Colors.white70 : Colors.black87,
                         ),
-                        backgroundColor: isDark ? Colors.grey[850] : Colors.grey[200],
+                        backgroundColor: isDark
+                            ? Colors.grey[850]
+                            : Colors.grey[200],
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                           side: BorderSide.none,

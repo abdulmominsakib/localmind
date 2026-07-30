@@ -819,6 +819,7 @@
   "lm_studio_memory_settings_title": "Memoria per raccomandazioni",
   "lm_studio_memory_settings_desc": "Usato per stimare se i modelli entrano nella memoria della tua macchina nell'esploratore di modelli.",
   "think_button_label": "Pensa",
+  "thinking_mode_title": "Modalità di pensiero",
   "reasoning_effort_low": "Basso",
   "reasoning_effort_medium": "Medio",
   "reasoning_effort_high": "Alto",

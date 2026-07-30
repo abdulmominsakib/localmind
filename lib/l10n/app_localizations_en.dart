@@ -981,7 +981,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboarding_connect_desc =>
-      'Connect to LM Studio, Ollama, or\nOpenRouter to start your private AI\nexperience.';
+      'Connect to LM Studio, Ollama,\nOllama Cloud, or OpenRouter to\nstart your private AI experience.';
 
   @override
   String get openai_compatible_api => 'OpenAI-compatible API';
@@ -1003,6 +1003,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get server_type_ollama => 'Ollama';
+
+  @override
+  String get server_type_ollama_cloud => 'Ollama Cloud';
+
+  @override
+  String get server_type_ollama_cloud_sub => 'CLOUD MANAGED';
+
+  @override
+  String get server_type_ollama_cloud_display => 'Ollama Cloud';
+
+  @override
+  String get server_address_ollama_cloud => 'ollama.com';
+
+  @override
+  String get ollama_cloud_disclosure =>
+      'By connecting Ollama Cloud, your chat messages and inputs are sent to Ollama\'s managed servers for inference. LocalMind does not track or store your conversations. You can revoke this key any time at ollama.com/settings/keys.';
+
+  @override
+  String get api_key_required_ollama_cloud =>
+      'API Key required for Ollama Cloud';
+
+  @override
+  String get api_key_hint_ollama_cloud => 'Paste your Ollama Cloud API key';
+
+  @override
+  String get add_server_ollama_cloud_subtitle =>
+      'Connect to Ollama Cloud with an API key from ollama.com/settings/keys to access managed cloud models.';
+
+  @override
+  String get add_server_openrouter_subtitle =>
+      'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.';
+
+  @override
+  String get add_server_endpoint_subtitle =>
+      'Configure a local or self-hosted endpoint, then verify the connection before saving.';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
@@ -2680,6 +2715,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get think_button_label => 'Think';
+
+  @override
+  String get thinking_mode_title => 'Thinking mode';
 
   @override
   String get reasoning_effort_low => 'Low';

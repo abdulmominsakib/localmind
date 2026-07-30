@@ -819,6 +819,7 @@
   "lm_studio_memory_settings_title": "用於推薦的記憶體大小",
   "lm_studio_memory_settings_desc": "用於在模型瀏覽器中預估模型是否可以在您的設備上運行。",
   "think_button_label": "思考",
+  "thinking_mode_title": "思考模式",
   "reasoning_effort_low": "低",
   "reasoning_effort_medium": "中",
   "reasoning_effort_high": "高",

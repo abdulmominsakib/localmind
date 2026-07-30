@@ -475,6 +475,7 @@ class SettingsViews extends ConsumerWidget {
                     providers: [
                       l10n.server_type_lm_studio,
                       l10n.server_type_ollama,
+                      l10n.server_type_ollama_cloud,
                       l10n.server_type_openrouter,
                     ],
                     highlights: [

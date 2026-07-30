@@ -44,19 +44,28 @@ class _OnboardingServerSetupScreenState
     super.initState();
     String defaultName = '';
     String defaultPort = '';
+    String defaultHost = '';
 
     switch (widget.selectedType) {
       case ServerType.lmStudio:
         defaultName = 'LM Studio';
         defaultPort = AppConstants.lmStudioDefaultPort.toString();
+        defaultHost = Platform.isAndroid ? '192.168.0.0' : '127.0.0.1';
         break;
       case ServerType.openAICompatible:
         defaultName = 'OpenAI Compatible';
         defaultPort = AppConstants.openAICompatibleDefaultPort.toString();
+        defaultHost = Platform.isAndroid ? '192.168.0.0' : '127.0.0.1';
         break;
       case ServerType.ollama:
         defaultName = 'Ollama';
         defaultPort = AppConstants.ollamaDefaultPort.toString();
+        defaultHost = Platform.isAndroid ? '192.168.0.0' : '127.0.0.1';
+        break;
+      case ServerType.ollamaCloud:
+        defaultName = 'Ollama Cloud';
+        defaultHost = AppConstants.ollamaCloudBaseUrl;
+        defaultPort = AppConstants.ollamaCloudDefaultPort.toString();
         break;
       case ServerType.openRouter:
         defaultName = 'OpenRouter';
@@ -69,11 +78,7 @@ class _OnboardingServerSetupScreenState
     }
 
     _nameController = TextEditingController(text: defaultName);
-    _hostController = TextEditingController(
-      text: widget.selectedType == ServerType.openRouter
-          ? ''
-          : (Platform.isAndroid ? '192.168.0.0' : '127.0.0.1'),
-    );
+    _hostController = TextEditingController(text: defaultHost);
     _portController = TextEditingController(text: defaultPort);
     _apiKeyController = TextEditingController();
   }
@@ -88,13 +93,22 @@ class _OnboardingServerSetupScreenState
   }
 
   Server _buildServer() {
+    final requiresCloudConfig =
+        widget.selectedType == ServerType.ollamaCloud;
+    final host = requiresCloudConfig
+        ? AppConstants.ollamaCloudBaseUrl
+        : _hostController.text.trim();
+    final port = requiresCloudConfig
+        ? AppConstants.ollamaCloudDefaultPort
+        : int.parse(_portController.text.trim());
+
     return Server(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: _nameController.text.trim(),
       type: widget.selectedType,
-      host: _hostController.text.trim(),
-      port: int.parse(_portController.text.trim()),
-      apiKey: widget.selectedType == ServerType.openRouter
+      host: host,
+      port: port,
+      apiKey: _isCloudProvider
           ? _apiKeyController.text.trim()
           : (_apiKeyController.text.trim().isNotEmpty
                 ? _apiKeyController.text.trim()
@@ -106,8 +120,12 @@ class _OnboardingServerSetupScreenState
     );
   }
 
+  bool get _isCloudProvider =>
+      widget.selectedType == ServerType.openRouter ||
+      widget.selectedType == ServerType.ollamaCloud;
+
   String? _validateHost(String? value) {
-    if (widget.selectedType == ServerType.openRouter) return null;
+    if (_isCloudProvider) return null;
     final l10n = AppLocalizations.of(context)!;
     if (value == null || value.trim().isEmpty) {
       return l10n.host_required;
@@ -119,7 +137,7 @@ class _OnboardingServerSetupScreenState
   }
 
   String? _validatePort(String? value) {
-    if (widget.selectedType == ServerType.openRouter) return null;
+    if (_isCloudProvider) return null;
     final l10n = AppLocalizations.of(context)!;
     if (value == null || value.trim().isEmpty) {
       return l10n.port_required;
@@ -208,7 +226,8 @@ class _OnboardingServerSetupScreenState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final isCloud = widget.selectedType == ServerType.openRouter;
+    final isCloud = _isCloudProvider;
+    final isOllamaCloud = widget.selectedType == ServerType.ollamaCloud;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.setup_connection)),
@@ -288,10 +307,23 @@ class _OnboardingServerSetupScreenState
                               : l10n.api_key_optional,
                           filled: true,
                           fillColor: theme.colorScheme.surface,
+                          hintText: isCloud
+                              ? (isOllamaCloud
+                                    ? l10n.api_key_hint_ollama_cloud
+                                    : l10n.api_key_hint_openrouter)
+                              : null,
                         ),
                         validator: (val) {
                           if (isCloud && (val == null || val.trim().isEmpty)) {
-                            return l10n.api_key_required_openrouter;
+                            return isOllamaCloud
+                                ? l10n.api_key_required_ollama_cloud
+                                : l10n.api_key_required_openrouter;
+                          }
+                          if (isCloud &&
+                              widget.selectedType == ServerType.openRouter &&
+                              val != null &&
+                              !val.trim().startsWith('sk-')) {
+                            return l10n.api_key_format;
                           }
                           return null;
                         },
@@ -319,7 +351,9 @@ class _OnboardingServerSetupScreenState
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  l10n.openrouter_disclosure,
+                                  isOllamaCloud
+                                      ? l10n.ollama_cloud_disclosure
+                                      : l10n.openrouter_disclosure,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                                     height: 1.4,

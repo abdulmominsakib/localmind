@@ -1345,7 +1345,7 @@
   "@onboarding_connect_server": {
     "description": "Onboarding heading for server connection"
   },
-  "onboarding_connect_desc": "Connect to LM Studio, Ollama, or\nOpenRouter to start your private AI\nexperience.",
+  "onboarding_connect_desc": "Connect to LM Studio, Ollama,\nOllama Cloud, or OpenRouter to\nstart your private AI experience.",
   "@onboarding_connect_desc": {
     "description": "Onboarding server connection description"
   },
@@ -1376,6 +1376,46 @@
   "server_type_ollama": "Ollama",
   "@server_type_ollama": {
     "description": "Ollama server type card title"
+  },
+  "server_type_ollama_cloud": "Ollama Cloud",
+  "@server_type_ollama_cloud": {
+    "description": "Ollama Cloud server type card title"
+  },
+  "server_type_ollama_cloud_sub": "CLOUD MANAGED",
+  "@server_type_ollama_cloud_sub": {
+    "description": "Ollama Cloud server type card subtitle"
+  },
+  "server_type_ollama_cloud_display": "Ollama Cloud",
+  "@server_type_ollama_cloud_display": {
+    "description": "Ollama Cloud server type display"
+  },
+  "server_address_ollama_cloud": "ollama.com",
+  "@server_address_ollama_cloud": {
+    "description": "Ollama Cloud default address"
+  },
+  "ollama_cloud_disclosure": "By connecting Ollama Cloud, your chat messages and inputs are sent to Ollama's managed servers for inference. LocalMind does not track or store your conversations. You can revoke this key any time at ollama.com/settings/keys.",
+  "@ollama_cloud_disclosure": {
+    "description": "Disclosure shown when connecting to Ollama Cloud about data being sent to their servers"
+  },
+  "api_key_required_ollama_cloud": "API Key required for Ollama Cloud",
+  "@api_key_required_ollama_cloud": {
+    "description": "Validation: API key required for Ollama Cloud"
+  },
+  "api_key_hint_ollama_cloud": "Paste your Ollama Cloud API key",
+  "@api_key_hint_ollama_cloud": {
+    "description": "Hint for the Ollama Cloud API key input"
+  },
+  "add_server_ollama_cloud_subtitle": "Connect to Ollama Cloud with an API key from ollama.com/settings/keys to access managed cloud models.",
+  "@add_server_ollama_cloud_subtitle": {
+    "description": "Add server screen subtitle for Ollama Cloud"
+  },
+  "add_server_openrouter_subtitle": "Connect through OpenRouter with a valid API key and keep this profile ready for model routing.",
+  "@add_server_openrouter_subtitle": {
+    "description": "Add server screen subtitle for OpenRouter"
+  },
+  "add_server_endpoint_subtitle": "Configure a local or self-hosted endpoint, then verify the connection before saving.",
+  "@add_server_endpoint_subtitle": {
+    "description": "Add server screen subtitle for endpoint-based servers"
   },
   "server_type_openrouter": "OpenRouter",
   "@server_type_openrouter": {
@@ -2976,6 +3016,10 @@
   "think_button_label": "Think",
   "@think_button_label": {
     "description": "Label for the reasoning-toggle button shown for reasoning-capable models"
+  },
+  "thinking_mode_title": "Thinking mode",
+  "@thinking_mode_title": {
+    "description": "Title for the reasoning mode selector shown in the model picker"
   },
   "reasoning_effort_low": "Low",
   "@reasoning_effort_low": {

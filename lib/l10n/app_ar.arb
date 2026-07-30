@@ -819,6 +819,7 @@
   "lm_studio_memory_settings_title": "الذاكرة المخصصة للتوصيات",
   "lm_studio_memory_settings_desc": "تُستخدم لتقدير ما إذا كانت النماذج تتناسب مع جهازك في متصفح النماذج.",
   "think_button_label": "تفكير",
+  "thinking_mode_title": "وضع التفكير",
   "reasoning_effort_low": "منخفض",
   "reasoning_effort_medium": "متوسط",
   "reasoning_effort_high": "مرتفع",

@@ -36,8 +36,8 @@ class ModelChip extends StatelessWidget {
     final bg = hasModel
         ? theme.colorScheme.primary.withValues(alpha: 0.12)
         : (isDark
-            ? AppColors.darkSurfaceInput
-            : AppColors.lightSurface.withValues(alpha: 0.0));
+              ? AppColors.darkSurfaceInput
+              : AppColors.lightSurface.withValues(alpha: 0.0));
     final borderColor = hasModel
         ? theme.colorScheme.primary.withValues(alpha: 0.4)
         : (isDark ? AppColors.darkBorder : AppColors.lightBorder);
@@ -50,6 +50,10 @@ class ModelChip extends StatelessWidget {
         onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(999),
         child: Container(
+          // Constrain the pill itself instead of the entire action row. This
+          // lets longer model names be readable while Flexible in the parent
+          // row still protects the fixed-size action buttons on the right.
+          constraints: const BoxConstraints(minWidth: 0, maxWidth: 280),
           padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 10, 6),
           decoration: BoxDecoration(
             color: bg,
@@ -59,8 +63,7 @@ class ModelChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 160),
+              Flexible(
                 child: Text(
                   label,
                   maxLines: 1,
@@ -72,7 +75,7 @@ class ModelChip extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 6),
               HugeIcon(
                 icon: HugeIcons.strokeRoundedArrowDown01,
                 size: 12,

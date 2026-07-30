@@ -819,6 +819,7 @@
   "lm_studio_memory_settings_title": "推奨用メモリ設定",
   "lm_studio_memory_settings_desc": "モデルブラウザーでモデルがお使いのデバイスに収まるかどうかを判断するために使用されます。",
   "think_button_label": "思考",
+  "thinking_mode_title": "思考モード",
   "reasoning_effort_low": "低",
   "reasoning_effort_medium": "中",
   "reasoning_effort_high": "高",

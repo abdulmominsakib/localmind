@@ -819,6 +819,7 @@
   "lm_studio_memory_settings_title": "सिफारिशों के लिए मेमोरी",
   "lm_studio_memory_settings_desc": "मॉडल ब्राउज़र में यह अनुमान लगाने के लिए उपयोग किया जाता है कि क्या मॉडल आपकी मशीन में फिट होंगे।",
   "think_button_label": "सोचें",
+  "thinking_mode_title": "सोच का तरीका",
   "reasoning_effort_low": "कम",
   "reasoning_effort_medium": "मध्यम",
   "reasoning_effort_high": "उच्च",

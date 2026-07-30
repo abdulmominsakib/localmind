@@ -1,3 +1,4 @@
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/models/enums.dart';
 
 bool _hasExplicitHttpScheme(String input) {
@@ -34,6 +35,9 @@ String displayServerAddress(String host, int port, ServerType type) {
   if (type == ServerType.openRouter) {
     return 'openrouter.ai';
   }
+  if (type == ServerType.ollamaCloud) {
+    return 'ollama.com';
+  }
   if (type == ServerType.onDevice) {
     return 'Local inference';
   }
@@ -64,6 +68,9 @@ String displayServerAddress(String host, int port, ServerType type) {
 String buildServerBaseUrl(String host, int port, ServerType type) {
   if (type == ServerType.openRouter) {
     return 'https://openrouter.ai/api/v1';
+  }
+  if (type == ServerType.ollamaCloud) {
+    return AppConstants.ollamaCloudBaseUrl;
   }
   if (type == ServerType.onDevice) {
     return 'on-device';
@@ -148,7 +155,10 @@ class Server {
   String get apiPathPrefix => normalizeServerPathPrefix(pathPrefix);
 
   String _apiPath(String suffix) {
-    if (type != ServerType.ollama || apiPathPrefix.isEmpty) {
+    if (apiPathPrefix.isEmpty) {
+      return suffix;
+    }
+    if (type != ServerType.ollama && type != ServerType.ollamaCloud) {
       return suffix;
     }
     return '$apiPathPrefix$suffix';
@@ -167,6 +177,7 @@ class Server {
       case ServerType.openAICompatible:
         return '$baseUrl/v1/chat/completions';
       case ServerType.ollama:
+      case ServerType.ollamaCloud:
         return '$baseUrl${_apiPath('/api/chat')}';
       case ServerType.openRouter:
         return '$baseUrl/chat/completions';
@@ -182,6 +193,7 @@ class Server {
       case ServerType.openAICompatible:
         return '$baseUrl/v1/models';
       case ServerType.ollama:
+      case ServerType.ollamaCloud:
         return '$baseUrl${_apiPath('/api/tags')}';
       case ServerType.openRouter:
         return '$baseUrl/models';
@@ -198,8 +210,8 @@ class Server {
         return '$baseUrl/v1/models';
       case ServerType.ollama:
         return '$baseUrl${_apiPath('/api/ps')}';
+      case ServerType.ollamaCloud:
       case ServerType.openRouter:
-        return '';
       case ServerType.onDevice:
         return '';
     }
@@ -208,6 +220,7 @@ class Server {
   String get modelDetailsEndpoint {
     switch (type) {
       case ServerType.ollama:
+      case ServerType.ollamaCloud:
         return '$baseUrl${_apiPath('/api/show')}';
       case ServerType.lmStudio:
       case ServerType.openAICompatible:
@@ -225,8 +238,8 @@ class Server {
         return '$baseUrl/v1/models/load';
       case ServerType.ollama:
         return '$baseUrl${_apiPath('/api/generate')}';
+      case ServerType.ollamaCloud:
       case ServerType.openRouter:
-        return '';
       case ServerType.onDevice:
         return '';
     }
@@ -240,14 +253,17 @@ class Server {
         return '$baseUrl/v1/models/unload';
       case ServerType.ollama:
         return '$baseUrl${_apiPath('/api/generate')}';
+      case ServerType.ollamaCloud:
       case ServerType.openRouter:
-        return '';
       case ServerType.onDevice:
         return '';
     }
   }
 
   bool get isOnDevice => type == ServerType.onDevice;
+  bool get isOllamaCloud => type == ServerType.ollamaCloud;
+  bool get isOllamaFamily =>
+      type == ServerType.ollama || type == ServerType.ollamaCloud;
 
   String get displayAddress => displayServerAddress(host, port, type);
 

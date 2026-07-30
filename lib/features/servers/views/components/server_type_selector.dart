@@ -39,6 +39,12 @@ class ServerTypeSelector extends StatelessWidget {
         Colors.orange,
       ),
       (
+        ServerType.ollamaCloud,
+        l10n.server_type_ollama_cloud,
+        HugeIcons.strokeRoundedAiCloud,
+        Colors.deepOrange,
+      ),
+      (
         ServerType.openRouter,
         l10n.server_type_openrouter,
         HugeIcons.strokeRoundedCloud,

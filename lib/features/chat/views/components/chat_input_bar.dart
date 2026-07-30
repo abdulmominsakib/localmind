@@ -22,6 +22,7 @@ import '../../providers/chat_providers.dart';
 import '../../utils/attachment_helpers.dart';
 import '../../utils/image_upload_utils.dart';
 import '../../../models/views/model_picker_sheet.dart';
+import '../../../models/components/thinking_mode_chip.dart';
 import 'attach_sheet.dart';
 import 'image_preview_dialog.dart';
 import 'model_chip.dart';
@@ -586,105 +587,6 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     );
   }
 
-  String _effortLabel(ReasoningEffort effort) {
-    final l10n = AppLocalizations.of(context)!;
-    return switch (effort) {
-      ReasoningEffort.low => l10n.reasoning_effort_low,
-      ReasoningEffort.medium => l10n.reasoning_effort_medium,
-      ReasoningEffort.high => l10n.reasoning_effort_high,
-    };
-  }
-
-  Widget _buildThinkButton(ThemeData theme) {
-    final selectedModel = ref.watch(selectedModelProvider);
-    if (selectedModel?.supportsReasoning != true) {
-      return const SizedBox.shrink();
-    }
-
-    final l10n = AppLocalizations.of(context)!;
-    final reasoningConfig = ref.watch(chatReasoningConfigProvider);
-    final enabled = reasoningConfig.enabled;
-    final activeColor = theme.colorScheme.primary;
-    final fgColor = enabled
-        ? activeColor
-        : theme.colorScheme.onSurface.withValues(alpha: 0.6);
-
-    return Padding(
-      padding: const EdgeInsets.only(left: 6),
-      child: Container(
-        height: 32,
-        decoration: BoxDecoration(
-          color: enabled
-              ? activeColor.withValues(alpha: 0.15)
-              : theme.colorScheme.onSurface.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () {
-                Haptics.vibrate(HapticsType.light);
-                ref
-                    .read(chatReasoningConfigProvider.notifier)
-                    .setEnabled(!enabled);
-              },
-              child: Padding(
-                padding: const EdgeInsetsDirectional.only(
-                  start: 10,
-                  end: 4,
-                  top: 6,
-                  bottom: 6,
-                ),
-                child: HugeIcon(
-                  icon: enabled
-                      ? HugeIcons.strokeRoundedTick01
-                      : HugeIcons.strokeRoundedSquare01,
-                  size: 18,
-                  color: fgColor,
-                ),
-              ),
-            ),
-            PopupMenuButton<ReasoningEffort>(
-              tooltip: '',
-              padding: EdgeInsets.zero,
-              onSelected: (effort) {
-                Haptics.vibrate(HapticsType.light);
-                ref
-                    .read(chatReasoningConfigProvider.notifier)
-                    .setEffort(effort);
-              },
-              itemBuilder: (context) => ReasoningEffort.values
-                  .map(
-                    (effort) => PopupMenuItem(
-                      value: effort,
-                      child: Text(_effortLabel(effort)),
-                    ),
-                  )
-                  .toList(),
-              child: Padding(
-                padding: const EdgeInsetsDirectional.only(
-                  end: 12,
-                  top: 6,
-                  bottom: 6,
-                ),
-                child: Text(
-                  '${l10n.think_button_label} (${_effortLabel(reasoningConfig.effort)})',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: fgColor,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   static const _holdDuration = Duration(milliseconds: 3000);
   static const _insertHoldThreshold = 500 / 3000;
 
@@ -955,9 +857,9 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         if (ref.read(isStreamingProvider)) return;
 
         _preSpeechText = _controller.text;
-        await ref.read(sttProvider.notifier).startListening(
-              onResult: _onSpeechResult,
-            );
+        await ref
+            .read(sttProvider.notifier)
+            .startListening(onResult: _onSpeechResult);
       }
     });
 
@@ -1226,9 +1128,13 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
             ),
 
             // Bottom action row: attach button, model picker chip, optional
-            // reasoning/role controls, mic, send. Mirrors the modern
-            // composer layout where composer actions sit in a single
-            // horizontal row directly below the text input.
+            // thinking-mode chip, optional role swap, mic, voice, send.
+            //
+            // The model chip is wrapped in `Flexible` so a long model name
+            // can take up more horizontal room without pushing the mic /
+            // voice / send buttons off-screen. The right-side cluster has
+            // fixed widths so the layout is stable regardless of how long
+            // the model name gets.
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -1236,30 +1142,38 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
                 const SizedBox(width: 8),
 
-                ModelChip(
-                  model: selectedModel,
-                  enabled: isConnected && widget.enabled,
-                  onTap: () {
-                    Haptics.vibrate(HapticsType.light);
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                      builder: (_) => const ModelPickerSheet(),
-                    );
-                  },
+                Flexible(
+                  child: ModelChip(
+                    model: selectedModel,
+                    enabled: isConnected && widget.enabled,
+                    onTap: () {
+                      Haptics.vibrate(HapticsType.light);
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        builder: (_) => const ModelPickerSheet(),
+                      );
+                    },
+                  ),
                 ),
 
                 if (selectedModel?.supportsReasoning == true) ...[
                   const SizedBox(width: 6),
-                  _buildThinkButton(theme),
+                  ThinkingModeChip(
+                    model: selectedModel,
+                    isDark: isDark,
+                    compact: true,
+                  ),
                 ],
                 if (showRoleSwapButton) ...[
                   const SizedBox(width: 4),
                   _buildRoleSwapButton(theme),
                 ],
 
-                const Spacer(),
+                // Fixed gap so we never collapse the right-side cluster
+                // against the chips, even when the model name is short.
+                const SizedBox(width: 8),
 
                 _buildMicButton(isListening, theme),
 

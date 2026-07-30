@@ -1,1 +1,118 @@
-{}
+{
+  "ar": [
+    "server_type_ollama_cloud",
+    "server_type_ollama_cloud_sub",
+    "server_type_ollama_cloud_display",
+    "server_address_ollama_cloud",
+    "ollama_cloud_disclosure",
+    "api_key_required_ollama_cloud",
+    "api_key_hint_ollama_cloud",
+    "add_server_ollama_cloud_subtitle",
+    "add_server_openrouter_subtitle",
+    "add_server_endpoint_subtitle"
+  ],
+
+  "bn": [
+    "server_type_ollama_cloud",
+    "server_type_ollama_cloud_sub",
+    "server_type_ollama_cloud_display",
+    "server_address_ollama_cloud",
+    "ollama_cloud_disclosure",
+    "api_key_required_ollama_cloud",
+    "api_key_hint_ollama_cloud",
+    "add_server_ollama_cloud_subtitle",
+    "add_server_openrouter_subtitle",
+    "add_server_endpoint_subtitle"
+  ],
+
+  "es": [
+    "server_type_ollama_cloud",
+    "server_type_ollama_cloud_sub",
+    "server_type_ollama_cloud_display",
+    "server_address_ollama_cloud",
+    "ollama_cloud_disclosure",
+    "api_key_required_ollama_cloud",
+    "api_key_hint_ollama_cloud",
+    "add_server_ollama_cloud_subtitle",
+    "add_server_openrouter_subtitle",
+    "add_server_endpoint_subtitle"
+  ],
+
+  "hi": [
+    "server_type_ollama_cloud",
+    "server_type_ollama_cloud_sub",
+    "server_type_ollama_cloud_display",
+    "server_address_ollama_cloud",
+    "ollama_cloud_disclosure",
+    "api_key_required_ollama_cloud",
+    "api_key_hint_ollama_cloud",
+    "add_server_ollama_cloud_subtitle",
+    "add_server_openrouter_subtitle",
+    "add_server_endpoint_subtitle"
+  ],
+
+  "it": [
+    "server_type_ollama_cloud",
+    "server_type_ollama_cloud_sub",
+    "server_type_ollama_cloud_display",
+    "server_address_ollama_cloud",
+    "ollama_cloud_disclosure",
+    "api_key_required_ollama_cloud",
+    "api_key_hint_ollama_cloud",
+    "add_server_ollama_cloud_subtitle",
+    "add_server_openrouter_subtitle",
+    "add_server_endpoint_subtitle"
+  ],
+
+  "ja": [
+    "server_type_ollama_cloud",
+    "server_type_ollama_cloud_sub",
+    "server_type_ollama_cloud_display",
+    "server_address_ollama_cloud",
+    "ollama_cloud_disclosure",
+    "api_key_required_ollama_cloud",
+    "api_key_hint_ollama_cloud",
+    "add_server_ollama_cloud_subtitle",
+    "add_server_openrouter_subtitle",
+    "add_server_endpoint_subtitle"
+  ],
+
+  "ru": [
+    "server_type_ollama_cloud",
+    "server_type_ollama_cloud_sub",
+    "server_type_ollama_cloud_display",
+    "server_address_ollama_cloud",
+    "ollama_cloud_disclosure",
+    "api_key_required_ollama_cloud",
+    "api_key_hint_ollama_cloud",
+    "add_server_ollama_cloud_subtitle",
+    "add_server_openrouter_subtitle",
+    "add_server_endpoint_subtitle"
+  ],
+
+  "zh": [
+    "server_type_ollama_cloud",
+    "server_type_ollama_cloud_sub",
+    "server_type_ollama_cloud_display",
+    "server_address_ollama_cloud",
+    "ollama_cloud_disclosure",
+    "api_key_required_ollama_cloud",
+    "api_key_hint_ollama_cloud",
+    "add_server_ollama_cloud_subtitle",
+    "add_server_openrouter_subtitle",
+    "add_server_endpoint_subtitle"
+  ],
+
+  "zh_TW": [
+    "server_type_ollama_cloud",
+    "server_type_ollama_cloud_sub",
+    "server_type_ollama_cloud_display",
+    "server_address_ollama_cloud",
+    "ollama_cloud_disclosure",
+    "api_key_required_ollama_cloud",
+    "api_key_hint_ollama_cloud",
+    "add_server_ollama_cloud_subtitle",
+    "add_server_openrouter_subtitle",
+    "add_server_endpoint_subtitle"
+  ]
+}

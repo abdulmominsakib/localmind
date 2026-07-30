@@ -53,6 +53,7 @@ class ServerApiService {
           models = _parseOpenAICompatibleModels(response.data, server);
           break;
         case ServerType.ollama:
+        case ServerType.ollamaCloud:
           models = await _parseAndEnrichOllamaModels(response.data, server);
           break;
         case ServerType.openRouter:
@@ -110,9 +111,11 @@ class ServerApiService {
         }
         break;
       case ServerType.ollama:
-        // Ollama auto-loads models on /api/chat. Calling /api/generate here
-        // would trigger an auto-pull (download) when the model is not already
-        // present on the Ollama server, which is not what the user wants.
+      case ServerType.ollamaCloud:
+        // Ollama (and Ollama Cloud) auto-loads models on /api/chat. Calling
+        // /api/generate here would trigger an auto-pull (download) when the
+        // model is not already present on the server, which is not what the
+        // user wants.
         return;
       case ServerType.openRouter:
       case ServerType.onDevice:
@@ -152,9 +155,11 @@ class ServerApiService {
           throw Exception(_extractApiErrorMessage(e.response?.data) ?? e.message);
         }
       case ServerType.ollama:
-        // Ollama auto-loads models on /api/chat. Calling /api/generate here
-        // would trigger an auto-pull (download) when the model is not already
-        // present on the Ollama server, which is not what the user wants.
+      case ServerType.ollamaCloud:
+        // Ollama (and Ollama Cloud) auto-loads models on /api/chat. Calling
+        // /api/generate here would trigger an auto-pull (download) when the
+        // model is not already present on the server, which is not what the
+        // user wants.
         return null;
       case ServerType.openRouter:
       case ServerType.onDevice:
@@ -215,6 +220,10 @@ class ServerApiService {
           options: Options(headers: buildServerAuthHeaders(server)),
         );
         break;
+      case ServerType.ollamaCloud:
+        // Ollama Cloud manages model lifecycle server-side; no client-side
+        // unload action is supported.
+        return;
       case ServerType.openRouter:
       case ServerType.onDevice:
         break;

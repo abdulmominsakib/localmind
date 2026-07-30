@@ -189,9 +189,21 @@ class _OnboardingServerTypeScreenState
                                 type: ServerType.ollama,
                                 title: l10n.server_type_ollama,
                                 subtitle: l10n.server_type_ollama_desc,
-                                iconWidget: HugeIcon(icon: 
+                                iconWidget: HugeIcon(icon:
                                   HugeIcons.strokeRoundedRobot01,
                                   color: _selectedType == ServerType.ollama
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurface,
+                                ),
+                                theme: theme,
+                              ),
+                              _buildServerCard(
+                                type: ServerType.ollamaCloud,
+                                title: l10n.server_type_ollama_cloud,
+                                subtitle: l10n.server_type_ollama_cloud_sub,
+                                iconWidget: HugeIcon(
+                                  icon: HugeIcons.strokeRoundedAiCloud,
+                                  color: _selectedType == ServerType.ollamaCloud
                                       ? theme.colorScheme.primary
                                       : theme.colorScheme.onSurface,
                                 ),

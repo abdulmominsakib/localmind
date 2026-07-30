@@ -401,7 +401,7 @@ class _ModelListState extends ConsumerState<ModelList> {
                   }
 
                   if (context.mounted) {
-                    final message = activeServer.type == ServerType.ollama
+                    final message = activeServer.isOllamaFamily
                         ? l10n.model_unloaded_ollama(model.name)
                         : l10n.model_unloaded_success(model.name);
                     ScaffoldMessenger.of(context).showSnackBar(

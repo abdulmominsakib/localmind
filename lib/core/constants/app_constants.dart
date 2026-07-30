@@ -22,4 +22,6 @@ class AppConstants {
   static const int ollamaDefaultPort = 11434;
 
   static const String openRouterBaseUrl = 'https://openrouter.ai/api/v1';
+  static const String ollamaCloudBaseUrl = 'https://ollama.com';
+  static const int ollamaCloudDefaultPort = 443;
 }

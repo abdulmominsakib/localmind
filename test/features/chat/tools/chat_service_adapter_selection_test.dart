@@ -74,6 +74,11 @@ void main() {
       final adapter = createAdapterForServerType(ServerType.ollama);
       expect(adapter, isA<OllamaToolAdapter>());
     });
+
+    test('uses Ollama adapter for Ollama Cloud servers', () {
+      final adapter = createAdapterForServerType(ServerType.ollamaCloud);
+      expect(adapter, isA<OllamaToolAdapter>());
+    });
   });
 
   group('ChatService implementation tool call adapter integration', () {

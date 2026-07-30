@@ -200,7 +200,14 @@ Voice? voiceFromSettings(String? voiceId, EngineId engine) {
   }
 }
 
-enum ServerType { lmStudio, openAICompatible, ollama, openRouter, onDevice }
+enum ServerType {
+  lmStudio,
+  openAICompatible,
+  ollama,
+  ollamaCloud,
+  openRouter,
+  onDevice,
+}
 
 enum ConnectionStatus { connected, disconnected, checking, error }
 

@@ -234,6 +234,11 @@ HugeIconData? getDefaultServerIcon(String? serverType) {
         (icon) => icon.name == 'Bot',
         orElse: () => serverIcons.first,
       );
+    case 'ollamaCloud':
+      return serverIcons.firstWhere(
+        (icon) => icon.name == 'AI Cloud',
+        orElse: () => serverIcons.first,
+      );
     case 'openRouter':
       return serverIcons.firstWhere(
         (icon) => icon.name == 'Cloud',
