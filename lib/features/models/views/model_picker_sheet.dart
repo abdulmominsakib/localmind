@@ -123,6 +123,7 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
                   isDark: isDark,
                   isThinking: isThinking,
                   loadedCount: loadedCount,
+                  serverName: activeServer?.name,
                   showBrowseButton: isLmStudio,
                   onBrowseModels: isLmStudio
                       ? () {
@@ -145,19 +146,6 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
                       ? () => _unloadAllModels(context, ref, activeServer)
                       : null,
                 ),
-                if (activeServer != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      activeServer.name,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark
-                            ? AppColors.darkMutedText
-                            : AppColors.lightMutedText,
-                      ),
-                    ),
-                  ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -235,6 +223,7 @@ class _ModelPickerHeader extends ConsumerWidget {
     required this.isDark,
     required this.isThinking,
     required this.loadedCount,
+    this.serverName,
     this.showBrowseButton = false,
     this.onBrowseModels,
     this.onRefresh,
@@ -244,6 +233,7 @@ class _ModelPickerHeader extends ConsumerWidget {
   final bool isDark;
   final bool isThinking;
   final int loadedCount;
+  final String? serverName;
   final bool showBrowseButton;
   final VoidCallback? onBrowseModels;
   final VoidCallback? onRefresh;
@@ -256,6 +246,8 @@ class _ModelPickerHeader extends ConsumerWidget {
     final activeConv = ref.watch(conv.activeConversationProvider);
     final contextLength = activeConv?.contextLength ?? settings.contextLength;
 
+    final hasSubtitle = serverName != null || loadedCount > 0;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -265,47 +257,67 @@ class _ModelPickerHeader extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Text(
-                    l10n.select_model_title,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
+                  Flexible(
+                    child: Text(
+                      l10n.select_model_title,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
-                  if (loadedCount > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            (isDark
-                                    ? AppColors.darkAccent
-                                    : AppColors.lightAccent)
-                                .withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        l10n.loaded_models_count(loadedCount),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? AppColors.darkAccent
-                              : AppColors.lightAccent,
-                        ),
-                      ),
-                    ),
-                  ],
                   if (isThinking) ...[
                     const SizedBox(width: 8),
                     ThinkingIndicator(isDark: isDark),
                   ],
                 ],
               ),
+              if (hasSubtitle) ...[
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    if (serverName != null)
+                      Text(
+                        serverName!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark
+                              ? AppColors.darkMutedText
+                              : AppColors.lightMutedText,
+                        ),
+                      ),
+                    if (serverName != null && loadedCount > 0)
+                      const SizedBox(width: 8),
+                    if (loadedCount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (isDark
+                                  ? AppColors.darkAccent
+                                  : AppColors.lightAccent)
+                              .withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          l10n.loaded_models_count(loadedCount),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.darkAccent
+                                : AppColors.lightAccent,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
