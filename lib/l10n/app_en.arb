@@ -1209,6 +1209,35 @@
   "@active_integrations": {
     "description": "Active MCP integrations section"
   },
+  "import_mcp_json": "Import JSON",
+  "@import_mcp_json": {
+    "description": "Button label to import MCP servers from JSON"
+  },
+  "import_mcp_json_dialog_title": "Import MCP Config JSON",
+  "@import_mcp_json_dialog_title": {
+    "description": "Dialog title for importing MCP JSON"
+  },
+  "import_mcp_json_instructions": "Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:",
+  "@import_mcp_json_instructions": {
+    "description": "Instructions for importing MCP JSON"
+  },
+  "import_mcp_json_placeholder": "Paste mcpServers JSON or plugin list here...",
+  "@import_mcp_json_placeholder": {
+    "description": "Placeholder for MCP JSON import field"
+  },
+  "mcp_import_success": "Successfully imported {count} integration(s)",
+  "@mcp_import_success": {
+    "description": "Toast message on successful MCP import",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcp_import_failed": "No valid MCP integrations found in JSON",
+  "@mcp_import_failed": {
+    "description": "Toast message on failed MCP import"
+  },
   "enable_notifications": "Enable Notifications",
   "@enable_notifications": {
     "description": "Notification banner title"

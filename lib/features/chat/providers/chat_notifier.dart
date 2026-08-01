@@ -874,9 +874,11 @@ class ChatNotifier extends Notifier<ChatState> {
 
       if (chatService != null) {
         final mcpConfig = ref.read(chatMcpConfigProvider);
+        final activeIntegrations =
+            mcpConfig.integrations.where((i) => i.enabled).toList();
         final integrations =
-            mcpConfig.enabled && mcpConfig.integrations.isNotEmpty
-            ? mcpConfig.integrations
+            mcpConfig.enabled && activeIntegrations.isNotEmpty
+            ? activeIntegrations
             : null;
 
         final registry = ref.read(toolRegistryProvider);
@@ -1934,9 +1936,11 @@ class ChatNotifier extends Notifier<ChatState> {
       var isFirstContinueChunk = continueGeneration;
 
       final mcpConfig = ref.read(chatMcpConfigProvider);
+      final activeIntegrations =
+          mcpConfig.integrations.where((i) => i.enabled).toList();
       final integrations =
-          mcpConfig.enabled && mcpConfig.integrations.isNotEmpty
-          ? mcpConfig.integrations
+          mcpConfig.enabled && activeIntegrations.isNotEmpty
+          ? activeIntegrations
           : null;
 
       final registry = ref.read(toolRegistryProvider);

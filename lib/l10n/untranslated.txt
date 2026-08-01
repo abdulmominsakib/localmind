@@ -1,5 +1,11 @@
 {
   "ar": [
+    "import_mcp_json",
+    "import_mcp_json_dialog_title",
+    "import_mcp_json_instructions",
+    "import_mcp_json_placeholder",
+    "mcp_import_success",
+    "mcp_import_failed",
     "server_type_ollama_cloud",
     "server_type_ollama_cloud_sub",
     "server_type_ollama_cloud_display",
@@ -13,6 +19,12 @@
   ],
 
   "bn": [
+    "import_mcp_json",
+    "import_mcp_json_dialog_title",
+    "import_mcp_json_instructions",
+    "import_mcp_json_placeholder",
+    "mcp_import_success",
+    "mcp_import_failed",
     "server_type_ollama_cloud",
     "server_type_ollama_cloud_sub",
     "server_type_ollama_cloud_display",
@@ -26,6 +38,12 @@
   ],
 
   "es": [
+    "import_mcp_json",
+    "import_mcp_json_dialog_title",
+    "import_mcp_json_instructions",
+    "import_mcp_json_placeholder",
+    "mcp_import_success",
+    "mcp_import_failed",
     "server_type_ollama_cloud",
     "server_type_ollama_cloud_sub",
     "server_type_ollama_cloud_display",
@@ -38,7 +56,22 @@
     "add_server_endpoint_subtitle"
   ],
 
+  "fr": [
+    "import_mcp_json",
+    "import_mcp_json_dialog_title",
+    "import_mcp_json_instructions",
+    "import_mcp_json_placeholder",
+    "mcp_import_success",
+    "mcp_import_failed"
+  ],
+
   "hi": [
+    "import_mcp_json",
+    "import_mcp_json_dialog_title",
+    "import_mcp_json_instructions",
+    "import_mcp_json_placeholder",
+    "mcp_import_success",
+    "mcp_import_failed",
     "server_type_ollama_cloud",
     "server_type_ollama_cloud_sub",
     "server_type_ollama_cloud_display",
@@ -52,6 +85,12 @@
   ],
 
   "it": [
+    "import_mcp_json",
+    "import_mcp_json_dialog_title",
+    "import_mcp_json_instructions",
+    "import_mcp_json_placeholder",
+    "mcp_import_success",
+    "mcp_import_failed",
     "server_type_ollama_cloud",
     "server_type_ollama_cloud_sub",
     "server_type_ollama_cloud_display",
@@ -65,6 +104,12 @@
   ],
 
   "ja": [
+    "import_mcp_json",
+    "import_mcp_json_dialog_title",
+    "import_mcp_json_instructions",
+    "import_mcp_json_placeholder",
+    "mcp_import_success",
+    "mcp_import_failed",
     "server_type_ollama_cloud",
     "server_type_ollama_cloud_sub",
     "server_type_ollama_cloud_display",
@@ -78,6 +123,12 @@
   ],
 
   "ru": [
+    "import_mcp_json",
+    "import_mcp_json_dialog_title",
+    "import_mcp_json_instructions",
+    "import_mcp_json_placeholder",
+    "mcp_import_success",
+    "mcp_import_failed",
     "server_type_ollama_cloud",
     "server_type_ollama_cloud_sub",
     "server_type_ollama_cloud_display",
@@ -90,7 +141,22 @@
     "add_server_endpoint_subtitle"
   ],
 
+  "tr": [
+    "import_mcp_json",
+    "import_mcp_json_dialog_title",
+    "import_mcp_json_instructions",
+    "import_mcp_json_placeholder",
+    "mcp_import_success",
+    "mcp_import_failed"
+  ],
+
   "zh": [
+    "import_mcp_json",
+    "import_mcp_json_dialog_title",
+    "import_mcp_json_instructions",
+    "import_mcp_json_placeholder",
+    "mcp_import_success",
+    "mcp_import_failed",
     "server_type_ollama_cloud",
     "server_type_ollama_cloud_sub",
     "server_type_ollama_cloud_display",
@@ -104,6 +170,12 @@
   ],
 
   "zh_TW": [
+    "import_mcp_json",
+    "import_mcp_json_dialog_title",
+    "import_mcp_json_instructions",
+    "import_mcp_json_placeholder",
+    "mcp_import_success",
+    "mcp_import_failed",
     "server_type_ollama_cloud",
     "server_type_ollama_cloud_sub",
     "server_type_ollama_cloud_display",

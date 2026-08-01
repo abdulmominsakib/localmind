@@ -238,7 +238,7 @@ class LMStudioChatService implements ChatService {
     // sending them would be silently ignored. The local tool registry is
     // therefore only useful for non-LM-Studio server types on this build.
     if (integrations != null && integrations.isNotEmpty) {
-      body['integrations'] = integrations.map((i) => i.toJson()).toList();
+      body['integrations'] = integrations.map((i) => i.toApiJson()).toList();
     }
 
     try {
@@ -659,7 +659,7 @@ class OpenAICompatibleChatService implements ChatService {
     _applyReasoningControl(body, params);
 
     if (integrations != null && integrations.isNotEmpty) {
-      body['integrations'] = integrations.map((i) => i.toJson()).toList();
+      body['integrations'] = integrations.map((i) => i.toApiJson()).toList();
     }
 
     if (tools != null && tools.isNotEmpty) {

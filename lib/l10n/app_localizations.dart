@@ -1767,6 +1767,42 @@ abstract class AppLocalizations {
   /// **'Active Integrations'**
   String get active_integrations;
 
+  /// Button label to import MCP servers from JSON
+  ///
+  /// In en, this message translates to:
+  /// **'Import JSON'**
+  String get import_mcp_json;
+
+  /// Dialog title for importing MCP JSON
+  ///
+  /// In en, this message translates to:
+  /// **'Import MCP Config JSON'**
+  String get import_mcp_json_dialog_title;
+
+  /// Instructions for importing MCP JSON
+  ///
+  /// In en, this message translates to:
+  /// **'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:'**
+  String get import_mcp_json_instructions;
+
+  /// Placeholder for MCP JSON import field
+  ///
+  /// In en, this message translates to:
+  /// **'Paste mcpServers JSON or plugin list here...'**
+  String get import_mcp_json_placeholder;
+
+  /// Toast message on successful MCP import
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully imported {count} integration(s)'**
+  String mcp_import_success(int count);
+
+  /// Toast message on failed MCP import
+  ///
+  /// In en, this message translates to:
+  /// **'No valid MCP integrations found in JSON'**
+  String get mcp_import_failed;
+
   /// Notification banner title
   ///
   /// In en, this message translates to:

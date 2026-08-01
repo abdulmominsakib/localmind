@@ -277,7 +277,32 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
           ),
           const SizedBox(height: 16),
           if (mcpConfig.enabled && isGloballyEnabled) ...[
-            Text(l10n.add_ephemeral_mcp, style: theme.textTheme.list),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.add_ephemeral_mcp,
+                    style: theme.textTheme.list,
+                  ),
+                ),
+                ShadButton.outline(
+                  size: ShadButtonSize.sm,
+                  onPressed: () => _showImportJsonDialog(context),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const HugeIcon(
+                        icon: HugeIcons.strokeRoundedFileImport,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(l10n.import_mcp_json),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -329,27 +354,54 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
                       ),
                       child: ListTile(
                         dense: true,
-                        leading: const HugeIcon(
+                        leading: HugeIcon(
                           icon: HugeIcons.strokeRoundedPuzzle,
                           size: 18,
+                          color: integration.enabled
+                              ? null
+                              : Colors.grey,
                         ),
                         title: Text(
                           integration.serverLabel ?? integration.pluginId ?? '',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            decoration: integration.enabled
+                                ? TextDecoration.none
+                                : TextDecoration.lineThrough,
+                            color: integration.enabled
+                                ? null
+                                : (isDark
+                                    ? AppColors.darkMutedText
+                                    : AppColors.lightMutedText),
+                          ),
                         ),
                         subtitle: Text(
-                          integration.serverUrl ?? '',
+                          integration.type == McpIntegrationType.plugin
+                              ? 'Plugin (${integration.pluginId})'
+                              : (integration.serverUrl ?? ''),
                           style: const TextStyle(fontSize: 11),
                         ),
-                        trailing: ShadIconButton.ghost(
-                          icon: const HugeIcon(icon: 
-                            HugeIcons.strokeRoundedDelete01,
-                            size: 18,
-                            color: Colors.red,
-                          ),
-                          onPressed: () => ref
-                              .read(chatMcpConfigProvider.notifier)
-                              .removeIntegration(index),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ShadSwitch(
+                              value: integration.enabled,
+                              onChanged: (v) => ref
+                                  .read(chatMcpConfigProvider.notifier)
+                                  .toggleIntegration(index, v),
+                            ),
+                            const SizedBox(width: 4),
+                            ShadIconButton.ghost(
+                              icon: const HugeIcon(
+                                icon: HugeIcons.strokeRoundedDelete01,
+                                size: 18,
+                                color: Colors.red,
+                              ),
+                              onPressed: () => ref
+                                  .read(chatMcpConfigProvider.notifier)
+                                  .removeIntegration(index),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -363,17 +415,125 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
     );
   }
 
+  void _showImportJsonDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final jsonController = TextEditingController();
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              const HugeIcon(
+                icon: HugeIcons.strokeRoundedFileImport,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.import_mcp_json_dialog_title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.darkBackground
+                        : AppColors.lightSurface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.darkSurfaceCard
+                          : AppColors.lightBorder,
+                    ),
+                  ),
+                  child: Text(
+                    l10n.import_mcp_json_instructions,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? AppColors.darkMutedText
+                          : AppColors.lightMutedText,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ShadInput(
+                  controller: jsonController,
+                  maxLines: 8,
+                  placeholder: Text(
+                    l10n.import_mcp_json_placeholder,
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            ShadButton.ghost(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.cancel),
+            ),
+            ShadButton(
+              onPressed: () {
+                final jsonStr = jsonController.text.trim();
+                if (jsonStr.isNotEmpty) {
+                  final importedCount = ref
+                      .read(chatMcpConfigProvider.notifier)
+                      .importIntegrationsFromJson(jsonStr);
+                  Navigator.of(dialogContext).pop();
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        importedCount > 0
+                            ? l10n.mcp_import_success(importedCount)
+                            : l10n.mcp_import_failed,
+                      ),
+                      backgroundColor:
+                          importedCount > 0 ? Colors.green : Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: Text(l10n.import_mcp_json),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _addServer() {
     final label = _serverLabelController.text.trim();
     final url = _serverUrlController.text.trim();
     if (label.isEmpty && url.isEmpty) return;
 
     final McpIntegration integration;
-    if (label.startsWith('mcp/') || url.startsWith('mcp/')) {
-      final pluginId = label.startsWith('mcp/') ? label : url;
+    if (label.contains('/') || url.contains('/')) {
+      final raw = label.isNotEmpty ? label : url;
+      final pluginId = raw.contains('/') ? raw : 'mcp/$raw';
       integration = McpIntegration(
         type: McpIntegrationType.plugin,
         pluginId: pluginId,
+        serverLabel: label.isNotEmpty ? label : null,
       );
     } else {
       if (label.isEmpty || url.isEmpty) return;

@@ -7,6 +7,7 @@ class McpIntegration {
   final String? pluginId;
   final List<String>? allowedTools;
   final Map<String, String>? headers;
+  final bool enabled;
 
   const McpIntegration({
     required this.type,
@@ -15,9 +16,11 @@ class McpIntegration {
     this.pluginId,
     this.allowedTools,
     this.headers,
+    this.enabled = true,
   });
 
-  Map<String, dynamic> toJson() {
+  /// Returns the clean API payload expected by LM Studio native endpoint.
+  Map<String, dynamic> toApiJson() {
     if (type == McpIntegrationType.plugin) {
       return {
         'type': 'plugin',
@@ -34,6 +37,12 @@ class McpIntegration {
     };
   }
 
+  Map<String, dynamic> toJson() {
+    final map = toApiJson();
+    map['enabled'] = enabled;
+    return map;
+  }
+
   factory McpIntegration.fromJson(Map<String, dynamic> json) {
     final typeStr = json['type'] as String;
     final type = typeStr == 'plugin'
@@ -47,6 +56,7 @@ class McpIntegration {
       pluginId: json['id'] as String?,
       allowedTools: (json['allowed_tools'] as List?)?.cast<String>(),
       headers: (json['headers'] as Map?)?.cast<String, String>(),
+      enabled: json['enabled'] as bool? ?? true,
     );
   }
 
@@ -57,6 +67,7 @@ class McpIntegration {
     String? pluginId,
     List<String>? allowedTools,
     Map<String, String>? headers,
+    bool? enabled,
   }) {
     return McpIntegration(
       type: type ?? this.type,
@@ -65,6 +76,7 @@ class McpIntegration {
       pluginId: pluginId ?? this.pluginId,
       allowedTools: allowedTools ?? this.allowedTools,
       headers: headers ?? this.headers,
+      enabled: enabled ?? this.enabled,
     );
   }
 }

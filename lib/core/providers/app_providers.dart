@@ -2,6 +2,7 @@ import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../features/chat/data/models/mcp_integration.dart';
 import '../../features/chat/utils/image_upload_utils.dart';
 import '../../features/settings/data/models/app_settings.dart';
 import '../models/enums.dart';
@@ -131,6 +132,33 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(roleSwapButtonEnabled: value));
   void setShowSystemMessagesInChat(bool value) =>
       _update(state.copyWith(showSystemMessagesInChat: value));
+
+  void addSavedMcpIntegration(McpIntegration integration) {
+    final current = List<McpIntegration>.from(state.savedMcpIntegrations);
+    final exists = current.any((i) =>
+        (integration.pluginId != null && i.pluginId == integration.pluginId) ||
+        (integration.serverUrl != null && i.serverUrl == integration.serverUrl));
+    if (!exists) {
+      current.add(integration);
+      _update(state.copyWith(savedMcpIntegrations: current));
+    }
+  }
+
+  void removeSavedMcpIntegration(int index) {
+    if (index >= 0 && index < state.savedMcpIntegrations.length) {
+      final current = List<McpIntegration>.from(state.savedMcpIntegrations)
+        ..removeAt(index);
+      _update(state.copyWith(savedMcpIntegrations: current));
+    }
+  }
+
+  void toggleSavedMcpIntegration(int index, bool enabled) {
+    if (index >= 0 && index < state.savedMcpIntegrations.length) {
+      final current = List<McpIntegration>.from(state.savedMcpIntegrations);
+      current[index] = current[index].copyWith(enabled: enabled);
+      _update(state.copyWith(savedMcpIntegrations: current));
+    }
+  }
 
   Future<void> _update(AppSettings updated) async {
     state = updated;

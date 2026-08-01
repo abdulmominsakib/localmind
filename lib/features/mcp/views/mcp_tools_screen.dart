@@ -6,8 +6,10 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../chat/data/mcp_server_manager.dart';
 import '../../chat/data/tools/tool_definition.dart';
+import '../../chat/providers/chat_mcp_providers.dart';
 import '../../chat/providers/tooling_providers.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/theme/colors.dart';
 import '../../../core/utils/system_insets.dart';
 
 class McpToolsScreen extends ConsumerStatefulWidget {
@@ -156,6 +158,12 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           mcpCard,
+                          if (settings.mcpEnabled) ...[
+                            const SizedBox(height: 16),
+                            _ConfiguredMcpServersCard(
+                              onServersChanged: _refreshTools,
+                            ),
+                          ],
                           const SizedBox(height: 16),
                           toolsCard,
                         ],
@@ -231,12 +239,14 @@ class _McpSectionCard extends StatelessWidget {
     required this.children,
     this.icon = HugeIcons.strokeRoundedMcpServer,
     this.accent = const Color(0xFF8B5CF6),
+    this.trailing,
   });
 
   final String title;
   final List<List<dynamic>> icon;
   final Color accent;
   final List<Widget> children;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -269,10 +279,11 @@ class _McpSectionCard extends StatelessWidget {
                   child: Text(
                     title,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
+                if (trailing != null) ...[const SizedBox(width: 8), trailing!],
               ],
             ),
             const SizedBox(height: 12),
@@ -524,10 +535,10 @@ class _FeatureBadge extends StatelessWidget {
       child: Text(
         label.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: const Color(0xFFB45309),
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.45,
-            ),
+          color: const Color(0xFFB45309),
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.45,
+        ),
       ),
     );
   }
@@ -555,4 +566,299 @@ Color _surfaceColor(BuildContext context) {
 
 Color _outlineColor(BuildContext context, {double alpha = 0.6}) {
   return ShadTheme.of(context).colorScheme.border.withValues(alpha: alpha);
+}
+
+class _ConfiguredMcpServersCard extends ConsumerStatefulWidget {
+  const _ConfiguredMcpServersCard({required this.onServersChanged});
+
+  final VoidCallback onServersChanged;
+
+  @override
+  ConsumerState<_ConfiguredMcpServersCard> createState() =>
+      __ConfiguredMcpServersCardState();
+}
+
+class __ConfiguredMcpServersCardState
+    extends ConsumerState<_ConfiguredMcpServersCard> {
+  final _serverLabelController = TextEditingController();
+  final _serverUrlController = TextEditingController();
+
+  @override
+  void dispose() {
+    _serverLabelController.dispose();
+    _serverUrlController.dispose();
+    super.dispose();
+  }
+
+  void _addServer() {
+    final label = _serverLabelController.text.trim();
+    final url = _serverUrlController.text.trim();
+    if (label.isEmpty && url.isEmpty) return;
+
+    final McpIntegration integration;
+    if (label.contains('/') || url.contains('/')) {
+      final raw = label.isNotEmpty ? label : url;
+      final pluginId = raw.contains('/') ? raw : 'mcp/$raw';
+      integration = McpIntegration(
+        type: McpIntegrationType.plugin,
+        pluginId: pluginId,
+        serverLabel: label.isNotEmpty ? label : null,
+      );
+    } else {
+      if (label.isEmpty || url.isEmpty) return;
+      integration = McpIntegration(
+        type: McpIntegrationType.ephemeralMcp,
+        serverLabel: label,
+        serverUrl: url,
+      );
+    }
+
+    ref.read(settingsProvider.notifier).addSavedMcpIntegration(integration);
+    ref.read(chatMcpConfigProvider.notifier).addIntegration(integration);
+    _serverLabelController.clear();
+    _serverUrlController.clear();
+    widget.onServersChanged();
+  }
+
+  void _showImportJsonDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final jsonController = TextEditingController();
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              const HugeIcon(icon: HugeIcons.strokeRoundedFileImport, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.import_mcp_json_dialog_title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            padding: EdgeInsets.zero,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.darkBackground
+                        : AppColors.lightSurface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.darkSurfaceCard
+                          : AppColors.lightBorder,
+                    ),
+                  ),
+                  child: Text(
+                    l10n.import_mcp_json_instructions,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? AppColors.darkMutedText
+                          : AppColors.lightMutedText,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ShadInput(
+                  controller: jsonController,
+                  maxLines: 8,
+                  placeholder: Text(
+                    l10n.import_mcp_json_placeholder,
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            ShadButton.ghost(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.cancel),
+            ),
+            ShadButton(
+              onPressed: () {
+                final jsonStr = jsonController.text.trim();
+                if (jsonStr.isNotEmpty) {
+                  final count = ref
+                      .read(chatMcpConfigProvider.notifier)
+                      .importIntegrationsFromJson(jsonStr);
+                  Navigator.of(dialogContext).pop();
+                  widget.onServersChanged();
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        count > 0
+                            ? l10n.mcp_import_success(count)
+                            : l10n.mcp_import_failed,
+                      ),
+                      backgroundColor: count > 0 ? Colors.green : Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: Text(l10n.import_mcp_json),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final settings = ref.watch(settingsProvider);
+    final savedIntegrations = settings.savedMcpIntegrations;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return _McpSectionCard(
+      title: l10n.active_integrations,
+      accent: const Color(0xFF3B82F6),
+      icon: HugeIcons.strokeRoundedMcpServer,
+      trailing: ShadButton.outline(
+        size: ShadButtonSize.sm,
+        onPressed: () => _showImportJsonDialog(context),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const HugeIcon(icon: HugeIcons.strokeRoundedFileImport, size: 16),
+            const SizedBox(width: 4),
+            Text(l10n.import_mcp_json),
+          ],
+        ),
+      ),
+      children: [
+        if (savedIntegrations.isNotEmpty) ...[
+          ListView.builder(
+            shrinkWrap: true,
+            padding: EdgeInsets.zero,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: savedIntegrations.length,
+            itemBuilder: (context, index) {
+              final integration = savedIntegrations[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkBackground
+                      : AppColors.lightSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.darkSurfaceCard
+                        : AppColors.lightBorder,
+                  ),
+                ),
+                child: ListTile(
+                  dense: true,
+                  leading: HugeIcon(
+                    icon: HugeIcons.strokeRoundedPuzzle,
+                    size: 18,
+                    color: integration.enabled ? null : Colors.grey,
+                  ),
+                  title: Text(
+                    integration.serverLabel ?? integration.pluginId ?? '',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      decoration: integration.enabled
+                          ? TextDecoration.none
+                          : TextDecoration.lineThrough,
+                      color: integration.enabled
+                          ? null
+                          : (isDark
+                                ? AppColors.darkMutedText
+                                : AppColors.lightMutedText),
+                    ),
+                  ),
+                  subtitle: Text(
+                    integration.type == McpIntegrationType.plugin
+                        ? 'Plugin (${integration.pluginId})'
+                        : (integration.serverUrl ?? ''),
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ShadSwitch(
+                        value: integration.enabled,
+                        onChanged: (v) {
+                          ref
+                              .read(settingsProvider.notifier)
+                              .toggleSavedMcpIntegration(index, v);
+                          ref
+                              .read(chatMcpConfigProvider.notifier)
+                              .toggleIntegration(index, v);
+                        },
+                      ),
+                      const SizedBox(width: 4),
+                      ShadIconButton.ghost(
+                        icon: const HugeIcon(
+                          icon: HugeIcons.strokeRoundedDelete01,
+                          size: 18,
+                          color: Colors.red,
+                        ),
+                        onPressed: () {
+                          ref
+                              .read(settingsProvider.notifier)
+                              .removeSavedMcpIntegration(index);
+                          ref
+                              .read(chatMcpConfigProvider.notifier)
+                              .removeIntegration(index);
+                          widget.onServersChanged();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+        Row(
+          children: [
+            Expanded(
+              child: ShadInput(
+                controller: _serverLabelController,
+                placeholder: Text(l10n.mcp_label_placeholder),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 2,
+              child: ShadInput(
+                controller: _serverUrlController,
+                placeholder: Text(l10n.mcp_url_placeholder),
+                keyboardType: TextInputType.url,
+              ),
+            ),
+            const SizedBox(width: 8),
+            ShadIconButton(
+              icon: const HugeIcon(icon: HugeIcons.strokeRoundedAdd01),
+              onPressed: _addServer,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }

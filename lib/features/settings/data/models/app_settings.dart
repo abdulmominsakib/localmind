@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 import '../../../../core/models/enums.dart';
+import '../../../../features/chat/data/models/mcp_integration.dart';
 import '../../../../features/chat/utils/image_upload_utils.dart';
 import '../../../../features/tts/data/kitten_tts_model.dart';
 
@@ -54,6 +55,7 @@ class AppSettings {
   final bool keepPersonaOnNewChat;
   final bool roleSwapButtonEnabled;
   final bool showSystemMessagesInChat;
+  final List<McpIntegration> savedMcpIntegrations;
 
   AppSettings({
     this.temperature = 0.7,
@@ -98,6 +100,7 @@ class AppSettings {
     this.keepPersonaOnNewChat = false,
     this.roleSwapButtonEnabled = false,
     this.showSystemMessagesInChat = true,
+    this.savedMcpIntegrations = const [],
   });
 
   AppSettings copyWith({
@@ -143,6 +146,7 @@ class AppSettings {
     bool? keepPersonaOnNewChat,
     bool? roleSwapButtonEnabled,
     bool? showSystemMessagesInChat,
+    List<McpIntegration>? savedMcpIntegrations,
   }) {
     return AppSettings(
       temperature: temperature ?? this.temperature,
@@ -206,6 +210,8 @@ class AppSettings {
           roleSwapButtonEnabled ?? this.roleSwapButtonEnabled,
       showSystemMessagesInChat:
           showSystemMessagesInChat ?? this.showSystemMessagesInChat,
+      savedMcpIntegrations:
+          savedMcpIntegrations ?? this.savedMcpIntegrations,
     );
   }
 
@@ -253,6 +259,8 @@ class AppSettings {
       'keepPersonaOnNewChat': keepPersonaOnNewChat,
       'roleSwapButtonEnabled': roleSwapButtonEnabled,
       'showSystemMessagesInChat': showSystemMessagesInChat,
+      'savedMcpIntegrations':
+          savedMcpIntegrations.map((i) => i.toJson()).toList(),
     };
   }
 
@@ -302,7 +310,19 @@ class AppSettings {
       keepPersonaOnNewChat: map['keepPersonaOnNewChat'] ?? false,
       roleSwapButtonEnabled: map['roleSwapButtonEnabled'] ?? false,
       showSystemMessagesInChat: map['showSystemMessagesInChat'] ?? true,
+      savedMcpIntegrations:
+          _parseSavedMcpIntegrations(map['savedMcpIntegrations']),
     );
+  }
+
+  static List<McpIntegration> _parseSavedMcpIntegrations(dynamic value) {
+    if (value is List) {
+      return value
+          .whereType<Map<String, dynamic>>()
+          .map((m) => McpIntegration.fromJson(m))
+          .toList();
+    }
+    return const [];
   }
 
   static ImageCompressionLevel _parseImageCompressionLevel(dynamic value) {

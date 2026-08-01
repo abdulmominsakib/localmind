@@ -900,6 +900,28 @@ class AppLocalizationsTr extends AppLocalizations {
   String get active_integrations => 'Aktif Entegrasyonlar';
 
   @override
+  String get import_mcp_json => 'Import JSON';
+
+  @override
+  String get import_mcp_json_dialog_title => 'Import MCP Config JSON';
+
+  @override
+  String get import_mcp_json_instructions =>
+      'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:';
+
+  @override
+  String get import_mcp_json_placeholder =>
+      'Paste mcpServers JSON or plugin list here...';
+
+  @override
+  String mcp_import_success(int count) {
+    return 'Successfully imported $count integration(s)';
+  }
+
+  @override
+  String get mcp_import_failed => 'No valid MCP integrations found in JSON';
+
+  @override
   String get enable_notifications => 'Bildirimleri Etkinleştir';
 
   @override
