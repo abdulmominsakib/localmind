@@ -27,6 +27,7 @@ import '../data/chat_service.dart';
 import '../data/models/message.dart' hide ToolCallData;
 import '../data/title_generation_service.dart';
 import '../data/tools/tool_definition.dart';
+import '../data/tools/tool_event.dart';
 import '../data/tools/tool_execution_loop.dart';
 import '../data/tools/adapters/tool_transport_adapter.dart' show ParsedToolCall;
 import '../utils/attachment_helpers.dart';
@@ -1083,54 +1084,94 @@ class ChatNotifier extends Notifier<ChatState> {
 
                   if (mcpConfig.enabled && collectedToolCalls.isNotEmpty) {
                     try {
-                      final registry = ref.read(toolRegistryProvider);
-                      final adapter = createAdapterForServerType(server.type);
-
+                      // Split collected tool calls into:
+                      //  - `serverExecuted`: calls whose output the server
+                      //    already populated (e.g. LM Studio's native
+                      //    /api/v1/chat runs MCP tools server-side). These
+                      //    must NOT be re-executed by the client.
+                      //  - `clientExecuted`: calls that arrived without
+                      //    output (OpenAI-compatible streaming tool calls).
+                      //    These are run by ToolExecutionLoop as before.
                       final dedupedCalls = <String, ToolCallData>{};
                       for (final tc in collectedToolCalls) {
                         dedupedCalls[tc.tool] = tc;
                       }
-
-                      final preParsedCalls = dedupedCalls.values
-                          .map(
-                            (tc) => ParsedToolCall(
-                              id: tc.tool,
-                              name: tc.tool,
-                              arguments: tc.arguments,
-                            ),
-                          )
+                      final allCalls = dedupedCalls.values.toList();
+                      final serverExecuted =
+                          allCalls.where((tc) => tc.output != null).toList();
+                      final clientExecuted = allCalls
+                          .where((tc) => tc.output == null)
                           .toList();
 
-                      final loop = ToolExecutionLoop(
-                        adapter: adapter,
-                        registry: registry,
-                        onRequestApproval: (call) async {
-                          final completer = Completer<bool>();
-                          state = state.copyWith(
-                            pendingToolApproval: PendingToolApproval(
-                              toolCall: call,
-                              completer: completer,
-                            ),
-                          );
+                      final toolEvents = <ToolEvent>[];
 
-                          final result = await completer.future;
+                      if (serverExecuted.isNotEmpty) {
+                        final sessionId =
+                            DateTime.now().millisecondsSinceEpoch.toString();
+                        for (final tc in serverExecuted) {
+                          final eventId =
+                              '${sessionId}_1_${tc.tool}.server_executed';
+                          toolEvents.add(ToolEvent(
+                            eventId: eventId,
+                            timestamp: DateTime.now(),
+                            status: ToolEventStatus.completed,
+                            toolName: tc.tool,
+                            providerType: ToolProviderType.lmStudioServer,
+                            arguments: tc.arguments,
+                            result: tc.output,
+                          ));
+                        }
+                      }
 
-                          state = state.copyWith(clearPendingApproval: true);
+                      if (clientExecuted.isNotEmpty) {
+                        final registry = ref.read(toolRegistryProvider);
+                        final adapter =
+                            createAdapterForServerType(server.type);
 
-                          return result;
-                        },
-                      );
+                        final preParsedCalls = clientExecuted
+                            .map(
+                              (tc) => ParsedToolCall(
+                                id: tc.tool,
+                                name: tc.tool,
+                                arguments: tc.arguments,
+                              ),
+                            )
+                            .toList();
 
-                      final loopResult = await loop.run(
-                        initialUserMessage: content,
-                        assistantContent: streamingAssistantMessage.content,
-                        preParsedCalls: preParsedCalls,
-                      );
+                        final loop = ToolExecutionLoop(
+                          adapter: adapter,
+                          registry: registry,
+                          onRequestApproval: (call) async {
+                            final completer = Completer<bool>();
+                            state = state.copyWith(
+                              pendingToolApproval: PendingToolApproval(
+                                toolCall: call,
+                                completer: completer,
+                              ),
+                            );
 
-                      if (loopResult.events.isNotEmpty) {
+                            final result = await completer.future;
+
+                            state = state.copyWith(clearPendingApproval: true);
+
+                            return result;
+                          },
+                        );
+
+                        final loopResult = await loop.run(
+                          initialUserMessage: content,
+                          assistantContent: streamingAssistantMessage.content,
+                          preParsedCalls: preParsedCalls,
+                        );
+
+                        if (loopResult.events.isNotEmpty) {
+                          toolEvents.addAll(loopResult.events);
+                        }
+                      }
+
+                      if (toolEvents.isNotEmpty) {
                         finalMessage = finalMessage.copyWith(
-                          toolSessionId: loop.sessionId,
-                          toolEvents: loopResult.events,
+                          toolEvents: toolEvents,
                         );
                       }
                     } catch (e) {

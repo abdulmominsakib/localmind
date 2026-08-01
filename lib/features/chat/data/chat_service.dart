@@ -30,7 +30,6 @@ abstract class ChatService {
     required ChatParameters params,
     List<McpIntegration>? integrations,
     List<ToolDefinition>? tools,
-    String? previousResponseId,
     bool continueGeneration = false,
   });
 
@@ -177,49 +176,35 @@ class LMStudioChatService implements ChatService {
     required ChatParameters params,
     List<McpIntegration>? integrations,
     List<ToolDefinition>? tools,
-    String? previousResponseId,
     bool continueGeneration = false,
   }) async* {
     _cancelToken = CancelToken();
-    final toolAdapter = OpenAiToolAdapter();
-    final lmStudioToolAdapter = LmStudioToolAdapter();
 
-    final apiMessages = <Map<String, dynamic>>[];
-    for (final m in messages) {
-      apiMessages.add(await _messageToApiMapWithImages(m));
-    }
+    // LM Studio's native /api/v1/chat is stateless from the client's
+    // perspective: it does not accept an OpenAI-style `messages` array. We
+    // collapse history into a single string `input` for plain text chats,
+    // or into a typed-input array for chats with image attachments. The
+    // MCP integrations array carries the server-side tool definitions.
+    final useTypedInput = messages.any(
+      (m) =>
+          m.attachmentPaths != null &&
+          m.attachmentPaths!.any(AttachmentHelpers.isImagePath),
+    );
 
-    // Strip trailing empty assistant messages to avoid "prefill incompatible
-    // with enable_thinking" errors from servers running thinking models.
-    if (!continueGeneration) {
-      while (apiMessages.isNotEmpty &&
-          apiMessages.last['role'] == 'assistant' &&
-          (apiMessages.last['content'] == null ||
-              (apiMessages.last['content'] is String &&
-                  (apiMessages.last['content'] as String).isEmpty))) {
-        apiMessages.removeLast();
-      }
-    } else if (apiMessages.isNotEmpty &&
-        apiMessages.last['role'] == 'assistant') {
-      // Keep the assistant prefill for continuation; ensure content is a
-      // string (the model continues from exactly where this cuts off, and
-      // the response contains only the newly generated continuation text).
-      final last = apiMessages.last;
-      last['content'] = (last['content'] as String?) ?? '';
-    }
+    final String systemPrompt;
+    final input = useTypedInput
+        ? await _buildNativeTypedInput(messages, continueGeneration)
+        : _buildNativeInputString(messages, continueGeneration);
+    systemPrompt = _extractSystemPrompt(messages) ?? params.systemPrompt ?? '';
 
     final body = <String, dynamic>{
       'model': modelId,
-      'messages': apiMessages,
+      'input': input,
+      if (systemPrompt.isNotEmpty) 'system_prompt': systemPrompt,
       'temperature': params.temperature,
       'top_p': params.topP,
-      'max_tokens': params.maxTokens,
+      'max_output_tokens': params.maxTokens,
       'stream': true,
-      // Requests a final chunk with an empty `choices` array and a
-      // `usage` object (prompt_tokens/completion_tokens) so tokens/sec and
-      // token counts can still be computed after switching off the native
-      // Responses-style endpoint's richer `chat.end` stats.
-      'stream_options': {'include_usage': true},
     };
 
     if (params.topK != null) body['top_k'] = params.topK;
@@ -227,17 +212,33 @@ class LMStudioChatService implements ChatService {
     if (params.repeatPenalty != null) {
       body['repeat_penalty'] = params.repeatPenalty;
     }
-    _applyReasoningControl(body, params);
-
-    if (integrations != null && integrations.isNotEmpty) {
-      body['integrations'] = integrations.map((i) => i.toJson()).toList();
+    // LM Studio's native /api/v1/chat expects `reasoning` as a *string*
+    // ('off' | 'low' | 'medium' | 'high' | 'on'), and does NOT accept the
+    // OpenAI-compatible `reasoning_effort` / `think` / `enable_thinking`
+    // keys that the shared [_applyReasoningControl] writes. Sending the
+    // object form causes HTTP 400 `invalid_request` for every
+    // reasoning-capable model (and ChatReasoningConfig defaults to
+    // enabled). We therefore apply reasoning in the native shape here.
+    //
+    // 'on' is universally accepted by reasoning-capable models (it means
+    // "use the model's default effort"); per-model effort strings such as
+    // 'low'/'medium'/'high' are not guaranteed to be supported (e.g. Gemma
+    // only allows 'off'/'on'), so we avoid them.
+    if (params.reasoningEnabled == false) {
+      body['reasoning'] = 'off';
+    } else if (params.reasoningEnabled == true) {
+      body['reasoning'] = 'on';
+    }
+    if (params.contextLength > 0) {
+      body['context_length'] = params.contextLength;
     }
 
-    if (tools != null && tools.isNotEmpty) {
-      final toolsPayload = toolAdapter.buildToolDefinitionPayload(tools);
-      if (toolsPayload.containsKey('tools')) {
-        body['tools'] = toolsPayload['tools'];
-      }
+    // MCP integrations are the only tool path supported by /api/v1/chat.
+    // `tools` (OpenAI-style function definitions) are NOT supported here —
+    // sending them would be silently ignored. The local tool registry is
+    // therefore only useful for non-LM-Studio server types on this build.
+    if (integrations != null && integrations.isNotEmpty) {
+      body['integrations'] = integrations.map((i) => i.toJson()).toList();
     }
 
     try {
@@ -258,6 +259,8 @@ class LMStudioChatService implements ChatService {
         utf8.decoder,
       );
       String buffer = '';
+      String? currentEventName;
+      final lmStudioToolAdapter = LmStudioToolAdapter();
 
       await for (final chunk in stream) {
         buffer += chunk;
@@ -265,106 +268,182 @@ class LMStudioChatService implements ChatService {
         buffer = lines.removeLast();
 
         for (final line in lines) {
-          if (!line.startsWith('data: ')) continue;
-          final data = line.substring(6);
-          if (data == '[DONE]') {
-            for (final call in toolAdapter.takeCompletedCalls()) {
-              yield ChatResponse(
-                type: ChatResponseType.toolCall,
-                toolCall: ToolCallData(
-                  tool: call.name,
-                  arguments: call.arguments,
-                ),
-              );
-            }
-            for (final call in lmStudioToolAdapter.takeServerExecutedCalls()) {
-              yield ChatResponse(
-                type: ChatResponseType.toolCall,
-                toolCall: ToolCallData(
-                  tool: call.name,
-                  arguments: call.arguments,
-                ),
-              );
-            }
-            yield const ChatResponse(type: ChatResponseType.done);
-            return;
+          if (line.isEmpty) {
+            // Blank line = SSE event boundary. Flush any buffered event.
+            currentEventName = null;
+            continue;
           }
+          if (line.startsWith(':')) {
+            // SSE comment / keep-alive.
+            continue;
+          }
+          if (line.startsWith('event:')) {
+            currentEventName = line.substring(6).trim();
+            continue;
+          }
+          if (!line.startsWith('data:')) continue;
+          final data = line.substring(5).trim();
           if (data.isEmpty) continue;
 
+          Map<String, dynamic>? json;
           try {
-            final json = jsonDecode(data) as Map<String, dynamic>;
-            toolAdapter.consumeDynamicChunk(json);
+            json = jsonDecode(data) as Map<String, dynamic>;
+          } catch (e) {
+            Log.error('LMStudio chat parsing error: $e');
+            continue;
+          }
 
-            final eventType = json['type'] as String?;
-            if (eventType != null) {
+          // Prefer the SSE `event:` line, fall back to the JSON `type` field.
+          final eventType =
+              currentEventName ?? json['type'] as String? ?? '';
+
+          switch (eventType) {
+            case 'chat.start':
+              // Nothing to do — server is acknowledging the stream.
+              break;
+            case 'message.delta':
+              final content = json['content'] as String?;
+              if (content != null && content.isNotEmpty) {
+                yield ChatResponse(
+                  type: ChatResponseType.message,
+                  content: content,
+                );
+              }
+              break;
+            case 'message.start':
+            case 'message.end':
+            case 'reasoning.start':
+            case 'reasoning.end':
+              // Boundaries only — content arrives in `*.delta`.
+              break;
+            case 'reasoning.delta':
+              final content = json['content'] as String?;
+              if (content != null && content.isNotEmpty) {
+                yield ChatResponse(
+                  type: ChatResponseType.reasoning,
+                  reasoningContent: content,
+                );
+              }
+              break;
+            case 'tool_call.start':
+            case 'tool_call.arguments':
+              // Adapter aggregates; final completion is emitted below.
               lmStudioToolAdapter.consumeEvent(eventType, json);
-              for (final call in lmStudioToolAdapter.takeServerExecutedCalls()) {
+              break;
+            case 'tool_call.success':
+              lmStudioToolAdapter.consumeEvent(eventType, json);
+              for (final call
+                  in lmStudioToolAdapter.takeServerExecutedCalls()) {
                 yield ChatResponse(
                   type: ChatResponseType.toolCall,
                   toolCall: ToolCallData(
                     tool: call.name,
                     arguments: call.arguments,
+                    output: call.output,
+                    providerInfo: _providerInfoFromMap(call.providerInfo),
                   ),
                 );
               }
-            }
-
-            if (json['error'] != null) {
+              break;
+            case 'tool_call.failure':
+              lmStudioToolAdapter.consumeEvent(eventType, json);
+              for (final call
+                  in lmStudioToolAdapter.takeServerExecutedCalls()) {
+                yield ChatResponse(
+                  type: ChatResponseType.toolCall,
+                  toolCall: ToolCallData(
+                    tool: call.name,
+                    arguments: call.arguments,
+                    output: call.output,
+                    providerInfo: _providerInfoFromMap(call.providerInfo),
+                  ),
+                );
+              }
+              break;
+            case 'error':
+              final error = json['error'];
+              final message = error is Map
+                  ? (error['message'] as String? ?? error.toString())
+                  : (error?.toString() ?? 'LM Studio error');
               yield ChatResponse(
                 type: ChatResponseType.error,
-                content: _formatApiErrorContent(json['error']),
+                content: ChatApiError(
+                  message: message,
+                  type: error is Map ? error['type'] as String? : null,
+                ).encode(),
               );
               return;
-            }
-
-            final usage = json['usage'] as Map<String, dynamic>?;
-            if (usage != null) {
-              yield ChatResponse(
-                type: ChatResponseType.done,
-                stats: ChatStats(
-                  inputTokens: usage['prompt_tokens'] as int? ?? 0,
-                  totalOutputTokens: usage['completion_tokens'] as int? ?? 0,
-                ),
-              );
-            }
-
-            final choices = json['choices'] as List<dynamic>?;
-            if (choices == null || choices.isEmpty) continue;
-
-            final firstChoice = choices[0] as Map<String, dynamic>?;
-            if (firstChoice == null) continue;
-
-            final delta = firstChoice['delta'];
-            if (delta == null || delta is! Map<String, dynamic>) continue;
-
-            final content = (delta['content'] ?? delta['text']) as String?;
-            final reasoning =
-                (delta['reasoning'] ?? delta['reasoning_content']) as String?;
-
-            if (content != null && content.isNotEmpty) {
-              yield ChatResponse(type: ChatResponseType.message, content: content);
-            }
-            if (reasoning != null && reasoning.isNotEmpty) {
-              yield ChatResponse(
-                type: ChatResponseType.reasoning,
-                reasoningContent: reasoning,
-              );
-            }
-          } catch (e) {
-            Log.error('LMStudio chat parsing error: $e');
+            case 'chat.end':
+              final result = json['result'] as Map<String, dynamic>?;
+              if (result != null) {
+                yield ChatResponse(
+                  type: ChatResponseType.done,
+                  stats: _extractStats(result),
+                );
+                // Surface any tool_call / invalid_tool_call items present
+                // in the final aggregated output that we may have missed
+                // in the stream.
+                final output = result['output'];
+                if (output is List) {
+                  for (final item in output) {
+                    if (item is! Map) continue;
+                    final m = Map<String, dynamic>.from(item);
+                    final t = m['type'];
+                    if (t == 'tool_call') {
+                      yield ChatResponse(
+                        type: ChatResponseType.toolCall,
+                        toolCall: ToolCallData(
+                          tool: m['tool'] as String? ?? '',
+                          arguments:
+                              (m['arguments'] as Map?)
+                                      ?.cast<String, dynamic>() ??
+                                  {},
+                          output: m['output'] as String?,
+                          providerInfo: _providerInfoFromMap(
+                            (m['provider_info'] as Map?)
+                                ?.cast<String, dynamic>(),
+                          ),
+                        ),
+                      );
+                    } else if (t == 'invalid_tool_call') {
+                      yield ChatResponse(
+                        type: ChatResponseType.invalidToolCall,
+                        invalidToolCall: InvalidToolCallData(
+                          reason: m['reason'] as String? ?? '',
+                          metadataType: (m['metadata'] is Map)
+                              ? (m['metadata']['type'] as String?)
+                              : null,
+                          toolName: (m['metadata'] is Map)
+                              ? (m['metadata']['tool_name'] as String?)
+                              : null,
+                          arguments: (m['arguments'] as Map?)
+                              ?.cast<String, dynamic>(),
+                          providerInfo: _providerInfoFromMap(
+                            (m['provider_info'] as Map?)
+                                ?.cast<String, dynamic>(),
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                }
+              } else {
+                yield const ChatResponse(type: ChatResponseType.done);
+              }
+              return;
+            default:
+              // Model load / prompt processing events are surfaced only in
+              // the debug log — they don't carry user-visible content.
+              if (eventType.isNotEmpty) {
+                Log.debug('LMStudio stream event: $eventType');
+              }
           }
         }
       }
 
-      for (final call in toolAdapter.takeCompletedCalls()) {
-        yield ChatResponse(
-          type: ChatResponseType.toolCall,
-          toolCall: ToolCallData(
-            tool: call.name,
-            arguments: call.arguments,
-          ),
-        );
-      }
+      // Stream ended without an explicit chat.end — treat as a normal
+      // completion so the UI doesn't stay stuck in "processing".
+      yield const ChatResponse(type: ChatResponseType.done);
     } catch (e) {
       Log.error('LMStudio connection error: $e');
       yield ChatResponse(
@@ -373,93 +452,156 @@ class LMStudioChatService implements ChatService {
       );
       return;
     }
-    yield const ChatResponse(type: ChatResponseType.done);
   }
 
-  Future<Map<String, dynamic>> _messageToApiMapWithImages(Message m) async {
-    var textContent = m.content;
-    final hasAttachments =
-        m.attachmentPaths != null && m.attachmentPaths!.isNotEmpty;
-
-    if (hasAttachments) {
-      for (final path in m.attachmentPaths!) {
-        if (!AttachmentHelpers.isTextPath(path)) continue;
-        final text = await AttachmentHelpers.readTextFile(path);
-        if (text != null) {
-          textContent = AttachmentHelpers.appendTextAttachment(
-            textContent,
-            AttachmentHelpers.fileNameOf(path),
-            text,
-          );
-        }
+  /// Builds the native `input` field as a single string, suitable for
+  /// plain-text chats. Conversation history is collapsed into a transcript
+  /// because `/api/v1/chat` does not accept an OpenAI-style `messages`
+  /// array; system prompt is hoisted to a top-level field by the caller.
+  String _buildNativeInputString(
+    List<Message> messages,
+    bool continueGeneration,
+  ) {
+    final visible = <Message>[];
+    for (final m in messages) {
+      if (m.role == MessageRole.system) continue;
+      visible.add(m);
+    }
+    // Drop trailing empty assistant (prefill) unless we're continuing it.
+    if (!continueGeneration && visible.isNotEmpty) {
+      while (visible.isNotEmpty &&
+          visible.last.role == MessageRole.assistant &&
+          visible.last.content.isEmpty) {
+        visible.removeLast();
       }
     }
+    final buf = StringBuffer();
+    for (final m in visible) {
+      final tag = switch (m.role) {
+        MessageRole.user => 'User',
+        MessageRole.assistant => 'Assistant',
+        MessageRole.tool => 'Tool',
+        MessageRole.system => 'System',
+      };
+      buf.writeln('$tag: ${m.content}');
+    }
+    return buf.toString().trimRight();
+  }
 
-    final imageParts = <Map<String, dynamic>>[];
-    if (hasAttachments) {
-      for (final path in m.attachmentPaths!) {
-        if (!AttachmentHelpers.isImagePath(path)) continue;
-        try {
-          final file = File(path);
-          if (!await file.exists()) continue;
-          final fileBytes = await ImageUploadUtils.prepareImageBytes(
-            file,
-            enabled: imageCompressionEnabled,
-            level: imageCompressionLevel,
-          );
-          final base64Image = await Isolate.run(() {
-            try {
-              return base64Encode(fileBytes);
-            } catch (_) {
-              return null;
-            }
-          });
+  /// Builds the native `input` field as an array of typed input items.
+  /// Used when at least one image attachment is present.
+  Future<List<Map<String, dynamic>>> _buildNativeTypedInput(
+    List<Message> messages,
+    bool continueGeneration,
+  ) async {
+    final items = <Map<String, dynamic>>[];
+    final visible = <Message>[];
+    for (final m in messages) {
+      if (m.role == MessageRole.system) continue;
+      visible.add(m);
+    }
+    if (!continueGeneration && visible.isNotEmpty) {
+      while (visible.isNotEmpty &&
+          visible.last.role == MessageRole.assistant &&
+          visible.last.content.isEmpty) {
+        visible.removeLast();
+      }
+    }
+    for (final m in visible) {
+      final imageItems = await _imageItemsFor(m);
+      final textContent = _messageTextWithAttachments(m);
+      if (textContent.isNotEmpty) {
+        items.add({'type': 'message', 'content': textContent});
+      }
+      items.addAll(imageItems);
+    }
+    return items;
+  }
 
-          if (base64Image != null) {
-            imageParts.add({
-              'type': 'image_url',
-              'image_url': {'url': 'data:image/png;base64,$base64Image'},
-            });
+  Future<List<Map<String, dynamic>>> _imageItemsFor(Message m) async {
+    final paths = m.attachmentPaths ?? const <String>[];
+    final items = <Map<String, dynamic>>[];
+    for (final path in paths) {
+      if (!AttachmentHelpers.isImagePath(path)) continue;
+      try {
+        final file = File(path);
+        if (!await file.exists()) continue;
+        final fileBytes = await ImageUploadUtils.prepareImageBytes(
+          file,
+          enabled: imageCompressionEnabled,
+          level: imageCompressionLevel,
+        );
+        final base64Image = await Isolate.run(() {
+          try {
+            return base64Encode(fileBytes);
+          } catch (_) {
+            return null;
           }
-        } catch (e) {
-          Log.error('Failed to read attachment for LMStudio format: $e');
+        });
+        if (base64Image != null) {
+          items.add({
+            'type': 'image',
+            'data_url': 'data:image/png;base64,$base64Image',
+          });
         }
+      } catch (e) {
+        Log.error('Failed to read attachment for LMStudio native format: $e');
       }
     }
+    return items;
+  }
 
-    dynamic content;
-    if (imageParts.isEmpty) {
-      content = textContent;
-    } else {
-      content = <Map<String, dynamic>>[
-        if (textContent.trim().isNotEmpty)
-          {'type': 'text', 'text': textContent},
-        ...imageParts,
-      ];
+  String _messageTextWithAttachments(Message m) {
+    var textContent = m.content;
+    final paths = m.attachmentPaths ?? const <String>[];
+    for (final path in paths) {
+      if (!AttachmentHelpers.isTextPath(path)) continue;
+      // Note: we don't read the file contents here synchronously — the
+      // native endpoint's typed input doesn't carry file metadata. The
+      // caller is expected to have already inlined text attachments into
+      // `m.content` upstream via AttachmentHelpers. If not, the image path
+      // above still handles images.
+      final fileName = AttachmentHelpers.fileNameOf(path);
+      if (fileName.isEmpty) continue;
+      textContent = AttachmentHelpers.appendTextAttachment(
+        textContent,
+        fileName,
+        '<inline text attachment: $fileName>',
+      );
     }
+    return textContent;
+  }
 
-    final map = <String, dynamic>{
-      'role': _roleToString(m.role),
-      'content': content,
-    };
-    if (m.role == MessageRole.tool && m.toolCallId != null) {
-      map['tool_call_id'] = m.toolCallId;
+  String? _extractSystemPrompt(List<Message> messages) {
+    for (final m in messages) {
+      if (m.role == MessageRole.system) return m.content;
     }
-    if (m.role == MessageRole.assistant &&
-        m.toolCalls != null &&
-        m.toolCalls!.isNotEmpty) {
-      map['tool_calls'] = m.toolCalls!.map((tc) {
-        return {
-          'id': tc.id,
-          'type': 'function',
-          'function': {
-            'name': tc.toolName,
-            'arguments': jsonEncode(tc.arguments),
-          },
-        };
-      }).toList();
-    }
-    return map;
+    return null;
+  }
+
+  ChatStats? _extractStats(Map<String, dynamic> result) {
+    final stats = result['stats'] as Map<String, dynamic>?;
+    if (stats == null) return null;
+    return ChatStats(
+      inputTokens: (stats['input_tokens'] as num?)?.toInt() ?? 0,
+      totalOutputTokens: (stats['total_output_tokens'] as num?)?.toInt() ?? 0,
+      reasoningOutputTokens:
+          (stats['reasoning_output_tokens'] as num?)?.toInt(),
+      tokensPerSecond: (stats['tokens_per_second'] as num?)?.toDouble(),
+      timeToFirstTokenSeconds:
+          (stats['time_to_first_token_seconds'] as num?)?.toDouble(),
+      modelLoadTimeSeconds:
+          (stats['model_load_time_seconds'] as num?)?.toDouble(),
+    );
+  }
+
+  ToolProviderInfo? _providerInfoFromMap(Map<String, dynamic>? map) {
+    if (map == null) return null;
+    return ToolProviderInfo(
+      type: map['type'] as String? ?? '',
+      pluginId: map['plugin_id'] as String?,
+      serverLabel: map['server_label'] as String?,
+    );
   }
 
   @override
@@ -483,7 +625,6 @@ class OpenAICompatibleChatService implements ChatService {
     required ChatParameters params,
     List<McpIntegration>? integrations,
     List<ToolDefinition>? tools,
-    String? previousResponseId,
     bool continueGeneration = false,
   }) async* {
     _cancelToken = CancelToken();
@@ -760,7 +901,6 @@ class OllamaChatService implements ChatService {
     required ChatParameters params,
     List<McpIntegration>? integrations,
     List<ToolDefinition>? tools,
-    String? previousResponseId,
     bool continueGeneration = false,
   }) async* {
     _cancelToken = CancelToken();
@@ -1003,7 +1143,6 @@ class OpenRouterChatService implements ChatService {
     required ChatParameters params,
     List<McpIntegration>? integrations,
     List<ToolDefinition>? tools,
-    String? previousResponseId,
     bool continueGeneration = false,
   }) async* {
     _cancelToken = CancelToken();

@@ -20,6 +20,7 @@ import '../../servers/data/models/server.dart';
 import '../../servers/providers/server_providers.dart';
 import '../../../core/providers/device_info_providers.dart';
 import '../../../core/device/device_memory_service.dart';
+import '../../models/components/ram_warning_dialog.dart';
 
 class OnboardingModelDownloadScreen extends ConsumerStatefulWidget {
   const OnboardingModelDownloadScreen({super.key});
@@ -584,38 +585,13 @@ class _ModelCard extends ConsumerWidget {
   }
 
   Future<bool> _showRamWarning(BuildContext context) async {
-    final result = await showDialog<bool>(
+    final availableRam = deviceMemory?.totalMemoryFormatted;
+    final requiredRam = '${model.minRamMb ~/ 1024 + 1} GB';
+
+    return RamWarningDialog.show(
       context: context,
-      builder: (ctx) {
-        final dialogL10n = AppLocalizations.of(ctx)!;
-        return AlertDialog(
-          title: Row(
-            children: [
-              const HugeIcon(icon: HugeIcons.strokeRoundedAlertCircle, color: Colors.orange),
-              const SizedBox(width: 8),
-              Text(dialogL10n.ram_warning),
-            ],
-          ),
-          content: Text(
-            dialogL10n.ram_warning_body_download(
-              '${model.minRamMb ~/ 1024 + 1}',
-              deviceMemory!.totalMemoryFormatted,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(dialogL10n.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: TextButton.styleFrom(foregroundColor: Colors.orange),
-              child: Text(dialogL10n.proceed_anyway),
-            ),
-          ],
-        );
-      },
+      availableRam: availableRam,
+      requiredRam: requiredRam,
     );
-    return result ?? false;
   }
 }

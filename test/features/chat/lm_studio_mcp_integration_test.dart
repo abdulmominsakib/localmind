@@ -43,13 +43,14 @@ class CapturingStreamInterceptor extends Interceptor {
 }
 
 void main() {
-  group('LM Studio MCP Integration Tests', () {
+  group('LM Studio MCP Integration Tests (native /api/v1/chat)', () {
     final server = Server(
       id: 'lmstudio-server',
       name: 'LM Studio',
       type: ServerType.lmStudio,
       host: 'localhost',
       port: 1234,
+      apiKey: 'test-token',
       createdAt: DateTime.now(),
       lastConnectedAt: DateTime.now(),
     );
@@ -62,10 +63,17 @@ void main() {
       createdAt: DateTime.now(),
     );
 
-    test('LMStudioChatService includes integrations array in body payload', () async {
+    test('endpoint is /api/v1/chat and body uses input/system_prompt/max_output_tokens', () async {
       final interceptor = CapturingStreamInterceptor([
-        'data: {"choices":[{"delta":{"content":"Hello"}}]}',
-        'data: [DONE]',
+        'event: chat.start',
+        'data: {"type":"chat.start","model_instance_id":"test-model"}',
+        '',
+        'event: message.delta',
+        'data: {"type":"message.delta","content":"Hello"}',
+        '',
+        'event: chat.end',
+        'data: {"type":"chat.end","result":{"model_instance_id":"test-model","output":[],"stats":{"input_tokens":5,"total_output_tokens":1}}}',
+        '',
       ]);
       final dio = Dio()..interceptors.add(interceptor);
       final service = LMStudioChatService(dio);
@@ -95,7 +103,32 @@ void main() {
       expect(responses.any((r) => r.type == ChatResponseType.message), isTrue);
       expect(interceptor.capturedRequest, isNotNull);
 
+      // Endpoint must be the native one.
+      expect(
+        interceptor.capturedRequest!.path,
+        equals('http://localhost:1234/api/v1/chat'),
+      );
+
+      // Auth header must be propagated when the server has an apiKey.
+      expect(
+        interceptor.capturedRequest!.headers['Authorization'],
+        equals('Bearer test-token'),
+      );
+
       final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expect(body['model'], equals('test-model'));
+      expect(body['stream'], isTrue);
+
+      // Wire format expectations (per LM Studio's /api/v1/chat spec).
+      expect(body['input'], isA<String>());
+      expect(body['input'], contains('Search Hugging Face models'));
+      expect(body.containsKey('messages'), isFalse,
+          reason: 'messages is OpenAI-style; the native endpoint uses input');
+      expect(body.containsKey('max_tokens'), isFalse,
+          reason: 'native endpoint uses max_output_tokens');
+      expect(body['max_output_tokens'], isA<int>());
+
+      // Integrations payload shape matches the spec.
       expect(body['integrations'], isNotNull);
       final bodyIntegrations = body['integrations'] as List;
       expect(bodyIntegrations.length, equals(2));
@@ -114,11 +147,87 @@ void main() {
       }));
     });
 
-    test('LMStudioChatService emits toolCall response on tool_call.success event', () async {
+    test('reasoning control uses native string shape, not OpenAI-compat object', () async {
+      // Regression: the shared _applyReasoningControl writes `reasoning` as an
+      // object and extra OpenAI-compat keys (reasoning_effort/think/
+      // enable_thinking). LM Studio's native /api/v1/chat rejects all of
+      // those with HTTP 400, so LMStudioChatService must emit the native
+      // string form ('off'|'low'|'medium'|'high'|'on') only.
       final interceptor = CapturingStreamInterceptor([
-        'data: {"type": "tool_call.start", "tool": "model_search"}',
-        'data: {"type": "tool_call.success", "tool": "model_search", "arguments": {"sort": "trendingScore"}, "output": "Model A, Model B"}',
-        'data: [DONE]',
+        'event: chat.start',
+        'data: {"type":"chat.start","model_instance_id":"test-model"}',
+        '',
+        'event: chat.end',
+        'data: {"type":"chat.end","result":{"model_instance_id":"test-model","output":[],"stats":{"input_tokens":1,"total_output_tokens":1}}}',
+        '',
+      ]);
+      final dio = Dio()..interceptors.add(interceptor);
+      final service = LMStudioChatService(dio);
+
+      await service.sendMessage(
+        server: server,
+        modelId: 'test-model',
+        messages: [userMessage],
+        params: ChatParameters.defaults().copyWith(reasoningEnabled: true),
+      ).toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+
+      // `reasoning` must be a string, never an object.
+      expect(body['reasoning'], isA<String>(),
+          reason: 'native endpoint expects reasoning as a string');
+      expect(body['reasoning'], equals('on'));
+
+      // The OpenAI-compatible reasoning keys must NOT be sent.
+      expect(body.containsKey('reasoning_effort'), isFalse);
+      expect(body.containsKey('think'), isFalse);
+      expect(body.containsKey('enable_thinking'), isFalse);
+    });
+
+    test('reasoning disabled sends native "off" string', () async {
+      final interceptor = CapturingStreamInterceptor([
+        'event: chat.start',
+        'data: {"type":"chat.start","model_instance_id":"test-model"}',
+        '',
+        'event: chat.end',
+        'data: {"type":"chat.end","result":{"model_instance_id":"test-model","output":[],"stats":{"input_tokens":1,"total_output_tokens":1}}}',
+        '',
+      ]);
+      final dio = Dio()..interceptors.add(interceptor);
+      final service = LMStudioChatService(dio);
+
+      await service.sendMessage(
+        server: server,
+        modelId: 'test-model',
+        messages: [userMessage],
+        params: ChatParameters.defaults().copyWith(reasoningEnabled: false),
+      ).toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expect(body['reasoning'], equals('off'));
+      expect(body.containsKey('reasoning_effort'), isFalse);
+      expect(body.containsKey('think'), isFalse);
+      expect(body.containsKey('enable_thinking'), isFalse);
+    });
+
+
+    test('tool_call.success event surfaces as a completed tool call with output', () async {
+      final interceptor = CapturingStreamInterceptor([
+        'event: chat.start',
+        'data: {"type":"chat.start","model_instance_id":"test-model"}',
+        '',
+        'event: tool_call.start',
+        'data: {"type":"tool_call.start","tool":"model_search","provider_info":{"type":"ephemeral_mcp","server_label":"huggingface"}}',
+        '',
+        'event: tool_call.arguments',
+        'data: {"type":"tool_call.arguments","tool":"model_search","arguments":{"sort":"trendingScore"}}',
+        '',
+        'event: tool_call.success',
+        'data: {"type":"tool_call.success","tool":"model_search","arguments":{"sort":"trendingScore"},"output":"Model A, Model B","provider_info":{"type":"ephemeral_mcp","server_label":"huggingface"}}',
+        '',
+        'event: chat.end',
+        'data: {"type":"chat.end","result":{"model_instance_id":"test-model","output":[],"stats":{"input_tokens":10,"total_output_tokens":2}}}',
+        '',
       ]);
       final dio = Dio()..interceptors.add(interceptor);
       final service = LMStudioChatService(dio);
@@ -137,13 +246,72 @@ void main() {
         ],
       ).toList();
 
-      final toolCalls = responses.where((r) => r.type == ChatResponseType.toolCall).toList();
+      final toolCalls = responses
+          .where((r) => r.type == ChatResponseType.toolCall)
+          .toList();
       expect(toolCalls.length, equals(1));
       expect(toolCalls.first.toolCall?.tool, equals('model_search'));
-      expect(toolCalls.first.toolCall?.arguments, equals({'sort': 'trendingScore'}));
+      expect(
+        toolCalls.first.toolCall?.arguments,
+        equals({'sort': 'trendingScore'}),
+      );
+      // The native endpoint executes the tool server-side; the output
+      // must be propagated so the client doesn't re-execute it.
+      expect(toolCalls.first.toolCall?.output, equals('Model A, Model B'));
+      expect(
+        toolCalls.first.toolCall?.providerInfo?.serverLabel,
+        equals('huggingface'),
+      );
+
+      // The aggregated stats arrive on the chat.end event.
+      final done = responses
+          .where((r) => r.type == ChatResponseType.done)
+          .firstOrNull;
+      expect(done?.stats?.inputTokens, equals(10));
+      expect(done?.stats?.totalOutputTokens, equals(2));
     });
 
-    test('OpenAICompatibleChatService includes integrations array in payload', () async {
+    test('mcp_connection_error surfaces as ChatResponseType.error', () async {
+      final interceptor = CapturingStreamInterceptor([
+        'event: error',
+        'data: {"type":"error","error":{"type":"mcp_connection_error","message":"Could not reach https://huggingface.co/mcp"}}',
+        '',
+      ]);
+      final dio = Dio()..interceptors.add(interceptor);
+      final service = LMStudioChatService(dio);
+
+      final responses = await service.sendMessage(
+        server: server,
+        modelId: 'test-model',
+        messages: [userMessage],
+        params: ChatParameters.defaults(),
+        integrations: [
+          const McpIntegration(
+            type: McpIntegrationType.ephemeralMcp,
+            serverLabel: 'huggingface',
+            serverUrl: 'https://huggingface.co/mcp',
+          ),
+        ],
+      ).toList();
+
+      final errors = responses
+          .where((r) => r.type == ChatResponseType.error)
+          .toList();
+      expect(errors, hasLength(1));
+      expect(errors.first.content, contains('Could not reach https://huggingface.co/mcp'));
+    });
+
+    test('OpenAICompatibleChatService still sends integrations on /v1/chat/completions', () async {
+      // Sanity check that the OpenAI-compatible path was not regressed.
+      final openAiServer = Server(
+        id: 'openai-server',
+        name: 'OAI Compat',
+        type: ServerType.openAICompatible,
+        host: 'localhost',
+        port: 1234,
+        createdAt: DateTime.now(),
+        lastConnectedAt: DateTime.now(),
+      );
       final interceptor = CapturingStreamInterceptor([
         'data: {"choices":[{"delta":{"content":"Hi"}}]}',
         'data: [DONE]',
@@ -151,19 +319,17 @@ void main() {
       final dio = Dio()..interceptors.add(interceptor);
       final service = OpenAICompatibleChatService(dio);
 
-      final integrations = [
-        const McpIntegration(
-          type: McpIntegrationType.plugin,
-          pluginId: 'mcp/filesystem',
-        ),
-      ];
-
       await service.sendMessage(
-        server: server,
+        server: openAiServer,
         modelId: 'test-model',
         messages: [userMessage],
         params: ChatParameters.defaults(),
-        integrations: integrations,
+        integrations: [
+          const McpIntegration(
+            type: McpIntegrationType.plugin,
+            pluginId: 'mcp/filesystem',
+          ),
+        ],
       ).toList();
 
       expect(interceptor.capturedRequest, isNotNull);

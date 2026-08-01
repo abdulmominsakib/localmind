@@ -35,7 +35,6 @@ class OnDeviceChatService implements ChatService {
     required ChatParameters params,
     List<McpIntegration>? integrations,
     List<ToolDefinition>? tools,
-    String? previousResponseId,
     bool continueGeneration = false,
   }) {
     cancelStream();

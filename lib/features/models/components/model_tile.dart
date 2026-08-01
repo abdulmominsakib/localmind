@@ -149,6 +149,12 @@ class ModelTile extends StatelessWidget {
                 if ((model.serverType == ServerType.lmStudio ||
                         model.serverType == ServerType.ollama) &&
                     isLoaded) ...[
+                  HugeIcon(
+                    icon: HugeIcons.strokeRoundedCpu,
+                    size: 16,
+                    color: accent,
+                  ),
+                  const SizedBox(width: 6),
                   IconButton(
                     icon: HugeIcon(
                       icon: HugeIcons.strokeRoundedPower,
@@ -170,10 +176,20 @@ class ModelTile extends StatelessWidget {
                 ],
                 if (isSelected) ...[
                   const SizedBox(width: 4),
-                  HugeIcon(
-                    icon: HugeIcons.strokeRoundedCheckmarkCircle01,
-                    color: accent,
-                    size: 22,
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: HugeIcon(
+                        icon: HugeIcons.strokeRoundedTick01,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                    ),
                   ),
                 ] else if (!isLoading)
                   HugeIcon(

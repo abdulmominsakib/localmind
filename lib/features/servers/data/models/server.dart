@@ -173,7 +173,10 @@ class Server {
   String get chatEndpoint {
     switch (type) {
       case ServerType.lmStudio:
-        return '$baseUrl/v1/chat/completions';
+        // LM Studio's native REST endpoint. MCP integrations (both
+        // ephemeral_mcp and plugin) are only supported here, not on the
+        // OpenAI-compatible /v1/chat/completions or /v1/responses endpoints.
+        return '$baseUrl/api/v1/chat';
       case ServerType.openAICompatible:
         return '$baseUrl/v1/chat/completions';
       case ServerType.ollama:

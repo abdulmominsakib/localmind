@@ -10,6 +10,7 @@ import 'package:hugeicons/hugeicons.dart';
 import '../../../../core/models/enums.dart';
 import '../../../../core/providers/app_providers.dart';
 import '../../chat/providers/chat_notifier.dart';
+import '../../tts/providers/tts_providers.dart';
 import '../../tts/views/tts_model_manager_screen.dart';
 import '../providers/voice_mode_provider.dart';
 import '../voice_mode_palette.dart';
@@ -20,7 +21,7 @@ import 'components/voice_visualizer.dart';
 /// Full-screen voice-to-voice conversation overlay.
 ///
 /// Features a real-time glowing 3D crystal visualizer and auto-scrolling transcript
-/// set against a sleek dark obsidian atmospheric backdrop in both light and dark modes.
+/// set against an adaptive pearlescent or obsidian atmospheric backdrop.
 class VoiceModeOverlay extends ConsumerStatefulWidget {
   const VoiceModeOverlay({super.key});
 
@@ -89,6 +90,8 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
 
   Widget _buildTtsChip(BuildContext context, ThemeData theme) {
     final settings = ref.watch(settingsProvider);
+    final isDark = theme.brightness == Brightness.dark;
+    final foreground = isDark ? Colors.white : const Color(0xFF25243A);
     final String label;
 
     switch (settings.ttsEngine) {
@@ -115,10 +118,10 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
+          color: foreground.withValues(alpha: isDark ? 0.08 : 0.055),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.14),
+            color: foreground.withValues(alpha: isDark ? 0.14 : 0.10),
           ),
         ),
         child: Row(
@@ -127,7 +130,7 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
             HugeIcon(
               icon: HugeIcons.strokeRoundedVolumeHigh,
               size: 13,
-              color: Colors.white.withValues(alpha: 0.90),
+              color: foreground.withValues(alpha: 0.90),
             ),
             const SizedBox(width: 6),
             Text(
@@ -136,14 +139,14 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.1,
-                color: Colors.white.withValues(alpha: 0.90),
+                color: foreground.withValues(alpha: 0.90),
               ),
             ),
             const SizedBox(width: 2),
             Icon(
               Icons.chevron_right_rounded,
               size: 16,
-              color: Colors.white.withValues(alpha: 0.50),
+              color: foreground.withValues(alpha: 0.50),
             ),
           ],
         ),
@@ -155,11 +158,30 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
   Widget build(BuildContext context) {
     final state = ref.watch(voiceModeProvider);
     final theme = Theme.of(context);
-
-    // Voice mode presents a dark obsidian atmospheric theme in both light and dark modes
-    const bgColor = Color(0xFF090A10);
-    final accent = VoiceModePalette.accentFor(state.phase, isDark: true);
-    final secondary = VoiceModePalette.secondaryFor(state.phase, isDark: true);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF090A10) : const Color(0xFFF4F6FA);
+    final foreground = isDark ? Colors.white : const Color(0xFF25243A);
+    final accent = VoiceModePalette.accentFor(state.phase, isDark: isDark);
+    final secondary = VoiceModePalette.secondaryFor(
+      state.phase,
+      isDark: isDark,
+    );
+    final ttsPlayback = ref.watch(
+      ttsProvider.select(
+        (tts) => (position: tts.position, duration: tts.duration),
+      ),
+    );
+    final durationMicros = ttsPlayback.duration.inMicroseconds;
+    final responseProgress = durationMicros <= 0
+        ? 0.0
+        : (ttsPlayback.position.inMicroseconds / durationMicros).clamp(
+            0.0,
+            1.0,
+          );
+    final orbSize = (MediaQuery.sizeOf(context).width * 0.88).clamp(
+      300.0,
+      360.0,
+    );
 
     return PopScope(
       canPop: false,
@@ -167,18 +189,17 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
         if (!didPop) _endSession();
       },
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: const SystemUiOverlayStyle(
+        value: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light, // White icons on Android
-          statusBarBrightness: Brightness.dark,       // White text/icons on iOS
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
           systemNavigationBarColor: Colors.transparent,
-          systemNavigationBarIconBrightness: Brightness.light,
+          systemNavigationBarIconBrightness: isDark
+              ? Brightness.light
+              : Brightness.dark,
         ),
         child: Theme(
-          data: theme.copyWith(
-            brightness: Brightness.dark,
-            colorScheme: const ColorScheme.dark(),
-          ),
+          data: theme,
           child: Scaffold(
             backgroundColor: bgColor,
             body: Stack(
@@ -192,6 +213,7 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
                       accent: accent,
                       secondary: secondary,
                       bgColor: bgColor,
+                      isDark: isDark,
                     ),
                   ),
                 ),
@@ -225,7 +247,7 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.2,
-                                color: Colors.white.withValues(alpha: 0.90),
+                                color: foreground.withValues(alpha: 0.90),
                               ),
                             ),
                             const Spacer(),
@@ -243,7 +265,8 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
                         child: VoiceVisualizer(
                           phase: state.phase,
                           micLevel: state.micLevel,
-                          size: 240,
+                          responseProgress: responseProgress,
+                          size: orbSize,
                         ),
                       ),
 
@@ -270,7 +293,9 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
                           ref.read(voiceModeProvider.notifier).toggleMute();
                         },
                         onToggleAutoListen: () {
-                          ref.read(voiceModeProvider.notifier).toggleAutoListen();
+                          ref
+                              .read(voiceModeProvider.notifier)
+                              .toggleAutoListen();
                         },
                         onTapCenter: _handleCenterAction,
                       ),
@@ -325,6 +350,9 @@ class _CloseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final foreground = isDark ? Colors.white : const Color(0xFF25243A);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -335,12 +363,12 @@ class _CloseButton extends StatelessWidget {
           height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.08),
+            color: foreground.withValues(alpha: isDark ? 0.08 : 0.055),
           ),
           child: Icon(
             Icons.close_rounded,
             size: 18,
-            color: Colors.white.withValues(alpha: 0.80),
+            color: foreground.withValues(alpha: 0.80),
           ),
         ),
       ),
@@ -354,6 +382,7 @@ class _PulsingBackgroundGlow extends StatefulWidget {
   final Color accent;
   final Color secondary;
   final Color bgColor;
+  final bool isDark;
 
   const _PulsingBackgroundGlow({
     required this.phase,
@@ -361,6 +390,7 @@ class _PulsingBackgroundGlow extends StatefulWidget {
     required this.accent,
     required this.secondary,
     required this.bgColor,
+    required this.isDark,
   });
 
   @override
@@ -396,7 +426,8 @@ class _PulsingBackgroundGlowState extends State<_PulsingBackgroundGlow>
 
         switch (widget.phase) {
           case VoiceModePhase.listening:
-            pulse = 0.18 + 0.45 * widget.micLevel.clamp(0.0, 1.0) + 0.12 * breath;
+            pulse =
+                0.18 + 0.45 * widget.micLevel.clamp(0.0, 1.0) + 0.12 * breath;
           case VoiceModePhase.speaking:
             pulse = 0.22 + 0.28 * breath;
           case VoiceModePhase.error:
@@ -407,12 +438,14 @@ class _PulsingBackgroundGlowState extends State<_PulsingBackgroundGlow>
             pulse = 0.06 + 0.06 * breath;
         }
 
-        final alpha = (0.16 + pulse * 0.18).clamp(0.08, 0.45);
+        final alpha = widget.isDark
+            ? (0.16 + pulse * 0.18).clamp(0.08, 0.45)
+            : (0.012 + pulse * 0.020).clamp(0.01, 0.05);
         final radius = 0.85 + pulse * 0.40;
 
         return Stack(
           children: [
-            // Deep obsidian background base
+            // Theme-adaptive background base.
             Container(color: widget.bgColor),
 
             // Top ambient gradient light pool
@@ -438,7 +471,8 @@ class _PulsingBackgroundGlowState extends State<_PulsingBackgroundGlow>
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 55, sigmaY: 55),
                 child: Container(
-                  color: Colors.black.withValues(alpha: 0.15),
+                  color: (widget.isDark ? Colors.black : Colors.white)
+                      .withValues(alpha: widget.isDark ? 0.15 : 0.10),
                 ),
               ),
             ),

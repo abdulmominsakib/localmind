@@ -46,6 +46,11 @@ class TtsState {
   /// Index of the chunk currently being read. -1 when nothing is playing.
   final int currentChunkIndex;
 
+  /// Character offset currently reported by a TTS engine with native
+  /// word-progress support. Falls back to an estimated offset for engines
+  /// that only expose playback time.
+  final int spokenCharOffset;
+
   const TtsState({
     this.isSpeaking = false,
     this.isPaused = false,
@@ -63,6 +68,7 @@ class TtsState {
     this.playbackSpeed = 1.0,
     this.chunks = const [],
     this.currentChunkIndex = -1,
+    this.spokenCharOffset = -1,
   });
 
   TtsState copyWith({
@@ -84,6 +90,7 @@ class TtsState {
     bool resetProgress = false,
     List<String>? chunks,
     int? currentChunkIndex,
+    int? spokenCharOffset,
   }) {
     return TtsState(
       isSpeaking: isSpeaking ?? this.isSpeaking,
@@ -92,8 +99,9 @@ class TtsState {
       error: error,
       activeEngine: activeEngine ?? this.activeEngine,
       playingContent: playingContent,
-      playingMessageId:
-          clearPlayingTarget ? null : (playingMessageId ?? this.playingMessageId),
+      playingMessageId: clearPlayingTarget
+          ? null
+          : (playingMessageId ?? this.playingMessageId),
       playingConversationId: clearPlayingTarget
           ? null
           : (playingConversationId ?? this.playingConversationId),
@@ -105,6 +113,9 @@ class TtsState {
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       chunks: chunks ?? this.chunks,
       currentChunkIndex: currentChunkIndex ?? this.currentChunkIndex,
+      spokenCharOffset: resetProgress
+          ? -1
+          : (spokenCharOffset ?? this.spokenCharOffset),
     );
   }
 }
@@ -152,12 +163,14 @@ class TtsNotifier extends Notifier<TtsState> {
   final Map<int, Duration> _chunkDurations = {};
   Duration _totalDuration = Duration.zero;
   Duration _chunkOffset = Duration.zero;
-  final StreamController<void> _onChunkChanged = StreamController<void>.broadcast();
+  final StreamController<void> _onChunkChanged =
+      StreamController<void>.broadcast();
 
   // System TTS approximate seek
   String? _systemFullText;
   Duration _systemSkippedOffset = Duration.zero;
   DateTime? _systemSpeakStart;
+  bool _systemHasNativeProgress = false;
   int _systemSpeakGeneration = 0;
 
   _MessageAudioCache? _messageAudioCache;
@@ -182,7 +195,9 @@ class TtsNotifier extends Notifier<TtsState> {
 
     _player.setAudioSources([]);
 
-    _playerCompleteSubscription = _player.playerStateStream.listen((playerState) {
+    _playerCompleteSubscription = _player.playerStateStream.listen((
+      playerState,
+    ) {
       if (playerState.processingState != ProcessingState.completed) return;
       if (_isStopping || state.isInitializing) return;
       if (_currentSessionId != _playbackSessionId) return;
@@ -292,9 +307,7 @@ class TtsNotifier extends Notifier<TtsState> {
       _mainReceivePort.sendPort,
     );
 
-    await _workerPortCompleter!.future.timeout(
-      const Duration(seconds: 10),
-    );
+    await _workerPortCompleter!.future.timeout(const Duration(seconds: 10));
   }
 
   void _computeChunkDuration(int index, Uint8List wavBytes) {
@@ -333,9 +346,7 @@ class TtsNotifier extends Notifier<TtsState> {
     if (_chunks.isEmpty) return Duration.zero;
     if (_chunkDurations.length >= _chunks.length) return _totalDuration;
     final avg = _averageChunkDuration();
-    return Duration(
-      milliseconds: avg.inMilliseconds * _chunks.length,
-    );
+    return Duration(milliseconds: avg.inMilliseconds * _chunks.length);
   }
 
   Duration _computeGlobalPosition() {
@@ -358,7 +369,8 @@ class TtsNotifier extends Notifier<TtsState> {
     state = state.copyWith(
       position: position,
       duration: duration,
-      canSeek: !state.isInitializing &&
+      canSeek:
+          !state.isInitializing &&
           duration > Duration.zero &&
           _nextPlaylistIndexToAdd >= _chunks.length,
     );
@@ -385,10 +397,52 @@ class TtsNotifier extends Notifier<TtsState> {
     _systemProgressTimer = null;
   }
 
+  void _startSystemProgressTimer(int speakGeneration) {
+    _stopSystemProgressTimer();
+    _systemProgressTimer = Timer.periodic(
+      const Duration(milliseconds: 80),
+      (timer) {
+        if (_isStopping ||
+            speakGeneration != _systemSpeakGeneration ||
+            !state.isSpeaking ||
+            state.activeEngine != EngineId.system) {
+          timer.cancel();
+          if (identical(_systemProgressTimer, timer)) {
+            _systemProgressTimer = null;
+          }
+          return;
+        }
+
+        final duration = _systemEstimatedDuration();
+        final position = _systemEstimatedPosition();
+        final text = _systemFullText ?? '';
+        int? estimatedCharOffset;
+        if (!_systemHasNativeProgress && text.isNotEmpty) {
+          final durationMicros = duration.inMicroseconds;
+          final progress = durationMicros <= 0
+              ? 0.0
+              : position.inMicroseconds / durationMicros;
+          estimatedCharOffset = (progress * text.length).floor().clamp(
+            0,
+            text.length - 1,
+          );
+        }
+
+        state = state.copyWith(
+          position: position,
+          duration: duration,
+          spokenCharOffset: estimatedCharOffset,
+          playingContent: state.playingContent,
+        );
+      },
+    );
+  }
+
   void _resetSystemSeekState() {
     _systemFullText = null;
     _systemSkippedOffset = Duration.zero;
     _systemSpeakStart = null;
+    _systemHasNativeProgress = false;
     _stopSystemProgressTimer();
   }
 
@@ -495,9 +549,7 @@ class TtsNotifier extends Notifier<TtsState> {
     await _ensureWorker();
 
     if (_isWorkerInitializing && _initCompleter != null) {
-      await _initCompleter!.future.timeout(
-        const Duration(seconds: 30),
-      );
+      await _initCompleter!.future.timeout(const Duration(seconds: 30));
     }
 
     String modelPath = '';
@@ -581,9 +633,7 @@ class TtsNotifier extends Notifier<TtsState> {
         ),
       );
 
-      await _initCompleter!.future.timeout(
-        const Duration(seconds: 30),
-      );
+      await _initCompleter!.future.timeout(const Duration(seconds: 30));
       _currentEngine = engineId;
       _currentModelPath = modelPath;
       _currentVoicesPath = voicesPath;
@@ -657,7 +707,9 @@ class TtsNotifier extends Notifier<TtsState> {
       final speakGeneration = ++_systemSpeakGeneration;
       _systemFullText = text;
       _systemSkippedOffset = Duration.zero;
-      _systemSpeakStart = DateTime.now();
+      _systemSpeakStart = null;
+      _systemHasNativeProgress = false;
+      final estimatedDuration = _systemEstimatedDuration();
       state = state.copyWith(
         isSpeaking: true,
         isPaused: false,
@@ -669,11 +721,38 @@ class TtsNotifier extends Notifier<TtsState> {
         playingConversationId: isPreview ? null : conversationId,
         isPreview: isPreview,
         canSeek: false,
-        resetProgress: true,
+        position: Duration.zero,
+        duration: estimatedDuration,
+        chunks: [text],
+        currentChunkIndex: 0,
+        spokenCharOffset: 0,
       );
       try {
         await _flutterTts!.setLanguage('en-US');
         await _applySystemSpeechRate();
+        _flutterTts!.setStartHandler(() {
+          if (_isStopping || speakGeneration != _systemSpeakGeneration) return;
+          _systemSpeakStart = DateTime.now();
+          _startSystemProgressTimer(speakGeneration);
+        });
+        _flutterTts!.setProgressHandler((spokenText, start, end, word) {
+          if (_isStopping || speakGeneration != _systemSpeakGeneration) return;
+          if (text.isEmpty) return;
+
+          _systemHasNativeProgress = true;
+          final safeStart = start.clamp(0, text.length - 1);
+          final duration = _systemEstimatedDuration();
+          final position = Duration(
+            microseconds: (duration.inMicroseconds * (safeStart / text.length))
+                .round(),
+          );
+          state = state.copyWith(
+            position: position,
+            duration: duration,
+            spokenCharOffset: safeStart,
+            playingContent: state.playingContent,
+          );
+        });
         _flutterTts!.setCompletionHandler(() {
           if (_isStopping || speakGeneration != _systemSpeakGeneration) return;
           _resetSystemSeekState();
@@ -684,6 +763,8 @@ class TtsNotifier extends Notifier<TtsState> {
             clearPlayingTarget: true,
             resetProgress: true,
             canSeek: false,
+            chunks: const [],
+            currentChunkIndex: -1,
           );
         });
         _flutterTts!.setErrorHandler((msg) {
@@ -697,12 +778,16 @@ class TtsNotifier extends Notifier<TtsState> {
             clearPlayingTarget: true,
             resetProgress: true,
             canSeek: false,
+            chunks: const [],
+            currentChunkIndex: -1,
           );
         });
         _flutterTts!.setCancelHandler(() {
           if (_isStopping || speakGeneration != _systemSpeakGeneration) return;
         });
         await _flutterTts!.awaitSpeakCompletion(true);
+        _systemSpeakStart = DateTime.now();
+        _startSystemProgressTimer(speakGeneration);
         await _flutterTts!.speak(text);
       } catch (e) {
         _resetSystemSeekState();
@@ -714,6 +799,8 @@ class TtsNotifier extends Notifier<TtsState> {
           clearPlayingTarget: true,
           resetProgress: true,
           canSeek: false,
+          chunks: const [],
+          currentChunkIndex: -1,
         );
         rethrow;
       }
@@ -753,6 +840,7 @@ class TtsNotifier extends Notifier<TtsState> {
       playingMessageId: isPreview ? null : messageId,
       playingConversationId: isPreview ? null : conversationId,
       isPreview: isPreview,
+      spokenCharOffset: -1,
     );
 
     try {
@@ -788,12 +876,16 @@ class TtsNotifier extends Notifier<TtsState> {
 
     final source = AudioSource.file(
       tempFile.path,
-      tag: _isPreview ? null : MediaItem(
-        id: 'tts_chunk_${_currentSessionId}_$chunkIndex',
-        album: 'LocalMind TTS',
-        title: _chunks[chunkIndex],
-        artist: _currentEngine == EngineId.kitten ? 'Kitten TTS' : 'Piper TTS',
-      ),
+      tag: _isPreview
+          ? null
+          : MediaItem(
+              id: 'tts_chunk_${_currentSessionId}_$chunkIndex',
+              album: 'LocalMind TTS',
+              title: _chunks[chunkIndex],
+              artist: _currentEngine == EngineId.kitten
+                  ? 'Kitten TTS'
+                  : 'Piper TTS',
+            ),
     );
 
     _playlistBuffer[chunkIndex] = source;
@@ -914,18 +1006,14 @@ class TtsNotifier extends Notifier<TtsState> {
   Future<void> skipForward() async {
     if (state.activeEngine == EngineId.system) return;
     if (!state.isSpeaking && !state.isPaused) return;
-    final skip = Duration(
-      seconds: ref.read(settingsProvider).ttsSkipSeconds,
-    );
+    final skip = Duration(seconds: ref.read(settingsProvider).ttsSkipSeconds);
     await seekTo(_computeGlobalPosition() + skip);
   }
 
   Future<void> skipBackward() async {
     if (state.activeEngine == EngineId.system) return;
     if (!state.isSpeaking && !state.isPaused) return;
-    final skip = Duration(
-      seconds: ref.read(settingsProvider).ttsSkipSeconds,
-    );
+    final skip = Duration(seconds: ref.read(settingsProvider).ttsSkipSeconds);
     await seekTo(_computeGlobalPosition() - skip);
   }
 
@@ -971,7 +1059,9 @@ class TtsNotifier extends Notifier<TtsState> {
   void resume() {
     if (!state.isPaused) return;
     if (state.activeEngine == EngineId.system) {
-      unawaited(_flutterTts?.speak(_systemFullText ?? state.playingContent ?? ''));
+      unawaited(
+        _flutterTts?.speak(_systemFullText ?? state.playingContent ?? ''),
+      );
     } else {
       _player.play();
     }
@@ -1034,7 +1124,9 @@ class TtsNotifier extends Notifier<TtsState> {
   void cyclePlaybackSpeed() {
     final options = playbackSpeedOptions;
     final currentIndex = options.indexOf(state.playbackSpeed);
-    final nextIndex = currentIndex < 0 ? 2 : (currentIndex + 1) % options.length;
+    final nextIndex = currentIndex < 0
+        ? 2
+        : (currentIndex + 1) % options.length;
     unawaited(setPlaybackSpeed(options[nextIndex]));
   }
 
@@ -1095,10 +1187,7 @@ class TtsNotifier extends Notifier<TtsState> {
       }
     }
 
-    state = state.copyWith(
-      isInitializing: false,
-      canSeek: true,
-    );
+    state = state.copyWith(isInitializing: false, canSeek: true);
     if (!state.isPaused) {
       await _player.play();
     }
@@ -1171,7 +1260,12 @@ class TtsNotifier extends Notifier<TtsState> {
   }
 
   Future<void> previewVoice(Voice voice) async {
-    await speak(ttsPreviewSample, engineId: voice.engine, voiceId: voice.id, isPreview: true);
+    await speak(
+      ttsPreviewSample,
+      engineId: voice.engine,
+      voiceId: voice.id,
+      isPreview: true,
+    );
   }
 }
 

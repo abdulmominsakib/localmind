@@ -62,8 +62,9 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
       ttsProvider.select((s) => s.isInitializing),
     );
 
-    final (label, badgeColor, isSynthesizing) =
-        _resolveStatusBadge(isTtsInitializing);
+    final (label, badgeColor, isSynthesizing) = _resolveStatusBadge(
+      isTtsInitializing,
+    );
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -143,9 +144,11 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
 
     switch (widget.phase) {
       case VoiceModePhase.listening:
-        return ('LISTENING',
-            VoiceModePalette.accentFor(VoiceModePhase.listening, isDark: isDark),
-            false);
+        return (
+          'LISTENING',
+          VoiceModePalette.accentFor(VoiceModePhase.listening, isDark: isDark),
+          false,
+        );
       case VoiceModePhase.processing:
         final hasResponse = widget.response.trim().isNotEmpty;
         if (isTtsInitializing) {
@@ -157,13 +160,17 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
           false,
         );
       case VoiceModePhase.speaking:
-        return ('SPEAKING',
-            VoiceModePalette.accentFor(VoiceModePhase.speaking, isDark: isDark),
-            false);
+        return (
+          'SPEAKING',
+          VoiceModePalette.accentFor(VoiceModePhase.speaking, isDark: isDark),
+          false,
+        );
       case VoiceModePhase.idle:
-        return ('READY',
-            VoiceModePalette.accentFor(VoiceModePhase.idle, isDark: isDark),
-            false);
+        return (
+          'READY',
+          VoiceModePalette.accentFor(VoiceModePhase.idle, isDark: isDark),
+          false,
+        );
       case VoiceModePhase.error:
         final errorText = widget.error ?? '';
         final isSpeechError = errorText.toLowerCase().contains('speech');
@@ -235,8 +242,9 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
         );
 
       case VoiceModePhase.listening:
-        final displayText =
-            widget.transcript.isEmpty ? 'Listening...' : widget.transcript;
+        final displayText = widget.transcript.isEmpty
+            ? 'Listening...'
+            : widget.transcript;
         return Text(
           displayText,
           key: const ValueKey('listening'),
@@ -252,7 +260,7 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
         );
 
       case VoiceModePhase.speaking:
-        return _buildSpeakingContent(isDark);
+        return _SpeakingTranscript(response: widget.response, isDark: isDark);
 
       case VoiceModePhase.idle:
         return Text(
@@ -286,13 +294,49 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
         );
     }
   }
+}
 
-  /// Renders the assistant's response with the currently-spoken word
-  /// highlighted. Estimate per-chunk timing proportionally from chunk
-  /// character counts (TTS exposes real per-chunk durations internally,
-  /// but not via [TtsState], so character-ratio is a good approximation).
-  Widget _buildSpeakingContent(bool isDark) {
-    final response = widget.response;
+/// Speaking transcript that highlights and follows the active word.
+class _SpeakingTranscript extends ConsumerStatefulWidget {
+  final String response;
+  final bool isDark;
+
+  const _SpeakingTranscript({required this.response, required this.isDark});
+
+  @override
+  ConsumerState<_SpeakingTranscript> createState() =>
+      _SpeakingTranscriptState();
+}
+
+class _SpeakingTranscriptState extends ConsumerState<_SpeakingTranscript> {
+  final ScrollController _scrollController = ScrollController();
+  int _lastTrackedWord = -1;
+  String? _trackedResponse;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tts = ref.watch(ttsProvider);
+    final spokenContent = tts.playingContent;
+    final response = spokenContent != null && spokenContent.trim().isNotEmpty
+        ? spokenContent
+        : widget.response;
+
+    if (_trackedResponse != response) {
+      _trackedResponse = response;
+      _lastTrackedWord = -1;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
+      });
+    }
+
     if (response.isEmpty) {
       return Text(
         '...',
@@ -300,7 +344,7 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w400,
-          color: isDark
+          color: widget.isDark
               ? Colors.white.withValues(alpha: 0.7)
               : Colors.black.withValues(alpha: 0.7),
           height: 1.45,
@@ -309,12 +353,11 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
       );
     }
 
-    final tts = ref.watch(ttsProvider);
     final accent = VoiceModePalette.accentFor(
       VoiceModePhase.speaking,
-      isDark: isDark,
+      isDark: widget.isDark,
     );
-    final mutedColor = isDark
+    final mutedColor = widget.isDark
         ? Colors.white.withValues(alpha: 0.7)
         : Colors.black.withValues(alpha: 0.7);
 
@@ -331,27 +374,132 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
       response: response,
       activeIndex: highlightedWordIndex,
       base: base,
-      active: base.copyWith(
-        color: accent,
-        fontWeight: FontWeight.w700,
-      ),
+      active: base.copyWith(color: accent, fontWeight: FontWeight.w700),
     );
 
-    return RichText(
-      key: const ValueKey('speaking'),
-      textAlign: TextAlign.center,
-      maxLines: 4,
-      overflow: TextOverflow.ellipsis,
-      text: TextSpan(style: base, children: spans),
+    final textSpan = TextSpan(style: base, children: spans);
+    final textScaler = MediaQuery.textScalerOf(context);
+    final textDirection = Directionality.of(context);
+    final maxHeight =
+        textScaler.scale(base.fontSize ?? 16) * (base.height ?? 1) * 4;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _scheduleActiveWordScroll(
+          response: response,
+          activeWordIndex: highlightedWordIndex,
+          textSpan: textSpan,
+          maxWidth: constraints.maxWidth,
+          maxHeight: maxHeight,
+          textScaler: textScaler,
+          textDirection: textDirection,
+        );
+
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: SingleChildScrollView(
+            key: const ValueKey('speaking-scroll'),
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            child: SizedBox(
+              width: constraints.maxWidth,
+              child: RichText(
+                key: const ValueKey('speaking'),
+                textAlign: TextAlign.center,
+                text: textSpan,
+              ),
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  void _scheduleActiveWordScroll({
+    required String response,
+    required int activeWordIndex,
+    required TextSpan textSpan,
+    required double maxWidth,
+    required double maxHeight,
+    required TextScaler textScaler,
+    required TextDirection textDirection,
+  }) {
+    if (activeWordIndex < 0 ||
+        activeWordIndex == _lastTrackedWord ||
+        !maxWidth.isFinite ||
+        maxWidth <= 0) {
+      return;
+    }
+
+    _lastTrackedWord = activeWordIndex;
+    final charOffset = _wordStartCharOffset(response, activeWordIndex);
+    if (charOffset < 0) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+
+      final painter = TextPainter(
+        text: textSpan,
+        textAlign: TextAlign.center,
+        textDirection: textDirection,
+        textScaler: textScaler,
+      )..layout(maxWidth: maxWidth);
+      final caret = painter.getOffsetForCaret(
+        TextPosition(offset: charOffset),
+        Rect.zero,
+      );
+      painter.dispose();
+
+      final position = _scrollController.position;
+      final lineHeight = textScaler.scale(16) * 1.45;
+      final visibleTop = position.pixels + lineHeight * 0.25;
+      final visibleBottom =
+          position.pixels + position.viewportDimension - lineHeight * 1.25;
+      final wordBottom = caret.dy + lineHeight;
+
+      if (caret.dy >= visibleTop && wordBottom <= visibleBottom) return;
+
+      final target = (caret.dy - maxHeight * 0.32)
+          .clamp(position.minScrollExtent, position.maxScrollExtent)
+          .toDouble();
+      if ((target - position.pixels).abs() < 0.5) return;
+
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  int _wordStartCharOffset(String text, int targetWordIndex) {
+    var inWord = false;
+    var wordIndex = -1;
+    for (var i = 0; i < text.length; i++) {
+      final isWord = _isWordChar(text.codeUnitAt(i));
+      if (isWord && !inWord) {
+        wordIndex++;
+        if (wordIndex == targetWordIndex) return i;
+        inWord = true;
+      } else if (!isWord) {
+        inWord = false;
+      }
+    }
+    return -1;
   }
 
   /// Returns the index of the word currently being spoken, or -1 if no
   /// word is currently active (e.g. between sentences, before TTS has
   /// populated `chunks`).
   int _activeWordIndex(String response, TtsState tts) {
-    if (!tts.isSpeaking ||
-        tts.chunks.isEmpty ||
+    if (!tts.isSpeaking) return -1;
+
+    if (tts.spokenCharOffset >= 0 && response.isNotEmpty) {
+      final safeOffset = tts.spokenCharOffset.clamp(0, response.length - 1);
+      return _wordIndexAtChar(response, safeOffset);
+    }
+
+    if (tts.chunks.isEmpty ||
         tts.currentChunkIndex < 0 ||
         tts.currentChunkIndex >= tts.chunks.length) {
       return -1;
@@ -409,8 +557,9 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
         ? duration.inMilliseconds
         : totalChars * 60;
     final safePosition = position.inMilliseconds.clamp(0, safeDuration);
-    final globalCharIdx =
-        ((safePosition / safeDuration) * totalChars).round().clamp(0, totalChars);
+    final globalCharIdx = ((safePosition / safeDuration) * totalChars)
+        .round()
+        .clamp(0, totalChars);
 
     // Within which chunk does that character fall?
     int targetChunk = chunks.length - 1;
@@ -422,8 +571,10 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
     }
 
     final chunkStart = chunkStartChars[targetChunk];
-    final charInChunk = (globalCharIdx - prevChunkChars[targetChunk])
-        .clamp(0, chunks[targetChunk].length);
+    final charInChunk = (globalCharIdx - prevChunkChars[targetChunk]).clamp(
+      0,
+      chunks[targetChunk].length,
+    );
     return chunkStart + charInChunk;
   }
 
@@ -452,12 +603,12 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
 
   bool _isWordChar(int codeUnit) {
     // Letters, digits, and apostrophes (don't break "don't" into two).
-    final isAlnum = (codeUnit >= 0x30 && codeUnit <= 0x39) || // 0-9
+    final isAlnum =
+        (codeUnit >= 0x30 && codeUnit <= 0x39) || // 0-9
         (codeUnit >= 0x41 && codeUnit <= 0x5A) || // A-Z
         (codeUnit >= 0x61 && codeUnit <= 0x7A) || // a-z
         (codeUnit >= 0xC0 && codeUnit <= 0x024F); // Latin extended
-    final isApostrophe =
-        codeUnit == 0x27 || codeUnit == 0x2019; // ' '
+    final isApostrophe = codeUnit == 0x27 || codeUnit == 0x2019; // ' '
     return isAlnum || isApostrophe;
   }
 
@@ -475,10 +626,12 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
     void flushBuffer({required bool trailingWord}) {
       if (buffer.isEmpty) return;
       final text = buffer.toString();
-      spans.add(TextSpan(
-        text: text,
-        style: trailingWord && wordIndex == activeIndex ? active : base,
-      ));
+      spans.add(
+        TextSpan(
+          text: text,
+          style: trailingWord && wordIndex == activeIndex ? active : base,
+        ),
+      );
       buffer = StringBuffer();
     }
 

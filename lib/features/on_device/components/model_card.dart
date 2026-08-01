@@ -15,6 +15,7 @@ import 'package:localmind/features/on_device/data/models/download_status.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 import 'package:localmind/features/on_device/providers/foreground_download_providers.dart';
 import 'package:localmind/l10n/app_localizations.dart';
+import 'package:localmind/features/models/components/ram_warning_dialog.dart';
 
 class ModelCard extends ConsumerWidget {
   const ModelCard({
@@ -435,8 +436,10 @@ class _DownloadedActions extends ConsumerWidget {
       children: [
         Row(
           children: [
-            HugeIcon(icon: 
-              isLoaded ? HugeIcons.strokeRoundedCheckmarkCircle01 : HugeIcons.strokeRoundedCheckmarkCircle01,
+            HugeIcon(
+              icon: isLoaded
+                  ? HugeIcons.strokeRoundedCpu
+                  : HugeIcons.strokeRoundedCheckmarkCircle01,
               color: isLoaded ? Colors.green : Colors.grey,
               size: 18,
             ),
@@ -492,22 +495,14 @@ class _DownloadedActions extends ConsumerWidget {
   }
 
   Future<void> _deleteModel(BuildContext context, WidgetRef ref) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await ModelConfirmDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.delete_model_title),
-        content: Text(l10n.delete_model_body(model.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
+      title: l10n.delete_model_title,
+      message: l10n.delete_model_body(model.name),
+      confirmLabel: l10n.delete,
+      cancelLabel: l10n.cancel,
+      isDestructive: true,
+      icon: HugeIcons.strokeRoundedDelete02,
     );
 
     if (confirm == true) {
@@ -764,31 +759,14 @@ class _NotDownloadedActions extends ConsumerWidget {
   }
 
   Future<bool> _showRamWarning(BuildContext context, String message) async {
-    final l10n = AppLocalizations.of(context)!;
-    final result = await showDialog<bool>(
+    final availableRam = deviceMemory?.availableMemoryFormatted;
+    final requiredRam = '${model.minRamMb ~/ 1024 + 1} GB';
+
+    return RamWarningDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            const HugeIcon(icon: HugeIcons.strokeRoundedAlertCircle, color: Colors.orange),
-            const SizedBox(width: 8),
-            Text(l10n.ram_warning),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.orange),
-            child: Text(l10n.proceed_anyway),
-          ),
-        ],
-      ),
+      availableRam: availableRam,
+      requiredRam: requiredRam,
+      message: message,
     );
-    return result ?? false;
   }
 }

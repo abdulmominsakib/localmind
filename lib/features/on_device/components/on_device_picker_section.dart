@@ -20,6 +20,7 @@ import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/routes/app_routes.dart';
 import 'package:localmind/features/models/components/metadata_chip.dart';
 import 'package:localmind/features/models/components/inline_thinking_selector.dart';
+import 'package:localmind/features/models/components/ram_warning_dialog.dart';
 
 class OnDevicePickerSection extends ConsumerWidget {
   const OnDevicePickerSection({
@@ -400,13 +401,10 @@ class _OnDeviceModelTile extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 if (isLoaded) ...[
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: AppColors.darkAccent,
-                      shape: BoxShape.circle,
-                    ),
+                  HugeIcon(
+                    icon: HugeIcons.strokeRoundedCpu,
+                    size: 16,
+                    color: accent,
                   ),
                   const SizedBox(width: 8),
                   _IconButton(
@@ -490,9 +488,23 @@ class _OnDeviceModelTile extends ConsumerWidget {
                     ),
                   ),
                 ],
-                if (isDownloaded && isSelected && isLoaded) ...[
+                if (isSelected) ...[
                   const SizedBox(width: 4),
-                  HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01, color: accent, size: 22),
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: HugeIcon(
+                        icon: HugeIcons.strokeRoundedTick01,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -559,37 +571,14 @@ class _OnDeviceModelTile extends ConsumerWidget {
   }
 
   Future<bool> _showRamWarning(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
-    final result = await showDialog<bool>(
+    final availableRam = deviceMemory?.availableMemoryFormatted;
+    final requiredRam = '${model.minRamMb ~/ 1024 + 1} GB';
+
+    return RamWarningDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            const HugeIcon(icon: HugeIcons.strokeRoundedAlertCircle, color: Colors.orange),
-            const SizedBox(width: 8),
-            Text(l10n.ram_warning),
-          ],
-        ),
-        content: Text(
-          l10n.ram_warning_body_load(
-            deviceMemory!.availableMemoryFormatted,
-            '${model.minRamMb ~/ 1024 + 1}',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.orange),
-            child: Text(l10n.proceed_anyway),
-          ),
-        ],
-      ),
+      availableRam: availableRam,
+      requiredRam: requiredRam,
     );
-    return result ?? false;
   }
 
   void _selectModel(BuildContext context, WidgetRef ref) {
@@ -633,22 +622,14 @@ class _OnDeviceModelTile extends ConsumerWidget {
 
   void _deleteModel(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirm = await showDialog<bool>(
+    final confirm = await ModelConfirmDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.delete_model_title),
-        content: Text(l10n.delete_model_body(model.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
+      title: l10n.delete_model_title,
+      message: l10n.delete_model_body(model.name),
+      confirmLabel: l10n.delete,
+      cancelLabel: l10n.cancel,
+      isDestructive: true,
+      icon: HugeIcons.strokeRoundedDelete02,
     );
 
     if (confirm == true) {

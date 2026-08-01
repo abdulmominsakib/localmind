@@ -1264,7 +1264,7 @@ class _EngineStatusCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01, color: Colors.green, size: 20),
+            const HugeIcon(icon: HugeIcons.strokeRoundedCpu, color: Colors.green, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

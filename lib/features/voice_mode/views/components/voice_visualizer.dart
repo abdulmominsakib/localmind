@@ -22,11 +22,18 @@ class VoiceVisualizer extends StatefulWidget {
   /// Current microphone input level in 0..1 (listening phase).
   final double micLevel;
 
+  /// Approximate progress through the spoken response in 0..1.
+  ///
+  /// TTS does not expose output amplitude, so the shader combines this signal
+  /// with a layered speech cadence to keep speaking motion tied to playback.
+  final double responseProgress;
+
   const VoiceVisualizer({
     super.key,
     required this.phase,
     this.size = 240,
     this.micLevel = 0,
+    this.responseProgress = 0,
   });
 
   @override
@@ -42,6 +49,8 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
   VoiceModePhase _currentPhase = VoiceModePhase.idle;
 
   double _smoothedMicLevel = 0.0;
+  final Stopwatch _clock = Stopwatch();
+  int _lastFrameMicros = 0;
   FragmentProgram? _shaderProgram;
 
   @override
@@ -52,8 +61,9 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
 
     _ticker = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 4000),
+      duration: const Duration(seconds: 1),
     )..repeat();
+    _clock.start();
 
     _transitionController = AnimationController(
       vsync: this,
@@ -66,7 +76,9 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
 
   Future<void> _loadShader() async {
     try {
-      final program = await FragmentProgram.fromAsset('assets/shaders/orb.frag');
+      final program = await FragmentProgram.fromAsset(
+        'assets/shaders/orb.frag',
+      );
       if (mounted) {
         setState(() {
           _shaderProgram = program;
@@ -89,6 +101,7 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
 
   @override
   void dispose() {
+    _clock.stop();
     _ticker.dispose();
     _transitionController.dispose();
     super.dispose();
@@ -104,12 +117,23 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
       child: AnimatedBuilder(
         animation: Listenable.merge([_ticker, _transitionController]),
         builder: (context, _) {
-          // Smooth the mic level frame-by-frame to eliminate jitter/flicker.
+          final nowMicros = _clock.elapsedMicroseconds;
+          final elapsedMicros = _lastFrameMicros == 0
+              ? 16667
+              : nowMicros - _lastFrameMicros;
+          _lastFrameMicros = nowMicros;
+          final deltaSeconds = (elapsedMicros / Duration.microsecondsPerSecond)
+              .clamp(0.0, 0.05);
+
+          // Fast attack preserves responsiveness; slower release prevents
+          // speech gaps from making the orb visibly snap or flicker.
           final targetMic = widget.phase == VoiceModePhase.listening
               ? widget.micLevel.clamp(0.0, 1.0)
               : 0.0;
+          final smoothingRate = targetMic > _smoothedMicLevel ? 15.0 : 6.5;
+          final smoothing = 1.0 - math.exp(-smoothingRate * deltaSeconds);
           _smoothedMicLevel =
-              lerpDouble(_smoothedMicLevel, targetMic, 0.12) ?? 0.0;
+              lerpDouble(_smoothedMicLevel, targetMic, smoothing) ?? 0.0;
 
           final transitionProgress = CurvedAnimation(
             parent: _transitionController,
@@ -122,7 +146,8 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
               targetPhase: _currentPhase,
               transitionProgress: transitionProgress,
               micLevel: _smoothedMicLevel,
-              progress: _ticker.value,
+              responseProgress: widget.responseProgress.clamp(0.0, 1.0),
+              time: nowMicros / Duration.microsecondsPerSecond,
               isDark: isDark,
               shaderProgram: _shaderProgram,
             ),
@@ -138,7 +163,8 @@ class _OrbWavePainter extends CustomPainter {
   final VoiceModePhase targetPhase;
   final double transitionProgress;
   final double micLevel;
-  final double progress;
+  final double responseProgress;
+  final double time;
   final bool isDark;
   final FragmentProgram? shaderProgram;
 
@@ -147,7 +173,8 @@ class _OrbWavePainter extends CustomPainter {
     required this.targetPhase,
     required this.transitionProgress,
     required this.micLevel,
-    required this.progress,
+    required this.responseProgress,
+    required this.time,
     required this.isDark,
     this.shaderProgram,
   });
@@ -155,20 +182,42 @@ class _OrbWavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rawCenter = Offset(size.width / 2, size.height / 2);
-    final time = progress * 2 * math.pi;
 
     // 1. Calculate Phase Colors with Smooth 450ms Cross-Fade
     final oldAccent = VoiceModePalette.accentFor(oldPhase, isDark: isDark);
-    final targetAccent = VoiceModePalette.accentFor(targetPhase, isDark: isDark);
+    final targetAccent = VoiceModePalette.accentFor(
+      targetPhase,
+      isDark: isDark,
+    );
     final accent = Color.lerp(oldAccent, targetAccent, transitionProgress)!;
 
-    final oldSecondary = VoiceModePalette.secondaryFor(oldPhase, isDark: isDark);
-    final targetSecondary = VoiceModePalette.secondaryFor(targetPhase, isDark: isDark);
-    final secondary = Color.lerp(oldSecondary, targetSecondary, transitionProgress)!;
+    final oldSecondary = VoiceModePalette.secondaryFor(
+      oldPhase,
+      isDark: isDark,
+    );
+    final targetSecondary = VoiceModePalette.secondaryFor(
+      targetPhase,
+      isDark: isDark,
+    );
+    final secondary = Color.lerp(
+      oldSecondary,
+      targetSecondary,
+      transitionProgress,
+    )!;
 
     // 2. Physics & Scale State Changes
-    final oldAmp = _computeAmplitudeFor(oldPhase, progress, micLevel);
-    final targetAmp = _computeAmplitudeFor(targetPhase, progress, micLevel);
+    final oldAmp = _computeAmplitudeFor(
+      oldPhase,
+      time,
+      micLevel,
+      responseProgress,
+    );
+    final targetAmp = _computeAmplitudeFor(
+      targetPhase,
+      time,
+      micLevel,
+      responseProgress,
+    );
     final amp = lerpDouble(oldAmp, targetAmp, transitionProgress)!;
 
     // Base radius scale factor
@@ -176,7 +225,8 @@ class _OrbWavePainter extends CustomPainter {
     Offset center = rawCenter;
 
     // Error Deflation & Horizontal Shake Oscillation
-    if (targetPhase == VoiceModePhase.error || oldPhase == VoiceModePhase.error) {
+    if (targetPhase == VoiceModePhase.error ||
+        oldPhase == VoiceModePhase.error) {
       final errorWeight = targetPhase == VoiceModePhase.error
           ? transitionProgress
           : (1.0 - transitionProgress);
@@ -211,15 +261,32 @@ class _OrbWavePainter extends CustomPainter {
       shader.setFloat(10, secondary.g);
       shader.setFloat(11, secondary.b);
       shader.setFloat(12, secondary.a);
+      shader.setFloat(13, isDark ? 1.0 : 0.0);
+      shader.setFloat(14, amp);
+      shader.setFloat(15, _phaseWeight(VoiceModePhase.processing));
+      shader.setFloat(16, _phaseWeight(VoiceModePhase.speaking));
+      shader.setFloat(17, _phaseWeight(VoiceModePhase.error));
+      shader.setFloat(18, responseProgress);
 
       final shaderPaint = Paint()..shader = shader;
-      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), shaderPaint);
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        shaderPaint,
+      );
       return;
     }
 
     // 4. CustomPainter Rendering Pipeline
     // A. Multi-Tier Layered Ambient Glow Halos
-    _paintMultiLayerHalo(canvas, center, baseRadius, time, amp, accent, secondary);
+    _paintMultiLayerHalo(
+      canvas,
+      center,
+      baseRadius,
+      time,
+      amp,
+      accent,
+      secondary,
+    );
 
     // B. Outer Organic Translucent Wave Rings with Additive Blend Modes
     _paintAdditiveOuterWaveRings(
@@ -252,20 +319,33 @@ class _OrbWavePainter extends CustomPainter {
     }
   }
 
-  double _computeAmplitudeFor(VoiceModePhase phase, double p, double mic) {
+  double _phaseWeight(VoiceModePhase phase) {
+    final oldWeight = oldPhase == phase ? 1.0 : 0.0;
+    final targetWeight = targetPhase == phase ? 1.0 : 0.0;
+    return lerpDouble(oldWeight, targetWeight, transitionProgress)!;
+  }
+
+  double _computeAmplitudeFor(
+    VoiceModePhase phase,
+    double time,
+    double mic,
+    double responseProgress,
+  ) {
     switch (phase) {
       case VoiceModePhase.listening:
-        return mic;
+        return math.pow(mic, 0.78).toDouble();
       case VoiceModePhase.speaking:
-        final wave = 0.5 + 0.5 * math.sin(p * 2 * math.pi * 3.8);
-        final breath = 0.45 + 0.55 * math.sin(p * 2 * math.pi * 1.4);
-        return (wave * breath).clamp(0.12, 1.0);
+        final playbackPhase = responseProgress * math.pi * 18;
+        final syllable = 0.5 + 0.5 * math.sin(time * 7.4 + playbackPhase);
+        final texture =
+            0.5 + 0.5 * math.sin(time * 12.7 - responseProgress * math.pi * 11);
+        return (0.16 + syllable * texture * 0.56).clamp(0.12, 0.82);
       case VoiceModePhase.processing:
-        return 0.22 + 0.18 * math.sin(p * 2 * math.pi * 3.0);
+        return 0.18 + 0.14 * (0.5 + 0.5 * math.sin(time * 3.6));
       case VoiceModePhase.idle:
-        return 0.06 + 0.04 * math.sin(p * 2 * math.pi);
+        return 0.05 + 0.035 * (0.5 + 0.5 * math.sin(time * 1.1));
       case VoiceModePhase.error:
-        return 0.08 + 0.05 * math.sin(p * 2 * math.pi * 1.8);
+        return 0.07 + 0.04 * (0.5 + 0.5 * math.sin(time * 2.1));
     }
   }
 
@@ -466,9 +546,12 @@ class _OrbWavePainter extends CustomPainter {
       final control2 = p2 - (p3 - p1) * 0.1666;
 
       path.cubicTo(
-        control1.dx, control1.dy,
-        control2.dx, control2.dy,
-        p2.dx, p2.dy,
+        control1.dx,
+        control1.dy,
+        control2.dx,
+        control2.dy,
+        p2.dx,
+        p2.dy,
       );
     }
 
@@ -488,7 +571,10 @@ class _OrbWavePainter extends CustomPainter {
     final orbRadius = baseRadius * (0.95 + 0.15 * amp);
     final orbRect = Rect.fromCircle(center: center, radius: orbRadius);
 
-    final gradientStops = VoiceModePalette.sphereGradientFor(targetPhase, isDark: isDark);
+    final gradientStops = VoiceModePalette.sphereGradientFor(
+      targetPhase,
+      isDark: isDark,
+    );
     final orbGradient = RadialGradient(
       center: const Alignment(-0.35, -0.45),
       radius: 1.15,
@@ -514,7 +600,15 @@ class _OrbWavePainter extends CustomPainter {
     canvas.drawCircle(center, orbRadius, orbPaint);
 
     // Inner morphing liquid wave shimmer
-    _paintInnerLiquidWaves(canvas, center, orbRadius, time, amp, accent, secondary);
+    _paintInnerLiquidWaves(
+      canvas,
+      center,
+      orbRadius,
+      time,
+      amp,
+      accent,
+      secondary,
+    );
 
     // Specular 3D light reflection highlight
     final specularPaint = Paint()
@@ -570,7 +664,8 @@ class _OrbWavePainter extends CustomPainter {
     for (int i = 0; i <= steps; i++) {
       final x = center.dx - radius + (i / steps) * (2 * radius);
       final normalizedX = (i / steps) * 2 * math.pi;
-      final y = yOffset +
+      final y =
+          yOffset +
           math.sin(normalizedX * 2 + time * 2.5) * waveHeight * 0.5 +
           math.cos(normalizedX * 3 - time * 1.8) * waveHeight * 0.3;
       wavePath.lineTo(x, y);
@@ -599,7 +694,8 @@ class _OrbWavePainter extends CustomPainter {
         targetPhase != oldDelegate.targetPhase ||
         transitionProgress != oldDelegate.transitionProgress ||
         micLevel != oldDelegate.micLevel ||
-        progress != oldDelegate.progress ||
+        responseProgress != oldDelegate.responseProgress ||
+        time != oldDelegate.time ||
         isDark != oldDelegate.isDark ||
         shaderProgram != oldDelegate.shaderProgram;
   }
