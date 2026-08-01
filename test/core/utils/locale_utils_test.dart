@@ -12,10 +12,22 @@ void main() {
     test('parses locales with country codes', () {
       expect(parseLocaleCode('zh_TW'), const Locale('zh', 'TW'));
       expect(parseLocaleCode('zh-TW'), const Locale('zh', 'TW'));
+      expect(parseLocaleCode('tr_TR'), const Locale('tr', 'TR'));
     });
   });
 
   group('findSupportedLocale', () {
+    test('matches Turkish locale exactly', () {
+      expect(
+        findSupportedLocale('tr', AppLocalizations.supportedLocales),
+        const Locale('tr'),
+      );
+      expect(
+        findSupportedLocale('tr_TR', AppLocalizations.supportedLocales),
+        const Locale('tr'),
+      );
+    });
+
     test('matches Traditional Chinese exactly', () {
       expect(
         findSupportedLocale('zh_TW', AppLocalizations.supportedLocales),

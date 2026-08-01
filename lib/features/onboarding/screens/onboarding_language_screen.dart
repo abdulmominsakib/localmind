@@ -132,6 +132,16 @@ const _languages = [
     shortText: 'Ru',
     gradient: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
   ),
+  _LanguageOption(
+    code: 'tr',
+    nativeName: 'Türkçe',
+    englishName: 'Turkish',
+    flag: '🇹🇷',
+    flagAsset: 'assets/images/flag_tr.png',
+    countryCode: 'TR',
+    shortText: 'Tr',
+    gradient: [Color(0xFFE11D48), Color(0xFFBE123C)],
+  ),
 ];
 
 class OnboardingLanguageScreen extends ConsumerStatefulWidget {
@@ -200,209 +210,217 @@ class _OnboardingLanguageScreenState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 24),
-                    Actor(
-                      acts: [.fadeIn(), .slideY(from: 0.08)],
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            l10n.onboarding_welcome,
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.headlineLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              height: 1.1,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            l10n.onboarding_choose_language,
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            l10n.onboarding_choose_language_desc,
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.7,
+              child: Scrollbar(
+                thickness: 2,
+                radius: const Radius.circular(4),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 24),
+                      Actor(
+                        acts: [.fadeIn(), .slideY(from: 0.08)],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              l10n.onboarding_welcome,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.headlineLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                height: 1.1,
                               ),
-                              height: 1.5,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Actor(
-                      delay: 60.ms,
-                      acts: [.fadeIn(), .slideY(from: 0.08)],
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _languages.length,
-                        separatorBuilder: (context, index) =>
                             const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final lang = _languages[index];
-                          final isSelected = _selectedCode == lang.code;
-
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedCode = lang.code;
-                              });
-                              // Dynamically apply settings localization update
-                              ref
-                                  .read(settingsProvider.notifier)
-                                  .setLocaleCode(lang.code);
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
+                            Text(
+                              l10n.onboarding_choose_language,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.primary,
                               ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surface,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.outline.withValues(
-                                          alpha: 0.15,
-                                        ),
-                                  width: isSelected ? 2 : 1,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.onboarding_choose_language_desc,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
                                 ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: theme.colorScheme.primary
-                                              .withValues(alpha: 0.1),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ]
-                                    : null,
+                                height: 1.5,
                               ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 48,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: theme.colorScheme.outline
-                                            .withValues(alpha: 0.15),
-                                        width: 1,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.05,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Actor(
+                        delay: 60.ms,
+                        acts: [.fadeIn(), .slideY(from: 0.08)],
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _languages.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final lang = _languages[index];
+                            final isSelected = _selectedCode == lang.code;
+
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedCode = lang.code;
+                                });
+                                // Dynamically apply settings localization update
+                                ref
+                                    .read(settingsProvider.notifier)
+                                    .setLocaleCode(lang.code);
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.outline.withValues(
+                                            alpha: 0.15,
                                           ),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: theme.colorScheme.primary
+                                                .withValues(alpha: 0.1),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: theme.colorScheme.outline
+                                              .withValues(alpha: 0.15),
+                                          width: 1,
                                         ),
-                                      ],
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(5),
-                                      child: Image.asset(
-                                        lang.flagAsset,
-                                        width: 48,
-                                        height: 32,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                              return Text(
-                                                lang.flag,
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                ),
-                                              );
-                                            },
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.05,
+                                            ),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(5),
+                                        child: Image.asset(
+                                          lang.flagAsset,
+                                          width: 48,
+                                          height: 32,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return Text(
+                                                  lang.flag,
+                                                  style: const TextStyle(
+                                                    fontSize: 18,
+                                                  ),
+                                                );
+                                              },
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          lang.nativeName,
-                                          style: theme.textTheme.titleMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '${lang.englishName} • ${lang.shortText.toUpperCase()}',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurface
-                                                    .withValues(alpha: 0.5),
-                                              ),
-                                        ),
-                                      ],
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            lang.nativeName,
+                                            style: theme.textTheme.titleMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${lang.englishName} • ${lang.shortText.toUpperCase()}',
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withValues(alpha: 0.5),
+                                                ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    width: 22,
-                                    height: 22,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: isSelected
-                                          ? theme.colorScheme.primary
-                                          : Colors.transparent,
-                                      border: Border.all(
+                                    const SizedBox(width: 8),
+                                    AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      width: 22,
+                                      height: 22,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
                                         color: isSelected
                                             ? theme.colorScheme.primary
-                                            : theme.colorScheme.outline
-                                                  .withValues(alpha: 0.3),
-                                        width: 2,
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? theme.colorScheme.primary
+                                              : theme.colorScheme.outline
+                                                    .withValues(alpha: 0.3),
+                                          width: 2,
+                                        ),
                                       ),
+                                      child: isSelected
+                                          ? const HugeIcon(
+                                              icon:
+                                                  HugeIcons.strokeRoundedTick01,
+                                              color: Colors.white,
+                                              size: 14,
+                                            )
+                                          : null,
                                     ),
-                                    child: isSelected
-                                        ? const HugeIcon(
-                                            icon: HugeIcons.strokeRoundedTick01,
-                                            color: Colors.white,
-                                            size: 14,
-                                          )
-                                        : null,
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 32),
-                  ],
+                      const SizedBox(height: 32),
+                    ],
+                  ),
                 ),
               ),
             ),
+            SizedBox(height: 8),
             Actor(
               delay: 120.ms,
               acts: [.fadeIn(), .slideY(from: 0.08)],
