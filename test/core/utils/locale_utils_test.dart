@@ -28,6 +28,17 @@ void main() {
       );
     });
 
+    test('matches French locale exactly', () {
+      expect(
+        findSupportedLocale('fr', AppLocalizations.supportedLocales),
+        const Locale('fr'),
+      );
+      expect(
+        findSupportedLocale('fr_FR', AppLocalizations.supportedLocales),
+        const Locale('fr'),
+      );
+    });
+
     test('matches Traditional Chinese exactly', () {
       expect(
         findSupportedLocale('zh_TW', AppLocalizations.supportedLocales),

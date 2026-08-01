@@ -138,89 +138,94 @@ class _OnboardingServerTypeScreenState
                           final crossAxisCount =
                               constraints.maxWidth >= 560 ? 3 : 2;
 
-                          return GridView.count(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.only(top: 24),
-                            crossAxisCount: crossAxisCount,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            mainAxisExtent: 144,
+                          return Column(
                             children: [
-                              _buildServerCard(
-                                type: ServerType.onDevice,
-                                title: l10n.server_type_on_device,
-                                subtitle: l10n.server_type_on_device_desc,
-                                iconWidget: HugeIcon(icon: 
-                                  HugeIcons.strokeRoundedSmartPhone01,
-                                  color: _selectedType == ServerType.onDevice
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.onSurface,
-                                ),
-                                theme: theme,
+                              GridView.count(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding: const EdgeInsets.only(top: 24),
+                                crossAxisCount: crossAxisCount,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                mainAxisExtent: 144,
+                                children: [
+                                  _buildServerCard(
+                                    type: ServerType.onDevice,
+                                    title: l10n.server_type_on_device,
+                                    subtitle: l10n.server_type_on_device_desc,
+                                    iconWidget: HugeIcon(
+                                      icon: HugeIcons.strokeRoundedSmartPhone01,
+                                      color: _selectedType == ServerType.onDevice
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                    ),
+                                    theme: theme,
+                                  ),
+                                  _buildServerCard(
+                                    type: ServerType.lmStudio,
+                                    title: l10n.server_type_lm_studio,
+                                    subtitle: l10n.server_type_lm_studio_desc,
+                                    iconWidget: HugeIcon(
+                                      icon: HugeIcons.strokeRoundedComputerTerminal01,
+                                      color: _selectedType == ServerType.lmStudio
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                    ),
+                                    theme: theme,
+                                  ),
+                                  _buildServerCard(
+                                    type: ServerType.openAICompatible,
+                                    title: l10n.server_type_openai_display,
+                                    subtitle: l10n.openai_compatible_api,
+                                    iconWidget: HugeIcon(
+                                      icon: HugeIcons.strokeRoundedApi,
+                                      color:
+                                          _selectedType ==
+                                              ServerType.openAICompatible
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                    ),
+                                    theme: theme,
+                                  ),
+                                  _buildServerCard(
+                                    type: ServerType.ollama,
+                                    title: l10n.server_type_ollama,
+                                    subtitle: l10n.server_type_ollama_desc,
+                                    iconWidget: HugeIcon(
+                                      icon: HugeIcons.strokeRoundedRobot01,
+                                      color: _selectedType == ServerType.ollama
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                    ),
+                                    theme: theme,
+                                  ),
+                                  _buildServerCard(
+                                    type: ServerType.ollamaCloud,
+                                    title: l10n.server_type_ollama_cloud,
+                                    subtitle: l10n.server_type_ollama_cloud_sub,
+                                    iconWidget: HugeIcon(
+                                      icon: HugeIcons.strokeRoundedAiCloud,
+                                      color: _selectedType == ServerType.ollamaCloud
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                    ),
+                                    theme: theme,
+                                  ),
+                                  _buildServerCard(
+                                    type: ServerType.openRouter,
+                                    title: l10n.server_type_openrouter,
+                                    subtitle: l10n.server_type_openrouter_sub,
+                                    iconWidget: HugeIcon(
+                                      icon: HugeIcons.strokeRoundedCloudServer,
+                                      color: _selectedType == ServerType.openRouter
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                    ),
+                                    theme: theme,
+                                  ),
+                                ],
                               ),
-                              _buildServerCard(
-                                type: ServerType.lmStudio,
-                                title: l10n.server_type_lm_studio,
-                                subtitle: l10n.server_type_lm_studio_desc,
-                                iconWidget: HugeIcon(icon: 
-                                  HugeIcons.strokeRoundedComputerTerminal01,
-                                  color: _selectedType == ServerType.lmStudio
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.onSurface,
-                                ),
-                                theme: theme,
-                              ),
-                              _buildServerCard(
-                                type: ServerType.openAICompatible,
-                                title: l10n.server_type_openai_display,
-                                subtitle: l10n.openai_compatible_api,
-                                iconWidget: HugeIcon(
-                                  icon: HugeIcons.strokeRoundedApi,
-                                  color:
-                                      _selectedType ==
-                                          ServerType.openAICompatible
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.onSurface,
-                                ),
-                                theme: theme,
-                              ),
-                              _buildServerCard(
-                                type: ServerType.ollama,
-                                title: l10n.server_type_ollama,
-                                subtitle: l10n.server_type_ollama_desc,
-                                iconWidget: HugeIcon(icon:
-                                  HugeIcons.strokeRoundedRobot01,
-                                  color: _selectedType == ServerType.ollama
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.onSurface,
-                                ),
-                                theme: theme,
-                              ),
-                              _buildServerCard(
-                                type: ServerType.ollamaCloud,
-                                title: l10n.server_type_ollama_cloud,
-                                subtitle: l10n.server_type_ollama_cloud_sub,
-                                iconWidget: HugeIcon(
-                                  icon: HugeIcons.strokeRoundedAiCloud,
-                                  color: _selectedType == ServerType.ollamaCloud
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.onSurface,
-                                ),
-                                theme: theme,
-                              ),
-                              _buildServerCard(
-                                type: ServerType.openRouter,
-                                title: l10n.server_type_openrouter,
-                                subtitle: l10n.server_type_openrouter_sub,
-                                iconWidget: HugeIcon(
-                                  icon: HugeIcons.strokeRoundedCloudServer,
-                                  color: _selectedType == ServerType.openRouter
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.onSurface,
-                                ),
-                                theme: theme,
-                              ),
+                              const SizedBox(height: 12),
                               _buildMoreCard(
                                 theme: theme,
                                 title: l10n.add_more,
@@ -433,7 +438,11 @@ class _OnboardingServerTypeScreenState
           child: Stack(
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -450,61 +459,66 @@ class _OnboardingServerTypeScreenState
                     color: theme.colorScheme.outline.withValues(alpha: 0.18),
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.12,
-                            ),
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                          child: HugeIcon(icon: 
-                            HugeIcons.strokeRoundedAdd01,
-                            size: 18,
-                            color: theme.colorScheme.primary,
-                          ),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.12,
                         ),
-                        const Spacer(),
-                      ],
-                    ),
-                    const Spacer(),
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14.5,
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      child: HugeIcon(
+                        icon: HugeIcons.strokeRoundedAdd01,
+                        size: 18,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        letterSpacing: 1.0,
-                        fontSize: 9.5,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14.5,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              letterSpacing: 1.0,
+                              fontSize: 9.5,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.55,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
               PositionedDirectional(
-                end: 4,
-                bottom: 2,
+                end: 12,
+                bottom: -8,
                 child: IgnorePointer(
                   child: Opacity(
                     opacity: 0.06,
                     child: HugeIcon(
                       icon: HugeIcons.strokeRoundedGithub,
-                      size: 54,
+                      size: 60,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),

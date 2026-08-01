@@ -142,6 +142,16 @@ const _languages = [
     shortText: 'Tr',
     gradient: [Color(0xFFE11D48), Color(0xFFBE123C)],
   ),
+  _LanguageOption(
+    code: 'fr',
+    nativeName: 'Français',
+    englishName: 'French',
+    flag: '🇫🇷',
+    flagAsset: 'assets/images/flag_fr.png',
+    countryCode: 'FR',
+    shortText: 'Fr',
+    gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+  ),
 ];
 
 class OnboardingLanguageScreen extends ConsumerStatefulWidget {
@@ -259,12 +269,17 @@ class _OnboardingLanguageScreenState
                       Actor(
                         delay: 60.ms,
                         acts: [.fadeIn(), .slideY(from: 0.08)],
-                        child: ListView.separated(
+                        child: GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            mainAxisExtent: 92,
+                          ),
                           itemCount: _languages.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final lang = _languages[index];
                             final isSelected = _selectedCode == lang.code;
@@ -281,10 +296,7 @@ class _OnboardingLanguageScreenState
                               },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
+                                padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
                                   color: theme.colorScheme.surface,
                                   borderRadius: BorderRadius.circular(16),
@@ -307,105 +319,115 @@ class _OnboardingLanguageScreenState
                                         ]
                                       : null,
                                 ),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Container(
-                                      width: 48,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: theme.colorScheme.outline
-                                              .withValues(alpha: 0.15),
-                                          width: 1,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.05,
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Container(
+                                          width: 36,
+                                          height: 24,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                            border: Border.all(
+                                              color: theme.colorScheme.outline
+                                                  .withValues(alpha: 0.15),
+                                              width: 1,
                                             ),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.05,
+                                                ),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
                                           ),
-                                        ],
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(5),
-                                        child: Image.asset(
-                                          lang.flagAsset,
-                                          width: 48,
-                                          height: 32,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
+                                          alignment: Alignment.center,
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                            child: Image.asset(
+                                              lang.flagAsset,
+                                              width: 36,
+                                              height: 24,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error,
+                                                  stackTrace) {
                                                 return Text(
                                                   lang.flag,
                                                   style: const TextStyle(
-                                                    fontSize: 18,
+                                                    fontSize: 14,
                                                   ),
                                                 );
                                               },
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            lang.nativeName,
-                                            style: theme.textTheme.titleMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                            ),
                                           ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            '${lang.englishName} • ${lang.shortText.toUpperCase()}',
-                                            style: theme.textTheme.labelSmall
-                                                ?.copyWith(
-                                                  color: theme
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withValues(alpha: 0.5),
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      width: 22,
-                                      height: 22,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: isSelected
-                                            ? theme.colorScheme.primary
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? theme.colorScheme.primary
-                                              : theme.colorScheme.outline
-                                                    .withValues(alpha: 0.3),
-                                          width: 2,
                                         ),
-                                      ),
-                                      child: isSelected
-                                          ? const HugeIcon(
-                                              icon:
-                                                  HugeIcons.strokeRoundedTick01,
-                                              color: Colors.white,
-                                              size: 14,
-                                            )
-                                          : null,
+                                        AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: isSelected
+                                                ? theme.colorScheme.primary
+                                                : Colors.transparent,
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? theme.colorScheme.primary
+                                                  : theme.colorScheme.outline
+                                                        .withValues(alpha: 0.3),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: isSelected
+                                              ? const HugeIcon(
+                                                  icon: HugeIcons
+                                                      .strokeRoundedTick01,
+                                                  color: Colors.white,
+                                                  size: 12,
+                                                )
+                                              : null,
+                                        ),
+                                      ],
+                                    ),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          lang.nativeName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.titleSmall
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${lang.englishName} • ${lang.shortText.toUpperCase()}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withValues(alpha: 0.5),
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
