@@ -11,18 +11,43 @@ class ServerApiService {
   ServerApiService(this._dio);
 
   Future<bool> testConnection(Server server) async {
-    try {
-      final response = await _dio.get(
-        server.modelsEndpoint,
-        options: Options(
-          headers: buildServerAuthHeaders(server),
-          validateStatus: (status) => status != null && status < 500,
-        ),
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
+    if (server.type == ServerType.onDevice) {
+      return true;
     }
+
+    final endpointsToTry = <String>[];
+    if (server.modelsEndpoint.isNotEmpty) {
+      endpointsToTry.add(server.modelsEndpoint);
+    }
+
+    if (server.type == ServerType.lmStudio) {
+      endpointsToTry.add('${server.baseUrl}/v1/models');
+      endpointsToTry.add('${server.baseUrl}/api/v0/models');
+    } else if (server.type == ServerType.openAICompatible) {
+      endpointsToTry.add('${server.baseUrl}/models');
+    } else if (server.type == ServerType.ollama) {
+      endpointsToTry.add('${server.baseUrl}/api/tags');
+      endpointsToTry.add('${server.baseUrl}/api/version');
+    }
+
+    for (final endpoint in endpointsToTry.toSet()) {
+      if (endpoint.isEmpty) continue;
+      try {
+        final response = await _dio.get(
+          endpoint,
+          options: Options(
+            headers: buildServerAuthHeaders(server),
+            validateStatus: (status) => status != null && status < 500,
+          ),
+        );
+        if (response.statusCode == 200) {
+          return true;
+        }
+      } catch (_) {
+        // Try next endpoint
+      }
+    }
+    return false;
   }
 
   Future<int?> pingServer(Server server) async {
@@ -41,10 +66,23 @@ class ServerApiService {
 
   Future<List<ModelInfo>> fetchModels(Server server) async {
     try {
-      final response = await _dio.get(
-        server.modelsEndpoint,
-        options: Options(headers: buildServerAuthHeaders(server)),
-      );
+      Response response;
+      try {
+        response = await _dio.get(
+          server.modelsEndpoint,
+          options: Options(headers: buildServerAuthHeaders(server)),
+        );
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404 &&
+            server.type == ServerType.lmStudio) {
+          response = await _dio.get(
+            '${server.baseUrl}/v1/models',
+            options: Options(headers: buildServerAuthHeaders(server)),
+          );
+        } else {
+          rethrow;
+        }
+      }
 
       List<ModelInfo> models;
       switch (server.type) {

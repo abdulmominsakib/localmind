@@ -10,11 +10,29 @@ import '../../../core/utils/system_insets.dart';
 import '../providers/server_providers.dart';
 import 'components/server_card.dart';
 
-class ServerListScreen extends ConsumerWidget {
+class ServerListScreen extends ConsumerStatefulWidget {
   const ServerListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ServerListScreen> createState() => _ServerListScreenState();
+}
+
+class _ServerListScreenState extends ConsumerState<ServerListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAllConnections();
+    });
+  }
+
+  Future<void> _checkAllConnections() async {
+    final apiService = ref.read(serverApiServiceProvider);
+    await ref.read(serversProvider.notifier).testAllConnections(apiService);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final servers = ref.watch(serversProvider);
     final activeServer = ref.watch(activeServerProvider);
@@ -72,16 +90,7 @@ class ServerListScreen extends ConsumerWidget {
                 data: (serverList) => serverList.isEmpty
                     ? _buildEmptyState(context, l10n, theme)
                     : RefreshIndicator(
-                        onRefresh: () async {
-                          for (final server in serverList) {
-                            await ref
-                                .read(serversProvider.notifier)
-                                .testConnection(
-                                  server.id,
-                                  ref.read(serverApiServiceProvider),
-                                );
-                          }
-                        },
+                        onRefresh: _checkAllConnections,
                         child: ListView.builder(
                           padding: EdgeInsets.fromLTRB(
                             16,

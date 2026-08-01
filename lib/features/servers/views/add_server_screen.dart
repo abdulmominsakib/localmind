@@ -166,7 +166,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       isDefault: widget.editServer?.isDefault ?? false,
       createdAt: widget.editServer?.createdAt ?? DateTime.now(),
       lastConnectedAt: widget.editServer?.lastConnectedAt ?? DateTime.now(),
-      status: ConnectionStatus.disconnected,
+      status: widget.editServer?.status ?? ConnectionStatus.disconnected,
       iconName: _selectedIconName,
       availableRamGb: _selectedType == ServerType.lmStudio
           ? _parseOptionalGb(_ramGbController.text)
@@ -192,6 +192,10 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       } else {
         await ref.read(serversProvider.notifier).addServer(server);
       }
+      final apiService = ref.read(serverApiServiceProvider);
+      await ref
+          .read(serversProvider.notifier)
+          .testConnection(server.id, apiService);
       invalidateAvailableModelsCache(server.id);
 
       if (mounted) {

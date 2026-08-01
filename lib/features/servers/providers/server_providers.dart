@@ -200,20 +200,21 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
     state = AsyncData(await _loadAll());
   }
 
-  Future<ConnectionStatus> testConnection(
+  Future<void> updateServerStatus(
     String serverId,
-    dynamic apiService,
+    ConnectionStatus status,
   ) async {
     final servers = state.value ?? [];
-    final server = servers.firstWhere((s) => s.id == serverId);
-    final isConnected = await apiService.testConnection(server);
-    final status = isConnected
-        ? ConnectionStatus.connected
-        : ConnectionStatus.error;
+    final index = servers.indexWhere((s) => s.id == serverId);
+    if (index == -1) return;
+    final server = servers[index];
+    if (server.status == status) return;
 
     final updatedServer = server.copyWith(
       status: status,
-      lastConnectedAt: DateTime.now(),
+      lastConnectedAt: status == ConnectionStatus.connected
+          ? DateTime.now()
+          : server.lastConnectedAt,
     );
     final db = ref.read(databaseProvider);
 
@@ -231,7 +232,36 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
     invalidateAvailableModelsCache(updatedServer.id);
 
     state = AsyncData(await _loadAll());
+  }
+
+  Future<ConnectionStatus> testConnection(
+    String serverId,
+    dynamic apiService,
+  ) async {
+    final servers = state.value ?? [];
+    final index = servers.indexWhere((s) => s.id == serverId);
+    if (index == -1) return ConnectionStatus.disconnected;
+    final server = servers[index];
+
+    if (server.type == ServerType.onDevice) {
+      await updateServerStatus(serverId, ConnectionStatus.connected);
+      return ConnectionStatus.connected;
+    }
+
+    final isConnected = await apiService.testConnection(server);
+    final status = isConnected
+        ? ConnectionStatus.connected
+        : ConnectionStatus.disconnected;
+
+    await updateServerStatus(serverId, status);
     return status;
+  }
+
+  Future<void> testAllConnections(dynamic apiService) async {
+    final servers = state.value ?? [];
+    for (final server in servers) {
+      await testConnection(server.id, apiService);
+    }
   }
 }
 
@@ -272,7 +302,7 @@ class ActiveServerNotifier extends Notifier<Server?> {
       servers,
       currentId ?? prefs.getString('defaultServerId'),
     );
-    if (resolved?.id != state?.id) {
+    if (resolved?.id != state?.id || resolved?.status != state?.status) {
       state = resolved;
     }
   }
@@ -309,9 +339,18 @@ class ConnectionStatusNotifier extends Notifier<ConnectionStatus> {
   Future<void> _checkConnection(Server server, dynamic apiService) async {
     try {
       final isConnected = await apiService.testConnection(server);
-      state = isConnected ? ConnectionStatus.connected : ConnectionStatus.error;
+      final status = isConnected
+          ? ConnectionStatus.connected
+          : ConnectionStatus.disconnected;
+      state = status;
+      ref
+          .read(serversProvider.notifier)
+          .updateServerStatus(server.id, status);
     } catch (e) {
       state = ConnectionStatus.error;
+      ref
+          .read(serversProvider.notifier)
+          .updateServerStatus(server.id, ConnectionStatus.disconnected);
     }
   }
 
