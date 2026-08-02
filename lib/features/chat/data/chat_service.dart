@@ -511,7 +511,7 @@ class LMStudioChatService implements ChatService {
       final imageItems = await _imageItemsFor(m);
       final textContent = _messageTextWithAttachments(m);
       if (textContent.isNotEmpty) {
-        items.add({'type': 'message', 'content': textContent});
+        items.add({'type': 'text', 'content': textContent});
       }
       items.addAll(imageItems);
     }

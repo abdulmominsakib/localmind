@@ -7,7 +7,6 @@ import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:localmind/features/chat/views/components/token_usage_indicator.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../core/models/enums.dart';
 import '../../../../core/providers/app_providers.dart';
@@ -204,41 +203,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     );
   }
 
-  Future<bool> _ensurePhotoPermission() async {
-    if (!Platform.isAndroid && !Platform.isIOS) return true;
-
-    var status = await Permission.photos.status;
-
-    if (status.isGranted || status.isLimited) return true;
-
-    status = await Permission.photos.request();
-
-    if (status.isGranted || status.isLimited) return true;
-
-    if (Platform.isAndroid) {
-      final storage = await Permission.storage.request();
-
-      return storage.isGranted;
-    }
-
-    return false;
-  }
-
   Future<void> _pickImages() async {
-    final granted = await _ensurePhotoPermission();
-
-    if (!granted) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.photo_permission_denied),
-        ),
-      );
-
-      return;
-    }
-
     final picker = ImagePicker();
 
     final images = await picker.pickMultiImage(imageQuality: 85);
@@ -907,9 +872,10 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               Padding(
                 padding: const EdgeInsets.only(left: 8, right: 8, top: 4),
                 child: SizedBox(
-                  height: 68,
+                  height: 50,
 
                   child: ListView.separated(
+                    shrinkWrap: true,
                     scrollDirection: Axis.horizontal,
 
                     itemCount: _attachedFiles.length,
@@ -1006,7 +972,6 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
             ],
 
             // Text input row. Sits on top of the action row so the action

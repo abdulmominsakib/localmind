@@ -223,20 +223,24 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
                   : Colors.black.withValues(alpha: 0.06),
             ),
           ),
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            physics: const BouncingScrollPhysics(),
-            child: Text(
-              widget.response,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.75)
-                    : Colors.black.withValues(alpha: 0.7),
-                height: 1.45,
+          child: _FadedScrollContainer(
+            scrollController: _scrollController,
+            fadeHeight: 22.0,
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(),
+              child: Text(
+                widget.response,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.75)
+                      : Colors.black.withValues(alpha: 0.7),
+                  height: 1.45,
+                ),
+                textAlign: TextAlign.start,
               ),
-              textAlign: TextAlign.start,
             ),
           ),
         );
@@ -397,16 +401,20 @@ class _SpeakingTranscriptState extends ConsumerState<_SpeakingTranscript> {
 
         return ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxHeight),
-          child: SingleChildScrollView(
-            key: const ValueKey('speaking-scroll'),
-            controller: _scrollController,
-            physics: const BouncingScrollPhysics(),
-            child: SizedBox(
-              width: constraints.maxWidth,
-              child: RichText(
-                key: const ValueKey('speaking'),
-                textAlign: TextAlign.center,
-                text: textSpan,
+          child: _FadedScrollContainer(
+            scrollController: _scrollController,
+            fadeHeight: 22.0,
+            child: SingleChildScrollView(
+              key: const ValueKey('speaking-scroll'),
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(),
+              child: SizedBox(
+                width: constraints.maxWidth,
+                child: RichText(
+                  key: const ValueKey('speaking'),
+                  textAlign: TextAlign.center,
+                  text: textSpan,
+                ),
               ),
             ),
           ),
@@ -728,3 +736,127 @@ class _PulsingDotState extends State<_PulsingDot>
     );
   }
 }
+
+/// Applies top and bottom fade gradient masks to a scrollable container
+/// when its text content scrolls past the top or bottom edges.
+class _FadedScrollContainer extends StatefulWidget {
+  final Widget child;
+  final ScrollController scrollController;
+  final double fadeHeight;
+
+  const _FadedScrollContainer({
+    required this.child,
+    required this.scrollController,
+    this.fadeHeight = 22.0,
+  });
+
+  @override
+  State<_FadedScrollContainer> createState() => _FadedScrollContainerState();
+}
+
+class _FadedScrollContainerState extends State<_FadedScrollContainer> {
+  double _topFade = 0.0;
+  double _bottomFade = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.scrollController.addListener(_updateFade);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateFade());
+  }
+
+  @override
+  void didUpdateWidget(covariant _FadedScrollContainer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.scrollController != oldWidget.scrollController) {
+      oldWidget.scrollController.removeListener(_updateFade);
+      widget.scrollController.addListener(_updateFade);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateFade());
+  }
+
+  @override
+  void dispose() {
+    widget.scrollController.removeListener(_updateFade);
+    super.dispose();
+  }
+
+  void _updateFade() {
+    if (!mounted) return;
+    if (!widget.scrollController.hasClients) return;
+    final position = widget.scrollController.position;
+    if (!position.hasContentDimensions) return;
+
+    final maxScroll = position.maxScrollExtent;
+    if (maxScroll <= 0) {
+      if (_topFade != 0.0 || _bottomFade != 0.0) {
+        setState(() {
+          _topFade = 0.0;
+          _bottomFade = 0.0;
+        });
+      }
+      return;
+    }
+
+    final offset = position.pixels;
+    final remaining = maxScroll - offset;
+
+    final newTopFade = (offset / widget.fadeHeight).clamp(0.0, 1.0);
+    final newBottomFade = (remaining / widget.fadeHeight).clamp(0.0, 1.0);
+
+    if ((newTopFade - _topFade).abs() > 0.005 ||
+        (newBottomFade - _bottomFade).abs() > 0.005) {
+      setState(() {
+        _topFade = newTopFade;
+        _bottomFade = newBottomFade;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        _updateFade();
+        return false;
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _updateFade());
+
+          if (_topFade == 0.0 && _bottomFade == 0.0) {
+            return widget.child;
+          }
+
+          return ShaderMask(
+            shaderCallback: (Rect bounds) {
+              final h = bounds.height;
+              if (h <= 0) {
+                return const LinearGradient(
+                  colors: [Colors.black, Colors.black],
+                ).createShader(bounds);
+              }
+              final tStop = (widget.fadeHeight / h).clamp(0.0, 0.35);
+              final bStop = 1.0 - (widget.fadeHeight / h).clamp(0.0, 0.35);
+
+              return LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 1.0 - _topFade),
+                  Colors.black,
+                  Colors.black,
+                  Colors.black.withValues(alpha: 1.0 - _bottomFade),
+                ],
+                stops: [0.0, tStop, bStop, 1.0],
+              ).createShader(bounds);
+            },
+            blendMode: BlendMode.dstIn,
+            child: widget.child,
+          );
+        },
+      ),
+    );
+  }
+}
+

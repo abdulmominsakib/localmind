@@ -25,6 +25,7 @@ class AddServerScreen extends ConsumerStatefulWidget {
 
 class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
   late TextEditingController _nameController;
   late TextEditingController _hostController;
   late TextEditingController _portController;
@@ -70,6 +71,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _nameController.dispose();
     _hostController.dispose();
     _portController.dispose();
@@ -100,6 +102,18 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     });
   }
 
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
   Future<void> _testConnection() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -107,6 +121,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       _isTesting = true;
       _testResult = null;
     });
+    _scrollToBottom();
 
     final apiService = ref.read(serverApiServiceProvider);
     final testServer = _buildServer();
@@ -131,6 +146,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       setState(() {
         _isTesting = false;
       });
+      _scrollToBottom();
     }
   }
 
@@ -322,6 +338,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
+          controller: _scrollController,
           padding: EdgeInsets.fromLTRB(16, 12, 16, 120 + systemBottomInset),
           children: [
             _buildHeaderCard(context),
