@@ -19,6 +19,7 @@ class ModelTile extends StatelessWidget {
     this.onLongPress,
     this.onUnload,
     this.isFavorite = false,
+    this.isDefault = false,
     this.note,
     this.isLoading = false,
   });
@@ -31,6 +32,7 @@ class ModelTile extends StatelessWidget {
   final VoidCallback? onLongPress;
   final Future<void> Function()? onUnload;
   final bool isFavorite;
+  final bool isDefault;
   final String? note;
   final bool isLoading;
 
@@ -72,6 +74,31 @@ class ModelTile extends StatelessWidget {
                               icon: HugeIcons.strokeRoundedStar,
                               size: 16,
                               color: Colors.amber[600],
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          if (isDefault) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.darkAccent.withValues(alpha: 0.18)
+                                    : AppColors.lightAccent.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                l10n.model_default_badge,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? AppColors.darkAccent
+                                      : AppColors.lightAccent,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 6),
                           ],

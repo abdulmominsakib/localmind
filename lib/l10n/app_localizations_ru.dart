@@ -549,6 +549,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settings_default_persona => 'Персона по умолчанию';
 
   @override
+  String get settings_default_model => 'Default Model';
+
+  @override
+  String get settings_default_model_desc =>
+      'Automatically selected when you start a new chat.';
+
+  @override
   String get settings_privacy => 'Конфиденциальность';
 
   @override
@@ -2243,6 +2250,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get model_favorite_toggle => 'Добавить в избранное';
+
+  @override
+  String get model_set_default => 'Set as default model';
+
+  @override
+  String get model_clear_default => 'Remove as default model';
+
+  @override
+  String get model_default_badge => 'Default';
 
   @override
   String get model_note_label => 'Заметка';

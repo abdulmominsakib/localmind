@@ -16,6 +16,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/system_insets.dart';
 import '../../chat/utils/image_upload_utils.dart';
 import '../../conversations/providers/conversation_providers.dart';
+import '../../models/data/models/model_info.dart';
 import '../../on_device/providers/on_device_providers.dart';
 import '../../personas/providers/personas_providers.dart';
 import '../../servers/providers/server_providers.dart';
@@ -38,6 +39,22 @@ class SettingsViews extends ConsumerWidget {
     final personas = (ref.watch(personasNotifierProvider).value ?? [])
         .map((persona) => (persona.id, '${persona.emoji} ${persona.name}'))
         .toList();
+
+    // The default model dropdown lists models from the server used as the
+    // default (the configured default server, falling back to the first one).
+    final defaultServerId = settings.defaultServerId ??
+        (servers.isNotEmpty ? servers.first.$1 : null);
+    final availableModels = defaultServerId != null
+        ? (ref.watch(availableModelsProvider(defaultServerId)).value ??
+                const <dynamic>[])
+            .cast<ModelInfo>()
+        : <ModelInfo>[];
+    final models = availableModels
+        .map((m) => (m.id, m.displayName))
+        .toList();
+    final isDefaultModelForServer =
+        settings.defaultModelServerId != null &&
+            settings.defaultModelServerId == defaultServerId;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final topPadding = MediaQuery.of(context).padding.top;
@@ -393,6 +410,18 @@ class SettingsViews extends ConsumerWidget {
                         .read(settingsProvider.notifier)
                         .setDefaultPersona(value),
                     icon: HugeIcons.strokeRoundedRobot01,
+                  ),
+                  _DropdownSetting(
+                    label: l10n.settings_default_model,
+                    description: l10n.settings_default_model_desc,
+                    currentValue: isDefaultModelForServer
+                        ? settings.defaultModelId
+                        : null,
+                    items: models,
+                    onChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setDefaultModel(serverId: defaultServerId, modelId: value),
+                    icon: HugeIcons.strokeRoundedSmartPhone01,
                   ),
                   const SizedBox(height: 8),
                   _SectionActionButton(
@@ -1618,6 +1647,7 @@ class _DropdownSetting extends StatelessWidget {
     required this.items,
     required this.onChanged,
     required this.icon,
+    this.description,
   });
 
   final String label;
@@ -1625,6 +1655,7 @@ class _DropdownSetting extends StatelessWidget {
   final List<(String id, String name)> items;
   final ValueChanged<String?> onChanged;
   final List<List<dynamic>> icon;
+  final String? description;
 
   @override
   Widget build(BuildContext context) {
@@ -1682,6 +1713,15 @@ class _DropdownSetting extends StatelessWidget {
               ),
             ),
           ),
+          if (description != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              description!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: _mutedColor(context),
+              ),
+            ),
+          ],
         ],
       ),
     );

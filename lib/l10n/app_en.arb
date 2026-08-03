@@ -756,6 +756,14 @@
   "@settings_default_persona": {
     "description": "Settings section header for default persona"
   },
+  "settings_default_model": "Default Model",
+  "@settings_default_model": {
+    "description": "Settings label for the default model used in new chats"
+  },
+  "settings_default_model_desc": "Automatically selected when you start a new chat.",
+  "@settings_default_model_desc": {
+    "description": "Helper text for the default model setting"
+  },
   "settings_privacy": "Privacy",
   "@settings_privacy": {
     "description": "Settings section header for privacy"
@@ -2797,6 +2805,18 @@
   "model_favorite_toggle": "Toggle favorite",
   "@model_favorite_toggle": {
     "description": "Long-press menu option to favorite a model"
+  },
+  "model_set_default": "Set as default model",
+  "@model_set_default": {
+    "description": "Long-press menu option to make a model the default for new chats"
+  },
+  "model_clear_default": "Remove as default model",
+  "@model_clear_default": {
+    "description": "Long-press menu option to clear the default model"
+  },
+  "model_default_badge": "Default",
+  "@model_default_badge": {
+    "description": "Badge shown on a model that is set as the default for new chats"
   },
   "model_note_label": "Note",
   "@model_note_label": {

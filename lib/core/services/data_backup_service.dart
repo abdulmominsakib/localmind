@@ -30,6 +30,8 @@ class DataBackupService {
     'autoGenerateTitle',
     'streamingEnabled',
     'defaultPersonaId',
+    'defaultModelId',
+    'defaultModelServerId',
     'mcpEnabled',
     'newChatMcpEnabled',
     'codeThemeDark',

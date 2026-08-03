@@ -549,6 +549,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settings_default_persona => 'Personaje predeterminado';
 
   @override
+  String get settings_default_model => 'Default Model';
+
+  @override
+  String get settings_default_model_desc =>
+      'Automatically selected when you start a new chat.';
+
+  @override
   String get settings_privacy => 'Privacidad';
 
   @override
@@ -2243,6 +2250,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get model_favorite_toggle => 'Alternar favorito';
+
+  @override
+  String get model_set_default => 'Set as default model';
+
+  @override
+  String get model_clear_default => 'Remove as default model';
+
+  @override
+  String get model_default_badge => 'Default';
 
   @override
   String get model_note_label => 'Nota';

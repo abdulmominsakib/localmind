@@ -80,6 +80,18 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(streamingEnabled: value));
   void setDefaultPersona(String? id) =>
       _update(state.copyWith(defaultPersonaId: id));
+  void setDefaultModel({String? serverId, String? modelId}) => _update(
+        state.copyWith(
+          defaultModelServerId: serverId,
+          defaultModelId: modelId,
+        ),
+      );
+  void clearDefaultModel() => _update(
+        state.copyWith(
+          defaultModelServerId: null,
+          defaultModelId: null,
+        ),
+      );
   void setHasCompletedOnboarding(bool value) =>
       _update(state.copyWith(hasCompletedOnboarding: value));
   void setMcpEnabled(bool value) => _update(state.copyWith(mcpEnabled: value));

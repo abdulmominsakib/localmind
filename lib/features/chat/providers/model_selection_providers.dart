@@ -2,8 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/models/enums.dart';
+import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/providers/service_providers.dart';
+import 'package:localmind/features/chat/providers/chat_params_providers.dart';
+import 'package:localmind/features/chat/providers/model_loading_providers.dart';
 import 'package:localmind/features/models/data/models/model_info.dart';
+import 'package:localmind/features/models/utils/model_instance_utils.dart';
+import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 
@@ -29,6 +34,13 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
   final activeServer = ref.watch(activeServerProvider);
   final status = ref.watch(connectionStatusProvider);
 
+  // Re-run whenever the configured default model changes so a newly chosen
+  // default is applied to the next new chat (the notifier only seeds the
+  // selection when no model is already picked).
+  ref.watch(
+    settingsProvider.select((s) => (s.defaultModelId, s.defaultModelServerId)),
+  );
+
   if (activeServer == null) {
     await Future.value();
     ref.read(selectedModelProvider.notifier).clear();
@@ -46,8 +58,18 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
     return;
   }
 
-  if (activeServer.type == ServerType.openRouter ||
-      activeServer.type == ServerType.openAICompatible) {
+  final settings = ref.read(settingsProvider);
+  final defaultModelId = settings.defaultModelId;
+  final defaultModelServerId = settings.defaultModelServerId;
+  final hasDefaultForServer =
+      defaultModelId != null && defaultModelServerId == activeServer.id;
+
+  // Cloud providers have no "loaded" notion, so without a configured
+  // default there's nothing to auto-select for them (avoids an extra model
+  // list fetch for users who never set one).
+  if (!hasDefaultForServer &&
+      (activeServer.type == ServerType.openRouter ||
+          activeServer.type == ServerType.openAICompatible)) {
     return;
   }
 
@@ -63,17 +85,53 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
       loadedModels = await apiService.fetchRunningModels(activeServer);
     }
 
-    if (loadedModels.isEmpty) return;
-
     final availableModels = await ref.read(
       availableModelsProvider(activeServer.id).future,
     );
-    if (availableModels.isEmpty) return;
 
     final typedModels = availableModels.cast<ModelInfo>();
+    if (typedModels.isEmpty) return;
+
+    if (hasDefaultForServer) {
+      final defaultModel = typedModels
+          .where((m) => m.id == defaultModelId)
+          .firstOrNull;
+      if (defaultModel != null) {
+        if (activeServer.type == ServerType.onDevice) {
+          // On-device inference runs one engine instance at a time, so only
+          // auto-select the default when it's the model the engine already
+          // has loaded; otherwise fall through to the loaded-model logic.
+          if (isModelKeyLoaded(loadedModels, defaultModel.id)) {
+            ref.read(selectedModelProvider.notifier).setModel(defaultModel);
+            return;
+          }
+        } else {
+          // LM Studio models must be running before a request can use them;
+          // if the default isn't loaded yet, load it exactly like tapping it
+          // in the model picker would so the user can start chatting right
+          // away. Ollama and cloud providers load on demand, so selecting is
+          // enough for them.
+          if (!isModelKeyLoaded(loadedModels, defaultModel.id) &&
+              activeServer.type == ServerType.lmStudio) {
+            await _loadDefaultModel(ref, activeServer, defaultModel);
+          }
+          ref.read(selectedModelProvider.notifier).setModel(defaultModel);
+          return;
+        }
+      }
+    }
+
+    // Cloud providers fall back to no selection when the configured default
+    // isn't among the available models.
+    if (activeServer.type == ServerType.openRouter ||
+        activeServer.type == ServerType.openAICompatible) {
+      return;
+    }
+
+    if (loadedModels.isEmpty) return;
 
     final firstLoadedModel = typedModels
-        .where((m) => loadedModels.contains(m.id))
+        .where((m) => isModelKeyLoaded(loadedModels, m.id))
         .firstOrNull;
 
     if (firstLoadedModel != null) {
@@ -83,6 +141,36 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
     // Silently fail auto-selection
   }
 });
+
+/// Loads an LM Studio model via the server API and reflects the busy state in
+/// [modelLoadingProvider], mirroring what tapping a model in the picker does.
+Future<void> _loadDefaultModel(
+  Ref ref,
+  Server activeServer,
+  ModelInfo model,
+) async {
+  final apiService = ref.read(serverApiServiceProvider);
+  final settings = ref.read(settingsProvider);
+  final contextLength = ref.read(chatParamsProvider).contextLength;
+
+  ref.read(modelLoadingProvider.notifier).setLoading(model.id);
+  try {
+    if (settings.unloadModelsBeforeLoad) {
+      final instances = await ref.read(
+        loadedModelsProvider(activeServer).future,
+      );
+      await apiService.unloadAllInstances(activeServer, instances);
+    }
+    await apiService.loadModelWithInstanceId(
+      activeServer,
+      model.id,
+      contextLength: contextLength,
+    );
+    ref.invalidate(loadedModelsProvider(activeServer));
+  } finally {
+    ref.read(modelLoadingProvider.notifier).setLoaded();
+  }
+}
 
 /// The actual context length the active model was loaded with, fetched
 /// live from the server (currently only LM Studio reports this — see

@@ -219,6 +219,8 @@ class CloudSyncSnapshot {
     'autoGenerateTitle',
     'streamingEnabled',
     'defaultPersonaId',
+    'defaultModelId',
+    'defaultModelServerId',
     'mcpEnabled',
     'newChatMcpEnabled',
     'codeThemeDark',

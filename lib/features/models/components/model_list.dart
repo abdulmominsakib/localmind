@@ -100,6 +100,11 @@ class _ModelListState extends ConsumerState<ModelList> {
       context: context,
       isScrollControlled: true,
       builder: (ctx) {
+        final settings = ref.read(settingsProvider);
+        final isDefaultModel =
+            settings.defaultModelServerId == widget.serverId &&
+                settings.defaultModelId == model.id;
+
         return SafeArea(
           child: Padding(
             padding: EdgeInsets.only(
@@ -120,6 +125,32 @@ class _ModelListState extends ConsumerState<ModelList> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: HugeIcon(
+                    icon: isDefaultModel
+                        ? HugeIcons.strokeRoundedDelete01
+                        : HugeIcons.strokeRoundedRocket,
+                    color: isDefaultModel ? Colors.red[400] : Colors.green[600],
+                  ),
+                  title: Text(
+                    isDefaultModel
+                        ? l10n.model_clear_default
+                        : l10n.model_set_default,
+                  ),
+                  onTap: () async {
+                    final notifier = ref.read(settingsProvider.notifier);
+                    if (isDefaultModel) {
+                      notifier.clearDefaultModel();
+                    } else {
+                      notifier.setDefaultModel(
+                        serverId: widget.serverId,
+                        modelId: model.id,
+                      );
+                    }
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: HugeIcon(icon: 
@@ -325,6 +356,13 @@ class _ModelListState extends ConsumerState<ModelList> {
               isDark: widget.isDark,
               isLoading: modelLoading.isLoading && modelLoading.modelId == model.id,
               isFavorite: modelMeta?.isFavorite ?? false,
+              isDefault: ref.watch(
+                settingsProvider.select(
+                  (s) =>
+                      s.defaultModelServerId == widget.serverId &&
+                      s.defaultModelId == model.id,
+                ),
+              ),
               note: modelMeta?.note,
               onLongPress: () => _showModelOptions(context, model),
               onTap: () async {

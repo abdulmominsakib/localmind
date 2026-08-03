@@ -1101,6 +1101,18 @@ abstract class AppLocalizations {
   /// **'Default Persona'**
   String get settings_default_persona;
 
+  /// Settings label for the default model used in new chats
+  ///
+  /// In en, this message translates to:
+  /// **'Default Model'**
+  String get settings_default_model;
+
+  /// Helper text for the default model setting
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically selected when you start a new chat.'**
+  String get settings_default_model_desc;
+
   /// Settings section header for privacy
   ///
   /// In en, this message translates to:
@@ -4184,6 +4196,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Toggle favorite'**
   String get model_favorite_toggle;
+
+  /// Long-press menu option to make a model the default for new chats
+  ///
+  /// In en, this message translates to:
+  /// **'Set as default model'**
+  String get model_set_default;
+
+  /// Long-press menu option to clear the default model
+  ///
+  /// In en, this message translates to:
+  /// **'Remove as default model'**
+  String get model_clear_default;
+
+  /// Badge shown on a model that is set as the default for new chats
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get model_default_badge;
 
   /// Label for model note text field
   ///

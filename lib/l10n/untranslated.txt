@@ -1,5 +1,7 @@
 {
   "ar": [
+    "settings_default_model",
+    "settings_default_model_desc",
     "import_mcp_json",
     "import_mcp_json_dialog_title",
     "import_mcp_json_instructions",
@@ -15,10 +17,15 @@
     "api_key_hint_ollama_cloud",
     "add_server_ollama_cloud_subtitle",
     "add_server_openrouter_subtitle",
-    "add_server_endpoint_subtitle"
+    "add_server_endpoint_subtitle",
+    "model_set_default",
+    "model_clear_default",
+    "model_default_badge"
   ],
 
   "bn": [
+    "settings_default_model",
+    "settings_default_model_desc",
     "import_mcp_json",
     "import_mcp_json_dialog_title",
     "import_mcp_json_instructions",
@@ -34,10 +41,15 @@
     "api_key_hint_ollama_cloud",
     "add_server_ollama_cloud_subtitle",
     "add_server_openrouter_subtitle",
-    "add_server_endpoint_subtitle"
+    "add_server_endpoint_subtitle",
+    "model_set_default",
+    "model_clear_default",
+    "model_default_badge"
   ],
 
   "es": [
+    "settings_default_model",
+    "settings_default_model_desc",
     "import_mcp_json",
     "import_mcp_json_dialog_title",
     "import_mcp_json_instructions",
@@ -53,19 +65,29 @@
     "api_key_hint_ollama_cloud",
     "add_server_ollama_cloud_subtitle",
     "add_server_openrouter_subtitle",
-    "add_server_endpoint_subtitle"
+    "add_server_endpoint_subtitle",
+    "model_set_default",
+    "model_clear_default",
+    "model_default_badge"
   ],
 
   "fr": [
+    "settings_default_model",
+    "settings_default_model_desc",
     "import_mcp_json",
     "import_mcp_json_dialog_title",
     "import_mcp_json_instructions",
     "import_mcp_json_placeholder",
     "mcp_import_success",
-    "mcp_import_failed"
+    "mcp_import_failed",
+    "model_set_default",
+    "model_clear_default",
+    "model_default_badge"
   ],
 
   "hi": [
+    "settings_default_model",
+    "settings_default_model_desc",
     "import_mcp_json",
     "import_mcp_json_dialog_title",
     "import_mcp_json_instructions",
@@ -81,10 +103,15 @@
     "api_key_hint_ollama_cloud",
     "add_server_ollama_cloud_subtitle",
     "add_server_openrouter_subtitle",
-    "add_server_endpoint_subtitle"
+    "add_server_endpoint_subtitle",
+    "model_set_default",
+    "model_clear_default",
+    "model_default_badge"
   ],
 
   "it": [
+    "settings_default_model",
+    "settings_default_model_desc",
     "import_mcp_json",
     "import_mcp_json_dialog_title",
     "import_mcp_json_instructions",
@@ -100,10 +127,15 @@
     "api_key_hint_ollama_cloud",
     "add_server_ollama_cloud_subtitle",
     "add_server_openrouter_subtitle",
-    "add_server_endpoint_subtitle"
+    "add_server_endpoint_subtitle",
+    "model_set_default",
+    "model_clear_default",
+    "model_default_badge"
   ],
 
   "ja": [
+    "settings_default_model",
+    "settings_default_model_desc",
     "import_mcp_json",
     "import_mcp_json_dialog_title",
     "import_mcp_json_instructions",
@@ -119,10 +151,15 @@
     "api_key_hint_ollama_cloud",
     "add_server_ollama_cloud_subtitle",
     "add_server_openrouter_subtitle",
-    "add_server_endpoint_subtitle"
+    "add_server_endpoint_subtitle",
+    "model_set_default",
+    "model_clear_default",
+    "model_default_badge"
   ],
 
   "ru": [
+    "settings_default_model",
+    "settings_default_model_desc",
     "import_mcp_json",
     "import_mcp_json_dialog_title",
     "import_mcp_json_instructions",
@@ -138,19 +175,29 @@
     "api_key_hint_ollama_cloud",
     "add_server_ollama_cloud_subtitle",
     "add_server_openrouter_subtitle",
-    "add_server_endpoint_subtitle"
+    "add_server_endpoint_subtitle",
+    "model_set_default",
+    "model_clear_default",
+    "model_default_badge"
   ],
 
   "tr": [
+    "settings_default_model",
+    "settings_default_model_desc",
     "import_mcp_json",
     "import_mcp_json_dialog_title",
     "import_mcp_json_instructions",
     "import_mcp_json_placeholder",
     "mcp_import_success",
-    "mcp_import_failed"
+    "mcp_import_failed",
+    "model_set_default",
+    "model_clear_default",
+    "model_default_badge"
   ],
 
   "zh": [
+    "settings_default_model",
+    "settings_default_model_desc",
     "import_mcp_json",
     "import_mcp_json_dialog_title",
     "import_mcp_json_instructions",
@@ -166,10 +213,15 @@
     "api_key_hint_ollama_cloud",
     "add_server_ollama_cloud_subtitle",
     "add_server_openrouter_subtitle",
-    "add_server_endpoint_subtitle"
+    "add_server_endpoint_subtitle",
+    "model_set_default",
+    "model_clear_default",
+    "model_default_badge"
   ],
 
   "zh_TW": [
+    "settings_default_model",
+    "settings_default_model_desc",
     "import_mcp_json",
     "import_mcp_json_dialog_title",
     "import_mcp_json_instructions",
@@ -185,6 +237,9 @@
     "api_key_hint_ollama_cloud",
     "add_server_ollama_cloud_subtitle",
     "add_server_openrouter_subtitle",
-    "add_server_endpoint_subtitle"
+    "add_server_endpoint_subtitle",
+    "model_set_default",
+    "model_clear_default",
+    "model_default_badge"
   ]
 }

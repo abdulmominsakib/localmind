@@ -27,6 +27,8 @@ class AppSettings {
   final bool autoGenerateTitle;
   final bool streamingEnabled;
   final String? defaultPersonaId;
+  final String? defaultModelId;
+  final String? defaultModelServerId;
   final bool hasCompletedOnboarding;
   final bool hasAskedForNotifications;
   final bool mcpEnabled;
@@ -72,6 +74,8 @@ class AppSettings {
     this.autoGenerateTitle = true,
     this.streamingEnabled = true,
     this.defaultPersonaId,
+    this.defaultModelId,
+    this.defaultModelServerId,
     this.hasCompletedOnboarding = false,
     this.hasAskedForNotifications = false,
     this.mcpEnabled = false,
@@ -118,6 +122,8 @@ class AppSettings {
     bool? autoGenerateTitle,
     bool? streamingEnabled,
     String? defaultPersonaId,
+    Object? defaultModelId = _unset,
+    Object? defaultModelServerId = _unset,
     bool? hasCompletedOnboarding,
     bool? hasAskedForNotifications,
     bool? mcpEnabled,
@@ -164,6 +170,12 @@ class AppSettings {
       autoGenerateTitle: autoGenerateTitle ?? this.autoGenerateTitle,
       streamingEnabled: streamingEnabled ?? this.streamingEnabled,
       defaultPersonaId: defaultPersonaId ?? this.defaultPersonaId,
+      defaultModelId: identical(defaultModelId, _unset)
+          ? this.defaultModelId
+          : defaultModelId as String?,
+      defaultModelServerId: identical(defaultModelServerId, _unset)
+          ? this.defaultModelServerId
+          : defaultModelServerId as String?,
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       hasAskedForNotifications:
@@ -231,6 +243,8 @@ class AppSettings {
       'autoGenerateTitle': autoGenerateTitle,
       'streamingEnabled': streamingEnabled,
       'defaultPersonaId': defaultPersonaId,
+      'defaultModelId': defaultModelId,
+      'defaultModelServerId': defaultModelServerId,
       'hasCompletedOnboarding': hasCompletedOnboarding,
       'hasAskedForNotifications': hasAskedForNotifications,
       'mcpEnabled': mcpEnabled,
@@ -280,6 +294,8 @@ class AppSettings {
       autoGenerateTitle: map['autoGenerateTitle'] ?? true,
       streamingEnabled: map['streamingEnabled'] ?? true,
       defaultPersonaId: map['defaultPersonaId'],
+      defaultModelId: map['defaultModelId'] as String?,
+      defaultModelServerId: map['defaultModelServerId'] as String?,
       hasCompletedOnboarding: map['hasCompletedOnboarding'] ?? false,
       hasAskedForNotifications: map['hasAskedForNotifications'] ?? false,
       mcpEnabled: map['mcpEnabled'] ?? false,

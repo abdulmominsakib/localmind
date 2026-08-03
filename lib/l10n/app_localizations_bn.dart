@@ -549,6 +549,13 @@ class AppLocalizationsBn extends AppLocalizations {
   String get settings_default_persona => 'ডিফল্ট পার্সোনা';
 
   @override
+  String get settings_default_model => 'Default Model';
+
+  @override
+  String get settings_default_model_desc =>
+      'Automatically selected when you start a new chat.';
+
+  @override
   String get settings_privacy => 'গোপনীয়তা';
 
   @override
@@ -2236,6 +2243,15 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get model_favorite_toggle => 'প্রিয় টগল করুন';
+
+  @override
+  String get model_set_default => 'Set as default model';
+
+  @override
+  String get model_clear_default => 'Remove as default model';
+
+  @override
+  String get model_default_badge => 'Default';
 
   @override
   String get model_note_label => 'নোট';
