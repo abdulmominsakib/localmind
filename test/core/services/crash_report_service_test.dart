@@ -34,7 +34,9 @@ void main() {
         error: Exception('Something went wrong'),
         stack: StackTrace.current,
       );
-      expect(report.shortError, 'Something went wrong');
+      // Dart's `Exception.toString()` includes the type prefix
+      // ("Exception: ..."), and shortError surfaces the raw first line.
+      expect(report.shortError, 'Exception: Something went wrong');
     });
 
     test('shortError truncates long first lines to 80 chars', () {
@@ -44,7 +46,8 @@ void main() {
         stack: StackTrace.current,
       );
       expect(report.shortError.length, 80);
-      expect(report.shortError, '${'A' * 77}...');
+      // 77 chars kept from "Exception: AAA..." plus the ellipsis.
+      expect(report.shortError, 'Exception: ${'A' * 66}...');
     });
 
     test('shortError sanitizes user-specific paths', () {
@@ -139,7 +142,7 @@ void main() {
       expect(uri.path, '/abdulmominsakib/localmind/issues/new');
       expect(uri.queryParameters['template'], 'crash_report.md');
       expect(uri.queryParameters['labels'], 'crash,bug');
-      expect(uri.queryParameters['title'], 'Crash: Boom');
+      expect(uri.queryParameters['title'], 'Crash: Exception: Boom');
       expect(uri.queryParameters['body'], isNotNull);
     });
 

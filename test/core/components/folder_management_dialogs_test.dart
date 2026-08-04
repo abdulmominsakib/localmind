@@ -14,17 +14,20 @@ Future<void> _pumpHarness(
       locale: const Locale('en'),
       home: Scaffold(
         body: Builder(
-          builder: (ctx) {
-            // Call the test action once the initial frame has rendered.
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              body(ctx);
-            });
-            return const SizedBox.shrink();
-          },
+          builder: (ctx) => TextButton(
+            // Trigger the dialog from a real user interaction instead of a
+            // post-frame callback: pushing a route mid-frame marks focus
+            // scopes dirty outside their build scope, which newer Flutter
+            // versions reject with a "dirty widget in the wrong build scope"
+            // assertion.
+            onPressed: () => body(ctx),
+            child: const Text('Open'),
+          ),
         ),
       ),
     ),
   );
+  await tester.tap(find.text('Open'));
   // Allow async dialog futures to settle.
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));

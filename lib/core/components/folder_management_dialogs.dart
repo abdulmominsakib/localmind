@@ -7,65 +7,84 @@ import 'package:localmind/l10n/app_localizations.dart';
 
 /// Shows a dialog asking the user to enter a new folder name. Returns the
 /// trimmed new name, or `null` if cancelled. Rejects empty names.
+///
+/// The controller lives inside [_RenameFolderDialog]'s state so it is only
+/// disposed once the dialog element is actually unmounted — disposing it as
+/// soon as `showDialog` resolves is unsafe because the exit animation keeps
+/// the TextField alive (and rebuilding) for a short while.
 Future<String?> showRenameFolderDialog(
   BuildContext context, {
   required String currentName,
-}) async {
-  final l10n = AppLocalizations.of(context)!;
-  final controller = TextEditingController(text: currentName);
-  controller.selection = TextSelection(
-    baseOffset: 0,
-    extentOffset: currentName.length,
-  );
-  String? errorText;
-
-  final result = await showDialog<String>(
+}) {
+  return showDialog<String>(
     context: context,
-    builder: (ctx) {
-      return StatefulBuilder(
-        builder: (ctx, setState) {
-          return AlertDialog(
-            title: Text(l10n.rename_folder),
-            content: TextField(
-              controller: controller,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: l10n.folder_name_hint,
-                errorText: errorText,
-              ),
-              onSubmitted: (_) {
-                final value = controller.text.trim();
-                if (value.isEmpty) {
-                  setState(() => errorText = l10n.folder_name_required);
-                  return;
-                }
-                Navigator.pop(ctx, value);
-              },
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(l10n.cancel),
-              ),
-              TextButton(
-                onPressed: () {
-                  final value = controller.text.trim();
-                  if (value.isEmpty) {
-                    setState(() => errorText = l10n.folder_name_required);
-                    return;
-                  }
-                  Navigator.pop(ctx, value);
-                },
-                child: Text(l10n.save),
-              ),
-            ],
-          );
-        },
-      );
-    },
+    builder: (ctx) => _RenameFolderDialog(currentName: currentName),
   );
-  controller.dispose();
-  return result;
+}
+
+class _RenameFolderDialog extends StatefulWidget {
+  const _RenameFolderDialog({required this.currentName});
+
+  final String currentName;
+
+  @override
+  State<_RenameFolderDialog> createState() => _RenameFolderDialogState();
+}
+
+class _RenameFolderDialogState extends State<_RenameFolderDialog> {
+  late final TextEditingController _controller;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.currentName);
+    _controller.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: widget.currentName.length,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final value = _controller.text.trim();
+    if (value.isEmpty) {
+      setState(() {
+        _errorText = AppLocalizations.of(context)!.folder_name_required;
+      });
+      return;
+    }
+    Navigator.pop(context, value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.rename_folder),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: l10n.folder_name_hint,
+          errorText: _errorText,
+        ),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        TextButton(onPressed: _submit, child: Text(l10n.save)),
+      ],
+    );
+  }
 }
 
 /// Shows a confirmation dialog asking the user whether they really want to

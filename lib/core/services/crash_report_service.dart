@@ -243,12 +243,17 @@ class CrashReportService {
       errorWidgetPayload: errorWidgetPayload,
     );
 
+    // The duplicate check must run before the report is recorded, otherwise
+    // the freshly added report matches itself and no crash would ever surface
+    // in the UI.
+    final isDuplicate = _isDuplicate(report);
+
     _recentCrashes.add(report);
     if (_recentCrashes.length > 20) {
       _recentCrashes.removeAt(0);
     }
 
-    if (!_isDuplicate(report)) {
+    if (!isDuplicate) {
       _currentCrash.value = report;
     }
     return report;

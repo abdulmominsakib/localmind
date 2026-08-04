@@ -43,8 +43,8 @@ void main() {
     await tester.longPress(find.text('Research'));
     await tester.pump();
     // The wrapper delivers globalPosition; we just confirm the callback fired
-    // for the right folder.
-    expect(captured?.id, 'Research');
+    // for the right folder (callbacks receive the folder id, not the name).
+    expect(captured?.id, 'research');
     expect(capturedPos, isNotNull);
   });
 
