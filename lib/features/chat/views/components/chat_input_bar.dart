@@ -836,9 +836,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     return SafeArea(
       top: false,
-
       child: Container(
-        margin: const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
+        margin: EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
 
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
 
