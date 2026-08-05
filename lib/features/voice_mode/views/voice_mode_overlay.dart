@@ -178,9 +178,9 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
             0.0,
             1.0,
           );
-    final orbSize = (MediaQuery.sizeOf(context).width * 0.88).clamp(
-      300.0,
-      360.0,
+    final orbSize = (MediaQuery.sizeOf(context).width * 0.72).clamp(
+      225.0,
+      255.0,
     );
 
     return PopScope(

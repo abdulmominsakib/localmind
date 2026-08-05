@@ -51,7 +51,7 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
   double _smoothedMicLevel = 0.0;
   final Stopwatch _clock = Stopwatch();
   int _lastFrameMicros = 0;
-  FragmentProgram? _shaderProgram;
+  FragmentShader? _shader;
 
   @override
   void initState() {
@@ -81,7 +81,7 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
       );
       if (mounted) {
         setState(() {
-          _shaderProgram = program;
+          _shader = program.fragmentShader();
         });
       }
     } catch (_) {
@@ -149,7 +149,7 @@ class _VoiceVisualizerState extends State<VoiceVisualizer>
               responseProgress: widget.responseProgress.clamp(0.0, 1.0),
               time: nowMicros / Duration.microsecondsPerSecond,
               isDark: isDark,
-              shaderProgram: _shaderProgram,
+              shader: _shader,
             ),
           );
         },
@@ -166,7 +166,7 @@ class _OrbWavePainter extends CustomPainter {
   final double responseProgress;
   final double time;
   final bool isDark;
-  final FragmentProgram? shaderProgram;
+  final FragmentShader? shader;
 
   _OrbWavePainter({
     required this.oldPhase,
@@ -176,7 +176,7 @@ class _OrbWavePainter extends CustomPainter {
     required this.responseProgress,
     required this.time,
     required this.isDark,
-    this.shaderProgram,
+    this.shader,
   });
 
   @override
@@ -244,35 +244,33 @@ class _OrbWavePainter extends CustomPainter {
     final baseRadius = (size.width * 0.27) * scaleFactor;
 
     // 3. Render GPU Shader if Available
-    if (shaderProgram != null) {
-      final shader = shaderProgram!.fragmentShader();
-      shader.setFloat(0, size.width);
-      shader.setFloat(1, size.height);
-      shader.setFloat(2, time);
-      shader.setFloat(3, micLevel);
-      shader.setFloat(4, _phaseToDouble(targetPhase));
+    if (shader != null) {
+      // Dynamic expansion driven by speaking cadence / microphone listening level
+      final dynamicScale = scaleFactor * (1.0 + amp * 0.20);
 
-      shader.setFloat(5, accent.r);
-      shader.setFloat(6, accent.g);
-      shader.setFloat(7, accent.b);
-      shader.setFloat(8, accent.a);
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.scale(dynamicScale);
+      canvas.translate(-rawCenter.dx, -rawCenter.dy);
 
-      shader.setFloat(9, secondary.r);
-      shader.setFloat(10, secondary.g);
-      shader.setFloat(11, secondary.b);
-      shader.setFloat(12, secondary.a);
-      shader.setFloat(13, isDark ? 1.0 : 0.0);
-      shader.setFloat(14, amp);
-      shader.setFloat(15, _phaseWeight(VoiceModePhase.processing));
-      shader.setFloat(16, _phaseWeight(VoiceModePhase.speaking));
-      shader.setFloat(17, _phaseWeight(VoiceModePhase.error));
-      shader.setFloat(18, responseProgress);
+      shader!
+        ..setFloat(0, size.width)
+        ..setFloat(1, size.height)
+        ..setFloat(2, time)
+        ..setFloat(3, accent.r)
+        ..setFloat(4, accent.g)
+        ..setFloat(5, accent.b)
+        ..setFloat(6, secondary.r)
+        ..setFloat(7, secondary.g)
+        ..setFloat(8, secondary.b);
 
-      final shaderPaint = Paint()..shader = shader;
+      final shaderPaint = Paint()..shader = shader!;
       canvas.drawRect(
-        Rect.fromLTWH(0, 0, size.width, size.height),
+        Offset.zero & size,
         shaderPaint,
       );
+
+      canvas.restore();
       return;
     }
 
@@ -302,27 +300,6 @@ class _OrbWavePainter extends CustomPainter {
 
     // C. Central 3D Gradient Orb Core with specular light & inner liquid shimmer
     _paint3DOrbCore(canvas, center, baseRadius, time, amp, accent, secondary);
-  }
-
-  double _phaseToDouble(VoiceModePhase phase) {
-    switch (phase) {
-      case VoiceModePhase.idle:
-        return 0.0;
-      case VoiceModePhase.listening:
-        return 1.0;
-      case VoiceModePhase.processing:
-        return 2.0;
-      case VoiceModePhase.speaking:
-        return 3.0;
-      case VoiceModePhase.error:
-        return 4.0;
-    }
-  }
-
-  double _phaseWeight(VoiceModePhase phase) {
-    final oldWeight = oldPhase == phase ? 1.0 : 0.0;
-    final targetWeight = targetPhase == phase ? 1.0 : 0.0;
-    return lerpDouble(oldWeight, targetWeight, transitionProgress)!;
   }
 
   double _computeAmplitudeFor(
@@ -697,7 +674,7 @@ class _OrbWavePainter extends CustomPainter {
         responseProgress != oldDelegate.responseProgress ||
         time != oldDelegate.time ||
         isDark != oldDelegate.isDark ||
-        shaderProgram != oldDelegate.shaderProgram;
+        shader != oldDelegate.shader;
   }
 }
 
