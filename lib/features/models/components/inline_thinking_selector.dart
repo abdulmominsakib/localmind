@@ -7,13 +7,17 @@ import 'package:localmind/features/chat/providers/chat_reasoning_providers.dart'
 import 'package:localmind/l10n/app_localizations.dart';
 
 /// Inline widget rendered under a model tile in the selection bottom sheet.
-/// Shows direct level options (Off, Low, Medium, High) without needing a dropdown.
+/// Shows the effort levels the model actually advertises (plus an "Off"
+/// toggle unless reasoning is mandatory), keeping the choice in sync with
+/// [chatReasoningConfigProvider].
 class InlineThinkingSelector extends ConsumerWidget {
   const InlineThinkingSelector({
     super.key,
     required this.isDark,
     this.isSelected = false,
     this.onSelectModel,
+    this.supportedEfforts,
+    this.reasoningMandatory = false,
   });
 
   final bool isDark;
@@ -21,6 +25,13 @@ class InlineThinkingSelector extends ConsumerWidget {
 
   /// Optional callback to select/load the parent model if it's not already selected.
   final VoidCallback? onSelectModel;
+
+  /// Effort strings the model supports (OpenRouter `supported_efforts`).
+  /// Null/empty falls back to low/medium/high for non-OpenRouter providers.
+  final List<String>? supportedEfforts;
+
+  /// When true the model can't run without reasoning, so "Off" is hidden.
+  final bool reasoningMandatory;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,29 +41,21 @@ class InlineThinkingSelector extends ConsumerWidget {
     final notifier = ref.read(chatReasoningConfigProvider.notifier);
 
     final accent = theme.colorScheme.primary;
+    final efforts = effortsForModel(supportedEfforts);
 
-    // Options: Off, Low, Medium, High
     final options = <_ThinkingOption>[
-      _ThinkingOption(
-        label: 'Off',
-        isEnabled: false,
-        effort: ReasoningEffort.low,
-      ),
-      _ThinkingOption(
-        label: l10n.reasoning_effort_low,
-        isEnabled: true,
-        effort: ReasoningEffort.low,
-      ),
-      _ThinkingOption(
-        label: l10n.reasoning_effort_medium,
-        isEnabled: true,
-        effort: ReasoningEffort.medium,
-      ),
-      _ThinkingOption(
-        label: l10n.reasoning_effort_high,
-        isEnabled: true,
-        effort: ReasoningEffort.high,
-      ),
+      if (!reasoningMandatory)
+        _ThinkingOption(
+          label: l10n.reasoning_effort_off,
+          isEnabled: false,
+          effort: ReasoningEffort.low,
+        ),
+      for (final effort in efforts)
+        _ThinkingOption(
+          label: effort.shortLabel(l10n),
+          isEnabled: true,
+          effort: effort,
+        ),
     ];
 
     return Padding(
@@ -163,4 +166,17 @@ class _ThinkingOption {
   final String label;
   final bool isEnabled;
   final ReasoningEffort effort;
+}
+
+extension on ReasoningEffort {
+  String shortLabel(AppLocalizations l10n) {
+    return switch (this) {
+      ReasoningEffort.minimal => l10n.reasoning_effort_minimal,
+      ReasoningEffort.low => l10n.reasoning_effort_low,
+      ReasoningEffort.medium => l10n.reasoning_effort_medium,
+      ReasoningEffort.high => l10n.reasoning_effort_high,
+      ReasoningEffort.xhigh => l10n.reasoning_effort_xhigh,
+      ReasoningEffort.max => l10n.reasoning_effort_max,
+    };
+  }
 }

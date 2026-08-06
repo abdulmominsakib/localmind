@@ -547,11 +547,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settings_default_persona => 'Default Persona';
 
   @override
-  String get settings_default_model => 'Default Model';
+  String get settings_default_model => 'Modèle par défaut';
 
   @override
   String get settings_default_model_desc =>
-      'Automatically selected when you start a new chat.';
+      'Sélectionné automatiquement lorsque vous démarrez un nouveau chat.';
 
   @override
   String get settings_privacy => 'Privacy';
@@ -901,26 +901,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get active_integrations => 'Active Integrations';
 
   @override
-  String get import_mcp_json => 'Import JSON';
+  String get import_mcp_json => 'Importer JSON';
 
   @override
-  String get import_mcp_json_dialog_title => 'Import MCP Config JSON';
+  String get import_mcp_json_dialog_title =>
+      'Importer la configuration MCP (JSON)';
 
   @override
   String get import_mcp_json_instructions =>
-      'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:';
+      'Copiez votre JSON mcpServers directement depuis LM Studio (mcp.json) ou collez un tableau de plugins ci-dessous :';
 
   @override
   String get import_mcp_json_placeholder =>
-      'Paste mcpServers JSON or plugin list here...';
+      'Collez le JSON mcpServers ou la liste de plugins ici...';
 
   @override
   String mcp_import_success(int count) {
-    return 'Successfully imported $count integration(s)';
+    return '$count intégration(s) importée(s) avec succès';
   }
 
   @override
-  String get mcp_import_failed => 'No valid MCP integrations found in JSON';
+  String get mcp_import_failed =>
+      'Aucune intégration MCP valide trouvée dans le JSON';
 
   @override
   String get enable_notifications => 'Enable Nontifications';
@@ -2235,13 +2237,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get model_favorite_toggle => 'Toggle favorite';
 
   @override
-  String get model_set_default => 'Set as default model';
+  String get model_set_default => 'Définir comme modèle par défaut';
 
   @override
-  String get model_clear_default => 'Remove as default model';
+  String get model_clear_default => 'Retirer comme modèle par défaut';
 
   @override
-  String get model_default_badge => 'Default';
+  String get model_default_badge => 'Par défaut';
 
   @override
   String get model_note_label => 'Nonte';
@@ -2515,10 +2517,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get model_identifier => 'Identifier';
 
   @override
-  String get model_capabilities => 'Capabilities';
+  String get model_capabilities => 'Capacités';
 
   @override
-  String get model_api_pricing => 'API pricing (per 1M tokens)';
+  String get model_api_pricing => 'Tarifs de l\'API (par 1M de tokens)';
 
   @override
   String get not_available => 'Nont available';
@@ -2721,11 +2723,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get lm_studio_reasoning => 'Reasoning';
 
   @override
-  String get openrouter_pricing_free => 'Free';
+  String get openrouter_pricing_free => 'Gratuit';
 
   @override
   String openrouter_pricing_tooltip(String input, String output) {
-    return 'Input $input / Output $output per 1M tokens';
+    return 'Entrée $input / Sortie $output par 1M de tokens';
   }
 
   @override
@@ -2784,6 +2786,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reasoning_effort_high => 'High';
+
+  @override
+  String get reasoning_effort_minimal => 'Minimal';
+
+  @override
+  String get reasoning_effort_xhigh => 'Très élevé';
+
+  @override
+  String get reasoning_effort_max => 'Maximal';
+
+  @override
+  String get reasoning_effort_off => 'Désactivé';
 
   @override
   String get could_not_read_file => 'Could not read file';

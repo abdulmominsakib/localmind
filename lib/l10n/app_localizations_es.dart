@@ -549,11 +549,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settings_default_persona => 'Personaje predeterminado';
 
   @override
-  String get settings_default_model => 'Default Model';
+  String get settings_default_model => 'Modelo predeterminado';
 
   @override
   String get settings_default_model_desc =>
-      'Automatically selected when you start a new chat.';
+      'Se selecciona automáticamente al iniciar un nuevo chat.';
 
   @override
   String get settings_privacy => 'Privacidad';
@@ -907,26 +907,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get active_integrations => 'Integraciones activas';
 
   @override
-  String get import_mcp_json => 'Import JSON';
+  String get import_mcp_json => 'Importar JSON';
 
   @override
-  String get import_mcp_json_dialog_title => 'Import MCP Config JSON';
+  String get import_mcp_json_dialog_title =>
+      'Importar JSON de configuración MCP';
 
   @override
   String get import_mcp_json_instructions =>
-      'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:';
+      'Copia tu JSON de mcpServers directamente desde LM Studio (mcp.json) o pega una lista de complementos a continuación:';
 
   @override
   String get import_mcp_json_placeholder =>
-      'Paste mcpServers JSON or plugin list here...';
+      'Pega el JSON de mcpServers o la lista de complementos aquí...';
 
   @override
   String mcp_import_success(int count) {
-    return 'Successfully imported $count integration(s)';
+    return '$count integración(es) importada(s) con éxito';
   }
 
   @override
-  String get mcp_import_failed => 'No valid MCP integrations found in JSON';
+  String get mcp_import_failed =>
+      'No se encontraron integraciones MCP válidas en el JSON';
 
   @override
   String get enable_notifications => 'Habilitar notificaciones';
@@ -1047,7 +1049,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get server_type_ollama_cloud => 'Ollama Cloud';
 
   @override
-  String get server_type_ollama_cloud_sub => 'CLOUD MANAGED';
+  String get server_type_ollama_cloud_sub => 'NUBE ADMINISTRADA';
 
   @override
   String get server_type_ollama_cloud_display => 'Ollama Cloud';
@@ -1057,26 +1059,26 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get ollama_cloud_disclosure =>
-      'By connecting Ollama Cloud, your chat messages and inputs are sent to Ollama\'s managed servers for inference. LocalMind does not track or store your conversations. You can revoke this key any time at ollama.com/settings/keys.';
+      'Al conectar Ollama Cloud, tus mensajes e insumos de chat se envían a los servidores administrados de Ollama para la inferencia. LocalMind no rastrea ni almacena tus conversaciones. Puedes revocar esta clave en cualquier momento en ollama.com/settings/keys.';
 
   @override
   String get api_key_required_ollama_cloud =>
-      'API Key required for Ollama Cloud';
+      'Se requiere clave API para Ollama Cloud';
 
   @override
-  String get api_key_hint_ollama_cloud => 'Paste your Ollama Cloud API key';
+  String get api_key_hint_ollama_cloud => 'Pega tu clave API de Ollama Cloud';
 
   @override
   String get add_server_ollama_cloud_subtitle =>
-      'Connect to Ollama Cloud with an API key from ollama.com/settings/keys to access managed cloud models.';
+      'Conéctate a Ollama Cloud con una clave API de ollama.com/settings/keys para acceder a modelos administrados en la nube.';
 
   @override
   String get add_server_openrouter_subtitle =>
-      'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.';
+      'Conéctate a través de OpenRouter con una clave API válida y mantén este perfil listo para el enrutamiento de modelos.';
 
   @override
   String get add_server_endpoint_subtitle =>
-      'Configure a local or self-hosted endpoint, then verify the connection before saving.';
+      'Configura un punto de enlace local o alojado por ti mismo y luego verifica la conexión antes de guardar.';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
@@ -2252,13 +2254,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get model_favorite_toggle => 'Alternar favorito';
 
   @override
-  String get model_set_default => 'Set as default model';
+  String get model_set_default => 'Establecer como modelo predeterminado';
 
   @override
-  String get model_clear_default => 'Remove as default model';
+  String get model_clear_default => 'Quitar como modelo predeterminado';
 
   @override
-  String get model_default_badge => 'Default';
+  String get model_default_badge => 'Predeterminado';
 
   @override
   String get model_note_label => 'Nota';
@@ -2533,10 +2535,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get model_identifier => 'Identificador del modelo';
 
   @override
-  String get model_capabilities => 'Capabilities';
+  String get model_capabilities => 'Capacidades';
 
   @override
-  String get model_api_pricing => 'API pricing (per 1M tokens)';
+  String get model_api_pricing => 'Precios de API (por millón de tokens)';
 
   @override
   String get not_available => 'No disponible';
@@ -2732,11 +2734,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get lm_studio_reasoning => 'Razonamiento';
 
   @override
-  String get openrouter_pricing_free => 'Free';
+  String get openrouter_pricing_free => 'Gratis';
 
   @override
   String openrouter_pricing_tooltip(String input, String output) {
-    return 'Input $input / Output $output per 1M tokens';
+    return 'Entrada $input / Salida $output por millón de tokens';
   }
 
   @override
@@ -2795,6 +2797,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get reasoning_effort_high => 'Alto';
+
+  @override
+  String get reasoning_effort_minimal => 'Mínimo';
+
+  @override
+  String get reasoning_effort_xhigh => 'Muy alto';
+
+  @override
+  String get reasoning_effort_max => 'Máximo';
+
+  @override
+  String get reasoning_effort_off => 'Desactivado';
 
   @override
   String get could_not_read_file => 'No se pudo leer el archivo';

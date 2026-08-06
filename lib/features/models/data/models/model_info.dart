@@ -20,6 +20,16 @@ class ModelInfo {
   final bool supportsVision;
   final bool supportsReasoning;
   final bool supportsToolUse;
+  /// Effort strings the model advertises for reasoning (OpenRouter
+  /// `reasoning.supported_efforts`), e.g. `["minimal","low","medium","high"]`.
+  /// Null for providers that don't expose per-model efforts.
+  final List<String>? supportedReasoningEfforts;
+  /// The model's default reasoning effort (OpenRouter
+  /// `reasoning.default_effort`), e.g. `"medium"`.
+  final String? defaultReasoningEffort;
+  /// When true the model cannot run without reasoning (OpenRouter
+  /// `reasoning.mandatory`); the "Off" toggle should be hidden.
+  final bool reasoningMandatory;
   /// Input token price in USD per 1M tokens (OpenRouter `pricing.prompt`).
   final double? inputPricePerMillion;
   /// Output token price in USD per 1M tokens (OpenRouter `pricing.completion`).
@@ -44,6 +54,9 @@ class ModelInfo {
     this.supportsVision = false,
     this.supportsReasoning = false,
     this.supportsToolUse = false,
+    this.supportedReasoningEfforts,
+    this.defaultReasoningEffort,
+    this.reasoningMandatory = false,
     this.inputPricePerMillion,
     this.outputPricePerMillion,
   });
@@ -141,6 +154,9 @@ class ModelInfo {
     bool? supportsVision,
     bool? supportsReasoning,
     bool? supportsToolUse,
+    List<String>? supportedReasoningEfforts,
+    String? defaultReasoningEffort,
+    bool? reasoningMandatory,
     double? inputPricePerMillion,
     double? outputPricePerMillion,
   }) {
@@ -163,6 +179,11 @@ class ModelInfo {
       supportsVision: supportsVision ?? this.supportsVision,
       supportsReasoning: supportsReasoning ?? this.supportsReasoning,
       supportsToolUse: supportsToolUse ?? this.supportsToolUse,
+      supportedReasoningEfforts:
+          supportedReasoningEfforts ?? this.supportedReasoningEfforts,
+      defaultReasoningEffort:
+          defaultReasoningEffort ?? this.defaultReasoningEffort,
+      reasoningMandatory: reasoningMandatory ?? this.reasoningMandatory,
       inputPricePerMillion:
           inputPricePerMillion ?? this.inputPricePerMillion,
       outputPricePerMillion:

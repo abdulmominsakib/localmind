@@ -185,6 +185,8 @@ class ModelTile extends StatelessWidget {
                           isDark: isDark,
                           isSelected: isSelected,
                           onSelectModel: onTap,
+                          supportedEfforts: model.supportedReasoningEfforts,
+                          reasoningMandatory: model.reasoningMandatory,
                         ),
                     ],
                   ),

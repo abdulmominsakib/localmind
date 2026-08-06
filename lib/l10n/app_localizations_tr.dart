@@ -549,11 +549,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settings_default_persona => 'Varsayılan Persona';
 
   @override
-  String get settings_default_model => 'Default Model';
+  String get settings_default_model => 'Varsayılan Model';
 
   @override
   String get settings_default_model_desc =>
-      'Automatically selected when you start a new chat.';
+      'Yeni bir sohbet başlattığınızda otomatik olarak seçilir.';
 
   @override
   String get settings_privacy => 'Gizlilik';
@@ -907,26 +907,28 @@ class AppLocalizationsTr extends AppLocalizations {
   String get active_integrations => 'Aktif Entegrasyonlar';
 
   @override
-  String get import_mcp_json => 'Import JSON';
+  String get import_mcp_json => 'JSON İçe Aktar';
 
   @override
-  String get import_mcp_json_dialog_title => 'Import MCP Config JSON';
+  String get import_mcp_json_dialog_title =>
+      'MCP Yapılandırma JSON\'ını İçe Aktar';
 
   @override
   String get import_mcp_json_instructions =>
-      'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:';
+      'mcpServers JSON dosyanızı doğrudan LM Studio\'dan (mcp.json) kopyalayın veya aşağıya bir eklenti dizisi yapıştırın:';
 
   @override
   String get import_mcp_json_placeholder =>
-      'Paste mcpServers JSON or plugin list here...';
+      'mcpServers JSON veya eklenti listesini buraya yapıştırın...';
 
   @override
   String mcp_import_success(int count) {
-    return 'Successfully imported $count integration(s)';
+    return '$count entegrasyon başarıyla içe aktarıldı';
   }
 
   @override
-  String get mcp_import_failed => 'No valid MCP integrations found in JSON';
+  String get mcp_import_failed =>
+      'JSON içinde geçerli bir MCP entegrasyonu bulunamadı';
 
   @override
   String get enable_notifications => 'Bildirimleri Etkinleştir';
@@ -2249,13 +2251,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get model_favorite_toggle => 'Toggle favorite';
 
   @override
-  String get model_set_default => 'Set as default model';
+  String get model_set_default => 'Varsayılan model olarak ayarla';
 
   @override
-  String get model_clear_default => 'Remove as default model';
+  String get model_clear_default => 'Varsayılan modelden kaldır';
 
   @override
-  String get model_default_badge => 'Default';
+  String get model_default_badge => 'Varsayılan';
 
   @override
   String get model_note_label => 'Note';
@@ -2531,10 +2533,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get model_identifier => 'Kimlik (Identifier)';
 
   @override
-  String get model_capabilities => 'Capabilities';
+  String get model_capabilities => 'Yetenekler';
 
   @override
-  String get model_api_pricing => 'API pricing (per 1M tokens)';
+  String get model_api_pricing => 'API fiyatlandırması (1M jeton başına)';
 
   @override
   String get not_available => 'Mevcut değil';
@@ -2738,11 +2740,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get lm_studio_reasoning => 'Mantık yürütme';
 
   @override
-  String get openrouter_pricing_free => 'Free';
+  String get openrouter_pricing_free => 'Ücretsiz';
 
   @override
   String openrouter_pricing_tooltip(String input, String output) {
-    return 'Input $input / Output $output per 1M tokens';
+    return '1M jeton başına Girdi $input / Çıktı $output';
   }
 
   @override
@@ -2803,6 +2805,18 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get reasoning_effort_high => 'Yüksek';
+
+  @override
+  String get reasoning_effort_minimal => 'Minimum';
+
+  @override
+  String get reasoning_effort_xhigh => 'Çok Yüksek';
+
+  @override
+  String get reasoning_effort_max => 'Maksimum';
+
+  @override
+  String get reasoning_effort_off => 'Kapalı';
 
   @override
   String get could_not_read_file => 'Dosya okunamadı';

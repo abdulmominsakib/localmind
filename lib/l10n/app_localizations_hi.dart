@@ -550,11 +550,11 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settings_default_persona => 'डिफ़ॉल्ट चरित्र';
 
   @override
-  String get settings_default_model => 'Default Model';
+  String get settings_default_model => 'डिफ़ॉल्ट मॉडल';
 
   @override
   String get settings_default_model_desc =>
-      'Automatically selected when you start a new chat.';
+      'नया चैट शुरू करने पर स्वचालित रूप से चुना जाता है।';
 
   @override
   String get settings_privacy => 'गोपनीयता';
@@ -906,26 +906,26 @@ class AppLocalizationsHi extends AppLocalizations {
   String get active_integrations => 'सक्रिय एकीकरण';
 
   @override
-  String get import_mcp_json => 'Import JSON';
+  String get import_mcp_json => 'JSON आयात करें';
 
   @override
-  String get import_mcp_json_dialog_title => 'Import MCP Config JSON';
+  String get import_mcp_json_dialog_title => 'MCP कॉन्फ़िगरेशन JSON आयात करें';
 
   @override
   String get import_mcp_json_instructions =>
-      'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:';
+      'LM Studio (mcp.json) से सीधे अपना mcpServers JSON कॉपी करें या नीचे प्लगइन एरे पेस्ट करें:';
 
   @override
   String get import_mcp_json_placeholder =>
-      'Paste mcpServers JSON or plugin list here...';
+      'यहाँ mcpServers JSON या प्लगइन सूची पेस्ट करें...';
 
   @override
   String mcp_import_success(int count) {
-    return 'Successfully imported $count integration(s)';
+    return 'सफलतापूर्वक $count एकीकरण आयात किए गए';
   }
 
   @override
-  String get mcp_import_failed => 'No valid MCP integrations found in JSON';
+  String get mcp_import_failed => 'JSON में कोई वैध MCP एकीकरण नहीं मिला';
 
   @override
   String get enable_notifications => 'सूचनाएं सक्षम करें';
@@ -1045,7 +1045,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get server_type_ollama_cloud => 'Ollama Cloud';
 
   @override
-  String get server_type_ollama_cloud_sub => 'CLOUD MANAGED';
+  String get server_type_ollama_cloud_sub => 'क्लाउड प्रबंधित';
 
   @override
   String get server_type_ollama_cloud_display => 'Ollama Cloud';
@@ -1055,26 +1055,27 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get ollama_cloud_disclosure =>
-      'By connecting Ollama Cloud, your chat messages and inputs are sent to Ollama\'s managed servers for inference. LocalMind does not track or store your conversations. You can revoke this key any time at ollama.com/settings/keys.';
+      'Ollama Cloud कनेक्ट करने पर आपके चैट संदेश और इनपुट अनुमान के लिए Ollama के प्रबंधित सर्वर पर भेजे जाते हैं। LocalMind आपकी बातचीत को ट्रैक या स्टोर नहीं करता है। आप ollama.com/settings/keys पर किसी भी समय इस कुंजी को रद्द कर सकते हैं।';
 
   @override
   String get api_key_required_ollama_cloud =>
-      'API Key required for Ollama Cloud';
+      'Ollama Cloud के लिए API Key आवश्यक है';
 
   @override
-  String get api_key_hint_ollama_cloud => 'Paste your Ollama Cloud API key';
+  String get api_key_hint_ollama_cloud =>
+      'अपनी Ollama Cloud API key पेस्ट करें';
 
   @override
   String get add_server_ollama_cloud_subtitle =>
-      'Connect to Ollama Cloud with an API key from ollama.com/settings/keys to access managed cloud models.';
+      'प्रबंधित क्लाउड मॉडल तक पहुँचने के लिए ollama.com/settings/keys से API Key के साथ Ollama Cloud से कनेक्ट करें।';
 
   @override
   String get add_server_openrouter_subtitle =>
-      'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.';
+      'एक वैध API Key के साथ OpenRouter के माध्यम से कनेक्ट करें और इस प्रोफ़ाइल को मॉडल राउटिंग के लिए तैयार रखें।';
 
   @override
   String get add_server_endpoint_subtitle =>
-      'Configure a local or self-hosted endpoint, then verify the connection before saving.';
+      'एक स्थानीय या स्व-होस्ट किए गए एंडपॉइंट को कॉन्फ़िगर करें, फिर सहेजने से पहले कनेक्शन सत्यापित करें।';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
@@ -2240,13 +2241,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get model_favorite_toggle => 'पसंदीदा टॉगल करें';
 
   @override
-  String get model_set_default => 'Set as default model';
+  String get model_set_default => 'डिफ़ॉल्ट मॉडल के रूप में सेट करें';
 
   @override
-  String get model_clear_default => 'Remove as default model';
+  String get model_clear_default => 'डिफ़ॉल्ट मॉडल के रूप में हटाएं';
 
   @override
-  String get model_default_badge => 'Default';
+  String get model_default_badge => 'डिफ़ॉल्ट';
 
   @override
   String get model_note_label => 'टिप्पणी (Note)';
@@ -2521,10 +2522,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get model_identifier => 'मॉडल पहचानकर्ता';
 
   @override
-  String get model_capabilities => 'Capabilities';
+  String get model_capabilities => 'क्षमताएं';
 
   @override
-  String get model_api_pricing => 'API pricing (per 1M tokens)';
+  String get model_api_pricing => 'API मूल्य निर्धारण (प्रति 1M टोकन)';
 
   @override
   String get not_available => 'अनुपलब्ध';
@@ -2721,11 +2722,11 @@ class AppLocalizationsHi extends AppLocalizations {
   String get lm_studio_reasoning => 'तर्क (Reasoning)';
 
   @override
-  String get openrouter_pricing_free => 'Free';
+  String get openrouter_pricing_free => 'निःशुल्क';
 
   @override
   String openrouter_pricing_tooltip(String input, String output) {
-    return 'Input $input / Output $output per 1M tokens';
+    return 'इनपुट $input / आउटपुट $output प्रति 1M टोकन';
   }
 
   @override
@@ -2784,6 +2785,18 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reasoning_effort_high => 'उच्च';
+
+  @override
+  String get reasoning_effort_minimal => 'न्यूनतम';
+
+  @override
+  String get reasoning_effort_xhigh => 'अत्यधिक उच्च';
+
+  @override
+  String get reasoning_effort_max => 'अधिकतम';
+
+  @override
+  String get reasoning_effort_off => 'बंद';
 
   @override
   String get could_not_read_file => 'फ़ाइल पढ़ी नहीं जा सकी';

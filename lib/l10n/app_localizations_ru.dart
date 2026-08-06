@@ -549,11 +549,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settings_default_persona => 'Персона по умолчанию';
 
   @override
-  String get settings_default_model => 'Default Model';
+  String get settings_default_model => 'Модель по умолчанию';
 
   @override
   String get settings_default_model_desc =>
-      'Automatically selected when you start a new chat.';
+      'Автоматически выбирается при начале нового чата.';
 
   @override
   String get settings_privacy => 'Конфиденциальность';
@@ -907,26 +907,27 @@ class AppLocalizationsRu extends AppLocalizations {
   String get active_integrations => 'Активная интеграция';
 
   @override
-  String get import_mcp_json => 'Import JSON';
+  String get import_mcp_json => 'Импортировать JSON';
 
   @override
-  String get import_mcp_json_dialog_title => 'Import MCP Config JSON';
+  String get import_mcp_json_dialog_title => 'Импорт JSON конфигурации MCP';
 
   @override
   String get import_mcp_json_instructions =>
-      'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:';
+      'Скопируйте ваш mcpServers JSON напрямую из LM Studio (mcp.json) или вставьте массив плагинов ниже:';
 
   @override
   String get import_mcp_json_placeholder =>
-      'Paste mcpServers JSON or plugin list here...';
+      'Вставьте сюда mcpServers JSON или список плагинов...';
 
   @override
   String mcp_import_success(int count) {
-    return 'Successfully imported $count integration(s)';
+    return 'Успешно импортировано интеграций: $count';
   }
 
   @override
-  String get mcp_import_failed => 'No valid MCP integrations found in JSON';
+  String get mcp_import_failed =>
+      'В JSON не найдено действительных интеграций MCP';
 
   @override
   String get enable_notifications => 'Включить уведомления';
@@ -1046,7 +1047,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get server_type_ollama_cloud => 'Ollama Cloud';
 
   @override
-  String get server_type_ollama_cloud_sub => 'CLOUD MANAGED';
+  String get server_type_ollama_cloud_sub => 'УПРАВЛЯЕМОЕ ОБЛАКО';
 
   @override
   String get server_type_ollama_cloud_display => 'Ollama Cloud';
@@ -1056,26 +1057,26 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get ollama_cloud_disclosure =>
-      'By connecting Ollama Cloud, your chat messages and inputs are sent to Ollama\'s managed servers for inference. LocalMind does not track or store your conversations. You can revoke this key any time at ollama.com/settings/keys.';
+      'При подключении к Ollama Cloud ваши сообщения чата и ввод отправляются на управляемые серверы Ollama для генерации. LocalMind не отслеживает и не сохраняет ваши разговоры. Вы можете отозвать этот ключ в любое время на странице ollama.com/settings/keys.';
 
   @override
   String get api_key_required_ollama_cloud =>
-      'API Key required for Ollama Cloud';
+      'Требуется API-ключ для Ollama Cloud';
 
   @override
-  String get api_key_hint_ollama_cloud => 'Paste your Ollama Cloud API key';
+  String get api_key_hint_ollama_cloud => 'Вставьте ваш API-ключ Ollama Cloud';
 
   @override
   String get add_server_ollama_cloud_subtitle =>
-      'Connect to Ollama Cloud with an API key from ollama.com/settings/keys to access managed cloud models.';
+      'Подключитесь к Ollama Cloud с помощью API-ключа с сайта ollama.com/settings/keys для доступа к управляемым облачным моделям.';
 
   @override
   String get add_server_openrouter_subtitle =>
-      'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.';
+      'Подключитесь через OpenRouter с помощью действительного API-ключа и держите этот профиль готовым для маршрутизации моделей.';
 
   @override
   String get add_server_endpoint_subtitle =>
-      'Configure a local or self-hosted endpoint, then verify the connection before saving.';
+      'Настройте локальную или собственную конечную точку, затем проверьте соединение перед сохранением.';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
@@ -2252,13 +2253,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get model_favorite_toggle => 'Добавить в избранное';
 
   @override
-  String get model_set_default => 'Set as default model';
+  String get model_set_default => 'Сделать модель по умолчанию';
 
   @override
-  String get model_clear_default => 'Remove as default model';
+  String get model_clear_default => 'Убрать из моделей по умолчанию';
 
   @override
-  String get model_default_badge => 'Default';
+  String get model_default_badge => 'По умолчанию';
 
   @override
   String get model_note_label => 'Заметка';
@@ -2533,10 +2534,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get model_identifier => 'Идентификатор модели';
 
   @override
-  String get model_capabilities => 'Capabilities';
+  String get model_capabilities => 'Возможности';
 
   @override
-  String get model_api_pricing => 'API pricing (per 1M tokens)';
+  String get model_api_pricing => 'Цены на API (за 1 млн токенов)';
 
   @override
   String get not_available => 'Недоступно';
@@ -2733,11 +2734,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get lm_studio_reasoning => 'Рассуждение';
 
   @override
-  String get openrouter_pricing_free => 'Free';
+  String get openrouter_pricing_free => 'Бесплатно';
 
   @override
   String openrouter_pricing_tooltip(String input, String output) {
-    return 'Input $input / Output $output per 1M tokens';
+    return 'Вход $input / Выход $output за 1 млн токенов';
   }
 
   @override
@@ -2798,6 +2799,18 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get reasoning_effort_high => 'Высокая';
+
+  @override
+  String get reasoning_effort_minimal => 'Минимальный';
+
+  @override
+  String get reasoning_effort_xhigh => 'Очень высокий';
+
+  @override
+  String get reasoning_effort_max => 'Максимальный';
+
+  @override
+  String get reasoning_effort_off => 'Выкл';
 
   @override
   String get could_not_read_file => 'Не удалось прочитать файл';

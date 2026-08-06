@@ -54,6 +54,11 @@ class ThinkingModeChip extends ConsumerWidget {
     final config = ref.watch(chatReasoningConfigProvider);
     final notifier = ref.read(chatReasoningConfigProvider.notifier);
 
+    // Mandatory-reasoning models can't be turned off, so the toggle side is
+    // non-interactive and the effort picker stays visible.
+    final canDisable = !(model?.reasoningMandatory ?? false);
+    final showPicker = config.enabled || !canDisable;
+
     final accent = theme.colorScheme.primary;
     final enabledFg = accent;
     final disabledFg = isDark
@@ -74,16 +79,18 @@ class ThinkingModeChip extends ConsumerWidget {
     final String labelText;
     if (fullWidth) {
       labelText = l10n.thinking_mode_title;
-    } else if (config.enabled) {
+    } else if (config.enabled || !canDisable) {
       labelText = _effortShortLabel(l10n, config.effort);
     } else {
-      labelText = 'Off';
+      labelText = l10n.reasoning_effort_off;
     }
 
     final toggleSide = InkWell(
-      onTap: () {
-        notifier.setEnabled(!config.enabled);
-      },
+      onTap: canDisable
+          ? () {
+              notifier.setEnabled(!config.enabled);
+            }
+          : null,
       borderRadius: borderRadius,
       child: Padding(
         padding: EdgeInsetsDirectional.fromSTEB(
@@ -113,7 +120,7 @@ class ThinkingModeChip extends ConsumerWidget {
                 ),
               ),
             ),
-            if (fullWidth && config.enabled) ...[
+            if (fullWidth && showPicker) ...[
               SizedBox(width: compact ? 3 : 6),
               Container(
                 padding: EdgeInsets.symmetric(
@@ -139,10 +146,11 @@ class ThinkingModeChip extends ConsumerWidget {
       ),
     );
 
-    // Right-side effort picker. Hidden when thinking is off because the
-    // choice has no effect — the entire chip is then a single tap toggle.
+    // Right-side effort picker. Hidden when thinking is off (and the model
+    // allows turning it off) because the choice has no effect there — the
+    // entire chip is then a single tap toggle.
     Widget pickerSide = const SizedBox.shrink();
-    if (config.enabled) {
+    if (showPicker) {
       pickerSide = PopupMenuButton<ReasoningEffort>(
         tooltip: '',
         padding: EdgeInsets.zero,
@@ -151,7 +159,7 @@ class ThinkingModeChip extends ConsumerWidget {
           notifier.setEnabled(true);
           notifier.setEffort(effort);
         },
-        itemBuilder: (context) => ReasoningEffort.values
+        itemBuilder: (context) => effortsForModel(model?.supportedReasoningEfforts)
             .map(
               (effort) => PopupMenuItem(
                 value: effort,
@@ -225,13 +233,13 @@ class ThinkingModeChip extends ConsumerWidget {
     AppLocalizations l10n,
     ReasoningEffort effort,
   ) {
-    switch (effort) {
-      case ReasoningEffort.low:
-        return l10n.reasoning_effort_low;
-      case ReasoningEffort.medium:
-        return l10n.reasoning_effort_medium;
-      case ReasoningEffort.high:
-        return l10n.reasoning_effort_high;
-    }
+    return switch (effort) {
+      ReasoningEffort.minimal => l10n.reasoning_effort_minimal,
+      ReasoningEffort.low => l10n.reasoning_effort_low,
+      ReasoningEffort.medium => l10n.reasoning_effort_medium,
+      ReasoningEffort.high => l10n.reasoning_effort_high,
+      ReasoningEffort.xhigh => l10n.reasoning_effort_xhigh,
+      ReasoningEffort.max => l10n.reasoning_effort_max,
+    };
   }
 }

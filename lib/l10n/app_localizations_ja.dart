@@ -540,11 +540,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settings_default_persona => 'デフォルトペルソナ';
 
   @override
-  String get settings_default_model => 'Default Model';
+  String get settings_default_model => 'デフォルトモデル';
 
   @override
-  String get settings_default_model_desc =>
-      'Automatically selected when you start a new chat.';
+  String get settings_default_model_desc => '新しいチャットを開始するときに自動的に選択されます。';
 
   @override
   String get settings_privacy => 'プライバシー';
@@ -887,26 +886,26 @@ class AppLocalizationsJa extends AppLocalizations {
   String get active_integrations => '有効な統合';
 
   @override
-  String get import_mcp_json => 'Import JSON';
+  String get import_mcp_json => 'JSONをインポート';
 
   @override
-  String get import_mcp_json_dialog_title => 'Import MCP Config JSON';
+  String get import_mcp_json_dialog_title => 'MCP設定JSONをインポート';
 
   @override
   String get import_mcp_json_instructions =>
-      'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:';
+      'LM Studio (mcp.json) から mcpServers JSON を直接コピーするか、以下にプラグイン配列を貼り付けてください:';
 
   @override
   String get import_mcp_json_placeholder =>
-      'Paste mcpServers JSON or plugin list here...';
+      'ここに mcpServers JSON またはプラグインリストを貼り付け...';
 
   @override
   String mcp_import_success(int count) {
-    return 'Successfully imported $count integration(s)';
+    return '$count 件の統合を正常にインポートしました';
   }
 
   @override
-  String get mcp_import_failed => 'No valid MCP integrations found in JSON';
+  String get mcp_import_failed => 'JSON 内に有効な MCP 統合が見つかりませんでした';
 
   @override
   String get enable_notifications => '通知を有効にする';
@@ -1024,7 +1023,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get server_type_ollama_cloud => 'Ollama Cloud';
 
   @override
-  String get server_type_ollama_cloud_sub => 'CLOUD MANAGED';
+  String get server_type_ollama_cloud_sub => 'クラウド管理';
 
   @override
   String get server_type_ollama_cloud_display => 'Ollama Cloud';
@@ -1034,26 +1033,25 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get ollama_cloud_disclosure =>
-      'By connecting Ollama Cloud, your chat messages and inputs are sent to Ollama\'s managed servers for inference. LocalMind does not track or store your conversations. You can revoke this key any time at ollama.com/settings/keys.';
+      'Ollama Cloud に接続すると、チャットメッセージと入力は推論のために Ollama の管理サーバーに送信されます。LocalMind は会話を追跡または保存しません。このキーは ollama.com/settings/keys でいつでも取り消すことができます。';
 
   @override
-  String get api_key_required_ollama_cloud =>
-      'API Key required for Ollama Cloud';
+  String get api_key_required_ollama_cloud => 'Ollama Cloud には API キーが必要です';
 
   @override
-  String get api_key_hint_ollama_cloud => 'Paste your Ollama Cloud API key';
+  String get api_key_hint_ollama_cloud => 'Ollama Cloud API キーを貼り付け';
 
   @override
   String get add_server_ollama_cloud_subtitle =>
-      'Connect to Ollama Cloud with an API key from ollama.com/settings/keys to access managed cloud models.';
+      'ollama.com/settings/keys の API キーで Ollama Cloud に接続し、管理対象のクラウドモデルにアクセスします。';
 
   @override
   String get add_server_openrouter_subtitle =>
-      'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.';
+      '有効な API キーで OpenRouter 経由で接続し、モデルルーティングの準備を整えます。';
 
   @override
   String get add_server_endpoint_subtitle =>
-      'Configure a local or self-hosted endpoint, then verify the connection before saving.';
+      'ローカルまたはセルフホストのエンドポイントを設定し、保存前に接続を確認します。';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
@@ -2202,13 +2200,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get model_favorite_toggle => 'お気に入りの切り替え';
 
   @override
-  String get model_set_default => 'Set as default model';
+  String get model_set_default => 'デフォルトモデルに設定';
 
   @override
-  String get model_clear_default => 'Remove as default model';
+  String get model_clear_default => 'デフォルトモデルから解除';
 
   @override
-  String get model_default_badge => 'Default';
+  String get model_default_badge => 'デフォルト';
 
   @override
   String get model_note_label => 'メモ';
@@ -2473,10 +2471,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get model_identifier => 'モデル識別子';
 
   @override
-  String get model_capabilities => 'Capabilities';
+  String get model_capabilities => '機能';
 
   @override
-  String get model_api_pricing => 'API pricing (per 1M tokens)';
+  String get model_api_pricing => 'API 価格設定 (100万トークンあたり)';
 
   @override
   String get not_available => '利用不可';
@@ -2670,11 +2668,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get lm_studio_reasoning => '推論';
 
   @override
-  String get openrouter_pricing_free => 'Free';
+  String get openrouter_pricing_free => '無料';
 
   @override
   String openrouter_pricing_tooltip(String input, String output) {
-    return 'Input $input / Output $output per 1M tokens';
+    return '入力 $input / 出力 $output (100万トークンあたり)';
   }
 
   @override
@@ -2732,6 +2730,18 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get reasoning_effort_high => '高';
+
+  @override
+  String get reasoning_effort_minimal => '最小';
+
+  @override
+  String get reasoning_effort_xhigh => '極高';
+
+  @override
+  String get reasoning_effort_max => '最大';
+
+  @override
+  String get reasoning_effort_off => 'オフ';
 
   @override
   String get could_not_read_file => 'ファイルを読み込めませんでした';

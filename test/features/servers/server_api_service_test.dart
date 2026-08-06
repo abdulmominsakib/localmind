@@ -544,7 +544,11 @@ void main() {
               'output_modalities': ['text'],
               'tokenizer': 'DeepSeek',
             },
-            'reasoning': {'mandatory': true},
+            'reasoning': {
+              'mandatory': false,
+              'default_effort': 'high',
+              'supported_efforts': ['max', 'high', 'low'],
+            },
             'supported_parameters': ['tools', 'reasoning', 'temperature'],
           },
           {
@@ -580,6 +584,9 @@ void main() {
       expect(reasoner.supportsReasoning, isTrue);
       expect(reasoner.supportsToolUse, isTrue);
       expect(reasoner.supportsVision, isFalse);
+      expect(reasoner.reasoningMandatory, isFalse);
+      expect(reasoner.defaultReasoningEffort, 'high');
+      expect(reasoner.supportedReasoningEfforts, ['max', 'high', 'low']);
 
       final free = byId['meta-llama/llama-3.1-8b-instruct:free']!;
       expect(free.isPricingFree, isTrue);
@@ -613,8 +620,40 @@ void main() {
       expect(models.single.pricingLabel, isNull);
     });
 
-    test('treats non-finite pricing values as unknown', () async {
+    test('parses mandatory reasoning with a single supported effort', () async {
       final data = {
+        'data': [
+          {
+            'id': 'openai/gpt-5-pro',
+            'name': 'OpenAI: GPT-5 Pro',
+            'context_length': 200000,
+            'architecture': {
+              'modality': 'text->text',
+              'tokenizer': 'GPT',
+            },
+            'reasoning': {
+              'mandatory': true,
+              'default_effort': 'high',
+              'supported_efforts': ['high'],
+            },
+          },
+        ],
+      };
+
+      final service = ServerApiService(
+        Dio()..interceptors.add(TestInterceptor(data)),
+      );
+      final models = await service.fetchModels(openRouterServer);
+
+      expect(models, hasLength(1));
+      final model = models.single;
+      expect(model.supportsReasoning, isTrue);
+      expect(model.reasoningMandatory, isTrue);
+      expect(model.supportedReasoningEfforts, ['high']);
+      expect(model.defaultReasoningEffort, 'high');
+    });
+
+    test('treats non-finite pricing values as unknown', () async {      final data = {
         'data': [
           {
             'id': 'weird/model',

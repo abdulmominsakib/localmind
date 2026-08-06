@@ -536,11 +536,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settings_default_persona => '默认角色';
 
   @override
-  String get settings_default_model => 'Default Model';
+  String get settings_default_model => '默认模型';
 
   @override
-  String get settings_default_model_desc =>
-      'Automatically selected when you start a new chat.';
+  String get settings_default_model_desc => '开始新聊天时自动选择。';
 
   @override
   String get settings_privacy => '隐私';
@@ -881,26 +880,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get active_integrations => '活动集成';
 
   @override
-  String get import_mcp_json => 'Import JSON';
+  String get import_mcp_json => '导入 JSON';
 
   @override
-  String get import_mcp_json_dialog_title => 'Import MCP Config JSON';
+  String get import_mcp_json_dialog_title => '导入 MCP 配置 JSON';
 
   @override
   String get import_mcp_json_instructions =>
-      'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:';
+      '直接从 LM Studio (mcp.json) 复制 mcpServers JSON 或在下方粘贴插件数组：';
 
   @override
-  String get import_mcp_json_placeholder =>
-      'Paste mcpServers JSON or plugin list here...';
+  String get import_mcp_json_placeholder => '在此粘贴 mcpServers JSON 或插件列表...';
 
   @override
   String mcp_import_success(int count) {
-    return 'Successfully imported $count integration(s)';
+    return '已成功导入 $count 个集成';
   }
 
   @override
-  String get mcp_import_failed => 'No valid MCP integrations found in JSON';
+  String get mcp_import_failed => 'JSON 中未找到有效的 MCP 集成';
 
   @override
   String get enable_notifications => '启用通知';
@@ -1017,7 +1015,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get server_type_ollama_cloud => 'Ollama Cloud';
 
   @override
-  String get server_type_ollama_cloud_sub => 'CLOUD MANAGED';
+  String get server_type_ollama_cloud_sub => '托管云服务';
 
   @override
   String get server_type_ollama_cloud_display => 'Ollama Cloud';
@@ -1027,26 +1025,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get ollama_cloud_disclosure =>
-      'By connecting Ollama Cloud, your chat messages and inputs are sent to Ollama\'s managed servers for inference. LocalMind does not track or store your conversations. You can revoke this key any time at ollama.com/settings/keys.';
+      '连接 Ollama Cloud 后，您的聊天消息和输入将被发送至 Ollama 的托管服务器进行推理。LocalMind 不会跟踪或存储您的对话。您可以随时在 ollama.com/settings/keys 撤销此密钥。';
 
   @override
-  String get api_key_required_ollama_cloud =>
-      'API Key required for Ollama Cloud';
+  String get api_key_required_ollama_cloud => 'Ollama Cloud 需要 API 密钥';
 
   @override
-  String get api_key_hint_ollama_cloud => 'Paste your Ollama Cloud API key';
+  String get api_key_hint_ollama_cloud => '粘贴您的 Ollama Cloud API 密钥';
 
   @override
   String get add_server_ollama_cloud_subtitle =>
-      'Connect to Ollama Cloud with an API key from ollama.com/settings/keys to access managed cloud models.';
+      '使用来自 ollama.com/settings/keys 的 API 密钥连接到 Ollama Cloud，以访问托管云端模型。';
 
   @override
   String get add_server_openrouter_subtitle =>
-      'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.';
+      '使用有效的 API 密钥通过 OpenRouter 连接，并为此配置文件做好模型路由准备。';
 
   @override
-  String get add_server_endpoint_subtitle =>
-      'Configure a local or self-hosted endpoint, then verify the connection before saving.';
+  String get add_server_endpoint_subtitle => '配置本地或自托管端点，然后在保存前验证连接。';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
@@ -2191,13 +2187,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get model_favorite_toggle => '切换收藏';
 
   @override
-  String get model_set_default => 'Set as default model';
+  String get model_set_default => '设为默认模型';
 
   @override
-  String get model_clear_default => 'Remove as default model';
+  String get model_clear_default => '取消默认模型';
 
   @override
-  String get model_default_badge => 'Default';
+  String get model_default_badge => '默认';
 
   @override
   String get model_note_label => '备注';
@@ -2457,10 +2453,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get model_identifier => '模型标识符';
 
   @override
-  String get model_capabilities => 'Capabilities';
+  String get model_capabilities => '能力';
 
   @override
-  String get model_api_pricing => 'API pricing (per 1M tokens)';
+  String get model_api_pricing => 'API 价格（每 100 万 token）';
 
   @override
   String get not_available => '不可用';
@@ -2652,11 +2648,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lm_studio_reasoning => '推理能力';
 
   @override
-  String get openrouter_pricing_free => 'Free';
+  String get openrouter_pricing_free => '免费';
 
   @override
   String openrouter_pricing_tooltip(String input, String output) {
-    return 'Input $input / Output $output per 1M tokens';
+    return '输入 $input / 输出 $output（每 100 万 token）';
   }
 
   @override
@@ -2713,6 +2709,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reasoning_effort_high => '高';
+
+  @override
+  String get reasoning_effort_minimal => '极低';
+
+  @override
+  String get reasoning_effort_xhigh => '极高';
+
+  @override
+  String get reasoning_effort_max => '最大';
+
+  @override
+  String get reasoning_effort_off => '关闭';
 
   @override
   String get could_not_read_file => '无法读取文件';
@@ -3390,6 +3398,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settings_default_persona => '預設角色';
 
   @override
+  String get settings_default_model => '預設模型';
+
+  @override
+  String get settings_default_model_desc => '開始新聊天時自動選擇。';
+
+  @override
   String get settings_privacy => '隱私';
 
   @override
@@ -3728,6 +3742,27 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get active_integrations => '活動整合';
 
   @override
+  String get import_mcp_json => '匯入 JSON';
+
+  @override
+  String get import_mcp_json_dialog_title => '匯入 MCP 設定 JSON';
+
+  @override
+  String get import_mcp_json_instructions =>
+      '直接從 LM Studio (mcp.json) 複製 mcpServers JSON 或在下方貼上擴充功能陣列：';
+
+  @override
+  String get import_mcp_json_placeholder => '在此貼上 mcpServers JSON 或擴充功能清單...';
+
+  @override
+  String mcp_import_success(int count) {
+    return '已成功匯入 $count 個整合';
+  }
+
+  @override
+  String get mcp_import_failed => 'JSON 中未找到有效的 MCP 整合';
+
+  @override
   String get enable_notifications => '啟用通知';
 
   @override
@@ -3837,6 +3872,39 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get server_type_ollama => 'Ollama';
+
+  @override
+  String get server_type_ollama_cloud => 'Ollama Cloud';
+
+  @override
+  String get server_type_ollama_cloud_sub => '託管雲端服務';
+
+  @override
+  String get server_type_ollama_cloud_display => 'Ollama Cloud';
+
+  @override
+  String get server_address_ollama_cloud => 'ollama.com';
+
+  @override
+  String get ollama_cloud_disclosure =>
+      '連線至 Ollama Cloud 後，您的聊天訊息與輸入將傳送至 Ollama 的託管伺服器進行推論。LocalMind 不會追蹤或儲存您的對話。您可隨時在 ollama.com/settings/keys 撤銷此金鑰。';
+
+  @override
+  String get api_key_required_ollama_cloud => 'Ollama Cloud 需要 API 金鑰';
+
+  @override
+  String get api_key_hint_ollama_cloud => '貼上您的 Ollama Cloud API 金鑰';
+
+  @override
+  String get add_server_ollama_cloud_subtitle =>
+      '使用來自 ollama.com/settings/keys 的 API 金鑰連線至 Ollama Cloud，以存取託管雲端模型。';
+
+  @override
+  String get add_server_openrouter_subtitle =>
+      '使用有效的 API 金鑰透過 OpenRouter 連線，並為此設定檔做好模型路由準備。';
+
+  @override
+  String get add_server_endpoint_subtitle => '設定本地或自託管端點，並在儲存前驗證連線。';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
@@ -4982,6 +5050,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get model_favorite_toggle => '切換收藏';
 
   @override
+  String get model_set_default => '設為預設模型';
+
+  @override
+  String get model_clear_default => '取消預設模型';
+
+  @override
+  String get model_default_badge => '預設';
+
+  @override
   String get model_note_label => '備註';
 
   @override
@@ -5239,6 +5316,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get model_identifier => '模型識別碼';
 
   @override
+  String get model_capabilities => '能力';
+
+  @override
+  String get model_api_pricing => 'API 價格（每 100 萬 token）';
+
+  @override
   String get not_available => '不可用';
 
   @override
@@ -5428,6 +5511,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get lm_studio_reasoning => '推理能力';
 
   @override
+  String get openrouter_pricing_free => '免費';
+
+  @override
+  String openrouter_pricing_tooltip(String input, String output) {
+    return '輸入 $input / 輸出 $output（每 100 萬 token）';
+  }
+
+  @override
   String get lm_studio_download_options => '下載選項';
 
   @override
@@ -5481,6 +5572,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get reasoning_effort_high => '高';
+
+  @override
+  String get reasoning_effort_minimal => '極低';
+
+  @override
+  String get reasoning_effort_xhigh => '極高';
+
+  @override
+  String get reasoning_effort_max => '最大';
+
+  @override
+  String get reasoning_effort_off => '關閉';
 
   @override
   String get could_not_read_file => '無法讀取檔案';

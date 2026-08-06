@@ -551,11 +551,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settings_default_persona => 'Persona predefinita';
 
   @override
-  String get settings_default_model => 'Default Model';
+  String get settings_default_model => 'Modello predefinito';
 
   @override
   String get settings_default_model_desc =>
-      'Automatically selected when you start a new chat.';
+      'Selezionato automaticamente quando avvii una nuova chat.';
 
   @override
   String get settings_privacy => 'Privacy';
@@ -908,26 +908,27 @@ class AppLocalizationsIt extends AppLocalizations {
   String get active_integrations => 'Integrazioni attive';
 
   @override
-  String get import_mcp_json => 'Import JSON';
+  String get import_mcp_json => 'Importa JSON';
 
   @override
-  String get import_mcp_json_dialog_title => 'Import MCP Config JSON';
+  String get import_mcp_json_dialog_title => 'Importa JSON configurazione MCP';
 
   @override
   String get import_mcp_json_instructions =>
-      'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:';
+      'Copia il tuo JSON mcpServers direttamente da LM Studio (mcp.json) o incolla un array di plugin qui sotto:';
 
   @override
   String get import_mcp_json_placeholder =>
-      'Paste mcpServers JSON or plugin list here...';
+      'Incolla il JSON mcpServers o l\'elenco dei plugin qui...';
 
   @override
   String mcp_import_success(int count) {
-    return 'Successfully imported $count integration(s)';
+    return '$count integrazione/i importata/e con successo';
   }
 
   @override
-  String get mcp_import_failed => 'No valid MCP integrations found in JSON';
+  String get mcp_import_failed =>
+      'Nessuna integrazione MCP valida trovata nel JSON';
 
   @override
   String get enable_notifications => 'Abilita notifiche';
@@ -1047,7 +1048,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get server_type_ollama_cloud => 'Ollama Cloud';
 
   @override
-  String get server_type_ollama_cloud_sub => 'CLOUD MANAGED';
+  String get server_type_ollama_cloud_sub => 'CLOUD GESTITO';
 
   @override
   String get server_type_ollama_cloud_display => 'Ollama Cloud';
@@ -1057,26 +1058,27 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get ollama_cloud_disclosure =>
-      'By connecting Ollama Cloud, your chat messages and inputs are sent to Ollama\'s managed servers for inference. LocalMind does not track or store your conversations. You can revoke this key any time at ollama.com/settings/keys.';
+      'Connettendo Ollama Cloud, i tuoi messaggi di chat e i tuoi input vengono inviati ai server gestiti di Ollama per l\'inferenza. LocalMind non traccia né memorizza le tue conversazioni. Puoi revocare questa chiave in qualsiasi momento su ollama.com/settings/keys.';
 
   @override
   String get api_key_required_ollama_cloud =>
-      'API Key required for Ollama Cloud';
+      'Chiave API richiesta per Ollama Cloud';
 
   @override
-  String get api_key_hint_ollama_cloud => 'Paste your Ollama Cloud API key';
+  String get api_key_hint_ollama_cloud =>
+      'Incolla la tua chiave API di Ollama Cloud';
 
   @override
   String get add_server_ollama_cloud_subtitle =>
-      'Connect to Ollama Cloud with an API key from ollama.com/settings/keys to access managed cloud models.';
+      'Connettiti a Ollama Cloud con una chiave API da ollama.com/settings/keys per accedere ai modelli cloud gestiti.';
 
   @override
   String get add_server_openrouter_subtitle =>
-      'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.';
+      'Connettiti tramite OpenRouter con una chiave API valida e tieni pronto questo profilo per l\'instradamento dei modelli.';
 
   @override
   String get add_server_endpoint_subtitle =>
-      'Configure a local or self-hosted endpoint, then verify the connection before saving.';
+      'Configura un endpoint locale o self-hosted, quindi verifica la connessione prima di salvare.';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
@@ -2253,13 +2255,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get model_favorite_toggle => 'Attiva/disattiva preferito';
 
   @override
-  String get model_set_default => 'Set as default model';
+  String get model_set_default => 'Imposta come modello predefinito';
 
   @override
-  String get model_clear_default => 'Remove as default model';
+  String get model_clear_default => 'Rimuovi come modello predefinito';
 
   @override
-  String get model_default_badge => 'Default';
+  String get model_default_badge => 'Predefinito';
 
   @override
   String get model_note_label => 'Nota';
@@ -2535,10 +2537,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get model_identifier => 'Identificatore modello';
 
   @override
-  String get model_capabilities => 'Capabilities';
+  String get model_capabilities => 'Capacità';
 
   @override
-  String get model_api_pricing => 'API pricing (per 1M tokens)';
+  String get model_api_pricing => 'Prezzi API (per 1M di token)';
 
   @override
   String get not_available => 'Non disponibile';
@@ -2734,11 +2736,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get lm_studio_reasoning => 'Ragionamento';
 
   @override
-  String get openrouter_pricing_free => 'Free';
+  String get openrouter_pricing_free => 'Gratuito';
 
   @override
   String openrouter_pricing_tooltip(String input, String output) {
-    return 'Input $input / Output $output per 1M tokens';
+    return 'Input $input / Output $output per 1M di token';
   }
 
   @override
@@ -2797,6 +2799,18 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get reasoning_effort_high => 'Alto';
+
+  @override
+  String get reasoning_effort_minimal => 'Minimo';
+
+  @override
+  String get reasoning_effort_xhigh => 'Molto alto';
+
+  @override
+  String get reasoning_effort_max => 'Massimo';
+
+  @override
+  String get reasoning_effort_off => 'Disattivato';
 
   @override
   String get could_not_read_file => 'Impossibile leggere il file';

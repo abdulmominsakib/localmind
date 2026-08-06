@@ -5205,6 +5205,30 @@ abstract class AppLocalizations {
   /// **'High'**
   String get reasoning_effort_high;
 
+  /// Minimal reasoning effort level
+  ///
+  /// In en, this message translates to:
+  /// **'Minimal'**
+  String get reasoning_effort_minimal;
+
+  /// Extra-high reasoning effort level
+  ///
+  /// In en, this message translates to:
+  /// **'X-High'**
+  String get reasoning_effort_xhigh;
+
+  /// Maximum reasoning effort level
+  ///
+  /// In en, this message translates to:
+  /// **'Max'**
+  String get reasoning_effort_max;
+
+  /// Label for disabling reasoning entirely
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get reasoning_effort_off;
+
   /// Error message when file cannot be read
   ///
   /// In en, this message translates to:

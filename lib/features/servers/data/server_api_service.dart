@@ -567,6 +567,9 @@ class ServerApiService {
             supportsVision: capabilities.supportsVision,
             supportsReasoning: capabilities.supportsReasoning,
             supportsToolUse: capabilities.supportsToolUse,
+            supportedReasoningEfforts: capabilities.supportedReasoningEfforts,
+            defaultReasoningEffort: capabilities.defaultReasoningEffort,
+            reasoningMandatory: capabilities.reasoningMandatory,
             inputPricePerMillion: pricing.inputPricePerMillion,
             outputPricePerMillion: pricing.outputPricePerMillion,
           ),
@@ -580,6 +583,9 @@ class ServerApiService {
     bool supportsVision,
     bool supportsReasoning,
     bool supportsToolUse,
+    List<String>? supportedReasoningEfforts,
+    String? defaultReasoningEffort,
+    bool reasoningMandatory,
   }) _parseOpenRouterCapabilities(Map<dynamic, dynamic> item) {
     final architecture = item['architecture'];
     final arch = architecture is Map ? architecture : const <String, dynamic>{};
@@ -597,16 +603,32 @@ class ServerApiService {
         <String>{};
     final supportsToolUse = supportedParams.contains('tools') ||
         supportedParams.contains('tool_choice');
+
     final reasoningField = item['reasoning'];
-    final supportsReasoning =
-        (reasoningField is Map && reasoningField.isNotEmpty) ||
-            supportedParams.contains('reasoning') ||
-            supportedParams.contains('include_reasoning');
+    final reasoning = reasoningField is Map ? reasoningField : null;
+    final supportedEffortsRaw = reasoning?['supported_efforts'];
+    final supportedReasoningEfforts = supportedEffortsRaw is List
+        ? supportedEffortsRaw
+            .map((e) => e.toString().trim().toLowerCase())
+            .where((e) => e.isNotEmpty)
+            .toList(growable: false)
+        : null;
+    final defaultReasoningEffort =
+        reasoning?['default_effort']?.toString().trim().toLowerCase();
+    final reasoningMandatory = reasoning?['mandatory'] == true;
+    final supportsReasoning = reasoning != null && reasoning.isNotEmpty ||
+        supportedReasoningEfforts != null && supportedReasoningEfforts.isNotEmpty ||
+        reasoningMandatory ||
+        supportedParams.contains('reasoning') ||
+        supportedParams.contains('include_reasoning');
 
     return (
       supportsVision: supportsVision,
       supportsReasoning: supportsReasoning,
       supportsToolUse: supportsToolUse,
+      supportedReasoningEfforts: supportedReasoningEfforts,
+      defaultReasoningEffort: defaultReasoningEffort,
+      reasoningMandatory: reasoningMandatory,
     );
   }
 

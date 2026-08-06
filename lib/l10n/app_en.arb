@@ -3102,6 +3102,22 @@
   "@reasoning_effort_high": {
     "description": "High reasoning effort level"
   },
+  "reasoning_effort_minimal": "Minimal",
+  "@reasoning_effort_minimal": {
+    "description": "Minimal reasoning effort level"
+  },
+  "reasoning_effort_xhigh": "X-High",
+  "@reasoning_effort_xhigh": {
+    "description": "Extra-high reasoning effort level"
+  },
+  "reasoning_effort_max": "Max",
+  "@reasoning_effort_max": {
+    "description": "Maximum reasoning effort level"
+  },
+  "reasoning_effort_off": "Off",
+  "@reasoning_effort_off": {
+    "description": "Label for disabling reasoning entirely"
+  },
   "could_not_read_file": "Could not read file",
   "@could_not_read_file": {
     "description": "Error message when file cannot be read"

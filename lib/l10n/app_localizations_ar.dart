@@ -548,11 +548,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settings_default_persona => 'الشخصية الافتراضية';
 
   @override
-  String get settings_default_model => 'Default Model';
+  String get settings_default_model => 'النموذج الافتراضي';
 
   @override
   String get settings_default_model_desc =>
-      'Automatically selected when you start a new chat.';
+      'يتم تحديده تلقائيًا عند بدء محادثة جديدة.';
 
   @override
   String get settings_privacy => 'الخصوصية';
@@ -901,26 +901,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get active_integrations => 'التكاملات النشطة';
 
   @override
-  String get import_mcp_json => 'Import JSON';
+  String get import_mcp_json => 'استيراد JSON';
 
   @override
-  String get import_mcp_json_dialog_title => 'Import MCP Config JSON';
+  String get import_mcp_json_dialog_title => 'استيراد تكوين MCP JSON';
 
   @override
   String get import_mcp_json_instructions =>
-      'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:';
+      'قم بنسخ mcpServers JSON مباشرة من LM Studio (mcp.json) أو ألصق مصفوفة الملحقات أدناه:';
 
   @override
   String get import_mcp_json_placeholder =>
-      'Paste mcpServers JSON or plugin list here...';
+      'ألصق mcpServers JSON أو قائمة الملحقات هنا...';
 
   @override
   String mcp_import_success(int count) {
-    return 'Successfully imported $count integration(s)';
+    return 'تم استيراد $count من التكاملات بنجاح';
   }
 
   @override
-  String get mcp_import_failed => 'No valid MCP integrations found in JSON';
+  String get mcp_import_failed =>
+      'لم يتم العثور على تكاملات MCP صالحة في ملف JSON';
 
   @override
   String get enable_notifications => 'تفعيل الإشعارات';
@@ -1040,7 +1041,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get server_type_ollama_cloud => 'Ollama Cloud';
 
   @override
-  String get server_type_ollama_cloud_sub => 'CLOUD MANAGED';
+  String get server_type_ollama_cloud_sub => 'سحابة مُدارة';
 
   @override
   String get server_type_ollama_cloud_display => 'Ollama Cloud';
@@ -1050,26 +1051,26 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ollama_cloud_disclosure =>
-      'By connecting Ollama Cloud, your chat messages and inputs are sent to Ollama\'s managed servers for inference. LocalMind does not track or store your conversations. You can revoke this key any time at ollama.com/settings/keys.';
+      'عند الاتصال بـ Ollama Cloud، يتم إرسال رسائل المحادثة والإدخالات إلى خوادم Ollama المُدارة للاستنتاج. لا يقوم LocalMind بتتبع أو تخزين محادثاتك. يمكنك إلغاء هذا المفتاح في أي وقت عبر ollama.com/settings/keys.';
 
   @override
-  String get api_key_required_ollama_cloud =>
-      'API Key required for Ollama Cloud';
+  String get api_key_required_ollama_cloud => 'مفتاح API مطلوب لـ Ollama Cloud';
 
   @override
-  String get api_key_hint_ollama_cloud => 'Paste your Ollama Cloud API key';
+  String get api_key_hint_ollama_cloud =>
+      'ألصق مفتاح API الخاص بـ Ollama Cloud';
 
   @override
   String get add_server_ollama_cloud_subtitle =>
-      'Connect to Ollama Cloud with an API key from ollama.com/settings/keys to access managed cloud models.';
+      'اتصل بـ Ollama Cloud باستخدام مفتاح API من ollama.com/settings/keys للوصول إلى النماذج السحابية المُدارة.';
 
   @override
   String get add_server_openrouter_subtitle =>
-      'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.';
+      'اتصل عبر OpenRouter باستخدام مفتاح API صالح واحتفظ بهذا الملف الشخصي جاهزًا لتوجيه النماذج.';
 
   @override
   String get add_server_endpoint_subtitle =>
-      'Configure a local or self-hosted endpoint, then verify the connection before saving.';
+      'قم بتكوين نقطة نهاية محلية أو مستضافة ذاتيًا، ثم تحقق من الاتصال قبل الحفظ.';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
@@ -2228,13 +2229,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get model_favorite_toggle => 'تبديل المفضلة';
 
   @override
-  String get model_set_default => 'Set as default model';
+  String get model_set_default => 'تعيين كنموذج افتراضي';
 
   @override
-  String get model_clear_default => 'Remove as default model';
+  String get model_clear_default => 'إزالة من النموذج الافتراضي';
 
   @override
-  String get model_default_badge => 'Default';
+  String get model_default_badge => 'افتراضي';
 
   @override
   String get model_note_label => 'ملاحظة';
@@ -2507,10 +2508,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get model_identifier => 'معرف النموذج';
 
   @override
-  String get model_capabilities => 'Capabilities';
+  String get model_capabilities => 'القدرات';
 
   @override
-  String get model_api_pricing => 'API pricing (per 1M tokens)';
+  String get model_api_pricing => 'أسعار API (لكل 1M رمز)';
 
   @override
   String get not_available => 'غير متاح';
@@ -2705,11 +2706,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lm_studio_reasoning => 'التفكير والاستنتاج';
 
   @override
-  String get openrouter_pricing_free => 'Free';
+  String get openrouter_pricing_free => 'مجاني';
 
   @override
   String openrouter_pricing_tooltip(String input, String output) {
-    return 'Input $input / Output $output per 1M tokens';
+    return 'الإدخال $input / الإخراج $output لكل 1M رمز';
   }
 
   @override
@@ -2770,6 +2771,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get reasoning_effort_high => 'مرتفع';
+
+  @override
+  String get reasoning_effort_minimal => 'أدنى';
+
+  @override
+  String get reasoning_effort_xhigh => 'عالي جداً';
+
+  @override
+  String get reasoning_effort_max => 'أقصى';
+
+  @override
+  String get reasoning_effort_off => 'موقف';
 
   @override
   String get could_not_read_file => 'تعذر قراءة الملف';

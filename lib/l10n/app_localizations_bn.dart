@@ -549,11 +549,11 @@ class AppLocalizationsBn extends AppLocalizations {
   String get settings_default_persona => 'ডিফল্ট পার্সোনা';
 
   @override
-  String get settings_default_model => 'Default Model';
+  String get settings_default_model => 'ডিফল্ট মডেল';
 
   @override
   String get settings_default_model_desc =>
-      'Automatically selected when you start a new chat.';
+      'নতুন চ্যাট শুরু করার সময় স্বয়ংক্রিয়ভাবে নির্বাচিত হয়।';
 
   @override
   String get settings_privacy => 'গোপনীয়তা';
@@ -906,26 +906,27 @@ class AppLocalizationsBn extends AppLocalizations {
   String get active_integrations => 'সক্রিয় ইন্টিগ্রেশনসমূহ';
 
   @override
-  String get import_mcp_json => 'Import JSON';
+  String get import_mcp_json => 'JSON ইম্পোর্ট করুন';
 
   @override
-  String get import_mcp_json_dialog_title => 'Import MCP Config JSON';
+  String get import_mcp_json_dialog_title => 'MCP কনফিগ JSON ইম্পোর্ট করুন';
 
   @override
   String get import_mcp_json_instructions =>
-      'Copy your mcpServers JSON directly from LM Studio (mcp.json) or paste a plugin array below:';
+      'LM Studio (mcp.json) থেকে সরাসরি আপনার mcpServers JSON কপি করুন অথবা নিচে প্লাগইন অ্যারে পেস্ট করুন:';
 
   @override
   String get import_mcp_json_placeholder =>
-      'Paste mcpServers JSON or plugin list here...';
+      'এখানে mcpServers JSON বা প্লাগইন তালিকা পেস্ট করুন...';
 
   @override
   String mcp_import_success(int count) {
-    return 'Successfully imported $count integration(s)';
+    return 'সফলভাবে $countটি ইন্টিগ্রেশন ইম্পোর্ট করা হয়েছে';
   }
 
   @override
-  String get mcp_import_failed => 'No valid MCP integrations found in JSON';
+  String get mcp_import_failed =>
+      'JSON-এ কোনো বৈধ MCP ইন্টিগ্রেশন পাওয়া যায়নি';
 
   @override
   String get enable_notifications => 'নোটিফিকেশন সক্ষম করুন';
@@ -1046,7 +1047,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get server_type_ollama_cloud => 'Ollama Cloud';
 
   @override
-  String get server_type_ollama_cloud_sub => 'CLOUD MANAGED';
+  String get server_type_ollama_cloud_sub => 'ক্লাউড পরিচালিত';
 
   @override
   String get server_type_ollama_cloud_display => 'Ollama Cloud';
@@ -1056,26 +1057,27 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get ollama_cloud_disclosure =>
-      'By connecting Ollama Cloud, your chat messages and inputs are sent to Ollama\'s managed servers for inference. LocalMind does not track or store your conversations. You can revoke this key any time at ollama.com/settings/keys.';
+      'Ollama Cloud সংযোগ করলে আপনার চ্যাট বার্তা এবং ইনপুট অনুমানের জন্য Ollama-এর পরিচালিত সার্ভারে পাঠানো হয়। LocalMind আপনার কথোপকথন ট্র্যাক বা সংরক্ষণ করে না। আপনি যেকোনো সময় ollama.com/settings/keys থেকে এই কী বাতিল করতে পারেন।';
 
   @override
   String get api_key_required_ollama_cloud =>
-      'API Key required for Ollama Cloud';
+      'Ollama Cloud-এর জন্য API Key প্রয়োজন';
 
   @override
-  String get api_key_hint_ollama_cloud => 'Paste your Ollama Cloud API key';
+  String get api_key_hint_ollama_cloud =>
+      'আপনার Ollama Cloud API key পেস্ট করুন';
 
   @override
   String get add_server_ollama_cloud_subtitle =>
-      'Connect to Ollama Cloud with an API key from ollama.com/settings/keys to access managed cloud models.';
+      'পরিচালিত ক্লাউড মডেল অ্যাক্সেস করতে ollama.com/settings/keys থেকে একটি API Key দিয়ে Ollama Cloud-এ সংযোগ করুন।';
 
   @override
   String get add_server_openrouter_subtitle =>
-      'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.';
+      'একটি বৈধ API Key দিয়ে OpenRouter-এর মাধ্যমে সংযোগ করুন এবং মডেল রাউটিংয়ের জন্য এই প্রোফাইলটি প্রস্তুত রাখুন।';
 
   @override
   String get add_server_endpoint_subtitle =>
-      'Configure a local or self-hosted endpoint, then verify the connection before saving.';
+      'একটি স্থানীয় বা স্ব-হোস্ট করা এন্ডপয়েন্ট কনফিগার করুন, তারপর সংরক্ষণ করার আগে সংযোগ যাচাই করুন।';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
@@ -2245,13 +2247,13 @@ class AppLocalizationsBn extends AppLocalizations {
   String get model_favorite_toggle => 'প্রিয় টগল করুন';
 
   @override
-  String get model_set_default => 'Set as default model';
+  String get model_set_default => 'ডিফল্ট মডেল হিসেবে সেট করুন';
 
   @override
-  String get model_clear_default => 'Remove as default model';
+  String get model_clear_default => 'ডিফল্ট মডেল হিসেবে সরিয়ে ফেলুন';
 
   @override
-  String get model_default_badge => 'Default';
+  String get model_default_badge => 'ডিফল্ট';
 
   @override
   String get model_note_label => 'নোট';
@@ -2528,10 +2530,10 @@ class AppLocalizationsBn extends AppLocalizations {
   String get model_identifier => 'মডেল সনাক্তকারী';
 
   @override
-  String get model_capabilities => 'Capabilities';
+  String get model_capabilities => 'ক্ষমতাসমূহ';
 
   @override
-  String get model_api_pricing => 'API pricing (per 1M tokens)';
+  String get model_api_pricing => 'API মূল্য (প্রতি ১ মিলিয়ন টোকেন)';
 
   @override
   String get not_available => 'অনুপলব্ধ';
@@ -2728,11 +2730,11 @@ class AppLocalizationsBn extends AppLocalizations {
   String get lm_studio_reasoning => 'রিজনিং';
 
   @override
-  String get openrouter_pricing_free => 'Free';
+  String get openrouter_pricing_free => 'বিনামূল্যে';
 
   @override
   String openrouter_pricing_tooltip(String input, String output) {
-    return 'Input $input / Output $output per 1M tokens';
+    return 'ইনপুট $input / আউটপুট $output প্রতি ১ মিলিয়ন টোকেন';
   }
 
   @override
@@ -2791,6 +2793,18 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get reasoning_effort_high => 'উচ্চ';
+
+  @override
+  String get reasoning_effort_minimal => 'ন্যূনতম';
+
+  @override
+  String get reasoning_effort_xhigh => 'অতিরিক্ত উচ্চ';
+
+  @override
+  String get reasoning_effort_max => 'সর্বোচ্চ';
+
+  @override
+  String get reasoning_effort_off => 'বন্ধ';
 
   @override
   String get could_not_read_file => 'ফাইল পড়া যায়নি';

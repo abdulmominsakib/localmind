@@ -2781,6 +2781,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reasoning_effort_high => 'High';
 
   @override
+  String get reasoning_effort_minimal => 'Minimal';
+
+  @override
+  String get reasoning_effort_xhigh => 'X-High';
+
+  @override
+  String get reasoning_effort_max => 'Max';
+
+  @override
+  String get reasoning_effort_off => 'Off';
+
+  @override
   String get could_not_read_file => 'Could not read file';
 
   @override

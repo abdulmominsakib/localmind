@@ -5,6 +5,7 @@ import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/providers/service_providers.dart';
 import 'package:localmind/features/chat/providers/chat_params_providers.dart';
+import 'package:localmind/features/chat/providers/chat_reasoning_providers.dart';
 import 'package:localmind/features/chat/providers/model_loading_providers.dart';
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/models/utils/model_instance_utils.dart';
@@ -23,6 +24,26 @@ class SelectedModelNotifier extends Notifier<ModelInfo?> {
 
   void setModel(ModelInfo? model) {
     state = model;
+    if (model != null) {
+      _normalizeReasoningForModel(model);
+    }
+  }
+
+  /// Snaps the reasoning config to a value the newly selected model actually
+  /// supports, so the next request never carries an invalid `reasoning_effort`
+  /// (e.g. `low` for a model that only advertises `high`). Also forces
+  /// reasoning on for mandatory-reasoning models, since they can't run with
+  /// it disabled.
+  void _normalizeReasoningForModel(ModelInfo model) {
+    final reasoning = ref.read(chatReasoningConfigProvider);
+    final notifier = ref.read(chatReasoningConfigProvider.notifier);
+    if (model.reasoningMandatory && !reasoning.enabled) {
+      notifier.setEnabled(true);
+    }
+    final supported = model.supportedReasoningEfforts;
+    if (supported != null && !supported.contains(reasoning.effort.apiValue)) {
+      notifier.setEffort(resolveEffortForModel(model, reasoning.effort));
+    }
   }
 
   void clear() {
