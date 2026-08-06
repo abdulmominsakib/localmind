@@ -500,4 +500,144 @@ void main() {
       );
     });
   });
+
+  group('ServerApiService - OpenRouter model parsing', () {
+    late Server openRouterServer;
+
+    setUp(() {
+      openRouterServer = Server(
+        id: 'test-openrouter',
+        name: 'Test OpenRouter',
+        type: ServerType.openRouter,
+        host: 'openrouter.ai',
+        port: 443,
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        lastConnectedAt: DateTime.now(),
+      );
+    });
+
+    test('parses capabilities and per-1M pricing for OpenRouter models', () async {
+      final data = {
+        'data': [
+          {
+            'id': 'openai/gpt-4o',
+            'name': 'OpenAI: GPT-4o',
+            'created': 1715558400,
+            'context_length': 128000,
+            'architecture': {
+              'modality': 'text+image+file->text',
+              'input_modalities': ['text', 'image', 'file'],
+              'output_modalities': ['text'],
+              'tokenizer': 'GPT',
+              'instruct_type': null,
+            },
+            'pricing': {'prompt': '0.0000025', 'completion': '0.00001'},
+          },
+          {
+            'id': 'deepseek/deepseek-reasoner',
+            'name': 'DeepSeek: R1',
+            'context_length': 163840,
+            'architecture': {
+              'modality': 'text->text',
+              'input_modalities': ['text'],
+              'output_modalities': ['text'],
+              'tokenizer': 'DeepSeek',
+            },
+            'reasoning': {'mandatory': true},
+            'supported_parameters': ['tools', 'reasoning', 'temperature'],
+          },
+          {
+            'id': 'meta-llama/llama-3.1-8b-instruct:free',
+            'name': 'Meta: Llama 3.1 8B (Free)',
+            'context_length': 131072,
+            'architecture': {
+              'modality': 'text->text',
+              'input_modalities': ['text'],
+              'output_modalities': ['text'],
+              'tokenizer': 'Llama3',
+            },
+            'pricing': {'prompt': '0', 'completion': '0'},
+          },
+        ],
+      };
+
+      final service = ServerApiService(
+        Dio()..interceptors.add(TestInterceptor(data)),
+      );
+      final models = await service.fetchModels(openRouterServer);
+
+      expect(models, hasLength(3));
+      final byId = {for (final m in models) m.id: m};
+
+      final gpt4o = byId['openai/gpt-4o']!;
+      expect(gpt4o.supportsVision, isTrue);
+      expect(gpt4o.inputPricePerMillion, closeTo(2.5, 0.0001));
+      expect(gpt4o.outputPricePerMillion, closeTo(10.0, 0.0001));
+      expect(gpt4o.pricingLabel, '\$2.50/\$10.00');
+
+      final reasoner = byId['deepseek/deepseek-reasoner']!;
+      expect(reasoner.supportsReasoning, isTrue);
+      expect(reasoner.supportsToolUse, isTrue);
+      expect(reasoner.supportsVision, isFalse);
+
+      final free = byId['meta-llama/llama-3.1-8b-instruct:free']!;
+      expect(free.isPricingFree, isTrue);
+      expect(free.pricingLabel, 'Free');
+    });
+
+    test('detects vision via modality when input_modalities is absent', () async {
+      final data = {
+        'data': [
+          {
+            'id': 'google/gemini-pro',
+            'name': 'Google: Gemini Pro',
+            'context_length': 32768,
+            'architecture': {
+              'modality': 'text+image->text',
+              'tokenizer': 'Gemini',
+            },
+          },
+        ],
+      };
+
+      final service = ServerApiService(
+        Dio()..interceptors.add(TestInterceptor(data)),
+      );
+      final models = await service.fetchModels(openRouterServer);
+
+      expect(models, hasLength(1));
+      expect(models.single.supportsVision, isTrue);
+      expect(models.single.supportsReasoning, isFalse);
+      expect(models.single.inputPricePerMillion, isNull);
+      expect(models.single.pricingLabel, isNull);
+    });
+
+    test('treats non-finite pricing values as unknown', () async {
+      final data = {
+        'data': [
+          {
+            'id': 'weird/model',
+            'name': 'Weird Model',
+            'context_length': 8192,
+            'architecture': {
+              'modality': 'text->text',
+              'tokenizer': 'X',
+            },
+            'pricing': {'prompt': '1e309', 'completion': 'Infinity'},
+          },
+        ],
+      };
+
+      final service = ServerApiService(
+        Dio()..interceptors.add(TestInterceptor(data)),
+      );
+      final models = await service.fetchModels(openRouterServer);
+
+      expect(models, hasLength(1));
+      expect(models.single.inputPricePerMillion, isNull);
+      expect(models.single.outputPricePerMillion, isNull);
+      expect(models.single.pricingLabel, isNull);
+    });
+  });
 }

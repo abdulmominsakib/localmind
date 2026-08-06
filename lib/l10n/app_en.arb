@@ -2960,6 +2960,8 @@
   "model_info": "Model info",
   "model_name": "Model name",
   "model_identifier": "Identifier",
+  "model_capabilities": "Capabilities",
+  "model_api_pricing": "API pricing (per 1M tokens)",
   "not_available": "Not available",
   "save_message_folders": "Save message",
   "remove_from_saved": "Remove from saved",
@@ -3040,6 +3042,24 @@
   "lm_studio_vision": "Vision",
   "lm_studio_tool_use": "Tool use",
   "lm_studio_reasoning": "Reasoning",
+  "openrouter_pricing_free": "Free",
+  "@openrouter_pricing_free": {
+    "description": "Chip label shown for free OpenRouter models"
+  },
+  "openrouter_pricing_tooltip": "Input {input} / Output {output} per 1M tokens",
+  "@openrouter_pricing_tooltip": {
+    "description": "Tooltip showing OpenRouter API pricing per 1M tokens",
+    "placeholders": {
+      "input": {
+        "type": "String",
+        "example": "$2.50"
+      },
+      "output": {
+        "type": "String",
+        "example": "$10.00"
+      }
+    }
+  },
   "lm_studio_download_options": "Download options",
   "lm_studio_download": "Download",
   "lm_studio_download_size": "Download {size}",

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../../servers/data/models/server.dart';
 import 'models/message.dart';
@@ -50,7 +51,11 @@ abstract class ChatService {
           imageCompressionLevel: imageCompressionLevel,
         );
       case ServerType.openAICompatible:
-        return OpenAICompatibleChatService(dio);
+        return OpenAICompatibleChatService(
+          dio,
+          imageCompressionEnabled: imageCompressionEnabled,
+          imageCompressionLevel: imageCompressionLevel,
+        );
       case ServerType.ollama:
       case ServerType.ollamaCloud:
         return OllamaChatService(
@@ -59,7 +64,11 @@ abstract class ChatService {
           imageCompressionLevel: imageCompressionLevel,
         );
       case ServerType.openRouter:
-        return OpenRouterChatService(dio);
+        return OpenRouterChatService(
+          dio,
+          imageCompressionEnabled: imageCompressionEnabled,
+          imageCompressionLevel: imageCompressionLevel,
+        );
       case ServerType.onDevice:
         if (onDeviceGemma == null) {
           throw StateError(
@@ -508,12 +517,11 @@ class LMStudioChatService implements ChatService {
       }
     }
     for (final m in visible) {
-      final imageItems = await _imageItemsFor(m);
-      final textContent = _messageTextWithAttachments(m);
+      final textContent = await _messageTextWithAttachments(m);
       if (textContent.isNotEmpty) {
         items.add({'type': 'text', 'content': textContent});
       }
-      items.addAll(imageItems);
+      items.addAll(await _imageItemsFor(m));
     }
     return items;
   }
@@ -551,22 +559,22 @@ class LMStudioChatService implements ChatService {
     return items;
   }
 
-  String _messageTextWithAttachments(Message m) {
+  /// Builds the text portion of a typed input item, inlining any `.txt`/`.md`
+  /// attachment contents into the message text so the model actually receives
+  /// them. Image attachments are handled separately by [_imageItemsFor].
+  Future<String> _messageTextWithAttachments(Message m) async {
     var textContent = m.content;
     final paths = m.attachmentPaths ?? const <String>[];
     for (final path in paths) {
       if (!AttachmentHelpers.isTextPath(path)) continue;
-      // Note: we don't read the file contents here synchronously — the
-      // native endpoint's typed input doesn't carry file metadata. The
-      // caller is expected to have already inlined text attachments into
-      // `m.content` upstream via AttachmentHelpers. If not, the image path
-      // above still handles images.
+      final text = await AttachmentHelpers.readTextFile(path);
+      if (text == null) continue;
       final fileName = AttachmentHelpers.fileNameOf(path);
       if (fileName.isEmpty) continue;
       textContent = AttachmentHelpers.appendTextAttachment(
         textContent,
         fileName,
-        '<inline text attachment: $fileName>',
+        text,
       );
     }
     return textContent;
@@ -612,10 +620,16 @@ class LMStudioChatService implements ChatService {
 
 class OpenAICompatibleChatService implements ChatService {
   final Dio _dio;
+  final bool imageCompressionEnabled;
+  final ImageCompressionLevel imageCompressionLevel;
   CancelToken? _cancelToken;
   Timer? _timeoutTimer;
 
-  OpenAICompatibleChatService(this._dio);
+  OpenAICompatibleChatService(
+    this._dio, {
+    this.imageCompressionEnabled = true,
+    this.imageCompressionLevel = ImageCompressionLevel.medium,
+  });
 
   @override
   Stream<ChatResponse> sendMessage({
@@ -630,23 +644,19 @@ class OpenAICompatibleChatService implements ChatService {
     _cancelToken = CancelToken();
     final toolAdapter = OpenAiToolAdapter();
 
-    final apiMessages = messages.map(_messageToApiMap).toList();
-    // Strip trailing empty assistant messages to avoid "prefill incompatible
-    // with enable_thinking" errors from servers running thinking models
-    if (!continueGeneration) {
-      while (apiMessages.isNotEmpty &&
-          apiMessages.last['role'] == 'assistant' &&
-          (apiMessages.last['content'] == null ||
-              (apiMessages.last['content'] is String &&
-                  (apiMessages.last['content'] as String).isEmpty))) {
-        apiMessages.removeLast();
-      }
-    } else if (apiMessages.isNotEmpty &&
-        apiMessages.last['role'] == 'assistant') {
-      // Keep the assistant prefill for continuation; ensure content is a string.
-      final last = apiMessages.last;
-      last['content'] = (last['content'] as String?) ?? '';
-    }
+    final apiMessages = await Future.wait(
+      messages.map(
+        (m) => _buildOpenAiApiMessage(
+          m,
+          imageCompressionEnabled: imageCompressionEnabled,
+          imageCompressionLevel: imageCompressionLevel,
+        ),
+      ),
+    );
+    // Strip trailing empty assistant prefill (or normalise it when
+    // continuing generation) to avoid "prefill incompatible with
+    // enable_thinking" errors from servers running thinking models.
+    _normalizeAssistantPrefill(apiMessages, continueGeneration);
 
     final body = <String, dynamic>{
       'model': modelId,
@@ -1130,10 +1140,16 @@ class OllamaChatService implements ChatService {
 
 class OpenRouterChatService implements ChatService {
   final Dio _dio;
+  final bool imageCompressionEnabled;
+  final ImageCompressionLevel imageCompressionLevel;
   CancelToken? _cancelToken;
   Timer? _timeoutTimer;
 
-  OpenRouterChatService(this._dio);
+  OpenRouterChatService(
+    this._dio, {
+    this.imageCompressionEnabled = true,
+    this.imageCompressionLevel = ImageCompressionLevel.medium,
+  });
 
   @override
   Stream<ChatResponse> sendMessage({
@@ -1148,9 +1164,20 @@ class OpenRouterChatService implements ChatService {
     _cancelToken = CancelToken();
     final toolAdapter = OpenRouterToolAdapter();
 
+    final apiMessages = await Future.wait(
+      messages.map(
+        (m) => _buildOpenAiApiMessage(
+          m,
+          imageCompressionEnabled: imageCompressionEnabled,
+          imageCompressionLevel: imageCompressionLevel,
+        ),
+      ),
+    );
+    _normalizeAssistantPrefill(apiMessages, continueGeneration);
+
     final body = <String, dynamic>{
       'model': modelId,
-      'messages': messages.map(_messageToApiMap).toList(),
+      'messages': apiMessages,
       'temperature': params.temperature,
       'top_p': params.topP,
       'max_tokens': params.maxTokens,
@@ -1454,11 +1481,110 @@ String _roleToString(MessageRole role) {
   }
 }
 
-Map<String, dynamic> _messageToApiMap(Message m) {
+/// Normalises the trailing assistant message in an OpenAI-style `messages`
+/// array. When NOT continuing generation, drops trailing empty assistant
+/// prefill messages (they trigger "prefill incompatible with
+/// enable_thinking" errors on thinking models). When continuing generation,
+/// keeps the trailing assistant prefill but ensures its `content` is a
+/// plain string (image content-part arrays are only valid on user messages,
+/// and [_buildOpenAiApiMessage] never produces them for assistants anyway).
+void _normalizeAssistantPrefill(
+  List<Map<String, dynamic>> apiMessages,
+  bool continueGeneration,
+) {
+  if (!continueGeneration) {
+    while (apiMessages.isNotEmpty &&
+        apiMessages.last['role'] == 'assistant' &&
+        (apiMessages.last['content'] == null ||
+            (apiMessages.last['content'] is String &&
+                (apiMessages.last['content'] as String).isEmpty))) {
+      apiMessages.removeLast();
+    }
+  } else if (apiMessages.isNotEmpty &&
+      apiMessages.last['role'] == 'assistant') {
+    final last = apiMessages.last;
+    last['content'] = (last['content'] as String?) ?? '';
+  }
+}
+
+/// Builds the OpenAI-style request payload for a single [Message], including
+/// attachments. `.txt`/`.md` files are read and inlined into the text content
+/// (mirroring the Ollama path), and image attachments are emitted as OpenAI
+/// multimodal `image_url` content parts carrying base64 data URLs.
+///
+/// Image parts are only emitted for user messages — OpenAI rejects content
+/// part arrays on other roles — so non-user messages keep a plain string
+/// `content` (which still receives inlined text attachments).
+Future<Map<String, dynamic>> _buildOpenAiApiMessage(
+  Message m, {
+  required bool imageCompressionEnabled,
+  required ImageCompressionLevel imageCompressionLevel,
+}) async {
   final map = <String, dynamic>{
     'role': _roleToString(m.role),
     'content': m.content,
   };
+
+  var textContent = m.content;
+  final imageParts = <Map<String, dynamic>>[];
+
+  for (final path in m.attachmentPaths ?? const <String>[]) {
+    if (AttachmentHelpers.isTextPath(path)) {
+      final text = await AttachmentHelpers.readTextFile(path);
+      if (text != null) {
+        textContent = AttachmentHelpers.appendTextAttachment(
+          textContent,
+          AttachmentHelpers.fileNameOf(path),
+          text,
+        );
+      }
+      continue;
+    }
+
+    if (!AttachmentHelpers.isImagePath(path)) continue;
+
+    try {
+      final file = File(path);
+      if (!await file.exists()) continue;
+
+      final fileBytes = await ImageUploadUtils.prepareImageBytes(
+        file,
+        enabled: imageCompressionEnabled,
+        level: imageCompressionLevel,
+      );
+      final base64Image = await Isolate.run(() {
+        try {
+          return base64Encode(fileBytes);
+        } catch (_) {
+          return null;
+        }
+      });
+
+      if (base64Image != null) {
+        // Compression re-encodes resized images to PNG; detect that so the
+        // data URL advertises the bytes actually being sent.
+        final mimeType = _looksLikePng(fileBytes)
+            ? 'image/png'
+            : AttachmentHelpers.mimeTypeForImage(path);
+        imageParts.add({
+          'type': 'image_url',
+          'image_url': {'url': 'data:$mimeType;base64,$base64Image'},
+        });
+      }
+    } catch (e) {
+      Log.error('Failed to read attachment for OpenAI format: $e');
+    }
+  }
+
+  if (imageParts.isNotEmpty && m.role == MessageRole.user) {
+    map['content'] = [
+      if (textContent.isNotEmpty) {'type': 'text', 'text': textContent},
+      ...imageParts,
+    ];
+  } else if (textContent != m.content) {
+    map['content'] = textContent;
+  }
+
   if (m.role == MessageRole.tool && m.toolCallId != null) {
     map['tool_call_id'] = m.toolCallId;
   }
@@ -1477,6 +1603,14 @@ Map<String, dynamic> _messageToApiMap(Message m) {
     }).toList();
   }
   return map;
+}
+
+bool _looksLikePng(Uint8List bytes) {
+  return bytes.length >= 4 &&
+      bytes[0] == 0x89 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x4e &&
+      bytes[3] == 0x47;
 }
 
 /// Returns the streaming-parsing adapter for a server type.

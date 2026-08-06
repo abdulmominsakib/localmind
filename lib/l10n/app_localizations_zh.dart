@@ -2457,6 +2457,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get model_identifier => '模型标识符';
 
   @override
+  String get model_capabilities => 'Capabilities';
+
+  @override
+  String get model_api_pricing => 'API pricing (per 1M tokens)';
+
+  @override
   String get not_available => '不可用';
 
   @override
@@ -2644,6 +2650,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get lm_studio_reasoning => '推理能力';
+
+  @override
+  String get openrouter_pricing_free => 'Free';
+
+  @override
+  String openrouter_pricing_tooltip(String input, String output) {
+    return 'Input $input / Output $output per 1M tokens';
+  }
 
   @override
   String get lm_studio_download_options => '下载选项';

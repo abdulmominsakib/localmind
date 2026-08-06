@@ -20,6 +20,10 @@ class ModelInfo {
   final bool supportsVision;
   final bool supportsReasoning;
   final bool supportsToolUse;
+  /// Input token price in USD per 1M tokens (OpenRouter `pricing.prompt`).
+  final double? inputPricePerMillion;
+  /// Output token price in USD per 1M tokens (OpenRouter `pricing.completion`).
+  final double? outputPricePerMillion;
 
   ModelInfo({
     required this.id,
@@ -40,6 +44,8 @@ class ModelInfo {
     this.supportsVision = false,
     this.supportsReasoning = false,
     this.supportsToolUse = false,
+    this.inputPricePerMillion,
+    this.outputPricePerMillion,
   });
 
   String get displayName {
@@ -73,6 +79,49 @@ class ModelInfo {
     return '${parameterCount!.toStringAsFixed(2)}B';
   }
 
+  /// True when both prices are known and are zero (a genuinely free model).
+  bool get isPricingFree =>
+      inputPricePerMillion != null &&
+      outputPricePerMillion != null &&
+      inputPricePerMillion == 0 &&
+      outputPricePerMillion == 0;
+
+  /// Compact chip label for API pricing, e.g. `$2.50/$10.00`. Returns
+  /// `Free` for zero-cost models and null when no pricing is known.
+  String? get pricingLabel {
+    if (inputPricePerMillion == null && outputPricePerMillion == null) {
+      return null;
+    }
+    if (isPricingFree) return 'Free';
+    return [
+      if (inputPricePerMillion != null)
+        '\$${_formatPriceValue(inputPricePerMillion!)}',
+      if (outputPricePerMillion != null)
+        '\$${_formatPriceValue(outputPricePerMillion!)}',
+    ].join('/');
+  }
+
+  /// Formatted input price (e.g. `$2.50`) or null when unknown.
+  String? get formattedInputPrice => inputPricePerMillion == null
+      ? null
+      : '\$${_formatPriceValue(inputPricePerMillion!)}';
+
+  /// Formatted output price (e.g. `$10.00`) or null when unknown.
+  String? get formattedOutputPrice => outputPricePerMillion == null
+      ? null
+      : '\$${_formatPriceValue(outputPricePerMillion!)}';
+
+  static String _formatPriceValue(double value) {
+    if (value >= 100) return value.round().toString();
+    if (value >= 0.01) return value.toStringAsFixed(2);
+    var s = value.toStringAsFixed(6);
+    while (s.endsWith('0')) {
+      s = s.substring(0, s.length - 1);
+    }
+    if (s.endsWith('.')) s = s.substring(0, s.length - 1);
+    return s;
+  }
+
   ModelInfo copyWith({
     String? id,
     String? name,
@@ -92,6 +141,8 @@ class ModelInfo {
     bool? supportsVision,
     bool? supportsReasoning,
     bool? supportsToolUse,
+    double? inputPricePerMillion,
+    double? outputPricePerMillion,
   }) {
     return ModelInfo(
       id: id ?? this.id,
@@ -112,6 +163,10 @@ class ModelInfo {
       supportsVision: supportsVision ?? this.supportsVision,
       supportsReasoning: supportsReasoning ?? this.supportsReasoning,
       supportsToolUse: supportsToolUse ?? this.supportsToolUse,
+      inputPricePerMillion:
+          inputPricePerMillion ?? this.inputPricePerMillion,
+      outputPricePerMillion:
+          outputPricePerMillion ?? this.outputPricePerMillion,
     );
   }
 }

@@ -2528,6 +2528,12 @@ class AppLocalizationsBn extends AppLocalizations {
   String get model_identifier => 'মডেল সনাক্তকারী';
 
   @override
+  String get model_capabilities => 'Capabilities';
+
+  @override
+  String get model_api_pricing => 'API pricing (per 1M tokens)';
+
+  @override
   String get not_available => 'অনুপলব্ধ';
 
   @override
@@ -2720,6 +2726,14 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get lm_studio_reasoning => 'রিজনিং';
+
+  @override
+  String get openrouter_pricing_free => 'Free';
+
+  @override
+  String openrouter_pricing_tooltip(String input, String output) {
+    return 'Input $input / Output $output per 1M tokens';
+  }
 
   @override
   String get lm_studio_download_options => 'ডাউনলোড বিকল্প';

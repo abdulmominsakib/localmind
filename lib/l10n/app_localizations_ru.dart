@@ -2533,6 +2533,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get model_identifier => 'Идентификатор модели';
 
   @override
+  String get model_capabilities => 'Capabilities';
+
+  @override
+  String get model_api_pricing => 'API pricing (per 1M tokens)';
+
+  @override
   String get not_available => 'Недоступно';
 
   @override
@@ -2725,6 +2731,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get lm_studio_reasoning => 'Рассуждение';
+
+  @override
+  String get openrouter_pricing_free => 'Free';
+
+  @override
+  String openrouter_pricing_tooltip(String input, String output) {
+    return 'Input $input / Output $output per 1M tokens';
+  }
 
   @override
   String get lm_studio_download_options => 'Параметры загрузки';

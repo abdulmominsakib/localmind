@@ -553,6 +553,8 @@ class ServerApiService {
           !modality.contains('->') ||
           modality.split('->').last.contains('text');
       if (isTextModel) {
+        final capabilities = _parseOpenRouterCapabilities(item);
+        final pricing = _parseOpenRouterPricing(item['pricing']);
         models.add(
           ModelInfo(
             id: item['id']?.toString() ?? '',
@@ -562,11 +564,71 @@ class ServerApiService {
             architecture: item['architecture']?['tokenizer'] as String?,
             serverType: server.type,
             serverId: server.id,
+            supportsVision: capabilities.supportsVision,
+            supportsReasoning: capabilities.supportsReasoning,
+            supportsToolUse: capabilities.supportsToolUse,
+            inputPricePerMillion: pricing.inputPricePerMillion,
+            outputPricePerMillion: pricing.outputPricePerMillion,
           ),
         );
       }
     }
     return models;
+  }
+
+  ({
+    bool supportsVision,
+    bool supportsReasoning,
+    bool supportsToolUse,
+  }) _parseOpenRouterCapabilities(Map<dynamic, dynamic> item) {
+    final architecture = item['architecture'];
+    final arch = architecture is Map ? architecture : const <String, dynamic>{};
+    final inputModalities = (arch['input_modalities'] as List?)
+            ?.map((e) => e.toString().trim().toLowerCase())
+            .toSet() ??
+        <String>{};
+    final modality = arch['modality']?.toString().toLowerCase() ?? '';
+    final supportsVision =
+        inputModalities.contains('image') || modality.contains('image');
+
+    final supportedParams = (item['supported_parameters'] as List?)
+            ?.map((e) => e.toString().trim().toLowerCase())
+            .toSet() ??
+        <String>{};
+    final supportsToolUse = supportedParams.contains('tools') ||
+        supportedParams.contains('tool_choice');
+    final reasoningField = item['reasoning'];
+    final supportsReasoning =
+        (reasoningField is Map && reasoningField.isNotEmpty) ||
+            supportedParams.contains('reasoning') ||
+            supportedParams.contains('include_reasoning');
+
+    return (
+      supportsVision: supportsVision,
+      supportsReasoning: supportsReasoning,
+      supportsToolUse: supportsToolUse,
+    );
+  }
+
+  /// Parses OpenRouter `pricing` into USD-per-1M-token prices. OpenRouter
+  /// quotes prices per token (e.g. `0.0000025`), so the value is scaled by
+  /// 1,000,000 for display-friendly numbers.
+  ({double? inputPricePerMillion, double? outputPricePerMillion})
+      _parseOpenRouterPricing(dynamic raw) {
+    if (raw is! Map) {
+      return (inputPricePerMillion: null, outputPricePerMillion: null);
+    }
+    return (
+      inputPricePerMillion: _openRouterPricePerMillion(raw['prompt']),
+      outputPricePerMillion: _openRouterPricePerMillion(raw['completion']),
+    );
+  }
+
+  double? _openRouterPricePerMillion(dynamic value) {
+    if (value == null) return null;
+    final parsed = double.tryParse(value.toString());
+    if (parsed == null || !parsed.isFinite || parsed < 0) return null;
+    return parsed * 1000000;
   }
 
   String _formatModelName(String id) {

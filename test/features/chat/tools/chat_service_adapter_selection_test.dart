@@ -428,6 +428,403 @@ void main() {
       },
     );
   });
+
+  group('OpenAI-compatible attachment formatting', () {
+    late Directory tempDirectory;
+
+    setUp(() async {
+      tempDirectory = await Directory.systemTemp.createTemp(
+        'localmind_openai_attachment_test_',
+      );
+    });
+
+    tearDown(() async {
+      if (await tempDirectory.exists()) {
+        await tempDirectory.delete(recursive: true);
+      }
+    });
+
+    test('sends image attachments as base64 data-URL content parts', () async {
+      // Minimal PNG and JPEG headers so mime-type detection is exercised.
+      final pngBytes = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x01, 0x02];
+      final jpegBytes = [0xff, 0xd8, 0xff, 0xe0, 0x03, 0x04, 0x05];
+      final png = await File('${tempDirectory.path}/photo.png')
+          .writeAsBytes(pngBytes);
+      final jpeg = await File('${tempDirectory.path}/photo.jpg')
+          .writeAsBytes(jpegBytes);
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenAICompatibleChatService(
+        Dio()..interceptors.add(interceptor),
+        imageCompressionEnabled: false,
+      );
+
+      final responses = await service
+          .sendMessage(
+            server: _openAiTestServer(),
+            modelId: 'vision-model',
+            messages: [
+              Message(
+                id: 'vision-message',
+                conversationId: 'conversation',
+                role: MessageRole.user,
+                content: 'What is shown?',
+                attachmentPaths: [png.path, jpeg.path],
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      final content = (body['messages'] as List).single['content'] as List;
+      expect(content, hasLength(3));
+      expect(content[0], {'type': 'text', 'text': 'What is shown?'});
+      expect(
+        content[1],
+        {
+          'type': 'image_url',
+          'image_url': {
+            'url': 'data:image/png;base64,${base64Encode(pngBytes)}',
+          },
+        },
+      );
+      expect(
+        content[2],
+        {
+          'type': 'image_url',
+          'image_url': {
+            'url': 'data:image/jpeg;base64,${base64Encode(jpegBytes)}',
+          },
+        },
+      );
+      expect(responses.last.type, ChatResponseType.done);
+    });
+
+    test('keeps messages without attachments as plain string content', () async {
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenAICompatibleChatService(
+        Dio()..interceptors.add(interceptor),
+      );
+
+      await service
+          .sendMessage(
+            server: _openAiTestServer(),
+            modelId: 'text-model',
+            messages: [
+              Message(
+                id: 'text-message',
+                conversationId: 'conversation',
+                role: MessageRole.user,
+                content: 'hello',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      final message = (body['messages'] as List).single as Map<String, dynamic>;
+      expect(message['content'], 'hello');
+    });
+
+    test('inlines text attachment contents into the user message', () async {
+      final textFile = await File(
+        '${tempDirectory.path}/notes.md',
+      ).writeAsString('Attachment text');
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenAICompatibleChatService(
+        Dio()..interceptors.add(interceptor),
+      );
+
+      await service
+          .sendMessage(
+            server: _openAiTestServer(),
+            modelId: 'text-model',
+            messages: [
+              Message(
+                id: 'text-message',
+                conversationId: 'conversation',
+                role: MessageRole.user,
+                content: 'Summarize this',
+                attachmentPaths: [textFile.path],
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      final message = (body['messages'] as List).single as Map<String, dynamic>;
+      expect(
+        message['content'],
+        'Summarize this\n\n--- notes.md ---\nAttachment text',
+      );
+    });
+
+    test('skips missing image attachments without aborting the request', () async {
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenAICompatibleChatService(
+        Dio()..interceptors.add(interceptor),
+      );
+
+      final responses = await service
+          .sendMessage(
+            server: _openAiTestServer(),
+            modelId: 'vision-model',
+            messages: [
+              Message(
+                id: 'missing-image-message',
+                conversationId: 'conversation',
+                role: MessageRole.user,
+                content: 'Continue without the missing image',
+                attachmentPaths: ['${tempDirectory.path}/missing.png'],
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      final message = (body['messages'] as List).single as Map<String, dynamic>;
+      expect(message['content'], 'Continue without the missing image');
+      expect(responses.last.type, ChatResponseType.done);
+    });
+  });
+
+  group('OpenRouter attachment formatting', () {
+    late Directory tempDirectory;
+
+    setUp(() async {
+      tempDirectory = await Directory.systemTemp.createTemp(
+        'localmind_openrouter_attachment_test_',
+      );
+    });
+
+    tearDown(() async {
+      if (await tempDirectory.exists()) {
+        await tempDirectory.delete(recursive: true);
+      }
+    });
+
+    test('sends image attachments as base64 data-URL content parts', () async {
+      final pngBytes = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x01, 0x02];
+      final png = await File('${tempDirectory.path}/photo.png')
+          .writeAsBytes(pngBytes);
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenRouterChatService(
+        Dio()..interceptors.add(interceptor),
+        imageCompressionEnabled: false,
+      );
+
+      final responses = await service
+          .sendMessage(
+            server: _openRouterTestServer(),
+            modelId: 'vision-model',
+            messages: [
+              Message(
+                id: 'vision-message',
+                conversationId: 'conversation',
+                role: MessageRole.user,
+                content: 'What is shown?',
+                attachmentPaths: [png.path],
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      final content = (body['messages'] as List).single['content'] as List;
+      expect(content, hasLength(2));
+      expect(content[0], {'type': 'text', 'text': 'What is shown?'});
+      expect(
+        content[1],
+        {
+          'type': 'image_url',
+          'image_url': {
+            'url': 'data:image/png;base64,${base64Encode(pngBytes)}',
+          },
+        },
+      );
+      expect(responses.last.type, ChatResponseType.done);
+    });
+
+    test('inlines text attachment contents into the user message', () async {
+      final textFile = await File(
+        '${tempDirectory.path}/notes.txt',
+      ).writeAsString('attachment text');
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenRouterChatService(
+        Dio()..interceptors.add(interceptor),
+      );
+
+      await service
+          .sendMessage(
+            server: _openRouterTestServer(),
+            modelId: 'text-model',
+            messages: [
+              Message(
+                id: 'text-message',
+                conversationId: 'conversation',
+                role: MessageRole.user,
+                content: 'Summarize this',
+                attachmentPaths: [textFile.path],
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      final message = (body['messages'] as List).single as Map<String, dynamic>;
+      expect(
+        message['content'],
+        'Summarize this\n\n--- notes.txt ---\nattachment text',
+      );
+    });
+  });
+
+  group('OpenAI-compatible & OpenRouter assistant prefill handling', () {
+    test('strips trailing empty assistant when not continuing generation', () async {
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenAICompatibleChatService(
+        Dio()..interceptors.add(interceptor),
+      );
+
+      await service
+          .sendMessage(
+            server: _openAiTestServer(),
+            modelId: 'text-model',
+            messages: [
+              Message(
+                id: 'u1',
+                conversationId: 'c',
+                role: MessageRole.user,
+                content: 'hi',
+                createdAt: DateTime.now(),
+              ),
+              Message(
+                id: 'a1',
+                conversationId: 'c',
+                role: MessageRole.assistant,
+                content: '',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      final msgs = (body['messages'] as List).cast<Map<String, dynamic>>();
+      expect(msgs, hasLength(1));
+      expect(msgs.last['role'], 'user');
+    });
+
+    test('keeps trailing assistant prefill when continuing generation (OpenRouter)', () async {
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenRouterChatService(
+        Dio()..interceptors.add(interceptor),
+      );
+
+      await service
+          .sendMessage(
+            server: _openRouterTestServer(),
+            modelId: 'text-model',
+            messages: [
+              Message(
+                id: 'u1',
+                conversationId: 'c',
+                role: MessageRole.user,
+                content: 'hi',
+                createdAt: DateTime.now(),
+              ),
+              Message(
+                id: 'a1',
+                conversationId: 'c',
+                role: MessageRole.assistant,
+                content: 'Sure, ',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+            continueGeneration: true,
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      final msgs = (body['messages'] as List).cast<Map<String, dynamic>>();
+      expect(msgs, hasLength(2));
+      expect(msgs.last['role'], 'assistant');
+      expect(msgs.last['content'], 'Sure, ');
+    });
+
+    test('strips trailing empty assistant on OpenRouter too', () async {
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenRouterChatService(
+        Dio()..interceptors.add(interceptor),
+      );
+
+      await service
+          .sendMessage(
+            server: _openRouterTestServer(),
+            modelId: 'text-model',
+            messages: [
+              Message(
+                id: 'u1',
+                conversationId: 'c',
+                role: MessageRole.user,
+                content: 'hi',
+                createdAt: DateTime.now(),
+              ),
+              Message(
+                id: 'a1',
+                conversationId: 'c',
+                role: MessageRole.assistant,
+                content: '',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      final msgs = (body['messages'] as List).cast<Map<String, dynamic>>();
+      expect(msgs, hasLength(1));
+      expect(msgs.last['role'], 'user');
+    });
+  });
+}
+
+Server _openAiTestServer() {
+  return Server(
+    id: 'test-openai',
+    name: 'Test OpenAI',
+    type: ServerType.openAICompatible,
+    host: 'localhost',
+    port: 8080,
+    createdAt: DateTime.now(),
+    lastConnectedAt: DateTime.now(),
+  );
+}
+
+Server _openRouterTestServer() {
+  return Server(
+    id: 'test-openrouter',
+    name: 'Test OpenRouter',
+    type: ServerType.openRouter,
+    host: 'localhost',
+    port: 8080,
+    createdAt: DateTime.now(),
+    lastConnectedAt: DateTime.now(),
+  );
 }
 
 Server _ollamaTestServer() {

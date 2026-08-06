@@ -162,6 +162,22 @@ class ModelTile extends StatelessWidget {
                               ),
                               isDark: isDark,
                             ),
+                          if (model.serverType == ServerType.openRouter &&
+                              model.pricingLabel != null)
+                            Tooltip(
+                              message: model.isPricingFree
+                                  ? l10n.openrouter_pricing_free
+                                  : l10n.openrouter_pricing_tooltip(
+                                      model.formattedInputPrice ?? '',
+                                      model.formattedOutputPrice ?? '',
+                                    ),
+                              child: MetadataChip(
+                                label: model.isPricingFree
+                                    ? l10n.openrouter_pricing_free
+                                    : model.pricingLabel!,
+                                isDark: isDark,
+                              ),
+                            ),
                         ],
                       ),
                       if (model.supportsReasoning)

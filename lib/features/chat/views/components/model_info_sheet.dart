@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/features/chat/providers/chat_params_providers.dart';
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
@@ -32,6 +33,12 @@ Future<void> showModelInfoSheet(
   final contextLength = ref.read(chatParamsProvider).contextLength;
   final identifier = model?.id ?? modelId;
 
+  final capabilities = <String>[
+    if (model?.supportsVision == true) l10n.lm_studio_vision,
+    if (model?.supportsReasoning == true) l10n.lm_studio_reasoning,
+    if (model?.supportsToolUse == true) l10n.lm_studio_tool_use,
+  ];
+
   await showShadSheet(
     context: context,
     builder: (ctx) => ShadSheet(
@@ -47,10 +54,24 @@ Future<void> showModelInfoSheet(
             label: l10n.model_identifier,
             value: identifier,
           ),
+          if (capabilities.isNotEmpty)
+            _ModelInfoRow(
+              label: l10n.model_capabilities,
+              value: capabilities.join(', '),
+            ),
           _ModelInfoRow(
             label: l10n.context_length,
             value: contextLength.toString(),
           ),
+          if (model?.serverType == ServerType.openRouter &&
+              model?.pricingLabel != null)
+            _ModelInfoRow(
+              label: l10n.model_api_pricing,
+              value: model!.isPricingFree
+                  ? l10n.openrouter_pricing_free
+                  : '${model.formattedInputPrice ?? '—'} / '
+                      '${model.formattedOutputPrice ?? '—'}',
+            ),
         ],
       ),
     ),

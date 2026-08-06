@@ -4713,6 +4713,18 @@ abstract class AppLocalizations {
   /// **'Identifier'**
   String get model_identifier;
 
+  /// No description provided for @model_capabilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Capabilities'**
+  String get model_capabilities;
+
+  /// No description provided for @model_api_pricing.
+  ///
+  /// In en, this message translates to:
+  /// **'API pricing (per 1M tokens)'**
+  String get model_api_pricing;
+
   /// No description provided for @not_available.
   ///
   /// In en, this message translates to:
@@ -5078,6 +5090,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reasoning'**
   String get lm_studio_reasoning;
+
+  /// Chip label shown for free OpenRouter models
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get openrouter_pricing_free;
+
+  /// Tooltip showing OpenRouter API pricing per 1M tokens
+  ///
+  /// In en, this message translates to:
+  /// **'Input {input} / Output {output} per 1M tokens'**
+  String openrouter_pricing_tooltip(String input, String output);
 
   /// No description provided for @lm_studio_download_options.
   ///
