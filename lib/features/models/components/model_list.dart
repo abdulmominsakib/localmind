@@ -85,6 +85,16 @@ class _ModelListState extends ConsumerState<ModelList> {
           return ctx != 0 ? ctx : byName(a, b);
         });
     }
+
+    final selectedId = widget.selectedModelId;
+    if (selectedId != null) {
+      final selectedIndex = sorted.indexWhere((m) => m.id == selectedId);
+      if (selectedIndex > 0) {
+        final selected = sorted.removeAt(selectedIndex);
+        sorted.insert(0, selected);
+      }
+    }
+
     return sorted;
   }
 

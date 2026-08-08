@@ -106,6 +106,23 @@ class OnDevicePickerSection extends ConsumerWidget {
             .where((model) => !model.isImported)
             .toList();
 
+        if (selectedModelId != null) {
+          final impIndex = importedModels.indexWhere(
+            (m) => m.id == selectedModelId,
+          );
+          if (impIndex > 0) {
+            final selected = importedModels.removeAt(impIndex);
+            importedModels.insert(0, selected);
+          }
+          final dlIndex = downloadableModels.indexWhere(
+            (m) => m.id == selectedModelId,
+          );
+          if (dlIndex > 0) {
+            final selected = downloadableModels.removeAt(dlIndex);
+            downloadableModels.insert(0, selected);
+          }
+        }
+
         Widget buildTile(OnDeviceModel model) {
           final isDownloaded = downloadedIds.contains(model.id);
           final isLoaded = engineState.loadedModelId == model.id;
