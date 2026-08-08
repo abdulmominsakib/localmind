@@ -16,6 +16,7 @@ class SimpleStringSink implements Sink<String> {
 class BpeDecoder {
   late final ByteConversionSink _utf8Sink;
   String _decoded = '';
+  bool _hasError = false;
 
   BpeDecoder() {
     _utf8Sink = utf8.decoder.startChunkedConversion(
@@ -27,6 +28,18 @@ class BpeDecoder {
 
   /// Decodes a chunk of a BPE-encoded unicode string and returns the newly decoded text segment.
   String decodeChunk(String bpeChunk) {
+    if (bpeChunk.isEmpty) return '';
+    if (_hasError) return bpeChunk;
+
+    // Check if bpeChunk contains characters with code point > 255 that are NOT in _bpeToByte.
+    // If so, the input is ALREADY a decoded standard string (e.g. Turkish 'İ' = 352).
+    for (var i = 0; i < bpeChunk.length; i++) {
+      final code = bpeChunk.codeUnitAt(i);
+      if (code > 255 && !_bpeToByte.containsKey(code)) {
+        return bpeChunk;
+      }
+    }
+
     final bytes = <int>[];
     for (var i = 0; i < bpeChunk.length; i++) {
       final code = bpeChunk.codeUnitAt(i);
@@ -37,15 +50,25 @@ class BpeDecoder {
     }
     
     final previousLength = _decoded.length;
-    _utf8Sink.add(bytes);
-    return _decoded.substring(previousLength);
+    try {
+      _utf8Sink.add(bytes);
+      return _decoded.substring(previousLength);
+    } catch (_) {
+      _hasError = true;
+      return bpeChunk;
+    }
   }
 
   /// Flushes any remaining bytes in the decoder buffer and returns the remaining decoded text.
   String flush() {
+    if (_hasError) return '';
     final previousLength = _decoded.length;
-    _utf8Sink.close();
-    return _decoded.substring(previousLength);
+    try {
+      _utf8Sink.close();
+      return _decoded.substring(previousLength);
+    } catch (_) {
+      return '';
+    }
   }
 }
 

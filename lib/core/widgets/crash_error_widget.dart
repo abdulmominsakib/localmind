@@ -21,30 +21,34 @@ class CrashErrorWidget extends StatelessWidget {
     final stackLines = crash.stackTrace.toString().split('\n');
     final previewLines = stackLines.take(40).join('\n');
 
-    return Material(
-      color: theme.colorScheme.surface,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Center(
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: HugeIcon(
-                      icon: HugeIcons.strokeRoundedAlertCircle,
-                      size: 36,
-                      color: theme.colorScheme.onErrorContainer,
+                  Center(
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: HugeIcon(
+                        icon: HugeIcons.strokeRoundedAlertCircle,
+                        size: 36,
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),

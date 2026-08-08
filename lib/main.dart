@@ -68,7 +68,10 @@ class CrashFallbackApp extends StatelessWidget {
       valueListenable: CrashReportService.instance.currentCrash,
       builder: (context, crash, _) {
         if (crash != null) {
-          return CrashErrorWidget(crash: crash);
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: CrashErrorWidget(crash: crash),
+          );
         }
         return const BootstrapHost();
       },

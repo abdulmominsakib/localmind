@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter_gemma/flutter_gemma.dart';
-import 'package:flutter_gemma/core/domain/model_source.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:path_provider/path_provider.dart';
 

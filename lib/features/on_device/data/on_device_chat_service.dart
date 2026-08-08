@@ -4,6 +4,7 @@ import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
 
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
+import '../../../core/services/crash_report_service.dart';
 import '../../../core/utils/bpe_decoder.dart';
 import '../../chat/data/chat_service.dart';
 import '../../chat/data/models/chat_parameters.dart';
@@ -157,43 +158,60 @@ class OnDeviceChatService implements ChatService {
         (response) {
           if (_isCancelled) return;
 
-          if (response is gemma.TextResponse) {
-            if (response.token.isNotEmpty) {
-              final content = textDecoder != null
-                  ? textDecoder.decodeChunk(response.token)
-                  : response.token;
-              if (content.isNotEmpty) {
-                _streamController?.add(
-                  ChatResponse(
-                    type: ChatResponseType.message,
-                    content: content,
+          try {
+            if (response is gemma.TextResponse) {
+              if (response.token.isNotEmpty) {
+                final content = textDecoder != null
+                    ? textDecoder.decodeChunk(response.token)
+                    : response.token;
+                if (content.isNotEmpty) {
+                  _streamController?.add(
+                    ChatResponse(
+                      type: ChatResponseType.message,
+                      content: content,
+                    ),
+                  );
+                }
+              }
+            } else if (response is gemma.FunctionCallResponse) {
+              _streamController?.add(
+                ChatResponse(
+                  type: ChatResponseType.toolCall,
+                  toolCall: ToolCallData(
+                    tool: response.name,
+                    arguments: response.args,
                   ),
-                );
+                ),
+              );
+            } else if (response is gemma.ThinkingResponse) {
+              if (response.content.isNotEmpty) {
+                final reasoningContent = reasoningDecoder != null
+                    ? reasoningDecoder.decodeChunk(response.content)
+                    : response.content;
+                if (reasoningContent.isNotEmpty) {
+                  _streamController?.add(
+                    ChatResponse(
+                      type: ChatResponseType.reasoning,
+                      reasoningContent: reasoningContent,
+                    ),
+                  );
+                }
               }
             }
-          } else if (response is gemma.FunctionCallResponse) {
-            _streamController?.add(
-              ChatResponse(
-                type: ChatResponseType.toolCall,
-                toolCall: ToolCallData(
-                  tool: response.name,
-                  arguments: response.args,
+          } catch (error, stackTrace) {
+            Log.error('OnDevice stream handling error: $error\n$stackTrace');
+            CrashReportService.instance.capture(error, stackTrace);
+            if (!_isCancelled && !(_streamController?.isClosed ?? true)) {
+              _streamController?.add(
+                ChatResponse(
+                  type: ChatResponseType.error,
+                  content: 'Inference error: ${error.toString()}',
                 ),
-              ),
-            );
-          } else if (response is gemma.ThinkingResponse) {
-            if (response.content.isNotEmpty) {
-              final reasoningContent = reasoningDecoder != null
-                  ? reasoningDecoder.decodeChunk(response.content)
-                  : response.content;
-              if (reasoningContent.isNotEmpty) {
-                _streamController?.add(
-                  ChatResponse(
-                    type: ChatResponseType.reasoning,
-                    reasoningContent: reasoningContent,
-                  ),
-                );
-              }
+              );
+              _streamController?.add(
+                const ChatResponse(type: ChatResponseType.done),
+              );
+              _streamController?.close();
             }
           }
         },
@@ -225,8 +243,12 @@ class OnDeviceChatService implements ChatService {
           _currentSubscription = null;
           if (!completer.isCompleted) completer.complete();
         },
-        onError: (error) {
+        onError: (error, stackTrace) {
           Log.error('OnDevice stream error: $error');
+          CrashReportService.instance.capture(
+            error,
+            stackTrace is StackTrace ? stackTrace : StackTrace.current,
+          );
           if (!_isCancelled && !(_streamController?.isClosed ?? true)) {
             _streamController?.add(
               ChatResponse(
@@ -250,8 +272,9 @@ class OnDeviceChatService implements ChatService {
       );
 
       await completer.future;
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error('OnDevice inference error: $e');
+      CrashReportService.instance.capture(e, stackTrace);
       if (!(_streamController?.isClosed ?? true)) {
         _streamController?.add(
           ChatResponse(

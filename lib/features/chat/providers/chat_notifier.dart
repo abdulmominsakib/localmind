@@ -11,6 +11,7 @@ import 'package:localmind/core/providers/review_prompt_providers.dart';
 import 'package:localmind/core/providers/service_providers.dart';
 import 'package:localmind/core/providers/chat_background_service_provider.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
+import 'package:localmind/core/services/crash_report_service.dart';
 import 'package:localmind/core/services/message_save_service.dart';
 import 'package:localmind/core/storage/entities.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
@@ -997,6 +998,12 @@ class ChatNotifier extends Notifier<ChatState> {
                       isProcessing: false,
                     );
                     _latestStreamingMessage = streamingAssistantMessage;
+                    if (streamingAssistantMessage.errorMessage != null) {
+                      CrashReportService.instance.capture(
+                        Exception(streamingAssistantMessage.errorMessage!),
+                        StackTrace.current,
+                      );
+                    }
 
                     if (isCurrentContext) {
                       _replaceMessageInState(

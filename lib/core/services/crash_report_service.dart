@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
-import 'package:characters/characters.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 /// Immutable payload describing a captured crash.
@@ -254,14 +255,29 @@ class CrashReportService {
     }
 
     if (!isDuplicate) {
-      _currentCrash.value = report;
+      _setCurrentCrash(report);
     }
     return report;
   }
 
   /// Clear the current crash so the app can re-render normally.
   void clearCrash() {
-    _currentCrash.value = null;
+    _setCurrentCrash(null);
+  }
+
+  void _setCurrentCrash(CrashReport? report) {
+    try {
+      final binding = WidgetsBinding.instance;
+      if (binding.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+        scheduleMicrotask(() {
+          _currentCrash.value = report;
+        });
+        return;
+      }
+    } catch (_) {
+      // Binding is not initialized (e.g. non-UI unit tests).
+    }
+    _currentCrash.value = report;
   }
 
   /// Construct a prefilled "new issue" URL pointing at the GitHub repo.
