@@ -33,7 +33,7 @@ class _AttachmentItem extends StatelessWidget {
   }
 
   void _viewText(BuildContext context) async {
-    final text = await AttachmentHelpers.readTextFile(path);
+    final text = await AttachmentHelpers.readDocumentFile(path);
     if (!context.mounted) return;
     if (text == null) {
       final l10n = AppLocalizations.of(context)!;
@@ -76,7 +76,7 @@ class _AttachmentItem extends StatelessWidget {
       );
     }
 
-    if (AttachmentHelpers.isTextPath(path)) {
+    if (AttachmentHelpers.isDocumentPath(path)) {
       return GestureDetector(
         onTap: () => _viewText(context),
         child: Container(

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/logger/app_logger.dart';
 import 'package:localmind/core/models/enums.dart';
@@ -12,6 +11,7 @@ import 'package:localmind/core/providers/service_providers.dart';
 import 'package:localmind/core/providers/chat_background_service_provider.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
 import 'package:localmind/core/services/crash_report_service.dart';
+import 'package:localmind/core/services/app_haptics.dart';
 import 'package:localmind/core/services/message_save_service.dart';
 import 'package:localmind/core/storage/entities.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
@@ -989,9 +989,8 @@ class ChatNotifier extends Notifier<ChatState> {
                         .copyWith(isProcessing: true);
                     _latestStreamingMessage = streamingAssistantMessage;
                     stateNeedsUpdate = true;
-                    if (!wasProcessing &&
-                        ref.read(settingsProvider).hapticFeedbackEnabled) {
-                      HapticFeedback.lightImpact();
+                    if (!wasProcessing) {
+                      ref.read(appHapticsProvider).light();
                     }
                     break;
                   case ChatResponseType.timeoutError:

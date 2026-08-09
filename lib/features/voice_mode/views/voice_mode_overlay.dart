@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:hugeicons/hugeicons.dart';
 
 import '../../../../core/models/enums.dart';
 import '../../../../core/providers/app_providers.dart';
+import '../../../../core/services/app_haptics.dart';
 import '../../chat/providers/chat_notifier.dart';
 import '../../tts/providers/tts_providers.dart';
 import '../../tts/views/tts_model_manager_screen.dart';
@@ -106,7 +106,7 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
 
     return InkWell(
       onTap: () {
-        Haptics.vibrate(HapticsType.light);
+        ref.read(appHapticsProvider).light();
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,

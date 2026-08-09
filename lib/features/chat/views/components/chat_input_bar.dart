@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:localmind/features/chat/views/components/token_usage_indicator.dart';
 
 import '../../../../core/models/enums.dart';
 import '../../../../core/providers/app_providers.dart';
+import '../../../../core/services/app_haptics.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../saved_messages/views/components/saved_message_picker_sheet.dart';
@@ -229,11 +229,10 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     widget.onAttach?.call(_attachedFiles);
   }
 
-  Future<void> _pickTextDocument() async {
+  Future<void> _pickDocuments() async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
-
-      allowedExtensions: const ['txt', 'md'],
+      allowedExtensions: AttachmentHelpers.supportedDocumentExtensions,
     );
 
     if (result == null || result.files.isEmpty) return;
@@ -260,7 +259,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     if (!mounted || result == null) return;
     switch (result) {
       case AttachAction.documents:
-        _pickTextDocument();
+        _pickDocuments();
       case AttachAction.images:
         _pickImages();
       case AttachAction.savedMessage:
@@ -273,7 +272,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     final isListening = ref.read(sttProvider).isListening;
 
-    Haptics.vibrate(HapticsType.light);
+    ref.read(appHapticsProvider).light();
 
     if (isListening) {
       await stt.stopListening();
@@ -394,7 +393,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         ),
         onPressed: !modelReady
             ? () {
-                Haptics.vibrate(HapticsType.light);
+                ref.read(appHapticsProvider).light();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(l10n.model_required_toast)),
                 );
@@ -406,7 +405,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                 );
               }
             : () {
-                Haptics.vibrate(HapticsType.light);
+                ref.read(appHapticsProvider).light();
                 VoiceModeOverlay.show(context);
               },
         tooltip: modelReady ? 'Voice mode' : l10n.model_required_toast,
@@ -446,7 +445,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     if (!_ensureModelSelected()) return;
 
-    Haptics.vibrate(HapticsType.medium);
+    ref.read(appHapticsProvider).medium();
 
     if (_sendAsAssistant) {
       ref
@@ -474,7 +473,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     if (!_ensureModelSelected()) return;
 
-    Haptics.vibrate(HapticsType.medium);
+    ref.read(appHapticsProvider).medium();
     ref
         .read(chatProvider.notifier)
         .insertMessageWithoutGenerating(
@@ -509,7 +508,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
   }
 
   void _handleStop() {
-    Haptics.vibrate(HapticsType.light);
+    ref.read(appHapticsProvider).light();
 
     widget.onStop();
   }
@@ -537,7 +536,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
             : l10n.send_as_user_tooltip,
         onPressed: widget.enabled
             ? () {
-                Haptics.vibrate(HapticsType.light);
+                ref.read(appHapticsProvider).light();
                 setState(() => _sendAsAssistant = !_sendAsAssistant);
               }
             : null,
@@ -1120,7 +1119,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                               isCompactFont:
                                   selectedModel?.supportsReasoning == true,
                               onTap: () {
-                                Haptics.vibrate(HapticsType.light);
+                                ref.read(appHapticsProvider).light();
                                 showModalBottomSheet(
                                   context: context,
                                   isScrollControlled: true,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../core/theme/colors.dart';
+import '../core/utils/locale_utils.dart';
 import '../l10n/app_localizations.dart';
 import 'bootstrap_state.dart';
 
@@ -40,8 +41,14 @@ class BootstrapScreen extends StatelessWidget {
     final brightness =
         WidgetsBinding.instance.platformDispatcher.platformBrightness;
     final isDark = brightness == Brightness.dark;
-    final locale = this.locale ??
-        WidgetsBinding.instance.platformDispatcher.locale;
+    final requestedLocale =
+        this.locale ?? WidgetsBinding.instance.platformDispatcher.locale;
+    final locale =
+        findSupportedLocale(
+          requestedLocale.toLanguageTag(),
+          AppLocalizations.supportedLocales,
+        ) ??
+        const Locale('en');
 
     return Localizations(
       locale: locale,

@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../core/services/app_haptics.dart';
 
 /// Sound + haptic feedback for the voice-to-voice overlay lifecycle.
 ///
@@ -13,6 +14,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// All playback errors are swallowed — feedback is best-effort and must
 /// never break the voice pipeline.
 class VoiceFeedbackService {
+  VoiceFeedbackService(this._haptics);
+
+  final AppHaptics _haptics;
   final AudioPlayer _connectedPlayer = AudioPlayer();
   final AudioPlayer _disconnectedPlayer = AudioPlayer();
   final AudioPlayer _listeningPlayer = AudioPlayer();
@@ -54,36 +58,31 @@ class VoiceFeedbackService {
 
   /// Session opened, mic is live. Confident, affirming.
   Future<void> playConnected() async {
+    if (_disposed) return;
     await _play(_connectedPlayer);
-    await _safeHaptic(HapticFeedback.mediumImpact);
+    await _haptics.medium();
   }
 
   /// Session closed gracefully. Soft, not alarming.
   Future<void> playDisconnected() async {
+    if (_disposed) return;
     await _play(_disconnectedPlayer);
-    await _safeHaptic(HapticFeedback.lightImpact);
+    await _haptics.light();
   }
 
   /// Mic activated, awaiting user speech. Crisp micro-click.
   Future<void> playListening() async {
+    if (_disposed) return;
     await _play(_listeningPlayer);
-    await _safeHaptic(HapticFeedback.selectionClick);
+    await _haptics.selection();
   }
 
   /// LLM is streaming. Single tap on first chunk only — repeated
   /// haptics during streaming feel glitchy.
   Future<void> playGenerating() async {
-    await _play(_generatingPlayer);
-    await _safeHaptic(HapticFeedback.lightImpact);
-  }
-
-  Future<void> _safeHaptic(Future<void> Function() haptic) async {
     if (_disposed) return;
-    try {
-      await haptic();
-    } catch (_) {
-      // Swallow — haptics unsupported on some devices / emulators.
-    }
+    await _play(_generatingPlayer);
+    await _haptics.light();
   }
 
   /// Release every player. Called by [voiceFeedbackProvider]'s
@@ -104,7 +103,7 @@ class VoiceFeedbackService {
 /// warm for the whole app lifetime so the first phase transition has no
 /// asset-load delay.
 final voiceFeedbackProvider = Provider<VoiceFeedbackService>((ref) {
-  final service = VoiceFeedbackService();
+  final service = VoiceFeedbackService(ref.read(appHapticsProvider));
   // Fire-and-forget: callers don't block on preload.
   // ignore: discarded_futures
   service.preload();

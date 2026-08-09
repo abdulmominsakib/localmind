@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:pdfrx/pdfrx.dart';
 
 import 'bootstrap/bootstrap_host.dart';
 import 'core/services/crash_report_service.dart';
@@ -12,6 +13,7 @@ Future<void> main() async {
   await runZonedGuarded<Future<void>>(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      await pdfrxFlutterInitialize();
       final crashReports = CrashReportService.instance;
       await crashReports.initialize();
 

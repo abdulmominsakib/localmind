@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/l10n/app_localizations.dart';
@@ -14,11 +13,12 @@ class TokenUsageIndicator extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final liveContextLength = ref.watch(activeModelContextLengthProvider).value;
-    final fallbackContextLength = ref.watch(
-      settingsProvider.select((s) => s.contextLength),
+    // LM Studio's native chat API accepts context_length per request. Use the
+    // configured per-chat value here so the indicator reflects the request the
+    // app will actually send instead of a stale load-time model value.
+    final contextLength = ref.watch(
+      chatParamsProvider.select((params) => params.contextLength),
     );
-    final int contextLength = liveContextLength ?? fallbackContextLength;
 
     // totalTokenCount only updates once a response finishes (it's the real
     // server-reported count), so while one is streaming in, grow the ring

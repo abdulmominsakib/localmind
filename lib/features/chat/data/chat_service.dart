@@ -559,15 +559,15 @@ class LMStudioChatService implements ChatService {
     return items;
   }
 
-  /// Builds the text portion of a typed input item, inlining any `.txt`/`.md`
-  /// attachment contents into the message text so the model actually receives
+  /// Builds the text portion of a typed input item, extracting supported
+  /// document contents into the message text so the model actually receives
   /// them. Image attachments are handled separately by [_imageItemsFor].
   Future<String> _messageTextWithAttachments(Message m) async {
     var textContent = m.content;
     final paths = m.attachmentPaths ?? const <String>[];
     for (final path in paths) {
-      if (!AttachmentHelpers.isTextPath(path)) continue;
-      final text = await AttachmentHelpers.readTextFile(path);
+      if (!AttachmentHelpers.isDocumentPath(path)) continue;
+      final text = await AttachmentHelpers.readDocumentFile(path);
       if (text == null) continue;
       final fileName = AttachmentHelpers.fileNameOf(path);
       if (fileName.isEmpty) continue;
@@ -1069,8 +1069,8 @@ class OllamaChatService implements ChatService {
     final images = <String>[];
 
     for (final path in m.attachmentPaths ?? const <String>[]) {
-      if (AttachmentHelpers.isTextPath(path)) {
-        final text = await AttachmentHelpers.readTextFile(path);
+      if (AttachmentHelpers.isDocumentPath(path)) {
+        final text = await AttachmentHelpers.readDocumentFile(path);
         if (text != null) {
           textContent = AttachmentHelpers.appendTextAttachment(
             textContent,
@@ -1508,7 +1508,7 @@ void _normalizeAssistantPrefill(
 }
 
 /// Builds the OpenAI-style request payload for a single [Message], including
-/// attachments. `.txt`/`.md` files are read and inlined into the text content
+/// attachments. Supported documents are read and inlined into the text content
 /// (mirroring the Ollama path), and image attachments are emitted as OpenAI
 /// multimodal `image_url` content parts carrying base64 data URLs.
 ///
@@ -1529,8 +1529,8 @@ Future<Map<String, dynamic>> _buildOpenAiApiMessage(
   final imageParts = <Map<String, dynamic>>[];
 
   for (final path in m.attachmentPaths ?? const <String>[]) {
-    if (AttachmentHelpers.isTextPath(path)) {
-      final text = await AttachmentHelpers.readTextFile(path);
+    if (AttachmentHelpers.isDocumentPath(path)) {
+      final text = await AttachmentHelpers.readDocumentFile(path);
       if (text != null) {
         textContent = AttachmentHelpers.appendTextAttachment(
           textContent,

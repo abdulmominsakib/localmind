@@ -11,6 +11,7 @@ import 'package:localmind/l10n/app_localizations.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/services/app_haptics.dart';
 import '../../../core/services/crash_report_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/system_insets.dart';
@@ -255,9 +256,12 @@ class SettingsViews extends ConsumerWidget {
                   _ToggleSetting(
                     label: l10n.haptic_feedback,
                     value: settings.hapticFeedbackEnabled,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setHapticFeedback(value),
+                    onChanged: (value) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .setHapticFeedback(value);
+                      if (value) ref.read(appHapticsProvider).medium();
+                    },
                   ),
                   _ToggleSetting(
                     label: l10n.enable_mcp,
