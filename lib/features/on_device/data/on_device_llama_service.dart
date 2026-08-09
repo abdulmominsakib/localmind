@@ -202,6 +202,7 @@ class OnDeviceLlamaService {
   }
 
   Future<void> unloadModel() async {
+    cancelGeneration();
     final engine = _engine;
     _engine = null;
     _session = null;

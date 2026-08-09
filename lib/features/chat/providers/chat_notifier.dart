@@ -122,6 +122,8 @@ class ChatNotifier extends Notifier<ChatState> {
   int _lastSavedReasoningLength = 0;
 
   MessageSaveService? _saveService;
+  PendingToolApproval? _pendingToolApproval;
+  final Set<String> _titleGenerationsInFlight = <String>{};
   bool _pendingTemporaryChat = false;
   String? _ephemeralConversationId;
   bool _attemptedResume = false;
@@ -208,7 +210,8 @@ class ChatNotifier extends Notifier<ChatState> {
         .firstOrNull;
     final total = lastWithStats == null
         ? 0
-        : (lastWithStats.inputTokenCount ?? 0) + (lastWithStats.tokenCount ?? 0);
+        : (lastWithStats.inputTokenCount ?? 0) +
+              (lastWithStats.tokenCount ?? 0);
     unawaited(
       ref
           .read(conv.conversationsProvider.notifier)
@@ -261,8 +264,9 @@ class ChatNotifier extends Notifier<ChatState> {
     _recomputeConversationTotal(conversationId, messages: timeline);
 
     if (isCurrentContext) {
-      final lastUserMessage =
-          timeline.where((m) => m.role == MessageRole.user).firstOrNull;
+      final lastUserMessage = timeline
+          .where((m) => m.role == MessageRole.user)
+          .firstOrNull;
       if (lastUserMessage != null) {
         _maybeAutoGenerateTitleAfterFirstReply();
       }
@@ -270,14 +274,15 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   void approveTool(bool approved) {
-    final pending = state.pendingToolApproval;
+    final pending = _pendingToolApproval;
     if (pending != null && !pending.completer.isCompleted) {
       pending.completer.complete(approved);
     }
   }
 
   void _clearPendingApproval() {
-    final pending = state.pendingToolApproval;
+    final pending = _pendingToolApproval;
+    _pendingToolApproval = null;
     if (pending != null) {
       if (!pending.completer.isCompleted) {
         pending.completer.complete(false);
@@ -297,7 +302,8 @@ class ChatNotifier extends Notifier<ChatState> {
       _streamSubscription = null;
       subscription?.cancel();
       _saveService?.dispose();
-      final pending = state.pendingToolApproval;
+      final pending = _pendingToolApproval;
+      _pendingToolApproval = null;
       if (pending != null && !pending.completer.isCompleted) {
         pending.completer.complete(false);
       }
@@ -368,7 +374,7 @@ class ChatNotifier extends Notifier<ChatState> {
         isTemporary: conversation.isTemporary,
       );
       ref
-          .read(conv.activeConversationProvider.notifier)
+          .read(conv.activeConversationIdProvider.notifier)
           .setActiveConversation(conversation);
 
       if (!conversation.isTemporary) {
@@ -431,20 +437,16 @@ class ChatNotifier extends Notifier<ChatState> {
     }
 
     messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    final normalized = messages
-        .asMap()
-        .entries
-        .map((entry) {
-          final msg = entry.value;
-          if (msg.variantGroupId?.isNotEmpty == true) return msg;
-          return msg.copyWith(
-            variantGroupId: msg.id,
-            variantIndex: 0,
-            threadOrder: entry.key,
-            isActiveVariant: true,
-          );
-        })
-        .toList();
+    final normalized = messages.asMap().entries.map((entry) {
+      final msg = entry.value;
+      if (msg.variantGroupId?.isNotEmpty == true) return msg;
+      return msg.copyWith(
+        variantGroupId: msg.id,
+        variantIndex: 0,
+        threadOrder: entry.key,
+        isActiveVariant: true,
+      );
+    }).toList();
     return _assignLegacyParentsIfNeeded(normalized);
   }
 
@@ -489,7 +491,7 @@ class ChatNotifier extends Notifier<ChatState> {
     ref.read(smartReplyServiceProvider).reset();
     state = const ChatState();
     ref
-        .read(conv.activeConversationProvider.notifier)
+        .read(conv.activeConversationIdProvider.notifier)
         .setActiveConversation(null);
     ref.read(chatOriginProvider.notifier).clear();
     ref.read(messageSelectionModeProvider.notifier).disable();
@@ -555,13 +557,15 @@ class ChatNotifier extends Notifier<ChatState> {
         messages: MessageVariants.resolveActiveTimeline(updatedAll),
       );
 
-      unawaited(_persistCancelledMessageInBackground(
-        streamingMessage,
-        convId,
-        stats: stats,
-        startTime: startTime,
-        firstTokenTime: firstTokenTime,
-      ));
+      unawaited(
+        _persistCancelledMessageInBackground(
+          streamingMessage,
+          convId,
+          stats: stats,
+          startTime: startTime,
+          firstTokenTime: firstTokenTime,
+        ),
+      );
     }
   }
 
@@ -710,7 +714,7 @@ class ChatNotifier extends Notifier<ChatState> {
         );
     _currentConversationId = conversation.id;
     ref
-        .read(conv.activeConversationProvider.notifier)
+        .read(conv.activeConversationIdProvider.notifier)
         .setActiveConversation(conversation);
     _persistLastActiveConversation(conversation.id);
     // A conversationsProvider refresh triggered later in this same send
@@ -761,8 +765,8 @@ class ChatNotifier extends Notifier<ChatState> {
     final titleSource = trimmedContent.isNotEmpty
         ? trimmedContent
         : (attachments?.isNotEmpty == true
-            ? attachments!.first.path.split(Platform.pathSeparator).last
-            : 'New Chat');
+              ? attachments!.first.path.split(Platform.pathSeparator).last
+              : 'New Chat');
     await _ensureConversationExists(titleSource);
 
     // Read after the conversation (and its persona system prompt) is
@@ -784,8 +788,10 @@ class ChatNotifier extends Notifier<ChatState> {
       }
 
       for (final file in attachments) {
-        final savedPath =
-            await AttachmentHelpers.saveAttachment(file, attachmentsDir);
+        final savedPath = await AttachmentHelpers.saveAttachment(
+          file,
+          attachmentsDir,
+        );
         if (savedPath != null) savedPaths.add(savedPath);
       }
     }
@@ -794,7 +800,9 @@ class ChatNotifier extends Notifier<ChatState> {
     final userGroupId = generateUuid();
     final assistantThreadOrder = userThreadOrder + 1;
     final assistantGroupId = generateUuid();
-    final lastInTimeline = state.messages.isNotEmpty ? state.messages.last : null;
+    final lastInTimeline = state.messages.isNotEmpty
+        ? state.messages.last
+        : null;
 
     final userMessage = Message(
       id: generateUuid(),
@@ -843,11 +851,13 @@ class ChatNotifier extends Notifier<ChatState> {
     if (!_isInMemoryChat && _currentConversationId != null) {
       final preview = trimmedContent.isNotEmpty
           ? (trimmedContent.length > 100
-              ? '${trimmedContent.substring(0, 100)}...'
-              : trimmedContent)
+                ? '${trimmedContent.substring(0, 100)}...'
+                : trimmedContent)
           : (attachments?.isNotEmpty == true ? '[attachment]' : 'New message');
       final timeline = [...state.messages, userMessage];
-      await ref.read(conv.conversationsProvider.notifier).syncConversationStats(
+      await ref
+          .read(conv.conversationsProvider.notifier)
+          .syncConversationStats(
             _currentConversationId!,
             messageCount: timeline.length,
             characterCount: timeline.fold<int>(
@@ -875,10 +885,10 @@ class ChatNotifier extends Notifier<ChatState> {
 
       if (chatService != null) {
         final mcpConfig = ref.read(chatMcpConfigProvider);
-        final activeIntegrations =
-            mcpConfig.integrations.where((i) => i.enabled).toList();
-        final integrations =
-            mcpConfig.enabled && activeIntegrations.isNotEmpty
+        final activeIntegrations = mcpConfig.integrations
+            .where((i) => i.enabled)
+            .toList();
+        final integrations = mcpConfig.enabled && activeIntegrations.isNotEmpty
             ? activeIntegrations
             : null;
 
@@ -973,7 +983,8 @@ class ChatNotifier extends Notifier<ChatState> {
                     stateNeedsUpdate = true;
                     break;
                   case ChatResponseType.processing:
-                    final wasProcessing = streamingAssistantMessage.isProcessing;
+                    final wasProcessing =
+                        streamingAssistantMessage.isProcessing;
                     streamingAssistantMessage = streamingAssistantMessage
                         .copyWith(isProcessing: true);
                     _latestStreamingMessage = streamingAssistantMessage;
@@ -1034,32 +1045,31 @@ class ChatNotifier extends Notifier<ChatState> {
                 }
               },
               onDone: () async {
-              _uiUpdateTimer?.cancel();
-              _uiUpdateTimer = null;
-              updateUiState();
+                _uiUpdateTimer?.cancel();
+                _uiUpdateTimer = null;
+                updateUiState();
 
-              if (streamHadError) {
-                // The error branch already finalised the message and
-                // stopped streaming — do not overwrite the error state
-                // with success/default text.
+                if (streamHadError) {
+                  // The error branch already finalised the message and
+                  // stopped streaming — do not overwrite the error state
+                  // with success/default text.
+                  if (!_isInMemoryChat) {
+                    await _saveService?.flush();
+                  }
+                  ref.read(chatBackgroundServiceProvider).stop();
+                  return;
+                }
+
                 if (!_isInMemoryChat) {
                   await _saveService?.flush();
                 }
                 ref.read(chatBackgroundServiceProvider).stop();
-                return;
-              }
-
-              if (!_isInMemoryChat) {
-                await _saveService?.flush();
-              }
-              ref.read(chatBackgroundServiceProvider).stop();
-              final streamConvId = assistantMessage.conversationId;
-              final isCurrentContext = _activeConversationId == streamConvId;
+                final streamConvId = assistantMessage.conversationId;
+                final isCurrentContext = _activeConversationId == streamConvId;
                 final streamingMessage = streamingAssistantMessage;
                 final hasContent =
                     streamingMessage.content.isNotEmpty ||
-                    (streamingMessage.reasoningContent?.isNotEmpty ??
-                        false) ||
+                    (streamingMessage.reasoningContent?.isNotEmpty ?? false) ||
                     collectedToolCalls.isNotEmpty;
 
                 if (!hasContent) {
@@ -1071,10 +1081,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   );
                   await _saveMessage(errorMessage);
                   if (isCurrentContext) {
-                    _replaceMessageInState(
-                      errorMessage,
-                      clearStreaming: true,
-                    );
+                    _replaceMessageInState(errorMessage, clearStreaming: true);
                     state = state.copyWith(
                       isStreaming: false,
                       errorMessage: errorMessage.errorMessage,
@@ -1106,8 +1113,9 @@ class ChatNotifier extends Notifier<ChatState> {
                         dedupedCalls[tc.tool] = tc;
                       }
                       final allCalls = dedupedCalls.values.toList();
-                      final serverExecuted =
-                          allCalls.where((tc) => tc.output != null).toList();
+                      final serverExecuted = allCalls
+                          .where((tc) => tc.output != null)
+                          .toList();
                       final clientExecuted = allCalls
                           .where((tc) => tc.output == null)
                           .toList();
@@ -1115,27 +1123,28 @@ class ChatNotifier extends Notifier<ChatState> {
                       final toolEvents = <ToolEvent>[];
 
                       if (serverExecuted.isNotEmpty) {
-                        final sessionId =
-                            DateTime.now().millisecondsSinceEpoch.toString();
+                        final sessionId = DateTime.now().millisecondsSinceEpoch
+                            .toString();
                         for (final tc in serverExecuted) {
                           final eventId =
                               '${sessionId}_1_${tc.tool}.server_executed';
-                          toolEvents.add(ToolEvent(
-                            eventId: eventId,
-                            timestamp: DateTime.now(),
-                            status: ToolEventStatus.completed,
-                            toolName: tc.tool,
-                            providerType: ToolProviderType.lmStudioServer,
-                            arguments: tc.arguments,
-                            result: tc.output,
-                          ));
+                          toolEvents.add(
+                            ToolEvent(
+                              eventId: eventId,
+                              timestamp: DateTime.now(),
+                              status: ToolEventStatus.completed,
+                              toolName: tc.tool,
+                              providerType: ToolProviderType.lmStudioServer,
+                              arguments: tc.arguments,
+                              result: tc.output,
+                            ),
+                          );
                         }
                       }
 
                       if (clientExecuted.isNotEmpty) {
                         final registry = ref.read(toolRegistryProvider);
-                        final adapter =
-                            createAdapterForServerType(server.type);
+                        final adapter = createAdapterForServerType(server.type);
 
                         final preParsedCalls = clientExecuted
                             .map(
@@ -1152,15 +1161,18 @@ class ChatNotifier extends Notifier<ChatState> {
                           registry: registry,
                           onRequestApproval: (call) async {
                             final completer = Completer<bool>();
+                            final approval = PendingToolApproval(
+                              toolCall: call,
+                              completer: completer,
+                            );
+                            _pendingToolApproval = approval;
                             state = state.copyWith(
-                              pendingToolApproval: PendingToolApproval(
-                                toolCall: call,
-                                completer: completer,
-                              ),
+                              pendingToolApproval: approval,
                             );
 
                             final result = await completer.future;
 
+                            _pendingToolApproval = null;
                             state = state.copyWith(clearPendingApproval: true);
 
                             return result;
@@ -1190,10 +1202,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
                   await _saveMessage(finalMessage);
                   if (isCurrentContext) {
-                    _replaceMessageInState(
-                      finalMessage,
-                      clearStreaming: true,
-                    );
+                    _replaceMessageInState(finalMessage, clearStreaming: true);
                     state = state.copyWith(isStreaming: false);
                   }
                   ref.read(isStreamingProvider.notifier).setStreaming(false);
@@ -1219,13 +1228,18 @@ class ChatNotifier extends Notifier<ChatState> {
                   // Auto-speak: read the response aloud if the setting
                   // is enabled and voice mode is not already handling TTS.
                   final autoSpeak = ref.read(settingsProvider).autoSpeakEnabled;
-                  final voiceActive = ref.read(voiceModeProvider).phase != VoiceModePhase.idle;
-                  if (autoSpeak && !voiceActive && finalMessage.content.trim().isNotEmpty) {
-                    ref.read(ttsProvider.notifier).speak(
-                      finalMessage.content,
-                      messageId: finalMessage.id,
-                      conversationId: finalMessage.conversationId,
-                    );
+                  final voiceActive =
+                      ref.read(voiceModeProvider).phase != VoiceModePhase.idle;
+                  if (autoSpeak &&
+                      !voiceActive &&
+                      finalMessage.content.trim().isNotEmpty) {
+                    ref
+                        .read(ttsProvider.notifier)
+                        .speak(
+                          finalMessage.content,
+                          messageId: finalMessage.id,
+                          conversationId: finalMessage.conversationId,
+                        );
                   }
                 }
               },
@@ -1299,15 +1313,16 @@ class ChatNotifier extends Notifier<ChatState> {
     }
 
     final trimmedContent = content.trim();
-    if (trimmedContent.isEmpty && (attachments == null || attachments.isEmpty)) {
+    if (trimmedContent.isEmpty &&
+        (attachments == null || attachments.isEmpty)) {
       return;
     }
 
     final titleSource = trimmedContent.isNotEmpty
         ? trimmedContent
         : (attachments?.isNotEmpty == true
-            ? attachments!.first.path.split(Platform.pathSeparator).last
-            : 'New Chat');
+              ? attachments!.first.path.split(Platform.pathSeparator).last
+              : 'New Chat');
     await _ensureConversationExists(titleSource);
 
     final convId = _activeConversationId;
@@ -1322,15 +1337,19 @@ class ChatNotifier extends Notifier<ChatState> {
       }
 
       for (final file in attachments) {
-        final savedPath =
-            await AttachmentHelpers.saveAttachment(file, attachmentsDir);
+        final savedPath = await AttachmentHelpers.saveAttachment(
+          file,
+          attachmentsDir,
+        );
         if (savedPath != null) savedPaths.add(savedPath);
       }
     }
 
     final threadOrder = MessageVariants.nextThreadOrder(state.messages);
     final groupId = generateUuid();
-    final lastInTimeline = state.messages.isNotEmpty ? state.messages.last : null;
+    final lastInTimeline = state.messages.isNotEmpty
+        ? state.messages.last
+        : null;
 
     final message = Message(
       id: generateUuid(),
@@ -1359,11 +1378,13 @@ class ChatNotifier extends Notifier<ChatState> {
     if (!_isInMemoryChat && _currentConversationId != null) {
       final preview = trimmedContent.isNotEmpty
           ? (trimmedContent.length > 100
-              ? '${trimmedContent.substring(0, 100)}...'
-              : trimmedContent)
+                ? '${trimmedContent.substring(0, 100)}...'
+                : trimmedContent)
           : (attachments?.isNotEmpty == true ? '[attachment]' : 'New message');
       final timeline = state.messages;
-      await ref.read(conv.conversationsProvider.notifier).syncConversationStats(
+      await ref
+          .read(conv.conversationsProvider.notifier)
+          .syncConversationStats(
             _currentConversationId!,
             messageCount: timeline.length,
             characterCount: timeline.fold<int>(
@@ -1384,7 +1405,8 @@ class ChatNotifier extends Notifier<ChatState> {
         (selectedModel?.supportsReasoning ?? false) && !reasoningConfig.enabled;
 
     final personaPrompt = _getPersonaSystemPrompt();
-    var systemContent = personaPrompt ??
+    var systemContent =
+        personaPrompt ??
         (settings.showSystemMessages
             ? 'You are LocalMind, a helpful AI assistant. Provide clear, accurate, and concise responses.'
             : null);
@@ -1465,8 +1487,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
     try {
       final personas = ref.read(personasNotifierProvider).value ?? [];
-      final selected =
-          PersonaPromptUtils.resolvePersonas(personaIds, personas);
+      final selected = PersonaPromptUtils.resolvePersonas(personaIds, personas);
       if (selected.isEmpty) return null;
       return PersonaPromptUtils.combineSystemPrompts(selected);
     } catch (_) {}
@@ -1515,12 +1536,17 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> _generateAndApplyTitle(String conversationId) async {
-    final title = await generateTitleWithAi(conversationId);
-    if (title == null || title.isEmpty || title == 'New Chat') return;
+    if (!_titleGenerationsInFlight.add(conversationId)) return;
+    try {
+      final title = await generateTitleWithAi(conversationId);
+      if (title == null || title.isEmpty || title == 'New Chat') return;
 
-    await ref
-        .read(conv.conversationsProvider.notifier)
-        .renameConversation(conversationId, title);
+      await ref
+          .read(conv.conversationsProvider.notifier)
+          .renameConversation(conversationId, title);
+    } finally {
+      _titleGenerationsInFlight.remove(conversationId);
+    }
   }
 
   Future<String?> generateTitleWithAi(String conversationId) async {
@@ -1566,7 +1592,8 @@ class ChatNotifier extends Notifier<ChatState> {
   Future<List<Message>> _loadMessagesForConversation(
     String conversationId,
   ) async {
-    if (_currentConversationId == conversationId && state.allMessages.isNotEmpty) {
+    if (_currentConversationId == conversationId &&
+        state.allMessages.isNotEmpty) {
       return MessageVariants.resolveActiveTimeline(state.allMessages);
     }
 
@@ -1714,7 +1741,9 @@ class ChatNotifier extends Notifier<ChatState> {
     }
     if (userMessage == null) return;
 
-    final userMessageIndex = messages.indexWhere((m) => m.id == userMessage!.id);
+    final userMessageIndex = messages.indexWhere(
+      (m) => m.id == userMessage!.id,
+    );
     final messagesToRemove = messages.sublist(userMessageIndex);
     final db = ref.read(databaseProvider);
 
@@ -1727,8 +1756,9 @@ class ChatNotifier extends Notifier<ChatState> {
     }
 
     final removedIds = messagesToRemove.map((m) => m.id).toSet();
-    final updatedAll =
-        state.allMessages.where((m) => !removedIds.contains(m.id)).toList();
+    final updatedAll = state.allMessages
+        .where((m) => !removedIds.contains(m.id))
+        .toList();
     state = state.copyWith(
       allMessages: updatedAll,
       messages: messages.sublist(0, userMessageIndex),
@@ -1737,9 +1767,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
     await sendMessage(
       userMessage.content,
-      attachments: userMessage.attachmentPaths
-          ?.map((p) => File(p))
-          .toList(),
+      attachments: userMessage.attachmentPaths?.map((p) => File(p)).toList(),
     );
   }
 
@@ -1817,9 +1845,7 @@ class ChatNotifier extends Notifier<ChatState> {
       (m) => MessageVariants.groupId(m) == groupId,
     );
     if (variants.isEmpty) return 0;
-    return variants
-            .map((m) => m.variantIndex)
-            .reduce((a, b) => a > b ? a : b) +
+    return variants.map((m) => m.variantIndex).reduce((a, b) => a > b ? a : b) +
         1;
   }
 
@@ -1943,10 +1969,10 @@ class ChatNotifier extends Notifier<ChatState> {
       var isFirstContinueChunk = continueGeneration;
 
       final mcpConfig = ref.read(chatMcpConfigProvider);
-      final activeIntegrations =
-          mcpConfig.integrations.where((i) => i.enabled).toList();
-      final integrations =
-          mcpConfig.enabled && activeIntegrations.isNotEmpty
+      final activeIntegrations = mcpConfig.integrations
+          .where((i) => i.enabled)
+          .toList();
+      final integrations = mcpConfig.enabled && activeIntegrations.isNotEmpty
           ? activeIntegrations
           : null;
 
@@ -1997,10 +2023,11 @@ class ChatNotifier extends Notifier<ChatState> {
                     isFirstContinueChunk = false;
                     final existing = streamingAssistantMessage.content;
                     if (existing.isNotEmpty &&
-                        !RegExp(r'[\s\p{P}]$', unicode: true)
-                            .hasMatch(existing) &&
-                        !RegExp(r'^[\s\p{P}]', unicode: true)
-                            .hasMatch(delta)) {
+                        !RegExp(
+                          r'[\s\p{P}]$',
+                          unicode: true,
+                        ).hasMatch(existing) &&
+                        !RegExp(r'^[\s\p{P}]', unicode: true).hasMatch(delta)) {
                       delta = ' $delta';
                     }
                   }
@@ -2103,7 +2130,10 @@ class ChatNotifier extends Notifier<ChatState> {
               await _saveMessage(finalMessage);
               if (isCurrentContext) {
                 _replaceMessageInAll(finalMessage, clearStreaming: true);
-                state = state.copyWith(isStreaming: false, clearStreaming: true);
+                state = state.copyWith(
+                  isStreaming: false,
+                  clearStreaming: true,
+                );
               }
               ref.read(isStreamingProvider.notifier).setStreaming(false);
               ref.read(chatBackgroundServiceProvider).stop();
@@ -2121,12 +2151,14 @@ class ChatNotifier extends Notifier<ChatState> {
               // Auto-speak: read the response aloud if the setting is
               // enabled and voice mode is not already handling TTS.
               final autoSpeak = ref.read(settingsProvider).autoSpeakEnabled;
-              final voiceActive = ref.read(voiceModeProvider).phase !=
-                  VoiceModePhase.idle;
+              final voiceActive =
+                  ref.read(voiceModeProvider).phase != VoiceModePhase.idle;
               if (autoSpeak &&
                   !voiceActive &&
                   finalMessage.content.trim().isNotEmpty) {
-                ref.read(ttsProvider.notifier).speak(
+                ref
+                    .read(ttsProvider.notifier)
+                    .speak(
                       finalMessage.content,
                       messageId: finalMessage.id,
                       conversationId: finalMessage.conversationId,
@@ -2223,7 +2255,9 @@ class ChatNotifier extends Notifier<ChatState> {
         activeConv.topP != null ||
         activeConv.maxTokens != null ||
         activeConv.contextLength != null) {
-      await ref.read(conv.conversationsProvider.notifier).updateChatParams(
+      await ref
+          .read(conv.conversationsProvider.notifier)
+          .updateChatParams(
             newConversation.id,
             temperature: activeConv.temperature,
             topP: activeConv.topP,
@@ -2245,7 +2279,9 @@ class ChatNotifier extends Notifier<ChatState> {
         ? '${lastMessage.content.substring(0, 100)}...'
         : lastMessage.content;
 
-    await ref.read(conv.conversationsProvider.notifier).updatePreview(
+    await ref
+        .read(conv.conversationsProvider.notifier)
+        .updatePreview(
           newConversation.id,
           preview,
           DateTime.now(),
@@ -2275,8 +2311,9 @@ class ChatNotifier extends Notifier<ChatState> {
     db.messageBox.removeMany(query.findIds());
     query.close();
 
-    final updatedAll =
-        state.allMessages.where((m) => m.id != messageId).toList();
+    final updatedAll = state.allMessages
+        .where((m) => m.id != messageId)
+        .toList();
     state = state.copyWith(
       allMessages: updatedAll,
       messages: MessageVariants.resolveActiveTimeline(updatedAll),
@@ -2329,7 +2366,9 @@ class ChatNotifier extends Notifier<ChatState> {
     final chatService = ref.read(chatServiceProvider);
     if (server == null || chatService == null || selectedModel == null) return;
 
-    final generated = await ref.read(smartReplyServiceProvider).generateUserMessage(
+    final generated = await ref
+        .read(smartReplyServiceProvider)
+        .generateUserMessage(
           chatService: chatService,
           server: server,
           modelId: selectedModel.id,
@@ -2356,10 +2395,10 @@ class ChatNotifier extends Notifier<ChatState> {
     final title = settings.autoGenerateTitle
         ? 'New Chat'
         : ref
-            .read(titleGenerationServiceProvider)
-            .truncateFirstMessageTitle(
-              firstUser.isNotEmpty ? firstUser : 'New Chat',
-            );
+              .read(titleGenerationServiceProvider)
+              .truncateFirstMessageTitle(
+                firstUser.isNotEmpty ? firstUser : 'New Chat',
+              );
 
     final preselected = ref.read(selectedPersonasProvider);
     final conversation = await ref
@@ -2384,7 +2423,7 @@ class ChatNotifier extends Notifier<ChatState> {
     _ephemeralConversationId = null;
     state = state.copyWith(isTemporary: false);
     ref
-        .read(conv.activeConversationProvider.notifier)
+        .read(conv.activeConversationIdProvider.notifier)
         .setActiveConversation(conversation);
 
     final updatedAll = state.allMessages
@@ -2492,7 +2531,7 @@ class ChatNotifier extends Notifier<ChatState> {
     _pendingTemporaryChat = false;
     state = const ChatState();
     ref
-        .read(conv.activeConversationProvider.notifier)
+        .read(conv.activeConversationIdProvider.notifier)
         .setActiveConversation(null);
   }
 
@@ -2504,7 +2543,5 @@ class ChatNotifier extends Notifier<ChatState> {
 final hasActiveChatSessionProvider = Provider<bool>((ref) {
   final chat = ref.watch(chatProvider);
   final activeConv = ref.watch(conv.activeConversationProvider);
-  return chat.messages.isNotEmpty ||
-      chat.isStreaming ||
-      activeConv != null;
+  return chat.messages.isNotEmpty || chat.isStreaming || activeConv != null;
 });

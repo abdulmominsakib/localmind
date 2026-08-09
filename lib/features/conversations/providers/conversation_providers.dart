@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +32,31 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       _loadConversationsInBackground,
       null,
     );
+  }
+
+  Future<void> _updateState() async {
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
+  }
+
+  void _updateInState(Conversation updated) {
+    final conversations = state.value;
+    if (conversations == null) {
+      unawaited(_updateState());
+      return;
+    }
+    final updatedList = conversations
+        .map((c) => c.id == updated.id ? updated : c)
+        .toList();
+    updatedList.sort((a, b) {
+      if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+      return b.updatedAt.compareTo(a.updatedAt);
+    });
+    if (ref.mounted) {
+      state = AsyncData(updatedList);
+    }
   }
 
   static List<Conversation> _loadConversationsInBackground(Store store, _) {
@@ -107,7 +133,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     );
 
     db.conversationBox.put(ConversationEntity.fromDomain(conversation));
-    state = AsyncData(await _loadAll());
+    await _updateState();
     return conversation;
   }
 
@@ -134,7 +160,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       }
       db.conversationBox.put(entity);
 
-      state = AsyncData(await _loadAll());
+      _updateInState(updated);
     }
   }
 
@@ -162,7 +188,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     }
     db.conversationBox.put(entity);
 
-    state = AsyncData(await _loadAll());
+    _updateInState(updated);
   }
 
   Future<void> setTemporary(String id, bool isTemporary) async {
@@ -190,7 +216,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     }
     db.conversationBox.put(entity);
 
-    state = AsyncData(await _loadAll());
+    _updateInState(updated);
   }
 
   Future<void> deleteConversation(String id) async {
@@ -210,7 +236,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     db.conversationBox.removeMany(convQuery.findIds());
     convQuery.close();
 
-    state = AsyncData(await _loadAll());
+    await _updateState();
   }
 
   Future<void> togglePin(String id) async {
@@ -238,7 +264,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     }
     db.conversationBox.put(entity);
 
-    state = AsyncData(await _loadAll());
+    _updateInState(updated);
   }
 
   Future<void> setArchived(String id, bool archived) async {
@@ -266,7 +292,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     }
     db.conversationBox.put(entity);
 
-    state = AsyncData(await _loadAll());
+    _updateInState(updated);
   }
 
   Future<void> updatePreview(
@@ -304,7 +330,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       }
       db.conversationBox.put(entity);
 
-      state = AsyncData(await _loadAll());
+      await _updateState();
     }
   }
 
@@ -338,7 +364,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       entity.internalId = existingEntity.internalId;
     }
     db.conversationBox.put(entity);
-    state = AsyncData(await _loadAll());
+    await _updateState();
   }
 
   /// Updates just the embeddings-derived total token count without
@@ -365,7 +391,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       entity.internalId = existingEntity.internalId;
     }
     db.conversationBox.put(entity);
-    state = AsyncData(await _loadAll());
+    await _updateState();
   }
 
   Future<void> updatePersonas(String id, List<Persona> personas) async {
@@ -408,7 +434,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       }
       db.conversationBox.put(entity);
 
-      state = AsyncData(await _loadAll());
+      await _updateState();
     }
   }
 
@@ -452,7 +478,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       }
       db.conversationBox.put(entity);
 
-      state = AsyncData(await _loadAll());
+      await _updateState();
     }
   }
 
@@ -483,7 +509,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       }
       db.conversationBox.put(entity);
 
-      state = AsyncData(await _loadAll());
+      await _updateState();
     }
   }
 
@@ -491,7 +517,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     final db = ref.read(databaseProvider);
     db.messageBox.removeAll();
     db.conversationBox.removeAll();
-    state = AsyncData(await _loadAll());
+    await _updateState();
   }
 
   Future<Conversation> duplicateConversation(String id) async {
@@ -535,7 +561,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       }
     }
 
-    state = AsyncData(await _loadAll());
+    await _updateState();
     return duplicate;
   }
 
@@ -558,7 +584,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     final entity = ConversationEntity.fromDomain(updated);
     if (existingEntity != null) entity.internalId = existingEntity.internalId;
     db.conversationBox.put(entity);
-    state = AsyncData(await _loadAll());
+    await _updateState();
   }
 
   String _generateUuid() {
@@ -570,44 +596,42 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
   }
 }
 
+final activeConversationIdProvider =
+    NotifierProvider<ActiveConversationIdNotifier, String?>(() {
+      return ActiveConversationIdNotifier();
+    });
+
+class ActiveConversationIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setActiveConversationId(String? id) {
+    state = id;
+  }
+
+  void setActiveConversation(Conversation? conversation) {
+    state = conversation?.id;
+  }
+}
+
 final activeConversationProvider =
     NotifierProvider<ActiveConversationNotifier, Conversation?>(() {
       return ActiveConversationNotifier();
     });
 
 class ActiveConversationNotifier extends Notifier<Conversation?> {
-  String? _activeConversationId;
-
   @override
   Conversation? build() {
-    // Use ref.listen instead of ref.watch to avoid triggering invalidateSelf
-    // during a rebuild cycle, which causes a Riverpod assertion error on
-    // pausedActiveSubscriptionCount.
-    ref.listen<AsyncValue<List<Conversation>>>(conversationsProvider, (prev, next) {
-      if (next.hasValue) {
-        Future.microtask(() => _updateFromConversations(next.value!));
-      }
-    });
-
-    final conversationsAsync = ref.read(conversationsProvider);
-    final conversations = conversationsAsync.value ?? [];
-    return _resolveConversation(conversations, _activeConversationId);
-  }
-
-  Conversation? _resolveConversation(List<Conversation> conversations, String? id) {
-    if (id == null) return null;
-    return conversations.where((c) => c.id == id).firstOrNull;
-  }
-
-  void _updateFromConversations(List<Conversation> conversations) {
-    final resolved = _resolveConversation(conversations, _activeConversationId);
-    if (resolved?.id != state?.id) {
-      state = resolved;
-    }
+    final activeId = ref.watch(activeConversationIdProvider);
+    if (activeId == null) return null;
+    final conversations = ref.watch(conversationsProvider).value ?? [];
+    return conversations.where((c) => c.id == activeId).firstOrNull;
   }
 
   void setActiveConversation(Conversation? conversation) {
-    _activeConversationId = conversation?.id;
+    ref
+        .read(activeConversationIdProvider.notifier)
+        .setActiveConversation(conversation);
     state = conversation;
   }
 }
@@ -823,6 +847,13 @@ class ConversationFoldersNotifier extends AsyncNotifier<List<ConversationFolder>
     );
   }
 
+  Future<void> _updateState() async {
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
+  }
+
   static List<ConversationFolder> _loadFoldersInBackground(Store store, _) {
     final entities = store.box<ConversationFolderEntity>().getAll();
     final folders = entities
@@ -855,7 +886,7 @@ class ConversationFoldersNotifier extends AsyncNotifier<List<ConversationFolder>
         createdAt: folder.createdAt,
       ),
     );
-    state = AsyncData(await _loadAll());
+    await _updateState();
     return folder;
   }
 
@@ -869,7 +900,7 @@ class ConversationFoldersNotifier extends AsyncNotifier<List<ConversationFolder>
     if (entity == null) return;
     entity.name = name;
     db.conversationFolderBox.put(entity);
-    state = AsyncData(await _loadAll());
+    await _updateState();
   }
 
   Future<void> deleteFolder(String id) async {
@@ -890,7 +921,7 @@ class ConversationFoldersNotifier extends AsyncNotifier<List<ConversationFolder>
     convQuery.close();
 
     ref.invalidate(conversationsProvider);
-    state = AsyncData(await _loadAll());
+    await _updateState();
   }
 }
 

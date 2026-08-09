@@ -25,6 +25,24 @@ class SelectedModelNotifier extends Notifier<ModelInfo?> {
   void setModel(ModelInfo? model) {
     state = model;
     if (model != null) {
+      if (model.serverType == ServerType.onDevice) {
+        final engineState = ref.read(onDeviceEngineProvider);
+        if (engineState.loadedModelId != null &&
+            engineState.status == OnDeviceEngineStatus.loaded) {
+          final activeServer = ref.read(activeServerProvider);
+          if (activeServer?.type != ServerType.onDevice) {
+            final servers = ref.read(serversProvider).value ?? [];
+            final onDeviceServer = servers
+                .where((s) => s.type == ServerType.onDevice)
+                .firstOrNull;
+            if (onDeviceServer != null) {
+              ref
+                  .read(activeServerIdProvider.notifier)
+                  .setActiveServer(onDeviceServer);
+            }
+          }
+        }
+      }
       _normalizeReasoningForModel(model);
     }
   }

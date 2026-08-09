@@ -110,7 +110,7 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
                                 isActive: activeServer?.id == server.id,
                                 onTap: () {
                                   ref
-                                      .read(activeServerProvider.notifier)
+                                      .read(activeServerIdProvider.notifier)
                                       .setActiveServer(server);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(

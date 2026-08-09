@@ -28,11 +28,66 @@ final serversProvider = AsyncNotifierProvider<ServersNotifier, List<Server>>(
   },
 );
 
+final activeServerIdProvider =
+    NotifierProvider<ActiveServerIdNotifier, String?>(() {
+      return ActiveServerIdNotifier();
+    });
+
+class ActiveServerIdNotifier extends Notifier<String?> {
+  static const _key = 'defaultServerId';
+
+  @override
+  String? build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return prefs.getString(_key);
+  }
+
+  void setActiveServerId(String? id) {
+    state = id;
+    final prefs = ref.read(sharedPreferencesProvider);
+    if (id != null) {
+      prefs.setString(_key, id);
+    } else {
+      prefs.remove(_key);
+    }
+  }
+
+  void setActiveServer(Server? server) {
+    setActiveServerId(server?.id);
+  }
+}
+
 final activeServerProvider = NotifierProvider<ActiveServerNotifier, Server?>(
   () {
     return ActiveServerNotifier();
   },
 );
+
+class ActiveServerNotifier extends Notifier<Server?> {
+  @override
+  Server? build() {
+    final activeId = ref.watch(activeServerIdProvider);
+    final servers = ref.watch(serversProvider).value ?? [];
+    return _resolveServer(servers, activeId);
+  }
+
+  Server? _resolveServer(List<Server> servers, String? defaultServerId) {
+    if (servers.isEmpty) return null;
+
+    if (defaultServerId != null && defaultServerId.isNotEmpty) {
+      final matching = servers.where((s) => s.id == defaultServerId);
+      if (matching.isNotEmpty) return matching.first;
+    }
+
+    final defaults = servers.where((s) => s.isDefault);
+    return defaults.isNotEmpty ? defaults.first : servers.first;
+  }
+
+  void setActiveServer(Server? server) {
+    ref.read(activeServerIdProvider.notifier).setActiveServer(server);
+    state = server;
+  }
+}
 
 final connectionStatusProvider =
     NotifierProvider<ConnectionStatusNotifier, ConnectionStatus>(() {
@@ -265,58 +320,6 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
   }
 }
 
-class ActiveServerNotifier extends Notifier<Server?> {
-  @override
-  Server? build() {
-    // Use ref.listen instead of ref.watch to avoid triggering invalidateSelf
-    // during a rebuild cycle, which causes a Riverpod assertion error on
-    // pausedActiveSubscriptionCount.
-    ref.listen<AsyncValue<List<Server>>>(serversProvider, (prev, next) {
-      if (next.hasValue) {
-        Future.microtask(() => _updateFromServers(next.value!));
-      }
-    });
-
-    final prefs = ref.read(sharedPreferencesProvider);
-    final serversAsync = ref.read(serversProvider);
-    final servers = serversAsync.value ?? [];
-    return _resolveServer(servers, prefs.getString('defaultServerId'));
-  }
-
-  Server? _resolveServer(List<Server> servers, String? defaultServerId) {
-    if (servers.isEmpty) return null;
-
-    if (defaultServerId != null && defaultServerId.isNotEmpty) {
-      final matching = servers.where((s) => s.id == defaultServerId);
-      if (matching.isNotEmpty) return matching.first;
-    }
-
-    final defaults = servers.where((s) => s.isDefault);
-    return defaults.isNotEmpty ? defaults.first : servers.first;
-  }
-
-  void _updateFromServers(List<Server> servers) {
-    final prefs = ref.read(sharedPreferencesProvider);
-    final currentId = state?.id;
-    final resolved = _resolveServer(
-      servers,
-      currentId ?? prefs.getString('defaultServerId'),
-    );
-    if (resolved?.id != state?.id || resolved?.status != state?.status) {
-      state = resolved;
-    }
-  }
-
-  void setActiveServer(Server? server) {
-    final prefs = ref.read(sharedPreferencesProvider);
-    state = server;
-    if (server != null) {
-      prefs.setString('defaultServerId', server.id);
-    } else {
-      prefs.remove('defaultServerId');
-    }
-  }
-}
 
 class ConnectionStatusNotifier extends Notifier<ConnectionStatus> {
   @override

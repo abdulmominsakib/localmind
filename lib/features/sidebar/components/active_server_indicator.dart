@@ -210,7 +210,7 @@ class ActiveServerIndicator extends ConsumerWidget {
                                       : () {
                                           ref
                                               .read(
-                                                activeServerProvider.notifier,
+                                                activeServerIdProvider.notifier,
                                               )
                                               .setActiveServer(server);
                                           Navigator.pop(context);

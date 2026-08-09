@@ -197,7 +197,7 @@ class _OnboardingServerSetupScreenState
       await ref.read(serversProvider.notifier).addServer(server);
       await ref.read(serversProvider.notifier).setDefault(server.id);
       invalidateAvailableModelsCache(server.id);
-      ref.read(activeServerProvider.notifier).setActiveServer(server);
+      ref.read(activeServerIdProvider.notifier).setActiveServer(server);
 
       if (mounted) {
         context.push(AppRoutes.onboardingTheme);

@@ -111,7 +111,7 @@ void showServerPickerSheet(BuildContext context, WidgetRef ref) {
                             ? null
                             : () {
                                 ref
-                                    .read(activeServerProvider.notifier)
+                                    .read(activeServerIdProvider.notifier)
                                     .setActiveServer(server);
                                 Navigator.pop(context);
                               },

@@ -16,6 +16,7 @@ import '../data/models/on_device_model.dart';
 import '../data/notification_permission_service.dart';
 import '../data/on_device_gemma_service.dart';
 import '../data/on_device_llama_service.dart';
+import '../../servers/providers/server_providers.dart';
 
 final notificationPermissionServiceProvider =
     Provider<NotificationPermissionService>((ref) {
@@ -188,9 +189,44 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
 }
 
 class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
+  bool _hasScheduledRestore = false;
+
   @override
   OnDeviceEngineState build() {
+    if (!_hasScheduledRestore) {
+      _hasScheduledRestore = true;
+      Future.microtask(() => _restoreActiveModel());
+    }
     return const OnDeviceEngineState();
+  }
+
+  /// After an app restart, the native model manager restores the last active
+  /// inference model spec (logged as "[ModelManager] restored active inference
+  /// model: ..."). The spec alone does NOT mean the model is loaded in memory,
+  /// so we only sync the service's tracking (enabling lazy-load on first chat)
+  /// without flipping the engine state to `loaded`. This keeps the model
+  /// manager and model picker from showing a not-yet-loaded model as active.
+  Future<void> _restoreActiveModel() async {
+    if (!ref.mounted) return;
+
+    final specName = _gemmaService.restoredActiveModelName;
+    if (specName == null) return;
+
+    final models = ref.read(onDeviceModelsProvider);
+    final model = models.where((m) => m.fileName == specName).firstOrNull;
+    if (model == null) return;
+
+    final settings = ref.read(settingsProvider);
+    final backend = model.isCpuOnly
+        ? PreferredBackend.cpu
+        : settings.preferredBackend;
+
+    // Sync the service so createChat can lazy-load on first use.
+    _gemmaService.syncFromRestoredSpec(backend);
+
+    Log.info(
+      'Restored active inference model spec: ${model.id} (${model.fileName})',
+    );
   }
 
   OnDeviceGemmaService get _gemmaService =>
@@ -266,6 +302,18 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
         loadedRuntime: model.runtime,
         backend: effectiveBackend,
       );
+
+      final activeServer = ref.read(activeServerProvider);
+      if (activeServer?.type != ServerType.onDevice) {
+        final servers = await ref.read(serversProvider.future);
+        final onDeviceServer =
+            servers.where((s) => s.type == ServerType.onDevice).firstOrNull;
+        if (onDeviceServer != null) {
+          ref
+              .read(activeServerIdProvider.notifier)
+              .setActiveServer(onDeviceServer);
+        }
+      }
 
       Log.info(
         'Model $modelId loaded successfully with ${effectiveBackend.name}',

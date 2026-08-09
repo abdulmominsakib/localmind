@@ -4,7 +4,6 @@ import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
 
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
-import '../../../core/services/crash_report_service.dart';
 import '../../../core/utils/bpe_decoder.dart';
 import '../../chat/data/chat_service.dart';
 import '../../chat/data/models/chat_parameters.dart';
@@ -15,18 +14,11 @@ import '../../servers/data/models/server.dart';
 import 'on_device_gemma_service.dart';
 
 class OnDeviceChatService implements ChatService {
-  final OnDeviceGemmaService _gemmaService;
-  StreamSubscription<gemma.ModelResponse>? _currentSubscription;
-  StreamController<ChatResponse>? _streamController;
-  gemma.InferenceChat? _activeChat;
-  String? _activeModelId;
-  String? _activeSystemInstruction;
-  // Safe in Dart's single-threaded event loop: reads/writes are not
-  // interrupted by other isolates, and async boundaries only yield control
-  // at `await` points — so simple `bool` state is sufficient.
-  bool _isCancelled = false;
-
   OnDeviceChatService(this._gemmaService);
+
+  final OnDeviceInferenceService _gemmaService;
+  final Set<_InferenceRun> _activeRuns = <_InferenceRun>{};
+  bool _isDisposed = false;
 
   @override
   Stream<ChatResponse> sendMessage({
@@ -38,260 +30,277 @@ class OnDeviceChatService implements ChatService {
     List<ToolDefinition>? tools,
     bool continueGeneration = false,
   }) {
-    cancelStream();
-    _isCancelled = false;
-    _streamController = StreamController<ChatResponse>();
+    late final _InferenceRun run;
+    final controller = StreamController<ChatResponse>();
+    run = _InferenceRun(controller);
+    controller.onCancel = () => _cancelRun(run, notifyListener: false);
 
-    _startInference(modelId, messages, params);
+    if (_isDisposed) {
+      scheduleMicrotask(() async {
+        controller.add(
+          const ChatResponse(
+            type: ChatResponseType.error,
+            content: 'On-device chat service has been disposed',
+          ),
+        );
+        controller.add(const ChatResponse(type: ChatResponseType.done));
+        await controller.close();
+      });
+      return controller.stream;
+    }
 
-    return _streamController!.stream;
+    _activeRuns.add(run);
+    unawaited(_startInference(run, modelId, messages, params));
+    return controller.stream;
   }
 
   Future<void> _startInference(
+    _InferenceRun run,
     String modelId,
     List<Message> messages,
     ChatParameters params,
   ) async {
     try {
-      if (!_gemmaService.isLoaded || _isCancelled) {
-        _streamController?.add(
-          const ChatResponse(
-            type: ChatResponseType.error,
-            content: 'Model not loaded',
-          ),
-        );
-        _streamController?.add(const ChatResponse(type: ChatResponseType.done));
-        await _streamController?.close();
-        return;
-      }
-
       final systemInstruction = params.systemPrompt?.isNotEmpty == true
           ? params.systemPrompt
           : null;
+      final session = await _gemmaService.createChat(
+        systemInstruction: systemInstruction,
+        tools: const [],
+      );
+      run.session = session;
 
-      final gemmaMessages = _convertMessages(messages);
-
-      bool canReuse = false;
-      List<gemma.Message> newMessagesToFeed = [];
-
-      if (_activeChat != null &&
-          _activeModelId == modelId &&
-          _activeSystemInstruction == systemInstruction) {
-        final existingHistory = _activeChat!.fullHistory;
-        if (existingHistory.length <= gemmaMessages.length) {
-          bool isPrefix = true;
-          for (int i = 0; i < existingHistory.length; i++) {
-            if (existingHistory[i].text != gemmaMessages[i].text ||
-                existingHistory[i].isUser != gemmaMessages[i].isUser) {
-              isPrefix = false;
-              break;
-            }
-          }
-          if (isPrefix) {
-            canReuse = true;
-            newMessagesToFeed = gemmaMessages.sublist(existingHistory.length);
-          }
-        }
-      }
-
-      gemma.InferenceChat chat;
-      if (canReuse) {
-        chat = _activeChat!;
-        Log.debug('Reusing existing active chat session for on-device inference.');
-        for (final msg in newMessagesToFeed) {
-          if (_isCancelled) break;
-          await chat.addQueryChunk(msg);
-        }
-      } else {
-        Log.debug('Creating new chat session for on-device inference.');
-        if (_activeChat != null) {
-          _disposeChat(_activeChat!);
-          _activeChat = null;
-        }
-
-        final newChat = await _gemmaService.createChat(
-          systemInstruction: systemInstruction,
-          tools: const [],
-        );
-
-        if (newChat == null) {
-          _streamController?.add(
-            const ChatResponse(
-              type: ChatResponseType.error,
-              content: 'Failed to create chat session',
-            ),
-          );
-          _streamController?.add(const ChatResponse(type: ChatResponseType.done));
-          await _streamController?.close();
-          return;
-        }
-
-        chat = newChat;
-        _activeChat = chat;
-        _activeModelId = modelId;
-        _activeSystemInstruction = systemInstruction;
-
-        for (final msg in gemmaMessages) {
-          if (_isCancelled) break;
-          await chat.addQueryChunk(msg);
-        }
-      }
-
-      if (_isCancelled) {
-        _disposeChat(chat);
-        _activeChat = null;
-        _streamController?.add(const ChatResponse(type: ChatResponseType.done));
-        await _streamController?.close();
+      if (run.isCancelled) {
+        await _closeSession(run, stopGeneration: false);
         return;
       }
 
-      // Start streaming response
-      final responseStream = chat.generateChatResponseAsync();
-      final completer = Completer<void>();
+      for (final message in _convertMessages(messages)) {
+        if (run.isCancelled) {
+          await _closeSession(run, stopGeneration: false);
+          return;
+        }
+        await session.addQueryChunk(message);
+      }
 
-      final isBpeModel = modelId.toLowerCase().contains('qwen') ||
+      if (run.isCancelled) {
+        await _closeSession(run, stopGeneration: false);
+        return;
+      }
+
+      final isBpeModel =
+          modelId.toLowerCase().contains('qwen') ||
           modelId.toLowerCase().contains('deepseek');
-      final textDecoder = isBpeModel ? BpeDecoder() : null;
-      final reasoningDecoder = isBpeModel ? BpeDecoder() : null;
+      run.textDecoder = isBpeModel ? BpeDecoder() : null;
+      run.reasoningDecoder = isBpeModel ? BpeDecoder() : null;
+      run.generationStarted = true;
 
-      _currentSubscription = responseStream.listen(
-        (response) {
-          if (_isCancelled) return;
-
-          try {
-            if (response is gemma.TextResponse) {
-              if (response.token.isNotEmpty) {
-                final content = textDecoder != null
-                    ? textDecoder.decodeChunk(response.token)
-                    : response.token;
-                if (content.isNotEmpty) {
-                  _streamController?.add(
-                    ChatResponse(
-                      type: ChatResponseType.message,
-                      content: content,
-                    ),
-                  );
-                }
-              }
-            } else if (response is gemma.FunctionCallResponse) {
-              _streamController?.add(
-                ChatResponse(
-                  type: ChatResponseType.toolCall,
-                  toolCall: ToolCallData(
-                    tool: response.name,
-                    arguments: response.args,
-                  ),
-                ),
-              );
-            } else if (response is gemma.ThinkingResponse) {
-              if (response.content.isNotEmpty) {
-                final reasoningContent = reasoningDecoder != null
-                    ? reasoningDecoder.decodeChunk(response.content)
-                    : response.content;
-                if (reasoningContent.isNotEmpty) {
-                  _streamController?.add(
-                    ChatResponse(
-                      type: ChatResponseType.reasoning,
-                      reasoningContent: reasoningContent,
-                    ),
-                  );
-                }
-              }
-            }
-          } catch (error, stackTrace) {
-            Log.error('OnDevice stream handling error: $error\n$stackTrace');
-            CrashReportService.instance.capture(error, stackTrace);
-            if (!_isCancelled && !(_streamController?.isClosed ?? true)) {
-              _streamController?.add(
-                ChatResponse(
-                  type: ChatResponseType.error,
-                  content: 'Inference error: ${error.toString()}',
-                ),
-              );
-              _streamController?.add(
-                const ChatResponse(type: ChatResponseType.done),
-              );
-              _streamController?.close();
-            }
-          }
+      final completer = Completer<void>();
+      run.streamCompleter = completer;
+      run.subscription = session.generateChatResponseAsync().listen(
+        (response) => _handleResponse(run, response),
+        onDone: () async {
+          run.subscription = null;
+          await _finishSuccessfully(run);
         },
-        onDone: () {
-          if (!_isCancelled) {
-            final finalToken = textDecoder?.flush() ?? '';
-            final finalReasoning = reasoningDecoder?.flush() ?? '';
-            if (finalToken.isNotEmpty) {
-              _streamController?.add(
-                ChatResponse(
-                  type: ChatResponseType.message,
-                  content: finalToken,
-                ),
-              );
-            }
-            if (finalReasoning.isNotEmpty) {
-              _streamController?.add(
-                ChatResponse(
-                  type: ChatResponseType.reasoning,
-                  reasoningContent: finalReasoning,
-                ),
-              );
-            }
-            _streamController?.add(
-              const ChatResponse(type: ChatResponseType.done),
-            );
-            _streamController?.close();
-          }
-          _currentSubscription = null;
-          if (!completer.isCompleted) completer.complete();
-        },
-        onError: (error, stackTrace) {
+        onError: (Object error, StackTrace stackTrace) async {
+          run.subscription = null;
           Log.error('OnDevice stream error: $error');
-          CrashReportService.instance.capture(
-            error,
-            stackTrace is StackTrace ? stackTrace : StackTrace.current,
-          );
-          if (!_isCancelled && !(_streamController?.isClosed ?? true)) {
-            _streamController?.add(
-              ChatResponse(
-                type: ChatResponseType.error,
-                content: 'Inference error: ${error.toString()}',
-              ),
-            );
-            _streamController?.add(
-              const ChatResponse(type: ChatResponseType.done),
-            );
-            _streamController?.close();
-          }
-          _disposeChat(chat);
-          if (_activeChat == chat) {
-            _activeChat = null;
-          }
-          _currentSubscription = null;
-          if (!completer.isCompleted) completer.complete();
+          await _finishWithError(run, 'Inference error: $error');
         },
         cancelOnError: true,
       );
-
       await completer.future;
-    } catch (e, stackTrace) {
-      Log.error('OnDevice inference error: $e');
-      CrashReportService.instance.capture(e, stackTrace);
-      if (!(_streamController?.isClosed ?? true)) {
-        _streamController?.add(
-          ChatResponse(
-            type: ChatResponseType.error,
-            content: 'Inference error: ${e.toString()}',
-          ),
-        );
-        _streamController?.add(const ChatResponse(type: ChatResponseType.done));
-        await _streamController?.close();
+    } catch (error, stackTrace) {
+      if (run.isCancelled) {
+        await _closeSession(run, stopGeneration: run.generationStarted);
+        return;
       }
+      Log.error('OnDevice inference error: $error\n$stackTrace');
+      await _finishWithError(run, 'Inference error: $error');
     }
   }
 
-  void _disposeChat(gemma.InferenceChat chat) {
-    chat.close().catchError((e) {
-      Log.error('Error disposing chat: $e');
-    });
+  void _handleResponse(_InferenceRun run, gemma.ModelResponse response) {
+    if (run.isCancelled || run.controller.isClosed) return;
+
+    try {
+      if (response is gemma.TextResponse && response.token.isNotEmpty) {
+        final content =
+            run.textDecoder?.decodeChunk(response.token) ?? response.token;
+        if (content.isNotEmpty) {
+          run.controller.add(
+            ChatResponse(type: ChatResponseType.message, content: content),
+          );
+        }
+      } else if (response is gemma.FunctionCallResponse) {
+        run.controller.add(
+          ChatResponse(
+            type: ChatResponseType.toolCall,
+            toolCall: ToolCallData(
+              tool: response.name,
+              arguments: response.args,
+            ),
+          ),
+        );
+      } else if (response is gemma.ThinkingResponse &&
+          response.content.isNotEmpty) {
+        final content =
+            run.reasoningDecoder?.decodeChunk(response.content) ??
+            response.content;
+        if (content.isNotEmpty) {
+          run.controller.add(
+            ChatResponse(
+              type: ChatResponseType.reasoning,
+              reasoningContent: content,
+            ),
+          );
+        }
+      }
+    } catch (error, stackTrace) {
+      Log.error('OnDevice stream handling error: $error\n$stackTrace');
+      unawaited(
+        _finishWithError(run, 'Inference error: $error', abortGeneration: true),
+      );
+    }
+  }
+
+  Future<void> _finishSuccessfully(_InferenceRun run) async {
+    if (!run.beginFinishing()) return;
+
+    if (!run.isCancelled && !run.controller.isClosed) {
+      try {
+        final finalToken = run.textDecoder?.flush() ?? '';
+        final finalReasoning = run.reasoningDecoder?.flush() ?? '';
+        if (finalToken.isNotEmpty) {
+          run.controller.add(
+            ChatResponse(type: ChatResponseType.message, content: finalToken),
+          );
+        }
+        if (finalReasoning.isNotEmpty) {
+          run.controller.add(
+            ChatResponse(
+              type: ChatResponseType.reasoning,
+              reasoningContent: finalReasoning,
+            ),
+          );
+        }
+      } catch (error) {
+        Log.error('Error flushing BPE decoders: $error');
+      }
+    }
+
+    await _closeSession(run, stopGeneration: false);
+    await _closeController(run, notifyListener: !run.isCancelled);
+    _activeRuns.remove(run);
+    _completeRunFuture(run);
+  }
+
+  Future<void> _finishWithError(
+    _InferenceRun run,
+    String message, {
+    bool abortGeneration = false,
+  }) async {
+    if (!run.beginFinishing()) return;
+
+    if (abortGeneration) {
+      final session = run.session;
+      if (session != null && run.generationStarted) {
+        try {
+          await session.stopGeneration();
+        } catch (error) {
+          Log.warning('Error stopping failed on-device generation: $error');
+        }
+      }
+      final subscription = run.subscription;
+      run.subscription = null;
+      await subscription?.cancel();
+    }
+    await _closeSession(run, stopGeneration: false);
+    if (!run.isCancelled && !run.controller.isClosed) {
+      run.controller.add(
+        ChatResponse(type: ChatResponseType.error, content: message),
+      );
+    }
+    await _closeController(run, notifyListener: !run.isCancelled);
+    _activeRuns.remove(run);
+    _completeRunFuture(run);
+  }
+
+  Future<void> _cancelRun(
+    _InferenceRun run, {
+    required bool notifyListener,
+  }) async {
+    // StreamController.onCancel may re-enter while cleanup is closing the
+    // controller. Waiting on that same cleanup future would deadlock the
+    // controller close, so repeated cancellation is deliberately a no-op.
+    if (run.isCancelled) return;
+    run.isCancelled = true;
+    if (!run.beginFinishing()) {
+      return;
+    }
+
+    final cleanup = () async {
+      final subscription = run.subscription;
+      run.subscription = null;
+      if (run.generationStarted) {
+        final session = run.session;
+        if (session != null) {
+          try {
+            await session.stopGeneration();
+          } catch (error) {
+            Log.warning('Error stopping on-device generation: $error');
+          }
+        }
+      }
+      await subscription?.cancel();
+      await _closeSession(run, stopGeneration: false);
+      await _closeController(run, notifyListener: notifyListener);
+      _activeRuns.remove(run);
+      _completeRunFuture(run);
+    }();
+    await cleanup;
+  }
+
+  void _completeRunFuture(_InferenceRun run) {
+    final completer = run.streamCompleter;
+    run.streamCompleter = null;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
+    }
+  }
+
+  Future<void> _closeSession(
+    _InferenceRun run, {
+    required bool stopGeneration,
+  }) async {
+    final session = run.session;
+    run.session = null;
+    if (session == null) return;
+
+    if (stopGeneration) {
+      try {
+        await session.stopGeneration();
+      } catch (error) {
+        Log.warning('Error stopping on-device generation: $error');
+      }
+    }
+    try {
+      await session.close();
+    } catch (error) {
+      Log.warning('Error closing on-device chat session: $error');
+    }
+  }
+
+  Future<void> _closeController(
+    _InferenceRun run, {
+    required bool notifyListener,
+  }) async {
+    if (run.controller.isClosed) return;
+    if (notifyListener) {
+      run.controller.add(const ChatResponse(type: ChatResponseType.done));
+    }
+    await run.controller.close();
   }
 
   List<gemma.Message> _convertMessages(List<Message> messages) {
@@ -303,15 +312,15 @@ class OnDeviceChatService implements ChatService {
     }
     return list
         .where(
-          (m) =>
-              m.role == MessageRole.user ||
-              m.role == MessageRole.assistant ||
-              m.role == MessageRole.system,
+          (message) =>
+              message.role == MessageRole.user ||
+              message.role == MessageRole.assistant ||
+              message.role == MessageRole.system,
         )
         .map(
-          (m) => gemma.Message.text(
-            text: m.content,
-            isUser: m.role == MessageRole.user,
+          (message) => gemma.Message.text(
+            text: message.content,
+            isUser: message.role == MessageRole.user,
           ),
         )
         .toList();
@@ -319,27 +328,34 @@ class OnDeviceChatService implements ChatService {
 
   @override
   void cancelStream() {
-    _isCancelled = true;
-
-    _currentSubscription?.cancel();
-    _currentSubscription = null;
-
-    if (_activeChat != null) {
-      _activeChat!.stopGeneration().catchError((e) {
-        Log.error('Error stopping generation: $e');
-      });
-    }
-
-    if (!(_streamController?.isClosed ?? true)) {
-      _streamController?.add(const ChatResponse(type: ChatResponseType.done));
-      _streamController?.close();
+    for (final run in _activeRuns.toList()) {
+      unawaited(_cancelRun(run, notifyListener: true));
     }
   }
 
   void dispose() {
-    if (_activeChat != null) {
-      _disposeChat(_activeChat!);
-      _activeChat = null;
-    }
+    if (_isDisposed) return;
+    _isDisposed = true;
+    cancelStream();
+  }
+}
+
+class _InferenceRun {
+  _InferenceRun(this.controller);
+
+  final StreamController<ChatResponse> controller;
+  StreamSubscription<gemma.ModelResponse>? subscription;
+  OnDeviceInferenceSession? session;
+  Completer<void>? streamCompleter;
+  BpeDecoder? textDecoder;
+  BpeDecoder? reasoningDecoder;
+  bool generationStarted = false;
+  bool isCancelled = false;
+  bool _isFinishing = false;
+
+  bool beginFinishing() {
+    if (_isFinishing) return false;
+    _isFinishing = true;
+    return true;
   }
 }

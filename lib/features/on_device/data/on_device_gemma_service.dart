@@ -7,16 +7,78 @@ import 'package:path_provider/path_provider.dart';
 import '../../../core/logger/app_logger.dart';
 import 'models/on_device_model.dart';
 
-class OnDeviceGemmaService {
+abstract interface class OnDeviceInferenceSession {
+  Future<void> addQueryChunk(Message message);
+
+  Stream<ModelResponse> generateChatResponseAsync();
+
+  Future<void> stopGeneration();
+
+  Future<void> close();
+}
+
+abstract interface class OnDeviceInferenceService {
+  bool get isLoaded;
+
+  Future<OnDeviceInferenceSession> createChat({
+    String? systemInstruction,
+    List<Tool> tools,
+  });
+}
+
+class _GemmaInferenceSession implements OnDeviceInferenceSession {
+  _GemmaInferenceSession(this._chat);
+
+  final InferenceChat _chat;
+
+  @override
+  Future<void> addQueryChunk(Message message) => _chat.addQueryChunk(message);
+
+  @override
+  Stream<ModelResponse> generateChatResponseAsync() =>
+      _chat.generateChatResponseAsync();
+
+  @override
+  Future<void> stopGeneration() => _chat.stopGeneration();
+
+  @override
+  Future<void> close() => _chat.close();
+}
+
+class OnDeviceGemmaService implements OnDeviceInferenceService {
   InferenceModel? _model;
   String? _currentModelId;
   PreferredBackend? _currentBackend;
   bool _isDisposed = false;
+  Future<void>? _recoveryFuture;
 
   InferenceModel? get activeModel => _model;
   String? get currentModelId => _currentModelId;
+  @override
   bool get isLoaded => _model != null && !_isDisposed;
   bool get isDisposed => _isDisposed;
+
+  /// The filename of the model restored by the native model manager on app
+  /// restart (e.g. "Qwen3-0.6B.litertlm"), or null if no active model spec is
+  /// set. This is a cheap synchronous read that does NOT load the engine.
+  String? get restoredActiveModelName => FlutterGemma.activeModelSpec?.name;
+
+  /// Syncs the service's internal tracking to the native restored active model
+  /// spec so that [createChat] can lazy-load the model on first use after a
+  /// restart. Sets both [_currentModelId] and [_currentBackend] so the
+  /// lazy-load path in [createChat] can actually trigger.
+  void syncFromRestoredSpec(PreferredBackend backend) {
+    final specName = restoredActiveModelName;
+    if (specName == null) return;
+
+    final model = OnDeviceModel.curatedModels.firstWhere(
+      (m) => m.fileName == specName,
+      orElse: () => throw StateError('No curated model for $specName'),
+    );
+
+    _currentModelId = model.id;
+    _currentBackend = backend;
+  }
 
   static Future<void> initialize({String? huggingFaceToken}) async {
     await FlutterGemma.initialize(
@@ -34,17 +96,14 @@ class OnDeviceGemmaService {
     Log.info('Installing model ${model.id} from ${model.huggingFaceUrl}');
 
     await FlutterGemma.installModel(
-      modelType: model.flutterGemmaModelType,
-      fileType: ModelFileType.litertlm,
-    )
-        .fromNetwork(
-          model.huggingFaceUrl,
-          token: token,
-          foreground: true,
+          modelType: model.flutterGemmaModelType,
+          fileType: ModelFileType.litertlm,
         )
+        .fromNetwork(model.huggingFaceUrl, token: token, foreground: true)
         .withProgress((progress) {
-      onProgress?.call(progress);
-    }).install();
+          onProgress?.call(progress);
+        })
+        .install();
 
     Log.info('Model ${model.id} installed successfully');
   }
@@ -138,19 +197,88 @@ class OnDeviceGemmaService {
     Log.info('Model $modelId loaded successfully');
   }
 
-  Future<InferenceChat?> createChat({
+  @override
+  Future<OnDeviceInferenceSession> createChat({
     String? systemInstruction,
     List<Tool> tools = const [],
   }) async {
-    if (_model == null) {
+    await _ensureModelLoaded();
+
+    try {
+      return await _openChat(
+        systemInstruction: systemInstruction,
+        tools: tools,
+      );
+    } catch (e) {
+      if (!_isClosedClientError(e)) rethrow;
+
+      Log.warning(
+        'Gemma FFI model closed while opening an independent chat ($e). '
+        'Reloading the model once.',
+      );
+      await _recoverClosedModel();
+      return _openChat(systemInstruction: systemInstruction, tools: tools);
+    }
+  }
+
+  Future<void> _ensureModelLoaded() async {
+    if (_model != null) return;
+    if (_currentModelId == null || _currentBackend == null) {
       throw StateError('Model not loaded. Call loadModel first.');
     }
+    await loadModel(_currentModelId!, _currentBackend!);
+  }
 
-    return _model!.createChat(
+  Future<OnDeviceInferenceSession> _openChat({
+    required String? systemInstruction,
+    required List<Tool> tools,
+  }) async {
+    final chat = await _model!.openChat(
       systemInstruction: systemInstruction,
       tools: tools,
       supportsFunctionCalls: tools.isNotEmpty,
     );
+    return _GemmaInferenceSession(chat);
+  }
+
+  bool _isClosedClientError(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('client shut down') ||
+        message.contains('model is closed') ||
+        message.contains('model was closed');
+  }
+
+  Future<void> _recoverClosedModel() {
+    final existing = _recoveryFuture;
+    if (existing != null) return existing;
+
+    final modelId = _currentModelId;
+    final backend = _currentBackend;
+    if (modelId == null || backend == null) {
+      return Future.error(
+        StateError('Cannot recover on-device model without a selected model'),
+      );
+    }
+
+    final recovery = () async {
+      final staleModel = _model;
+      if (staleModel != null) {
+        try {
+          await staleModel.close();
+        } catch (error) {
+          Log.warning('Error awaiting stale Gemma model shutdown: $error');
+        }
+      }
+      _model = null;
+      await loadModel(modelId, backend);
+    }();
+
+    _recoveryFuture = recovery;
+    return recovery.whenComplete(() {
+      if (identical(_recoveryFuture, recovery)) {
+        _recoveryFuture = null;
+      }
+    });
   }
 
   Future<void> unloadModel() async {
@@ -187,8 +315,9 @@ class OnDeviceGemmaService {
           final modelId = fileName.replaceAll('.litertlm', '');
 
           // Check if already registered in flutter_gemma
-          final alreadyInstalled =
-              await FlutterGemma.isModelInstalled(fileName);
+          final alreadyInstalled = await FlutterGemma.isModelInstalled(
+            fileName,
+          );
           if (alreadyInstalled) continue;
 
           // Register the existing file with flutter_gemma

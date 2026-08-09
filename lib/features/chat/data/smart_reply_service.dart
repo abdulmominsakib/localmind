@@ -9,7 +9,43 @@ import 'models/chat_parameters.dart';
 import 'models/message.dart';
 
 class SmartReplyService {
+  final Map<String, Future<List<String>>> _inFlightSuggestions = {};
+
   Future<List<String>> suggestRepliesWithLLM({
+    required ChatService chatService,
+    required Server server,
+    required String modelId,
+    required List<Message> messages,
+    required ChatParameters params,
+    String? personaSystemPrompt,
+  }) async {
+    if (messages.isEmpty) return [];
+
+    final lastMessage = messages.last;
+    final requestKey =
+        '${lastMessage.conversationId}:${lastMessage.id}:$modelId';
+    final existing = _inFlightSuggestions[requestKey];
+    if (existing != null) return existing;
+
+    final request = _suggestRepliesWithLLM(
+      chatService: chatService,
+      server: server,
+      modelId: modelId,
+      messages: messages,
+      params: params,
+      personaSystemPrompt: personaSystemPrompt,
+    );
+    _inFlightSuggestions[requestKey] = request;
+    try {
+      return await request;
+    } finally {
+      if (identical(_inFlightSuggestions[requestKey], request)) {
+        _inFlightSuggestions.remove(requestKey);
+      }
+    }
+  }
+
+  Future<List<String>> _suggestRepliesWithLLM({
     required ChatService chatService,
     required Server server,
     required String modelId,
@@ -26,16 +62,14 @@ class SmartReplyService {
       id: 'smart-reply-prompt',
       conversationId: lastMessage.conversationId,
       role: MessageRole.user,
-      content: 'Based on the conversation history above, suggest 3 short, natural, context-appropriate reply options that the user (human) might want to send next. '
+      content:
+          'Based on the conversation history above, suggest 3 short, natural, context-appropriate reply options that the user (human) might want to send next. '
           'Return them strictly as a JSON array of strings, for example: ["Reply 1", "Reply 2", "Reply 3"]. '
           'Each reply should be brief (under 8 words). Return ONLY the raw JSON array, with no markdown code block formatting (do not wrap in ```json), explanations, or extra text.',
       createdAt: DateTime.now(),
     );
 
-    final apiMessages = [
-      ...messages,
-      promptMessage,
-    ];
+    final apiMessages = [...messages, promptMessage];
 
     const baseInstruction =
         'You are a smart reply assistant. Your job is to output exactly a JSON array containing 3 suggested short replies for the user. Do not output anything other than the JSON array.';
@@ -44,7 +78,8 @@ class SmartReplyService {
     final suggestionParams = params.copyWith(
       temperature: 0.2,
       maxTokens: 128,
-      systemPrompt: personaSystemPrompt != null && personaSystemPrompt.trim().isNotEmpty
+      systemPrompt:
+          personaSystemPrompt != null && personaSystemPrompt.trim().isNotEmpty
           ? '$personaSystemPrompt\n\n$baseInstruction'
           : baseInstruction,
     );
@@ -63,7 +98,8 @@ class SmartReplyService {
       StreamSubscription? subscription;
       subscription = stream.listen(
         (response) {
-          if (response.type == ChatResponseType.message && response.content != null) {
+          if (response.type == ChatResponseType.message &&
+              response.content != null) {
             accumulatedContent += response.content!;
           } else if (response.type == ChatResponseType.done) {
             subscription?.cancel();
@@ -73,7 +109,9 @@ class SmartReplyService {
           } else if (response.type == ChatResponseType.error) {
             subscription?.cancel();
             if (!completer.isCompleted) {
-              completer.completeError(response.content ?? 'Unknown streaming error');
+              completer.completeError(
+                response.content ?? 'Unknown streaming error',
+              );
             }
           }
         },
@@ -96,7 +134,6 @@ class SmartReplyService {
         const Duration(seconds: 15),
         onTimeout: () {
           subscription?.cancel();
-          chatService.cancelStream();
           return accumulatedContent;
         },
       );
@@ -290,11 +327,7 @@ class SmartReplyService {
         lowerContent.contains('goodbye') ||
         lowerContent.contains('bye') ||
         lowerContent.contains('see you')) {
-      return [
-        'You\'re welcome!',
-        'Thanks for your help!',
-        'Have a great day!',
-      ];
+      return ['You\'re welcome!', 'Thanks for your help!', 'Have a great day!'];
     }
 
     // 3. Code & Programming
@@ -337,7 +370,10 @@ class SmartReplyService {
 
     // 5. Lists & Steps
     final hasNumberedList = RegExp(r'\b\d+\.\s').hasMatch(cleanContent);
-    final hasBulletList = RegExp(r'^[\s]*[-*+]\s', multiLine: true).hasMatch(cleanContent);
+    final hasBulletList = RegExp(
+      r'^[\s]*[-*+]\s',
+      multiLine: true,
+    ).hasMatch(cleanContent);
     if (hasNumberedList ||
         hasBulletList ||
         lowerContent.contains('step 1') ||
@@ -355,18 +391,15 @@ class SmartReplyService {
 
     // 6. Questions asked by the assistant
     if (cleanContent.endsWith('?')) {
-      final isYesNoQuestion = lowerContent.contains('do you') ||
+      final isYesNoQuestion =
+          lowerContent.contains('do you') ||
           lowerContent.contains('can you') ||
           lowerContent.contains('is it') ||
           lowerContent.contains('are you') ||
           lowerContent.contains('would you') ||
           lowerContent.contains('should we');
       if (isYesNoQuestion) {
-        return [
-          'Yes, please.',
-          'No, thank you.',
-          'Can you explain more?',
-        ];
+        return ['Yes, please.', 'No, thank you.', 'Can you explain more?'];
       }
       return [
         'Sure, tell me more.',
@@ -441,7 +474,11 @@ class SmartReplyService {
     ];
   }
 
-  void reset() {}
+  void reset() {
+    _inFlightSuggestions.clear();
+  }
 
-  void dispose() {}
+  void dispose() {
+    _inFlightSuggestions.clear();
+  }
 }
