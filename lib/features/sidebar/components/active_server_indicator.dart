@@ -96,6 +96,8 @@ class ActiveServerIndicator extends ConsumerWidget {
       child: InkWell(
         onTap: () {
           final servers = serversAsync.value ?? [];
+          final scaffold = Scaffold.maybeOf(context);
+          final router = GoRouter.of(context);
 
           showModalBottomSheet(
             context: context,
@@ -311,11 +313,8 @@ class ActiveServerIndicator extends ConsumerWidget {
                             leading: const HugeIcon(icon: HugeIcons.strokeRoundedSettings01, size: 18),
                             onPressed: () {
                               Navigator.pop(context);
-                              context.go(AppRoutes.servers);
-                              if (Scaffold.maybeOf(context)?.isDrawerOpen ??
-                                  false) {
-                                Navigator.pop(context);
-                              }
+                              scaffold?.closeDrawer();
+                              router.go(AppRoutes.servers);
                             },
                             child: Text(l10n.manage_servers),
                           ),

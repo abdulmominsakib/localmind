@@ -273,10 +273,6 @@ class AppShell extends ConsumerWidget {
 
   const AppShell({super.key, required this.child});
 
-  static void openDrawer(BuildContext context) {
-    Scaffold.of(context).openDrawer();
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -340,20 +336,22 @@ class AppShell extends ConsumerWidget {
         }
 
         return Scaffold(
-          body: PopScope(
-            canPop: false,
-            onPopInvokedWithResult: (didPop, _) {
-              if (didPop) return;
-              if (isHome && !hasActiveChat) {
-                // On the empty home screen, open the side drawer instead
-                // of exiting the app — matches the menu icon on the
-                // top-left.
-                Scaffold.of(context).openDrawer();
-                return;
-              }
-              handleBack();
-            },
-            child: child,
+          body: Builder(
+            builder: (scaffoldContext) => PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, _) {
+                if (didPop) return;
+                if (isHome && !hasActiveChat) {
+                  // On the empty home screen, open the side drawer instead
+                  // of exiting the app — matches the menu icon on the
+                  // top-left. This context must be below the Scaffold.
+                  Scaffold.of(scaffoldContext).openDrawer();
+                  return;
+                }
+                handleBack();
+              },
+              child: child,
+            ),
           ),
           drawer: const ConversationDrawer(),
         );

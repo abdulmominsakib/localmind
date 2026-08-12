@@ -132,7 +132,7 @@ void main() {
   });
 
   group('CrashReportService', () {
-    test('buildGitHubIssueUrl points to the configured repo and template', () {
+    test('buildGitHubIssueUrl prefills diagnostics without a template', () {
       final report = _makeReport(
         error: Exception('Boom'),
         stack: StackTrace.current,
@@ -140,10 +140,10 @@ void main() {
       final uri = CrashReportService.instance.buildGitHubIssueUrl(report);
       expect(uri.host, 'github.com');
       expect(uri.path, '/abdulmominsakib/localmind/issues/new');
-      expect(uri.queryParameters['template'], 'crash_report.md');
+      expect(uri.queryParameters, isNot(contains('template')));
       expect(uri.queryParameters['labels'], 'crash,bug');
       expect(uri.queryParameters['title'], 'Crash: Exception: Boom');
-      expect(uri.queryParameters['body'], isNotNull);
+      expect(uri.queryParameters['body'], report.markdownBody);
     });
 
     test('buildFeedbackIssueUrl points to the feedback form', () {

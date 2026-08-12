@@ -288,7 +288,6 @@ class CrashReportService {
       'title': title,
       'body': report.markdownBody,
       'labels': 'crash,bug',
-      'template': issueTemplate,
     };
     return Uri.https('github.com', '/$repoOwner/$repoName/issues/new', params);
   }
