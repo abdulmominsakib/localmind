@@ -740,6 +740,50 @@
   "@settings_tts": {
     "description": "Settings section header for TTS"
   },
+  "settings_android_assistant": "Android Assistant",
+  "@settings_android_assistant": {
+    "description": "Settings section header for Android default assistant integration"
+  },
+  "assistant_default_title": "Use LocalMind as your assistant",
+  "@assistant_default_title": {
+    "description": "Title for the Android default assistant setting"
+  },
+  "assistant_default_description": "Launch voice mode with Android's assistant gesture or power-button shortcut.",
+  "@assistant_default_description": {
+    "description": "Description for the Android default assistant setting"
+  },
+  "assistant_status_active": "Active",
+  "@assistant_status_active": {
+    "description": "Status shown when LocalMind is the default Android assistant"
+  },
+  "assistant_status_available": "Not active",
+  "@assistant_status_available": {
+    "description": "Status shown when LocalMind can request the Android assistant role"
+  },
+  "assistant_status_manual": "Check settings",
+  "@assistant_status_manual": {
+    "description": "Status shown when assistant selection must be checked in Android settings"
+  },
+  "assistant_status_unsupported": "Unavailable",
+  "@assistant_status_unsupported": {
+    "description": "Status shown when the Android assistant role is unavailable"
+  },
+  "assistant_status_checking": "Checking…",
+  "@assistant_status_checking": {
+    "description": "Status shown while checking the Android assistant role"
+  },
+  "assistant_set_default": "Set as default assistant",
+  "@assistant_set_default": {
+    "description": "Button that requests the Android default assistant role"
+  },
+  "assistant_open_settings": "Open Android assistant settings",
+  "@assistant_open_settings": {
+    "description": "Button that opens Android assistant settings"
+  },
+  "assistant_error": "Could not open Android assistant settings.",
+  "@assistant_error": {
+    "description": "Error shown when Android assistant settings cannot be opened"
+  },
   "settings_behavior": "Behavior",
   "@settings_behavior": {
     "description": "Settings section header for behavior"

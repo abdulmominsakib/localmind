@@ -537,6 +537,40 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settings_tts => 'Преобразование текста в речь';
 
   @override
+  String get settings_android_assistant => 'Android Assistant';
+
+  @override
+  String get assistant_default_title => 'Use LocalMind as your assistant';
+
+  @override
+  String get assistant_default_description =>
+      'Launch voice mode with Android\'s assistant gesture or power-button shortcut.';
+
+  @override
+  String get assistant_status_active => 'Active';
+
+  @override
+  String get assistant_status_available => 'Not active';
+
+  @override
+  String get assistant_status_manual => 'Check settings';
+
+  @override
+  String get assistant_status_unsupported => 'Unavailable';
+
+  @override
+  String get assistant_status_checking => 'Checking…';
+
+  @override
+  String get assistant_set_default => 'Set as default assistant';
+
+  @override
+  String get assistant_open_settings => 'Open Android assistant settings';
+
+  @override
+  String get assistant_error => 'Could not open Android assistant settings.';
+
+  @override
   String get settings_behavior => 'Поведение';
 
   @override

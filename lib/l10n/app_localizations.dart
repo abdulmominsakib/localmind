@@ -1077,6 +1077,72 @@ abstract class AppLocalizations {
   /// **'Text-to-Speech'**
   String get settings_tts;
 
+  /// Settings section header for Android default assistant integration
+  ///
+  /// In en, this message translates to:
+  /// **'Android Assistant'**
+  String get settings_android_assistant;
+
+  /// Title for the Android default assistant setting
+  ///
+  /// In en, this message translates to:
+  /// **'Use LocalMind as your assistant'**
+  String get assistant_default_title;
+
+  /// Description for the Android default assistant setting
+  ///
+  /// In en, this message translates to:
+  /// **'Launch voice mode with Android\'s assistant gesture or power-button shortcut.'**
+  String get assistant_default_description;
+
+  /// Status shown when LocalMind is the default Android assistant
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get assistant_status_active;
+
+  /// Status shown when LocalMind can request the Android assistant role
+  ///
+  /// In en, this message translates to:
+  /// **'Not active'**
+  String get assistant_status_available;
+
+  /// Status shown when assistant selection must be checked in Android settings
+  ///
+  /// In en, this message translates to:
+  /// **'Check settings'**
+  String get assistant_status_manual;
+
+  /// Status shown when the Android assistant role is unavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get assistant_status_unsupported;
+
+  /// Status shown while checking the Android assistant role
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get assistant_status_checking;
+
+  /// Button that requests the Android default assistant role
+  ///
+  /// In en, this message translates to:
+  /// **'Set as default assistant'**
+  String get assistant_set_default;
+
+  /// Button that opens Android assistant settings
+  ///
+  /// In en, this message translates to:
+  /// **'Open Android assistant settings'**
+  String get assistant_open_settings;
+
+  /// Error shown when Android assistant settings cannot be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open Android assistant settings.'**
+  String get assistant_error;
+
   /// Settings section header for behavior
   ///
   /// In en, this message translates to:

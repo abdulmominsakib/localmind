@@ -1,6 +1,7 @@
 import 'package:cue/cue.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -11,6 +12,7 @@ import 'package:localmind/l10n/app_localizations.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/services/android_assistant_service.dart';
 import '../../../core/services/app_haptics.dart';
 import '../../../core/services/crash_report_service.dart';
 import '../../../core/theme/app_theme.dart';
@@ -34,6 +36,7 @@ class SettingsViews extends ConsumerWidget {
     final currentTheme = ref.watch(themeModeProvider);
     final systemBottomInset = bottomSystemInset(context);
     final packageInfo = ref.watch(packageInfoProvider);
+    final assistantService = ref.watch(androidAssistantServiceProvider);
     final servers = (ref.watch(serversProvider).value ?? [])
         .map((server) => (server.id, server.name))
         .toList();
@@ -43,19 +46,18 @@ class SettingsViews extends ConsumerWidget {
 
     // The default model dropdown lists models from the server used as the
     // default (the configured default server, falling back to the first one).
-    final defaultServerId = settings.defaultServerId ??
+    final defaultServerId =
+        settings.defaultServerId ??
         (servers.isNotEmpty ? servers.first.$1 : null);
     final availableModels = defaultServerId != null
         ? (ref.watch(availableModelsProvider(defaultServerId)).value ??
-                const <dynamic>[])
-            .cast<ModelInfo>()
+                  const <dynamic>[])
+              .cast<ModelInfo>()
         : <ModelInfo>[];
-    final models = availableModels
-        .map((m) => (m.id, m.displayName))
-        .toList();
+    final models = availableModels.map((m) => (m.id, m.displayName)).toList();
     final isDefaultModelForServer =
         settings.defaultModelServerId != null &&
-            settings.defaultModelServerId == defaultServerId;
+        settings.defaultModelServerId == defaultServerId;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final topPadding = MediaQuery.of(context).padding.top;
@@ -210,6 +212,15 @@ class SettingsViews extends ConsumerWidget {
                   ),
                 ],
               );
+
+              final assistantCard = assistantService.isSupportedPlatform
+                  ? _SettingsSectionCard(
+                      title: l10n.settings_android_assistant,
+                      icon: HugeIcons.strokeRoundedVoice,
+                      accent: const Color(0xFF6366F1),
+                      children: const [_AndroidAssistantSetting()],
+                    )
+                  : null;
 
               final behaviorCard = _SettingsSectionCard(
                 title: l10n.settings_behavior,
@@ -424,7 +435,10 @@ class SettingsViews extends ConsumerWidget {
                     items: models,
                     onChanged: (value) => ref
                         .read(settingsProvider.notifier)
-                        .setDefaultModel(serverId: defaultServerId, modelId: value),
+                        .setDefaultModel(
+                          serverId: defaultServerId,
+                          modelId: value,
+                        ),
                     icon: HugeIcons.strokeRoundedSmartPhone01,
                   ),
                   const SizedBox(height: 8),
@@ -565,6 +579,7 @@ class SettingsViews extends ConsumerWidget {
                                   child: _SettingsSectionColumn(
                                     children: [
                                       ttsCard,
+                                      ?assistantCard,
                                       onDeviceCard,
                                       dataCard,
                                       aboutCard,
@@ -578,6 +593,7 @@ class SettingsViews extends ConsumerWidget {
                               children: [
                                 appearanceCard,
                                 ttsCard,
+                                ?assistantCard,
                                 behaviorCard,
                                 onDeviceCard,
                                 defaultsCard,
@@ -612,6 +628,149 @@ class _SettingsSectionColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: _withVerticalSpacing(children, gap: 16),
+    );
+  }
+}
+
+class _AndroidAssistantSetting extends ConsumerStatefulWidget {
+  const _AndroidAssistantSetting();
+
+  @override
+  ConsumerState<_AndroidAssistantSetting> createState() =>
+      _AndroidAssistantSettingState();
+}
+
+class _AndroidAssistantSettingState
+    extends ConsumerState<_AndroidAssistantSetting>
+    with WidgetsBindingObserver {
+  AndroidAssistantStatus? _status;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshStatus();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshStatus();
+    }
+  }
+
+  Future<void> _refreshStatus() async {
+    final status = await ref.read(androidAssistantServiceProvider).getStatus();
+    if (mounted) setState(() => _status = status);
+  }
+
+  Future<void> _handleAction() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+
+    final service = ref.read(androidAssistantServiceProvider);
+    try {
+      if (_status == AndroidAssistantStatus.available) {
+        await service.requestRole();
+      } else {
+        await service.openSettings();
+      }
+      await _refreshStatus();
+    } on PlatformException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.assistant_error),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final status = _status ?? AndroidAssistantStatus.unknown;
+    final statusLabel = switch (status) {
+      AndroidAssistantStatus.active => l10n.assistant_status_active,
+      AndroidAssistantStatus.available => l10n.assistant_status_available,
+      AndroidAssistantStatus.manual => l10n.assistant_status_manual,
+      AndroidAssistantStatus.unsupported => l10n.assistant_status_unsupported,
+      AndroidAssistantStatus.unknown => l10n.assistant_status_checking,
+    };
+    final actionLabel = status == AndroidAssistantStatus.available
+        ? l10n.assistant_set_default
+        : l10n.assistant_open_settings;
+
+    return _SettingPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.assistant_default_title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.09),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.assistant_default_description,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ShadButton.outline(
+            onPressed: _busy || status == AndroidAssistantStatus.unsupported
+                ? null
+                : _handleAction,
+            width: double.infinity,
+            leading: _busy
+                ? const SizedBox.square(
+                    dimension: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const HugeIcon(
+                    icon: HugeIcons.strokeRoundedSmartPhone01,
+                    size: 16,
+                  ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(actionLabel),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
