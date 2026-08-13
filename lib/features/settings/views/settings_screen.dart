@@ -218,6 +218,7 @@ class SettingsViews extends ConsumerWidget {
                       title: l10n.settings_android_assistant,
                       icon: HugeIcons.strokeRoundedVoice,
                       accent: const Color(0xFF6366F1),
+                      badges: [_FeatureBadge(label: l10n.beta_label)],
                       children: const [_AndroidAssistantSetting()],
                     )
                   : null;
@@ -942,12 +943,14 @@ class _SettingsSectionCard extends StatelessWidget {
     required this.icon,
     required this.accent,
     required this.children,
+    this.badges = const [],
   });
 
   final String title;
   final List<List<dynamic>> icon;
   final Color accent;
   final List<Widget> children;
+  final List<Widget> badges;
 
   @override
   Widget build(BuildContext context) {
@@ -984,6 +987,7 @@ class _SettingsSectionCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (badges.isNotEmpty) ...[const SizedBox(width: 8), ...badges],
               ],
             ),
             const SizedBox(height: 12),
