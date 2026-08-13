@@ -900,5 +900,21 @@
   "reasoning_effort_minimal": "أدنى",
   "reasoning_effort_xhigh": "عالي جداً",
   "reasoning_effort_max": "أقصى",
-  "reasoning_effort_off": "موقف"
+  "reasoning_effort_off": "موقف",
+  "settings_android_assistant": "مساعد أندرويد",
+  "assistant_default_title": "المساعد الصوتي الافتراضي",
+  "assistant_default_description": "تعيين Localmind كمساعد صوتي افتراضي للنظام على أندرويد.",
+  "assistant_status_active": "Localmind محدد كمساعدك الافتراضي",
+  "assistant_status_available": "يمكن تعيين Localmind كمساعدك الافتراضي",
+  "assistant_status_manual": "افتح إعدادات النظام وحدد Localmind يدويًا",
+  "assistant_status_unsupported": "إعداد المساعد الافتراضي متاح فقط على أندرويد 7.0+",
+  "assistant_status_checking": "جاري التحقق من حالة المساعد…",
+  "assistant_set_default": "تعيين المساعد الافتراضي",
+  "assistant_open_settings": "فتح إعدادات المساعد",
+  "assistant_error": "خطأ: {error}",
+  "settings_concise_voice_responses": "إجابات وضع الصوت الموجزة",
+  "settings_concise_voice_responses_desc": "اجعل ردود النموذج قصيرة (فقرة واحدة قصيرة) واطرح أسئلة متابعة في وضع الصوت.",
+  "s3_connection_succeeded": "نجح الاتصال بـ S3.",
+  "failed_to_open_url": "فشل فتح الرابط: {error}",
+  "failed_to_copy": "فشل النسخ: {error}"
 }

@@ -900,5 +900,21 @@
   "reasoning_effort_minimal": "Mínimo",
   "reasoning_effort_xhigh": "Muy alto",
   "reasoning_effort_max": "Máximo",
-  "reasoning_effort_off": "Desactivado"
+  "reasoning_effort_off": "Desactivado",
+  "settings_android_assistant": "Asistente de Android",
+  "assistant_default_title": "Asistente de voz predeterminado",
+  "assistant_default_description": "Establece Localmind como tu asistente de voz predeterminado en Android.",
+  "assistant_status_active": "Localmind está configurado como tu asistente predeterminado",
+  "assistant_status_available": "Localmind se puede configurar como tu asistente predeterminado",
+  "assistant_status_manual": "Abre los ajustes del sistema y selecciona Localmind manualmente",
+  "assistant_status_unsupported": "El asistente predeterminado solo está disponible en Android 7.0 o superior",
+  "assistant_status_checking": "Comprobando el estado del asistente…",
+  "assistant_set_default": "Establecer asistente predeterminado",
+  "assistant_open_settings": "Abrir ajustes del asistente",
+  "assistant_error": "Error: {error}",
+  "settings_concise_voice_responses": "Respuestas concisas en modo voz",
+  "settings_concise_voice_responses_desc": "Mantén las respuestas del modelo breves (1 párrafo corto) y haz preguntas de seguimiento en modo voz.",
+  "s3_connection_succeeded": "Conexión a S3 realizada con éxito.",
+  "failed_to_open_url": "Error al abrir la URL: {error}",
+  "failed_to_copy": "Error al copiar: {error}"
 }

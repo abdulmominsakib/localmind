@@ -537,38 +537,45 @@ class AppLocalizationsBn extends AppLocalizations {
   String get settings_tts => 'টেক্সট-টু-স্পিচ';
 
   @override
-  String get settings_android_assistant => 'Android Assistant';
+  String get settings_android_assistant => 'অ্যান্ড্রয়েড অ্যাসিস্ট্যান্ট';
 
   @override
-  String get assistant_default_title => 'Use LocalMind as your assistant';
+  String get assistant_default_title => 'ডিফল্ট ভয়েস অ্যাসিস্ট্যান্ট';
 
   @override
   String get assistant_default_description =>
-      'Launch voice mode with Android\'s assistant gesture or power-button shortcut.';
+      'অ্যান্ড্রয়েডে Localmind-কে আপনার সিস্টেমের ডিফল্ট ভয়েস অ্যাসিস্ট্যান্ট হিসেবে সেট করুন।';
 
   @override
-  String get assistant_status_active => 'Active';
+  String get assistant_status_active =>
+      'Localmind আপনার ডিফল্ট অ্যাসিস্ট্যান্ট হিসেবে সেট করা আছে';
 
   @override
-  String get assistant_status_available => 'Not active';
+  String get assistant_status_available =>
+      'Localmind-কে ডিফল্ট অ্যাসিস্ট্যান্ট হিসেবে সেট করা যাবে';
 
   @override
-  String get assistant_status_manual => 'Check settings';
+  String get assistant_status_manual =>
+      'সিস্টেম সেটিংস খুলুন এবং ম্যানুয়ালি Localmind নির্বাচন করুন';
 
   @override
-  String get assistant_status_unsupported => 'Unavailable';
+  String get assistant_status_unsupported =>
+      'ডিফল্ট অ্যাসিস্ট্যান্ট সেটিংস কেবল অ্যান্ড্রয়েড 7.0+ এ সমর্থিত';
 
   @override
-  String get assistant_status_checking => 'Checking…';
+  String get assistant_status_checking =>
+      'অ্যাসিস্ট্যান্ট স্ট্যাটাস পরীক্ষা করা হচ্ছে…';
 
   @override
-  String get assistant_set_default => 'Set as default assistant';
+  String get assistant_set_default => 'ডিফল্ট অ্যাসিস্ট্যান্ট সেট করুন';
 
   @override
-  String get assistant_open_settings => 'Open Android assistant settings';
+  String get assistant_open_settings => 'অ্যাসিস্ট্যান্ট সেটিংস খুলুন';
 
   @override
-  String get assistant_error => 'Could not open Android assistant settings.';
+  String assistant_error(Object error) {
+    return 'ত্রুটি: $error';
+  }
 
   @override
   String get settings_behavior => 'আচরণ';
@@ -2986,4 +2993,24 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get model_required_toast =>
       'আপনাকে প্রথমে একটি মডেল নির্বাচন করতে হবে';
+
+  @override
+  String get settings_concise_voice_responses => 'সংক্ষিপ্ত ভয়েস মোড উত্তর';
+
+  @override
+  String get settings_concise_voice_responses_desc =>
+      'ভয়েস মোডে মডেলের উত্তর সংক্ষেপে (১টি ছোট অনুচ্ছেদ) রাখুন এবং ফলো-আপ প্রশ্ন করুন।';
+
+  @override
+  String get s3_connection_succeeded => 'S3 সংযোগ সফল হয়েছে।';
+
+  @override
+  String failed_to_open_url(String error) {
+    return 'ইউআরএল খুলতে ব্যর্থ হয়েছে: $error';
+  }
+
+  @override
+  String failed_to_copy(String error) {
+    return 'কপি করতে ব্যর্থ হয়েছে: $error';
+  }
 }

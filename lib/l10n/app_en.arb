@@ -3285,5 +3285,37 @@
   "model_required_toast": "You need to select a model first",
   "@model_required_toast": {
     "description": "Toast shown when the user tries to send a message but no model is selected"
+  },
+  "settings_concise_voice_responses": "Concise Voice Mode Responses",
+  "@settings_concise_voice_responses": {
+    "description": "Label for concise voice responses toggle"
+  },
+  "settings_concise_voice_responses_desc": "Keep LLM responses brief (1 short paragraph) and ask follow-up questions in voice mode.",
+  "@settings_concise_voice_responses_desc": {
+    "description": "Description for concise voice responses toggle"
+  },
+  "s3_connection_succeeded": "S3 connection succeeded.",
+  "@s3_connection_succeeded": {
+    "description": "Toast message when S3 connection succeeds"
+  },
+  "failed_to_open_url": "Failed to open URL: {error}",
+  "@failed_to_open_url": {
+    "description": "Error message when opening a URL fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Could not launch URL"
+      }
+    }
+  },
+  "failed_to_copy": "Failed to copy: {error}",
+  "@failed_to_copy": {
+    "description": "Error message when copying text fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Permission denied"
+      }
+    }
   }
 }

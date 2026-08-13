@@ -536,38 +536,43 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settings_tts => 'تحويل النص إلى كلام';
 
   @override
-  String get settings_android_assistant => 'Android Assistant';
+  String get settings_android_assistant => 'مساعد أندرويد';
 
   @override
-  String get assistant_default_title => 'Use LocalMind as your assistant';
+  String get assistant_default_title => 'المساعد الصوتي الافتراضي';
 
   @override
   String get assistant_default_description =>
-      'Launch voice mode with Android\'s assistant gesture or power-button shortcut.';
+      'تعيين Localmind كمساعد صوتي افتراضي للنظام على أندرويد.';
 
   @override
-  String get assistant_status_active => 'Active';
+  String get assistant_status_active => 'Localmind محدد كمساعدك الافتراضي';
 
   @override
-  String get assistant_status_available => 'Not active';
+  String get assistant_status_available =>
+      'يمكن تعيين Localmind كمساعدك الافتراضي';
 
   @override
-  String get assistant_status_manual => 'Check settings';
+  String get assistant_status_manual =>
+      'افتح إعدادات النظام وحدد Localmind يدويًا';
 
   @override
-  String get assistant_status_unsupported => 'Unavailable';
+  String get assistant_status_unsupported =>
+      'إعداد المساعد الافتراضي متاح فقط على أندرويد 7.0+';
 
   @override
-  String get assistant_status_checking => 'Checking…';
+  String get assistant_status_checking => 'جاري التحقق من حالة المساعد…';
 
   @override
-  String get assistant_set_default => 'Set as default assistant';
+  String get assistant_set_default => 'تعيين المساعد الافتراضي';
 
   @override
-  String get assistant_open_settings => 'Open Android assistant settings';
+  String get assistant_open_settings => 'فتح إعدادات المساعد';
 
   @override
-  String get assistant_error => 'Could not open Android assistant settings.';
+  String assistant_error(Object error) {
+    return 'خطأ: $error';
+  }
 
   @override
   String get settings_behavior => 'السلوك';
@@ -2963,4 +2968,24 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get model_required_toast => 'يجب عليك اختيار نموذج أولاً';
+
+  @override
+  String get settings_concise_voice_responses => 'إجابات وضع الصوت الموجزة';
+
+  @override
+  String get settings_concise_voice_responses_desc =>
+      'اجعل ردود النموذج قصيرة (فقرة واحدة قصيرة) واطرح أسئلة متابعة في وضع الصوت.';
+
+  @override
+  String get s3_connection_succeeded => 'نجح الاتصال بـ S3.';
+
+  @override
+  String failed_to_open_url(String error) {
+    return 'فشل فتح الرابط: $error';
+  }
+
+  @override
+  String failed_to_copy(String error) {
+    return 'فشل النسخ: $error';
+  }
 }

@@ -528,38 +528,41 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settings_tts => '音声合成';
 
   @override
-  String get settings_android_assistant => 'Android Assistant';
+  String get settings_android_assistant => 'Android アシスタント';
 
   @override
-  String get assistant_default_title => 'Use LocalMind as your assistant';
+  String get assistant_default_title => 'デフォルトの音声アシスタント';
 
   @override
   String get assistant_default_description =>
-      'Launch voice mode with Android\'s assistant gesture or power-button shortcut.';
+      'Localmind を Android のシステムデフォルト音声アシスタントに設定します。';
 
   @override
-  String get assistant_status_active => 'Active';
+  String get assistant_status_active => 'Localmind がデフォルトのアシスタントに設定されています';
 
   @override
-  String get assistant_status_available => 'Not active';
+  String get assistant_status_available => 'Localmind をデフォルトのアシスタントに設定できます';
 
   @override
-  String get assistant_status_manual => 'Check settings';
+  String get assistant_status_manual => 'システム設定を開き、Localmind を手動で選択してください';
 
   @override
-  String get assistant_status_unsupported => 'Unavailable';
+  String get assistant_status_unsupported =>
+      'デフォルトアシスタントの設定は Android 7.0 以降でのみ利用可能です';
 
   @override
-  String get assistant_status_checking => 'Checking…';
+  String get assistant_status_checking => 'アシスタントのステータスを確認中…';
 
   @override
-  String get assistant_set_default => 'Set as default assistant';
+  String get assistant_set_default => 'デフォルトアシスタントに設定';
 
   @override
-  String get assistant_open_settings => 'Open Android assistant settings';
+  String get assistant_open_settings => 'アシスタント設定を開く';
 
   @override
-  String get assistant_error => 'Could not open Android assistant settings.';
+  String assistant_error(Object error) {
+    return 'エラー: $error';
+  }
 
   @override
   String get settings_behavior => '動作';
@@ -2920,4 +2923,24 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get model_required_toast => '最初にモデルを選択する必要があります';
+
+  @override
+  String get settings_concise_voice_responses => '簡潔な音声モード応答';
+
+  @override
+  String get settings_concise_voice_responses_desc =>
+      '音声モードでのLLMの応答を短く（短い1段落）保ち、フォローアップの質問を行います。';
+
+  @override
+  String get s3_connection_succeeded => 'S3 接続に成功しました。';
+
+  @override
+  String failed_to_open_url(String error) {
+    return 'URL を開くことができませんでした: $error';
+  }
+
+  @override
+  String failed_to_copy(String error) {
+    return 'コピーに失敗しました: $error';
+  }
 }

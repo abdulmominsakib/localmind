@@ -900,5 +900,21 @@
   "reasoning_effort_minimal": "न्यूनतम",
   "reasoning_effort_xhigh": "अत्यधिक उच्च",
   "reasoning_effort_max": "अधिकतम",
-  "reasoning_effort_off": "बंद"
+  "reasoning_effort_off": "बंद",
+  "settings_android_assistant": "एंड्रॉइड असिस्टेंट",
+  "assistant_default_title": "डिफ़ॉल्ट वॉयस असिस्टेंट",
+  "assistant_default_description": "Localmind को एंड्रॉइड पर अपना डिफ़ॉल्ट सिस्टम वॉयस असिस्टेंट सेट करें।",
+  "assistant_status_active": "Localmind आपके डिफ़ॉल्ट असिस्टेंट के रूप में सेट है",
+  "assistant_status_available": "Localmind को डिफ़ॉल्ट असिस्टेंट के रूप में सेट किया जा सकता है",
+  "assistant_status_manual": "सिस्टम सेटिंग्स खोलें और मैन्युअल रूप से Localmind चुनें",
+  "assistant_status_unsupported": "डिफ़ॉल्ट असिस्टेंट सेटिंग केवल एंड्रॉइड 7.0+ पर उपलब्ध है",
+  "assistant_status_checking": "असिस्टेंट स्थिति की जांच की जा रही है…",
+  "assistant_set_default": "डिफ़ॉल्ट असिस्टेंट सेट करें",
+  "assistant_open_settings": "असिस्टेंट सेटिंग्स खोलें",
+  "assistant_error": "त्रुटि: {error}",
+  "settings_concise_voice_responses": "संक्षिप्त वॉयस मोड उत्तर",
+  "settings_concise_voice_responses_desc": "वॉयस मोड में LLM उत्तरों को संक्षिप्त (1 छोटा अनुच्छेद) रखें और अनुवर्ती प्रश्न पूछें।",
+  "s3_connection_succeeded": "S3 कनेक्शन सफल रहा।",
+  "failed_to_open_url": "URL खोलने में विफल: {error}",
+  "failed_to_copy": "कॉपी करने में विफल: {error}"
 }

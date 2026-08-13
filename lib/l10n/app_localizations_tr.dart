@@ -537,38 +537,44 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settings_tts => 'Metin Okuma';
 
   @override
-  String get settings_android_assistant => 'Android Assistant';
+  String get settings_android_assistant => 'Android Asistanı';
 
   @override
-  String get assistant_default_title => 'Use LocalMind as your assistant';
+  String get assistant_default_title => 'Varsayılan Sesli Asistan';
 
   @override
   String get assistant_default_description =>
-      'Launch voice mode with Android\'s assistant gesture or power-button shortcut.';
+      'Localmind\'ı Android sisteminizdeki varsayılan sesli asistan olarak ayarlayın.';
 
   @override
-  String get assistant_status_active => 'Active';
+  String get assistant_status_active =>
+      'Localmind varsayılan asistanınız olarak ayarlandı';
 
   @override
-  String get assistant_status_available => 'Not active';
+  String get assistant_status_available =>
+      'Localmind varsayılan asistanınız olarak ayarlanabilir';
 
   @override
-  String get assistant_status_manual => 'Check settings';
+  String get assistant_status_manual =>
+      'Sistem ayarlarını açın ve Localmind\'ı manuel olarak seçin';
 
   @override
-  String get assistant_status_unsupported => 'Unavailable';
+  String get assistant_status_unsupported =>
+      'Varsayılan asistan ayarı yalnızca Android 7.0+ sürümünde mevcuttur';
 
   @override
-  String get assistant_status_checking => 'Checking…';
+  String get assistant_status_checking => 'Asistan durumu kontrol ediliyor…';
 
   @override
-  String get assistant_set_default => 'Set as default assistant';
+  String get assistant_set_default => 'Varsayılan Asistanı Ayarla';
 
   @override
-  String get assistant_open_settings => 'Open Android assistant settings';
+  String get assistant_open_settings => 'Asistan Ayarlarını Aç';
 
   @override
-  String get assistant_error => 'Could not open Android assistant settings.';
+  String assistant_error(Object error) {
+    return 'Hata: $error';
+  }
 
   @override
   String get settings_behavior => 'Davranış';
@@ -2997,4 +3003,24 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get model_required_toast => 'Önce bir model seçmeniz gerekiyor';
+
+  @override
+  String get settings_concise_voice_responses => 'Özet Sesli Mod Yanıtları';
+
+  @override
+  String get settings_concise_voice_responses_desc =>
+      'Sesli modda LLM yanıtlarını kısa tutun (1 kısa paragraf) ve takip soruları sorun.';
+
+  @override
+  String get s3_connection_succeeded => 'S3 bağlantısı başarılı.';
+
+  @override
+  String failed_to_open_url(String error) {
+    return 'URL açılamadı: $error';
+  }
+
+  @override
+  String failed_to_copy(String error) {
+    return 'Kopyalanamadı: $error';
+  }
 }

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_ar.dart';
 import 'app_localizations_bn.dart';
+import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
 import 'app_localizations_fr.dart';
@@ -105,6 +106,7 @@ abstract class AppLocalizations {
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ar'),
     Locale('bn'),
+    Locale('de'),
     Locale('en'),
     Locale('es'),
     Locale('fr'),
@@ -1141,7 +1143,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Could not open Android assistant settings.'**
-  String get assistant_error;
+  String assistant_error(Object error);
 
   /// Settings section header for behavior
   ///
@@ -5570,6 +5572,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You need to select a model first'**
   String get model_required_toast;
+
+  /// Label for concise voice responses toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Concise Voice Mode Responses'**
+  String get settings_concise_voice_responses;
+
+  /// Description for concise voice responses toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Keep LLM responses brief (1 short paragraph) and ask follow-up questions in voice mode.'**
+  String get settings_concise_voice_responses_desc;
+
+  /// Toast message when S3 connection succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'S3 connection succeeded.'**
+  String get s3_connection_succeeded;
+
+  /// Error message when opening a URL fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to open URL: {error}'**
+  String failed_to_open_url(String error);
+
+  /// Error message when copying text fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to copy: {error}'**
+  String failed_to_copy(String error);
 }
 
 class _AppLocalizationsDelegate
@@ -5585,6 +5617,7 @@ class _AppLocalizationsDelegate
   bool isSupported(Locale locale) => <String>[
     'ar',
     'bn',
+    'de',
     'en',
     'es',
     'fr',
@@ -5619,6 +5652,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsAr();
     case 'bn':
       return AppLocalizationsBn();
+    case 'de':
+      return AppLocalizationsDe();
     case 'en':
       return AppLocalizationsEn();
     case 'es':

@@ -900,5 +900,21 @@
   "reasoning_effort_minimal": "ন্যূনতম",
   "reasoning_effort_xhigh": "অতিরিক্ত উচ্চ",
   "reasoning_effort_max": "সর্বোচ্চ",
-  "reasoning_effort_off": "বন্ধ"
+  "reasoning_effort_off": "বন্ধ",
+  "settings_android_assistant": "অ্যান্ড্রয়েড অ্যাসিস্ট্যান্ট",
+  "assistant_default_title": "ডিফল্ট ভয়েস অ্যাসিস্ট্যান্ট",
+  "assistant_default_description": "অ্যান্ড্রয়েডে Localmind-কে আপনার সিস্টেমের ডিফল্ট ভয়েস অ্যাসিস্ট্যান্ট হিসেবে সেট করুন।",
+  "assistant_status_active": "Localmind আপনার ডিফল্ট অ্যাসিস্ট্যান্ট হিসেবে সেট করা আছে",
+  "assistant_status_available": "Localmind-কে ডিফল্ট অ্যাসিস্ট্যান্ট হিসেবে সেট করা যাবে",
+  "assistant_status_manual": "সিস্টেম সেটিংস খুলুন এবং ম্যানুয়ালি Localmind নির্বাচন করুন",
+  "assistant_status_unsupported": "ডিফল্ট অ্যাসিস্ট্যান্ট সেটিংস কেবল অ্যান্ড্রয়েড 7.0+ এ সমর্থিত",
+  "assistant_status_checking": "অ্যাসিস্ট্যান্ট স্ট্যাটাস পরীক্ষা করা হচ্ছে…",
+  "assistant_set_default": "ডিফল্ট অ্যাসিস্ট্যান্ট সেট করুন",
+  "assistant_open_settings": "অ্যাসিস্ট্যান্ট সেটিংস খুলুন",
+  "assistant_error": "ত্রুটি: {error}",
+  "settings_concise_voice_responses": "সংক্ষিপ্ত ভয়েস মোড উত্তর",
+  "settings_concise_voice_responses_desc": "ভয়েস মোডে মডেলের উত্তর সংক্ষেপে (১টি ছোট অনুচ্ছেদ) রাখুন এবং ফলো-আপ প্রশ্ন করুন।",
+  "s3_connection_succeeded": "S3 সংযোগ সফল হয়েছে।",
+  "failed_to_open_url": "ইউআরএল খুলতে ব্যর্থ হয়েছে: {error}",
+  "failed_to_copy": "কপি করতে ব্যর্থ হয়েছে: {error}"
 }

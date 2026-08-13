@@ -196,9 +196,8 @@ class SettingsViews extends ConsumerWidget {
                         .setTtsProcessMarkdown(value),
                   ),
                   _ToggleSetting(
-                    label: 'Concise Voice Mode Responses',
-                    description:
-                        'Keep LLM responses brief (1 short paragraph) and ask follow-up questions in voice mode.',
+                    label: l10n.settings_concise_voice_responses,
+                    description: l10n.settings_concise_voice_responses_desc,
                     value: settings.conciseVoiceResponsesEnabled,
                     onChanged: (value) => ref
                         .read(settingsProvider.notifier)
@@ -678,11 +677,13 @@ class _AndroidAssistantSettingState
         await service.openSettings();
       }
       await _refreshStatus();
-    } on PlatformException {
+    } on PlatformException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.assistant_error),
+            content: Text(
+              AppLocalizations.of(context)!.assistant_error(e.toString()),
+            ),
           ),
         );
       }
@@ -1236,6 +1237,7 @@ class _LanguageSetting extends StatelessWidget {
     ('ru', 'Русский', 'assets/images/flag_ru.png', '🇷🇺'),
     ('tr', 'Türkçe', 'assets/images/flag_tr.png', '🇹🇷'),
     ('fr', 'Français', 'assets/images/flag_fr.png', '🇫🇷'),
+    ('de', 'Deutsch', 'assets/images/flag_de.png', '🇩🇪'),
   ];
 
   final String? current;
@@ -2658,7 +2660,13 @@ Future<void> _openFeedbackIssue(BuildContext context) async {
     }
   } catch (e) {
     if (messenger != null) {
-      messenger.showSnackBar(SnackBar(content: Text('Failed to open URL: $e')));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.failed_to_open_url(e.toString()) ?? 'Failed to open URL: $e',
+          ),
+        ),
+      );
     }
   }
 }

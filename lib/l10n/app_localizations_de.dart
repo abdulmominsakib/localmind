@@ -4,93 +4,93 @@ import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
 
-/// The translations for English (`en`).
-class AppLocalizationsEn extends AppLocalizations {
-  AppLocalizationsEn([String locale = 'en']) : super(locale);
+/// The translations for German (`de`).
+class AppLocalizationsDe extends AppLocalizations {
+  AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
   String get app_name => 'LocalMind';
 
   @override
-  String get app_tagline => 'Your AI. Your Device. Your Rules.';
+  String get app_tagline => 'Ihre KI. Ihr Gerät. Ihre Regeln.';
 
   @override
   String get app_version => '1.0.0';
 
   @override
-  String get cancel => 'Cancel';
+  String get cancel => 'Abbrechen';
 
   @override
-  String get confirm => 'Confirm';
+  String get confirm => 'Bestätigen';
 
   @override
-  String get delete => 'Delete';
+  String get delete => 'Löschen';
 
   @override
-  String get save => 'Save';
+  String get save => 'Speichern';
 
   @override
-  String get retry => 'Retry';
+  String get retry => 'Wiederholen';
 
   @override
-  String get close => 'Close';
+  String get close => 'Schließen';
 
   @override
-  String get done => 'Done';
+  String get done => 'Fertig';
 
   @override
-  String get continue_action => 'Continue';
+  String get continue_action => 'Weiter';
 
   @override
-  String get skip => 'Skip';
+  String get skip => 'Überspringen';
 
   @override
-  String get install => 'Install';
+  String get install => 'Installieren';
 
   @override
-  String get download => 'Download';
+  String get download => 'Herunterladen';
 
   @override
-  String get resume => 'Resume';
+  String get resume => 'Fortsetzen';
 
   @override
-  String get pause => 'Pause';
+  String get pause => 'Pausieren';
 
   @override
-  String get stop => 'Stop';
+  String get stop => 'Stoppen';
 
   @override
-  String get edit => 'Edit';
+  String get edit => 'Bearbeiten';
 
   @override
-  String get preview => 'Preview';
+  String get preview => 'Vorschau';
 
   @override
-  String get unload => 'Unload';
+  String get unload => 'Entladen';
 
   @override
-  String get load => 'Load';
+  String get load => 'Laden';
 
   @override
-  String get rename => 'Rename';
+  String get rename => 'Umbenennen';
 
   @override
-  String get pin => 'Pin';
+  String get pin => 'Anheften';
 
   @override
-  String get unpin => 'Unpin';
+  String get unpin => 'Ablösen';
 
   @override
-  String get share => 'Share';
+  String get share => 'Teilen';
 
   @override
-  String get copy => 'Copy';
+  String get copy => 'Kopieren';
 
   @override
-  String get copied => 'Copied!';
+  String get copied => 'Kopiert!';
 
   @override
-  String get copied_to_clipboard => 'Copied to clipboard';
+  String get copied_to_clipboard => 'In Zwischenablage kopiert';
 
   @override
   String get select => 'Select';
@@ -99,10 +99,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get active => 'Active';
 
   @override
-  String get all => 'All';
+  String get all => 'Alle';
 
   @override
-  String get none => 'None';
+  String get none => 'Keine';
 
   @override
   String get none_selected => 'None selected';
@@ -120,7 +120,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offline => 'Offline';
 
   @override
-  String get error => 'Error';
+  String get error => 'Fehler';
 
   @override
   String get unknown_error => 'Unknown error';
@@ -135,22 +135,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get proceed_anyway => 'Proceed Anyway';
 
   @override
-  String get test_connection => 'Test Connection';
+  String get test_connection => 'Verbindung testen';
 
   @override
   String get testing => 'Testing...';
 
   @override
-  String get connection_successful => 'Connection successful!';
+  String get connection_successful => 'Verbindung erfolgreich!';
 
   @override
-  String get connection_failed => 'Connection failed. Check your settings.';
+  String get connection_failed =>
+      'Verbindung fehlgeschlagen. Überprüfen Sie Ihre Einstellungen.';
 
   @override
-  String get save_continue => 'Save & Continue';
+  String get save_continue => 'Speichern & Continue';
 
   @override
-  String get save_changes => 'Save Changes';
+  String get save_changes => 'Speichern Changes';
 
   @override
   String get finish_setup => 'Finish Setup';
@@ -162,7 +163,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cannot_undo => 'This action cannot be undone.';
 
   @override
-  String get ram_warning => 'RAM Warning';
+  String get ram_warning => 'RAM Warnung';
 
   @override
   String get recommended => 'RECOMMENDED';
@@ -174,7 +175,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculating => 'Calculating...';
 
   @override
-  String get download_failed => 'Download failed';
+  String get download_failed => 'Download fehlgeschlagen';
 
   @override
   String get downloaded => 'Downloaded';
@@ -189,7 +190,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get not_installed => 'Not installed';
 
   @override
-  String get loading => 'Loading...';
+  String get loading => 'Wird geladen…';
 
   @override
   String get thinking => 'Thinking';
@@ -219,56 +220,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get something_went_wrong => 'Something went wrong';
 
   @override
-  String get delete_model_title => 'Delete Model';
+  String get delete_model_title => 'Modell löschen?';
 
   @override
   String delete_model_body(String name) {
-    return 'Are you sure you want to delete $name?';
+    return 'Möchten Sie $name wirklich löschen?';
   }
 
   @override
   String delete_model_body_with_size(String name, String size) {
-    return 'Are you sure you want to delete $name? This will free up approximately $size of space.\n\nYou can download this model again later if needed.';
+    return 'Möchten Sie $name wirklich löschen? Dadurch werden ca. $size Speicherplatz freigegeben.\n\nSie können dieses Modell später bei Bedarf erneut herunterladen.';
   }
 
   @override
-  String get delete_voice_title => 'Delete Voice';
+  String get delete_voice_title => 'Löschen Voice';
 
   @override
   String delete_voice_body(String name, String size) {
-    return 'Are you sure you want to delete $name? This will free up approximately $size of space.\n\nYou can download this voice again later if needed.';
+    return 'Möchten Sie wirklich löschen: $name? This will free up approximately $size of space.\n\nYou can download this voice again later if needed.';
   }
 
   @override
-  String get delete_server_title => 'Delete Server';
+  String get delete_server_title => 'Server löschen?';
 
   @override
   String delete_server_body(String name) {
-    return 'Are you sure you want to delete \"$name\"? This cannot be undone.';
+    return 'Möchten Sie den Server \"$name\" wirklich löschen? Dies kann nicht rückgängig gemacht werden.';
   }
 
   @override
-  String get delete_conversation_title => 'Delete conversation?';
+  String get delete_conversation_title => 'Unterhaltung löschen?';
 
   @override
   String delete_conversation_body(String title) {
-    return 'Are you sure you want to delete \"$title\"? This cannot be undone.';
+    return 'Möchten Sie \"$title\" wirklich löschen? Dies kann nicht rückgängig gemacht werden.';
   }
 
   @override
-  String get delete_message_title => 'Delete message?';
+  String get delete_message_title => 'Löschen message?';
 
   @override
   String delete_persona_title(String name) {
-    return 'Delete \"$name\"?';
+    return '\"$name\" löschen?';
   }
 
   @override
-  String get delete_persona_body => 'This cannot be undone.';
+  String get delete_persona_body =>
+      'Dies kann nicht rückgängig gemacht werden.';
 
   @override
   String get delete_builtin_persona_body =>
-      'This is a built-in persona. You can restore it later from Settings.';
+      'This is a built-in persona. You can restore it later from Einstellungen.';
 
   @override
   String get restore_builtin_personas => 'Restore default personas';
@@ -331,7 +333,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String selected_count(int count) {
-    return '$count selected';
+    return '$count ausgewählt';
   }
 
   @override
@@ -342,7 +344,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String total_tokens_count(int count) {
-    return '$count tokens';
+    return '$count Tokens';
   }
 
   @override
@@ -423,7 +425,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'This will delete all messages in this conversation.';
 
   @override
-  String get clear => 'Clear';
+  String get clear => 'Leeren';
 
   @override
   String label_completed(String label) {
@@ -432,59 +434,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String error_with_message(String error) {
-    return 'Error: $error';
+    return 'Fehler: $error';
   }
 
   @override
   String preview_failed(String error) {
-    return 'Preview failed: $error';
+    return 'Vorschau fehlgeschlagen: $error';
   }
 
   @override
   String loading_model(String modelId) {
-    return 'Loading $modelId...';
+    return 'Lade $modelId…';
   }
 
   @override
   String model_loaded(String modelId, String backend) {
-    return 'Model loaded: $modelId ($backend)';
+    return 'Modell geladen: $modelId ($backend)';
   }
 
   @override
   String get no_model_loaded =>
-      'No model loaded. Tap \"Manage On-Device Models\" to download and load a model.';
+      'No model loaded. Tap \"Manage On-Device Modelle\" to download and load a model.';
 
   @override
   String loading_model_error(String error) {
-    return 'Error: $error';
+    return 'Fehler: $error';
   }
 
   @override
-  String get delete_conversation => 'Delete conversation?';
+  String get delete_conversation => 'Unterhaltung löschen';
 
   @override
   String get nav_history => 'History';
 
   @override
-  String get nav_servers => 'Servers';
+  String get nav_servers => 'Server';
 
   @override
-  String get nav_local_models => 'Local Models';
+  String get nav_local_models => 'Local Modelle';
 
   @override
-  String get nav_tts => 'Text To Speech';
+  String get nav_tts => 'Sprachmodelle';
 
   @override
   String get nav_personas => 'Personas';
 
   @override
-  String get nav_settings => 'Settings';
+  String get nav_settings => 'Einstellungen';
 
   @override
   String get nav_new_chat => 'New Chat';
 
   @override
-  String get search_hint => 'Search conversations...';
+  String get search_hint => 'Suchen conversations...';
 
   @override
   String get no_server_selected => 'No server selected';
@@ -502,99 +504,103 @@ class AppLocalizationsEn extends AppLocalizations {
   String get open_source => 'Open Source';
 
   @override
-  String get open_source_desc =>
-      'LocalMind is open source. Follow our progress or contribute on GitHub.';
+  String get open_source_desc => 'LocalMind ist Open-Source-Software.';
 
   @override
   String get star_on_github => 'Star on GitHub';
 
   @override
-  String get add_more => 'Add more';
+  String get add_more => 'Hinzufügen more';
 
   @override
   String get on_github => 'on GitHub';
 
   @override
-  String get could_not_open_github => 'Could not open GitHub.';
+  String get could_not_open_github =>
+      'GitHub konnte nicht geöffnet werden. Bitte versuchen Sie es später erneut.';
 
   @override
-  String get settings_title => 'Settings';
+  String get settings_title => 'Einstellungen';
 
   @override
-  String get settings_appearance => 'Appearance';
+  String get settings_appearance => 'Erscheinungsbild';
 
   @override
-  String get settings_language => 'Language';
+  String get settings_language => 'Sprache';
 
   @override
-  String get language_system_default => 'System Default';
+  String get language_system_default => 'Systemstandard';
 
   @override
-  String get settings_tts => 'Text-to-Speech';
+  String get settings_tts => 'Text-to-Speech (TTS)';
 
   @override
-  String get settings_android_assistant => 'Android Assistant';
+  String get settings_android_assistant => 'Android-Assistent';
 
   @override
-  String get assistant_default_title => 'Use LocalMind as your assistant';
+  String get assistant_default_title => 'Standard-Sprachassistent';
 
   @override
   String get assistant_default_description =>
-      'Launch voice mode with Android\'s assistant gesture or power-button shortcut.';
+      'Legen Sie Localmind als Ihren Standard-Sprachassistenten auf Android fest.';
 
   @override
-  String get assistant_status_active => 'Active';
+  String get assistant_status_active =>
+      'Localmind ist als Standard-Assistent festgelegt';
 
   @override
-  String get assistant_status_available => 'Not active';
+  String get assistant_status_available =>
+      'Localmind kann als Standard-Assistent festgelegt werden';
 
   @override
-  String get assistant_status_manual => 'Check settings';
+  String get assistant_status_manual =>
+      'Öffnen Sie die Systemeinstellungen und wählen Sie Localmind manuell aus';
 
   @override
-  String get assistant_status_unsupported => 'Unavailable';
+  String get assistant_status_unsupported =>
+      'Die Standard-Assistenteneinstellung ist nur ab Android 7.0+ verfügbar';
 
   @override
-  String get assistant_status_checking => 'Checking…';
+  String get assistant_status_checking => 'Assistentenstatus wird überprüft…';
 
   @override
-  String get assistant_set_default => 'Set as default assistant';
+  String get assistant_set_default => 'Standard-Assistent festlegen';
 
   @override
-  String get assistant_open_settings => 'Open Android assistant settings';
+  String get assistant_open_settings => 'Assistenteneinstellungen öffnen';
 
   @override
   String assistant_error(Object error) {
-    return 'Could not open Android assistant settings.';
+    return 'Fehler: $error';
   }
 
   @override
-  String get settings_behavior => 'Behavior';
+  String get settings_behavior => 'Verhalten';
 
   @override
   String get settings_on_device => 'On-Device Inference';
 
   @override
-  String get settings_default_server => 'Default Server';
+  String get settings_default_server => 'Standardserver';
 
   @override
-  String get settings_default_persona => 'Default Persona';
+  String get settings_default_persona => 'Standard-Persona';
 
   @override
-  String get settings_default_model => 'Default Model';
+  String get settings_default_model => 'Standardmodell';
 
   @override
   String get settings_default_model_desc =>
       'Automatically selected when you start a new chat.';
 
   @override
-  String get settings_privacy => 'Privacy';
+  String get settings_privacy => 'Datenschutz & Daten';
 
   @override
   String get settings_data_management => 'Data Management';
 
   @override
-  String get settings_about => 'About';
+  String get settings_about => 'Über LocalMind';
 
   @override
   String get theme => 'Theme';
@@ -658,10 +664,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tts_speed_desc => 'Adjust the playback rate.';
 
   @override
-  String get manage_tts_models => 'Manage TTS Models';
+  String get manage_tts_models => 'Manage TTS Modelle';
 
   @override
-  String get manage_on_device_models => 'Manage On-Device Models';
+  String get manage_on_device_models => 'Manage On-Device Modelle';
 
   @override
   String get enable_smart_reply => 'On-Device Smart Replies';
@@ -715,10 +721,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privacy_info => '\"LocalMind never sees your data\"';
 
   @override
-  String get delete_all_conversations => 'Delete All Conversations';
+  String get delete_all_conversations => 'Löschen All Conversations';
 
   @override
-  String get reset_settings_defaults => 'Reset Settings to Defaults';
+  String get reset_settings_defaults => 'Reset Einstellungen to Defaults';
 
   @override
   String get chat_title => 'LocalMind';
@@ -733,7 +739,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get set_persona => 'Set Persona';
 
   @override
-  String get remove_persona => 'Remove Persona';
+  String get remove_persona => 'Entfernen Persona';
 
   @override
   String get clear_conversation => 'Clear Conversation';
@@ -748,10 +754,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get configure => 'Configure';
 
   @override
-  String get select_model => 'Select Model';
+  String get select_model => 'Modell auswählen';
 
   @override
-  String get select_persona => 'Select Persona';
+  String get select_persona => 'Persona auswählen';
 
   @override
   String get manage_personas => 'Manage personas';
@@ -792,7 +798,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get technical_details => 'Technical Details';
 
   @override
-  String get last_error => 'Last Error:';
+  String get last_error => 'Last Fehler:';
 
   @override
   String get copy_info => 'Copy Info';
@@ -856,21 +862,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String character_count(int length) {
-    return '$length characters';
+    return '$length Zeichen';
   }
 
   @override
-  String get edit_message => 'Edit message';
+  String get edit_message => 'Nachricht bearbeiten';
 
   @override
   String get edit_message_desc =>
       'Saving will remove the assistant response below and regenerate.';
 
   @override
-  String get save_regenerate => 'Save & regenerate';
+  String get save_regenerate => 'Speichern & regenerate';
 
   @override
-  String get chat_settings_title => 'Chat Settings';
+  String get chat_settings_title => 'Chat Einstellungen';
 
   @override
   String get reset_defaults => 'Reset Defaults';
@@ -882,7 +888,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mcp_tab => 'MCP';
 
   @override
-  String get temperature => 'Temperature';
+  String get temperature => 'Temperatur';
 
   @override
   String get temperature_desc =>
@@ -908,7 +914,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mcp_disabled_warning =>
-      'MCP is disabled globally. Enable it in Settings to use these features.';
+      'MCP is disabled globally. Enable it in Einstellungen to use these features.';
 
   @override
   String get mcp_enable_chat => 'Enable MCP for this chat';
@@ -923,7 +929,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get experimental_label => 'Experimental';
 
   @override
-  String get add_ephemeral_mcp => 'Add Ephemeral MCP Server';
+  String get add_ephemeral_mcp => 'Hinzufügen Ephemeral MCP Server';
 
   @override
   String get mcp_label_placeholder => 'Label';
@@ -950,7 +956,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String mcp_import_success(int count) {
-    return 'Successfully imported $count integration(s)';
+    return '$count Integration(en) erfolgreich importiert';
   }
 
   @override
@@ -1008,7 +1014,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get start_new_conversation => 'Start a new conversation';
 
   @override
-  String get rename_conversation => 'Rename conversation';
+  String get rename_conversation => 'Unterhaltung umbenennen';
 
   @override
   String get enter_new_title => 'Enter new title';
@@ -1032,11 +1038,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get older_section => 'OLDER';
 
   @override
-  String get onboarding_choose_language => 'Choose Language';
+  String get onboarding_choose_language => 'Wählen Sie Ihre Sprache';
 
   @override
   String get onboarding_choose_language_desc =>
-      'Select your preferred language. You can change this anytime in settings.';
+      'Sie können dies später jederzeit in den Einstellungen ändern.';
 
   @override
   String get onboarding_localmind => 'LOCALMIND';
@@ -1046,7 +1052,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboarding_connect_desc =>
-      'Connect to LM Studio, Ollama,\nOllama Cloud, or OpenRouter to\nstart your private AI experience.';
+      'Geben Sie die Verbindungsdetails für Ihren KI-Server ein.';
 
   @override
   String get openai_compatible_api => 'OpenAI-compatible API';
@@ -1058,10 +1064,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get most_local_setups_use_http => 'Most local setups use http://';
 
   @override
-  String get onboarding_welcome => 'Welcome to LocalMind';
+  String get onboarding_welcome => 'Willkommen bei LocalMind';
 
   @override
-  String get server_type_on_device => 'On-Device';
+  String get server_type_on_device => 'Auf dem Gerät';
 
   @override
   String get server_type_lm_studio => 'LM Studio';
@@ -1111,7 +1117,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get server_type_openrouter_sub => 'UNIFIED CLOUD';
 
   @override
-  String get ready_continue => 'READY TO CONTINUE';
+  String get ready_continue => 'BEREIT ZUM FORTFAHREN';
 
   @override
   String get waiting_selection => 'WAITING FOR SELECTION';
@@ -1125,7 +1131,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get server_name => 'Server Name';
+  String get server_name => 'Servername';
 
   @override
   String get name_required => 'Name required';
@@ -1182,7 +1188,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get update_server => 'Update Server';
 
   @override
-  String get save_server => 'Save Server';
+  String get save_server => 'Speichern Server';
 
   @override
   String get server_updated => 'Server updated';
@@ -1191,7 +1197,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get server_added => 'Server added';
 
   @override
-  String get download_model_title => 'Download a Model';
+  String get download_model_title => 'Download a Modell';
 
   @override
   String get download_model_desc =>
@@ -1276,7 +1282,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Get notified when your AI models finish downloading or when long-running tasks complete.';
 
   @override
-  String get notification_benefit_downloads => 'Model download progress';
+  String get notification_benefit_downloads => 'Modell download progress';
 
   @override
   String get notification_benefit_completions => 'Generation completions';
@@ -1295,10 +1301,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get no_servers_desc =>
-      'Add your first server to start chatting with AI models.';
+      'Hinzufügen your first server to start chatting with AI models.';
 
   @override
-  String get add_server => 'Add Server';
+  String get add_server => 'Server hinzufügen';
 
   @override
   String switched_to_server(String name) {
@@ -1306,10 +1312,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get edit_server => 'Edit Server';
+  String get edit_server => 'Server bearbeiten';
 
   @override
-  String get add_server_title => 'Add Server';
+  String get add_server_title => 'Hinzufügen Server';
 
   @override
   String get server_type_label => 'Server Type';
@@ -1359,7 +1365,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get select_icon_desc => 'Choose an icon for your server';
 
   @override
-  String get search_icons_hint => 'Search icons...';
+  String get search_icons_hint => 'Suchen icons...';
 
   @override
   String get server_icon_stack => 'Server Stack';
@@ -1449,10 +1455,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get server_icon_star => 'Star';
 
   @override
-  String get server_icon_settings1 => 'Settings 01';
+  String get server_icon_settings1 => 'Einstellungen 01';
 
   @override
-  String get server_icon_settings2 => 'Settings 02';
+  String get server_icon_settings2 => 'Einstellungen 02';
 
   @override
   String get server_icon_home1 => 'Home 01';
@@ -1518,7 +1524,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personas_title => 'Personas';
 
   @override
-  String get persona_category_general => 'General';
+  String get persona_category_general => 'Allgemein';
 
   @override
   String get persona_category_coding => 'Coding';
@@ -1536,7 +1542,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get persona_my_section => 'MY PERSONAS';
 
   @override
-  String get clone_edit => 'Clone & Edit';
+  String get clone_edit => 'Clone & Bearbeiten';
 
   @override
   String get builtin_badge => 'Built-in';
@@ -1549,10 +1555,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Create your first persona to customize AI behavior.';
 
   @override
-  String get edit_persona => 'Edit Persona';
+  String get edit_persona => 'Persona bearbeiten';
 
   @override
-  String get create_persona => 'Create Persona';
+  String get create_persona => 'Persona erstellen';
 
   @override
   String get create_persona_button => 'Create';
@@ -1576,7 +1582,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get description_hint => 'What this persona does...';
 
   @override
-  String get system_prompt => 'System Prompt';
+  String get system_prompt => 'System-Prompt';
 
   @override
   String character_count_max(int currentLen) {
@@ -1596,7 +1602,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get prompt_max_chars => 'Max 4000 characters';
 
   @override
-  String get advanced_settings => 'Advanced Settings';
+  String get advanced_settings => 'Erweitert Einstellungen';
 
   @override
   String get temperature_label => 'Temperature (0.0-2.0)';
@@ -1623,7 +1629,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get persona_created => 'Persona created';
 
   @override
-  String get tts_models_title => 'Text To Speech Models';
+  String get tts_models_title => 'Text To Speech Modelle';
 
   @override
   String get always_available => 'Always available';
@@ -1651,7 +1657,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get on_device_models_title => 'On-Device Models';
+  String get on_device_models_title => 'On-Device Modelle';
 
   @override
   String get settings_huggingface_token => 'Hugging Face Token (Optional)';
@@ -1672,7 +1678,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get model_missing_huggingface_token =>
-      'This model is gated on Hugging Face. Add a token in Settings → On-Device Inference to download it.';
+      'This model is gated on Hugging Face. Hinzufügen a token in Einstellungen → On-Device Inference to download it.';
 
   @override
   String get set_huggingface_token => 'Set token';
@@ -1687,18 +1693,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get huggingface_token_dialog_hint => 'hf_…';
 
   @override
-  String get server_type_ollama_desc => 'Local AI engine. No API key required.';
+  String get server_type_ollama_desc =>
+      'Lokal auf Ihrem Computer oder im Netzwerk ausgeführt';
 
   @override
   String get server_type_on_device_desc =>
-      'Runs on your phone. Some models need a Hugging Face token.';
+      'Modelle direkt auf diesem Gerät ausführen';
 
   @override
   String get server_type_lm_studio_desc =>
-      'Local API server. No API key required.';
+      'Verbindung zur lokalen LM Studio Entwickler-API';
 
   @override
-  String get available_models => 'Available Models';
+  String get available_models => 'Available Modelle';
 
   @override
   String get device_memory => 'Device Memory';
@@ -1747,25 +1754,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'Vendor NPU (Qualcomm/MediaTek). Fastest inference.';
 
   @override
-  String get select_model_title => 'Select Model';
+  String get select_model_title => 'Select Modell';
 
   @override
   String get refresh_models => 'Refresh models';
 
   @override
-  String get search_models_hint => 'Search models...';
+  String get search_models_hint => 'Suchen models...';
 
   @override
   String get no_server_connected => 'No server connected';
 
   @override
-  String get add_server_first => 'Add a server first to see available models.';
+  String get add_server_first =>
+      'Hinzufügen a server first to see available models.';
 
   @override
-  String get failed_load_models => 'Failed to load models';
+  String get failed_load_models => 'Fehlgeschlagen beim load models';
 
   @override
-  String get no_models_available => 'No models available';
+  String get no_models_available => 'Keine Modelle verfügbar';
 
   @override
   String no_models_match(String searchQuery) {
@@ -1774,7 +1782,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String model_load_failed(String error) {
-    return 'Failed to load model: $error';
+    return 'Fehlgeschlagen beim load model: $error';
   }
 
   @override
@@ -1789,7 +1797,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String model_unload_failed(String error) {
-    return 'Failed to unload model: $error';
+    return 'Fehlgeschlagen beim unload model: $error';
   }
 
   @override
@@ -1818,7 +1826,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get branch_chat_desc => 'Start a new conversation from this message';
 
   @override
-  String get edit_assistant_message_desc => 'Edit the assistant response text.';
+  String get edit_assistant_message_desc =>
+      'Bearbeiten the assistant response text.';
 
   @override
   String switch_to_model(String modelName, Object model) {
@@ -1831,7 +1840,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get download_complete_notification => 'Download complete!';
+  String get download_complete_notification => 'Download abgeschlossen!';
 
   @override
   String download_complete_body(String modelName) {
@@ -1840,12 +1849,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String download_failed_notification(String error) {
-    return 'Download failed: $error';
+    return 'Download fehlgeschlagen: $error';
   }
 
   @override
   String download_failed_body(String modelName) {
-    return 'Failed to download $modelName.';
+    return 'Fehlgeschlagen beim download $modelName.';
   }
 
   @override
@@ -1972,7 +1981,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get export_label_tool => 'TOOL';
 
   @override
-  String get select_model_hint => 'Select a model to start chatting';
+  String get select_model_hint => 'Wählen Sie ein Modell to start chatting';
 
   @override
   String get test_notification_title => 'Test notification';
@@ -2012,7 +2021,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gguf_imported_from_local_file => 'imported from local file.';
 
   @override
-  String get gguf_import_failed => 'Failed to import GGUF model';
+  String get gguf_import_failed => 'Fehlgeschlagen beim import GGUF model';
 
   @override
   String get gguf_imported_from_huggingface => 'imported from Hugging Face.';
@@ -2116,7 +2125,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gguf_huggingface_token_optional_desc =>
-      'Requires a Hugging Face token. Add one in Settings if this GGUF is gated or private.';
+      'Requires a Hugging Face token. Hinzufügen one in Einstellungen if this GGUF is gated or private.';
 
   @override
   String get gguf_downloading => 'Downloading GGUF';
@@ -2128,7 +2137,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gguf_preparing_download => 'Preparing download...';
 
   @override
-  String get gguf_cancel_import => 'Cancel import';
+  String get gguf_cancel_import => 'Abbrechen import';
 
   @override
   String get clipboard_empty => 'Clipboard is empty.';
@@ -2260,7 +2269,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tool_status_done => 'Done';
 
   @override
-  String get tool_status_failed => 'Failed';
+  String get tool_status_failed => 'Fehlgeschlagen';
 
   @override
   String get model_favorite_toggle => 'Toggle favorite';
@@ -2269,7 +2278,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get model_set_default => 'Set as default model';
 
   @override
-  String get model_clear_default => 'Remove as default model';
+  String get model_clear_default => 'Entfernen as default model';
 
   @override
   String get model_default_badge => 'Default';
@@ -2278,7 +2287,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get model_note_label => 'Note';
 
   @override
-  String get model_note_hint => 'Add a note about this model…';
+  String get model_note_hint => 'Hinzufügen a note about this model…';
 
   @override
   String get unload_models_before_load =>
@@ -2313,7 +2322,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String import_data_failed(String error) {
-    return 'Failed to import backup: $error';
+    return 'Fehlgeschlagen beim import backup: $error';
   }
 
   @override
@@ -2358,7 +2367,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get move_to_folder => 'Move to folder';
 
   @override
-  String get remove_from_folder => 'Remove from folder';
+  String get remove_from_folder => 'Entfernen from folder';
 
   @override
   String get create_folder => 'Create folder';
@@ -2385,7 +2394,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get server_path_prefix_hint => '/your-secret-token';
 
   @override
-  String get search_message_contents => 'Search message contents';
+  String get search_message_contents => 'Suchen message contents';
 
   @override
   String get message_search_results => 'Message matches';
@@ -2401,7 +2410,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'No saved messages yet. Bookmark a message from its options menu.';
 
   @override
-  String get save_message => 'Save message';
+  String get save_message => 'Nachricht speichern';
 
   @override
   String get message_saved => 'Message saved';
@@ -2447,7 +2456,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personas_label => 'Personas';
 
   @override
-  String get settings_label => 'Settings';
+  String get settings_label => 'Einstellungen';
 
   @override
   String get export_conversation => 'Export conversation';
@@ -2498,14 +2507,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get temporary_chat_save_warning_title =>
-      'Save message in temporary chat?';
+      'Speichern message in temporary chat?';
 
   @override
   String get temporary_chat_save_warning_body =>
       'This chat is temporary and hidden from history. The saved message will still appear in Saved Messages.';
 
   @override
-  String get save_to_history => 'Save to history';
+  String get save_to_history => 'Speichern to history';
 
   @override
   String get share_conversation => 'Share conversation';
@@ -2537,10 +2546,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose a saved message to add to your input';
 
   @override
-  String get model_info => 'Model info';
+  String get model_info => 'Modell info';
 
   @override
-  String get model_name => 'Model name';
+  String get model_name => 'Modell name';
 
   @override
   String get model_identifier => 'Identifier';
@@ -2555,10 +2564,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get not_available => 'Not available';
 
   @override
-  String get save_message_folders => 'Save message';
+  String get save_message_folders => 'Speichern message';
 
   @override
-  String get remove_from_saved => 'Remove from saved';
+  String get remove_from_saved => 'Entfernen from saved';
 
   @override
   String get message_already_saved => 'Saved';
@@ -2597,10 +2606,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attach_shortcut_saved => 'Saved';
 
   @override
-  String get add_attachment => 'Add attachment';
+  String get add_attachment => 'Hinzufügen attachment';
 
   @override
-  String get add_to_chat => 'Add to chat';
+  String get add_to_chat => 'Hinzufügen to chat';
 
   @override
   String get choose_what_to_attach => 'What would you like to add?';
@@ -2683,7 +2692,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lm_studio_model_browser_title => 'Browse models';
 
   @override
-  String get lm_studio_model_search_hint => 'Search models by name or author…';
+  String get lm_studio_model_search_hint => 'Suchen models by name or author…';
 
   @override
   String get lm_studio_staff_picks => 'Staff picks';
@@ -2692,7 +2701,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lm_studio_community_models => 'Community models';
 
   @override
-  String get lm_studio_no_models => 'No models found';
+  String get lm_studio_no_models => 'Keine Modelle gefunden';
 
   @override
   String lm_studio_models_count(int count) {
@@ -2703,7 +2712,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lm_studio_browse_models => 'Browse & download';
 
   @override
-  String get lm_studio_model_search => 'LMS Model Search';
+  String get lm_studio_model_search => 'LMS Modell Suchen';
 
   @override
   String get lm_studio_downloads_title => 'Downloads';
@@ -2949,48 +2958,49 @@ class AppLocalizationsEn extends AppLocalizations {
       'Reporting opens GitHub with diagnostics prefilled. You stay in control — nothing is submitted automatically. Please review and remove any sensitive content before submitting.';
 
   @override
-  String get crash_report_copied => 'Copied to clipboard';
+  String get crash_report_copied => 'In Zwischenablage kopiert';
 
   @override
-  String get report_a_problem => 'Report a problem';
+  String get report_a_problem => 'Problem melden';
 
   @override
-  String get rename_folder => 'Rename folder';
+  String get rename_folder => 'Ordner umbenennen';
 
   @override
-  String get delete_folder => 'Delete folder';
+  String get delete_folder => 'Ordner löschen';
 
   @override
-  String get delete_folder_title => 'Delete folder?';
+  String get delete_folder_title => 'Ordner löschen?';
 
   @override
   String delete_folder_body(String name) {
-    return 'Are you sure you want to delete \"$name\"? Conversations or saved messages inside will be moved back to \"Unfiled\". This cannot be undone.';
+    return 'Möchten Sie den Ordner \"$name\" wirklich löschen? Enthaltene Unterhaltungen oder gespeicherte Nachrichten werden nach \"Unsortiert\" verschoben. Dies kann nicht rückgängig gemacht werden.';
   }
 
   @override
-  String get folder_name_required => 'Please enter a folder name';
+  String get folder_name_required => 'Bitte geben Sie einen Ordnernamen ein';
 
   @override
-  String get model_required_toast => 'You need to select a model first';
+  String get model_required_toast => 'Sie müssen zuerst ein Modell auswählen';
 
   @override
-  String get settings_concise_voice_responses => 'Concise Voice Mode Responses';
+  String get settings_concise_voice_responses =>
+      'Prägnante Sprachmodus-Antworten';
 
   @override
   String get settings_concise_voice_responses_desc =>
-      'Keep LLM responses brief (1 short paragraph) and ask follow-up questions in voice mode.';
+      'Halten Sie LLM-Antworten im Sprachmodus kurz (1 kurzer Absatz) und stellen Sie Nachfragen.';
 
   @override
-  String get s3_connection_succeeded => 'S3 connection succeeded.';
+  String get s3_connection_succeeded => 'S3-Verbindung erfolgreich.';
 
   @override
   String failed_to_open_url(String error) {
-    return 'Failed to open URL: $error';
+    return 'URL konnte nicht geöffnet werden: $error';
   }
 
   @override
   String failed_to_copy(String error) {
-    return 'Failed to copy: $error';
+    return 'Kopieren fehlgeschlagen: $error';
   }
 }

@@ -897,5 +897,21 @@
   "reasoning_effort_minimal": "Minimum",
   "reasoning_effort_xhigh": "Çok Yüksek",
   "reasoning_effort_max": "Maksimum",
-  "reasoning_effort_off": "Kapalı"
+  "reasoning_effort_off": "Kapalı",
+  "settings_android_assistant": "Android Asistanı",
+  "assistant_default_title": "Varsayılan Sesli Asistan",
+  "assistant_default_description": "Localmind'ı Android sisteminizdeki varsayılan sesli asistan olarak ayarlayın.",
+  "assistant_status_active": "Localmind varsayılan asistanınız olarak ayarlandı",
+  "assistant_status_available": "Localmind varsayılan asistanınız olarak ayarlanabilir",
+  "assistant_status_manual": "Sistem ayarlarını açın ve Localmind'ı manuel olarak seçin",
+  "assistant_status_unsupported": "Varsayılan asistan ayarı yalnızca Android 7.0+ sürümünde mevcuttur",
+  "assistant_status_checking": "Asistan durumu kontrol ediliyor…",
+  "assistant_set_default": "Varsayılan Asistanı Ayarla",
+  "assistant_open_settings": "Asistan Ayarlarını Aç",
+  "assistant_error": "Hata: {error}",
+  "settings_concise_voice_responses": "Özet Sesli Mod Yanıtları",
+  "settings_concise_voice_responses_desc": "Sesli modda LLM yanıtlarını kısa tutun (1 kısa paragraf) ve takip soruları sorun.",
+  "s3_connection_succeeded": "S3 bağlantısı başarılı.",
+  "failed_to_open_url": "URL açılamadı: {error}",
+  "failed_to_copy": "Kopyalanamadı: {error}"
 }

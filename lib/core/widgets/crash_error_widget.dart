@@ -220,7 +220,12 @@ class CrashErrorWidget extends StatelessWidget {
     } catch (e) {
       if (messenger != null) {
         messenger.showSnackBar(
-          SnackBar(content: Text('Failed to open URL: $e')),
+          SnackBar(
+            content: Text(
+              l10n?.failed_to_open_url(e.toString()) ??
+                  'Failed to open URL: $e',
+            ),
+          ),
         );
       }
     }
@@ -243,7 +248,11 @@ class CrashErrorWidget extends StatelessWidget {
     } catch (e) {
       if (messenger != null) {
         messenger.showSnackBar(
-          SnackBar(content: Text('Failed to copy: $e')),
+          SnackBar(
+            content: Text(
+              l10n?.failed_to_copy(e.toString()) ?? 'Failed to copy: $e',
+            ),
+          ),
         );
       }
     }

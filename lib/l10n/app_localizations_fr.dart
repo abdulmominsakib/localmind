@@ -535,38 +535,45 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settings_tts => 'Text-to-Speech';
 
   @override
-  String get settings_android_assistant => 'Android Assistant';
+  String get settings_android_assistant => 'Assistant Android';
 
   @override
-  String get assistant_default_title => 'Use LocalMind as your assistant';
+  String get assistant_default_title => 'Assistant vocal par défaut';
 
   @override
   String get assistant_default_description =>
-      'Launch voice mode with Android\'s assistant gesture or power-button shortcut.';
+      'Définissez Localmind comme assistant vocal par défaut de votre système Android.';
 
   @override
-  String get assistant_status_active => 'Active';
+  String get assistant_status_active =>
+      'Localmind est défini comme votre assistant par défaut';
 
   @override
-  String get assistant_status_available => 'Not active';
+  String get assistant_status_available =>
+      'Localmind peut être défini comme votre assistant par défaut';
 
   @override
-  String get assistant_status_manual => 'Check settings';
+  String get assistant_status_manual =>
+      'Ouvrez les paramètres système et sélectionnez Localmind manuellement';
 
   @override
-  String get assistant_status_unsupported => 'Unavailable';
+  String get assistant_status_unsupported =>
+      'L\'assistant par défaut est disponible uniquement à partir d\'Android 7.0+';
 
   @override
-  String get assistant_status_checking => 'Checking…';
+  String get assistant_status_checking =>
+      'Vérification du statut de l\'assistant…';
 
   @override
-  String get assistant_set_default => 'Set as default assistant';
+  String get assistant_set_default => 'Définir l\'assistant par défaut';
 
   @override
-  String get assistant_open_settings => 'Open Android assistant settings';
+  String get assistant_open_settings => 'Ouvrir les paramètres de l\'assistant';
 
   @override
-  String get assistant_error => 'Could not open Android assistant settings.';
+  String assistant_error(Object error) {
+    return 'Erreur : $error';
+  }
 
   @override
   String get settings_behavior => 'Behavior';
@@ -2978,4 +2985,25 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get model_required_toast => 'You need to select a model first';
+
+  @override
+  String get settings_concise_voice_responses =>
+      'Réponses concises en mode vocal';
+
+  @override
+  String get settings_concise_voice_responses_desc =>
+      'Conservez les réponses du LLM concises (1 court paragraphe) et posez des questions de suivi en mode vocal.';
+
+  @override
+  String get s3_connection_succeeded => 'Connexion S3 réussie.';
+
+  @override
+  String failed_to_open_url(String error) {
+    return 'Échec de l\'ouverture de l\'URL : $error';
+  }
+
+  @override
+  String failed_to_copy(String error) {
+    return 'Échec de la copie : $error';
+  }
 }

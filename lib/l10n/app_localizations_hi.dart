@@ -538,38 +538,45 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settings_tts => 'टेक्स्ट-टू-स्पीच';
 
   @override
-  String get settings_android_assistant => 'Android Assistant';
+  String get settings_android_assistant => 'एंड्रॉइड असिस्टेंट';
 
   @override
-  String get assistant_default_title => 'Use LocalMind as your assistant';
+  String get assistant_default_title => 'डिफ़ॉल्ट वॉयस असिस्टेंट';
 
   @override
   String get assistant_default_description =>
-      'Launch voice mode with Android\'s assistant gesture or power-button shortcut.';
+      'Localmind को एंड्रॉइड पर अपना डिफ़ॉल्ट सिस्टम वॉयस असिस्टेंट सेट करें।';
 
   @override
-  String get assistant_status_active => 'Active';
+  String get assistant_status_active =>
+      'Localmind आपके डिफ़ॉल्ट असिस्टेंट के रूप में सेट है';
 
   @override
-  String get assistant_status_available => 'Not active';
+  String get assistant_status_available =>
+      'Localmind को डिफ़ॉल्ट असिस्टेंट के रूप में सेट किया जा सकता है';
 
   @override
-  String get assistant_status_manual => 'Check settings';
+  String get assistant_status_manual =>
+      'सिस्टम सेटिंग्स खोलें और मैन्युअल रूप से Localmind चुनें';
 
   @override
-  String get assistant_status_unsupported => 'Unavailable';
+  String get assistant_status_unsupported =>
+      'डिफ़ॉल्ट असिस्टेंट सेटिंग केवल एंड्रॉइड 7.0+ पर उपलब्ध है';
 
   @override
-  String get assistant_status_checking => 'Checking…';
+  String get assistant_status_checking =>
+      'असिस्टेंट स्थिति की जांच की जा रही है…';
 
   @override
-  String get assistant_set_default => 'Set as default assistant';
+  String get assistant_set_default => 'डिफ़ॉल्ट असिस्टेंट सेट करें';
 
   @override
-  String get assistant_open_settings => 'Open Android assistant settings';
+  String get assistant_open_settings => 'असिस्टेंट सेटिंग्स खोलें';
 
   @override
-  String get assistant_error => 'Could not open Android assistant settings.';
+  String assistant_error(Object error) {
+    return 'त्रुटि: $error';
+  }
 
   @override
   String get settings_behavior => 'व्यवहार';
@@ -2977,4 +2984,24 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get model_required_toast => 'आपको पहले एक मॉडल चुनना होगा';
+
+  @override
+  String get settings_concise_voice_responses => 'संक्षिप्त वॉयस मोड उत्तर';
+
+  @override
+  String get settings_concise_voice_responses_desc =>
+      'वॉयस मोड में LLM उत्तरों को संक्षिप्त (1 छोटा अनुच्छेद) रखें और अनुवर्ती प्रश्न पूछें।';
+
+  @override
+  String get s3_connection_succeeded => 'S3 कनेक्शन सफल रहा।';
+
+  @override
+  String failed_to_open_url(String error) {
+    return 'URL खोलने में विफल: $error';
+  }
+
+  @override
+  String failed_to_copy(String error) {
+    return 'कॉपी करने में विफल: $error';
+  }
 }

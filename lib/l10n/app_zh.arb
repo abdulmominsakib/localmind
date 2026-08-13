@@ -900,5 +900,21 @@
   "reasoning_effort_minimal": "极低",
   "reasoning_effort_xhigh": "极高",
   "reasoning_effort_max": "最大",
-  "reasoning_effort_off": "关闭"
+  "reasoning_effort_off": "关闭",
+  "settings_android_assistant": "Android 助手",
+  "assistant_default_title": "默认语音助手",
+  "assistant_default_description": "将 Localmind 设置为 Android 系统默认的语音助手。",
+  "assistant_status_active": "Localmind 已设置为默认助手",
+  "assistant_status_available": "可将 Localmind 设置为默认助手",
+  "assistant_status_manual": "打开系统设置并手动选择 Localmind",
+  "assistant_status_unsupported": "默认助手设置仅适用于 Android 7.0+",
+  "assistant_status_checking": "正在检查助手状态…",
+  "assistant_set_default": "设置默认助手",
+  "assistant_open_settings": "打开助手设置",
+  "assistant_error": "错误: {error}",
+  "settings_concise_voice_responses": "简短语音模式回复",
+  "settings_concise_voice_responses_desc": "在语音模式下保持 LLM 回复简短（1个短段落）并提出后续问题。",
+  "s3_connection_succeeded": "S3 连接成功。",
+  "failed_to_open_url": "无法打开 URL: {error}",
+  "failed_to_copy": "复制失败: {error}"
 }

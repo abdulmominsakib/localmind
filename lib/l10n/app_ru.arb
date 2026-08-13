@@ -897,5 +897,21 @@
   "reasoning_effort_minimal": "Минимальный",
   "reasoning_effort_xhigh": "Очень высокий",
   "reasoning_effort_max": "Максимальный",
-  "reasoning_effort_off": "Выкл"
+  "reasoning_effort_off": "Выкл",
+  "settings_android_assistant": "Помощник Android",
+  "assistant_default_title": "Голосовой помощник по умолчанию",
+  "assistant_default_description": "Установите Localmind в качестве голосового помощника по умолчанию на Android.",
+  "assistant_status_active": "Localmind установлен в качестве помощника по умолчанию",
+  "assistant_status_available": "Localmind можно установить в качестве помощника по умолчанию",
+  "assistant_status_manual": "Откройте системные настройки и выберите Localmind вручную",
+  "assistant_status_unsupported": "Настройка помощника по умолчанию доступна только на Android 7.0+",
+  "assistant_status_checking": "Проверка статуса помощника…",
+  "assistant_set_default": "Установить помощник по умолчанию",
+  "assistant_open_settings": "Открыть настройки помощника",
+  "assistant_error": "Ошибка: {error}",
+  "settings_concise_voice_responses": "Краткие ответы в голосовом режиме",
+  "settings_concise_voice_responses_desc": "Делайте ответы LLM короткими (1 короткий абзац) и задавайте уточняющие вопросы в голосовом режиме.",
+  "s3_connection_succeeded": "Подключение к S3 успешно.",
+  "failed_to_open_url": "Не удалось открыть URL: {error}",
+  "failed_to_copy": "Не удалось скопировать: {error}"
 }

@@ -900,5 +900,21 @@
   "reasoning_effort_minimal": "最小",
   "reasoning_effort_xhigh": "極高",
   "reasoning_effort_max": "最大",
-  "reasoning_effort_off": "オフ"
+  "reasoning_effort_off": "オフ",
+  "settings_android_assistant": "Android アシスタント",
+  "assistant_default_title": "デフォルトの音声アシスタント",
+  "assistant_default_description": "Localmind を Android のシステムデフォルト音声アシスタントに設定します。",
+  "assistant_status_active": "Localmind がデフォルトのアシスタントに設定されています",
+  "assistant_status_available": "Localmind をデフォルトのアシスタントに設定できます",
+  "assistant_status_manual": "システム設定を開き、Localmind を手動で選択してください",
+  "assistant_status_unsupported": "デフォルトアシスタントの設定は Android 7.0 以降でのみ利用可能です",
+  "assistant_status_checking": "アシスタントのステータスを確認中…",
+  "assistant_set_default": "デフォルトアシスタントに設定",
+  "assistant_open_settings": "アシスタント設定を開く",
+  "assistant_error": "エラー: {error}",
+  "settings_concise_voice_responses": "簡潔な音声モード応答",
+  "settings_concise_voice_responses_desc": "音声モードでのLLMの応答を短く（短い1段落）保ち、フォローアップの質問を行います。",
+  "s3_connection_succeeded": "S3 接続に成功しました。",
+  "failed_to_open_url": "URL を開くことができませんでした: {error}",
+  "failed_to_copy": "コピーに失敗しました: {error}"
 }

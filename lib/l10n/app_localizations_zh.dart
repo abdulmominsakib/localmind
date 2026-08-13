@@ -524,38 +524,40 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settings_tts => '语音合成 (TTS)';
 
   @override
-  String get settings_android_assistant => 'Android Assistant';
+  String get settings_android_assistant => 'Android 助手';
 
   @override
-  String get assistant_default_title => 'Use LocalMind as your assistant';
+  String get assistant_default_title => '默认语音助手';
 
   @override
   String get assistant_default_description =>
-      'Launch voice mode with Android\'s assistant gesture or power-button shortcut.';
+      '将 Localmind 设置为 Android 系统默认的语音助手。';
 
   @override
-  String get assistant_status_active => 'Active';
+  String get assistant_status_active => 'Localmind 已设置为默认助手';
 
   @override
-  String get assistant_status_available => 'Not active';
+  String get assistant_status_available => '可将 Localmind 设置为默认助手';
 
   @override
-  String get assistant_status_manual => 'Check settings';
+  String get assistant_status_manual => '打开系统设置并手动选择 Localmind';
 
   @override
-  String get assistant_status_unsupported => 'Unavailable';
+  String get assistant_status_unsupported => '默认助手设置仅适用于 Android 7.0+';
 
   @override
-  String get assistant_status_checking => 'Checking…';
+  String get assistant_status_checking => '正在检查助手状态…';
 
   @override
-  String get assistant_set_default => 'Set as default assistant';
+  String get assistant_set_default => '设置默认助手';
 
   @override
-  String get assistant_open_settings => 'Open Android assistant settings';
+  String get assistant_open_settings => '打开助手设置';
 
   @override
-  String get assistant_error => 'Could not open Android assistant settings.';
+  String assistant_error(Object error) {
+    return '错误: $error';
+  }
 
   @override
   String get settings_behavior => '行为';
@@ -2898,6 +2900,26 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get model_required_toast => '您需要先选择一个模型';
+
+  @override
+  String get settings_concise_voice_responses => '简短语音模式回复';
+
+  @override
+  String get settings_concise_voice_responses_desc =>
+      '在语音模式下保持 LLM 回复简短（1个短段落）并提出后续问题。';
+
+  @override
+  String get s3_connection_succeeded => 'S3 连接成功。';
+
+  @override
+  String failed_to_open_url(String error) {
+    return '无法打开 URL: $error';
+  }
+
+  @override
+  String failed_to_copy(String error) {
+    return '复制失败: $error';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -3418,6 +3440,42 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settings_tts => '語音合成 (TTS)';
+
+  @override
+  String get settings_android_assistant => 'Android 助理';
+
+  @override
+  String get assistant_default_title => '預設語音助理';
+
+  @override
+  String get assistant_default_description =>
+      '將 Localmind 設定為 Android 系統預設的語音助理。';
+
+  @override
+  String get assistant_status_active => 'Localmind 已設定為預設助理';
+
+  @override
+  String get assistant_status_available => '可將 Localmind 設定為預設助理';
+
+  @override
+  String get assistant_status_manual => '開啟系統設定並手動選擇 Localmind';
+
+  @override
+  String get assistant_status_unsupported => '預設助理設定僅適用於 Android 7.0+';
+
+  @override
+  String get assistant_status_checking => '正在檢查助理狀態…';
+
+  @override
+  String get assistant_set_default => '設定預設助理';
+
+  @override
+  String get assistant_open_settings => '開啟助理設定';
+
+  @override
+  String assistant_error(Object error) {
+    return '錯誤: $error';
+  }
 
   @override
   String get settings_behavior => '行為';
@@ -5761,4 +5819,24 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get model_required_toast => '您需要先選擇一個模型';
+
+  @override
+  String get settings_concise_voice_responses => '精簡語音模式回應';
+
+  @override
+  String get settings_concise_voice_responses_desc =>
+      '在語音模式下保持 LLM 回應精簡（1個短段落）並提出後續問題。';
+
+  @override
+  String get s3_connection_succeeded => 'S3 連線成功。';
+
+  @override
+  String failed_to_open_url(String error) {
+    return '無法開啟 URL: $error';
+  }
+
+  @override
+  String failed_to_copy(String error) {
+    return '複製失敗: $error';
+  }
 }

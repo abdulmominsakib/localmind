@@ -152,6 +152,16 @@ const _languages = [
     shortText: 'Fr',
     gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
   ),
+  _LanguageOption(
+    code: 'de',
+    nativeName: 'Deutsch',
+    englishName: 'German',
+    flag: '🇩🇪',
+    flagAsset: 'assets/images/flag_de.png',
+    countryCode: 'DE',
+    shortText: 'De',
+    gradient: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+  ),
 ];
 
 class OnboardingLanguageScreen extends ConsumerStatefulWidget {
