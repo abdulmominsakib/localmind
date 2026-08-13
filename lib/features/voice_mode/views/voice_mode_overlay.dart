@@ -9,7 +9,12 @@ import 'package:hugeicons/hugeicons.dart';
 import '../../../../core/models/enums.dart';
 import '../../../../core/providers/app_providers.dart';
 import '../../../../core/services/app_haptics.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../chat/providers/chat_notifier.dart';
+import '../../chat/providers/model_selection_providers.dart';
+import '../../models/components/model_list.dart';
+import '../../on_device/components/on_device_picker_section.dart';
+import '../../servers/providers/server_providers.dart';
 import '../../tts/providers/tts_providers.dart';
 import '../../tts/views/tts_model_manager_screen.dart';
 import '../providers/voice_mode_provider.dart';
@@ -182,6 +187,12 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
       225.0,
       255.0,
     );
+    final target = ref.watch(activeChatTargetProvider);
+    final showInlineModelPicker = target.server != null && !target.isReady;
+    final modelPickerHeight = (MediaQuery.sizeOf(context).height / 3).clamp(
+      220.0,
+      380.0,
+    );
 
     return PopScope(
       canPop: false,
@@ -257,32 +268,81 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
                           ],
                         ),
                       ),
-
-                      const Spacer(flex: 2),
-
-                      GestureDetector(
-                        onTap: _handleCenterAction,
-                        child: VoiceVisualizer(
-                          phase: state.phase,
-                          micLevel: state.micLevel,
-                          responseProgress: responseProgress,
-                          size: orbSize,
+                      if (showInlineModelPicker) ...[
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final compactOrbSize =
+                                  (constraints.maxHeight * 0.52).clamp(
+                                    110.0,
+                                    orbSize,
+                                  );
+                              return Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  GestureDetector(
+                                    onTap: _handleCenterAction,
+                                    child: VoiceVisualizer(
+                                      phase: state.phase,
+                                      micLevel: state.micLevel,
+                                      responseProgress: responseProgress,
+                                      size: compactOrbSize,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Flexible(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 32,
+                                      ),
+                                      child: _StreamingTranscript(
+                                        phase: state.phase,
+                                        transcript: state.transcript,
+                                        response: state.response,
+                                        error: state.error,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
                         ),
-                      ),
-
-                      const SizedBox(height: 28),
-
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: _StreamingTranscript(
-                          phase: state.phase,
-                          transcript: state.transcript,
-                          response: state.response,
-                          error: state.error,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: SizedBox(
+                            height: modelPickerHeight,
+                            child: const VoiceModelPickerPanel(),
+                          ),
                         ),
-                      ),
-
-                      const Spacer(flex: 3),
+                        const SizedBox(height: 10),
+                      ] else ...[
+                        const Spacer(flex: 2),
+                        GestureDetector(
+                          onTap: _handleCenterAction,
+                          child: VoiceVisualizer(
+                            phase: state.phase,
+                            micLevel: state.micLevel,
+                            responseProgress: responseProgress,
+                            size: orbSize,
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: _StreamingTranscript(
+                            phase: state.phase,
+                            transcript: state.transcript,
+                            response: state.response,
+                            error: state.error,
+                          ),
+                        ),
+                        const Spacer(flex: 3),
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+                          child: Center(child: VoiceTargetChip()),
+                        ),
+                      ],
 
                       VoiceModeControls(
                         phase: state.phase,
@@ -307,6 +367,170 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class VoiceModelPickerPanel extends ConsumerWidget {
+  const VoiceModelPickerPanel({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final server = ref.watch(activeServerProvider);
+    if (server == null) return const SizedBox.shrink();
+
+    final selectedModel = ref.watch(selectedModelProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final foreground = isDark ? Colors.white : const Color(0xFF25243A);
+    final surface = isDark
+        ? const Color(0xFF151720).withValues(alpha: 0.94)
+        : Colors.white.withValues(alpha: 0.88);
+
+    return Semantics(
+      container: true,
+      label: '${l10n.select_model_title}, ${server.name}',
+      child: Container(
+        key: const ValueKey('voice-model-picker-panel'),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: foreground.withValues(alpha: 0.10)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.07),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.memory_rounded,
+                  size: 16,
+                  color: foreground.withValues(alpha: 0.62),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    l10n.select_model_title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: foreground.withValues(alpha: 0.86),
+                    ),
+                  ),
+                ),
+                Text(
+                  server.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: foreground.withValues(alpha: 0.48),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: server.type == ServerType.onDevice
+                  ? OnDevicePickerSection(
+                      selectedModelId: selectedModel?.id,
+                      isDark: isDark,
+                      closeOnSelect: false,
+                    )
+                  : ModelList(
+                      serverId: server.id,
+                      selectedModelId: selectedModel?.id,
+                      isDark: isDark,
+                      closeOnSelect: false,
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class VoiceTargetChip extends ConsumerWidget {
+  const VoiceTargetChip({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final target = ref.watch(activeChatTargetProvider);
+    final server = target.server;
+    if (server == null) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final foreground = isDark ? Colors.white : const Color(0xFF25243A);
+
+    return Semantics(
+      label: 'Active server ${server.name}, model ${target.modelLabel}',
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 320),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: foreground.withValues(alpha: isDark ? 0.055 : 0.035),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: foreground.withValues(alpha: isDark ? 0.10 : 0.075),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.dns_outlined,
+              size: 12,
+              color: foreground.withValues(alpha: 0.55),
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                server.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: foreground.withValues(alpha: 0.62),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                '•',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: foreground.withValues(alpha: 0.32),
+                ),
+              ),
+            ),
+            Flexible(
+              child: Text(
+                target.modelLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: foreground.withValues(alpha: 0.52),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

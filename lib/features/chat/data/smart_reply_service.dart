@@ -9,6 +9,11 @@ import 'models/chat_parameters.dart';
 import 'models/message.dart';
 
 class SmartReplyService {
+  static final RegExp _greetingPattern = RegExp(
+    r'\b(?:hello|hi|hey|greetings|good morning|good afternoon|good evening|welcome)\b',
+    caseSensitive: false,
+  );
+
   final Map<String, Future<List<String>>> _inFlightSuggestions = {};
 
   Future<List<String>> suggestRepliesWithLLM({
@@ -304,14 +309,7 @@ class SmartReplyService {
     final lowerContent = cleanContent.toLowerCase();
 
     // 1. Greetings & Welcomes
-    if (lowerContent.contains('hello') ||
-        lowerContent.contains('hi') ||
-        lowerContent.contains('hey') ||
-        lowerContent.contains('greetings') ||
-        lowerContent.contains('good morning') ||
-        lowerContent.contains('good afternoon') ||
-        lowerContent.contains('good evening') ||
-        lowerContent.contains('welcome')) {
+    if (_greetingPattern.hasMatch(cleanContent)) {
       return [
         'Hello! How are you?',
         'I have a question',

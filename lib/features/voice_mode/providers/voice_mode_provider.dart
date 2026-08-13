@@ -106,18 +106,28 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
       (previous, next) => _onTtsStateChanged(previous, next),
     );
 
+    // A server or genuinely loaded model can become available while the voice
+    // overlay is open. Resume automatically instead of leaving the user on a
+    // stale selection error.
+    ref.listen<ActiveChatTarget>(activeChatTargetProvider, (previous, next) {
+      final waitingForTarget =
+          state.phase == VoiceModePhase.error &&
+          (state.error == modelSelectionRequiredMessage ||
+              state.error == 'No server connected');
+      if (_active && waitingForTarget && next.isReady) {
+        unawaited(startListening());
+      }
+    });
+
     // Listen to STT errors and show them directly on the voice screen.
-    ref.listen<String?>(
-      sttProvider.select((s) => s.error),
-      (previous, next) {
-        if (!_active || next == null) return;
-        state = state.copyWith(
-          phase: VoiceModePhase.error,
-          error: _mapSttError(next),
-        );
-        ref.read(voiceFeedbackProvider).playDisconnected();
-      },
-    );
+    ref.listen<String?>(sttProvider.select((s) => s.error), (previous, next) {
+      if (!_active || next == null) return;
+      state = state.copyWith(
+        phase: VoiceModePhase.error,
+        error: _mapSttError(next),
+      );
+      ref.read(voiceFeedbackProvider).playDisconnected();
+    });
 
     return const VoiceModeState();
   }
@@ -131,6 +141,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     _active = true;
     _generatingFired = false;
     state = const VoiceModeState(isActive: true, phase: VoiceModePhase.idle);
+    if (!_ensureChatTarget()) return;
     ref.read(voiceFeedbackProvider).playConnected();
     // Auto-start listening.
     startListening();
@@ -139,6 +150,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
   /// Start listening for user speech.
   Future<void> startListening() async {
     if (!_active) return;
+    if (!_ensureChatTarget()) return;
 
     _isSendingTranscript = false;
     state = state.copyWith(
@@ -197,6 +209,8 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
       );
       return;
     }
+
+    if (!_ensureChatTarget()) return;
 
     // Reset the mic level so the waveform visualizer doesn't keep
     // dancing on a stale value once we leave the listening phase.
@@ -358,6 +372,22 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     } else {
       state = state.copyWith(phase: VoiceModePhase.idle);
     }
+  }
+
+  bool _ensureChatTarget() {
+    final target = ref.read(activeChatTargetProvider);
+    if (target.isReady) return true;
+
+    _isSendingTranscript = false;
+    state = state.copyWith(
+      isActive: true,
+      phase: VoiceModePhase.error,
+      error: target.server == null
+          ? 'No server connected'
+          : modelSelectionRequiredMessage,
+      micLevel: 0,
+    );
+    return false;
   }
 }
 

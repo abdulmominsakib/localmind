@@ -735,12 +735,18 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> sendMessage(String content, {List<File>? attachments}) async {
-    final server = ref.read(activeServerProvider);
-    final selectedModel = ref.read(selectedModelProvider);
-    final chatService = ref.read(chatServiceProvider);
+    final target = ref.read(activeChatTargetProvider);
+    final server = target.server;
+    final selectedModel = target.selectedModel;
+    final effectiveModelId = target.effectiveModelId;
 
     if (server == null) {
       state = state.copyWith(errorMessage: 'No server connected');
+      return;
+    }
+
+    if (effectiveModelId == null) {
+      state = state.copyWith(errorMessage: modelSelectionRequiredMessage);
       return;
     }
 
@@ -748,6 +754,8 @@ class ChatNotifier extends Notifier<ChatState> {
         (attachments == null || attachments.isEmpty)) {
       return;
     }
+
+    final chatService = ref.read(chatServiceProvider);
 
     await _abortStreamImmediately();
 
@@ -827,7 +835,7 @@ class ChatNotifier extends Notifier<ChatState> {
       content: '',
       createdAt: DateTime.now(),
       status: MessageStatus.streaming,
-      modelId: selectedModel?.id,
+      modelId: effectiveModelId,
       variantGroupId: assistantGroupId,
       variantIndex: 0,
       threadOrder: assistantThreadOrder,
@@ -922,7 +930,7 @@ class ChatNotifier extends Notifier<ChatState> {
         _streamSubscription = chatService
             .sendMessage(
               server: server,
-              modelId: selectedModel?.id ?? 'default',
+              modelId: effectiveModelId,
               messages: messagesForApi,
               params: chatParams,
               integrations: integrations,
@@ -1618,7 +1626,8 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   String? _resolveModelIdForTitle(Conversation? conversation) {
-    return conversation?.modelId ?? ref.read(selectedModelProvider)?.id;
+    return conversation?.modelId ??
+        ref.read(activeChatTargetProvider).effectiveModelId;
   }
 
   ChatService? _resolveChatServiceForTitle(Server server) {
@@ -1658,9 +1667,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }) {
     final modelId =
         selectedModel?.id ??
-        (server.type == ServerType.onDevice
-            ? ref.read(onDeviceEngineProvider).loadedModelId
-            : null);
+        ref.read(activeChatTargetProvider).effectiveModelId;
 
     unawaited(
       ref
@@ -2360,17 +2367,18 @@ class ChatNotifier extends Notifier<ChatState> {
     if (state.isStreaming) return;
     if (state.messages.isEmpty) return;
 
-    final server = ref.read(activeServerProvider);
-    final selectedModel = ref.read(selectedModelProvider);
+    final target = ref.read(activeChatTargetProvider);
+    final server = target.server;
+    final modelId = target.effectiveModelId;
     final chatService = ref.read(chatServiceProvider);
-    if (server == null || chatService == null || selectedModel == null) return;
+    if (server == null || chatService == null || modelId == null) return;
 
     final generated = await ref
         .read(smartReplyServiceProvider)
         .generateUserMessage(
           chatService: chatService,
           server: server,
-          modelId: selectedModel.id,
+          modelId: modelId,
           messages: state.messages,
           params: ref.read(chatParamsProvider),
         );

@@ -28,11 +28,13 @@ class OnDevicePickerSection extends ConsumerWidget {
     required this.selectedModelId,
     required this.isDark,
     this.scrollController,
+    this.closeOnSelect = true,
   });
 
   final String? selectedModelId;
   final bool isDark;
   final ScrollController? scrollController;
+  final bool closeOnSelect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,7 +51,11 @@ class OnDevicePickerSection extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, size: 48, color: Colors.red[400]),
+            HugeIcon(
+              icon: HugeIcons.strokeRoundedInformationCircle,
+              size: 48,
+              color: Colors.red[400],
+            ),
             const SizedBox(height: 16),
             Text(
               l10n.failed_load_models,
@@ -139,6 +145,7 @@ class OnDevicePickerSection extends ConsumerWidget {
             isSelected: isSelected,
             isDark: isDark,
             deviceMemory: deviceMemoryAsync.value,
+            closeOnSelect: closeOnSelect,
           );
         }
 
@@ -204,6 +211,7 @@ class _OnDeviceModelTile extends ConsumerWidget {
     required this.isCurrentlyLoading,
     required this.isSelected,
     required this.isDark,
+    required this.closeOnSelect,
     this.deviceMemory,
   });
 
@@ -213,6 +221,7 @@ class _OnDeviceModelTile extends ConsumerWidget {
   final bool isCurrentlyLoading;
   final bool isSelected;
   final bool isDark;
+  final bool closeOnSelect;
   final DeviceMemoryInfo? deviceMemory;
 
   @override
@@ -327,8 +336,8 @@ class _OnDeviceModelTile extends ConsumerWidget {
                           padding: const EdgeInsets.only(top: 2),
                           child: Row(
                             children: [
-                              const HugeIcon(icon: 
-                                HugeIcons.strokeRoundedAlertCircle,
+                              const HugeIcon(
+                                icon: HugeIcons.strokeRoundedAlertCircle,
                                 color: Colors.orange,
                                 size: 12,
                               ),
@@ -360,7 +369,8 @@ class _OnDeviceModelTile extends ConsumerWidget {
                               Text(
                                 isPaused
                                     ? l10n.paused_progress(
-                                        ((downloadProgress?.progress ?? 0) * 100)
+                                        ((downloadProgress?.progress ?? 0) *
+                                                100)
                                             .toStringAsFixed(0),
                                       )
                                     : '${l10n.downloading_status} ${((downloadProgress?.progress ?? 0) * 100).toStringAsFixed(0)}%',
@@ -425,8 +435,8 @@ class _OnDeviceModelTile extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   _IconButton(
-                    icon: HugeIcon(icon: 
-                      HugeIcons.strokeRoundedPower,
+                    icon: HugeIcon(
+                      icon: HugeIcons.strokeRoundedPower,
                       size: 18,
                       color: Colors.red[400],
                     ),
@@ -435,14 +445,18 @@ class _OnDeviceModelTile extends ConsumerWidget {
                   ),
                 ] else if (isDownloaded && !isCurrentlyLoading) ...[
                   _IconButton(
-                    icon: HugeIcon(icon: HugeIcons.strokeRoundedPlay, size: 20, color: accent),
+                    icon: HugeIcon(
+                      icon: HugeIcons.strokeRoundedPlay,
+                      size: 20,
+                      color: accent,
+                    ),
                     tooltip: l10n.load,
                     onPressed: () => _loadModel(context, ref),
                   ),
                   const SizedBox(width: 4),
                   _IconButton(
-                    icon: HugeIcon(icon: 
-                      HugeIcons.strokeRoundedDelete01,
+                    icon: HugeIcon(
+                      icon: HugeIcons.strokeRoundedDelete01,
                       size: 18,
                       color: isDark
                           ? AppColors.darkMutedText
@@ -453,8 +467,8 @@ class _OnDeviceModelTile extends ConsumerWidget {
                   ),
                 ] else if (isDownloading) ...[
                   _IconButton(
-                    icon: HugeIcon(icon: 
-                      HugeIcons.strokeRoundedCancel01,
+                    icon: HugeIcon(
+                      icon: HugeIcons.strokeRoundedCancel01,
                       size: 16,
                       color: isDark
                           ? AppColors.darkMutedText
@@ -467,8 +481,8 @@ class _OnDeviceModelTile extends ConsumerWidget {
                   ),
                 ] else if (!isCurrentlyLoading) ...[
                   _IconButton(
-                    icon: HugeIcon(icon: 
-                      HugeIcons.strokeRoundedCloudDownload,
+                    icon: HugeIcon(
+                      icon: HugeIcons.strokeRoundedCloudDownload,
                       size: 18,
                       color: isDark
                           ? AppColors.darkMutedText
@@ -583,7 +597,7 @@ class _OnDeviceModelTile extends ConsumerWidget {
     final engineState = ref.read(onDeviceEngineProvider);
     if (engineState.loadedModelId == model.id) {
       ref.read(selectedModelProvider.notifier).setModel(modelInfo);
-      Navigator.pop(context);
+      if (closeOnSelect) Navigator.pop(context);
     }
   }
 
@@ -623,7 +637,7 @@ class _OnDeviceModelTile extends ConsumerWidget {
     );
 
     ref.read(selectedModelProvider.notifier).setModel(modelInfo);
-    Navigator.pop(context);
+    if (closeOnSelect) Navigator.pop(context);
   }
 
   void _unloadModel(BuildContext context, WidgetRef ref) async {

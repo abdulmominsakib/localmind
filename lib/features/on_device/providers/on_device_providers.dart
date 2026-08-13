@@ -306,8 +306,9 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       final activeServer = ref.read(activeServerProvider);
       if (activeServer?.type != ServerType.onDevice) {
         final servers = await ref.read(serversProvider.future);
-        final onDeviceServer =
-            servers.where((s) => s.type == ServerType.onDevice).firstOrNull;
+        final onDeviceServer = servers
+            .where((s) => s.type == ServerType.onDevice)
+            .firstOrNull;
         if (onDeviceServer != null) {
           ref
               .read(activeServerIdProvider.notifier)

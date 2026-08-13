@@ -25,7 +25,6 @@ import '../../../models/components/thinking_mode_chip.dart';
 import 'attach_sheet.dart';
 import 'image_preview_dialog.dart';
 import 'model_chip.dart';
-import '../../../on_device/providers/on_device_providers.dart';
 import '../../../voice_mode/views/voice_mode_overlay.dart';
 
 class ChatInputBar extends ConsumerStatefulWidget {
@@ -363,16 +362,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
   Widget _buildVoiceModeButton(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
-    final onDeviceLoaded = ref.watch(
-      onDeviceEngineProvider.select(
-        (s) => s.status == OnDeviceEngineStatus.loaded,
-      ),
-    );
-    final connectionStatus = ref.watch(connectionStatusProvider);
-    final isConnected = connectionStatus == ConnectionStatus.connected;
-    final hasRemoteModel =
-        isConnected && ref.watch(selectedModelProvider) != null;
-    final modelReady = onDeviceLoaded || hasRemoteModel;
+    final modelReady = ref.watch(activeChatTargetProvider).isReady;
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
@@ -443,7 +433,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     if (text.isEmpty && _attachedFiles.isEmpty) return;
 
-    if (!_ensureModelSelected()) return;
+    if (!_ensureChatTarget()) return;
 
     ref.read(appHapticsProvider).medium();
 
@@ -471,7 +461,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     final text = _controller.text.trim();
     if (text.isEmpty && _attachedFiles.isEmpty) return;
 
-    if (!_ensureModelSelected()) return;
+    if (!_ensureChatTarget()) return;
 
     ref.read(appHapticsProvider).medium();
     ref
@@ -489,11 +479,10 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     });
   }
 
-  /// Returns true if a model is currently selected. When no model is selected,
-  /// shows a SnackBar prompting the user to pick one and opens the model
-  /// picker sheet, then returns false so the caller can bail out.
-  bool _ensureModelSelected() {
-    if (ref.read(selectedModelProvider) != null) return true;
+  /// Returns true when the active server has a usable model target. When it
+  /// does not, prompts the user to choose an on-device model.
+  bool _ensureChatTarget() {
+    if (ref.read(activeChatTargetProvider).isReady) return true;
     final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(
       context,

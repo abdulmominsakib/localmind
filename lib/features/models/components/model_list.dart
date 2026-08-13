@@ -23,12 +23,14 @@ class ModelList extends ConsumerStatefulWidget {
     required this.selectedModelId,
     required this.isDark,
     this.scrollController,
+    this.closeOnSelect = true,
   });
 
   final String serverId;
   final String? selectedModelId;
   final bool isDark;
   final ScrollController? scrollController;
+  final bool closeOnSelect;
 
   @override
   ConsumerState<ModelList> createState() => _ModelListState();
@@ -98,10 +100,7 @@ class _ModelListState extends ConsumerState<ModelList> {
     return sorted;
   }
 
-  Future<void> _showModelOptions(
-    BuildContext context,
-    ModelInfo model,
-  ) async {
+  Future<void> _showModelOptions(BuildContext context, ModelInfo model) async {
     final l10n = AppLocalizations.of(context)!;
     final metadata = ref.read(modelMetadataProvider)[model.id];
     final noteController = TextEditingController(text: metadata?.note ?? '');
@@ -113,7 +112,7 @@ class _ModelListState extends ConsumerState<ModelList> {
         final settings = ref.read(settingsProvider);
         final isDefaultModel =
             settings.defaultModelServerId == widget.serverId &&
-                settings.defaultModelId == model.id;
+            settings.defaultModelId == model.id;
 
         return SafeArea(
           child: Padding(
@@ -163,8 +162,8 @@ class _ModelListState extends ConsumerState<ModelList> {
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: HugeIcon(icon: 
-                    metadata?.isFavorite == true
+                  leading: HugeIcon(
+                    icon: metadata?.isFavorite == true
                         ? HugeIcons.strokeRoundedStar
                         : HugeIcons.strokeRoundedStar,
                     color: Colors.amber[700],
@@ -231,7 +230,11 @@ class _ModelListState extends ConsumerState<ModelList> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              HugeIcon(icon: HugeIcons.strokeRoundedCloud, size: 64, color: Colors.red[300]),
+              HugeIcon(
+                icon: HugeIcons.strokeRoundedCloud,
+                size: 64,
+                color: Colors.red[300],
+              ),
               const SizedBox(height: 16),
               Text(
                 l10n.server_offline,
@@ -246,7 +249,9 @@ class _ModelListState extends ConsumerState<ModelList> {
                 l10n.could_not_establish_connection,
                 style: TextStyle(
                   fontSize: 13,
-                  color: widget.isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                  color: widget.isDark
+                      ? AppColors.darkMutedText
+                      : AppColors.lightMutedText,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -277,7 +282,11 @@ class _ModelListState extends ConsumerState<ModelList> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, size: 48, color: Colors.red[400]),
+            HugeIcon(
+              icon: HugeIcons.strokeRoundedInformationCircle,
+              size: 48,
+              color: Colors.red[400],
+            ),
             const SizedBox(height: 16),
             Text(
               l10n.failed_load_models,
@@ -292,7 +301,9 @@ class _ModelListState extends ConsumerState<ModelList> {
               err.toString(),
               style: TextStyle(
                 fontSize: 12,
-                color: widget.isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                color: widget.isDark
+                    ? AppColors.darkMutedText
+                    : AppColors.lightMutedText,
               ),
               textAlign: TextAlign.center,
             ),
@@ -309,8 +320,9 @@ class _ModelListState extends ConsumerState<ModelList> {
       data: (models) {
         final serversAsync = ref.watch(serversProvider);
         final servers = serversAsync.value ?? [];
-        final activeServer =
-            servers.where((s) => s.id == widget.serverId).firstOrNull;
+        final activeServer = servers
+            .where((s) => s.id == widget.serverId)
+            .firstOrNull;
         final loadedModelsAsync = activeServer != null
             ? ref.watch(loadedModelsProvider(activeServer))
             : const AsyncValue<Set<String>>.data(<String>{});
@@ -344,7 +356,9 @@ class _ModelListState extends ConsumerState<ModelList> {
                   : l10n.no_models_match(searchQuery),
               style: TextStyle(
                 fontSize: 14,
-                color: widget.isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                color: widget.isDark
+                    ? AppColors.darkMutedText
+                    : AppColors.lightMutedText,
               ),
             ),
           );
@@ -364,7 +378,8 @@ class _ModelListState extends ConsumerState<ModelList> {
               isSelected: isSelected,
               isLoaded: isLoaded,
               isDark: widget.isDark,
-              isLoading: modelLoading.isLoading && modelLoading.modelId == model.id,
+              isLoading:
+                  modelLoading.isLoading && modelLoading.modelId == model.id,
               isFavorite: modelMeta?.isFavorite ?? false,
               isDefault: ref.watch(
                 settingsProvider.select(
@@ -387,8 +402,9 @@ class _ModelListState extends ConsumerState<ModelList> {
                   try {
                     final apiService = ref.read(serverApiServiceProvider);
                     final settings = ref.read(settingsProvider);
-                    final contextLength =
-                        ref.read(chatParamsProvider).contextLength;
+                    final contextLength = ref
+                        .read(chatParamsProvider)
+                        .contextLength;
 
                     if (settings.unloadModelsBeforeLoad) {
                       final instances = await ref.read(
@@ -423,7 +439,7 @@ class _ModelListState extends ConsumerState<ModelList> {
                 }
 
                 ref.read(selectedModelProvider.notifier).setModel(model);
-                if (context.mounted) {
+                if (widget.closeOnSelect && context.mounted) {
                   Navigator.pop(context);
                 }
               },
@@ -452,9 +468,9 @@ class _ModelListState extends ConsumerState<ModelList> {
                     final message = activeServer.isOllamaFamily
                         ? l10n.model_unloaded_ollama(model.name)
                         : l10n.model_unloaded_success(model.name);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(message)),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(message)));
                   }
                 } catch (e) {
                   if (context.mounted) {

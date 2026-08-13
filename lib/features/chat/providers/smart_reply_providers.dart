@@ -5,7 +5,6 @@ import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
     as conv;
-import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/voice_mode/providers/voice_mode_provider.dart';
 import 'chat_notifier.dart';
 import 'chat_params_providers.dart';
@@ -40,17 +39,18 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
   List<String> suggestions = [];
 
   if (settings.smartReplyEnabled) {
-    final server = ref.watch(activeServerProvider);
-    final selectedModel = ref.watch(selectedModelProvider);
+    final target = ref.watch(activeChatTargetProvider);
+    final server = target.server;
+    final modelId = target.effectiveModelId;
     final chatParams = ref.watch(chatParamsProvider);
     final chatService = ref.watch(chatServiceProvider);
 
-    if (server != null && chatService != null && selectedModel != null) {
+    if (server != null && chatService != null && modelId != null) {
       final service = ref.read(smartReplyServiceProvider);
       suggestions = await service.suggestRepliesWithLLM(
         chatService: chatService,
         server: server,
-        modelId: selectedModel.id,
+        modelId: modelId,
         messages: messages,
         params: chatParams,
         personaSystemPrompt: settings.smartRepliesUsePersona

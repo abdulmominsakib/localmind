@@ -51,48 +51,51 @@ class ScreenAppBar extends ConsumerWidget {
         top: true,
         bottom: false,
         child: Container(
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01),
-              onPressed: () =>
-                  ref.read(messageSelectionModeProvider.notifier).disable(),
-            ),
-            Expanded(
-              child: Text(
-                l10n.selected_count(selectedMessageIds.length),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01),
+                onPressed: () =>
+                    ref.read(messageSelectionModeProvider.notifier).disable(),
+              ),
+              Expanded(
+                child: Text(
+                  l10n.selected_count(selectedMessageIds.length),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-            IconButton(
-              icon: const HugeIcon(icon: HugeIcons.strokeRoundedShare01),
-              tooltip: l10n.export_conversation,
-              onPressed: selectedMessageIds.isEmpty
-                  ? null
-                  : () => _shareSelectedMessages(
-                      context,
-                      ref,
-                      selectedMessageIds,
-                    ),
-            ),
-            IconButton(
-              icon: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, color: Colors.red),
-              tooltip: l10n.delete,
-              onPressed: selectedMessageIds.isEmpty
-                  ? null
-                  : () => _deleteSelectedMessages(
-                      context,
-                      ref,
-                      selectedMessageIds,
-                    ),
-            ),
-          ],
-        ),
+              IconButton(
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedShare01),
+                tooltip: l10n.export_conversation,
+                onPressed: selectedMessageIds.isEmpty
+                    ? null
+                    : () => _shareSelectedMessages(
+                        context,
+                        ref,
+                        selectedMessageIds,
+                      ),
+              ),
+              IconButton(
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedDelete01,
+                  color: Colors.red,
+                ),
+                tooltip: l10n.delete,
+                onPressed: selectedMessageIds.isEmpty
+                    ? null
+                    : () => _deleteSelectedMessages(
+                        context,
+                        ref,
+                        selectedMessageIds,
+                      ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -101,136 +104,145 @@ class ScreenAppBar extends ConsumerWidget {
       top: true,
       bottom: false,
       child: Container(
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
-        children: [
-          ShadResponsiveBuilder(
-            builder: (context, breakpoint) {
-              final isDesktop =
-                  breakpoint >= ShadTheme.of(context).breakpoints.md;
-              if (isDesktop) return const SizedBox.shrink();
-              return IconButton(
-                icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _TitleBlock(
-              title: _appBarTitle(l10n),
-              isDark: isDark,
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          children: [
+            ShadResponsiveBuilder(
+              builder: (context, breakpoint) {
+                final isDesktop =
+                    breakpoint >= ShadTheme.of(context).breakpoints.md;
+                if (isDesktop) return const SizedBox.shrink();
+                return IconButton(
+                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                );
+              },
             ),
-          ),
-          Stack(
-            children: [
-              IconButton(
-                icon: HugeIcon(
-                  icon: HugeIcons.strokeRoundedFilterHorizontal,
-                  size: 24,
-                  color: isDark ? Colors.white70 : Colors.black87,
-                ),
-                onPressed: () =>
-                    showChatSettingsSheet(context, initialTab: 'parameters'),
-                tooltip: l10n.chat_parameters_tooltip,
-              ),
-              PositionedDirectional(
-                top: 4,
-                end: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: isMcpEnabled ? Colors.green : Colors.grey,
-                    shape: BoxShape.circle,
+            const SizedBox(width: 8),
+            Expanded(
+              child: _TitleBlock(title: _appBarTitle(l10n), isDark: isDark),
+            ),
+            Stack(
+              children: [
+                IconButton(
+                  icon: HugeIcon(
+                    icon: HugeIcons.strokeRoundedFilterHorizontal,
+                    size: 24,
+                    color: isDark ? Colors.white70 : Colors.black87,
                   ),
-                  child: const HugeIcon(
-                    icon: HugeIcons.strokeRoundedTools,
-                    size: 10,
-                    color: Colors.white,
+                  onPressed: () =>
+                      showChatSettingsSheet(context, initialTab: 'parameters'),
+                  tooltip: l10n.chat_parameters_tooltip,
+                ),
+                PositionedDirectional(
+                  top: 4,
+                  end: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: isMcpEnabled ? Colors.green : Colors.grey,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedTools,
+                      size: 10,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          ChatModeIconButton(
-            hasMessages: hasMessages,
-            isTemporary: isTemporary,
-            isDark: isDark,
-            onPressed: onChatModeAction,
-          ),
-          PopupMenuButton<String>(
-            icon: const HugeIcon(icon: HugeIcons.strokeRoundedMoreVertical),
-            onSelected: onMenuAction,
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'new_chat',
-                child: ListTile(
-                  leading: const HugeIcon(icon: HugeIcons.strokeRoundedAdd01),
-                  title: Text(l10n.nav_new_chat),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              if (activeConversation != null && !isTemporary) ...[
+              ],
+            ),
+            ChatModeIconButton(
+              hasMessages: hasMessages,
+              isTemporary: isTemporary,
+              isDark: isDark,
+              onPressed: onChatModeAction,
+            ),
+            PopupMenuButton<String>(
+              icon: const HugeIcon(icon: HugeIcons.strokeRoundedMoreVertical),
+              onSelected: onMenuAction,
+              itemBuilder: (context) => [
                 PopupMenuItem(
-                  value: 'rename',
+                  value: 'new_chat',
                   child: ListTile(
-                    leading: const HugeIcon(icon: HugeIcons.strokeRoundedPencilEdit02),
-                    title: Text(l10n.rename_conversation),
+                    leading: const HugeIcon(icon: HugeIcons.strokeRoundedAdd01),
+                    title: Text(l10n.nav_new_chat),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                if (activeConversation != null && !isTemporary) ...[
+                  PopupMenuItem(
+                    value: 'rename',
+                    child: ListTile(
+                      leading: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedPencilEdit02,
+                      ),
+                      title: Text(l10n.rename_conversation),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'move_to_folder',
+                    child: ListTile(
+                      leading: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedFolder01,
+                      ),
+                      title: Text(l10n.move_to_folder),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
+                if (hasMessages) ...[
+                  PopupMenuItem(
+                    value: 'export_chat',
+                    child: ListTile(
+                      leading: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedUpload01,
+                      ),
+                      title: Text(l10n.export_conversation),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'share_chat',
+                    child: ListTile(
+                      leading: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedShare01,
+                      ),
+                      title: Text(l10n.share_conversation),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
+                PopupMenuItem(
+                  value: 'persona',
+                  child: ListTile(
+                    leading: HugeIcon(
+                      icon: hasPersonas
+                          ? HugeIcons.strokeRoundedExchange01
+                          : HugeIcons.strokeRoundedRobot01,
+                    ),
+                    title: Text(
+                      hasPersonas ? l10n.change_persona : l10n.set_persona,
+                    ),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
                 PopupMenuItem(
-                  value: 'move_to_folder',
+                  value: 'clear',
                   child: ListTile(
-                    leading: const HugeIcon(icon: HugeIcons.strokeRoundedFolder01),
-                    title: Text(l10n.move_to_folder),
+                    leading: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedDelete01,
+                    ),
+                    title: Text(l10n.clear_conversation),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ],
-              if (hasMessages) ...[
-                PopupMenuItem(
-                  value: 'export_chat',
-                  child: ListTile(
-                    leading: const HugeIcon(icon: HugeIcons.strokeRoundedUpload01),
-                    title: Text(l10n.export_conversation),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'share_chat',
-                  child: ListTile(
-                    leading: const HugeIcon(icon: HugeIcons.strokeRoundedShare01),
-                    title: Text(l10n.share_conversation),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
-              PopupMenuItem(
-                value: 'persona',
-                child: ListTile(
-                  leading: HugeIcon(icon: 
-                    hasPersonas ? HugeIcons.strokeRoundedExchange01 : HugeIcons.strokeRoundedRobot01,
-                  ),
-                  title: Text(
-                    hasPersonas ? l10n.change_persona : l10n.set_persona,
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              PopupMenuItem(
-                value: 'clear',
-                child: ListTile(
-                  leading: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01),
-                  title: Text(l10n.clear_conversation),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -337,17 +349,25 @@ class ChatModeIconButton extends StatelessWidget {
                   color: activeColor.withValues(alpha: 0.25),
                   shape: BoxShape.circle,
                 ),
-                child: HugeIcon(icon: HugeIcons.strokeRoundedIncognito, size: 20, color: activeColor),
+                child: HugeIcon(
+                  icon: HugeIcons.strokeRoundedIncognito,
+                  size: 20,
+                  color: activeColor,
+                ),
               )
-            : HugeIcon(icon: HugeIcons.strokeRoundedIncognito, size: 22, color: inactiveColor),
+            : HugeIcon(
+                icon: HugeIcons.strokeRoundedIncognito,
+                size: 22,
+                color: inactiveColor,
+              ),
       );
     }
 
     return IconButton(
       onPressed: onPressed,
       tooltip: l10n.nav_new_chat,
-      icon: HugeIcon(icon: 
-        HugeIcons.strokeRoundedMessageAdd01,
+      icon: HugeIcon(
+        icon: HugeIcons.strokeRoundedMessageAdd01,
         size: 22,
         color: isDark ? Colors.white70 : Colors.black87,
       ),
@@ -355,15 +375,11 @@ class ChatModeIconButton extends StatelessWidget {
   }
 }
 
-/// Title block shown in the chat app bar — conversation title on top,
-/// active server name directly below it with a small status dot
-/// (green when connected, grey otherwise). The row is intentionally
-/// non-interactive; server switching still lives in the sidebar.
+/// Title block shown in the chat app bar — conversation title on top and the
+/// active server name below. Model selection is already visible and editable
+/// from the model picker near the composer.
 class _TitleBlock extends ConsumerWidget {
-  const _TitleBlock({
-    required this.title,
-    required this.isDark,
-  });
+  const _TitleBlock({required this.title, required this.isDark});
 
   final String title;
   final bool isDark;
@@ -386,10 +402,7 @@ class _TitleBlock extends ConsumerWidget {
         children: [
           AutoSizeText(
             title,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -417,10 +430,7 @@ class _TitleBlock extends ConsumerWidget {
               ],
             )
           else
-            Text(
-              '',
-              style: TextStyle(fontSize: 11, color: mutedColor),
-            ),
+            Text('', style: TextStyle(fontSize: 11, color: mutedColor)),
         ],
       ),
     );

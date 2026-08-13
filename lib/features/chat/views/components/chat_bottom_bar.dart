@@ -5,7 +5,8 @@ import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/features/chat/views/components/chat_input_bar.dart';
 import 'package:localmind/features/chat/views/components/top_bar/smart_reply_chips.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
-import 'package:localmind/features/conversations/providers/conversation_providers.dart' as conv;
+import 'package:localmind/features/conversations/providers/conversation_providers.dart'
+    as conv;
 import 'package:localmind/features/models/views/model_picker_sheet.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
@@ -109,11 +110,11 @@ class SmartReplyChipsWrapper extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return SmartReplyChips(
       onSend: (message) {
-        if (ref.read(selectedModelProvider) == null) {
+        if (!ref.read(activeChatTargetProvider).isReady) {
           final l10n = AppLocalizations.of(context)!;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.model_required_toast)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.model_required_toast)));
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,

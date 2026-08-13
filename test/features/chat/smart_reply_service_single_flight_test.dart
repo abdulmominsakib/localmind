@@ -11,6 +11,20 @@ import 'package:localmind/features/chat/data/tools/tool_definition.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 
 void main() {
+  test('does not treat hi inside Chicago as a greeting', () {
+    final replies = SmartReplyService().getFallbackReplies(
+      'The conference in Chicago is next month.',
+    );
+
+    expect(replies, isNot(contains('Hello! How are you?')));
+  });
+
+  test('still recognizes hi as a standalone greeting', () {
+    final replies = SmartReplyService().getFallbackReplies('Hi there!');
+
+    expect(replies, contains('Hello! How are you?'));
+  });
+
   test(
     'shares an in-flight suggestion request for the same assistant message',
     () async {

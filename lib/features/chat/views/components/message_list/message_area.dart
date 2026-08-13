@@ -7,7 +7,8 @@ import 'package:localmind/core/services/share_service.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
-import 'package:localmind/features/conversations/providers/conversation_providers.dart' as conv;
+import 'package:localmind/features/conversations/providers/conversation_providers.dart'
+    as conv;
 import 'package:localmind/features/models/views/model_picker_sheet.dart';
 import 'package:localmind/features/personas/providers/personas_providers.dart';
 import 'package:localmind/features/chat/views/components/model_info_sheet.dart';
@@ -70,7 +71,7 @@ class MessageArea extends ConsumerWidget {
       return EmptyState(
         isCloudProvider: isCloudProvider,
         onQuickPrompt: (prompt) {
-          if (ref.read(selectedModelProvider) == null) {
+          if (!ref.read(activeChatTargetProvider).isReady) {
             final toastL10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(toastL10n.model_required_toast)),

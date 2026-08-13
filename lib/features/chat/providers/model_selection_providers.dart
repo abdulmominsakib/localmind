@@ -9,14 +9,89 @@ import 'package:localmind/features/chat/providers/chat_reasoning_providers.dart'
 import 'package:localmind/features/chat/providers/model_loading_providers.dart';
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/models/utils/model_instance_utils.dart';
+import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 
+const modelSelectionRequiredMessage = 'You need to select a model first';
+
+class ActiveChatTarget {
+  final Server? server;
+  final ModelInfo? selectedModel;
+  final String? effectiveModelId;
+  final String modelLabel;
+
+  const ActiveChatTarget({
+    required this.server,
+    required this.selectedModel,
+    required this.effectiveModelId,
+    required this.modelLabel,
+  });
+
+  bool get isReady => server != null && effectiveModelId != null;
+}
+
+/// The server/model pair that a message will actually use.
+///
+/// A loaded on-device model remains usable even before the model picker has
+/// recreated its [ModelInfo]. A native restored spec is deliberately excluded:
+/// it is metadata for lazy loading, not proof that a model is in memory.
+/// Remote servers retain their existing `default` model routing when no
+/// explicit model is selected.
+final activeChatTargetProvider = Provider<ActiveChatTarget>((ref) {
+  final server = ref.watch(activeServerProvider);
+  if (server == null) {
+    return const ActiveChatTarget(
+      server: null,
+      selectedModel: null,
+      effectiveModelId: null,
+      modelLabel: 'No model',
+    );
+  }
+
+  final selected = ref.watch(selectedModelProvider);
+  final selectedForServer = selected?.serverId == server.id ? selected : null;
+  if (selectedForServer != null) {
+    return ActiveChatTarget(
+      server: server,
+      selectedModel: selectedForServer,
+      effectiveModelId: selectedForServer.id,
+      modelLabel: selectedForServer.displayName,
+    );
+  }
+
+  if (server.type != ServerType.onDevice) {
+    return ActiveChatTarget(
+      server: server,
+      selectedModel: null,
+      effectiveModelId: 'default',
+      modelLabel: 'Default model',
+    );
+  }
+
+  final engine = ref.watch(onDeviceEngineProvider);
+  final modelId = engine.status == OnDeviceEngineStatus.loaded
+      ? engine.loadedModelId
+      : null;
+  final model = modelId == null
+      ? null
+      : OnDeviceModel.curatedModels
+            .where((candidate) => candidate.id == modelId)
+            .firstOrNull;
+
+  return ActiveChatTarget(
+    server: server,
+    selectedModel: null,
+    effectiveModelId: modelId,
+    modelLabel: model?.name ?? modelId ?? 'No model',
+  );
+});
+
 final selectedModelProvider =
     NotifierProvider<SelectedModelNotifier, ModelInfo?>(() {
-  return SelectedModelNotifier();
-});
+      return SelectedModelNotifier();
+    });
 
 class SelectedModelNotifier extends Notifier<ModelInfo?> {
   @override
