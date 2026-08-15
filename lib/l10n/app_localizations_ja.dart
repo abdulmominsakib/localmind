@@ -2943,4 +2943,23 @@ class AppLocalizationsJa extends AppLocalizations {
   String failed_to_copy(String error) {
     return 'コピーに失敗しました: $error';
   }
+
+  @override
+  String get file_explorer_not_found =>
+      'No file explorer found. Please make sure a file manager app is installed and enabled on your device.';
+
+  @override
+  String export_data_failed(String error) {
+    return 'Failed to export backup: $error';
+  }
+
+  @override
+  String file_pick_failed(String error) {
+    return 'Failed to select file: $error';
+  }
+
+  @override
+  String image_pick_failed(String error) {
+    return 'Failed to select image: $error';
+  }
 }

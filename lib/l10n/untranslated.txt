@@ -1,1 +1,78 @@
-{}
+{
+  "bn": [
+    "file_explorer_not_found",
+    "export_data_failed",
+    "file_pick_failed",
+    "image_pick_failed"
+  ],
+
+  "de": [
+    "file_explorer_not_found",
+    "export_data_failed",
+    "file_pick_failed",
+    "image_pick_failed"
+  ],
+
+  "es": [
+    "file_explorer_not_found",
+    "export_data_failed",
+    "file_pick_failed",
+    "image_pick_failed"
+  ],
+
+  "fr": [
+    "file_explorer_not_found",
+    "export_data_failed",
+    "file_pick_failed",
+    "image_pick_failed"
+  ],
+
+  "hi": [
+    "file_explorer_not_found",
+    "export_data_failed",
+    "file_pick_failed",
+    "image_pick_failed"
+  ],
+
+  "it": [
+    "file_explorer_not_found",
+    "export_data_failed",
+    "file_pick_failed",
+    "image_pick_failed"
+  ],
+
+  "ja": [
+    "file_explorer_not_found",
+    "export_data_failed",
+    "file_pick_failed",
+    "image_pick_failed"
+  ],
+
+  "ru": [
+    "file_explorer_not_found",
+    "export_data_failed",
+    "file_pick_failed",
+    "image_pick_failed"
+  ],
+
+  "tr": [
+    "file_explorer_not_found",
+    "export_data_failed",
+    "file_pick_failed",
+    "image_pick_failed"
+  ],
+
+  "zh": [
+    "file_explorer_not_found",
+    "export_data_failed",
+    "file_pick_failed",
+    "image_pick_failed"
+  ],
+
+  "zh_TW": [
+    "file_explorer_not_found",
+    "export_data_failed",
+    "file_pick_failed",
+    "image_pick_failed"
+  ]
+}

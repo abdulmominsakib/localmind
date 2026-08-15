@@ -4,12 +4,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:localmind/features/chat/views/components/token_usage_indicator.dart';
 
 import '../../../../core/models/enums.dart';
 import '../../../../core/providers/app_providers.dart';
 import '../../../../core/services/app_haptics.dart';
+import '../../../../core/utils/safe_file_picker.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../saved_messages/views/components/saved_message_picker_sheet.dart';
@@ -203,46 +203,84 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
   }
 
   Future<void> _pickImages() async {
-    final picker = ImagePicker();
-
-    final images = await picker.pickMultiImage(imageQuality: 85);
-
-    if (images.isEmpty) return;
-
-    final settings = ref.read(settingsProvider);
-    final compressed = <File>[];
-    for (final image in images) {
-      compressed.add(
-        await ImageUploadUtils.prepareImageFile(
-          File(image.path),
-          enabled: settings.imageCompressionEnabled,
-          level: settings.imageCompressionLevel,
-        ),
+    try {
+      final images = await SafeFilePicker.pickMultiImage(
+        imageQuality: 85,
+        context: context,
       );
+
+      if (images.isEmpty) return;
+
+      final settings = ref.read(settingsProvider);
+      final compressed = <File>[];
+      for (final image in images) {
+        compressed.add(
+          await ImageUploadUtils.prepareImageFile(
+            File(image.path),
+            enabled: settings.imageCompressionEnabled,
+            level: settings.imageCompressionLevel,
+          ),
+        );
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _attachedFiles.addAll(compressed);
+      });
+
+      widget.onAttach?.call(_attachedFiles);
+    } catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              SafeFilePicker.getErrorMessage(
+                e,
+                l10n,
+                fallbackMessage: l10n.image_pick_failed(e.toString()),
+              ),
+            ),
+          ),
+        );
+      }
     }
-
-    setState(() {
-      _attachedFiles.addAll(compressed);
-    });
-
-    widget.onAttach?.call(_attachedFiles);
   }
 
   Future<void> _pickDocuments() async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: AttachmentHelpers.supportedDocumentExtensions,
-    );
-
-    if (result == null || result.files.isEmpty) return;
-
-    setState(() {
-      _attachedFiles.addAll(
-        result.files.where((f) => f.path != null).map((f) => File(f.path!)),
+    try {
+      final result = await SafeFilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: AttachmentHelpers.supportedDocumentExtensions,
+        context: context,
       );
-    });
 
-    widget.onAttach?.call(_attachedFiles);
+      if (result == null || result.files.isEmpty) return;
+
+      if (!mounted) return;
+      setState(() {
+        _attachedFiles.addAll(
+          result.files.where((f) => f.path != null).map((f) => File(f.path!)),
+        );
+      });
+
+      widget.onAttach?.call(_attachedFiles);
+    } catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              SafeFilePicker.getErrorMessage(
+                e,
+                l10n,
+                fallbackMessage: l10n.file_pick_failed(e.toString()),
+              ),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleInsertSavedMessage() async {
@@ -253,16 +291,16 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     }
   }
 
-  void _showAttachMenu() async {
+  Future<void> _showAttachMenu() async {
     final result = await showAttachSheet(context);
     if (!mounted || result == null) return;
     switch (result) {
       case AttachAction.documents:
-        _pickDocuments();
+        await _pickDocuments();
       case AttachAction.images:
-        _pickImages();
+        await _pickImages();
       case AttachAction.savedMessage:
-        _handleInsertSavedMessage();
+        await _handleInsertSavedMessage();
     }
   }
 

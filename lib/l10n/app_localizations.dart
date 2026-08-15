@@ -5602,6 +5602,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to copy: {error}'**
   String failed_to_copy(String error);
+
+  /// Error message when no file explorer app is found on the device
+  ///
+  /// In en, this message translates to:
+  /// **'No file explorer found. Please make sure a file manager app is installed and enabled on your device.'**
+  String get file_explorer_not_found;
+
+  /// Error message shown when data export fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to export backup: {error}'**
+  String export_data_failed(String error);
+
+  /// Error message shown when selecting a file fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to select file: {error}'**
+  String file_pick_failed(String error);
+
+  /// Error message shown when selecting an image fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to select image: {error}'**
+  String image_pick_failed(String error);
 }
 
 class _AppLocalizationsDelegate

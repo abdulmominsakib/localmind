@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
-import 'package:localmind/features/models/data/model_metadata_repository.dart';
 import 'package:localmind/features/models/providers/model_metadata_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

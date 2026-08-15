@@ -13,6 +13,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/utils/safe_file_picker.dart';
 import '../utils/tts_text_processor.dart';
 import 'tts_model_providers.dart';
 import '../data/piper_tts_model.dart';
@@ -1230,33 +1231,38 @@ class TtsNotifier extends Notifier<TtsState> {
     }
     if (!state.isSpeaking && !state.isPaused) return false;
 
-    final wavFiles = <Uint8List>[];
-    for (var i = 0; i < _chunks.length; i++) {
-      final cached = _synthesizedChunks[i];
-      if (cached != null && cached.isNotEmpty) {
-        wavFiles.add(cached);
-        continue;
+    try {
+      final wavFiles = <Uint8List>[];
+      for (var i = 0; i < _chunks.length; i++) {
+        final cached = _synthesizedChunks[i];
+        if (cached != null && cached.isNotEmpty) {
+          wavFiles.add(cached);
+          continue;
+        }
+        final tempFile = File(
+          '${Directory.systemTemp.path}/tts_chunk_${_currentSessionId}_$i.wav',
+        );
+        if (tempFile.existsSync()) {
+          wavFiles.add(await tempFile.readAsBytes());
+        }
       }
-      final tempFile = File(
-        '${Directory.systemTemp.path}/tts_chunk_${_currentSessionId}_$i.wav',
+
+      if (wavFiles.isEmpty) return false;
+
+      final merged = mergeWavFiles(wavFiles);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final saved = await SafeFilePicker.saveFile(
+        dialogTitle: 'Save TTS audio',
+        fileName: 'localmind_tts_$timestamp.wav',
+        type: FileType.custom,
+        allowedExtensions: const ['wav'],
+        bytes: merged,
       );
-      if (tempFile.existsSync()) {
-        wavFiles.add(await tempFile.readAsBytes());
-      }
+      return saved != null;
+    } catch (e, st) {
+      Log.warning('Failed to download TTS audio: $e\n$st');
+      return false;
     }
-
-    if (wavFiles.isEmpty) return false;
-
-    final merged = mergeWavFiles(wavFiles);
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final saved = await FilePicker.saveFile(
-      dialogTitle: 'Save TTS audio',
-      fileName: 'localmind_tts_$timestamp.wav',
-      type: FileType.custom,
-      allowedExtensions: const ['wav'],
-      bytes: merged,
-    );
-    return saved != null;
   }
 
   Future<void> previewVoice(Voice voice) async {

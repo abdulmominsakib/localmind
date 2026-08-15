@@ -2988,4 +2988,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String failed_to_copy(String error) {
     return 'فشل النسخ: $error';
   }
+
+  @override
+  String get file_explorer_not_found =>
+      'لم يتم العثور على متصفح ملفات. يرجى التأكد من تثبيت وتفعيل تطبيق إدارة الملفات على جهازك.';
+
+  @override
+  String export_data_failed(String error) {
+    return 'فشل تصدير النسخة الاحتياطية: $error';
+  }
+
+  @override
+  String file_pick_failed(String error) {
+    return 'فشل اختيار الملف: $error';
+  }
+
+  @override
+  String image_pick_failed(String error) {
+    return 'فشل اختيار الصورة: $error';
+  }
 }

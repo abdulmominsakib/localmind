@@ -3317,5 +3317,37 @@
         "example": "Permission denied"
       }
     }
+  },
+  "file_explorer_not_found": "No file explorer found. Please make sure a file manager app is installed and enabled on your device.",
+  "@file_explorer_not_found": {
+    "description": "Error message when no file explorer app is found on the device"
+  },
+  "export_data_failed": "Failed to export backup: {error}",
+  "@export_data_failed": {
+    "description": "Error message shown when data export fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "file_pick_failed": "Failed to select file: {error}",
+  "@file_pick_failed": {
+    "description": "Error message shown when selecting a file fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "image_pick_failed": "Failed to select image: {error}",
+  "@image_pick_failed": {
+    "description": "Error message shown when selecting an image fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }
+

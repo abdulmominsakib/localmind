@@ -14,6 +14,7 @@ import 'package:localmind/l10n/app_localizations.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/providers/storage_providers.dart';
 import '../../../core/services/data_backup_service.dart';
+import '../../../core/utils/safe_file_picker.dart';
 import '../../conversations/providers/conversation_providers.dart';
 import '../../personas/providers/personas_providers.dart';
 import '../../saved_messages/providers/saved_message_providers.dart';
@@ -28,18 +29,34 @@ class DataBackupActions extends ConsumerWidget {
     String fileName,
     String json,
   ) async {
-    final saved = await FilePicker.saveFile(
-      dialogTitle: dialogTitle,
-      fileName: fileName,
-      type: FileType.custom,
-      allowedExtensions: const ['json'],
-      bytes: Uint8List.fromList(utf8.encode(json)),
-    );
-    if (saved == null) return;
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.export_data_success)),
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final saved = await SafeFilePicker.saveFile(
+        dialogTitle: dialogTitle,
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+        bytes: Uint8List.fromList(utf8.encode(json)),
       );
+      if (saved == null) return;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.export_data_success)),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        final msg = SafeFilePicker.getErrorMessage(e, l10n);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              SafeFilePicker.isExplorerNotFoundError(e)
+                  ? msg
+                  : l10n.export_data_failed(msg),
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -60,7 +77,7 @@ class DataBackupActions extends ConsumerWidget {
         settings.toJson(),
         prefs: prefs,
       );
-      final saved = await FilePicker.saveFile(
+      final saved = await SafeFilePicker.saveFile(
         dialogTitle: dialogTitle,
         fileName: fileName,
         type: FileType.custom,
@@ -75,8 +92,15 @@ class DataBackupActions extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
+        final msg = SafeFilePicker.getErrorMessage(e, l10n);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.import_data_failed(e.toString()))),
+          SnackBar(
+            content: Text(
+              SafeFilePicker.isExplorerNotFoundError(e)
+                  ? msg
+                  : l10n.export_data_failed(msg),
+            ),
+          ),
         );
       }
     }
@@ -116,7 +140,7 @@ class DataBackupActions extends ConsumerWidget {
     if (!await _confirmImport(context, confirmMessage)) return;
 
     try {
-      final result = await FilePicker.pickFiles(
+      final result = await SafeFilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['json'],
       );
@@ -133,8 +157,15 @@ class DataBackupActions extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
+        final msg = SafeFilePicker.getErrorMessage(e, l10n);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.import_data_failed(e.toString()))),
+          SnackBar(
+            content: Text(
+              SafeFilePicker.isExplorerNotFoundError(e)
+                  ? msg
+                  : l10n.import_data_failed(msg),
+            ),
+          ),
         );
       }
     }
@@ -162,7 +193,7 @@ class DataBackupActions extends ConsumerWidget {
     if (!await _confirmImport(context, l10n.import_data_confirm)) return;
 
     try {
-      final result = await FilePicker.pickFiles(
+      final result = await SafeFilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['zip'],
       );
@@ -197,8 +228,15 @@ class DataBackupActions extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
+        final msg = SafeFilePicker.getErrorMessage(e, l10n);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.import_data_failed(e.toString()))),
+          SnackBar(
+            content: Text(
+              SafeFilePicker.isExplorerNotFoundError(e)
+                  ? msg
+                  : l10n.import_data_failed(msg),
+            ),
+          ),
         );
       }
     }

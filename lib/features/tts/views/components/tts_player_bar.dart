@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/routes/app_routes.dart';
+import 'package:localmind/core/utils/safe_file_picker.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/features/tts/providers/tts_providers.dart' as tts;
 import 'package:localmind/features/conversations/data/models/conversation.dart';
@@ -245,17 +246,32 @@ class TtsPlayerBar extends ConsumerWidget {
                     tooltip: l10n.download_tts_audio,
                     visualDensity: VisualDensity.compact,
                     onPressed: () async {
-                      final ok = await notifier.downloadCurrentAudio();
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            ok
-                                ? l10n.tts_download_success
-                                : l10n.tts_download_no_audio,
+                      try {
+                        final ok = await notifier.downloadCurrentAudio();
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              ok
+                                  ? l10n.tts_download_success
+                                  : l10n.tts_download_no_audio,
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      } catch (e) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              SafeFilePicker.getErrorMessage(
+                                e,
+                                l10n,
+                                fallbackMessage: l10n.tts_download_no_audio,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
                     },
                   ),
                 const SizedBox(width: 4),

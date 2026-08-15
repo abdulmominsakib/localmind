@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
+import 'package:localmind/core/utils/safe_file_picker.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:localmind/features/on_device/providers/foreground_download_providers.dart';
@@ -123,7 +124,7 @@ class _OnDeviceModelManagerScreenState
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
     try {
-      final result = await FilePicker.pickFiles(
+      final result = await SafeFilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['gguf'],
       );
@@ -176,11 +177,15 @@ class _OnDeviceModelManagerScreenState
   }
 
   String _friendlyErrorForL10n(AppLocalizations l10n, Object error) {
+    if (SafeFilePicker.isExplorerNotFoundError(error)) {
+      return l10n.file_explorer_not_found;
+    }
     final message = error.toString();
     final normalized = message
         .replaceFirst('HttpException: ', '')
         .replaceFirst('FormatException: ', '')
-        .replaceFirst('FileSystemException: ', '');
+        .replaceFirst('FileSystemException: ', '')
+        .replaceFirst('PlatformException: ', '');
 
     switch (normalized) {
       case 'GGUF import canceled.':
@@ -200,7 +205,11 @@ class _OnDeviceModelManagerScreenState
       case 'Selected model file does not exist':
         return l10n.gguf_selected_file_missing;
       default:
-        return normalized;
+        return SafeFilePicker.getErrorMessage(
+          error,
+          l10n,
+          fallbackMessage: normalized,
+        );
     }
   }
 }

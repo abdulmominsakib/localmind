@@ -916,5 +916,10 @@
   "settings_concise_voice_responses_desc": "اجعل ردود النموذج قصيرة (فقرة واحدة قصيرة) واطرح أسئلة متابعة في وضع الصوت.",
   "s3_connection_succeeded": "نجح الاتصال بـ S3.",
   "failed_to_open_url": "فشل فتح الرابط: {error}",
-  "failed_to_copy": "فشل النسخ: {error}"
+  "failed_to_copy": "فشل النسخ: {error}",
+  "file_explorer_not_found": "لم يتم العثور على متصفح ملفات. يرجى التأكد من تثبيت وتفعيل تطبيق إدارة الملفات على جهازك.",
+  "export_data_failed": "فشل تصدير النسخة الاحتياطية: {error}",
+  "file_pick_failed": "فشل اختيار الملف: {error}",
+  "image_pick_failed": "فشل اختيار الصورة: {error}"
 }
+
