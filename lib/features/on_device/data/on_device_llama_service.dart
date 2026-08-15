@@ -24,6 +24,7 @@ class OnDeviceLlamaService {
   /// out-of-band edits or regenerations and rebuild the chat history.
   String? _lastUserMessageId;
   int _userMessageCount = 0;
+  Future<void>? _activeGenerationFuture;
 
   String? get currentModelId => _currentModelId;
   bool get isLoaded => _engine != null && !_isDisposed;
@@ -88,104 +89,132 @@ class OnDeviceLlamaService {
     required List<Message> messages,
     required ChatParameters params,
   }) async* {
-    final engine = _engine;
-    if (engine == null || _currentModelId != modelId) {
-      yield const ChatResponse(
-        type: ChatResponseType.error,
-        content: 'GGUF model not loaded',
-      );
-      yield const ChatResponse(type: ChatResponseType.done);
-      return;
-    }
+    final prev = _activeGenerationFuture;
+    final generationCompleter = Completer<void>();
+    _activeGenerationFuture = generationCompleter.future;
 
-    final userMessages = messages
-        .where((m) => m.role == MessageRole.user)
-        .toList(growable: false);
-    if (userMessages.isEmpty) {
-      yield const ChatResponse(
-        type: ChatResponseType.error,
-        content: 'GGUF chat requires a user message.',
-      );
-      yield const ChatResponse(type: ChatResponseType.done);
-      return;
-    }
-
-    final latestUserMessage = userMessages.last;
-    final systemPrompt = params.systemPrompt?.isNotEmpty == true
-        ? params.systemPrompt
-        : null;
-    final sessionContextChanged =
-        _session != null && _currentContextLength != params.contextLength;
-
-    if (_session == null ||
-        _currentSystemPrompt != systemPrompt ||
-        sessionContextChanged) {
-      _session = llama.ChatSession(
-        engine,
-        maxContextTokens: params.contextLength,
-        systemPrompt: systemPrompt,
-      );
-      _currentSystemPrompt = systemPrompt;
-      _currentContextLength = params.contextLength;
-      _userMessageCount = 0;
-      _lastUserMessageId = null;
-    } else if (userMessages.length < _userMessageCount ||
-        (_lastUserMessageId != null &&
-            latestUserMessage.id != _lastUserMessageId)) {
-      // Upstream history diverged from our internal tracking (edit, retry,
-      // regeneration). Discard the cached history and rebuild it from the
-      // caller-supplied messages on the next create() call.
-      _session!.reset(keepSystemPrompt: true);
-      _userMessageCount = 0;
-      _lastUserMessageId = null;
-    }
-
-    final text = latestUserMessage.content.trim();
-    if (text.isEmpty) {
-      yield const ChatResponse(
-        type: ChatResponseType.error,
-        content: 'GGUF chat requires a text prompt.',
-      );
-      yield const ChatResponse(type: ChatResponseType.done);
-      return;
+    if (prev != null) {
+      try {
+        await prev;
+      } catch (_) {}
     }
 
     try {
-      await for (final chunk in _session!.create(
-        [llama.LlamaTextContent(text)],
-        params: llama.GenerationParams(
-          maxTokens: params.maxTokens,
-          temp: params.temperature,
-          topP: params.topP,
-          topK: params.topK ?? 40,
-          minP: params.minP ?? 0.0,
-          penalty: params.repeatPenalty ?? 1.1,
-        ),
-      )) {
-        if (chunk.choices.isEmpty) continue;
-        final delta = chunk.choices.first.delta;
-        final reasoning = delta.thinking;
-        if (reasoning != null && reasoning.isNotEmpty) {
-          yield ChatResponse(
-            type: ChatResponseType.reasoning,
-            reasoningContent: reasoning,
-          );
-        }
-        final content = delta.content;
-        if (content != null && content.isNotEmpty) {
-          yield ChatResponse(type: ChatResponseType.message, content: content);
-        }
+      if (_isDisposed) {
+        yield const ChatResponse(
+          type: ChatResponseType.error,
+          content: 'GGUF engine disposed',
+        );
+        yield const ChatResponse(type: ChatResponseType.done);
+        return;
       }
-      _userMessageCount = userMessages.length;
-      _lastUserMessageId = latestUserMessage.id;
-      yield const ChatResponse(type: ChatResponseType.done);
-    } catch (e) {
-      Log.error('GGUF inference error: $e');
-      yield ChatResponse(
-        type: ChatResponseType.error,
-        content: 'GGUF inference error: ${e.toString()}',
-      );
-      yield const ChatResponse(type: ChatResponseType.done);
+
+      final engine = _engine;
+      if (engine == null || _currentModelId != modelId) {
+        yield const ChatResponse(
+          type: ChatResponseType.error,
+          content: 'GGUF model not loaded',
+        );
+        yield const ChatResponse(type: ChatResponseType.done);
+        return;
+      }
+
+      final userMessages = messages
+          .where((m) => m.role == MessageRole.user)
+          .toList(growable: false);
+      if (userMessages.isEmpty) {
+        yield const ChatResponse(
+          type: ChatResponseType.error,
+          content: 'GGUF chat requires a user message.',
+        );
+        yield const ChatResponse(type: ChatResponseType.done);
+        return;
+      }
+
+      final latestUserMessage = userMessages.last;
+      final systemPrompt = params.systemPrompt?.isNotEmpty == true
+          ? params.systemPrompt
+          : null;
+      final sessionContextChanged =
+          _session != null && _currentContextLength != params.contextLength;
+
+      if (_session == null ||
+          _currentSystemPrompt != systemPrompt ||
+          sessionContextChanged) {
+        _session = llama.ChatSession(
+          engine,
+          maxContextTokens: params.contextLength,
+          systemPrompt: systemPrompt,
+        );
+        _currentSystemPrompt = systemPrompt;
+        _currentContextLength = params.contextLength;
+        _userMessageCount = 0;
+        _lastUserMessageId = null;
+      } else if (userMessages.length < _userMessageCount ||
+          (_lastUserMessageId != null &&
+              latestUserMessage.id != _lastUserMessageId)) {
+        // Upstream history diverged from our internal tracking (edit, retry,
+        // regeneration). Discard the cached history and rebuild it from the
+        // caller-supplied messages on the next create() call.
+        _session!.reset(keepSystemPrompt: true);
+        _userMessageCount = 0;
+        _lastUserMessageId = null;
+      }
+
+      final text = latestUserMessage.content.trim();
+      if (text.isEmpty) {
+        yield const ChatResponse(
+          type: ChatResponseType.error,
+          content: 'GGUF chat requires a text prompt.',
+        );
+        yield const ChatResponse(type: ChatResponseType.done);
+        return;
+      }
+
+      try {
+        await for (final chunk in _session!.create(
+          [llama.LlamaTextContent(text)],
+          params: llama.GenerationParams(
+            maxTokens: params.maxTokens,
+            temp: params.temperature,
+            topP: params.topP,
+            topK: params.topK ?? 40,
+            minP: params.minP ?? 0.0,
+            penalty: params.repeatPenalty ?? 1.1,
+          ),
+        )) {
+          if (chunk.choices.isEmpty) continue;
+          final delta = chunk.choices.first.delta;
+          final reasoning = delta.thinking;
+          if (reasoning != null && reasoning.isNotEmpty) {
+            yield ChatResponse(
+              type: ChatResponseType.reasoning,
+              reasoningContent: reasoning,
+            );
+          }
+          final content = delta.content;
+          if (content != null && content.isNotEmpty) {
+            yield ChatResponse(type: ChatResponseType.message, content: content);
+          }
+        }
+        _userMessageCount = userMessages.length;
+        _lastUserMessageId = latestUserMessage.id;
+        yield const ChatResponse(type: ChatResponseType.done);
+      } catch (e) {
+        Log.error('GGUF inference error: $e');
+        yield ChatResponse(
+          type: ChatResponseType.error,
+          content: 'GGUF inference error: ${e.toString()}',
+        );
+        yield const ChatResponse(type: ChatResponseType.done);
+      }
+    } finally {
+      if (!generationCompleter.isCompleted) {
+        generationCompleter.complete();
+      }
+      if (identical(_activeGenerationFuture, generationCompleter.future)) {
+        _activeGenerationFuture = null;
+      }
     }
   }
 
@@ -203,6 +232,7 @@ class OnDeviceLlamaService {
 
   Future<void> unloadModel() async {
     cancelGeneration();
+    _activeGenerationFuture = null;
     final engine = _engine;
     _engine = null;
     _session = null;

@@ -123,6 +123,8 @@ class ChatNotifier extends Notifier<ChatState> {
   MessageSaveService? _saveService;
   PendingToolApproval? _pendingToolApproval;
   final Set<String> _titleGenerationsInFlight = <String>{};
+  final Map<String, Future<void>> _titleGenerationFutures =
+      <String, Future<void>>{};
   bool _pendingTemporaryChat = false;
   String? _ephemeralConversationId;
   bool _attemptedResume = false;
@@ -1216,6 +1218,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   if (isCurrentContext) {
                     _replaceMessageInState(finalMessage, clearStreaming: true);
                     state = state.copyWith(isStreaming: false);
+                    _maybeAutoGenerateTitleAfterFirstReply();
                   }
                   ref.read(isStreamingProvider.notifier).setStreaming(false);
                   _latestStreamingMessage = null;
@@ -1530,36 +1533,64 @@ class ChatNotifier extends Notifier<ChatState> {
     return result;
   }
 
-  void _maybeAutoGenerateTitleAfterFirstReply() {
-    if (_currentConversationId == null || _isInMemoryChat) return;
+  /// Waits for any in-flight AI title generation on [conversationId] to complete.
+  /// Used by downstream post-generation tasks (like smart reply generation)
+  /// so LLM inference calls execute sequentially without colliding on local models.
+  Future<void> waitForTitleGeneration(String conversationId) async {
+    final future = _titleGenerationFutures[conversationId];
+    if (future != null) {
+      try {
+        await future;
+      } catch (_) {
+        // Title generation errors should not fail downstream consumers.
+      }
+    }
+  }
+
+  /// Returns true if AI title generation is currently in flight for [conversationId].
+  bool isTitleGenerationInFlight(String conversationId) {
+    return _titleGenerationsInFlight.contains(conversationId) ||
+        _titleGenerationFutures.containsKey(conversationId);
+  }
+
+  Future<void>? _maybeAutoGenerateTitleAfterFirstReply() {
+    if (_currentConversationId == null || _isInMemoryChat) return null;
 
     final settings = ref.read(settingsProvider);
-    if (!settings.autoGenerateTitle) return;
+    if (!settings.autoGenerateTitle) return null;
 
     final activeConv = ref.read(conv.activeConversationProvider);
-    if (activeConv == null || activeConv.title != 'New Chat') return;
+    if (activeConv == null || activeConv.title != 'New Chat') return null;
 
     final assistantCount = state.messages
         .where((m) => m.role == MessageRole.assistant)
         .length;
-    if (assistantCount != 1) return;
+    if (assistantCount != 1) return null;
 
-    unawaited(_generateAndApplyTitle(_currentConversationId!));
+    final convId = _currentConversationId!;
+    return _generateAndApplyTitle(convId);
   }
 
-  Future<void> _generateAndApplyTitle(String conversationId) async {
-    if (!_titleGenerationsInFlight.add(conversationId)) return;
-    try {
-      final title = await generateTitleWithAi(conversationId);
-      if (!ref.mounted) return;
-      if (title == null || title.isEmpty || title == 'New Chat') return;
-
-      await ref
-          .read(conv.conversationsProvider.notifier)
-          .renameConversation(conversationId, title);
-    } finally {
-      _titleGenerationsInFlight.remove(conversationId);
+  Future<void> _generateAndApplyTitle(String conversationId) {
+    if (!_titleGenerationsInFlight.add(conversationId)) {
+      return _titleGenerationFutures[conversationId] ?? Future<void>.value();
     }
+    final future = () async {
+      try {
+        final title = await generateTitleWithAi(conversationId);
+        if (!ref.mounted) return;
+        if (title == null || title.isEmpty || title == 'New Chat') return;
+
+        await ref
+            .read(conv.conversationsProvider.notifier)
+            .renameConversation(conversationId, title);
+      } finally {
+        _titleGenerationsInFlight.remove(conversationId);
+        _titleGenerationFutures.remove(conversationId);
+      }
+    }();
+    _titleGenerationFutures[conversationId] = future;
+    return future;
   }
 
   Future<String?> generateTitleWithAi(String conversationId) async {
@@ -2151,6 +2182,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   isStreaming: false,
                   clearStreaming: true,
                 );
+                _maybeAutoGenerateTitleAfterFirstReply();
               }
               ref.read(isStreamingProvider.notifier).setStreaming(false);
               ref.read(chatBackgroundServiceProvider).stop();

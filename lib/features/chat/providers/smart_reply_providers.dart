@@ -28,13 +28,33 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
     return [];
   }
 
-  final activeConv = ref.watch(conv.activeConversationProvider);
-  if (activeConv != null &&
-      activeConv.smartRepliesLastMessageId == lastMessage.id &&
-      activeConv.smartReplies != null &&
-      activeConv.smartReplies!.isNotEmpty) {
-    return activeConv.smartReplies!;
+  // Only watch the smart replies cache fields of the active conversation to avoid
+  // invalidating and restarting this provider when conversation title or stats change.
+  final cachedData = ref.watch(
+    conv.activeConversationProvider.select((c) {
+      if (c == null) return null;
+      return (
+        id: c.id,
+        smartRepliesLastMessageId: c.smartRepliesLastMessageId,
+        smartReplies: c.smartReplies,
+      );
+    }),
+  );
+
+  if (cachedData != null &&
+      cachedData.smartRepliesLastMessageId == lastMessage.id &&
+      cachedData.smartReplies != null &&
+      cachedData.smartReplies!.isNotEmpty) {
+    return cachedData.smartReplies!;
   }
+
+  // If AI title generation is running for this conversation, wait for it first
+  // so LLM inference executes sequentially without colliding on local models.
+  final chatNotifier = ref.read(chatProvider.notifier);
+  await chatNotifier.waitForTitleGeneration(lastMessage.conversationId);
+
+  if (!ref.mounted) return [];
+  if (ref.read(chatProvider.select((s) => s.isStreaming))) return [];
 
   List<String> suggestions = [];
 
@@ -66,12 +86,13 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
     suggestions = service.getFallbackReplies(lastMessage.content);
   }
 
-  if (activeConv != null && suggestions.isNotEmpty) {
+  final convId = cachedData?.id ?? lastMessage.conversationId;
+  if (suggestions.isNotEmpty) {
     Future.microtask(() {
       if (ref.mounted) {
         ref
             .read(conv.conversationsProvider.notifier)
-            .updateSmartReplies(activeConv.id, suggestions, lastMessage.id);
+            .updateSmartReplies(convId, suggestions, lastMessage.id);
       }
     });
   }

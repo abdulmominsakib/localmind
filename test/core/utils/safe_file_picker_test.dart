@@ -136,5 +136,28 @@ void main() {
       final result = await SafeFilePicker.getDirectoryPath();
       expect(result, isNull);
     });
+
+    test('pickFiles returns result when platform succeeds', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        const MethodChannel('miguelruivo.flutter.plugins.filepicker'),
+        (MethodCall methodCall) async {
+          return [
+            {
+              'path': '/path/to/file.txt',
+              'name': 'file.txt',
+              'size': 123,
+              'bytes': null,
+              'identifier': null,
+            }
+          ];
+        },
+      );
+
+      final result = await SafeFilePicker.pickFiles();
+      expect(result, isNotNull);
+      expect(result!.files.first.name, 'file.txt');
+    });
   });
 }
+

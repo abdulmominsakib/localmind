@@ -73,7 +73,7 @@ class SafeFilePicker {
     bool withReadStream = false,
     String? dialogTitle,
     String? initialDirectory,
-    dynamic lockParentWindow,
+    bool lockParentWindow = false,
     Function(FilePickerStatus)? onFileLoading,
     BuildContext? context,
     void Function(String message)? onError,
@@ -115,7 +115,7 @@ class SafeFilePicker {
     FileType type = FileType.any,
     List<String>? allowedExtensions,
     Uint8List? bytes,
-    dynamic lockParentWindow,
+    bool lockParentWindow = false,
     BuildContext? context,
     void Function(String message)? onError,
   }) async {
@@ -150,7 +150,7 @@ class SafeFilePicker {
   static Future<String?> getDirectoryPath({
     String? dialogTitle,
     String? initialDirectory,
-    dynamic lockParentWindow,
+    bool lockParentWindow = false,
     BuildContext? context,
     void Function(String message)? onError,
   }) async {
