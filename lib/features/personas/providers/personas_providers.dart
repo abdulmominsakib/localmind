@@ -110,6 +110,9 @@ class PersonasNotifier extends AsyncNotifier<List<Persona>> {
     String? category,
     Map<String, dynamic>? preferredParams,
   }) async {
+    if (!ref.mounted) {
+      throw StateError('Cannot create persona on unmounted notifier');
+    }
     final db = ref.read(databaseProvider);
     final now = DateTime.now();
     final persona = Persona(
@@ -125,11 +128,15 @@ class PersonasNotifier extends AsyncNotifier<List<Persona>> {
       preferredParams: preferredParams,
     );
     db.personaBox.put(PersonaEntity.fromDomain(persona));
-    state = AsyncData(await _loadAll());
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
     return persona;
   }
 
   Future<void> updatePersona(Persona updated) async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     final persona = updated.copyWith(updatedAt: DateTime.now());
 
@@ -145,10 +152,14 @@ class PersonasNotifier extends AsyncNotifier<List<Persona>> {
     }
     db.personaBox.put(entity);
 
-    state = AsyncData(await _loadAll());
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 
   Future<void> deletePersona(String id) async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     final query = db.personaBox.query(PersonaEntity_.id.equals(id)).build();
     db.personaBox.removeMany(query.findIds());
@@ -163,12 +174,16 @@ class PersonasNotifier extends AsyncNotifier<List<Persona>> {
     }
     convQuery.close();
 
-    state = AsyncData(await _loadWithoutSeeding());
+    final data = await _loadWithoutSeeding();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 
   /// Re-adds any built-in personas that were deleted, without touching
   /// custom ones or duplicating built-ins that are still present.
   Future<void> restoreBuiltInPersonas() async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     final existingIds = db.personaBox.getAll().map((e) => e.id).toSet();
     for (final preset in builtInPersonas) {
@@ -176,10 +191,14 @@ class PersonasNotifier extends AsyncNotifier<List<Persona>> {
         db.personaBox.put(PersonaEntity.fromDomain(preset));
       }
     }
-    state = AsyncData(await _loadWithoutSeeding());
+    final data = await _loadWithoutSeeding();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 
   Future<List<Persona>> _loadWithoutSeeding() async {
+    if (!ref.mounted) return [];
     final db = ref.read(databaseProvider);
     final entities = db.personaBox.getAll();
     final personas = entities.map((e) => e.toDomain()).toList();

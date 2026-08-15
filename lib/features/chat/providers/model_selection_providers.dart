@@ -157,6 +157,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
 
   if (activeServer == null) {
     await Future.value();
+    if (!ref.mounted) return;
     ref.read(selectedModelProvider.notifier).clear();
     return;
   }
@@ -167,6 +168,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
 
   if (selectedModel != null && selectedModel.serverId != activeServer.id) {
     await Future.value();
+    if (!ref.mounted) return;
     ref.read(selectedModelProvider.notifier).clear();
   } else if (selectedModel != null) {
     return;
@@ -197,11 +199,13 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
     } else {
       final apiService = ref.read(serverApiServiceProvider);
       loadedModels = await apiService.fetchRunningModels(activeServer);
+      if (!ref.mounted) return;
     }
 
     final availableModels = await ref.read(
       availableModelsProvider(activeServer.id).future,
     );
+    if (!ref.mounted) return;
 
     final typedModels = availableModels.cast<ModelInfo>();
     if (typedModels.isEmpty) return;
@@ -216,6 +220,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
           // auto-select the default when it's the model the engine already
           // has loaded; otherwise fall through to the loaded-model logic.
           if (isModelKeyLoaded(loadedModels, defaultModel.id)) {
+            if (!ref.mounted) return;
             ref.read(selectedModelProvider.notifier).setModel(defaultModel);
             return;
           }
@@ -228,6 +233,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
           if (!isModelKeyLoaded(loadedModels, defaultModel.id) &&
               activeServer.type == ServerType.lmStudio) {
             await _loadDefaultModel(ref, activeServer, defaultModel);
+            if (!ref.mounted) return;
           }
           ref.read(selectedModelProvider.notifier).setModel(defaultModel);
           return;
@@ -248,7 +254,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
         .where((m) => isModelKeyLoaded(loadedModels, m.id))
         .firstOrNull;
 
-    if (firstLoadedModel != null) {
+    if (firstLoadedModel != null && ref.mounted) {
       ref.read(selectedModelProvider.notifier).setModel(firstLoadedModel);
     }
   } catch (e) {
@@ -263,6 +269,7 @@ Future<void> _loadDefaultModel(
   Server activeServer,
   ModelInfo model,
 ) async {
+  if (!ref.mounted) return;
   final apiService = ref.read(serverApiServiceProvider);
   final settings = ref.read(settingsProvider);
   final contextLength = ref.read(chatParamsProvider).contextLength;
@@ -273,16 +280,21 @@ Future<void> _loadDefaultModel(
       final instances = await ref.read(
         loadedModelsProvider(activeServer).future,
       );
+      if (!ref.mounted) return;
       await apiService.unloadAllInstances(activeServer, instances);
+      if (!ref.mounted) return;
     }
     await apiService.loadModelWithInstanceId(
       activeServer,
       model.id,
       contextLength: contextLength,
     );
+    if (!ref.mounted) return;
     ref.invalidate(loadedModelsProvider(activeServer));
   } finally {
-    ref.read(modelLoadingProvider.notifier).setLoaded();
+    if (ref.mounted) {
+      ref.read(modelLoadingProvider.notifier).setLoaded();
+    }
   }
 }
 

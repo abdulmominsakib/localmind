@@ -231,6 +231,7 @@ class ChatNotifier extends Notifier<ChatState> {
     Message finalMessage, {
     required bool isCurrentContext,
   }) async {
+    if (!ref.mounted) return;
     final timeline = isCurrentContext
         ? state.messages
         : MessageVariants.resolveActiveTimeline(
@@ -244,6 +245,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 ),
           );
 
+    if (!ref.mounted) return;
     final preview = finalMessage.content.length > 100
         ? '${finalMessage.content.substring(0, 100)}...'
         : finalMessage.content;
@@ -260,6 +262,7 @@ class ChatNotifier extends Notifier<ChatState> {
           characterCount: totalChars,
           preview: preview,
         );
+    if (!ref.mounted) return;
     _recomputeConversationTotal(conversationId, messages: timeline);
 
     if (isCurrentContext) {
@@ -315,6 +318,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> _tryResumeLastChat() async {
+    if (!ref.mounted) return;
     final settings = ref.read(settingsProvider);
     if (!settings.resumeLastChat) return;
     if (state.messages.isNotEmpty || _currentConversationId != null) return;
@@ -325,6 +329,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
     try {
       final conversations = await ref.read(conv.conversationsProvider.future);
+      if (!ref.mounted) return;
       Conversation? target;
       for (final conversation in conversations) {
         if (conversation.id == lastId && !conversation.isTemporary) {
@@ -341,6 +346,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   void _persistLastActiveConversation(String conversationId) {
+    if (!ref.mounted) return;
     if (!ref.read(settingsProvider).resumeLastChat) return;
     ref
         .read(sharedPreferencesProvider)
@@ -349,6 +355,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
   Future<void> loadConversation(Conversation conversation) async {
     await cancelStream();
+    if (!ref.mounted) return;
     _currentConversationId = conversation.id;
     ref.read(smartReplyServiceProvider).reset();
     state = state.copyWith(
@@ -365,6 +372,8 @@ class ChatNotifier extends Notifier<ChatState> {
         _loadMessagesInBackground,
         conversation.id,
       );
+
+      if (!ref.mounted) return;
 
       state = ChatState(
         allMessages: messages,
@@ -385,10 +394,12 @@ class ChatNotifier extends Notifier<ChatState> {
           .setEnabled(conversation.mcpEnabled ?? false);
     } catch (e, stackTrace) {
       Log.fatal(error: e, stackTrace: stackTrace);
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Failed to load conversation: $e',
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Failed to load conversation: $e',
+        );
+      }
     }
   }
 
@@ -711,6 +722,7 @@ class ChatNotifier extends Notifier<ChatState> {
           isTemporary: false,
           folderId: ref.read(pendingNewChatFolderIdProvider.notifier).consume(),
         );
+    if (!ref.mounted) return;
     _currentConversationId = conversation.id;
     ref
         .read(conv.activeConversationIdProvider.notifier)
@@ -1539,6 +1551,7 @@ class ChatNotifier extends Notifier<ChatState> {
     if (!_titleGenerationsInFlight.add(conversationId)) return;
     try {
       final title = await generateTitleWithAi(conversationId);
+      if (!ref.mounted) return;
       if (title == null || title.isEmpty || title == 'New Chat') return;
 
       await ref
@@ -1551,6 +1564,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
   Future<String?> generateTitleWithAi(String conversationId) async {
     final messages = await _loadMessagesForConversation(conversationId);
+    if (!ref.mounted) return null;
     if (messages.isEmpty) return null;
 
     final timeline = MessageVariants.resolveActiveTimeline(messages);
@@ -1583,6 +1597,7 @@ class ChatNotifier extends Notifier<ChatState> {
       params: ref.read(chatParamsProvider),
     );
 
+    if (!ref.mounted) return null;
     if (generated != null && generated.isNotEmpty) {
       return generated;
     }
@@ -2085,18 +2100,20 @@ class ChatNotifier extends Notifier<ChatState> {
                     stopReason: 'error',
                   );
                   await _saveMessage(streamingAssistantMessage);
-                  if (isCurrentContext) {
-                    _replaceMessageInAll(
-                      streamingAssistantMessage,
-                      clearStreaming: true,
-                    );
-                    state = state.copyWith(
-                      isStreaming: false,
-                      clearStreaming: true,
-                    );
+                  if (ref.mounted) {
+                    if (isCurrentContext) {
+                      _replaceMessageInAll(
+                        streamingAssistantMessage,
+                        clearStreaming: true,
+                      );
+                      state = state.copyWith(
+                        isStreaming: false,
+                        clearStreaming: true,
+                      );
+                    }
+                    ref.read(isStreamingProvider.notifier).setStreaming(false);
+                    ref.read(chatBackgroundServiceProvider).stop();
                   }
-                  ref.read(isStreamingProvider.notifier).setStreaming(false);
-                  ref.read(chatBackgroundServiceProvider).stop();
                   break;
                 case ChatResponseType.done:
                   if (response.stats != null) {
@@ -2127,6 +2144,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 stopReason: 'complete',
               );
               await _saveMessage(finalMessage);
+              if (!ref.mounted) return;
               if (isCurrentContext) {
                 _replaceMessageInAll(finalMessage, clearStreaming: true);
                 state = state.copyWith(
@@ -2141,6 +2159,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 finalMessage,
                 isCurrentContext: isCurrentContext,
               );
+              if (!ref.mounted) return;
               _maybeRequestReviewAfterSuccessfulCompletion(
                 finalMessage: finalMessage,
                 server: server,
@@ -2176,6 +2195,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 isProcessing: false,
               );
               await _saveMessage(errorMessage);
+              if (!ref.mounted) return;
               if (isCurrentContext) {
                 _replaceMessageInAll(errorMessage, clearStreaming: true);
                 state = state.copyWith(

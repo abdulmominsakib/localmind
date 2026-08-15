@@ -235,6 +235,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       ref.read(onDeviceLlamaServiceProvider);
 
   Future<void> loadModel(String modelId, PreferredBackend backend) async {
+    if (!ref.mounted) return;
     final models = ref.read(onDeviceModelsProvider);
     final model = models.firstWhere(
       (m) => m.id == modelId,
@@ -251,6 +252,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     // Protect the heavy native model-load from Android CPU throttling
     final bgService = ref.read(chatBackgroundServiceProvider);
     await bgService.start();
+    if (!ref.mounted) return;
 
     try {
       final effectiveBackend = model.isCpuOnly ? PreferredBackend.cpu : backend;
@@ -258,12 +260,16 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       // Yield control to the event loop so the UI has time to draw the loading indicator
       // and stabilize before the native platform thread begins heavy model loading.
       await Future.delayed(const Duration(milliseconds: 100));
+      if (!ref.mounted) return;
+
       if (model.runtime == OnDeviceModelRuntime.llamaCpp) {
         final file = File(model.localPath ?? '');
         if (!await file.exists()) {
+          if (!ref.mounted) return;
           await ref
               .read(importedGgufModelsProvider.notifier)
               .removeMissingModel(modelId);
+          if (!ref.mounted) return;
           state = state.copyWith(
             status: OnDeviceEngineStatus.error,
             loadedModelId: null,
@@ -275,13 +281,16 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
 
         final settings = ref.read(settingsProvider);
         await _gemmaService.unloadModel();
+        if (!ref.mounted) return;
         await _llamaService.loadModel(
           model,
           contextLength: settings.contextLength,
           useGpu: !model.isCpuOnly && effectiveBackend == PreferredBackend.gpu,
         );
+        if (!ref.mounted) return;
       } else {
         final isInstalled = await _gemmaService.isModelInstalled(modelId);
+        if (!ref.mounted) return;
         if (!isInstalled) {
           state = state.copyWith(
             status: OnDeviceEngineStatus.error,
@@ -293,7 +302,9 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
         }
 
         await _llamaService.unloadModel();
+        if (!ref.mounted) return;
         await _gemmaService.loadModel(modelId, effectiveBackend);
+        if (!ref.mounted) return;
       }
 
       state = state.copyWith(
@@ -306,6 +317,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       final activeServer = ref.read(activeServerProvider);
       if (activeServer?.type != ServerType.onDevice) {
         final servers = await ref.read(serversProvider.future);
+        if (!ref.mounted) return;
         final onDeviceServer = servers
             .where((s) => s.type == ServerType.onDevice)
             .firstOrNull;
@@ -321,13 +333,16 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       );
 
       try {
-        await ref
-            .read(reviewPromptServiceProvider)
-            .markOnDeviceModelLoaded(modelId);
+        if (ref.mounted) {
+          await ref
+              .read(reviewPromptServiceProvider)
+              .markOnDeviceModelLoaded(modelId);
+        }
       } catch (e) {
         Log.error('Failed to record model load review signal: $e');
       }
     } catch (e) {
+      if (!ref.mounted) return;
       Log.error('Failed to load model $modelId: $e');
       state = state.copyWith(
         status: OnDeviceEngineStatus.error,
@@ -351,7 +366,9 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     } catch (e) {
       Log.error('Failed to unload llama.cpp model: $e');
     }
-    state = const OnDeviceEngineState();
+    if (ref.mounted) {
+      state = const OnDeviceEngineState();
+    }
   }
 
   Future<void> disposeService() async {

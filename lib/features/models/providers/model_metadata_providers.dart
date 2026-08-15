@@ -22,6 +22,7 @@ class ModelMetadataNotifier extends Notifier<Map<String, ModelMetadata>> {
 
   void loadForServer(String serverId) {
     _serverId = serverId;
+    if (!ref.mounted) return;
     state = ref.read(modelMetadataRepositoryProvider).getAllForServer(serverId);
   }
 
@@ -32,6 +33,7 @@ class ModelMetadataNotifier extends Notifier<Map<String, ModelMetadata>> {
     await ref
         .read(modelMetadataRepositoryProvider)
         .setFavorite(serverId, modelId, !current);
+    if (!ref.mounted) return;
     loadForServer(serverId);
   }
 
@@ -41,6 +43,7 @@ class ModelMetadataNotifier extends Notifier<Map<String, ModelMetadata>> {
     await ref
         .read(modelMetadataRepositoryProvider)
         .setNote(serverId, modelId, note);
+    if (!ref.mounted) return;
     loadForServer(serverId);
   }
 }

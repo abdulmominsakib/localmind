@@ -26,6 +26,7 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
   }
 
   Future<List<Conversation>> _loadAll() async {
+    if (!ref.mounted) return [];
     final db = ref.read(databaseProvider);
     return await db.store.runInTransactionAsync(
       TxMode.read,
@@ -839,6 +840,7 @@ class ConversationFoldersNotifier extends AsyncNotifier<List<ConversationFolder>
   Future<List<ConversationFolder>> build() async => _loadAll();
 
   Future<List<ConversationFolder>> _loadAll() async {
+    if (!ref.mounted) return [];
     final db = ref.read(databaseProvider);
     return db.store.runInTransactionAsync(
       TxMode.read,

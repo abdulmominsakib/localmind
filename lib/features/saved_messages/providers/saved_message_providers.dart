@@ -161,6 +161,7 @@ class SavedMessagesNotifier extends AsyncNotifier<List<SavedMessage>> {
   Future<List<SavedMessage>> build() async => _loadAll();
 
   Future<List<SavedMessage>> _loadAll() async {
+    if (!ref.mounted) return [];
     final db = ref.read(databaseProvider);
     final entities = db.savedMessageBox.getAll();
     final messages = entities
@@ -184,6 +185,7 @@ class SavedMessagesNotifier extends AsyncNotifier<List<SavedMessage>> {
   }
 
   Future<bool> isMessageSaved(String sourceMessageId) async {
+    if (!ref.mounted) return false;
     final db = ref.read(databaseProvider);
     final query = db.savedMessageBox
         .query(SavedMessageEntity_.sourceMessageId.equals(sourceMessageId))
@@ -194,6 +196,7 @@ class SavedMessagesNotifier extends AsyncNotifier<List<SavedMessage>> {
   }
 
   Future<SavedMessage?> getBySourceMessageId(String sourceMessageId) async {
+    if (!ref.mounted) return null;
     final db = ref.read(databaseProvider);
     final query = db.savedMessageBox
         .query(SavedMessageEntity_.sourceMessageId.equals(sourceMessageId))
@@ -220,6 +223,7 @@ class SavedMessagesNotifier extends AsyncNotifier<List<SavedMessage>> {
     String? folderId,
     bool isTemporaryChat = false,
   }) async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     final existingQuery = db.savedMessageBox
         .query(SavedMessageEntity_.sourceMessageId.equals(message.id))
@@ -231,7 +235,10 @@ class SavedMessagesNotifier extends AsyncNotifier<List<SavedMessage>> {
       existing.folderId = folderId;
       existing.content = message.content;
       db.savedMessageBox.put(existing);
-      state = AsyncData(await _loadAll());
+      final data = await _loadAll();
+      if (ref.mounted) {
+        state = AsyncData(data);
+      }
       return;
     }
 
@@ -250,30 +257,42 @@ class SavedMessagesNotifier extends AsyncNotifier<List<SavedMessage>> {
       savedAt: DateTime.now(),
     );
     db.savedMessageBox.put(entity);
-    state = AsyncData(await _loadAll());
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 
   Future<void> removeBySourceMessageId(String sourceMessageId) async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     final query = db.savedMessageBox
         .query(SavedMessageEntity_.sourceMessageId.equals(sourceMessageId))
         .build();
     db.savedMessageBox.removeMany(query.findIds());
     query.close();
-    state = AsyncData(await _loadAll());
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 
   Future<void> deleteSavedMessage(String id) async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     final query = db.savedMessageBox
         .query(SavedMessageEntity_.id.equals(id))
         .build();
     db.savedMessageBox.removeMany(query.findIds());
     query.close();
-    state = AsyncData(await _loadAll());
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 
   Future<void> moveToFolder(String savedMessageId, String? folderId) async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     final query = db.savedMessageBox
         .query(SavedMessageEntity_.id.equals(savedMessageId))
@@ -283,10 +302,14 @@ class SavedMessagesNotifier extends AsyncNotifier<List<SavedMessage>> {
     if (entity == null) return;
     entity.folderId = folderId;
     db.savedMessageBox.put(entity);
-    state = AsyncData(await _loadAll());
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 
   Future<void> setArchived(String savedMessageId, bool archived) async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     final query = db.savedMessageBox
         .query(SavedMessageEntity_.id.equals(savedMessageId))
@@ -296,7 +319,10 @@ class SavedMessagesNotifier extends AsyncNotifier<List<SavedMessage>> {
     if (entity == null) return;
     entity.isArchived = archived;
     db.savedMessageBox.put(entity);
-    state = AsyncData(await _loadAll());
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 }
 

@@ -137,6 +137,42 @@ void main() {
       final selected = container.read(selectedModelProvider);
       expect(selected?.id, 'model-a');
     });
+
+    test('does not throw or access disposed Ref when container is disposed during execution',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        'appSettings': AppSettings(
+          defaultModelId: 'model-a',
+          defaultModelServerId: 'server-1',
+        ).toJson(),
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      final api = _FakeServerApiService(loadedModelIds: const {});
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          activeServerProvider.overrideWith(_StubLmStudioActiveServer.new),
+          connectionStatusProvider.overrideWith(
+            _StubConnectedStatusNotifier.new,
+          ),
+          availableModelsProvider('server-1').overrideWith(
+            (ref) async {
+              await Future.delayed(const Duration(milliseconds: 50));
+              return _models();
+            },
+          ),
+          serverApiServiceProvider.overrideWithValue(api),
+        ],
+      );
+
+      // Start the future and dispose container immediately
+      final future = container.read(autoSelectFirstLoadedModelProvider.future);
+      container.dispose();
+
+      // Should complete without uncaught StateError
+      expect(future, completes);
+    });
   });
 }
 List<ModelInfo> _models() => [

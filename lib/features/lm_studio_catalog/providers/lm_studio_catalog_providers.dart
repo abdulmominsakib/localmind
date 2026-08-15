@@ -96,12 +96,12 @@ class LmCatalogSearchNotifier extends Notifier<LmCatalogSearchState> {
 
     try {
       final staffPicks = await ref.read(lmStudioStaffPicksProvider.future);
-      if (generation != _searchGeneration) return;
+      if (!ref.mounted || generation != _searchGeneration) return;
       final staffMatches = staffPicks
           .where((m) => m.matchesQuery(trimmed))
           .toList();
       final page = await service.searchHuggingFace(query: trimmed);
-      if (generation != _searchGeneration) return;
+      if (!ref.mounted || generation != _searchGeneration) return;
       final staffIds = staffMatches.map((m) => m.id).toSet();
       final community = page.models
           .where((m) => !staffIds.contains(m.id))
@@ -115,7 +115,7 @@ class LmCatalogSearchNotifier extends Notifier<LmCatalogSearchState> {
         isLoading: false,
       );
     } catch (e) {
-      if (generation != _searchGeneration) return;
+      if (!ref.mounted || generation != _searchGeneration) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -128,6 +128,7 @@ class LmCatalogSearchNotifier extends Notifier<LmCatalogSearchState> {
 
     try {
       final page = await service.searchHuggingFace(nextUrl: state.nextUrl);
+      if (!ref.mounted) return;
       final existingIds = state.allModels.map((m) => m.id).toSet();
       final more = page.models
           .where((m) => !existingIds.contains(m.id))
@@ -140,6 +141,7 @@ class LmCatalogSearchNotifier extends Notifier<LmCatalogSearchState> {
         isLoadingMore: false,
       );
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
@@ -205,6 +207,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
   /// was last closed, so a restart doesn't silently abandon tracking of a
   /// download that's still running on the LM Studio server.
   Future<void> _restoreActiveDownloads() async {
+    if (!ref.mounted) return;
     final prefs = ref.read(sharedPreferencesProvider);
     final raw = prefs.getString(_storageKey);
     if (raw == null || raw.isEmpty) return;
@@ -213,14 +216,18 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
     try {
       entries = jsonDecode(raw) as List<dynamic>;
     } catch (_) {
-      await prefs.remove(_storageKey);
+      if (ref.mounted) {
+        await prefs.remove(_storageKey);
+      }
       return;
     }
 
     final servers = await ref.read(serversProvider.future);
+    if (!ref.mounted) return;
     final service = ref.read(lmStudioDownloadServiceProvider);
 
     for (final entry in entries) {
+      if (!ref.mounted) return;
       if (entry is! Map) continue;
       final serverId = entry['serverId'] as String?;
       final jobId = entry['jobId'] as String?;
@@ -243,6 +250,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
           server: server,
           job: placeholder,
         );
+        if (!ref.mounted) return;
         _jobServerIds[jobId] = serverId;
         _replaceJob(updated);
 
@@ -251,6 +259,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
         } else if (updated.status == LmDownloadStatus.completed ||
             updated.status == LmDownloadStatus.alreadyDownloaded) {
           await _notifyCompleted(updated);
+          if (!ref.mounted) return;
           ref.invalidate(availableModelsProvider(server.id));
         } else if (updated.status == LmDownloadStatus.failed) {
           await _notifyFailed(updated);
@@ -263,10 +272,13 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
       }
     }
 
-    await _persistActiveDownloads();
+    if (ref.mounted) {
+      await _persistActiveDownloads();
+    }
   }
 
   Future<void> _persistActiveDownloads() async {
+    if (!ref.mounted) return;
     final prefs = ref.read(sharedPreferencesProvider);
     final active = state.jobs.where((j) => j.status.isActive).toList();
     if (active.isEmpty) {
@@ -289,6 +301,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
   }
 
   void _setJobs(List<LmDownloadJob> jobs) {
+    if (!ref.mounted) return;
     state = state.copyWith(jobs: jobs);
     unawaited(_persistActiveDownloads());
   }
@@ -309,6 +322,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
     required LmModelDetail detail,
     LmModelQuantOption? quant,
   }) async {
+    if (!ref.mounted) return;
     final downloadService = ref.read(lmStudioDownloadServiceProvider);
     final request = downloadService.buildDownloadRequest(
       model: model,
@@ -319,6 +333,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
       server: server,
       request: request,
     );
+    if (!ref.mounted) return;
 
     final updatedJobs = [...state.jobs];
     if (job.jobId.isNotEmpty) {
@@ -333,6 +348,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
     if (job.status == LmDownloadStatus.alreadyDownloaded ||
         job.status == LmDownloadStatus.completed) {
       await _notifyCompleted(job);
+      if (!ref.mounted) return;
       ref.invalidate(availableModelsProvider(server.id));
       return;
     }
@@ -350,12 +366,14 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
   }
 
   Future<void> _poll({required Server server, required String jobId}) async {
+    if (!ref.mounted) return;
     final current = state.jobs.where((j) => j.jobId == jobId).firstOrNull;
     if (current == null) return;
 
     try {
       final service = ref.read(lmStudioDownloadServiceProvider);
       final updated = await service.fetchStatus(server: server, job: current);
+      if (!ref.mounted) return;
       _replaceJob(updated);
 
       if (updated.status == LmDownloadStatus.completed ||
@@ -363,6 +381,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
         _pollers[jobId]?.cancel();
         _pollers.remove(jobId);
         await _notifyCompleted(updated);
+        if (!ref.mounted) return;
         ref.invalidate(availableModelsProvider(server.id));
       } else if (updated.status == LmDownloadStatus.failed) {
         _pollers[jobId]?.cancel();
@@ -370,6 +389,7 @@ class LmDownloadManagerNotifier extends Notifier<LmDownloadManagerState> {
         await _notifyFailed(updated);
       }
     } on LmDownloadJobNotFoundException {
+      if (!ref.mounted) return;
       _pollers[jobId]?.cancel();
       _pollers.remove(jobId);
       removeJob(jobId);

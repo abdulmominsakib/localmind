@@ -149,7 +149,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
 
   /// Start listening for user speech.
   Future<void> startListening() async {
-    if (!_active) return;
+    if (!_active || !ref.mounted) return;
     if (!_ensureChatTarget()) return;
 
     _isSendingTranscript = false;
@@ -167,13 +167,13 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     final stt = ref.read(sttProvider.notifier);
     await stt.startListening(
       onResult: (words) {
-        if (!_active) return;
+        if (!_active || !ref.mounted) return;
         if (words.isNotEmpty) {
           state = state.copyWith(transcript: words);
         }
       },
       onFinal: (finalWords) async {
-        if (!_active) return;
+        if (!_active || !ref.mounted) return;
         if (!state.autoListen) return;
         if (_isSendingTranscript) return;
         final text = finalWords.trim().isNotEmpty
@@ -184,7 +184,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
         await stopListeningAndSend();
       },
       onSoundLevelChange: (level) {
-        if (!_active) return;
+        if (!_active || !ref.mounted) return;
         // Skip the rebuild when the value hasn't materially changed
         // (riverpod notifies listeners on every distinct copyWith).
         if ((state.micLevel - level).abs() < 0.01) return;
@@ -195,10 +195,11 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
 
   /// Stop listening and send the captured transcript to the LLM.
   Future<void> stopListeningAndSend() async {
-    if (!_active) return;
+    if (!_active || !ref.mounted) return;
 
     final stt = ref.read(sttProvider.notifier);
     await stt.stopListening();
+    if (!_active || !ref.mounted) return;
 
     final transcript = state.transcript.trim();
     if (transcript.isEmpty) {
@@ -225,6 +226,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     try {
       await ref.read(chatProvider.notifier).sendMessage(transcript);
     } catch (e) {
+      if (!_active || !ref.mounted) return;
       Log.error('Voice mode send error: $e');
       state = state.copyWith(phase: VoiceModePhase.error, error: e.toString());
     }
@@ -340,7 +342,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
           conversationId: lastMessage.conversationId,
         );
       } catch (e) {
-        if (!_active) return;
+        if (!_active || !ref.mounted) return;
         Log.error('Voice mode TTS speak failed: $e');
         state = state.copyWith(
           phase: VoiceModePhase.error,

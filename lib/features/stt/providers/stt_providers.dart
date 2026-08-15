@@ -64,10 +64,12 @@ class SttNotifier extends Notifier<SttState> {
     try {
       final available = await _speech.initialize(
         onError: (val) {
+          if (!ref.mounted) return;
           Log.error('STT error: ${val.errorMsg} - permanent: ${val.permanent}');
           state = state.copyWith(error: val.errorMsg, isListening: false);
         },
         onStatus: (val) {
+          if (!ref.mounted) return;
           Log.debug('STT status: $val');
           // Only honour status updates from the active session; stale
           // callbacks from a previous listen() (or callbacks fired while
@@ -80,10 +82,12 @@ class SttNotifier extends Notifier<SttState> {
           }
         },
       );
+      if (!ref.mounted) return false;
       _isInit = true;
       state = state.copyWith(isAvailable: available);
       return available;
     } catch (e) {
+      if (!ref.mounted) return false;
       Log.error('STT initialization failed: $e');
       state = state.copyWith(isAvailable: false, error: e.toString());
       return false;
@@ -96,6 +100,7 @@ class SttNotifier extends Notifier<SttState> {
     SoundLevelChange? onSoundLevelChange,
   }) async {
     final available = await initSpeech();
+    if (!ref.mounted) return;
     if (!available) {
       state = state.copyWith(
         error: 'Speech recognition not available or permission denied',
@@ -114,6 +119,7 @@ class SttNotifier extends Notifier<SttState> {
     try {
       await _speech.listen(
         onResult: (result) {
+          if (!ref.mounted) return;
           state = state.copyWith(recognizedWords: result.recognizedWords);
           onResult(result.recognizedWords);
           if (result.finalResult && onFinal != null) {
@@ -135,6 +141,7 @@ class SttNotifier extends Notifier<SttState> {
         ),
       );
     } catch (e) {
+      if (!ref.mounted) return;
       Log.error('STT listen error: $e');
       state = state.copyWith(isListening: false, error: e.toString());
     }
@@ -147,6 +154,7 @@ class SttNotifier extends Notifier<SttState> {
     _activeSession = -1;
     try {
       await _speech.stop();
+      if (!ref.mounted) return;
       state = state.copyWith(isListening: false);
     } catch (e) {
       Log.error('STT stop error: $e');
@@ -158,6 +166,7 @@ class SttNotifier extends Notifier<SttState> {
     _activeSession = -1;
     try {
       await _speech.cancel();
+      if (!ref.mounted) return;
       state = state.copyWith(isListening: false);
     } catch (e) {
       Log.error('STT cancel error: $e');

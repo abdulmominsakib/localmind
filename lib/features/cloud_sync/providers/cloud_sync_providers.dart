@@ -142,20 +142,25 @@ class CloudSyncController extends Notifier<CloudSyncStatus> {
   }
 
   Future<void> syncNow({bool rethrowErrors = false}) async {
-    if (_running) {
+    if (_running || !ref.mounted) {
       _pending = true;
       return;
     }
     final config = _local.loadConfig();
     if (config == null || !config.enabled) return;
     final credentials = await _local.loadCredentials();
+    if (!ref.mounted) return;
     final masterKey = await _local.loadMasterKey();
+    if (!ref.mounted) return;
     final salt = await _local.loadSalt();
+    if (!ref.mounted) return;
     if (credentials == null || masterKey == null || salt == null) {
-      state = state.copyWith(
-        phase: CloudSyncPhase.locked,
-        message: 'Cloud sync must be unlocked again on this device.',
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          phase: CloudSyncPhase.locked,
+          message: 'Cloud sync must be unlocked again on this device.',
+        );
+      }
       return;
     }
 
@@ -174,6 +179,7 @@ class CloudSyncController extends Notifier<CloudSyncStatus> {
         salt,
         generation,
       );
+      if (!ref.mounted) return;
       _ensureActive(generation);
       _retryIndex = 0;
       _retryTimer?.cancel();
@@ -185,6 +191,7 @@ class CloudSyncController extends Notifier<CloudSyncStatus> {
         warnings: warnings,
       );
     } catch (error) {
+      if (!ref.mounted) return;
       if (error is CloudSyncFailure &&
           error.kind == CloudSyncFailureKind.cancelled) {
         return;
@@ -197,7 +204,7 @@ class CloudSyncController extends Notifier<CloudSyncStatus> {
       if (rethrowErrors) rethrow;
     } finally {
       _running = false;
-      if (_pending) {
+      if (_pending && ref.mounted) {
         _pending = false;
         scheduleSync(delay: Duration.zero);
       }

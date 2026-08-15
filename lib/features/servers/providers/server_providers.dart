@@ -193,19 +193,25 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
   }
 
   Future<List<Server>> _loadAll() async {
+    if (!ref.mounted) return [];
     final db = ref.read(databaseProvider);
     final entities = db.serverBox.getAll();
     return entities.map((e) => e.toDomain()).toList();
   }
 
   Future<void> addServer(Server server) async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     db.serverBox.put(ServerEntity.fromDomain(server));
     invalidateAvailableModelsCache(server.id);
-    state = AsyncData(await _loadAll());
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 
   Future<void> updateServer(Server server) async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     final query = db.serverBox
         .query(ServerEntity_.id.equals(server.id))
@@ -219,19 +225,27 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
     }
     db.serverBox.put(entity);
     invalidateAvailableModelsCache(server.id);
-    state = AsyncData(await _loadAll());
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 
   Future<void> deleteServer(String serverId) async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     final query = db.serverBox.query(ServerEntity_.id.equals(serverId)).build();
     db.serverBox.removeMany(query.findIds());
     query.close();
     invalidateAvailableModelsCache(serverId);
-    state = AsyncData(await _loadAll());
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 
   Future<void> setDefault(String serverId) async {
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     final servers = state.value ?? [];
     final updatedServers = servers.map((s) {
@@ -252,7 +266,10 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
       db.serverBox.put(entity);
       invalidateAvailableModelsCache(server.id);
     }
-    state = AsyncData(await _loadAll());
+    final data = await _loadAll();
+    if (ref.mounted) {
+      state = AsyncData(data);
+    }
   }
 
   Future<void> updateServerStatus(
