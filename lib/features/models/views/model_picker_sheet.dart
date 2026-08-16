@@ -197,10 +197,9 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
         await apiService.unloadAllInstances(activeServer, loadedInstances);
       }
 
-      ref.invalidate(loadedModelsProvider(activeServer));
-      ref.read(selectedModelProvider.notifier).clear();
-
       if (context.mounted) {
+        ref.invalidate(loadedModelsProvider(activeServer));
+        ref.read(selectedModelProvider.notifier).clear();
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.all_models_unloaded)));

@@ -410,22 +410,27 @@ class _ModelListState extends ConsumerState<ModelList> {
                       final instances = await ref.read(
                         loadedModelsProvider(activeServer).future,
                       );
+                      if (!mounted) return;
                       await apiService.unloadAllInstances(
                         activeServer,
                         instances,
                       );
                     }
 
+                    if (!mounted) return;
                     await apiService.loadModelWithInstanceId(
                       activeServer,
                       model.id,
                       contextLength: contextLength,
                     );
 
+                    if (!mounted) return;
                     ref.invalidate(loadedModelsProvider(activeServer));
                     ref.read(modelLoadingProvider.notifier).setLoaded();
                   } catch (e) {
-                    ref.read(modelLoadingProvider.notifier).setLoaded();
+                    if (mounted) {
+                      ref.read(modelLoadingProvider.notifier).setLoaded();
+                    }
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -438,6 +443,7 @@ class _ModelListState extends ConsumerState<ModelList> {
                   }
                 }
 
+                if (!mounted) return;
                 ref.read(selectedModelProvider.notifier).setModel(model);
                 if (widget.closeOnSelect && context.mounted) {
                   Navigator.pop(context);
@@ -452,11 +458,13 @@ class _ModelListState extends ConsumerState<ModelList> {
                   final instances = await ref.read(
                     loadedModelsProvider(activeServer).future,
                   );
+                  if (!mounted) return;
                   await apiService.unloadInstancesForModelKey(
                     activeServer,
                     model.id,
                     instances,
                   );
+                  if (!mounted) return;
                   ref.invalidate(loadedModelsProvider(activeServer));
 
                   final selectedModel = ref.read(selectedModelProvider);

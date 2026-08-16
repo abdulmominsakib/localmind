@@ -877,16 +877,14 @@ class TtsNotifier extends Notifier<TtsState> {
 
     final source = AudioSource.file(
       tempFile.path,
-      tag: _isPreview
-          ? null
-          : MediaItem(
-              id: 'tts_chunk_${_currentSessionId}_$chunkIndex',
-              album: 'LocalMind TTS',
-              title: _chunks[chunkIndex],
-              artist: _currentEngine == EngineId.kitten
-                  ? 'Kitten TTS'
-                  : 'Piper TTS',
-            ),
+      tag: MediaItem(
+        id: 'tts_chunk_${_currentSessionId}_$chunkIndex',
+        album: _isPreview ? 'Voice Preview' : 'LocalMind TTS',
+        title: _chunks[chunkIndex],
+        artist: _currentEngine == EngineId.kitten
+            ? 'Kitten TTS'
+            : 'Piper TTS',
+      ),
     );
 
     _playlistBuffer[chunkIndex] = source;

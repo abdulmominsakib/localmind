@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import '../../../core/logger/app_logger.dart';
@@ -103,6 +104,12 @@ class ServerApiService {
       }
       return models;
     } catch (e) {
+      if (e is DioException) {
+        final apiMsg = _extractApiErrorMessage(e.response?.data);
+        if (apiMsg != null) {
+          throw Exception('Failed to fetch models: $apiMsg');
+        }
+      }
       throw Exception('Failed to fetch models: $e');
     }
   }
@@ -698,14 +705,51 @@ class ServerApiService {
   }
 
   String? _extractApiErrorMessage(dynamic data) {
-    if (data is! Map) return null;
-    final error = data['error'];
+    if (data == null) return null;
+    dynamic map = data;
+    if (data is String) {
+      final trimmed = data.trim();
+      if (trimmed.startsWith('{')) {
+        try {
+          map = jsonDecode(trimmed);
+        } catch (_) {
+          return trimmed.isNotEmpty ? trimmed : null;
+        }
+      } else {
+        return trimmed.isNotEmpty ? trimmed : null;
+      }
+    }
+    if (map is! Map) return null;
+
+    final error = map['error'];
     if (error is Map) {
       final type = error['type']?.toString();
       final message = error['message']?.toString();
-      if (type != null && message != null) return '$type: $message';
-      return message ?? type;
+      final code = error['code']?.toString();
+      if (message != null && message.trim().isNotEmpty) {
+        if (type != null && type.trim().isNotEmpty) return '$type: $message';
+        if (code != null && code.trim().isNotEmpty) return 'Error $code: $message';
+        return message;
+      }
+      return type ?? code;
+    } else if (error is String && error.trim().isNotEmpty) {
+      return error;
     }
+
+    final message = map['message']?.toString();
+    final type = map['type']?.toString();
+    final detail = map['detail']?.toString();
+    if (message != null && message.trim().isNotEmpty) {
+      if (type != null && type.trim().isNotEmpty) return '$type: $message';
+      return message;
+    }
+    if (detail != null && detail.trim().isNotEmpty) {
+      return detail;
+    }
+    if (type != null && type.trim().isNotEmpty) {
+      return type;
+    }
+
     return null;
   }
 }

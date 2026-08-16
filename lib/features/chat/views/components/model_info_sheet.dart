@@ -18,12 +18,16 @@ Future<void> showModelInfoSheet(
   final server = ref.read(activeServerProvider);
   ModelInfo? model;
   if (server != null) {
-    final models = await ref.read(availableModelsProvider(server.id).future);
-    for (final m in models) {
-      if (m is ModelInfo && m.id == modelId) {
-        model = m;
-        break;
+    try {
+      final models = await ref.read(availableModelsProvider(server.id).future);
+      for (final m in models) {
+        if (m is ModelInfo && m.id == modelId) {
+          model = m;
+          break;
+        }
       }
+    } catch (_) {
+      // Model info fetch failed, fallback to basic identifier display
     }
   }
 
