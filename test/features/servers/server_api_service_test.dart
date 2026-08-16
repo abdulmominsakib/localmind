@@ -679,4 +679,92 @@ void main() {
       expect(models.single.pricingLabel, isNull);
     });
   });
+
+  group('ServerApiService - LM Studio load model behavior', () {
+    late Server lmStudioServer;
+
+    setUp(() {
+      lmStudioServer = Server(
+        id: 'test-lmstudio',
+        name: 'Test LM Studio',
+        type: ServerType.lmStudio,
+        host: 'localhost',
+        port: 1234,
+        createdAt: DateTime.now(),
+        lastConnectedAt: DateTime.now(),
+      );
+    });
+
+    test('loadModelWithInstanceId succeeds with LM Studio response having "type": "llm"', () async {
+      final successData = {
+        'type': 'llm',
+        'instance_id': 'liquid/lfm2-1.2b',
+        'load_config': {
+          'context_length': 4096,
+        },
+      };
+
+      final dio = Dio()..interceptors.add(TestInterceptor(successData));
+      final service = ServerApiService(dio);
+
+      final instanceId = await service.loadModelWithInstanceId(
+        lmStudioServer,
+        'liquid/lfm2-1.2b',
+        contextLength: 4096,
+      );
+
+      expect(instanceId, 'liquid/lfm2-1.2b');
+    });
+
+    test('loadModelWithInstanceId throws when response contains error object', () async {
+      final errorData = {
+        'error': {
+          'type': 'invalid_request_error',
+          'message': 'Context length exceeds model limit',
+        },
+      };
+
+      final dio = Dio()..interceptors.add(TestInterceptor(errorData));
+      final service = ServerApiService(dio);
+
+      expect(
+        () => service.loadModelWithInstanceId(
+          lmStudioServer,
+          'liquid/lfm2-1.2b',
+          contextLength: 999999,
+        ),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('invalid_request_error: Context length exceeds model limit'),
+          ),
+        ),
+      );
+    });
+
+    test('loadModelWithInstanceId throws when response contains status error', () async {
+      final errorData = {
+        'status': 'error',
+        'message': 'Failed to allocate memory',
+      };
+
+      final dio = Dio()..interceptors.add(TestInterceptor(errorData));
+      final service = ServerApiService(dio);
+
+      expect(
+        () => service.loadModelWithInstanceId(
+          lmStudioServer,
+          'liquid/lfm2-1.2b',
+        ),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Failed to allocate memory'),
+          ),
+        ),
+      );
+    });
+  });
 }

@@ -195,7 +195,20 @@ class ServerApiService {
             options: Options(headers: buildServerAuthHeaders(server)),
           );
           _throwIfErrorResponse(response.data);
-          return response.data['instance_id'] as String?;
+          final data = response.data;
+          dynamic map = data;
+          if (data is String && data.trim().startsWith('{')) {
+            try {
+              map = jsonDecode(data);
+            } catch (_) {}
+          }
+          if (map is Map) {
+            return map['instance_id']?.toString() ??
+                map['id']?.toString() ??
+                map['model']?.toString() ??
+                modelId;
+          }
+          return modelId;
         } on DioException catch (e) {
           throw Exception(_extractApiErrorMessage(e.response?.data) ?? e.message);
         }
@@ -698,9 +711,32 @@ class ServerApiService {
   }
 
   void _throwIfErrorResponse(dynamic data) {
-    final message = _extractApiErrorMessage(data);
-    if (message != null) {
-      throw Exception(message);
+    if (data == null) return;
+    dynamic map = data;
+    if (data is String) {
+      final trimmed = data.trim();
+      if (trimmed.startsWith('{')) {
+        try {
+          map = jsonDecode(trimmed);
+        } catch (_) {
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+    if (map is! Map) return;
+
+    final hasError = map.containsKey('error') && map['error'] != null;
+    final isFailedStatus = map['status'] == 'error' ||
+        map['status'] == 'failed' ||
+        map['success'] == false;
+
+    if (hasError || isFailedStatus) {
+      final message = _extractApiErrorMessage(map);
+      if (message != null && message.isNotEmpty) {
+        throw Exception(message);
+      }
     }
   }
 
@@ -738,16 +774,31 @@ class ServerApiService {
 
     final message = map['message']?.toString();
     final type = map['type']?.toString();
-    final detail = map['detail']?.toString();
+    final detail = map['detail'];
     if (message != null && message.trim().isNotEmpty) {
       if (type != null && type.trim().isNotEmpty) return '$type: $message';
       return message;
     }
-    if (detail != null && detail.trim().isNotEmpty) {
-      return detail;
+
+    final errorDescription = map['error_description']?.toString();
+    if (errorDescription != null && errorDescription.trim().isNotEmpty) {
+      return errorDescription;
     }
-    if (type != null && type.trim().isNotEmpty) {
-      return type;
+
+    if (detail is String && detail.trim().isNotEmpty) {
+      if (type != null && type.trim().isNotEmpty) return '$type: $detail';
+      return detail;
+    } else if (detail is List && detail.isNotEmpty) {
+      final msgs = detail
+          .map((d) => d is Map ? d['msg']?.toString() : d?.toString())
+          .where((m) => m != null && m.trim().isNotEmpty)
+          .join(', ');
+      if (msgs.isNotEmpty) return msgs;
+    }
+
+    final title = map['title']?.toString();
+    if (title != null && title.trim().isNotEmpty) {
+      return title;
     }
 
     return null;
