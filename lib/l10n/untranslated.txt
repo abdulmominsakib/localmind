@@ -1,78 +1,117 @@
 {
+  "ar": [
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
+  ],
+
   "bn": [
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
-    "image_pick_failed"
+    "image_pick_failed",
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
   ],
 
   "de": [
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
-    "image_pick_failed"
+    "image_pick_failed",
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
   ],
 
   "es": [
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
-    "image_pick_failed"
+    "image_pick_failed",
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
   ],
 
   "fr": [
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
-    "image_pick_failed"
+    "image_pick_failed",
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
   ],
 
   "hi": [
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
-    "image_pick_failed"
+    "image_pick_failed",
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
   ],
 
   "it": [
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
-    "image_pick_failed"
+    "image_pick_failed",
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
   ],
 
   "ja": [
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
-    "image_pick_failed"
+    "image_pick_failed",
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
   ],
 
   "ru": [
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
-    "image_pick_failed"
+    "image_pick_failed",
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
   ],
 
   "tr": [
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
-    "image_pick_failed"
+    "image_pick_failed",
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
   ],
 
   "zh": [
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
-    "image_pick_failed"
+    "image_pick_failed",
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
   ],
 
   "zh_TW": [
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
-    "image_pick_failed"
+    "image_pick_failed",
+    "calendar_access",
+    "calendar_access_desc",
+    "calendar_permission_denied"
   ]
 }

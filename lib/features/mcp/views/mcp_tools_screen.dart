@@ -5,6 +5,7 @@ import 'package:localmind/l10n/app_localizations.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../chat/data/mcp_server_manager.dart';
+import '../../chat/data/tools/calendar_service.dart';
 import '../../chat/data/tools/tool_definition.dart';
 import '../../chat/providers/chat_mcp_providers.dart';
 import '../../chat/providers/tooling_providers.dart';
@@ -114,9 +115,12 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                     label: l10n.enable_mcp,
                     value: settings.mcpEnabled,
                     badges: [_FeatureBadge(label: l10n.experimental_label)],
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setMcpEnabled(value),
+                    onChanged: (value) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .setMcpEnabled(value);
+                      _refreshTools();
+                    },
                   ),
                   if (settings.mcpEnabled) ...[
                     _McpToggleSetting(
@@ -125,6 +129,38 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                       onChanged: (value) => ref
                           .read(settingsProvider.notifier)
                           .setNewChatMcpEnabled(value),
+                    ),
+                    _McpToggleSetting(
+                      label: l10n.calendar_access,
+                      description: l10n.calendar_access_desc,
+                      value: settings.calendarToolsEnabled,
+                      badges: [_FeatureBadge(label: l10n.experimental_label)],
+                      onChanged: (value) async {
+                        if (value) {
+                          final cal = CalendarService.instance;
+                          final granted = await cal.requestAccess();
+                          if (granted) {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setCalendarToolsEnabled(true);
+                            _refreshTools();
+                          } else {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      Text(l10n.calendar_permission_denied),
+                                ),
+                              );
+                            }
+                          }
+                        } else {
+                          ref
+                              .read(settingsProvider.notifier)
+                              .setCalendarToolsEnabled(false);
+                          _refreshTools();
+                        }
+                      },
                     ),
                     _McpToggleSetting(
                       label: l10n.enable_example_server,
@@ -395,7 +431,9 @@ class _ToolRow extends StatelessWidget {
             HugeIcon(
               icon: isMcp
                   ? HugeIcons.strokeRoundedShare01
-                  : HugeIcons.strokeRoundedCalculate,
+                  : (tool.name.startsWith('calendar.')
+                      ? HugeIcons.strokeRoundedCalendar01
+                      : HugeIcons.strokeRoundedCalculate),
               size: 18,
               color: isMcp
                   ? theme.colorScheme.primary

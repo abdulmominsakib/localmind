@@ -88,6 +88,12 @@
 	<string>This app requires microphone access for offline voice interaction and speech-to-text features.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>This app requires speech recognition access to convert your voice messages into text.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Access your calendar to view and manage events through AI chat.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Full access to view and edit your calendar events through AI chat.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>Add calendar events through AI chat without reading existing events.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

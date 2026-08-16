@@ -3007,4 +3007,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String image_pick_failed(String error) {
     return 'فشل اختيار الصورة: $error';
   }
+
+  @override
+  String get calendar_access => 'Calendar Access';
+
+  @override
+  String get calendar_access_desc =>
+      'Allow AI to read and create calendar events';
+
+  @override
+  String get calendar_permission_denied =>
+      'Calendar permission denied. Please grant calendar access in your device settings.';
 }

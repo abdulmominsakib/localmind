@@ -57,6 +57,7 @@ class AppSettings {
   final bool keepPersonaOnNewChat;
   final bool roleSwapButtonEnabled;
   final bool showSystemMessagesInChat;
+  final bool calendarToolsEnabled;
   final List<McpIntegration> savedMcpIntegrations;
 
   AppSettings({
@@ -104,6 +105,7 @@ class AppSettings {
     this.keepPersonaOnNewChat = false,
     this.roleSwapButtonEnabled = false,
     this.showSystemMessagesInChat = true,
+    this.calendarToolsEnabled = false,
     this.savedMcpIntegrations = const [],
   });
 
@@ -152,6 +154,7 @@ class AppSettings {
     bool? keepPersonaOnNewChat,
     bool? roleSwapButtonEnabled,
     bool? showSystemMessagesInChat,
+    bool? calendarToolsEnabled,
     List<McpIntegration>? savedMcpIntegrations,
   }) {
     return AppSettings(
@@ -222,6 +225,8 @@ class AppSettings {
           roleSwapButtonEnabled ?? this.roleSwapButtonEnabled,
       showSystemMessagesInChat:
           showSystemMessagesInChat ?? this.showSystemMessagesInChat,
+      calendarToolsEnabled:
+          calendarToolsEnabled ?? this.calendarToolsEnabled,
       savedMcpIntegrations:
           savedMcpIntegrations ?? this.savedMcpIntegrations,
     );
@@ -273,6 +278,7 @@ class AppSettings {
       'keepPersonaOnNewChat': keepPersonaOnNewChat,
       'roleSwapButtonEnabled': roleSwapButtonEnabled,
       'showSystemMessagesInChat': showSystemMessagesInChat,
+      'calendarToolsEnabled': calendarToolsEnabled,
       'savedMcpIntegrations':
           savedMcpIntegrations.map((i) => i.toJson()).toList(),
     };
@@ -326,6 +332,7 @@ class AppSettings {
       keepPersonaOnNewChat: map['keepPersonaOnNewChat'] ?? false,
       roleSwapButtonEnabled: map['roleSwapButtonEnabled'] ?? false,
       showSystemMessagesInChat: map['showSystemMessagesInChat'] ?? true,
+      calendarToolsEnabled: map['calendarToolsEnabled'] ?? false,
       savedMcpIntegrations:
           _parseSavedMcpIntegrations(map['savedMcpIntegrations']),
     );

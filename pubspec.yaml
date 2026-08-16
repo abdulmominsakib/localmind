@@ -87,6 +87,7 @@ dependencies:
   pdfrx: ^2.4.7
   permission_handler: ^11.4.0
   auto_size_text_plus: ^3.0.2
+  device_calendar_plus: ^0.8.0
 
 dev_dependencies:
   flutter_test:

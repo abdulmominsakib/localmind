@@ -13,7 +13,10 @@ final mcpServerManagerProvider = Provider<McpServerManager>((ref) {
 });
 
 final builtInToolProviderProvider = Provider<BuiltInToolProvider>((ref) {
-  return BuiltInToolProvider();
+  final settings = ref.watch(settingsProvider);
+  return BuiltInToolProvider(
+    calendarToolsEnabled: settings.calendarToolsEnabled,
+  );
 });
 
 final toolRegistryProvider = Provider<ToolRegistry>((ref) {

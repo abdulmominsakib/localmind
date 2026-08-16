@@ -5626,6 +5626,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to select image: {error}'**
   String image_pick_failed(String error);
+
+  /// Toggle for calendar tools feature
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar Access'**
+  String get calendar_access;
+
+  /// Description for calendar tools toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Allow AI to read and create calendar events'**
+  String get calendar_access_desc;
+
+  /// Snackbar message when calendar permission is denied
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar permission denied. Please grant calendar access in your device settings.'**
+  String get calendar_permission_denied;
 }
 
 class _AppLocalizationsDelegate

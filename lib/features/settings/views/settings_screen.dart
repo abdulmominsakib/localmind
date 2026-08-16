@@ -275,22 +275,6 @@ class SettingsViews extends ConsumerWidget {
                     },
                   ),
                   _ToggleSetting(
-                    label: l10n.enable_mcp,
-                    value: settings.mcpEnabled,
-                    badges: [_FeatureBadge(label: l10n.experimental_label)],
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setMcpEnabled(value),
-                  ),
-                  if (settings.mcpEnabled)
-                    _ToggleSetting(
-                      label: l10n.new_chat_mcp_default,
-                      value: settings.newChatMcpEnabled,
-                      onChanged: (value) => ref
-                          .read(settingsProvider.notifier)
-                          .setNewChatMcpEnabled(value),
-                    ),
-                  _ToggleSetting(
                     label: l10n.temp_chat_keyboard_incognito,
                     description: l10n.temp_chat_keyboard_incognito_desc,
                     value: settings.tempChatKeyboardIncognito,

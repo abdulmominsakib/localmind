@@ -144,6 +144,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(roleSwapButtonEnabled: value));
   void setShowSystemMessagesInChat(bool value) =>
       _update(state.copyWith(showSystemMessagesInChat: value));
+  void setCalendarToolsEnabled(bool value) =>
+      _update(state.copyWith(calendarToolsEnabled: value));
 
   void addSavedMcpIntegration(McpIntegration integration) {
     final current = List<McpIntegration>.from(state.savedMcpIntegrations);

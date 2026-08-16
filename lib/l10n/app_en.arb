@@ -3348,6 +3348,18 @@
         "type": "String"
       }
     }
+  },
+  "calendar_access": "Calendar Access",
+  "@calendar_access": {
+    "description": "Toggle for calendar tools feature"
+  },
+  "calendar_access_desc": "Allow AI to read and create calendar events",
+  "@calendar_access_desc": {
+    "description": "Description for calendar tools toggle"
+  },
+  "calendar_permission_denied": "Calendar permission denied. Please grant calendar access in your device settings.",
+  "@calendar_permission_denied": {
+    "description": "Snackbar message when calendar permission is denied"
   }
 }
 
