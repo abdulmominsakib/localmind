@@ -21,6 +21,8 @@ import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/data/server_api_service.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
+import 'package:localmind/features/onboarding/screens/onboarding_server_setup_screen.dart';
+import 'package:localmind/features/servers/views/add_server_screen.dart';
 import 'package:localmind/features/settings/data/models/app_settings.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -40,23 +42,24 @@ void main() {
         if (tempFile.existsSync()) tempFile.deleteSync();
       });
 
-      final isPreview = true;
-      final source = AudioSource.file(
-        tempFile.path,
-        tag: MediaItem(
-          id: 'tts_chunk_test_0',
-          album: isPreview ? 'Voice Preview' : 'LocalMind TTS',
-          title: 'Hello world',
-          artist: 'Piper TTS',
-        ),
-      );
+      for (final isPreview in [true, false]) {
+        final source = AudioSource.file(
+          tempFile.path,
+          tag: MediaItem(
+            id: 'tts_chunk_test_$isPreview',
+            album: isPreview ? 'Voice Preview' : 'LocalMind TTS',
+            title: 'Hello world',
+            artist: 'Piper TTS',
+          ),
+        );
 
-      // Verify tag is non-null and is a MediaItem (avoiding "type 'Null' is not a subtype of type 'MediaItem'")
-      expect(source.tag, isNotNull);
-      expect(source.tag, isA<MediaItem>());
-      final mediaItem = source.tag as MediaItem;
-      expect(mediaItem.album, 'Voice Preview');
-      expect(mediaItem.title, 'Hello world');
+        // Verify tag is non-null and is a MediaItem (avoiding "type 'Null' is not a subtype of type 'MediaItem'")
+        expect(source.tag, isNotNull);
+        expect(source.tag, isA<MediaItem>());
+        final mediaItem = source.tag as MediaItem;
+        expect(mediaItem.album, isPreview ? 'Voice Preview' : 'LocalMind TTS');
+        expect(mediaItem.title, 'Hello world');
+      }
     });
   });
 
@@ -304,6 +307,138 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('Issue #64: Server Setup Screens Unmounted testConnection Guard', () {
+    testWidgets('OnboardingServerSetupScreen does not crash when unmounted during testConnection', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final connectionCompleter = Completer<ResponseBody>();
+      final mockDio = Dio();
+      mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
+        return connectionCompleter.future;
+      });
+      final mockApiService = ServerApiService(mockDio);
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          settingsProvider.overrideWith(_TestSettingsNotifier.new),
+          chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+          serverApiServiceProvider.overrideWithValue(mockApiService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: ShadTheme(
+            data: AppTheme.lightShadTheme,
+            child: const MaterialApp(
+              locale: Locale('en'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: OnboardingServerSetupScreen(
+                selectedType: ServerType.lmStudio,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test Connection'), findsOneWidget);
+
+      // Tap Test Connection
+      await tester.tap(find.text('Test Connection'));
+      await tester.pump();
+
+      // Immediately unmount OnboardingServerSetupScreen while test is in flight
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: Scaffold(body: SizedBox()),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Now complete the network response
+      connectionCompleter.complete(
+        ResponseBody.fromString('{"models":[]}', 200),
+      );
+      await tester.pumpAndSettle();
+
+      // Ensure no Null check operator or setState exception was thrown
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('AddServerScreen does not crash when unmounted during testConnection', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final connectionCompleter = Completer<ResponseBody>();
+      final mockDio = Dio();
+      mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
+        return connectionCompleter.future;
+      });
+      final mockApiService = ServerApiService(mockDio);
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          settingsProvider.overrideWith(_TestSettingsNotifier.new),
+          chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+          serverApiServiceProvider.overrideWithValue(mockApiService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: ShadTheme(
+            data: AppTheme.lightShadTheme,
+            child: const MaterialApp(
+              locale: Locale('en'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: AddServerScreen(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test Connection'), findsOneWidget);
+
+      // Tap Test Connection
+      await tester.tap(find.text('Test Connection'));
+      await tester.pump();
+
+      // Immediately unmount AddServerScreen while test is in flight
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: Scaffold(body: SizedBox()),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Now complete the network response
+      connectionCompleter.complete(
+        ResponseBody.fromString('{"models":[]}', 200),
+      );
+      await tester.pumpAndSettle();
+
+      // Ensure no Null check operator or setState exception was thrown
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
 
 class _StubActiveServerNotifier extends ActiveServerNotifier {
@@ -330,7 +465,7 @@ class _StubConnectedStatusNotifier extends ConnectionStatusNotifier {
 }
 
 class _MockHttpClientAdapter implements HttpClientAdapter {
-  final ResponseBody Function(RequestOptions options) handler;
+  final FutureOr<ResponseBody> Function(RequestOptions options) handler;
 
   _MockHttpClientAdapter(this.handler);
 

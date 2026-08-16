@@ -98,9 +98,17 @@ class _OnboardingServerSetupScreenState
     final host = requiresCloudConfig
         ? AppConstants.ollamaCloudBaseUrl
         : _hostController.text.trim();
+    final defaultPort = switch (widget.selectedType) {
+      ServerType.lmStudio => AppConstants.lmStudioDefaultPort,
+      ServerType.openAICompatible => AppConstants.openAICompatibleDefaultPort,
+      ServerType.ollama => AppConstants.ollamaDefaultPort,
+      ServerType.ollamaCloud => AppConstants.ollamaCloudDefaultPort,
+      ServerType.openRouter => 443,
+      ServerType.onDevice => 0,
+    };
     final port = requiresCloudConfig
         ? AppConstants.ollamaCloudDefaultPort
-        : int.parse(_portController.text.trim());
+        : (int.tryParse(_portController.text.trim()) ?? defaultPort);
 
     return Server(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -126,31 +134,31 @@ class _OnboardingServerSetupScreenState
 
   String? _validateHost(String? value) {
     if (_isCloudProvider) return null;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     if (value == null || value.trim().isEmpty) {
-      return l10n.host_required;
+      return l10n?.host_required ?? 'Host is required';
     }
     if (parseServerAddressInput(value) == null) {
-      return l10n.host_valid;
+      return l10n?.host_valid ?? 'Enter a valid host';
     }
     return null;
   }
 
   String? _validatePort(String? value) {
     if (_isCloudProvider) return null;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     if (value == null || value.trim().isEmpty) {
-      return l10n.port_required;
+      return l10n?.port_required ?? 'Port is required';
     }
     final port = int.tryParse(value.trim());
     if (port == null || port < 1 || port > 65535) {
-      return l10n.port_invalid;
+      return l10n?.port_invalid ?? 'Enter a valid port number (1-65535)';
     }
     return null;
   }
 
   Future<void> _testConnection() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState?.validate() != true) return;
 
     setState(() {
       _isTesting = true;
@@ -158,35 +166,39 @@ class _OnboardingServerSetupScreenState
       _testSuccess = false;
     });
 
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final apiService = ref.read(serverApiServiceProvider);
     final testServer = _buildServer();
 
     try {
       final isConnected = await apiService.testConnection(testServer);
+      if (!mounted) return;
       setState(() {
         _testSuccess = isConnected;
         _testResult = isConnected
-            ? l10n.connection_successful
-            : l10n.connection_failed;
+            ? (l10n?.connection_successful ?? 'Connection successful')
+            : (l10n?.connection_failed ?? 'Connection failed');
       });
       if (isConnected) {
         invalidateAvailableModelsCache(testServer.id);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _testSuccess = false;
-        _testResult = l10n.error_with_message(e.toString());
+        _testResult = l10n?.error_with_message(e.toString()) ?? 'Error: $e';
       });
     } finally {
-      setState(() {
-        _isTesting = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isTesting = false;
+        });
+      }
     }
   }
 
   Future<void> _saveAndContinue() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState?.validate() != true) return;
 
     setState(() {
       _isSaving = true;
@@ -207,7 +219,8 @@ class _OnboardingServerSetupScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(context)!.error_with_message(e.toString()),
+              AppLocalizations.of(context)?.error_with_message(e.toString()) ??
+                  'Error: $e',
             ),
             backgroundColor: Colors.red,
           ),

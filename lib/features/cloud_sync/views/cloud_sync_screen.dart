@@ -76,7 +76,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   );
 
   Future<void> _run(Future<void> Function() action) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState?.validate() != true) return;
     setState(() => _working = true);
     try {
       await action();

@@ -115,7 +115,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   }
 
   Future<void> _testConnection() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState?.validate() != true) return;
 
     setState(() {
       _isTesting = true;
@@ -128,25 +128,29 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
 
     try {
       final isConnected = await apiService.testConnection(testServer);
+      if (!mounted) return;
       setState(() {
         _testResult = isConnected
-            ? AppLocalizations.of(context)!.connection_successful
-            : AppLocalizations.of(context)!.connection_failed;
+            ? AppLocalizations.of(context)?.connection_successful ?? 'Connection successful'
+            : AppLocalizations.of(context)?.connection_failed ?? 'Connection failed';
       });
       if (isConnected) {
         invalidateAvailableModelsCache(testServer.id);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _testResult = AppLocalizations.of(
           context,
-        )!.error_with_message(e.toString());
+        )?.error_with_message(e.toString()) ?? 'Error: $e';
       });
     } finally {
-      setState(() {
-        _isTesting = false;
-      });
-      _scrollToBottom();
+      if (mounted) {
+        setState(() {
+          _isTesting = false;
+        });
+        _scrollToBottom();
+      }
     }
   }
 
@@ -162,9 +166,17 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     final host = _selectedType == ServerType.ollamaCloud
         ? AppConstants.ollamaCloudBaseUrl
         : rawHost;
+    final defaultPort = switch (_selectedType) {
+      ServerType.lmStudio => AppConstants.lmStudioDefaultPort,
+      ServerType.openAICompatible => AppConstants.openAICompatibleDefaultPort,
+      ServerType.ollama => AppConstants.ollamaDefaultPort,
+      ServerType.ollamaCloud => AppConstants.ollamaCloudDefaultPort,
+      ServerType.openRouter => 443,
+      ServerType.onDevice => 0,
+    };
     final port = _selectedType == ServerType.ollamaCloud
         ? AppConstants.ollamaCloudDefaultPort
-        : int.parse(rawPort);
+        : (int.tryParse(rawPort) ?? defaultPort);
 
     return Server(
       id:
@@ -194,7 +206,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   }
 
   Future<void> _saveServer() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState?.validate() != true) return;
 
     setState(() {
       _isSaving = true;
@@ -215,21 +227,24 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       invalidateAvailableModelsCache(server.id);
 
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
+        final l10n = AppLocalizations.of(context);
         context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isEditing ? l10n.server_updated : l10n.server_added),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        if (l10n != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_isEditing ? l10n.server_updated : l10n.server_added),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(context)!.error_with_message(e.toString()),
+              AppLocalizations.of(context)?.error_with_message(e.toString()) ??
+                  'Error: $e',
             ),
             backgroundColor: Colors.red,
           ),
