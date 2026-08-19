@@ -160,6 +160,14 @@ class _OnboardingServerSetupScreenState
   Future<void> _testConnection() async {
     if (_formKey.currentState?.validate() != true) return;
 
+    // Defensive mounted check before any state mutation. Even though the
+    // entry point here is a user tap (which implies mounted == true), a
+    // stale callback could still trigger this method after the widget
+    // has been disposed. Without this guard the first setState would
+    // throw "Null check operator used on a null value" at
+    // package:flutter/src/widgets/framework.dart from
+    // `_element!.markNeedsBuild()`. See #65.
+    if (!mounted) return;
     setState(() {
       _isTesting = true;
       _testResult = null;
@@ -200,6 +208,8 @@ class _OnboardingServerSetupScreenState
   Future<void> _saveAndContinue() async {
     if (_formKey.currentState?.validate() != true) return;
 
+    // Defensive mounted check before any state mutation. See #65.
+    if (!mounted) return;
     setState(() {
       _isSaving = true;
     });

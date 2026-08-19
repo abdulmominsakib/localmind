@@ -117,6 +117,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   Future<void> _testConnection() async {
     if (_formKey.currentState?.validate() != true) return;
 
+    // Defensive mounted check before any state mutation. See #65.
+    if (!mounted) return;
     setState(() {
       _isTesting = true;
       _testResult = null;
@@ -208,6 +210,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   Future<void> _saveServer() async {
     if (_formKey.currentState?.validate() != true) return;
 
+    // Defensive mounted check before any state mutation. See #65.
+    if (!mounted) return;
     setState(() {
       _isSaving = true;
     });

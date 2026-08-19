@@ -439,6 +439,157 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('Issue #65: Server Setup Screens Unmounted setState finally-guard', () {
+    testWidgets(
+        'OnboardingServerSetupScreen does not crash when testConnection completes after unmount',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      // Use a Completer so we control when the network response resolves —
+      // this lets us unmount the widget before the await resumes, then
+      // resume the future and verify the `finally` setState is a no-op.
+      final connectionCompleter = Completer<ResponseBody>();
+      final mockDio = Dio();
+      mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
+        return connectionCompleter.future;
+      });
+      final mockApiService = ServerApiService(mockDio);
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          settingsProvider.overrideWith(_TestSettingsNotifier.new),
+          chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+          serverApiServiceProvider.overrideWithValue(mockApiService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: ShadTheme(
+            data: AppTheme.lightShadTheme,
+            child: const MaterialApp(
+              locale: Locale('en'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: OnboardingServerSetupScreen(
+                selectedType: ServerType.lmStudio,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test Connection'), findsOneWidget);
+
+      // Kick off the test connection (this enters the try block and awaits).
+      await tester.tap(find.text('Test Connection'));
+      await tester.pump();
+
+      // Unmount the screen *while* the await is pending. This simulates a
+      // user navigating away (or any other reason for the widget to be
+      // disposed) before the network response arrives.
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: Scaffold(body: SizedBox()),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Now resume the future — this should run the remaining setState
+      // calls in the try, catch, and finally blocks. Without the mounted
+      // guards this would crash with
+      // "Null check operator used on a null value" at
+      // package:flutter/src/widgets/framework.dart:1219 from
+      // `_element!.markNeedsBuild()` (issue #65).
+      connectionCompleter.complete(
+        ResponseBody.fromString('{"models":[]}', 200),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'OnboardingServerSetupScreen does not crash when testConnection fails after unmount',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      // Completer that returns a 500 response — exercises the failure
+      // branch (isConnected == false) + the `finally` block while the
+      // widget is already unmounted.
+      final connectionCompleter = Completer<ResponseBody>();
+      final mockDio = Dio();
+      mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
+        return connectionCompleter.future;
+      });
+      final mockApiService = ServerApiService(mockDio);
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          settingsProvider.overrideWith(_TestSettingsNotifier.new),
+          chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+          serverApiServiceProvider.overrideWithValue(mockApiService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: ShadTheme(
+            data: AppTheme.lightShadTheme,
+            child: const MaterialApp(
+              locale: Locale('en'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: OnboardingServerSetupScreen(
+                selectedType: ServerType.openAICompatible,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Test Connection'));
+      await tester.pump();
+
+      // Unmount before completing the in-flight request.
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: Scaffold(body: SizedBox()),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Complete with a 500 response so the testConnection method returns
+      // false (no exception thrown). This drives both the try branch
+      // (isConnected == false) and the finally branch (sets
+      // _isTesting = false) on the now-disposed state. Without the
+      // mounted guard, the finally setState would crash with
+      // "Null check operator used on a null value" (#65).
+      connectionCompleter.complete(
+        ResponseBody.fromString('{"error":"server error"}', 500),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
 
 class _StubActiveServerNotifier extends ActiveServerNotifier {
