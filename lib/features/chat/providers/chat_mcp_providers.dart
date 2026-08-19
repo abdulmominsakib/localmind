@@ -64,6 +64,43 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
     ref.read(settingsProvider.notifier).addSavedMcpIntegration(integration);
   }
 
+  bool addIntegrationFromInput({required String label, required String url}) {
+    final trimmedLabel = label.trim();
+    final trimmedUrl = url.trim();
+    final uri = Uri.tryParse(trimmedUrl);
+    final isRemoteMcpUrl =
+        uri != null &&
+        uri.hasAuthority &&
+        (uri.scheme == 'http' || uri.scheme == 'https');
+
+    if (isRemoteMcpUrl) {
+      if (trimmedLabel.isEmpty) return false;
+      addIntegration(
+        McpIntegration(
+          type: McpIntegrationType.ephemeralMcp,
+          serverLabel: trimmedLabel,
+          serverUrl: trimmedUrl,
+        ),
+      );
+      return true;
+    }
+
+    final pluginId = trimmedLabel.isNotEmpty ? trimmedLabel : trimmedUrl;
+    final hasBothInputs = trimmedLabel.isNotEmpty && trimmedUrl.isNotEmpty;
+    if (hasBothInputs || !pluginId.contains('/')) {
+      return false;
+    }
+
+    addIntegration(
+      McpIntegration(
+        type: McpIntegrationType.plugin,
+        pluginId: pluginId,
+        serverLabel: trimmedLabel.isNotEmpty ? trimmedLabel : null,
+      ),
+    );
+    return true;
+  }
+
   void removeIntegration(int index) {
     final integration = state.integrations[index];
     final newIntegrations = List<McpIntegration>.from(state.integrations)

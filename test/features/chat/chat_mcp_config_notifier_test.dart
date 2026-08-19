@@ -2,20 +2,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
+import 'package:localmind/features/chat/data/mcp_server_manager.dart';
 import 'package:localmind/features/chat/providers/chat_mcp_providers.dart';
+import 'package:localmind/features/chat/providers/tooling_providers.dart';
+
+class RecordingMcpServerManager extends McpServerManager {
+  final List<({String label, String url, Map<String, String>? headers})>
+  addedServers = [];
+
+  @override
+  Future<void> addServer(
+    String label,
+    String url, {
+    Map<String, String>? headers,
+  }) async {
+    addedServers.add((label: label, url: url, headers: headers));
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ChatMcpConfigNotifier Tests', () {
     late ProviderContainer container;
+    late RecordingMcpServerManager mcpServerManager;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
+      mcpServerManager = RecordingMcpServerManager();
       container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          mcpServerManagerProvider.overrideWithValue(mcpServerManager),
         ],
       );
     });
@@ -80,6 +99,63 @@ void main() {
 
       notifier.toggleIntegration(0, true);
       expect(container.read(chatMcpConfigProvider).integrations[0].enabled, isTrue);
+    });
+
+    test('addIntegrationFromInput connects an HTTPS MCP server', () {
+      final notifier = container.read(chatMcpConfigProvider.notifier);
+
+      final added = notifier.addIntegrationFromInput(
+        label: 'Remote tools',
+        url: 'https://example.com/mcp/sse',
+      );
+
+      expect(added, isTrue);
+      final integration = container
+          .read(chatMcpConfigProvider)
+          .integrations
+          .single;
+      expect(integration.type, McpIntegrationType.ephemeralMcp);
+      expect(integration.serverLabel, 'Remote tools');
+      expect(integration.serverUrl, 'https://example.com/mcp/sse');
+      expect(integration.pluginId, isNull);
+      expect(mcpServerManager.addedServers, hasLength(1));
+      expect(mcpServerManager.addedServers.single.label, 'Remote tools');
+      expect(
+        mcpServerManager.addedServers.single.url,
+        'https://example.com/mcp/sse',
+      );
+    });
+
+    test('addIntegrationFromInput still accepts a plugin id', () {
+      final notifier = container.read(chatMcpConfigProvider.notifier);
+
+      final added = notifier.addIntegrationFromInput(
+        label: 'mcp/playwright',
+        url: '',
+      );
+
+      expect(added, isTrue);
+      final integration = container
+          .read(chatMcpConfigProvider)
+          .integrations
+          .single;
+      expect(integration.type, McpIntegrationType.plugin);
+      expect(integration.pluginId, 'mcp/playwright');
+      expect(integration.serverUrl, isNull);
+      expect(mcpServerManager.addedServers, isEmpty);
+    });
+
+    test('addIntegrationFromInput rejects an unlabeled MCP URL', () {
+      final notifier = container.read(chatMcpConfigProvider.notifier);
+
+      final added = notifier.addIntegrationFromInput(
+        label: '',
+        url: 'https://example.com/mcp/sse',
+      );
+
+      expect(added, isFalse);
+      expect(container.read(chatMcpConfigProvider).integrations, isEmpty);
+      expect(mcpServerManager.addedServers, isEmpty);
     });
   });
 }
