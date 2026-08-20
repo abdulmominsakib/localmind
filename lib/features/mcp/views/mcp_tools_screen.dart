@@ -134,7 +134,6 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                       label: l10n.calendar_access,
                       description: l10n.calendar_access_desc,
                       value: settings.calendarToolsEnabled,
-                      badges: [_FeatureBadge(label: l10n.experimental_label)],
                       onChanged: (value) async {
                         if (value) {
                           final cal = CalendarService.instance;
