@@ -712,6 +712,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sistem mesajlarını (örn. içe aktarılan yedekten) konuşmada görünür baloncuklar olarak göster';
 
   @override
+  String get auto_collapse_thinking => 'Düşünme Sürecini Otomatik Daralt';
+
+  @override
+  String get auto_collapse_thinking_desc =>
+      'Ana yanıt mevcut olduğunda oluşturma tamamlandıktan sonra akıl yürütme sürecini otomatik olarak daralt';
+
+  @override
   String get haptic_feedback => 'Dokunsal Geri Bildirim';
 
   @override

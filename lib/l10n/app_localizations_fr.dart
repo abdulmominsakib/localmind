@@ -707,6 +707,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Display system messages (e.g. from an imported backup) as visible bubbles in the conversation';
 
   @override
+  String get auto_collapse_thinking => 'Réduire automatiquement la réflexion';
+
+  @override
+  String get auto_collapse_thinking_desc =>
+      'Réduit automatiquement le raisonnement à la fin de la génération lorsqu\'une réponse principale est présente';
+
+  @override
   String get haptic_feedback => 'Haptic Feedback';
 
   @override

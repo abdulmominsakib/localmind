@@ -713,6 +713,13 @@ class AppLocalizationsHi extends AppLocalizations {
       'चैट ट्रांसक्रिप्ट में दृश्यमान बुलबुले के रूप में सिस्टम संदेश (जैसे आयातित बैकअप से) प्रदर्शित करें';
 
   @override
+  String get auto_collapse_thinking => 'सोच को स्वचालित रूप से संक्षिप्त करें';
+
+  @override
+  String get auto_collapse_thinking_desc =>
+      'मुख्य उत्तर मौजूद होने पर प्रतिक्रिया निर्माण पूरा होने के बाद तर्क प्रक्रिया को स्वचालित रूप से संक्षिप्त करें';
+
+  @override
   String get haptic_feedback => 'हैप्टिक फीडबैक';
 
   @override

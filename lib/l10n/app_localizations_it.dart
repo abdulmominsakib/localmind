@@ -713,6 +713,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Visualizza i messaggi di sistema (es. da un backup importato) come bolle visibili nella conversazione';
 
   @override
+  String get auto_collapse_thinking => 'Comprimi automaticamente pensiero';
+
+  @override
+  String get auto_collapse_thinking_desc =>
+      'Comprimi automaticamente il ragionamento al termine della risposta quando è presente una risposta principale';
+
+  @override
   String get haptic_feedback => 'Feedback aptico';
 
   @override

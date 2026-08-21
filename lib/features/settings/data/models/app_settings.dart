@@ -58,6 +58,7 @@ class AppSettings {
   final bool roleSwapButtonEnabled;
   final bool showSystemMessagesInChat;
   final bool calendarToolsEnabled;
+  final bool autoCollapseThinking;
   final List<McpIntegration> savedMcpIntegrations;
 
   AppSettings({
@@ -106,6 +107,7 @@ class AppSettings {
     this.roleSwapButtonEnabled = false,
     this.showSystemMessagesInChat = true,
     this.calendarToolsEnabled = false,
+    this.autoCollapseThinking = false,
     this.savedMcpIntegrations = const [],
   });
 
@@ -155,6 +157,7 @@ class AppSettings {
     bool? roleSwapButtonEnabled,
     bool? showSystemMessagesInChat,
     bool? calendarToolsEnabled,
+    bool? autoCollapseThinking,
     List<McpIntegration>? savedMcpIntegrations,
   }) {
     return AppSettings(
@@ -225,10 +228,9 @@ class AppSettings {
           roleSwapButtonEnabled ?? this.roleSwapButtonEnabled,
       showSystemMessagesInChat:
           showSystemMessagesInChat ?? this.showSystemMessagesInChat,
-      calendarToolsEnabled:
-          calendarToolsEnabled ?? this.calendarToolsEnabled,
-      savedMcpIntegrations:
-          savedMcpIntegrations ?? this.savedMcpIntegrations,
+      calendarToolsEnabled: calendarToolsEnabled ?? this.calendarToolsEnabled,
+      autoCollapseThinking: autoCollapseThinking ?? this.autoCollapseThinking,
+      savedMcpIntegrations: savedMcpIntegrations ?? this.savedMcpIntegrations,
     );
   }
 
@@ -279,8 +281,10 @@ class AppSettings {
       'roleSwapButtonEnabled': roleSwapButtonEnabled,
       'showSystemMessagesInChat': showSystemMessagesInChat,
       'calendarToolsEnabled': calendarToolsEnabled,
-      'savedMcpIntegrations':
-          savedMcpIntegrations.map((i) => i.toJson()).toList(),
+      'autoCollapseThinking': autoCollapseThinking,
+      'savedMcpIntegrations': savedMcpIntegrations
+          .map((i) => i.toJson())
+          .toList(),
     };
   }
 
@@ -314,8 +318,7 @@ class AppSettings {
       ttsSpeed: map['ttsSpeed']?.toDouble() ?? 1.0,
       kittenTtsModelVariant: _parseKittenVariant(map['kittenTtsModelVariant']),
       autoSpeakEnabled: map['autoSpeakEnabled'] ?? false,
-      conciseVoiceResponsesEnabled:
-          map['conciseVoiceResponsesEnabled'] ?? true,
+      conciseVoiceResponsesEnabled: map['conciseVoiceResponsesEnabled'] ?? true,
       ttsProcessMarkdown: map['ttsProcessMarkdown'] ?? true,
       ttsSkipSeconds: _parseTtsSkipSeconds(map['ttsSkipSeconds']),
       smartReplyEnabled: map['smartReplyEnabled'] ?? true,
@@ -326,15 +329,18 @@ class AppSettings {
       tempChatKeyboardIncognito: map['tempChatKeyboardIncognito'] ?? true,
       resumeLastChat: map['resumeLastChat'] ?? true,
       imageCompressionEnabled: map['imageCompressionEnabled'] ?? false,
-      imageCompressionLevel:
-          _parseImageCompressionLevel(map['imageCompressionLevel']),
+      imageCompressionLevel: _parseImageCompressionLevel(
+        map['imageCompressionLevel'],
+      ),
       smartRepliesUsePersona: map['smartRepliesUsePersona'] ?? false,
       keepPersonaOnNewChat: map['keepPersonaOnNewChat'] ?? false,
       roleSwapButtonEnabled: map['roleSwapButtonEnabled'] ?? false,
       showSystemMessagesInChat: map['showSystemMessagesInChat'] ?? true,
       calendarToolsEnabled: map['calendarToolsEnabled'] ?? false,
-      savedMcpIntegrations:
-          _parseSavedMcpIntegrations(map['savedMcpIntegrations']),
+      autoCollapseThinking: map['autoCollapseThinking'] ?? false,
+      savedMcpIntegrations: _parseSavedMcpIntegrations(
+        map['savedMcpIntegrations'],
+      ),
     );
   }
 

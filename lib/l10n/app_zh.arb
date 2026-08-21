@@ -200,6 +200,8 @@
   "show_system_messages_desc": "当没有选定角色时，每次请求都发送默认的助手系统提示词",
   "show_system_messages_in_chat": "在聊天中显示系统消息",
   "show_system_messages_in_chat_desc": "将系统消息 (例如来自导入的备份) 作为对话中的可见气泡显示",
+  "auto_collapse_thinking": "自动折叠思考过程",
+  "auto_collapse_thinking_desc": "存在主要回复时，在生成完成后自动折叠推理过程",
   "haptic_feedback": "触觉反馈",
   "enable_mcp": "启用 MCP",
   "new_chat_mcp_default": "新聊天默认启用 MCP",

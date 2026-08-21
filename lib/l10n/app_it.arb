@@ -200,6 +200,8 @@
   "show_system_messages_desc": "Quando nessun personaggio è selezionato, invia un prompt di sistema dell'assistente predefinito con ogni richiesta",
   "show_system_messages_in_chat": "Mostra messaggi di sistema in chat",
   "show_system_messages_in_chat_desc": "Visualizza i messaggi di sistema (es. da un backup importato) come bolle visibili nella conversazione",
+  "auto_collapse_thinking": "Comprimi automaticamente pensiero",
+  "auto_collapse_thinking_desc": "Comprimi automaticamente il ragionamento al termine della risposta quando è presente una risposta principale",
   "haptic_feedback": "Feedback aptico",
   "enable_mcp": "Abilita MCP",
   "new_chat_mcp_default": "Nuova chat MCP predefinita",

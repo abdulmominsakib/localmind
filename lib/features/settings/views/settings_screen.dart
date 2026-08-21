@@ -265,6 +265,14 @@ class SettingsViews extends ConsumerWidget {
                         .setShowSystemMessagesInChat(value),
                   ),
                   _ToggleSetting(
+                    label: l10n.auto_collapse_thinking,
+                    description: l10n.auto_collapse_thinking_desc,
+                    value: settings.autoCollapseThinking,
+                    onChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setAutoCollapseThinking(value),
+                  ),
+                  _ToggleSetting(
                     label: l10n.haptic_feedback,
                     value: settings.hapticFeedbackEnabled,
                     onChanged: (value) {

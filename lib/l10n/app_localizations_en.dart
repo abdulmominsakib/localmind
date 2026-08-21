@@ -700,6 +700,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Display system messages (e.g. from an imported backup) as visible bubbles in the conversation';
 
   @override
+  String get auto_collapse_thinking => 'Auto-collapse Thinking';
+
+  @override
+  String get auto_collapse_thinking_desc =>
+      'Automatically collapse reasoning process after response generation completes when a main answer is present';
+
+  @override
   String get haptic_feedback => 'Haptic Feedback';
 
   @override

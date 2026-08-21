@@ -200,6 +200,8 @@
   "show_system_messages_desc": "Persona seçilmediğinde, her istekle birlikte varsayılan asistan sistem yönergesini gönder",
   "show_system_messages_in_chat": "Sohbette Sistem Mesajlarını Göster",
   "show_system_messages_in_chat_desc": "Sistem mesajlarını (örn. içe aktarılan yedekten) konuşmada görünür baloncuklar olarak göster",
+  "auto_collapse_thinking": "Düşünme Sürecini Otomatik Daralt",
+  "auto_collapse_thinking_desc": "Ana yanıt mevcut olduğunda oluşturma tamamlandıktan sonra akıl yürütme sürecini otomatik olarak daralt",
   "haptic_feedback": "Dokunsal Geri Bildirim",
   "enable_mcp": "MCP'yi Etkinleştir",
   "new_chat_mcp_default": "Yeni Sohbet MCP Varsayılanı",

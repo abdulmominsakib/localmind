@@ -200,6 +200,8 @@
   "show_system_messages_desc": "عند عدم تحديد أي شخصية، أرسل مطالبة نظام المساعد الافتراضية مع كل طلب",
   "show_system_messages_in_chat": "إظهار رسائل النظام في الدردشة",
   "show_system_messages_in_chat_desc": "عرض رسائل النظام (على سبيل المثال من نسخة احتياطية مستوردة) كفقاعات مرئية في المحادثة",
+  "auto_collapse_thinking": "طي التفكير تلقائيًا",
+  "auto_collapse_thinking_desc": "طي عملية التفكير تلقائيًا بعد اكتمال التوليد عند وجود إجابة رئيسية",
   "haptic_feedback": "الاستجابة اللمسية",
   "enable_mcp": "تفعيل MCP",
   "new_chat_mcp_default": "تفعيل MCP افتراضياً في المحادثات الجديدة",

@@ -952,6 +952,14 @@
   "@show_system_messages_in_chat_desc": {
     "description": "Description for the show-system-messages-in-chat toggle"
   },
+  "auto_collapse_thinking": "Auto-collapse Thinking",
+  "@auto_collapse_thinking": {
+    "description": "Toggle for automatically collapsing reasoning bubbles after generation completes"
+  },
+  "auto_collapse_thinking_desc": "Automatically collapse reasoning process after response generation completes when a main answer is present",
+  "@auto_collapse_thinking_desc": {
+    "description": "Description for the auto-collapse thinking toggle"
+  },
   "haptic_feedback": "Haptic Feedback",
   "@haptic_feedback": {
     "description": "Toggle for haptic feedback"

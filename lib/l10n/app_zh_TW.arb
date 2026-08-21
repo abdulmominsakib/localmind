@@ -200,6 +200,8 @@
   "show_system_messages_desc": "當沒有選定角色時，每次請求都發送預設的助手系統提示詞",
   "show_system_messages_in_chat": "在聊天中顯示系統消息",
   "show_system_messages_in_chat_desc": "將系統消息 (例如來自導入的備份) 作為對話中的可見氣泡顯示",
+  "auto_collapse_thinking": "自動摺疊思考過程",
+  "auto_collapse_thinking_desc": "存在主要回覆時，在生成完成後自動摺疊推理過程",
   "haptic_feedback": "觸覺回饋",
   "enable_mcp": "啟用 MCP",
   "new_chat_mcp_default": "新對話預設啟用 MCP",

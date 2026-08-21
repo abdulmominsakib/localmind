@@ -694,6 +694,13 @@ class AppLocalizationsJa extends AppLocalizations {
       'インポートされたバックアップなどからのシステムメッセージを、チャット画面上に吹き出しとして表示します';
 
   @override
+  String get auto_collapse_thinking => '思考プロセスを自動で折りたたむ';
+
+  @override
+  String get auto_collapse_thinking_desc =>
+      'メインの回答が存在する場合、生成完了後に推論プロセスを自動で折りたたみます';
+
+  @override
   String get haptic_feedback => '触覚フィードバック';
 
   @override

@@ -712,6 +712,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar mensajes de sistema (por ejemplo, de una copia de seguridad importada) como burbujas visibles en la conversación';
 
   @override
+  String get auto_collapse_thinking => 'Plegar pensamiento automáticamente';
+
+  @override
+  String get auto_collapse_thinking_desc =>
+      'Plegar automáticamente el proceso de razonamiento tras completar la respuesta cuando hay una respuesta principal';
+
+  @override
   String get haptic_feedback => 'Comentarios hápticos';
 
   @override

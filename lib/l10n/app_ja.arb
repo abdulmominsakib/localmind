@@ -200,6 +200,8 @@
   "show_system_messages_desc": "ペルソナが選択されていない場合、リクエストごとに関連するデフォルトのアシスタントシステムプロンプトを送信する",
   "show_system_messages_in_chat": "チャット内にシステムメッセージを表示",
   "show_system_messages_in_chat_desc": "インポートされたバックアップなどからのシステムメッセージを、チャット画面上に吹き出しとして表示します",
+  "auto_collapse_thinking": "思考プロセスを自動で折りたたむ",
+  "auto_collapse_thinking_desc": "メインの回答が存在する場合、生成完了後に推論プロセスを自動で折りたたみます",
   "haptic_feedback": "触覚フィードバック",
   "enable_mcp": "MCPを有効化",
   "new_chat_mcp_default": "新規チャットでMCPをデフォルトにする",

@@ -52,8 +52,7 @@ class AssistantBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final muted =
-        isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
 
     return Container(
       width: double.infinity,
@@ -83,6 +82,7 @@ class AssistantBubble extends StatelessWidget {
             ReasoningWidget(
               reasoningContent: message.reasoningContent,
               isStreaming: isStreaming,
+              hasMainContent: message.content.trim().isNotEmpty,
             ),
           if (isStreaming && message.content.isEmpty && message.isProcessing)
             const ProcessingIndicator()
@@ -100,7 +100,7 @@ class AssistantBubble extends StatelessWidget {
                 color: muted,
               ),
             )
-          else
+          else if (message.content.trim().isNotEmpty)
             MarkdownContent(content: message.content, isDark: isDark),
           if (message.status == MessageStatus.error &&
               message.errorMessage != null &&
@@ -142,7 +142,11 @@ class AssistantBubble extends StatelessWidget {
               ),
               if (message.status == MessageStatus.error) ...[
                 const SizedBox(width: 4),
-                HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, size: 14, color: Colors.red[400]),
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedInformationCircle,
+                  size: 14,
+                  color: Colors.red[400],
+                ),
               ],
               const Spacer(),
               if (!isStreaming)

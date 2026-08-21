@@ -706,6 +706,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'عرض رسائل النظام (على سبيل المثال من نسخة احتياطية مستوردة) كفقاعات مرئية في المحادثة';
 
   @override
+  String get auto_collapse_thinking => 'طي التفكير تلقائيًا';
+
+  @override
+  String get auto_collapse_thinking_desc =>
+      'طي عملية التفكير تلقائيًا بعد اكتمال التوليد عند وجود إجابة رئيسية';
+
+  @override
   String get haptic_feedback => 'الاستجابة اللمسية';
 
   @override

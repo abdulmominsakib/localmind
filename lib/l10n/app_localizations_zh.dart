@@ -687,6 +687,12 @@ class AppLocalizationsZh extends AppLocalizations {
       '将系统消息 (例如来自导入的备份) 作为对话中的可见气泡显示';
 
   @override
+  String get auto_collapse_thinking => '自动折叠思考过程';
+
+  @override
+  String get auto_collapse_thinking_desc => '存在主要回复时，在生成完成后自动折叠推理过程';
+
+  @override
   String get haptic_feedback => '触觉反馈';
 
   @override
@@ -3633,6 +3639,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get show_system_messages_in_chat_desc =>
       '將系統消息 (例如來自導入的備份) 作為對話中的可見氣泡顯示';
+
+  @override
+  String get auto_collapse_thinking => '自動摺疊思考過程';
+
+  @override
+  String get auto_collapse_thinking_desc => '存在主要回覆時，在生成完成後自動摺疊推理過程';
 
   @override
   String get haptic_feedback => '觸覺回饋';

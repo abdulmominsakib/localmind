@@ -1,33 +1,41 @@
 import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/theme/colors.dart';
 
-class ReasoningWidget extends StatefulWidget {
+class ReasoningWidget extends ConsumerStatefulWidget {
   final String? reasoningContent;
   final bool isStreaming;
+  final bool hasMainContent;
 
   const ReasoningWidget({
     super.key,
     this.reasoningContent,
     this.isStreaming = false,
+    this.hasMainContent = true,
   });
 
   @override
-  State<ReasoningWidget> createState() => _ReasoningWidgetState();
+  ConsumerState<ReasoningWidget> createState() => _ReasoningWidgetState();
 }
 
-class _ReasoningWidgetState extends State<ReasoningWidget>
+class _ReasoningWidgetState extends ConsumerState<ReasoningWidget>
     with SingleTickerProviderStateMixin {
   late bool _isExpanded;
+  bool _hasUserManuallyToggled = false;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
 
   @override
   void initState() {
     super.initState();
-    _isExpanded = widget.isStreaming;
+    final autoCollapse = ref.read(
+      settingsProvider.select((s) => s.autoCollapseThinking),
+    );
+    _isExpanded = widget.isStreaming || !widget.hasMainContent || !autoCollapse;
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
@@ -51,15 +59,31 @@ class _ReasoningWidgetState extends State<ReasoningWidget>
   void didUpdateWidget(ReasoningWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isStreaming && !oldWidget.isStreaming) {
-      setState(() {
-        _isExpanded = true;
-        _animationController.forward();
-      });
+      if (!_isExpanded) {
+        setState(() {
+          _isExpanded = true;
+          _animationController.forward();
+        });
+      }
+    } else if (!widget.isStreaming && oldWidget.isStreaming) {
+      if (!_hasUserManuallyToggled) {
+        final autoCollapse = ref.read(
+          settingsProvider.select((s) => s.autoCollapseThinking),
+        );
+        final shouldStayExpanded = !widget.hasMainContent || !autoCollapse;
+        if (!shouldStayExpanded && _isExpanded) {
+          setState(() {
+            _isExpanded = false;
+            _animationController.reverse();
+          });
+        }
+      }
     }
   }
 
   void _toggleExpand() {
     setState(() {
+      _hasUserManuallyToggled = true;
       _isExpanded = !_isExpanded;
       if (_isExpanded) {
         _animationController.forward();
@@ -124,8 +148,8 @@ class _ReasoningWidgetState extends State<ReasoningWidget>
                 ),
                 child: Row(
                   children: [
-                    HugeIcon(icon: 
-                      HugeIcons.strokeRoundedBrain,
+                    HugeIcon(
+                      icon: HugeIcons.strokeRoundedBrain,
                       size: 18,
                       color: isDark
                           ? AppColors.darkMutedText
@@ -160,8 +184,8 @@ class _ReasoningWidgetState extends State<ReasoningWidget>
                         begin: 0.0,
                         end: 0.5,
                       ).animate(_expandAnimation),
-                      child: HugeIcon(icon: 
-                        HugeIcons.strokeRoundedArrowDown01,
+                      child: HugeIcon(
+                        icon: HugeIcons.strokeRoundedArrowDown01,
                         size: 18,
                         color: isDark
                             ? AppColors.darkMutedText

@@ -81,17 +81,10 @@ class SettingsNotifier extends Notifier<AppSettings> {
   void setDefaultPersona(String? id) =>
       _update(state.copyWith(defaultPersonaId: id));
   void setDefaultModel({String? serverId, String? modelId}) => _update(
-        state.copyWith(
-          defaultModelServerId: serverId,
-          defaultModelId: modelId,
-        ),
-      );
-  void clearDefaultModel() => _update(
-        state.copyWith(
-          defaultModelServerId: null,
-          defaultModelId: null,
-        ),
-      );
+    state.copyWith(defaultModelServerId: serverId, defaultModelId: modelId),
+  );
+  void clearDefaultModel() =>
+      _update(state.copyWith(defaultModelServerId: null, defaultModelId: null));
   void setHasCompletedOnboarding(bool value) =>
       _update(state.copyWith(hasCompletedOnboarding: value));
   void setMcpEnabled(bool value) => _update(state.copyWith(mcpEnabled: value));
@@ -146,12 +139,18 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(showSystemMessagesInChat: value));
   void setCalendarToolsEnabled(bool value) =>
       _update(state.copyWith(calendarToolsEnabled: value));
+  void setAutoCollapseThinking(bool value) =>
+      _update(state.copyWith(autoCollapseThinking: value));
 
   void addSavedMcpIntegration(McpIntegration integration) {
     final current = List<McpIntegration>.from(state.savedMcpIntegrations);
-    final exists = current.any((i) =>
-        (integration.pluginId != null && i.pluginId == integration.pluginId) ||
-        (integration.serverUrl != null && i.serverUrl == integration.serverUrl));
+    final exists = current.any(
+      (i) =>
+          (integration.pluginId != null &&
+              i.pluginId == integration.pluginId) ||
+          (integration.serverUrl != null &&
+              i.serverUrl == integration.serverUrl),
+    );
     if (!exists) {
       current.add(integration);
       _update(state.copyWith(savedMcpIntegrations: current));

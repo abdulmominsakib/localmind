@@ -200,6 +200,8 @@
   "show_system_messages_desc": "When no persona is selected, send a default assistant system prompt with each request",
   "show_system_messages_in_chat": "Show System Messages in Chat",
   "show_system_messages_in_chat_desc": "Display system messages (e.g. from an imported backup) as visible bubbles in the conversation",
+  "auto_collapse_thinking": "Réduire automatiquement la réflexion",
+  "auto_collapse_thinking_desc": "Réduit automatiquement le raisonnement à la fin de la génération lorsqu'une réponse principale est présente",
   "haptic_feedback": "Haptic Feedback",
   "enable_mcp": "Enable MCP",
   "new_chat_mcp_default": "New Chat MCP Default",

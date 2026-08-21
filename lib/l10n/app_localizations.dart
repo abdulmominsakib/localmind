@@ -1397,6 +1397,18 @@ abstract class AppLocalizations {
   /// **'Display system messages (e.g. from an imported backup) as visible bubbles in the conversation'**
   String get show_system_messages_in_chat_desc;
 
+  /// Toggle for automatically collapsing reasoning bubbles after generation completes
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-collapse Thinking'**
+  String get auto_collapse_thinking;
+
+  /// Description for the auto-collapse thinking toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically collapse reasoning process after response generation completes when a main answer is present'**
+  String get auto_collapse_thinking_desc;
+
   /// Toggle for haptic feedback
   ///
   /// In en, this message translates to:

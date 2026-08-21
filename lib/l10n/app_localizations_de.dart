@@ -706,6 +706,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Display system messages (e.g. from an imported backup) as visible bubbles in the conversation';
 
   @override
+  String get auto_collapse_thinking => 'Denkprozess automatisch einklappen';
+
+  @override
+  String get auto_collapse_thinking_desc =>
+      'Denkprozess nach Abschluss der Antwort automatisch einklappen, wenn eine Hauptantwort vorhanden ist';
+
+  @override
   String get haptic_feedback => 'Haptic Feedback';
 
   @override

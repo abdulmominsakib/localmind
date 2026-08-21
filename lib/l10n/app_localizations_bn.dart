@@ -712,6 +712,14 @@ class AppLocalizationsBn extends AppLocalizations {
       'কথোপকথনে দৃশ্যমান বুদবুদ হিসাবে সিস্টেম বার্তাগুলি (যেমন আমদানিকৃত ব্যাকআপ থেকে) প্রদর্শন করুন';
 
   @override
+  String get auto_collapse_thinking =>
+      'চিন্তাভাবনা স্বয়ংক্রিয়ভাবে সংকুচিত করুন';
+
+  @override
+  String get auto_collapse_thinking_desc =>
+      'মূল উত্তর উপস্থিত থাকলে প্রতিক্রিয়া তৈরি সম্পূর্ণ হওয়ার পরে যুক্তির প্রক্রিয়া স্বয়ংক্রিয়ভাবে সংকুচিত করুন';
+
+  @override
   String get haptic_feedback => 'হ্যাপটিক ফিডব্যাক';
 
   @override

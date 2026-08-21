@@ -712,6 +712,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'Отображать системные сообщения (например, из импортированной резервной копии) в виде облачков сообщений в чате';
 
   @override
+  String get auto_collapse_thinking => 'Автосворачивание рассуждений';
+
+  @override
+  String get auto_collapse_thinking_desc =>
+      'Автоматически сворачивать блок рассуждений после завершения генерации, если присутствует основной ответ';
+
+  @override
   String get haptic_feedback => 'Тактильная обратная связь';
 
   @override

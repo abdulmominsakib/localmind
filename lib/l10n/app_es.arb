@@ -200,6 +200,8 @@
   "show_system_messages_desc": "Cuando no se seleccione ningún personaje, enviar un prompt de sistema de asistente predeterminado con cada solicitud",
   "show_system_messages_in_chat": "Mostrar mensajes del sistema en el chat",
   "show_system_messages_in_chat_desc": "Mostrar mensajes de sistema (por ejemplo, de una copia de seguridad importada) como burbujas visibles en la conversación",
+  "auto_collapse_thinking": "Plegar pensamiento automáticamente",
+  "auto_collapse_thinking_desc": "Plegar automáticamente el proceso de razonamiento tras completar la respuesta cuando hay una respuesta principal",
   "haptic_feedback": "Comentarios hápticos",
   "enable_mcp": "Habilitar MCP",
   "new_chat_mcp_default": "Nuevo chat MCP predeterminado",
