@@ -303,6 +303,7 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
     db.serverBox.put(entity);
     invalidateAvailableModelsCache(updatedServer.id);
 
+    if (!ref.mounted) return;
     state = AsyncData(await _loadAll());
   }
 
@@ -321,6 +322,11 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
     }
 
     final isConnected = await apiService.testConnection(server);
+    if (!ref.mounted) {
+      return isConnected
+          ? ConnectionStatus.connected
+          : ConnectionStatus.disconnected;
+    }
     final status = isConnected
         ? ConnectionStatus.connected
         : ConnectionStatus.disconnected;
@@ -332,13 +338,15 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
   Future<void> testAllConnections(dynamic apiService) async {
     final servers = state.value ?? [];
     for (final server in servers) {
+      if (!ref.mounted) return;
       await testConnection(server.id, apiService);
     }
   }
 }
 
-
 class ConnectionStatusNotifier extends Notifier<ConnectionStatus> {
+  int _checkGeneration = 0;
+
   @override
   ConnectionStatus build() {
     final activeServer = ref.watch(activeServerProvider);
@@ -352,34 +360,49 @@ class ConnectionStatusNotifier extends Notifier<ConnectionStatus> {
       return ConnectionStatus.connected;
     }
 
-    _checkConnection(activeServer, apiService);
+    final generation = ++_checkGeneration;
+    Future.microtask(
+      () => _checkConnection(activeServer, apiService, generation),
+    );
     return ConnectionStatus.checking;
   }
 
-  Future<void> _checkConnection(Server server, dynamic apiService) async {
+  Future<void> _checkConnection(
+    Server server,
+    dynamic apiService,
+    int generation,
+  ) async {
     try {
       final isConnected = await apiService.testConnection(server);
+      if (!ref.mounted || generation != _checkGeneration) return;
       final status = isConnected
           ? ConnectionStatus.connected
           : ConnectionStatus.disconnected;
       state = status;
-      ref
-          .read(serversProvider.notifier)
-          .updateServerStatus(server.id, status);
+      if (ref.mounted) {
+        ref
+            .read(serversProvider.notifier)
+            .updateServerStatus(server.id, status);
+      }
     } catch (e) {
+      if (!ref.mounted || generation != _checkGeneration) return;
       state = ConnectionStatus.error;
-      ref
-          .read(serversProvider.notifier)
-          .updateServerStatus(server.id, ConnectionStatus.disconnected);
+      if (ref.mounted) {
+        ref
+            .read(serversProvider.notifier)
+            .updateServerStatus(server.id, ConnectionStatus.disconnected);
+      }
     }
   }
 
   Future<void> refresh() async {
+    if (!ref.mounted) return;
     final activeServer = ref.read(activeServerProvider);
     final apiService = ref.read(serverApiServiceProvider);
     if (activeServer != null) {
       state = ConnectionStatus.checking;
-      await _checkConnection(activeServer, apiService);
+      final generation = ++_checkGeneration;
+      await _checkConnection(activeServer, apiService, generation);
     }
   }
 }

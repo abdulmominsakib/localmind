@@ -924,7 +924,7 @@ class ChatNotifier extends Notifier<ChatState> {
         bool streamHadError = false;
 
         void updateUiState() {
-          if (!stateNeedsUpdate) return;
+          if (!stateNeedsUpdate || !ref.mounted) return;
           stateNeedsUpdate = false;
 
           final streamConvId = assistantMessage.conversationId;
@@ -951,7 +951,9 @@ class ChatNotifier extends Notifier<ChatState> {
             )
             .listen(
               (response) async {
-                if (streamGeneration != _streamGeneration) return;
+                if (streamGeneration != _streamGeneration || !ref.mounted) {
+                  return;
+                }
                 final streamConvId = assistantMessage.conversationId;
                 final isCurrentContext = _currentConversationId == streamConvId;
 
@@ -1070,14 +1072,18 @@ class ChatNotifier extends Notifier<ChatState> {
                   if (!_isInMemoryChat) {
                     await _saveService?.flush();
                   }
-                  ref.read(chatBackgroundServiceProvider).stop();
+                  if (ref.mounted) {
+                    ref.read(chatBackgroundServiceProvider).stop();
+                  }
                   return;
                 }
 
                 if (!_isInMemoryChat) {
                   await _saveService?.flush();
                 }
-                ref.read(chatBackgroundServiceProvider).stop();
+                if (ref.mounted) {
+                  ref.read(chatBackgroundServiceProvider).stop();
+                }
                 final streamConvId = assistantMessage.conversationId;
                 final isCurrentContext = _activeConversationId == streamConvId;
                 final streamingMessage = streamingAssistantMessage;
@@ -1094,14 +1100,16 @@ class ChatNotifier extends Notifier<ChatState> {
                     isProcessing: false,
                   );
                   await _saveMessage(errorMessage);
-                  if (isCurrentContext) {
+                  if (ref.mounted && isCurrentContext) {
                     _replaceMessageInState(errorMessage, clearStreaming: true);
                     state = state.copyWith(
                       isStreaming: false,
                       errorMessage: errorMessage.errorMessage,
                     );
                   }
-                  ref.read(isStreamingProvider.notifier).setStreaming(false);
+                  if (ref.mounted) {
+                    ref.read(isStreamingProvider.notifier).setStreaming(false);
+                  }
                   _latestStreamingMessage = null;
                 } else {
                   var finalMessage = _finalizeStreamMessage(
@@ -1156,7 +1164,7 @@ class ChatNotifier extends Notifier<ChatState> {
                         }
                       }
 
-                      if (clientExecuted.isNotEmpty) {
+                      if (clientExecuted.isNotEmpty && ref.mounted) {
                         final registry = ref.read(toolRegistryProvider);
                         final adapter = createAdapterForServerType(server.type);
 
@@ -1180,14 +1188,20 @@ class ChatNotifier extends Notifier<ChatState> {
                               completer: completer,
                             );
                             _pendingToolApproval = approval;
-                            state = state.copyWith(
-                              pendingToolApproval: approval,
-                            );
+                            if (ref.mounted) {
+                              state = state.copyWith(
+                                pendingToolApproval: approval,
+                              );
+                            }
 
                             final result = await completer.future;
 
                             _pendingToolApproval = null;
-                            state = state.copyWith(clearPendingApproval: true);
+                            if (ref.mounted) {
+                              state = state.copyWith(
+                                clearPendingApproval: true,
+                              );
+                            }
 
                             return result;
                           },
@@ -1215,12 +1229,14 @@ class ChatNotifier extends Notifier<ChatState> {
                   }
 
                   await _saveMessage(finalMessage);
-                  if (isCurrentContext) {
+                  if (ref.mounted && isCurrentContext) {
                     _replaceMessageInState(finalMessage, clearStreaming: true);
                     state = state.copyWith(isStreaming: false);
                     _maybeAutoGenerateTitleAfterFirstReply();
                   }
-                  ref.read(isStreamingProvider.notifier).setStreaming(false);
+                  if (ref.mounted) {
+                    ref.read(isStreamingProvider.notifier).setStreaming(false);
+                  }
                   _latestStreamingMessage = null;
 
                   await _syncConversationStatsAfterGeneration(
@@ -1229,11 +1245,13 @@ class ChatNotifier extends Notifier<ChatState> {
                     isCurrentContext: isCurrentContext,
                   );
 
-                  _maybeRequestReviewAfterSuccessfulCompletion(
-                    finalMessage: finalMessage,
-                    server: server,
-                    selectedModel: selectedModel,
-                  );
+                  if (ref.mounted) {
+                    _maybeRequestReviewAfterSuccessfulCompletion(
+                      finalMessage: finalMessage,
+                      server: server,
+                      selectedModel: selectedModel,
+                    );
+                  }
 
                   _chunkCount = 0;
                   _lastCheckpointTime = null;
@@ -1242,19 +1260,24 @@ class ChatNotifier extends Notifier<ChatState> {
 
                   // Auto-speak: read the response aloud if the setting
                   // is enabled and voice mode is not already handling TTS.
-                  final autoSpeak = ref.read(settingsProvider).autoSpeakEnabled;
-                  final voiceActive =
-                      ref.read(voiceModeProvider).phase != VoiceModePhase.idle;
-                  if (autoSpeak &&
-                      !voiceActive &&
-                      finalMessage.content.trim().isNotEmpty) {
-                    ref
-                        .read(ttsProvider.notifier)
-                        .speak(
-                          finalMessage.content,
-                          messageId: finalMessage.id,
-                          conversationId: finalMessage.conversationId,
-                        );
+                  if (ref.mounted) {
+                    final autoSpeak = ref
+                        .read(settingsProvider)
+                        .autoSpeakEnabled;
+                    final voiceActive =
+                        ref.read(voiceModeProvider).phase !=
+                        VoiceModePhase.idle;
+                    if (autoSpeak &&
+                        !voiceActive &&
+                        finalMessage.content.trim().isNotEmpty) {
+                      ref
+                          .read(ttsProvider.notifier)
+                          .speak(
+                            finalMessage.content,
+                            messageId: finalMessage.id,
+                            conversationId: finalMessage.conversationId,
+                          );
+                    }
                   }
                 }
               },
@@ -1275,10 +1298,12 @@ class ChatNotifier extends Notifier<ChatState> {
                 if (errorMessage != null) {
                   await _saveMessage(errorMessage);
 
-                  ref.read(chatBackgroundServiceProvider).stop();
+                  if (ref.mounted) {
+                    ref.read(chatBackgroundServiceProvider).stop();
+                  }
 
                   final streamConvId = assistantMessage.conversationId;
-                  if (_currentConversationId == streamConvId) {
+                  if (ref.mounted && _currentConversationId == streamConvId) {
                     _replaceMessageInState(errorMessage, clearStreaming: true);
                     state = state.copyWith(
                       isStreaming: false,
@@ -1286,7 +1311,9 @@ class ChatNotifier extends Notifier<ChatState> {
                     );
                   }
                 }
-                ref.read(isStreamingProvider.notifier).setStreaming(false);
+                if (ref.mounted) {
+                  ref.read(isStreamingProvider.notifier).setStreaming(false);
+                }
                 _latestStreamingMessage = null;
               },
             );
@@ -1300,6 +1327,8 @@ class ChatNotifier extends Notifier<ChatState> {
         isProcessing: false,
       );
       await _saveMessage(errorMsg);
+
+      if (!ref.mounted) return;
 
       state = state.copyWith(
         isStreaming: false,
@@ -1389,6 +1418,8 @@ class ChatNotifier extends Notifier<ChatState> {
     );
 
     await _saveMessage(message);
+
+    if (!ref.mounted) return;
 
     if (!_isInMemoryChat && _currentConversationId != null) {
       final preview = trimmedContent.isNotEmpty
@@ -2184,8 +2215,10 @@ class ChatNotifier extends Notifier<ChatState> {
                 );
                 _maybeAutoGenerateTitleAfterFirstReply();
               }
-              ref.read(isStreamingProvider.notifier).setStreaming(false);
-              ref.read(chatBackgroundServiceProvider).stop();
+              if (ref.mounted) {
+                ref.read(isStreamingProvider.notifier).setStreaming(false);
+                ref.read(chatBackgroundServiceProvider).stop();
+              }
               await _syncConversationStatsAfterGeneration(
                 streamConvId,
                 finalMessage,
@@ -2200,19 +2233,21 @@ class ChatNotifier extends Notifier<ChatState> {
 
               // Auto-speak: read the response aloud if the setting is
               // enabled and voice mode is not already handling TTS.
-              final autoSpeak = ref.read(settingsProvider).autoSpeakEnabled;
-              final voiceActive =
-                  ref.read(voiceModeProvider).phase != VoiceModePhase.idle;
-              if (autoSpeak &&
-                  !voiceActive &&
-                  finalMessage.content.trim().isNotEmpty) {
-                ref
-                    .read(ttsProvider.notifier)
-                    .speak(
-                      finalMessage.content,
-                      messageId: finalMessage.id,
-                      conversationId: finalMessage.conversationId,
-                    );
+              if (ref.mounted) {
+                final autoSpeak = ref.read(settingsProvider).autoSpeakEnabled;
+                final voiceActive =
+                    ref.read(voiceModeProvider).phase != VoiceModePhase.idle;
+                if (autoSpeak &&
+                    !voiceActive &&
+                    finalMessage.content.trim().isNotEmpty) {
+                  ref
+                      .read(ttsProvider.notifier)
+                      .speak(
+                        finalMessage.content,
+                        messageId: finalMessage.id,
+                        conversationId: finalMessage.conversationId,
+                      );
+                }
               }
             },
             onError: (Object error, StackTrace stackTrace) async {
@@ -2236,8 +2271,10 @@ class ChatNotifier extends Notifier<ChatState> {
                   errorMessage: error.toString(),
                 );
               }
-              ref.read(isStreamingProvider.notifier).setStreaming(false);
-              ref.read(chatBackgroundServiceProvider).stop();
+              if (ref.mounted) {
+                ref.read(isStreamingProvider.notifier).setStreaming(false);
+                ref.read(chatBackgroundServiceProvider).stop();
+              }
             },
           );
     } catch (e) {
@@ -2530,7 +2567,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> _saveMessage(Message message) async {
-    if (_isInMemoryChat) return;
+    if (_isInMemoryChat || !ref.mounted) return;
     final db = ref.read(databaseProvider);
     await db.store.runInTransactionAsync(
       TxMode.write,
@@ -2570,6 +2607,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
   Future<void> clearConversation() async {
     await _saveService?.flush();
+    if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
     if (_currentConversationId != null && !_isInMemoryChat) {
       final query = db.messageBox

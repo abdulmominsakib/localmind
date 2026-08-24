@@ -16,9 +16,11 @@ final savedMessageFolderFilterProvider =
 enum SavedMessageListFilter { all, tempChats, user, assistant, archived }
 
 final savedMessageListFilterProvider =
-    NotifierProvider<SavedMessageListFilterNotifier, SavedMessageListFilter>(() {
-      return SavedMessageListFilterNotifier();
-    });
+    NotifierProvider<SavedMessageListFilterNotifier, SavedMessageListFilter>(
+      () {
+        return SavedMessageListFilterNotifier();
+      },
+    );
 
 class SavedMessageListFilterNotifier extends Notifier<SavedMessageListFilter> {
   @override
@@ -70,9 +72,10 @@ class SavedMessageSelectedIdsNotifier extends Notifier<Set<String>> {
 }
 
 final savedMessageFoldersProvider =
-    AsyncNotifierProvider<SavedMessageFoldersNotifier, List<SavedMessageFolder>>(
-      () => SavedMessageFoldersNotifier(),
-    );
+    AsyncNotifierProvider<
+      SavedMessageFoldersNotifier,
+      List<SavedMessageFolder>
+    >(() => SavedMessageFoldersNotifier());
 
 class SavedMessageFoldersNotifier
     extends AsyncNotifier<List<SavedMessageFolder>> {
@@ -112,6 +115,7 @@ class SavedMessageFoldersNotifier
         createdAt: folder.createdAt,
       ),
     );
+    if (!ref.mounted) return folder;
     state = AsyncData(await _loadAll());
     return folder;
   }
@@ -126,6 +130,7 @@ class SavedMessageFoldersNotifier
     if (entity == null) return;
     entity.name = name;
     db.savedMessageFolderBox.put(entity);
+    if (!ref.mounted) return;
     state = AsyncData(await _loadAll());
   }
 
@@ -146,6 +151,7 @@ class SavedMessageFoldersNotifier
     }
     msgQuery.close();
 
+    if (!ref.mounted) return;
     ref.invalidate(savedMessagesProvider);
     state = AsyncData(await _loadAll());
   }
@@ -247,9 +253,7 @@ class SavedMessagesNotifier extends AsyncNotifier<List<SavedMessage>> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       sourceMessageId: message.id,
       conversationId: isTemporaryChat ? '' : message.conversationId,
-      conversationTitle: isTemporaryChat
-          ? ''
-          : (conversation?.title ?? 'Chat'),
+      conversationTitle: isTemporaryChat ? '' : (conversation?.title ?? 'Chat'),
       roleIndex: message.role.index,
       content: message.content,
       modelId: message.modelId,
@@ -326,49 +330,49 @@ class SavedMessagesNotifier extends AsyncNotifier<List<SavedMessage>> {
   }
 }
 
-final filteredSavedMessagesProvider =
-    Provider<AsyncValue<List<SavedMessage>>>((ref) {
-      final messagesAsync = ref.watch(savedMessagesProvider);
-      final folderFilter = ref.watch(savedMessageFolderFilterProvider);
-      final listFilter = ref.watch(savedMessageListFilterProvider);
+final filteredSavedMessagesProvider = Provider<AsyncValue<List<SavedMessage>>>((
+  ref,
+) {
+  final messagesAsync = ref.watch(savedMessagesProvider);
+  final folderFilter = ref.watch(savedMessageFolderFilterProvider);
+  final listFilter = ref.watch(savedMessageListFilterProvider);
 
-      return messagesAsync.whenData((messages) {
-        var filtered = messages;
+  return messagesAsync.whenData((messages) {
+    var filtered = messages;
 
-        switch (listFilter) {
-          case SavedMessageListFilter.archived:
-            filtered = filtered.where((m) => m.isArchived).toList();
-          case SavedMessageListFilter.tempChats:
-            filtered = filtered
-                .where((m) => !m.isArchived && m.conversationId.isEmpty)
-                .toList();
-          case SavedMessageListFilter.user:
-            filtered = filtered
-                .where(
-                  (m) => !m.isArchived && m.roleIndex == MessageRole.user.index,
-                )
-                .toList();
-          case SavedMessageListFilter.assistant:
-            filtered = filtered
-                .where(
-                  (m) =>
-                      !m.isArchived &&
-                      m.roleIndex == MessageRole.assistant.index,
-                )
-                .toList();
-          case SavedMessageListFilter.all:
-            filtered = filtered.where((m) => !m.isArchived).toList();
-        }
+    switch (listFilter) {
+      case SavedMessageListFilter.archived:
+        filtered = filtered.where((m) => m.isArchived).toList();
+      case SavedMessageListFilter.tempChats:
+        filtered = filtered
+            .where((m) => !m.isArchived && m.conversationId.isEmpty)
+            .toList();
+      case SavedMessageListFilter.user:
+        filtered = filtered
+            .where(
+              (m) => !m.isArchived && m.roleIndex == MessageRole.user.index,
+            )
+            .toList();
+      case SavedMessageListFilter.assistant:
+        filtered = filtered
+            .where(
+              (m) =>
+                  !m.isArchived && m.roleIndex == MessageRole.assistant.index,
+            )
+            .toList();
+      case SavedMessageListFilter.all:
+        filtered = filtered.where((m) => !m.isArchived).toList();
+    }
 
-        if (folderFilter == null) return filtered;
-        if (folderFilter.isEmpty) {
-          return filtered
-              .where((m) => m.folderId == null || m.folderId!.isEmpty)
-              .toList();
-        }
-        return filtered.where((m) => m.folderId == folderFilter).toList();
-      });
-    });
+    if (folderFilter == null) return filtered;
+    if (folderFilter.isEmpty) {
+      return filtered
+          .where((m) => m.folderId == null || m.folderId!.isEmpty)
+          .toList();
+    }
+    return filtered.where((m) => m.folderId == folderFilter).toList();
+  });
+});
 
 final isMessageSavedProvider = FutureProvider.family<bool, String>((
   ref,

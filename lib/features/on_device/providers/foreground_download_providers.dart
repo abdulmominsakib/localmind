@@ -101,7 +101,7 @@ class ForegroundDownloadNotifier
         model,
         token: (hfToken != null && hfToken.isNotEmpty) ? hfToken : null,
         onProgress: (progress) {
-          if (_activeDownloads[modelId] != true) return;
+          if (!ref.mounted || _activeDownloads[modelId] != true) return;
 
           final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
           final elapsed = DateTime.now().difference(startTime).inSeconds;
@@ -131,31 +131,33 @@ class ForegroundDownloadNotifier
 
       // Download completed
       if (_activeDownloads[modelId] == true) {
-        state = {
-          ...state,
-          modelId: DownloadProgressInfo(
-            modelId: modelId,
-            status: DownloadStatus.complete,
-            progress: 1.0,
-            receivedBytes: model.fileSizeBytes,
-            totalBytes: model.fileSizeBytes,
-          ),
-        };
-        _saveState();
+        if (ref.mounted) {
+          state = {
+            ...state,
+            modelId: DownloadProgressInfo(
+              modelId: modelId,
+              status: DownloadStatus.complete,
+              progress: 1.0,
+              receivedBytes: model.fileSizeBytes,
+              totalBytes: model.fileSizeBytes,
+            ),
+          };
+          _saveState();
 
-        ref.invalidate(downloadedModelsProvider);
-        try {
-          await ref
-              .read(reviewPromptServiceProvider)
-              .markModelDownloadCompleted(modelId);
-        } catch (e) {
-          Log.error('Failed to record model download review signal: $e');
+          ref.invalidate(downloadedModelsProvider);
+          try {
+            await ref
+                .read(reviewPromptServiceProvider)
+                .markModelDownloadCompleted(modelId);
+          } catch (e) {
+            Log.error('Failed to record model download review signal: $e');
+          }
+          _removeCompletedDownload(modelId);
         }
-        _removeCompletedDownload(modelId);
       }
     } catch (e) {
       Log.error('Download failed for $modelId: $e');
-      if (_activeDownloads[modelId] == true) {
+      if (_activeDownloads[modelId] == true && ref.mounted) {
         state = {
           ...state,
           modelId: DownloadProgressInfo(
@@ -176,12 +178,11 @@ class ForegroundDownloadNotifier
 
   void _removeCompletedDownload(String modelId) {
     Future.delayed(const Duration(seconds: 1), () {
-      if (state.containsKey(modelId)) {
-        final current = Map<String, DownloadProgressInfo>.from(state);
-        current.remove(modelId);
-        state = current;
-        _saveState();
-      }
+      if (!ref.mounted || !state.containsKey(modelId)) return;
+      final current = Map<String, DownloadProgressInfo>.from(state);
+      current.remove(modelId);
+      state = current;
+      _saveState();
     });
   }
 

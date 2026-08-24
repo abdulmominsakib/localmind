@@ -121,16 +121,19 @@ class CloudSyncController extends Notifier<CloudSyncStatus> {
         masterKey: masterKey,
         salt: salt,
       );
+      if (!ref.mounted) return;
       state = state.copyWith(
         phase: CloudSyncPhase.ready,
         message: 'Cloud sync enabled.',
       );
       await syncNow(rethrowErrors: true);
     } catch (error) {
-      state = state.copyWith(
-        phase: CloudSyncPhase.error,
-        message: error.toString(),
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          phase: CloudSyncPhase.error,
+          message: error.toString(),
+        );
+      }
       rethrow;
     }
   }
@@ -234,6 +237,12 @@ class CloudSyncController extends Notifier<CloudSyncStatus> {
       credentials: credentials,
     );
     final journal = await _local.loadJournal();
+    if (!ref.mounted) {
+      throw const CloudSyncFailure(
+        CloudSyncFailureKind.cancelled,
+        'Cloud sync was cancelled.',
+      );
+    }
     final payload = DataBackupService().exportCloudSync(
       ref.read(databaseProvider).store,
       ref.read(settingsProvider).toJson(),
@@ -521,6 +530,12 @@ class CloudSyncController extends Notifier<CloudSyncStatus> {
   ) async {
     final payload = Map<String, dynamic>.from(snapshot.payload);
     await _materializeAttachments(payload, repository, masterKey);
+    if (!ref.mounted) {
+      throw const CloudSyncFailure(
+        CloudSyncFailureKind.cancelled,
+        'Cloud sync was cancelled.',
+      );
+    }
     _ensureActive(generation);
     AppSettings? importedSettings;
     final remoteSettings = payload['settings'];

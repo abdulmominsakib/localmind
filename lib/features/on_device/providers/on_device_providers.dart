@@ -135,7 +135,9 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
   Future<OnDeviceModel> importModel(String sourcePath) async {
     final metadata = await _repository.importFromPath(sourcePath);
     final model = metadata.toOnDeviceModel();
-    state = [...state, model];
+    if (ref.mounted) {
+      state = [...state, model];
+    }
     return model;
   }
 
@@ -152,12 +154,15 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
       cancelToken: cancelToken,
     );
     final model = metadata.toOnDeviceModel();
-    state = [...state, model];
+    if (ref.mounted) {
+      state = [...state, model];
+    }
     return model;
   }
 
   Future<void> deleteModel(String modelId) async {
     await _repository.delete(modelId);
+    if (!ref.mounted) return;
     state = state.where((model) => model.id != modelId).toList();
   }
 
@@ -168,6 +173,7 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     final hadModel = state.any((m) => m.id == modelId);
     if (!hadModel) return;
     await _repository.delete(modelId);
+    if (!ref.mounted) return;
     state = state.where((model) => model.id != modelId).toList();
   }
 
@@ -356,15 +362,21 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
   }
 
   Future<void> unloadModel() async {
-    try {
-      await _gemmaService.unloadModel();
-    } catch (e) {
-      Log.error('Failed to unload gemma model: $e');
+    final gemma = ref.mounted ? _gemmaService : null;
+    final llama = ref.mounted ? _llamaService : null;
+    if (gemma != null) {
+      try {
+        await gemma.unloadModel();
+      } catch (e) {
+        Log.error('Failed to unload gemma model: $e');
+      }
     }
-    try {
-      await _llamaService.unloadModel();
-    } catch (e) {
-      Log.error('Failed to unload llama.cpp model: $e');
+    if (llama != null) {
+      try {
+        await llama.unloadModel();
+      } catch (e) {
+        Log.error('Failed to unload llama.cpp model: $e');
+      }
     }
     if (ref.mounted) {
       state = const OnDeviceEngineState();

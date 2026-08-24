@@ -93,8 +93,7 @@ class _OnboardingServerSetupScreenState
   }
 
   Server _buildServer() {
-    final requiresCloudConfig =
-        widget.selectedType == ServerType.ollamaCloud;
+    final requiresCloudConfig = widget.selectedType == ServerType.ollamaCloud;
     final host = requiresCloudConfig
         ? AppConstants.ollamaCloudBaseUrl
         : _hostController.text.trim();
@@ -217,7 +216,9 @@ class _OnboardingServerSetupScreenState
     try {
       final server = _buildServer();
       await ref.read(serversProvider.notifier).addServer(server);
+      if (!mounted) return;
       await ref.read(serversProvider.notifier).setDefault(server.id);
+      if (!mounted) return;
       invalidateAvailableModelsCache(server.id);
       ref.read(activeServerIdProvider.notifier).setActiveServer(server);
 
@@ -266,10 +267,7 @@ class _OnboardingServerSetupScreenState
               ),
               children: [
                 Actor(
-                  acts: [
-                    .fadeIn(),
-                    .slideY(from: 0.08),
-                  ],
+                  acts: [.fadeIn(), .slideY(from: 0.08)],
                   child: Text(
                     l10n.setup_connection_desc(widget.selectedType.name),
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -279,10 +277,7 @@ class _OnboardingServerSetupScreenState
                 ),
                 Actor(
                   delay: 60.ms,
-                  acts: [
-                    .fadeIn(),
-                    .slideY(from: 0.08),
-                  ],
+                  acts: [.fadeIn(), .slideY(from: 0.08)],
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -357,10 +352,14 @@ class _OnboardingServerSetupScreenState
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.08,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.2,
+                              ),
                             ),
                           ),
                           child: Row(
@@ -378,7 +377,8 @@ class _OnboardingServerSetupScreenState
                                       ? l10n.ollama_cloud_disclosure
                                       : l10n.openrouter_disclosure,
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.8),
                                     height: 1.4,
                                   ),
                                 ),
@@ -392,10 +392,7 @@ class _OnboardingServerSetupScreenState
                 ),
                 Actor(
                   delay: 120.ms,
-                  acts: [
-                    .fadeIn(),
-                    .slideY(from: 0.08),
-                  ],
+                  acts: [.fadeIn(), .slideY(from: 0.08)],
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -415,8 +412,10 @@ class _OnboardingServerSetupScreenState
                           ),
                           child: Row(
                             children: [
-                              HugeIcon(icon: 
-                                _testSuccess ? HugeIcons.strokeRoundedCheckmarkCircle01 : HugeIcons.strokeRoundedAlertCircle,
+                              HugeIcon(
+                                icon: _testSuccess
+                                    ? HugeIcons.strokeRoundedCheckmarkCircle01
+                                    : HugeIcons.strokeRoundedAlertCircle,
                                 color: _testSuccess ? Colors.green : Colors.red,
                               ),
                               const SizedBox(width: 8),
@@ -424,7 +423,9 @@ class _OnboardingServerSetupScreenState
                                 child: Text(
                                   _testResult!,
                                   style: TextStyle(
-                                    color: _testSuccess ? Colors.green : Colors.red,
+                                    color: _testSuccess
+                                        ? Colors.green
+                                        : Colors.red,
                                   ),
                                 ),
                               ),
@@ -438,7 +439,9 @@ class _OnboardingServerSetupScreenState
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : Text(l10n.test_connection),
                       ),
