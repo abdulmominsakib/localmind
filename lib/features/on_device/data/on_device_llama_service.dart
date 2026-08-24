@@ -194,7 +194,10 @@ class OnDeviceLlamaService {
           }
           final content = delta.content;
           if (content != null && content.isNotEmpty) {
-            yield ChatResponse(type: ChatResponseType.message, content: content);
+            yield ChatResponse(
+              type: ChatResponseType.message,
+              content: content,
+            );
           }
         }
         _userMessageCount = userMessages.length;

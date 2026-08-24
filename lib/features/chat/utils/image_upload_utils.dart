@@ -20,12 +20,26 @@ class ImageUploadUtils {
   static const maxBase64Chars = 1000000;
 
   static const Map<ImageCompressionLevel, _CompressionConfig> _configs = {
-    ImageCompressionLevel.low:
-        _CompressionConfig(1500000, [1920, 1536, 1280, 1024]),
-    ImageCompressionLevel.medium:
-        _CompressionConfig(750000, [1536, 1280, 1024, 768, 512]),
-    ImageCompressionLevel.high:
-        _CompressionConfig(400000, [1024, 768, 512, 384, 256]),
+    ImageCompressionLevel.low: _CompressionConfig(1500000, [
+      1920,
+      1536,
+      1280,
+      1024,
+    ]),
+    ImageCompressionLevel.medium: _CompressionConfig(750000, [
+      1536,
+      1280,
+      1024,
+      768,
+      512,
+    ]),
+    ImageCompressionLevel.high: _CompressionConfig(400000, [
+      1024,
+      768,
+      512,
+      384,
+      256,
+    ]),
   };
 
   static Future<Uint8List> prepareImageBytes(
@@ -79,10 +93,16 @@ class ImageUploadUtils {
     int targetWidth, targetHeight;
     if (origWidth >= origHeight) {
       targetWidth = maxDimension;
-      targetHeight = (origHeight * maxDimension / origWidth).round().clamp(1, maxDimension);
+      targetHeight = (origHeight * maxDimension / origWidth).round().clamp(
+        1,
+        maxDimension,
+      );
     } else {
       targetHeight = maxDimension;
-      targetWidth = (origWidth * maxDimension / origHeight).round().clamp(1, maxDimension);
+      targetWidth = (origWidth * maxDimension / origHeight).round().clamp(
+        1,
+        maxDimension,
+      );
     }
     final codec = await ui.instantiateImageCodec(
       bytes,

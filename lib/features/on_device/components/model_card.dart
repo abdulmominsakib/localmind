@@ -188,8 +188,8 @@ class _MemoryWarningBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const HugeIcon(icon: 
-            HugeIcons.strokeRoundedAlertCircle,
+          const HugeIcon(
+            icon: HugeIcons.strokeRoundedAlertCircle,
             color: Colors.orange,
             size: 14,
           ),
@@ -479,8 +479,12 @@ class _DownloadedActions extends ConsumerWidget {
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
               minHeight: 3,
-              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
-              valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
+              backgroundColor: theme.colorScheme.primary.withValues(
+                alpha: 0.15,
+              ),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                theme.colorScheme.primary,
+              ),
             ),
           ),
         ],

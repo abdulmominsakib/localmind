@@ -46,7 +46,9 @@ class UserBubble extends StatelessWidget {
         children: [
           Container(
             constraints: BoxConstraints(
-              maxWidth: maxBubbleWidth < availableWidth ? maxBubbleWidth : availableWidth,
+              maxWidth: maxBubbleWidth < availableWidth
+                  ? maxBubbleWidth
+                  : availableWidth,
             ),
             margin: const EdgeInsetsDirectional.only(
               start: 48,
@@ -56,7 +58,9 @@ class UserBubble extends StatelessWidget {
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurfaceCard : AppColors.lightSurface,
+              color: isDark
+                  ? AppColors.darkSurfaceCard
+                  : AppColors.lightSurface,
               borderRadius: BorderRadiusDirectional.only(
                 topStart: Radius.circular(18),
                 topEnd: Radius.circular(18),
@@ -81,7 +85,9 @@ class UserBubble extends StatelessWidget {
                     content: message.content,
                     isDark: isDark,
                     style: TextStyle(
-                      color: isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText,
+                      color: isDark
+                          ? AppColors.darkPrimaryText
+                          : AppColors.lightPrimaryText,
                       fontSize: 16,
                       height: 1.6,
                     ),
@@ -108,12 +114,18 @@ class UserBubble extends StatelessWidget {
                   _formatTime(message.createdAt),
                   style: TextStyle(
                     fontSize: 11,
-                    color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                    color: isDark
+                        ? AppColors.darkMutedText
+                        : AppColors.lightMutedText,
                   ),
                 ),
                 if (message.status == MessageStatus.error) ...[
                   const SizedBox(width: 4),
-                  HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, size: 14, color: Colors.red[200]),
+                  HugeIcon(
+                    icon: HugeIcons.strokeRoundedInformationCircle,
+                    size: 14,
+                    color: Colors.red[200],
+                  ),
                 ],
                 const SizedBox(width: 8),
                 MessageActionBar(

@@ -49,7 +49,7 @@ class ServerEntity {
     this.isDefault = false,
     required this.createdAt,
     required this.lastConnectedAt,
-    required     this.statusIndex,
+    required this.statusIndex,
     this.iconName,
     this.pathPrefix,
     this.availableRamGb,
@@ -314,7 +314,6 @@ class ConversationEntity {
       totalTokenCount: totalTokenCount,
     );
   }
-
 }
 
 @Entity()
@@ -557,7 +556,11 @@ class MessageEntity {
                 final decoded = jsonDecode(toolCallsJson!);
                 if (decoded is List) {
                   return decoded
-                      .map((e) => ToolCallData.fromMap(Map<String, dynamic>.from(e as Map)))
+                      .map(
+                        (e) => ToolCallData.fromMap(
+                          Map<String, dynamic>.from(e as Map),
+                        ),
+                      )
                       .toList();
                 }
                 return null;
@@ -575,7 +578,11 @@ class MessageEntity {
                 final decoded = jsonDecode(toolEventsJson!);
                 if (decoded is List) {
                   return decoded
-                      .map((e) => ToolEvent.fromMap(Map<String, dynamic>.from(e as Map)))
+                      .map(
+                        (e) => ToolEvent.fromMap(
+                          Map<String, dynamic>.from(e as Map),
+                        ),
+                      )
                       .toList();
                 }
                 return null;

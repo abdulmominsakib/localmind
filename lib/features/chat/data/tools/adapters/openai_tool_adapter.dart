@@ -15,14 +15,18 @@ class OpenAiToolAdapter implements ToolTransportAdapter {
   @override
   Map<String, dynamic> buildToolDefinitionPayload(List<ToolDefinition> tools) {
     return {
-      'tools': tools.map((t) => {
-        'type': 'function',
-        'function': {
-          'name': t.name,
-          'description': t.description,
-          'parameters': t.inputSchema,
-        },
-      }).toList(),
+      'tools': tools
+          .map(
+            (t) => {
+              'type': 'function',
+              'function': {
+                'name': t.name,
+                'description': t.description,
+                'parameters': t.inputSchema,
+              },
+            },
+          )
+          .toList(),
     };
   }
 
@@ -76,10 +80,6 @@ class OpenAiToolAdapter implements ToolTransportAdapter {
     required ParsedToolCall call,
     required String output,
   }) {
-    return {
-      'role': 'tool',
-      'tool_call_id': call.id,
-      'content': output,
-    };
+    return {'role': 'tool', 'tool_call_id': call.id, 'content': output};
   }
 }

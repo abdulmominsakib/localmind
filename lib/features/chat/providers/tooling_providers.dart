@@ -7,9 +7,7 @@ import '../data/mcp_server_manager.dart';
 
 final mcpServerManagerProvider = Provider<McpServerManager>((ref) {
   final packageInfo = ref.watch(packageInfoProvider);
-  return McpServerManager(
-    appVersion: packageInfo.value?.version ?? '1.0.0',
-  );
+  return McpServerManager(appVersion: packageInfo.value?.version ?? '1.0.0');
 });
 
 final builtInToolProviderProvider = Provider<BuiltInToolProvider>((ref) {

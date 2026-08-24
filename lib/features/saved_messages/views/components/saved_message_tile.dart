@@ -36,8 +36,9 @@ class SavedMessageTile extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final isFromTempChat = saved.conversationId.isEmpty;
-    final mutedColor =
-        isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+    final mutedColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.lightMutedText;
 
     return Dismissible(
       key: Key(saved.id),
@@ -46,8 +47,10 @@ class SavedMessageTile extends StatelessWidget {
         alignment: AlignmentDirectional.centerStart,
         padding: const EdgeInsetsDirectional.only(start: 16),
         color: Colors.blue,
-        child: HugeIcon(icon: 
-          saved.isArchived ? HugeIcons.strokeRoundedArchive : HugeIcons.strokeRoundedArchive,
+        child: HugeIcon(
+          icon: saved.isArchived
+              ? HugeIcons.strokeRoundedArchive
+              : HugeIcons.strokeRoundedArchive,
           color: Colors.white,
         ),
       ),
@@ -55,7 +58,10 @@ class SavedMessageTile extends StatelessWidget {
         alignment: AlignmentDirectional.centerEnd,
         padding: const EdgeInsetsDirectional.only(end: 16),
         color: Colors.red,
-        child: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, color: Colors.white),
+        child: const HugeIcon(
+          icon: HugeIcons.strokeRoundedDelete01,
+          color: Colors.white,
+        ),
       ),
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
@@ -66,86 +72,86 @@ class SavedMessageTile extends StatelessWidget {
         return false;
       },
       child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: () => _showContextMenu(context, l10n, isDark),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (selectionMode)
-                Checkbox(value: isSelected, onChanged: (_) => onTap())
-              else
-                HugeIcon(icon: 
-                  isUser
-                      ? HugeIcons.strokeRoundedUser
-                      : HugeIcons.strokeRoundedSparkles,
-                  size: 20,
-                  color: mutedColor,
-                ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (isFromTempChat)
-                      Text(
-                        l10n.temporary_chat,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontStyle: FontStyle.italic,
-                          color: mutedColor,
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: () => _showContextMenu(context, l10n, isDark),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (selectionMode)
+                  Checkbox(value: isSelected, onChanged: (_) => onTap())
+                else
+                  HugeIcon(
+                    icon: isUser
+                        ? HugeIcons.strokeRoundedUser
+                        : HugeIcons.strokeRoundedSparkles,
+                    size: 20,
+                    color: mutedColor,
+                  ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isFromTempChat)
+                        Text(
+                          l10n.temporary_chat,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontStyle: FontStyle.italic,
+                            color: mutedColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      else if (saved.conversationTitle.isNotEmpty)
+                        Text(
+                          saved.conversationTitle,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.darkPrimaryText
+                                : AppColors.lightPrimaryText,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
-                    else if (saved.conversationTitle.isNotEmpty)
+                      if (isFromTempChat || saved.conversationTitle.isNotEmpty)
+                        const SizedBox(height: 2),
                       Text(
-                        saved.conversationTitle,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? AppColors.darkPrimaryText
-                              : AppColors.lightPrimaryText,
-                        ),
-                        maxLines: 1,
+                        saved.content,
+                        style: TextStyle(fontSize: 13, color: mutedColor),
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    if (isFromTempChat || saved.conversationTitle.isNotEmpty)
-                      const SizedBox(height: 2),
-                    Text(
-                      saved.content,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: mutedColor,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                onPressed: () => _showContextMenu(context, l10n, isDark),
-                icon: HugeIcon(
-                  icon: HugeIcons.strokeRoundedMoreVertical,
-                  size: 18,
-                  color: mutedColor,
+                const SizedBox(width: 4),
+                IconButton(
+                  onPressed: () => _showContextMenu(context, l10n, isDark),
+                  icon: HugeIcon(
+                    icon: HugeIcons.strokeRoundedMoreVertical,
+                    size: 18,
+                    color: mutedColor,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  tooltip: l10n.options_tooltip,
                 ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                visualDensity: VisualDensity.compact,
-                tooltip: l10n.options_tooltip,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -164,7 +170,9 @@ class SavedMessageTile extends StatelessWidget {
             children: [
               if (onEnterSelectionMode != null)
                 ListTile(
-                  leading: const HugeIcon(icon: HugeIcons.strokeRoundedCheckList),
+                  leading: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedCheckList,
+                  ),
                   title: Text(l10n.select),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -188,8 +196,8 @@ class SavedMessageTile extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: HugeIcon(icon: 
-                  saved.isArchived
+                leading: HugeIcon(
+                  icon: saved.isArchived
                       ? HugeIcons.strokeRoundedArchive
                       : HugeIcons.strokeRoundedArchive,
                 ),
@@ -202,7 +210,10 @@ class SavedMessageTile extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, color: Colors.red),
+                leading: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedDelete01,
+                  color: Colors.red,
+                ),
                 title: Text(
                   l10n.delete,
                   style: const TextStyle(color: Colors.red),

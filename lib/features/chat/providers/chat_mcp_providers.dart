@@ -11,10 +11,7 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
   @override
   ChatMcpConfig build() {
     final savedIntegrations = ref.read(settingsProvider).savedMcpIntegrations;
-    return ChatMcpConfig(
-      enabled: false,
-      integrations: savedIntegrations,
-    );
+    return ChatMcpConfig(enabled: false, integrations: savedIntegrations);
   }
 
   void setConfig(ChatMcpConfig config) {
@@ -23,11 +20,13 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
     manager.clear();
     for (final integration in config.integrations) {
       if (integration.serverLabel != null && integration.serverUrl != null) {
-        manager.addServer(
-          integration.serverLabel!,
-          integration.serverUrl!,
-          headers: integration.headers,
-        ).catchError((_) {});
+        manager
+            .addServer(
+              integration.serverLabel!,
+              integration.serverUrl!,
+              headers: integration.headers,
+            )
+            .catchError((_) {});
       }
     }
   }
@@ -55,11 +54,14 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
           : state.activeMcpServers,
     );
     if (integration.serverLabel != null && integration.serverUrl != null) {
-      ref.read(mcpServerManagerProvider).addServer(
-        integration.serverLabel!,
-        integration.serverUrl!,
-        headers: integration.headers,
-      ).catchError((_) {});
+      ref
+          .read(mcpServerManagerProvider)
+          .addServer(
+            integration.serverLabel!,
+            integration.serverUrl!,
+            headers: integration.headers,
+          )
+          .catchError((_) {});
     }
     ref.read(settingsProvider.notifier).addSavedMcpIntegration(integration);
   }
@@ -117,9 +119,13 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
       ref.read(mcpServerManagerProvider).removeServer(integration.serverLabel!);
     }
     final saved = ref.read(settingsProvider).savedMcpIntegrations;
-    final savedIdx = saved.indexWhere((i) =>
-        (integration.pluginId != null && i.pluginId == integration.pluginId) ||
-        (integration.serverUrl != null && i.serverUrl == integration.serverUrl));
+    final savedIdx = saved.indexWhere(
+      (i) =>
+          (integration.pluginId != null &&
+              i.pluginId == integration.pluginId) ||
+          (integration.serverUrl != null &&
+              i.serverUrl == integration.serverUrl),
+    );
     if (savedIdx != -1) {
       ref.read(settingsProvider.notifier).removeSavedMcpIntegration(savedIdx);
     }
@@ -133,11 +139,17 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
     state = state.copyWith(integrations: newIntegrations);
 
     final saved = ref.read(settingsProvider).savedMcpIntegrations;
-    final savedIdx = saved.indexWhere((i) =>
-        (integration.pluginId != null && i.pluginId == integration.pluginId) ||
-        (integration.serverUrl != null && i.serverUrl == integration.serverUrl));
+    final savedIdx = saved.indexWhere(
+      (i) =>
+          (integration.pluginId != null &&
+              i.pluginId == integration.pluginId) ||
+          (integration.serverUrl != null &&
+              i.serverUrl == integration.serverUrl),
+    );
     if (savedIdx != -1) {
-      ref.read(settingsProvider.notifier).toggleSavedMcpIntegration(savedIdx, enabled);
+      ref
+          .read(settingsProvider.notifier)
+          .toggleSavedMcpIntegration(savedIdx, enabled);
     }
   }
 
@@ -188,7 +200,8 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
     if (decoded is Map<String, dynamic>) {
       if (decoded.containsKey('mcpServers') && decoded['mcpServers'] is Map) {
         processMcpServers(decoded['mcpServers'] as Map<String, dynamic>);
-      } else if (decoded.containsKey('integrations') && decoded['integrations'] is List) {
+      } else if (decoded.containsKey('integrations') &&
+          decoded['integrations'] is List) {
         final list = decoded['integrations'] as List;
         for (final item in list) {
           if (item is String) {
@@ -244,7 +257,6 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
 
     return addedCount;
   }
-
 
   void toggleEnabled() {
     state = state.copyWith(enabled: !state.enabled);

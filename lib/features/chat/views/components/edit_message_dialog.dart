@@ -43,10 +43,8 @@ class EditMessageDialog extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => EditMessageDialog(
-        initialContent: initialContent,
-        showSaveOnly: true,
-      ),
+      builder: (context) =>
+          EditMessageDialog(initialContent: initialContent, showSaveOnly: true),
     );
   }
 
@@ -89,9 +87,9 @@ class _EditMessageDialogState extends State<EditMessageDialog> {
     final text = _validatedText();
     if (text == null) return;
     if (widget.showSaveOnly) {
-      Navigator.of(context).pop(
-        EditMessageResult(content: text, regenerate: regenerate),
-      );
+      Navigator.of(
+        context,
+      ).pop(EditMessageResult(content: text, regenerate: regenerate));
     } else {
       Navigator.of(context).pop(text);
     }

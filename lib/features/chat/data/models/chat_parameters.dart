@@ -10,6 +10,7 @@ class ChatParameters {
   final int? topK;
   final double? minP;
   final double? repeatPenalty;
+
   /// Null when the active model doesn't support reasoning (no reasoning
   /// control fields should be sent); otherwise reflects the Think toggle.
   final bool? reasoningEnabled;

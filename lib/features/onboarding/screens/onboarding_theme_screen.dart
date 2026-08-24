@@ -39,15 +39,15 @@ class _OnboardingThemeScreenState extends ConsumerState<OnboardingThemeScreen> {
         child: Cue.onMount(
           motion: .smooth(),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 16.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Actor(
-                  acts: [
-                    .fadeIn(),
-                    .slideY(from: 0.08),
-                  ],
+                  acts: [.fadeIn(), .slideY(from: 0.08)],
                   child: Text(
                     l10n.choose_theme_desc,
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -60,10 +60,7 @@ class _OnboardingThemeScreenState extends ConsumerState<OnboardingThemeScreen> {
                 Expanded(
                   child: Actor(
                     delay: 60.ms,
-                    acts: [
-                      .fadeIn(),
-                      .slideY(from: 0.08),
-                    ],
+                    acts: [.fadeIn(), .slideY(from: 0.08)],
                     child: ListView(
                       children: [
                         _buildThemeCard(
@@ -129,10 +126,7 @@ class _OnboardingThemeScreenState extends ConsumerState<OnboardingThemeScreen> {
                 const SizedBox(height: 24),
                 Actor(
                   delay: 120.ms,
-                  acts: [
-                    .fadeIn(),
-                    .slideY(from: 0.08),
-                  ],
+                  acts: [.fadeIn(), .slideY(from: 0.08)],
                   child: ShadButton(
                     width: double.infinity,
                     onPressed: () async {
@@ -142,7 +136,10 @@ class _OnboardingThemeScreenState extends ConsumerState<OnboardingThemeScreen> {
                     },
                     child: Text(
                       l10n.finish_setup,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -213,7 +210,10 @@ class _OnboardingThemeScreenState extends ConsumerState<OnboardingThemeScreen> {
               ),
             ),
             if (isSelected)
-              HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01, color: theme.colorScheme.primary),
+              HugeIcon(
+                icon: HugeIcons.strokeRoundedCheckmarkCircle01,
+                color: theme.colorScheme.primary,
+              ),
           ],
         ),
       ),

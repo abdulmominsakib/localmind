@@ -10,7 +10,9 @@ Uri? parseServerAddressInput(String input) {
   final trimmed = input.trim();
   if (trimmed.isEmpty) return null;
 
-  final candidate = _hasExplicitHttpScheme(trimmed) ? trimmed : 'http://$trimmed';
+  final candidate = _hasExplicitHttpScheme(trimmed)
+      ? trimmed
+      : 'http://$trimmed';
   final uri = Uri.tryParse(candidate);
   if (uri == null || uri.host.isEmpty) return null;
   if (uri.scheme != 'http' && uri.scheme != 'https') return null;
@@ -130,8 +132,10 @@ class Server {
   final ConnectionStatus status;
   final String? iconName;
   final String? pathPrefix;
+
   /// Optional system RAM in GB for model compatibility hints in the browser.
   final int? availableRamGb;
+
   /// Optional GPU VRAM in GB for model compatibility hints in the browser.
   final int? availableVramGb;
 
@@ -302,10 +306,12 @@ class Server {
       status: status ?? this.status,
       iconName: iconName ?? this.iconName,
       pathPrefix: clearPathPrefix ? null : (pathPrefix ?? this.pathPrefix),
-      availableRamGb:
-          clearAvailableRamGb ? null : (availableRamGb ?? this.availableRamGb),
-      availableVramGb:
-          clearAvailableVramGb ? null : (availableVramGb ?? this.availableVramGb),
+      availableRamGb: clearAvailableRamGb
+          ? null
+          : (availableRamGb ?? this.availableRamGb),
+      availableVramGb: clearAvailableVramGb
+          ? null
+          : (availableVramGb ?? this.availableVramGb),
     );
   }
 }

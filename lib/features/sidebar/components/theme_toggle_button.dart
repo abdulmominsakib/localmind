@@ -15,7 +15,8 @@ class ThemeToggleButton extends ConsumerWidget {
     return ShadIconButton.ghost(
       onPressed: () {
         // Cycle through: System -> Light -> Dark -> Claude -> System
-        final nextMode = AppThemeType.values[(themeMode.index + 1) % AppThemeType.values.length];
+        final nextMode = AppThemeType
+            .values[(themeMode.index + 1) % AppThemeType.values.length];
         ref.read(themeModeProvider.notifier).setThemeMode(nextMode);
       },
       icon: AnimatedSwitcher(
@@ -23,14 +24,11 @@ class ThemeToggleButton extends ConsumerWidget {
         transitionBuilder: (child, animation) {
           return RotationTransition(
             turns: animation,
-            child: FadeTransition(
-              opacity: animation,
-              child: child,
-            ),
+            child: FadeTransition(opacity: animation, child: child),
           );
         },
-        child: HugeIcon(icon: 
-          _getIconForMode(themeMode),
+        child: HugeIcon(
+          icon: _getIconForMode(themeMode),
           key: ValueKey(themeMode),
           size: 20,
         ),

@@ -400,43 +400,42 @@ class TtsNotifier extends Notifier<TtsState> {
 
   void _startSystemProgressTimer(int speakGeneration) {
     _stopSystemProgressTimer();
-    _systemProgressTimer = Timer.periodic(
-      const Duration(milliseconds: 80),
-      (timer) {
-        if (_isStopping ||
-            speakGeneration != _systemSpeakGeneration ||
-            !state.isSpeaking ||
-            state.activeEngine != EngineId.system) {
-          timer.cancel();
-          if (identical(_systemProgressTimer, timer)) {
-            _systemProgressTimer = null;
-          }
-          return;
+    _systemProgressTimer = Timer.periodic(const Duration(milliseconds: 80), (
+      timer,
+    ) {
+      if (_isStopping ||
+          speakGeneration != _systemSpeakGeneration ||
+          !state.isSpeaking ||
+          state.activeEngine != EngineId.system) {
+        timer.cancel();
+        if (identical(_systemProgressTimer, timer)) {
+          _systemProgressTimer = null;
         }
+        return;
+      }
 
-        final duration = _systemEstimatedDuration();
-        final position = _systemEstimatedPosition();
-        final text = _systemFullText ?? '';
-        int? estimatedCharOffset;
-        if (!_systemHasNativeProgress && text.isNotEmpty) {
-          final durationMicros = duration.inMicroseconds;
-          final progress = durationMicros <= 0
-              ? 0.0
-              : position.inMicroseconds / durationMicros;
-          estimatedCharOffset = (progress * text.length).floor().clamp(
-            0,
-            text.length - 1,
-          );
-        }
-
-        state = state.copyWith(
-          position: position,
-          duration: duration,
-          spokenCharOffset: estimatedCharOffset,
-          playingContent: state.playingContent,
+      final duration = _systemEstimatedDuration();
+      final position = _systemEstimatedPosition();
+      final text = _systemFullText ?? '';
+      int? estimatedCharOffset;
+      if (!_systemHasNativeProgress && text.isNotEmpty) {
+        final durationMicros = duration.inMicroseconds;
+        final progress = durationMicros <= 0
+            ? 0.0
+            : position.inMicroseconds / durationMicros;
+        estimatedCharOffset = (progress * text.length).floor().clamp(
+          0,
+          text.length - 1,
         );
-      },
-    );
+      }
+
+      state = state.copyWith(
+        position: position,
+        duration: duration,
+        spokenCharOffset: estimatedCharOffset,
+        playingContent: state.playingContent,
+      );
+    });
   }
 
   void _resetSystemSeekState() {
@@ -881,9 +880,7 @@ class TtsNotifier extends Notifier<TtsState> {
         id: 'tts_chunk_${_currentSessionId}_$chunkIndex',
         album: _isPreview ? 'Voice Preview' : 'LocalMind TTS',
         title: _chunks[chunkIndex],
-        artist: _currentEngine == EngineId.kitten
-            ? 'Kitten TTS'
-            : 'Piper TTS',
+        artist: _currentEngine == EngineId.kitten ? 'Kitten TTS' : 'Piper TTS',
       ),
     );
 

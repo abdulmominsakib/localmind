@@ -141,8 +141,8 @@ class ServerTypeSelector extends StatelessWidget {
                         PositionedDirectional(
                           top: 6,
                           end: 6,
-                          child: HugeIcon(icon: 
-                            HugeIcons.strokeRoundedCheckmarkCircle01,
+                          child: HugeIcon(
+                            icon: HugeIcons.strokeRoundedCheckmarkCircle01,
                             size: 17,
                             color: accentColor,
                           ),

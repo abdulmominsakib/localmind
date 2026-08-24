@@ -3,8 +3,8 @@ import '../data/models/message.dart';
 class MessageVariants {
   static String groupId(Message message) =>
       message.variantGroupId?.isNotEmpty == true
-          ? message.variantGroupId!
-          : message.id;
+      ? message.variantGroupId!
+      : message.id;
 
   static List<Message> resolveActiveTimeline(List<Message> allMessages) {
     if (allMessages.isEmpty) return [];
@@ -126,9 +126,7 @@ class MessageVariants {
     Message message,
   ) {
     final gid = groupId(message);
-    return allMessages
-        .where((m) => groupId(m) == gid)
-        .toList()
+    return allMessages.where((m) => groupId(m) == gid).toList()
       ..sort((a, b) => a.variantIndex.compareTo(b.variantIndex));
   }
 

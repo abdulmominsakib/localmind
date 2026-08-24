@@ -80,8 +80,8 @@ class _ConversationSearchBarState extends ConsumerState<ConversationSearchBar> {
           prefixIcon: Center(
             widthFactor: 1.0,
             heightFactor: 1.0,
-            child: HugeIcon(icon: 
-              HugeIcons.strokeRoundedSearch01,
+            child: HugeIcon(
+              icon: HugeIcons.strokeRoundedSearch01,
               size: 20,
               color: isDark ? const Color(0xFF666666) : const Color(0xFF999999),
             ),
@@ -90,24 +90,25 @@ class _ConversationSearchBarState extends ConsumerState<ConversationSearchBar> {
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                icon: HugeIcon(icon: 
-                  searchContents ? HugeIcons.strokeRoundedDocumentCode : HugeIcons.strokeRoundedDocumentCode,
+                icon: HugeIcon(
+                  icon: searchContents
+                      ? HugeIcons.strokeRoundedDocumentCode
+                      : HugeIcons.strokeRoundedDocumentCode,
                   size: 20,
                   color: searchContents
                       ? theme.colorScheme.primary
                       : (isDark
-                          ? const Color(0xFF666666)
-                          : const Color(0xFF999999)),
+                            ? const Color(0xFF666666)
+                            : const Color(0xFF999999)),
                 ),
                 tooltip: l10n.search_message_contents,
-                onPressed: () => ref
-                    .read(searchMessageContentsProvider.notifier)
-                    .toggle(),
+                onPressed: () =>
+                    ref.read(searchMessageContentsProvider.notifier).toggle(),
               ),
               if (_controller.text.isNotEmpty)
                 IconButton(
-                  icon: HugeIcon(icon: 
-                    HugeIcons.strokeRoundedCancel01,
+                  icon: HugeIcon(
+                    icon: HugeIcons.strokeRoundedCancel01,
                     size: 18,
                     color: isDark
                         ? const Color(0xFF666666)

@@ -56,8 +56,7 @@ class _SavedMessagePickerSheet extends ConsumerWidget {
                     },
                   );
                 },
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(child: Text(e.toString())),
               ),
             ),

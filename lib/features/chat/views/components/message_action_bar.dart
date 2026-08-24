@@ -125,7 +125,9 @@ class _MessageActionBarState extends ConsumerState<MessageActionBar> {
         if (widget.onSave != null) ...[
           const SizedBox(width: 4),
           _ActionButton(
-            icon: isSaved ? HugeIcons.strokeRoundedBookmark01 : HugeIcons.strokeRoundedBookmark01,
+            icon: isSaved
+                ? HugeIcons.strokeRoundedBookmark01
+                : HugeIcons.strokeRoundedBookmark01,
             label: isSaved ? l10n.message_already_saved : l10n.save_message,
             onTap: widget.onSave,
             isActive: isSaved,
@@ -149,7 +151,11 @@ class _MessageActionBarState extends ConsumerState<MessageActionBar> {
         ],
         if (widget.onEdit != null) ...[
           const SizedBox(width: 4),
-          _ActionButton(icon: HugeIcons.strokeRoundedPencilEdit02, label: l10n.edit, onTap: widget.onEdit),
+          _ActionButton(
+            icon: HugeIcons.strokeRoundedPencilEdit02,
+            label: l10n.edit,
+            onTap: widget.onEdit,
+          ),
         ],
         if (widget.onDelete != null) ...[
           const SizedBox(width: 4),
@@ -172,9 +178,11 @@ class _MessageActionBarState extends ConsumerState<MessageActionBar> {
         _ActionButton(
           icon: isThisActive
               ? (isThisPlaying
-                  ? HugeIcons.strokeRoundedPauseCircle
-                  : HugeIcons.strokeRoundedPlayCircle)
-              : (isThisInitializing ? HugeIcons.strokeRoundedClock01 : HugeIcons.strokeRoundedVolumeUp),
+                    ? HugeIcons.strokeRoundedPauseCircle
+                    : HugeIcons.strokeRoundedPlayCircle)
+              : (isThisInitializing
+                    ? HugeIcons.strokeRoundedClock01
+                    : HugeIcons.strokeRoundedVolumeUp),
           label: isThisActive
               ? (isThisPlaying ? l10n.pause : l10n.resume)
               : (isThisInitializing ? l10n.initializing : l10n.read_aloud),
@@ -306,8 +314,8 @@ class _MessageActionBarState extends ConsumerState<MessageActionBar> {
               _CompactOptionTile(
                 icon: isThisActive
                     ? (isThisPlaying
-                        ? HugeIcons.strokeRoundedPauseCircle
-                        : HugeIcons.strokeRoundedPlayCircle)
+                          ? HugeIcons.strokeRoundedPauseCircle
+                          : HugeIcons.strokeRoundedPlayCircle)
                     : HugeIcons.strokeRoundedVolumeUp,
                 label: isThisActive
                     ? (isThisPlaying ? sheetL10n.pause : sheetL10n.resume)
@@ -337,7 +345,9 @@ class _MessageActionBarState extends ConsumerState<MessageActionBar> {
                 ),
               if (widget.onSave != null)
                 _CompactOptionTile(
-                  icon: isSaved ? HugeIcons.strokeRoundedBookmark01 : HugeIcons.strokeRoundedBookmark01,
+                  icon: isSaved
+                      ? HugeIcons.strokeRoundedBookmark01
+                      : HugeIcons.strokeRoundedBookmark01,
                   label: isSaved
                       ? sheetL10n.message_already_saved
                       : sheetL10n.save_message,
@@ -353,12 +363,13 @@ class _MessageActionBarState extends ConsumerState<MessageActionBar> {
                   child: GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 3.2,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 4,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 3.2,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 4,
+                        ),
                     itemCount: stats.length,
                     itemBuilder: (context, index) {
                       final stat = stats[index];
@@ -485,8 +496,8 @@ class _ActionButtonState extends State<_ActionButton>
     final baseColor = widget.isActive
         ? theme.colorScheme.primary
         : widget.isDestructive
-            ? (isDark ? Colors.red[300] : Colors.red[600])
-            : (isDark ? AppColors.darkMutedText : AppColors.lightMutedText);
+        ? (isDark ? Colors.red[300] : Colors.red[600])
+        : (isDark ? AppColors.darkMutedText : AppColors.lightMutedText);
 
     final hoverColor = widget.isDestructive
         ? (isDark ? Colors.red[200] : Colors.red[500])
@@ -520,8 +531,8 @@ class _ActionButtonState extends State<_ActionButton>
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: HugeIcon(icon: 
-                widget.icon,
+              child: HugeIcon(
+                icon: widget.icon,
                 size: 16,
                 color: _isHovered ? hoverColor : baseColor,
               ),

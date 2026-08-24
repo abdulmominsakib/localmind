@@ -4,10 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
 class ConversationEmptyState extends StatelessWidget {
-  const ConversationEmptyState({
-    super.key,
-    required this.isSearching,
-  });
+  const ConversationEmptyState({super.key, required this.isSearching});
 
   final bool isSearching;
 

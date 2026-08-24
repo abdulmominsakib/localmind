@@ -4,8 +4,7 @@ import 'package:localmind/features/chat/data/chat_error_formatter.dart';
 
 void main() {
   group('ChatErrorFormatter', () {
-    test('decodes Ollama envelope with type tag and humanises context error',
-        () {
+    test('decodes Ollama envelope with type tag and humanises context error', () {
       final formatted = ChatErrorFormatter.formatBody(
         '{"error":{"code":400,"message":"request (4286 tokens) exceeds the available context size (4096 tokens), try increasing it","type":"exceed_context_size_error"}}',
         statusCode: 400,
@@ -16,14 +15,16 @@ void main() {
       expect(parsed.message, contains('context window'));
     });
 
-    test('decodes Ollama string error and humanises "does not support images"',
-        () {
-      final formatted = ChatErrorFormatter.formatBody(
-        '{"error":"this model does not support images"}',
-      );
-      final parsed = ChatApiError.tryParse(formatted)!;
-      expect(parsed.message, contains('vision model'));
-    });
+    test(
+      'decodes Ollama string error and humanises "does not support images"',
+      () {
+        final formatted = ChatErrorFormatter.formatBody(
+          '{"error":"this model does not support images"}',
+        );
+        final parsed = ChatApiError.tryParse(formatted)!;
+        expect(parsed.message, contains('vision model'));
+      },
+    );
 
     test('decodes OpenAI-style nested error and attaches status code', () {
       final formatted = ChatErrorFormatter.formatBody(

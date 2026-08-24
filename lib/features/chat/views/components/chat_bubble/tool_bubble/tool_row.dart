@@ -99,16 +99,20 @@ class _ToolRowWidgetState extends State<ToolRowWidget> {
                   if (call.status == ToolEventStatus.running)
                     _AnimatedRunningIcon(color: iconColor)
                   else
-                    HugeIcon(icon: 
-                      switch (call.status) {
+                    HugeIcon(
+                      icon: switch (call.status) {
                         ToolEventStatus.requested =>
                           HugeIcons.strokeRoundedClock01,
                         ToolEventStatus.approved =>
                           HugeIcons.strokeRoundedCheckmarkCircle01,
-                        ToolEventStatus.rejected => HugeIcons.strokeRoundedUnavailable,
-                        ToolEventStatus.running => HugeIcons.strokeRoundedRefresh,
-                        ToolEventStatus.completed => HugeIcons.strokeRoundedCheckmarkCircle01,
-                        ToolEventStatus.failed => HugeIcons.strokeRoundedAlertCircle,
+                        ToolEventStatus.rejected =>
+                          HugeIcons.strokeRoundedUnavailable,
+                        ToolEventStatus.running =>
+                          HugeIcons.strokeRoundedRefresh,
+                        ToolEventStatus.completed =>
+                          HugeIcons.strokeRoundedCheckmarkCircle01,
+                        ToolEventStatus.failed =>
+                          HugeIcons.strokeRoundedAlertCircle,
                       },
                       size: 14,
                       color: iconColor,
@@ -187,8 +191,8 @@ class _ToolRowWidgetState extends State<ToolRowWidget> {
                   ],
                   if (showCodeBlock) ...[
                     const SizedBox(width: 6),
-                    HugeIcon(icon: 
-                      _isExpanded
+                    HugeIcon(
+                      icon: _isExpanded
                           ? HugeIcons.strokeRoundedArrowUp01
                           : HugeIcons.strokeRoundedArrowDown01,
                       size: 16,
@@ -342,7 +346,11 @@ class _AnimatedRunningIconState extends State<_AnimatedRunningIcon>
   Widget build(BuildContext context) {
     return RotationTransition(
       turns: _controller,
-      child: HugeIcon(icon: HugeIcons.strokeRoundedRefresh, size: 14, color: widget.color),
+      child: HugeIcon(
+        icon: HugeIcons.strokeRoundedRefresh,
+        size: 14,
+        color: widget.color,
+      ),
     );
   }
 }

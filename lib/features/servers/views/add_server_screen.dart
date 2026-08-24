@@ -133,8 +133,10 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       if (!mounted) return;
       setState(() {
         _testResult = isConnected
-            ? AppLocalizations.of(context)?.connection_successful ?? 'Connection successful'
-            : AppLocalizations.of(context)?.connection_failed ?? 'Connection failed';
+            ? AppLocalizations.of(context)?.connection_successful ??
+                  'Connection successful'
+            : AppLocalizations.of(context)?.connection_failed ??
+                  'Connection failed';
       });
       if (isConnected) {
         invalidateAvailableModelsCache(testServer.id);
@@ -142,9 +144,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _testResult = AppLocalizations.of(
-          context,
-        )?.error_with_message(e.toString()) ?? 'Error: $e';
+        _testResult =
+            AppLocalizations.of(context)?.error_with_message(e.toString()) ??
+            'Error: $e';
       });
     } finally {
       if (mounted) {
@@ -236,7 +238,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
         if (l10n != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(_isEditing ? l10n.server_updated : l10n.server_added),
+              content: Text(
+                _isEditing ? l10n.server_updated : l10n.server_added,
+              ),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -438,8 +442,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                               ],
                             ),
                           ),
-                          HugeIcon(icon: 
-                            HugeIcons.strokeRoundedArrowRight01,
+                          HugeIcon(
+                            icon: HugeIcons.strokeRoundedArrowRight01,
                             size: 16,
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -559,10 +563,14 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.08,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                       ),
                       child: Row(
@@ -580,7 +588,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                                   ? l10n.ollama_cloud_disclosure
                                   : l10n.openrouter_disclosure,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.8,
+                                ),
                                 height: 1.4,
                               ),
                             ),
@@ -657,7 +667,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
               ),
               _buildInfoPill(
                 context,
-                icon: _requiresMandatoryApiKey ? HugeIcons.strokeRoundedKey01 : HugeIcons.strokeRoundedDatabase,
+                icon: _requiresMandatoryApiKey
+                    ? HugeIcons.strokeRoundedKey01
+                    : HugeIcons.strokeRoundedDatabase,
                 label: _requiresMandatoryApiKey
                     ? l10n.api_key_required
                     : l10n.host_label,
@@ -727,8 +739,10 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          HugeIcon(icon: 
-            success ? HugeIcons.strokeRoundedCheckmarkCircle01 : HugeIcons.strokeRoundedAlertCircle,
+          HugeIcon(
+            icon: success
+                ? HugeIcons.strokeRoundedCheckmarkCircle01
+                : HugeIcons.strokeRoundedAlertCircle,
             color: accent,
           ),
           const SizedBox(width: 10),

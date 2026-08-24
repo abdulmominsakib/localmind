@@ -35,51 +35,57 @@ class TtsModelManagerScreen extends ConsumerWidget {
             top: topPadding + 8,
             bottom: 16,
           ),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
-              border: Border(
-                bottom: BorderSide(
-                  color: isDark
-                      ? const Color(0xFF2A2A2A)
-                      : const Color(0xFFE5E5E5),
-                ),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
+            border: Border(
+              bottom: BorderSide(
+                color: isDark
+                    ? const Color(0xFF2A2A2A)
+                    : const Color(0xFFE5E5E5),
               ),
             ),
-            child: Row(
-              children: [
-                Builder(
-                  builder: (context) => IconButton(
-                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
-                    onPressed: () => Scaffold.of(context).openDrawer(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.tts_models_title,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                ),
-              ],
-            ),
           ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _SystemEngineCard(isSelected: settings.ttsEngine == EngineId.system),
-                const SizedBox(height: 16),
-                _KittenEngineCard(isSelected: settings.ttsEngine == EngineId.kitten),
-                const SizedBox(height: 16),
-                _PiperEngineCard(isSelected: settings.ttsEngine == EngineId.piper),
-                const SizedBox(height: 24),
-                const _TtsTestSection(),
-                const SizedBox(height: 24),
-              ],
-            ),
+          child: Row(
+            children: [
+              Builder(
+                builder: (context) => IconButton(
+                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                l10n.tts_models_title,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+            ],
           ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _SystemEngineCard(
+                isSelected: settings.ttsEngine == EngineId.system,
+              ),
+              const SizedBox(height: 16),
+              _KittenEngineCard(
+                isSelected: settings.ttsEngine == EngineId.kitten,
+              ),
+              const SizedBox(height: 16),
+              _PiperEngineCard(
+                isSelected: settings.ttsEngine == EngineId.piper,
+              ),
+              const SizedBox(height: 24),
+              const _TtsTestSection(),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -139,8 +145,8 @@ class _SystemVoicesList extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           ShadAlert(
-            icon: HugeIcon(icon: 
-              HugeIcons.strokeRoundedInformationCircle,
+            icon: HugeIcon(
+              icon: HugeIcons.strokeRoundedInformationCircle,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             description: Text(
@@ -205,7 +211,10 @@ class _KittenEngineCard extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const HugeIcon(icon: HugeIcons.strokeRoundedMusicNote01, size: 12),
+                  const HugeIcon(
+                    icon: HugeIcons.strokeRoundedMusicNote01,
+                    size: 12,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     l10n.tts_supports_background,
@@ -269,7 +278,11 @@ class _KittenEngineCard extends ConsumerWidget {
           const SizedBox(width: 8),
           ShadIconButton.ghost(
             padding: EdgeInsets.zero,
-            icon: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, color: Colors.red, size: 20),
+            icon: const HugeIcon(
+              icon: HugeIcons.strokeRoundedDelete01,
+              color: Colors.red,
+              size: 20,
+            ),
             onPressed: () => _confirmDelete(context, ref, model),
           ),
         ],
@@ -293,7 +306,10 @@ class _KittenEngineCard extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: Text(l10n.delete_model_title),
         content: Text(
-          l10n.delete_model_body_with_size(model.displayName, _formatSize(model.totalSizeBytes)),
+          l10n.delete_model_body_with_size(
+            model.displayName,
+            _formatSize(model.totalSizeBytes),
+          ),
         ),
         actions: [
           TextButton(
@@ -437,7 +453,10 @@ class _PiperEngineCard extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const HugeIcon(icon: HugeIcons.strokeRoundedMusicNote01, size: 12),
+                  const HugeIcon(
+                    icon: HugeIcons.strokeRoundedMusicNote01,
+                    size: 12,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     l10n.tts_supports_background,
@@ -531,7 +550,11 @@ class _PiperEngineCard extends ConsumerWidget {
           const SizedBox(width: 8),
           ShadIconButton.ghost(
             padding: EdgeInsets.zero,
-            icon: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, color: Colors.red, size: 20),
+            icon: const HugeIcon(
+              icon: HugeIcons.strokeRoundedDelete01,
+              color: Colors.red,
+              size: 20,
+            ),
             onPressed: () => _confirmDelete(context, ref, variant),
           ),
         ],
@@ -555,7 +578,10 @@ class _PiperEngineCard extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: Text(l10n.delete_voice_title),
         content: Text(
-          l10n.delete_voice_body(variant.displayName, _formatSize(variant.totalSizeBytes)),
+          l10n.delete_voice_body(
+            variant.displayName,
+            _formatSize(variant.totalSizeBytes),
+          ),
         ),
         actions: [
           TextButton(
@@ -689,7 +715,11 @@ class _PiperVariantChip extends StatelessWidget {
             ),
             if (installed) ...[
               const SizedBox(width: 6),
-              const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01, size: 14, color: Colors.green),
+              const HugeIcon(
+                icon: HugeIcons.strokeRoundedCheckmarkCircle01,
+                size: 14,
+                color: Colors.green,
+              ),
             ],
           ],
         ),
@@ -751,8 +781,8 @@ class _EngineCard extends StatelessWidget {
                   color: accentColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: HugeIcon(icon: 
-                  HugeIcons.strokeRoundedVoice,
+                child: HugeIcon(
+                  icon: HugeIcons.strokeRoundedVoice,
                   size: 18,
                   color: accentColor,
                 ),
@@ -793,7 +823,11 @@ class _EngineCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    l10n.engine_spec(meta.sizeMb.toString(), meta.ramMb.toString(), meta.voiceCount),
+                    l10n.engine_spec(
+                      meta.sizeMb.toString(),
+                      meta.ramMb.toString(),
+                      meta.voiceCount,
+                    ),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                       fontSize: 10,
@@ -890,7 +924,13 @@ class _VoiceChipsState extends ConsumerState<_VoiceChips> {
                     .map(
                       (v) => Padding(
                         padding: const EdgeInsetsDirectional.only(end: 8),
-                        child: _voiceChip(context, v, theme, accent, selectedVoiceId),
+                        child: _voiceChip(
+                          context,
+                          v,
+                          theme,
+                          accent,
+                          selectedVoiceId,
+                        ),
                       ),
                     )
                     .toList(),
@@ -913,7 +953,13 @@ class _VoiceChipsState extends ConsumerState<_VoiceChips> {
                     .map(
                       (v) => Padding(
                         padding: const EdgeInsetsDirectional.only(end: 8),
-                        child: _voiceChip(context, v, theme, accent, selectedVoiceId),
+                        child: _voiceChip(
+                          context,
+                          v,
+                          theme,
+                          accent,
+                          selectedVoiceId,
+                        ),
                       ),
                     )
                     .toList(),
@@ -972,8 +1018,8 @@ class _VoiceChipsState extends ConsumerState<_VoiceChips> {
                 child: Row(
                   children: [
                     if (isSelected) ...[
-                      const HugeIcon(icon: 
-                        HugeIcons.strokeRoundedCheckmarkCircle01,
+                      const HugeIcon(
+                        icon: HugeIcons.strokeRoundedCheckmarkCircle01,
                         size: 16,
                         color: Colors.green,
                       ),
@@ -1015,8 +1061,10 @@ class _VoiceChipsState extends ConsumerState<_VoiceChips> {
                   horizontal: 10,
                   vertical: 8,
                 ),
-                child: HugeIcon(icon: 
-                  isPlaying ? HugeIcons.strokeRoundedStop : HugeIcons.strokeRoundedPlay,
+                child: HugeIcon(
+                  icon: isPlaying
+                      ? HugeIcons.strokeRoundedStop
+                      : HugeIcons.strokeRoundedPlay,
                   size: 16,
                   color: isPlaying
                       ? accent
@@ -1047,9 +1095,9 @@ class _VoiceChipsState extends ConsumerState<_VoiceChips> {
     } catch (e) {
       if (mounted) {
         setState(() => _playingVoice = null);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.preview_failed(e.toString()))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.preview_failed(e.toString()))),
+        );
       }
     }
   }
@@ -1106,7 +1154,9 @@ class _TtsTestSectionState extends ConsumerState<_TtsTestSection> {
           decoration: InputDecoration(
             hintText: l10n.test_tts_hint,
             filled: true,
-            fillColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5),
+            fillColor: isDark
+                ? const Color(0xFF1A1A1A)
+                : const Color(0xFFF5F5F5),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
         ),

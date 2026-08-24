@@ -18,7 +18,8 @@ class NotificationPermissionService {
   Future<bool> isPermissionGranted() async {
     final androidImplementation = _notifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (androidImplementation != null) {
       return await androidImplementation.areNotificationsEnabled() ?? false;
     }
@@ -28,16 +29,18 @@ class NotificationPermissionService {
   Future<bool> requestPermission() async {
     final androidImplementation = _notifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (androidImplementation != null) {
-      final granted =
-          await androidImplementation.requestNotificationsPermission();
+      final granted = await androidImplementation
+          .requestNotificationsPermission();
       return granted ?? false;
     }
 
     final iosImplementation = _notifications
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>();
+          IOSFlutterLocalNotificationsPlugin
+        >();
     if (iosImplementation != null) {
       final granted = await iosImplementation.requestPermissions(
         alert: true,

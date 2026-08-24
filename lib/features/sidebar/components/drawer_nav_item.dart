@@ -34,9 +34,7 @@ class DrawerNavItem extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected
-                ? accent.withAlpha(30)
-                : Colors.transparent,
+            color: isSelected ? accent.withAlpha(30) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -46,7 +44,9 @@ class DrawerNavItem extends StatelessWidget {
                 size: 20,
                 color: isSelected
                     ? accent
-                    : (isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText),
+                    : (isDark
+                          ? AppColors.darkPrimaryText
+                          : AppColors.lightPrimaryText),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -57,7 +57,9 @@ class DrawerNavItem extends StatelessWidget {
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     color: isSelected
                         ? accent
-                        : (isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText),
+                        : (isDark
+                              ? AppColors.darkPrimaryText
+                              : AppColors.lightPrimaryText),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -65,7 +67,10 @@ class DrawerNavItem extends StatelessWidget {
               if (badgeText != null && badgeText!.isNotEmpty) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: accent.withAlpha(45),
                     borderRadius: BorderRadius.circular(999),
@@ -83,10 +88,7 @@ class DrawerNavItem extends StatelessWidget {
                   ),
                 ),
               ],
-              if (trailing != null) ...[
-                const SizedBox(width: 8),
-                trailing!,
-              ],
+              if (trailing != null) ...[const SizedBox(width: 8), trailing!],
             ],
           ),
         ),

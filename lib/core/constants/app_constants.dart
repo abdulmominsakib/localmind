@@ -1,7 +1,8 @@
 class AppConstants {
   static const String appName = 'LocalMind';
   static const String appTagline = 'Your AI. Your Device. Your Rules.';
-  static const String version = '1.0.0'; // Fallback; prefer PackageInfo.version at runtime
+  static const String version =
+      '1.0.0'; // Fallback; prefer PackageInfo.version at runtime
 
   static const double defaultTemperature = 0.7;
   static const double defaultTopP = 0.9;

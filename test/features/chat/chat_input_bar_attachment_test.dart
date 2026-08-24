@@ -15,22 +15,23 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('ChatInputBar handles explorer_not_found error safely',
-      (tester) async {
+  testWidgets('ChatInputBar handles explorer_not_found error safely', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('miguelruivo.flutter.plugins.filepicker'),
-      (MethodCall methodCall) async {
-        throw PlatformException(
-          code: 'explorer_not_found',
-          message:
-              "Can't find a valid activity to handle the request. Make sure you have a file explorer installed.",
+          const MethodChannel('miguelruivo.flutter.plugins.filepicker'),
+          (MethodCall methodCall) async {
+            throw PlatformException(
+              code: 'explorer_not_found',
+              message:
+                  "Can't find a valid activity to handle the request. Make sure you have a file explorer installed.",
+            );
+          },
         );
-      },
-    );
 
     await tester.pumpWidget(
       ProviderScope(

@@ -159,29 +159,30 @@ class ThinkingModeChip extends ConsumerWidget {
           notifier.setEnabled(true);
           notifier.setEffort(effort);
         },
-        itemBuilder: (context) => effortsForModel(model?.supportedReasoningEfforts)
-            .map(
-              (effort) => PopupMenuItem(
-                value: effort,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    HugeIcon(
-                      icon: effort == config.effort
-                          ? HugeIcons.strokeRoundedTick01
-                          : HugeIcons.strokeRoundedSquare01,
-                      size: 16,
-                      color: effort == config.effort
-                          ? accent
-                          : Colors.transparent,
+        itemBuilder: (context) =>
+            effortsForModel(model?.supportedReasoningEfforts)
+                .map(
+                  (effort) => PopupMenuItem(
+                    value: effort,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        HugeIcon(
+                          icon: effort == config.effort
+                              ? HugeIcons.strokeRoundedTick01
+                              : HugeIcons.strokeRoundedSquare01,
+                          size: 16,
+                          color: effort == config.effort
+                              ? accent
+                              : Colors.transparent,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(_effortShortLabel(l10n, effort)),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(_effortShortLabel(l10n, effort)),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
+                  ),
+                )
+                .toList(),
         child: Padding(
           padding: EdgeInsetsDirectional.fromSTEB(
             0,

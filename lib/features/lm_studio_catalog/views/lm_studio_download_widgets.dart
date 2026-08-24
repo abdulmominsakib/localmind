@@ -45,8 +45,9 @@ class LmDownloadIndicatorButton extends ConsumerWidget {
                 value: activeCount > 0 ? progress : null,
                 strokeWidth: compact ? 2 : 2.5,
                 color: theme.colorScheme.primary,
-                backgroundColor:
-                    isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                backgroundColor: isDark
+                    ? AppColors.darkBorder
+                    : AppColors.lightBorder,
               ),
             ),
             Text(
@@ -189,7 +190,9 @@ class _DownloadJobTile extends ConsumerWidget {
         job.displayName,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,8 +214,9 @@ class _DownloadJobTile extends ConsumerWidget {
                 value: job.progressFraction,
                 minHeight: 6,
                 color: theme.colorScheme.primary,
-                backgroundColor:
-                    isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                backgroundColor: isDark
+                    ? AppColors.darkBorder
+                    : AppColors.lightBorder,
               ),
             ),
             const SizedBox(height: 4),
@@ -230,7 +234,10 @@ class _DownloadJobTile extends ConsumerWidget {
       trailing: job.status.isActive
           ? null
           : IconButton(
-              icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, size: 18),
+              icon: const HugeIcon(
+                icon: HugeIcons.strokeRoundedCancel01,
+                size: 18,
+              ),
               onPressed: () => ref
                   .read(lmDownloadManagerProvider.notifier)
                   .removeJob(job.jobId),

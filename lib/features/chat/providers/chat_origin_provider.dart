@@ -4,8 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// handler can return there instead of always starting a new chat.
 enum ChatOrigin { none, history, savedMessages }
 
-final chatOriginProvider =
-    NotifierProvider<ChatOriginNotifier, ChatOrigin>(ChatOriginNotifier.new);
+final chatOriginProvider = NotifierProvider<ChatOriginNotifier, ChatOrigin>(
+  ChatOriginNotifier.new,
+);
 
 class ChatOriginNotifier extends Notifier<ChatOrigin> {
   @override

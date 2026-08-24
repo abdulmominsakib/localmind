@@ -41,43 +41,44 @@ void main() {
   });
 
   group('chatServiceProvider', () {
-    test('only recreates when loadedRuntime changes, not on every status change',
-        () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          activeServerProvider.overrideWith(_StubActiveServerNotifier.new),
-          onDeviceGemmaServiceProvider.overrideWithValue(
-            _FakeOnDeviceGemmaService(),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+    test(
+      'only recreates when loadedRuntime changes, not on every status change',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            activeServerProvider.overrideWith(_StubActiveServerNotifier.new),
+            onDeviceGemmaServiceProvider.overrideWithValue(
+              _FakeOnDeviceGemmaService(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final initialService = container.read(chatServiceProvider);
-      expect(initialService, isA<OnDeviceChatService>());
+        final initialService = container.read(chatServiceProvider);
+        expect(initialService, isA<OnDeviceChatService>());
 
-      // Toggle status without changing runtime — the service instance must be
-      // preserved so we don't drop an in-flight chat.
-      container.read(onDeviceEngineProvider.notifier).state =
-          const OnDeviceEngineState(
-        status: OnDeviceEngineStatus.loading,
-      );
-      final stillSameService = container.read(chatServiceProvider);
-      expect(identical(initialService, stillSameService), isTrue);
+        // Toggle status without changing runtime — the service instance must be
+        // preserved so we don't drop an in-flight chat.
+        container.read(onDeviceEngineProvider.notifier).state =
+            const OnDeviceEngineState(status: OnDeviceEngineStatus.loading);
+        final stillSameService = container.read(chatServiceProvider);
+        expect(identical(initialService, stillSameService), isTrue);
 
-      // Switching the runtime rebuilds the service so it can pick up the
-      // llama.cpp adapter.
-      container.read(onDeviceEngineProvider.notifier).state =
-          const OnDeviceEngineState(
-        status: OnDeviceEngineStatus.loaded,
-        loadedRuntime: OnDeviceModelRuntime.llamaCpp,
-      );
-      final llamaService = container.read(chatServiceProvider);
-      expect(llamaService, isA<OnDeviceLlamaChatService>());
-    });
+        // Switching the runtime rebuilds the service so it can pick up the
+        // llama.cpp adapter.
+        container
+            .read(onDeviceEngineProvider.notifier)
+            .state = const OnDeviceEngineState(
+          status: OnDeviceEngineStatus.loaded,
+          loadedRuntime: OnDeviceModelRuntime.llamaCpp,
+        );
+        final llamaService = container.read(chatServiceProvider);
+        expect(llamaService, isA<OnDeviceLlamaChatService>());
+      },
+    );
   });
 }
 

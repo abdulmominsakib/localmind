@@ -248,35 +248,44 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     _isSendingTranscript = false;
     _generatingFired = false;
 
-    ref.read(voiceFeedbackProvider).playDisconnected();
+    if (ref.mounted) {
+      ref.read(voiceFeedbackProvider).playDisconnected();
+    }
 
     // Stop STT if still listening.
     try {
-      final stt = ref.read(sttProvider.notifier);
-      await stt.cancelListening();
+      if (ref.mounted) {
+        final stt = ref.read(sttProvider.notifier);
+        await stt.cancelListening();
+      }
     } catch (e) {
       Log.error('Voice mode STT cancel error: $e');
     }
 
     // Stop TTS if still speaking.
     try {
-      final tts = ref.read(ttsProvider.notifier);
-      await tts.stop();
+      if (ref.mounted) {
+        final tts = ref.read(ttsProvider.notifier);
+        await tts.stop();
+      }
     } catch (e) {
       Log.error('Voice mode TTS stop error: $e');
     }
 
-    state = const VoiceModeState();
+    if (ref.mounted) {
+      state = const VoiceModeState();
+    }
   }
 
   /// Manually interrupt speaking and re-listen.
   Future<void> interrupt() async {
-    if (!_active) return;
+    if (!_active || !ref.mounted) return;
     try {
       final tts = ref.read(ttsProvider.notifier);
       await tts.stop();
     } catch (_) {}
 
+    if (!ref.mounted) return;
     if (state.autoListen) {
       startListening();
     } else {

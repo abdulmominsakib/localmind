@@ -15,6 +15,9 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
   final isStreaming = ref.watch(chatProvider.select((s) => s.isStreaming));
   final settings = ref.watch(settingsProvider);
   final voiceState = ref.watch(voiceModeProvider);
+  final target = ref.watch(activeChatTargetProvider);
+  final chatParams = ref.watch(chatParamsProvider);
+  final chatService = ref.watch(chatServiceProvider);
 
   if (isStreaming) return [];
   if (voiceState.isActive || voiceState.phase != VoiceModePhase.idle) return [];
@@ -59,11 +62,8 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
   List<String> suggestions = [];
 
   if (settings.smartReplyEnabled) {
-    final target = ref.watch(activeChatTargetProvider);
     final server = target.server;
     final modelId = target.effectiveModelId;
-    final chatParams = ref.watch(chatParamsProvider);
-    final chatService = ref.watch(chatServiceProvider);
 
     if (server != null && chatService != null && modelId != null) {
       final service = ref.read(smartReplyServiceProvider);
@@ -82,6 +82,7 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
   }
 
   if (suggestions.isEmpty) {
+    if (!ref.mounted) return [];
     final service = ref.read(smartReplyServiceProvider);
     suggestions = service.getFallbackReplies(lastMessage.content);
   }

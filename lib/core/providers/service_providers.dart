@@ -30,7 +30,10 @@ class RedirectInterceptor extends Interceptor {
       final location = response.headers.value('location');
       if (location != null) {
         try {
-          final redirectedResponse = await _performRedirect(response.requestOptions, location);
+          final redirectedResponse = await _performRedirect(
+            response.requestOptions,
+            location,
+          );
           return handler.resolve(redirectedResponse);
         } catch (_) {
           return handler.next(response);
@@ -43,31 +46,41 @@ class RedirectInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     final response = err.response;
-    if (response != null && (response.statusCode == 307 || response.statusCode == 308)) {
+    if (response != null &&
+        (response.statusCode == 307 || response.statusCode == 308)) {
       final location = response.headers.value('location');
       if (location != null) {
         try {
-          final redirectedResponse = await _performRedirect(err.requestOptions, location);
+          final redirectedResponse = await _performRedirect(
+            err.requestOptions,
+            location,
+          );
           return handler.resolve(redirectedResponse);
         } catch (e) {
           if (e is DioException) {
             return handler.next(e);
           }
-          return handler.next(DioException(
-            requestOptions: err.requestOptions,
-            error: e,
-            type: DioExceptionType.unknown,
-          ));
+          return handler.next(
+            DioException(
+              requestOptions: err.requestOptions,
+              error: e,
+              type: DioExceptionType.unknown,
+            ),
+          );
         }
       }
     }
     super.onError(err, handler);
   }
 
-  Future<Response<dynamic>> _performRedirect(RequestOptions requestOptions, String location) async {
+  Future<Response<dynamic>> _performRedirect(
+    RequestOptions requestOptions,
+    String location,
+  ) async {
     var redirectUrl = location;
     final originalUri = requestOptions.uri;
-    if (!redirectUrl.startsWith('http://') && !redirectUrl.startsWith('https://')) {
+    if (!redirectUrl.startsWith('http://') &&
+        !redirectUrl.startsWith('https://')) {
       final baseUri = Uri.parse(requestOptions.path);
       redirectUrl = baseUri.resolve(redirectUrl).toString();
     }
@@ -88,14 +101,13 @@ class RedirectInterceptor extends Interceptor {
     // response (e.g. from a compromised or misconfigured server) must not
     // be able to exfiltrate them to an arbitrary host.
     final redirectUri = Uri.parse(redirectUrl);
-    final sameOrigin = redirectUri.scheme == originalUri.scheme &&
+    final sameOrigin =
+        redirectUri.scheme == originalUri.scheme &&
         redirectUri.host == originalUri.host &&
         redirectUri.port == originalUri.port;
     final headers = Map<String, dynamic>.from(requestOptions.headers);
     if (!sameOrigin) {
-      headers.removeWhere(
-        (key, _) => key.toLowerCase() == 'authorization',
-      );
+      headers.removeWhere((key, _) => key.toLowerCase() == 'authorization');
     }
 
     return _dio.request(
@@ -112,4 +124,3 @@ class RedirectInterceptor extends Interceptor {
     );
   }
 }
-

@@ -27,8 +27,8 @@ class ModelLoadingState {
 
 final modelLoadingProvider =
     NotifierProvider<ModelLoadingNotifier, ModelLoadingState>(() {
-  return ModelLoadingNotifier();
-});
+      return ModelLoadingNotifier();
+    });
 
 class ModelLoadingNotifier extends Notifier<ModelLoadingState> {
   @override

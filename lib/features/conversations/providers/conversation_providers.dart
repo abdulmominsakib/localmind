@@ -313,7 +313,8 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
         lastMessagePreview: preview,
         updatedAt: updatedAt,
         messageCount: messageCount ?? existing.messageCount,
-        characterCount: characterCount ??
+        characterCount:
+            characterCount ??
             (characterCountDelta != null
                 ? existing.characterCount + characterCountDelta
                 : existing.characterCount),
@@ -578,7 +579,9 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
       clearFolderId: folderId == null,
     );
 
-    final query = db.conversationBox.query(ConversationEntity_.id.equals(id)).build();
+    final query = db.conversationBox
+        .query(ConversationEntity_.id.equals(id))
+        .build();
     final existingEntity = query.findFirst();
     query.close();
 
@@ -711,9 +714,10 @@ final filteredConversationsProvider = Provider<AsyncValue<List<Conversation>>>((
 
     filtered.sort((a, b) {
       if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
-      return historySortDate(b, sortOption).compareTo(
-        historySortDate(a, sortOption),
-      );
+      return historySortDate(
+        b,
+        sortOption,
+      ).compareTo(historySortDate(a, sortOption));
     });
     return filtered;
   });
@@ -831,11 +835,13 @@ class HistorySelectedIdsNotifier extends Notifier<Set<String>> {
 }
 
 final conversationFoldersProvider =
-    AsyncNotifierProvider<ConversationFoldersNotifier, List<ConversationFolder>>(
-      () => ConversationFoldersNotifier(),
-    );
+    AsyncNotifierProvider<
+      ConversationFoldersNotifier,
+      List<ConversationFolder>
+    >(() => ConversationFoldersNotifier());
 
-class ConversationFoldersNotifier extends AsyncNotifier<List<ConversationFolder>> {
+class ConversationFoldersNotifier
+    extends AsyncNotifier<List<ConversationFolder>> {
   @override
   Future<List<ConversationFolder>> build() async => _loadAll();
 

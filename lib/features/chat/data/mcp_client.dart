@@ -26,8 +26,8 @@ class McpClient {
     this.headers,
     String version = '1.0.0',
     Dio? dio,
-  })  : _version = version,
-        _dio = dio ?? Dio();
+  }) : _version = version,
+       _dio = dio ?? Dio();
 
   bool get isInitialized => _initialized;
   McpCapabilities? get capabilities => _capabilities;
@@ -47,7 +47,8 @@ class McpClient {
       );
 
       final contentType = response.headers.value('content-type') ?? '';
-      if (!contentType.contains('text/event-stream') && !serverUrl.contains('sse')) {
+      if (!contentType.contains('text/event-stream') &&
+          !serverUrl.contains('sse')) {
         // Not an SSE stream endpoint, fallback to direct HTTP POST
         return;
       }
@@ -55,7 +56,9 @@ class McpClient {
       _useSse = true;
       final handshakeCompleter = Completer<void>();
 
-      final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
+      final stream = response.data!.stream.cast<List<int>>().transform(
+        utf8.decoder,
+      );
       String buffer = '';
       String currentEvent = 'message';
       String currentData = '';
@@ -70,7 +73,11 @@ class McpClient {
             final trimmed = line.trim();
             if (trimmed.isEmpty) {
               if (currentData.isNotEmpty) {
-                _handleSseMessage(currentEvent, currentData, handshakeCompleter);
+                _handleSseMessage(
+                  currentEvent,
+                  currentData,
+                  handshakeCompleter,
+                );
                 currentEvent = 'message';
                 currentData = '';
               }
@@ -101,11 +108,17 @@ class McpClient {
             if (currentData.isNotEmpty) {
               _handleSseMessage(currentEvent, currentData, handshakeCompleter);
             } else if (buffer.trim().isNotEmpty) {
-              _handleSseMessage(currentEvent, buffer.trim(), handshakeCompleter);
+              _handleSseMessage(
+                currentEvent,
+                buffer.trim(),
+                handshakeCompleter,
+              );
             }
           }
           if (!handshakeCompleter.isCompleted) {
-            handshakeCompleter.completeError(McpException('SSE stream closed before handshake completed'));
+            handshakeCompleter.completeError(
+              McpException('SSE stream closed before handshake completed'),
+            );
           }
           _handleSseDisconnect(null);
         },
@@ -115,7 +128,9 @@ class McpClient {
       await handshakeCompleter.future.timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          throw McpException('Handshake timeout waiting for SSE endpoint event');
+          throw McpException(
+            'Handshake timeout waiting for SSE endpoint event',
+          );
         },
       );
     } catch (e) {
@@ -125,7 +140,11 @@ class McpClient {
     }
   }
 
-  void _handleSseMessage(String event, String data, Completer<void> initCompleter) {
+  void _handleSseMessage(
+    String event,
+    String data,
+    Completer<void> initCompleter,
+  ) {
     if (event == 'endpoint') {
       try {
         final baseUri = Uri.parse(serverUrl);
@@ -158,7 +177,9 @@ class McpClient {
   }
 
   void _handleSseDisconnect(dynamic error) {
-    final ex = McpException(error != null ? 'SSE disconnected: $error' : 'SSE connection closed');
+    final ex = McpException(
+      error != null ? 'SSE disconnected: $error' : 'SSE connection closed',
+    );
     for (final completer in _pendingRequests.values) {
       if (!completer.isCompleted) {
         completer.completeError(ex);
@@ -174,7 +195,10 @@ class McpClient {
     _postUrl = null;
   }
 
-  Future<Map<String, dynamic>> _sendJsonRpc(String method, Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _sendJsonRpc(
+    String method,
+    Map<String, dynamic> params,
+  ) async {
     final id = _requestIdCounter++;
     final payload = {
       'jsonrpc': '2.0',
@@ -185,7 +209,9 @@ class McpClient {
 
     if (_useSse) {
       if (_postUrl == null) {
-        throw McpException('SSE transport initialized but POST endpoint is missing');
+        throw McpException(
+          'SSE transport initialized but POST endpoint is missing',
+        );
       }
 
       final completer = Completer<Map<String, dynamic>>();
@@ -208,13 +234,17 @@ class McpClient {
         const Duration(seconds: 30),
         onTimeout: () {
           _pendingRequests.remove(id.toString());
-          throw McpException('Timeout waiting for JSON-RPC response over SSE transport');
+          throw McpException(
+            'Timeout waiting for JSON-RPC response over SSE transport',
+          );
         },
       );
 
       if (responseJson.containsKey('error')) {
         final error = responseJson['error'];
-        final message = error is Map ? (error['message'] ?? 'Unknown error') : 'Unknown error';
+        final message = error is Map
+            ? (error['message'] ?? 'Unknown error')
+            : 'Unknown error';
         throw McpException('Server returned error: $message');
       }
 
@@ -236,7 +266,9 @@ class McpClient {
 
         if (responseData.containsKey('error')) {
           final error = responseData['error'];
-          final message = error is Map ? (error['message'] ?? 'Unknown error') : 'Unknown error';
+          final message = error is Map
+              ? (error['message'] ?? 'Unknown error')
+              : 'Unknown error';
           throw McpException('Server returned error: $message');
         }
 
@@ -266,12 +298,13 @@ class McpClient {
   }
 
   Future<McpCapabilities> _doInitialize() async {
-
     try {
       try {
         await _connectSse();
       } catch (e) {
-        Log.debug('Failed to connect via SSE: $e. Falling back to direct HTTP POST.');
+        Log.debug(
+          'Failed to connect via SSE: $e. Falling back to direct HTTP POST.',
+        );
         _useSse = false;
       }
 

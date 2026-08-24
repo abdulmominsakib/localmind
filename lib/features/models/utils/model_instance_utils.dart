@@ -1,13 +1,8 @@
 bool isModelKeyLoaded(Set<String> instanceIds, String modelKey) {
-  return instanceIds.any(
-    (id) => id == modelKey || id.startsWith('$modelKey:'),
-  );
+  return instanceIds.any((id) => id == modelKey || id.startsWith('$modelKey:'));
 }
 
-List<String> instanceIdsForModelKey(
-  Set<String> instanceIds,
-  String modelKey,
-) {
+List<String> instanceIdsForModelKey(Set<String> instanceIds, String modelKey) {
   return instanceIds
       .where((id) => id == modelKey || id.startsWith('$modelKey:'))
       .toList();

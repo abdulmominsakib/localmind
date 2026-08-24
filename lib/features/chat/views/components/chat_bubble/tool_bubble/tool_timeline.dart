@@ -107,10 +107,12 @@ class ToolTimeline extends StatelessWidget {
             ),
             child: Row(
               children: [
-                HugeIcon(icon: 
-                  HugeIcons.strokeRoundedComputerTerminal01,
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedComputerTerminal01,
                   size: 16,
-                  color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                  color: isDark
+                      ? AppColors.darkMutedText
+                      : AppColors.lightMutedText,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -119,14 +121,21 @@ class ToolTimeline extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
-                    color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                    color: isDark
+                        ? AppColors.darkMutedText
+                        : AppColors.lightMutedText,
                   ),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceCard : AppColors.lightBorder,
+                    color: isDark
+                        ? AppColors.darkSurfaceCard
+                        : AppColors.lightBorder,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(

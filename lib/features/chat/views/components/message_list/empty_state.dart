@@ -55,11 +55,13 @@ class _EmptyStateState extends State<EmptyState> {
   }
 
   List<String> _welcomeMessages(AppLocalizations l10n) => [
-        l10n.welcome_message_1,
-        l10n.welcome_message_2,
-        widget.isCloudProvider ? l10n.welcome_message_cloud : l10n.welcome_message_3,
-        l10n.welcome_message_4,
-      ];
+    l10n.welcome_message_1,
+    l10n.welcome_message_2,
+    widget.isCloudProvider
+        ? l10n.welcome_message_cloud
+        : l10n.welcome_message_3,
+    l10n.welcome_message_4,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -138,8 +140,11 @@ class _EmptyStateState extends State<EmptyState> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                HugeIcon(icon: HugeIcons.strokeRoundedSettings01,
-                    size: 18, color: theme.colorScheme.primary),
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedSettings01,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
@@ -154,7 +159,11 @@ class _EmptyStateState extends State<EmptyState> {
                   ),
                 ),
                 const SizedBox(width: 4),
-                const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, size: 16, color: Colors.grey),
+                const HugeIcon(
+                  icon: HugeIcons.strokeRoundedArrowDown01,
+                  size: 16,
+                  color: Colors.grey,
+                ),
               ],
             ),
           ),
@@ -190,8 +199,11 @@ class _EmptyStateState extends State<EmptyState> {
                     ),
                   ),
                 ] else ...[
-                  HugeIcon(icon: HugeIcons.strokeRoundedRobot01,
-                      size: 18, color: theme.colorScheme.primary),
+                  HugeIcon(
+                    icon: HugeIcons.strokeRoundedRobot01,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
@@ -207,7 +219,11 @@ class _EmptyStateState extends State<EmptyState> {
                   ),
                 ],
                 const SizedBox(width: 4),
-                const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, size: 16, color: Colors.grey),
+                const HugeIcon(
+                  icon: HugeIcons.strokeRoundedArrowDown01,
+                  size: 16,
+                  color: Colors.grey,
+                ),
               ],
             ),
           ),
@@ -248,8 +264,9 @@ class _EmptyStateState extends State<EmptyState> {
           child: ActionChip(
             label: Text(prompt),
             onPressed: () => widget.onQuickPrompt(prompt),
-            backgroundColor:
-                isDark ? AppColors.darkSurfaceCard : AppColors.lightSurface,
+            backgroundColor: isDark
+                ? AppColors.darkSurfaceCard
+                : AppColors.lightSurface,
             side: BorderSide(
               color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
             ),
@@ -270,8 +287,9 @@ class _EmptyStateState extends State<EmptyState> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color:
-                    isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                color: isDark
+                    ? AppColors.darkMutedText
+                    : AppColors.lightMutedText,
               ),
             ),
             const SizedBox(width: 8),

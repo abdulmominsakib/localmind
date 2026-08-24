@@ -367,8 +367,9 @@ final personaByIdProvider = Provider.family<Persona?, String>((ref, id) {
   }
 });
 
-final personasForConversationProvider =
-    Provider.family<List<Persona>, String?>((ref, personaIdsRaw) {
-  final personas = ref.watch(personasNotifierProvider).value ?? [];
-  return PersonaPromptUtils.resolvePersonas(personaIdsRaw, personas);
-});
+final personasForConversationProvider = Provider.family<List<Persona>, String?>(
+  (ref, personaIdsRaw) {
+    final personas = ref.watch(personasNotifierProvider).value ?? [];
+    return PersonaPromptUtils.resolvePersonas(personaIdsRaw, personas);
+  },
+);

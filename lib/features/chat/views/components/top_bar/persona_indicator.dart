@@ -47,14 +47,16 @@ class PersonaIndicator extends StatelessWidget {
                       color: theme.colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color:
-                            theme.colorScheme.primary.withValues(alpha: 0.2),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(persona.emoji, style: const TextStyle(fontSize: 16)),
+                        Text(
+                          persona.emoji,
+                          style: const TextStyle(fontSize: 16),
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           persona.name,
@@ -73,7 +75,10 @@ class PersonaIndicator extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, size: 16),
+            icon: const HugeIcon(
+              icon: HugeIcons.strokeRoundedCancel01,
+              size: 16,
+            ),
             onPressed: onClear,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),

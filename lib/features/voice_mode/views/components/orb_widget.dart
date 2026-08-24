@@ -151,7 +151,8 @@ class _OrbPainter extends CustomPainter {
         pulseScale = 1.0 + (math.pow(clampedMic, 0.75) * 0.20);
       } else if (isSpeaking) {
         // Organic breathing pulsation synced with TTS speech cadence
-        final cadence = 0.5 + 0.5 * (math.sin(time * 7.2) * math.sin(time * 3.4));
+        final cadence =
+            0.5 + 0.5 * (math.sin(time * 7.2) * math.sin(time * 3.4));
         pulseScale = 1.0 + (cadence * 0.16);
       }
     }
@@ -172,10 +173,7 @@ class _OrbPainter extends CustomPainter {
       ..setFloat(7, glowColor.g)
       ..setFloat(8, glowColor.b);
 
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..shader = shader,
-    );
+    canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
 
     canvas.restore();
   }

@@ -35,7 +35,11 @@ enum ReasoningEffort {
 /// low/medium/high set is returned so existing behaviour is preserved.
 List<ReasoningEffort> effortsForModel(List<String>? supported) {
   if (supported == null || supported.isEmpty) {
-    return const [ReasoningEffort.low, ReasoningEffort.medium, ReasoningEffort.high];
+    return const [
+      ReasoningEffort.low,
+      ReasoningEffort.medium,
+      ReasoningEffort.high,
+    ];
   }
   final list = ReasoningEffort.values
       .where((e) => supported.contains(e.apiValue))
@@ -43,7 +47,11 @@ List<ReasoningEffort> effortsForModel(List<String>? supported) {
   // Shouldn't happen (an OpenRouter model advertising only efforts we don't
   // model), but fall back to the classic set rather than rendering nothing.
   if (list.isEmpty) {
-    return const [ReasoningEffort.low, ReasoningEffort.medium, ReasoningEffort.high];
+    return const [
+      ReasoningEffort.low,
+      ReasoningEffort.medium,
+      ReasoningEffort.high,
+    ];
   }
   return list;
 }
@@ -52,7 +60,10 @@ List<ReasoningEffort> effortsForModel(List<String>? supported) {
 /// the model's advertised default when [current] isn't supported. Used when
 /// building request params so a stale UI config never produces an invalid
 /// `reasoning_effort` (e.g. `low` for a model that only supports `high`).
-ReasoningEffort resolveEffortForModel(ModelInfo? model, ReasoningEffort current) {
+ReasoningEffort resolveEffortForModel(
+  ModelInfo? model,
+  ReasoningEffort current,
+) {
   final supported = model?.supportedReasoningEfforts;
   if (supported == null || supported.isEmpty) return current;
   if (supported.contains(current.apiValue)) return current;

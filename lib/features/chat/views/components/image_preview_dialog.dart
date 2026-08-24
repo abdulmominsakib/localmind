@@ -24,7 +24,10 @@ class _ImagePreviewDialog extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, color: Colors.white),
+          icon: const HugeIcon(
+            icon: HugeIcons.strokeRoundedCancel01,
+            color: Colors.white,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),

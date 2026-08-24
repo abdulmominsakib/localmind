@@ -42,8 +42,9 @@ class ConversationList extends ConsumerWidget {
       ..sort((a, b) {
         final aIndex = sectionOrder.indexOf(a);
         final bIndex = sectionOrder.indexOf(b);
-        return (aIndex == -1 ? 999 : aIndex)
-            .compareTo(bIndex == -1 ? 999 : bIndex);
+        return (aIndex == -1 ? 999 : aIndex).compareTo(
+          bIndex == -1 ? 999 : bIndex,
+        );
       });
 
     return ListView.builder(
@@ -122,10 +123,9 @@ class ConversationList extends ConsumerWidget {
                     _exportConversation(context, ref, l10n, conversation);
                   },
                   onArchive: () {
-                    ref.read(conversationsProvider.notifier).setArchived(
-                          conversation.id,
-                          !conversation.isArchived,
-                        );
+                    ref
+                        .read(conversationsProvider.notifier)
+                        .setArchived(conversation.id, !conversation.isArchived);
                   },
                 ),
               );
@@ -185,8 +185,10 @@ class ConversationList extends ConsumerWidget {
     Conversation conversation,
   ) async {
     final db = ref.read(databaseProvider);
-    final json = DataBackupService()
-        .exportConversationAsJson(db.store, conversation.id);
+    final json = DataBackupService().exportConversationAsJson(
+      db.store,
+      conversation.id,
+    );
     if (!context.mounted) return;
     await showExportChoiceDialog(
       context,
@@ -297,8 +299,10 @@ Future<void> runBulkExportConversations(
 ) async {
   final l10n = AppLocalizations.of(context)!;
   final db = ref.read(databaseProvider);
-  final json = DataBackupService()
-      .exportConversationsForIdsAsJson(db.store, conversationIds);
+  final json = DataBackupService().exportConversationsForIdsAsJson(
+    db.store,
+    conversationIds,
+  );
   if (!context.mounted) return;
   await showExportChoiceDialog(
     context,
@@ -318,9 +322,7 @@ Future<void> runBulkAiRename(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(l10n.bulk_ai_rename_confirm_title),
-      content: Text(
-        l10n.bulk_ai_rename_confirm_body(conversationIds.length),
-      ),
+      content: Text(l10n.bulk_ai_rename_confirm_body(conversationIds.length)),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
@@ -365,9 +367,13 @@ Future<void> runBulkAiRename(
 
   for (final id in conversationIds) {
     try {
-      final title = await ref.read(chatProvider.notifier).generateTitleWithAi(id);
+      final title = await ref
+          .read(chatProvider.notifier)
+          .generateTitleWithAi(id);
       if (title != null && title.isNotEmpty) {
-        await ref.read(conversationsProvider.notifier).renameConversation(id, title);
+        await ref
+            .read(conversationsProvider.notifier)
+            .renameConversation(id, title);
       }
     } catch (_) {
       // continue renaming remaining conversations

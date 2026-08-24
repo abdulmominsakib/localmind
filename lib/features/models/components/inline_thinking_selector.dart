@@ -84,21 +84,22 @@ class InlineThinkingSelector extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: options.map((opt) {
-                  final isActive = isSelected &&
+                  final isActive =
+                      isSelected &&
                       (opt.isEnabled == config.enabled) &&
                       (!opt.isEnabled || opt.effort == config.effort);
 
                   final chipBg = isActive
                       ? accent.withValues(alpha: 0.2)
                       : (isDark
-                          ? Colors.white.withValues(alpha: 0.05)
-                          : Colors.black.withValues(alpha: 0.04));
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.black.withValues(alpha: 0.04));
 
                   final chipFg = isActive
                       ? accent
                       : (isDark
-                          ? AppColors.darkMutedText
-                          : AppColors.lightMutedText);
+                            ? AppColors.darkMutedText
+                            : AppColors.lightMutedText);
 
                   final borderColor = isActive
                       ? accent.withValues(alpha: 0.5)

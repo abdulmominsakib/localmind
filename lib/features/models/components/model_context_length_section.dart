@@ -62,10 +62,9 @@ class _ModelContextLengthSectionState
     if (conversationId == null) {
       ref.read(settingsProvider.notifier).setContextLength(parsed);
     } else {
-      ref.read(conv.conversationsProvider.notifier).updateChatParams(
-            conversationId,
-            contextLength: parsed,
-          );
+      ref
+          .read(conv.conversationsProvider.notifier)
+          .updateChatParams(conversationId, contextLength: parsed);
     }
     _lastValue = parsed;
   }
@@ -95,10 +94,8 @@ class _ModelContextLengthSectionState
           controller: _controller,
           focusNode: _focusNode,
           keyboardType: TextInputType.number,
-          onSubmitted: (value) =>
-              _saveValue(value, activeConv?.id),
-          onEditingComplete: () =>
-              _saveValue(_controller.text, activeConv?.id),
+          onSubmitted: (value) => _saveValue(value, activeConv?.id),
+          onEditingComplete: () => _saveValue(_controller.text, activeConv?.id),
         ),
         const SizedBox(height: 4),
         Text(

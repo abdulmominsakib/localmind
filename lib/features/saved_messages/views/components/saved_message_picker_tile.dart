@@ -23,8 +23,9 @@ class SavedMessagePickerTile extends StatelessWidget {
     final role = MessageRole.values[saved.roleIndex];
     final isUser = role == MessageRole.user;
     final isFromTempChat = saved.conversationId.isEmpty;
-    final mutedColor =
-        isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+    final mutedColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.lightMutedText;
 
     return Material(
       color: Colors.transparent,
@@ -35,8 +36,8 @@ class SavedMessagePickerTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              HugeIcon(icon: 
-                isUser
+              HugeIcon(
+                icon: isUser
                     ? HugeIcons.strokeRoundedUser
                     : HugeIcons.strokeRoundedSparkles,
                 size: 20,
@@ -76,10 +77,7 @@ class SavedMessagePickerTile extends StatelessWidget {
                       const SizedBox(height: 2),
                     Text(
                       saved.content,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: mutedColor,
-                      ),
+                      style: TextStyle(fontSize: 13, color: mutedColor),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),

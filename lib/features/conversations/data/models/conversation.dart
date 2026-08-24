@@ -95,15 +95,19 @@ class Conversation {
       modelId: modelId ?? this.modelId,
       messageCount: messageCount ?? this.messageCount,
       lastMessagePreview: lastMessagePreview ?? this.lastMessagePreview,
-      systemPrompt:
-          clearSystemPrompt ? null : (systemPrompt ?? this.systemPrompt),
+      systemPrompt: clearSystemPrompt
+          ? null
+          : (systemPrompt ?? this.systemPrompt),
       temperature: clearTemperature ? null : (temperature ?? this.temperature),
       topP: clearTopP ? null : (topP ?? this.topP),
       maxTokens: clearMaxTokens ? null : (maxTokens ?? this.maxTokens),
-      contextLength:
-          clearContextLength ? null : (contextLength ?? this.contextLength),
+      contextLength: clearContextLength
+          ? null
+          : (contextLength ?? this.contextLength),
       mcpEnabled: clearMcpEnabled ? null : (mcpEnabled ?? this.mcpEnabled),
-      smartReplies: clearSmartReplies ? null : (smartReplies ?? this.smartReplies),
+      smartReplies: clearSmartReplies
+          ? null
+          : (smartReplies ?? this.smartReplies),
       smartRepliesLastMessageId: clearSmartRepliesLastMessageId
           ? null
           : (smartRepliesLastMessageId ?? this.smartRepliesLastMessageId),

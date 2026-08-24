@@ -34,191 +34,197 @@ class PersonaListScreen extends ConsumerWidget {
                 top: topPadding + 8,
                 bottom: 16,
               ),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF0A0A0A)
-                      : const Color(0xFFFAFAFA),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: isDark
-                          ? const Color(0xFF2A2A2A)
-                          : const Color(0xFFE5E5E5),
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Builder(
-                      builder: (context) => IconButton(
-                        icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
-                        onPressed: () => Scaffold.of(context).openDrawer(),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.personas_title,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: HugeIcon(icon: 
-                        previewSystemPrompts
-                            ? HugeIcons.strokeRoundedEye
-                            : HugeIcons.strokeRoundedEye,
-                      ),
-                      tooltip: l10n.preview_system_prompts,
-                      onPressed: () => ref
-                          .read(personaPreviewSystemPromptsProvider.notifier)
-                          .toggle(),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Text(
-                  l10n.personas_combine_hint,
-                  style: TextStyle(
-                    fontSize: 13,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF0A0A0A)
+                    : const Color(0xFFFAFAFA),
+                border: Border(
+                  bottom: BorderSide(
                     color: isDark
-                        ? AppColors.darkMutedText
-                        : AppColors.lightMutedText,
+                        ? const Color(0xFF2A2A2A)
+                        : const Color(0xFFE5E5E5),
                   ),
                 ),
               ),
-              SizedBox(
-                height: 44,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  children:
-                      [
-                        l10n.all,
-                        l10n.persona_category_general,
-                        l10n.persona_category_coding,
-                        l10n.persona_category_education,
-                        l10n.persona_category_creative,
-                      ].map((cat) {
-                        final isActive =
-                            selectedCategory == (cat == l10n.all ? null : cat);
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 6,
-                          ),
-                          child: FilterChip(
-                            label: Text(
-                              cat,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: isActive
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                                color: isActive
-                                    ? (isDark ? Colors.white : Colors.white)
-                                    : (isDark
-                                          ? const Color(0xFFAAAAAA)
-                                          : const Color(0xFF666666)),
-                              ),
-                            ),
-                            selected: isActive,
-                            onSelected: (_) {
-                              ref
-                                  .read(personaCategoryFilterProvider.notifier)
-                                  .setCategory(cat == l10n.all ? null : cat);
-                            },
-                            selectedColor: isDark
-                                ? const Color(0xFF3B82F6)
-                                : const Color(0xFF2563EB),
-                            backgroundColor: isDark
-                                ? const Color(0xFF1F1F1F)
-                                : const Color(0xFFF5F5F5),
-                            side: BorderSide(
-                              color: isActive
-                                  ? (isDark
-                                        ? const Color(0xFF3B82F6)
-                                        : const Color(0xFF2563EB))
-                                  : (isDark
-                                        ? const Color(0xFF3A3A3A)
-                                        : const Color(0xFFE5E5E5)),
-                            ),
-                            showCheckmark: false,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        );
-                      }).toList(),
+              child: Row(
+                children: [
+                  Builder(
+                    builder: (context) => IconButton(
+                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.personas_title,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: HugeIcon(
+                      icon: previewSystemPrompts
+                          ? HugeIcons.strokeRoundedEye
+                          : HugeIcons.strokeRoundedEye,
+                    ),
+                    tooltip: l10n.preview_system_prompts,
+                    onPressed: () => ref
+                        .read(personaPreviewSystemPromptsProvider.notifier)
+                        .toggle(),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(
+                l10n.personas_combine_hint,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark
+                      ? AppColors.darkMutedText
+                      : AppColors.lightMutedText,
                 ),
               ),
-              Expanded(
-                child: filteredPersonas.isEmpty
-                    ? _EmptyState(isDark: isDark, l10n: l10n)
-                    : ListView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        children: [
-                          if (userCreated.isNotEmpty) ...[
-                            _SectionLabel(label: l10n.persona_my_section, isDark: isDark),
-                            ...userCreated.map(
-                              (p) => _PersonaCard(
-                                persona: p,
-                                isDark: isDark,
-                                l10n: l10n,
-                                onTap: () => context.push(
-                                  AppRoutes.createPersona,
-                                  extra: p,
-                                ),
-                                onLongPress: () => _showActions(
-                                  context,
-                                  ref,
-                                  p,
-                                  isBuiltIn: false,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                          if (builtIn.isNotEmpty) ...[
-                            _SectionLabel(label: l10n.persona_builtin_section, isDark: isDark),
-                            ...builtIn.map(
-                              (p) => _PersonaCard(
-                                persona: p,
-                                isDark: isDark,
-                                l10n: l10n,
-                                showSystemPrompt: previewSystemPrompts,
-                                onLongPress: () => _showActions(
-                                  context,
-                                  ref,
-                                  p,
-                                  isBuiltIn: true,
-                                ),
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 80),
-                        ],
-                      ),
-              ),
-            ],
-          ),
-          PositionedDirectional(
-            bottom: 24,
-            end: 24,
-            child: FloatingActionButton(
-              onPressed: () => context.push(AppRoutes.createPersona),
-              child: const HugeIcon(icon: HugeIcons.strokeRoundedAdd01),
             ),
+            SizedBox(
+              height: 44,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children:
+                    [
+                      l10n.all,
+                      l10n.persona_category_general,
+                      l10n.persona_category_coding,
+                      l10n.persona_category_education,
+                      l10n.persona_category_creative,
+                    ].map((cat) {
+                      final isActive =
+                          selectedCategory == (cat == l10n.all ? null : cat);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 6,
+                        ),
+                        child: FilterChip(
+                          label: Text(
+                            cat,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isActive
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              color: isActive
+                                  ? (isDark ? Colors.white : Colors.white)
+                                  : (isDark
+                                        ? const Color(0xFFAAAAAA)
+                                        : const Color(0xFF666666)),
+                            ),
+                          ),
+                          selected: isActive,
+                          onSelected: (_) {
+                            ref
+                                .read(personaCategoryFilterProvider.notifier)
+                                .setCategory(cat == l10n.all ? null : cat);
+                          },
+                          selectedColor: isDark
+                              ? const Color(0xFF3B82F6)
+                              : const Color(0xFF2563EB),
+                          backgroundColor: isDark
+                              ? const Color(0xFF1F1F1F)
+                              : const Color(0xFFF5F5F5),
+                          side: BorderSide(
+                            color: isActive
+                                ? (isDark
+                                      ? const Color(0xFF3B82F6)
+                                      : const Color(0xFF2563EB))
+                                : (isDark
+                                      ? const Color(0xFF3A3A3A)
+                                      : const Color(0xFFE5E5E5)),
+                          ),
+                          showCheckmark: false,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      );
+                    }).toList(),
+              ),
+            ),
+            Expanded(
+              child: filteredPersonas.isEmpty
+                  ? _EmptyState(isDark: isDark, l10n: l10n)
+                  : ListView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      children: [
+                        if (userCreated.isNotEmpty) ...[
+                          _SectionLabel(
+                            label: l10n.persona_my_section,
+                            isDark: isDark,
+                          ),
+                          ...userCreated.map(
+                            (p) => _PersonaCard(
+                              persona: p,
+                              isDark: isDark,
+                              l10n: l10n,
+                              onTap: () => context.push(
+                                AppRoutes.createPersona,
+                                extra: p,
+                              ),
+                              onLongPress: () => _showActions(
+                                context,
+                                ref,
+                                p,
+                                isBuiltIn: false,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (builtIn.isNotEmpty) ...[
+                          _SectionLabel(
+                            label: l10n.persona_builtin_section,
+                            isDark: isDark,
+                          ),
+                          ...builtIn.map(
+                            (p) => _PersonaCard(
+                              persona: p,
+                              isDark: isDark,
+                              l10n: l10n,
+                              showSystemPrompt: previewSystemPrompts,
+                              onLongPress: () => _showActions(
+                                context,
+                                ref,
+                                p,
+                                isBuiltIn: true,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 80),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+        PositionedDirectional(
+          bottom: 24,
+          end: 24,
+          child: FloatingActionButton(
+            onPressed: () => context.push(AppRoutes.createPersona),
+            child: const HugeIcon(icon: HugeIcons.strokeRoundedAdd01),
           ),
+        ),
       ],
     );
   }
@@ -239,7 +245,9 @@ class PersonaListScreen extends ConsumerWidget {
             children: [
               if (!isBuiltIn)
                 ListTile(
-                  leading: const HugeIcon(icon: HugeIcons.strokeRoundedPencilEdit02),
+                  leading: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedPencilEdit02,
+                  ),
                   title: Text(sheetL10n.edit),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -247,7 +255,10 @@ class PersonaListScreen extends ConsumerWidget {
                   },
                 ),
               ListTile(
-                leading: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, color: Colors.red),
+                leading: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedDelete01,
+                  color: Colors.red,
+                ),
                 title: Text(
                   sheetL10n.delete,
                   style: const TextStyle(color: Colors.red),
@@ -436,10 +447,10 @@ class _PersonaCard extends StatelessWidget {
                     showSystemPrompt && persona.isBuiltIn
                         ? persona.systemPrompt
                         : (persona.description ??
-                            persona.systemPrompt.substring(
-                              0,
-                              persona.systemPrompt.length.clamp(0, 60),
-                            )),
+                              persona.systemPrompt.substring(
+                                0,
+                                persona.systemPrompt.length.clamp(0, 60),
+                              )),
                     style: TextStyle(
                       fontSize: showSystemPrompt && persona.isBuiltIn ? 12 : 13,
                       color: isDark
@@ -482,8 +493,8 @@ class _PersonaCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            HugeIcon(icon: 
-              HugeIcons.strokeRoundedArrowRight01,
+            HugeIcon(
+              icon: HugeIcons.strokeRoundedArrowRight01,
               size: 20,
               color: isDark ? const Color(0xFF555555) : const Color(0xFFCCCCCC),
             ),
@@ -507,8 +518,8 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            HugeIcon(icon: 
-              HugeIcons.strokeRoundedRobot01,
+            HugeIcon(
+              icon: HugeIcons.strokeRoundedRobot01,
               size: 64,
               color: isDark ? const Color(0xFF444444) : const Color(0xFFCCCCCC),
             ),

@@ -411,10 +411,7 @@ class ServerCard extends StatelessWidget {
                   color: Colors.red,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  l10n.delete,
-                  style: const TextStyle(color: Colors.red),
-                ),
+                Text(l10n.delete, style: const TextStyle(color: Colors.red)),
               ],
             ),
           ),

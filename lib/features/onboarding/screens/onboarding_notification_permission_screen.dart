@@ -41,7 +41,9 @@ class _OnboardingNotificationPermissionScreenState
   Future<void> _requestPermission() async {
     setState(() => _isProcessing = true);
     try {
-      final notificationService = ref.read(notificationPermissionServiceProvider);
+      final notificationService = ref.read(
+        notificationPermissionServiceProvider,
+      );
       await notificationService.requestPermission();
       await _completeOnboarding();
     } finally {
@@ -61,17 +63,17 @@ class _OnboardingNotificationPermissionScreenState
         child: Cue.onMount(
           motion: .smooth(),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 32.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Spacer(),
                 // Visual element
                 Actor(
-                  acts: [
-                    .fadeIn(),
-                    .scale(from: 0.8),
-                  ],
+                  acts: [.fadeIn(), .scale(from: 0.8)],
                   child: Container(
                     padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
@@ -90,10 +92,7 @@ class _OnboardingNotificationPermissionScreenState
                 const SizedBox(height: 48),
                 Actor(
                   delay: 60.ms,
-                  acts: [
-                    .fadeIn(),
-                    .slideY(from: 0.08),
-                  ],
+                  acts: [.fadeIn(), .slideY(from: 0.08)],
                   child: Column(
                     children: [
                       Text(
@@ -107,7 +106,9 @@ class _OnboardingNotificationPermissionScreenState
                       Text(
                         l10n.stay_updated_desc,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -118,10 +119,7 @@ class _OnboardingNotificationPermissionScreenState
                 // Benefits list
                 Actor(
                   delay: 120.ms,
-                  acts: [
-                    .fadeIn(),
-                    .slideY(from: 0.08),
-                  ],
+                  acts: [.fadeIn(), .slideY(from: 0.08)],
                   child: Column(
                     children: [
                       _buildBenefitRow(
@@ -148,10 +146,7 @@ class _OnboardingNotificationPermissionScreenState
                 const SizedBox(height: 32),
                 Actor(
                   delay: 180.ms,
-                  acts: [
-                    .fadeIn(),
-                    .slideY(from: 0.08),
-                  ],
+                  acts: [.fadeIn(), .slideY(from: 0.08)],
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -163,7 +158,9 @@ class _OnboardingNotificationPermissionScreenState
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : Text(

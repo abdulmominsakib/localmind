@@ -50,10 +50,7 @@ class CrashReport {
   /// Issue body markdown for GitHub. Built lazily when accessed so URL
   /// generation remains synchronous and side-effect-free.
   String get markdownBody {
-    final stack = _truncate(
-      _sanitizePaths(stackTrace.toString()),
-      3000,
-    );
+    final stack = _truncate(_sanitizePaths(stackTrace.toString()), 3000);
     final cleanStack = _stripBackticks(stack);
     final ts = timestamp.toUtc().toIso8601String();
 
@@ -81,9 +78,7 @@ class CrashReport {
         ..writeln()
         ..writeln('```text')
         ..writeln(
-          _stripBackticks(
-            _truncate(_sanitizePaths(errorWidgetPayload!), 2000),
-          ),
+          _stripBackticks(_truncate(_sanitizePaths(errorWidgetPayload!), 2000)),
         )
         ..writeln('```');
     }
@@ -129,14 +124,8 @@ class CrashReport {
   /// absolute paths while preserving the structure of the stack trace.
   String _sanitizePaths(String input) {
     return input
-        .replaceAllMapped(
-          RegExp(r'/Users/[^/\s]+'),
-          (_) => '/Users/<user>',
-        )
-        .replaceAllMapped(
-          RegExp(r'/home/[^/\s]+'),
-          (_) => '/home/<user>',
-        )
+        .replaceAllMapped(RegExp(r'/Users/[^/\s]+'), (_) => '/Users/<user>')
+        .replaceAllMapped(RegExp(r'/home/[^/\s]+'), (_) => '/home/<user>')
         .replaceAllMapped(
           RegExp(r'/data/user/[^/\s]+'),
           (_) => '/data/user/<user>',

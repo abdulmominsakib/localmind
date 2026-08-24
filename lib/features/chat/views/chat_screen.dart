@@ -430,4 +430,3 @@ void _handleChatModeAction(
   FocusManager.instance.primaryFocus?.unfocus();
   ref.read(chatProvider.notifier).startNewConversation();
 }
-

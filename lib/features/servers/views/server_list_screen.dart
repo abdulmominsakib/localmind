@@ -148,8 +148,8 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const HugeIcon(icon: 
-                        HugeIcons.strokeRoundedInformationCircle,
+                      const HugeIcon(
+                        icon: HugeIcons.strokeRoundedInformationCircle,
                         color: Colors.red,
                         size: 48,
                       ),
@@ -189,7 +189,11 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            HugeIcon(icon: HugeIcons.strokeRoundedComputer, size: 80, color: theme.colorScheme.outline),
+            HugeIcon(
+              icon: HugeIcons.strokeRoundedComputer,
+              size: 80,
+              color: theme.colorScheme.outline,
+            ),
             const SizedBox(height: 24),
             Text(l10n.no_servers_yet, style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),

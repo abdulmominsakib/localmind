@@ -155,7 +155,10 @@ class ActiveServerIndicator extends ConsumerWidget {
                         ),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
-                          icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, size: 20),
+                          icon: const HugeIcon(
+                            icon: HugeIcons.strokeRoundedCancel01,
+                            size: 20,
+                          ),
                           visualDensity: VisualDensity.compact,
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -287,14 +290,16 @@ class ActiveServerIndicator extends ConsumerWidget {
                                           ),
                                         ),
                                         if (isCurrentlyActive)
-                                          HugeIcon(icon: 
-                                            HugeIcons.strokeRoundedCheckmarkCircle01,
+                                          HugeIcon(
+                                            icon: HugeIcons
+                                                .strokeRoundedCheckmarkCircle01,
                                             size: 20,
                                             color: colorScheme.primary,
                                           )
                                         else
-                                          const HugeIcon(icon: 
-                                            HugeIcons.strokeRoundedArrowRight01,
+                                          const HugeIcon(
+                                            icon: HugeIcons
+                                                .strokeRoundedArrowRight01,
                                             size: 20,
                                             color: Colors.grey,
                                           ),
@@ -310,7 +315,10 @@ class ActiveServerIndicator extends ConsumerWidget {
                           const SizedBox(height: 12),
                           ShadButton.ghost(
                             width: double.infinity,
-                            leading: const HugeIcon(icon: HugeIcons.strokeRoundedSettings01, size: 18),
+                            leading: const HugeIcon(
+                              icon: HugeIcons.strokeRoundedSettings01,
+                              size: 18,
+                            ),
                             onPressed: () {
                               Navigator.pop(context);
                               scaffold?.closeDrawer();
@@ -347,7 +355,9 @@ class ActiveServerIndicator extends ConsumerWidget {
               HugeIcon(
                 icon: serverIcon ?? HugeIcons.strokeRoundedServerStack01,
                 size: 18,
-                color: isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText,
+                color: isDark
+                    ? AppColors.darkPrimaryText
+                    : AppColors.lightPrimaryText,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -359,7 +369,9 @@ class ActiveServerIndicator extends ConsumerWidget {
                       activeServer.name,
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText,
+                        color: isDark
+                            ? AppColors.darkPrimaryText
+                            : AppColors.lightPrimaryText,
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
@@ -388,7 +400,11 @@ class ActiveServerIndicator extends ConsumerWidget {
                   ],
                 ),
               ),
-              const HugeIcon(icon: HugeIcons.strokeRoundedArrowUpDown, size: 16, color: Colors.grey),
+              const HugeIcon(
+                icon: HugeIcons.strokeRoundedArrowUpDown,
+                size: 16,
+                color: Colors.grey,
+              ),
             ],
           ),
         ),

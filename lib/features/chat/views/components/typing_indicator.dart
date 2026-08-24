@@ -46,7 +46,9 @@ class _TypingIndicatorState extends State<TypingIndicator>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final dotColor = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+    final dotColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.lightMutedText;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -79,4 +81,3 @@ class _TypingIndicatorState extends State<TypingIndicator>
     );
   }
 }
-

@@ -4,13 +4,18 @@ import 'themed_gpt_markdown.dart';
 import 'streaming_text.dart';
 
 class DeferredMarkdownContent extends StatefulWidget {
-  const DeferredMarkdownContent({super.key, required this.content, required this.isDark});
+  const DeferredMarkdownContent({
+    super.key,
+    required this.content,
+    required this.isDark,
+  });
 
   final String content;
   final bool isDark;
 
   @override
-  State<DeferredMarkdownContent> createState() => _DeferredMarkdownContentState();
+  State<DeferredMarkdownContent> createState() =>
+      _DeferredMarkdownContentState();
 }
 
 class _DeferredMarkdownContentState extends State<DeferredMarkdownContent> {
@@ -36,7 +41,8 @@ class _DeferredMarkdownContentState extends State<DeferredMarkdownContent> {
   @override
   void didUpdateWidget(DeferredMarkdownContent oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.content != widget.content || oldWidget.isDark != widget.isDark) {
+    if (oldWidget.content != widget.content ||
+        oldWidget.isDark != widget.isDark) {
       _showMarkdown = false;
       _deferTimer?.cancel();
       _deferTimer = Timer(const Duration(milliseconds: 120), () {

@@ -14,9 +14,7 @@ class PiperTtsDownloader {
   final ModelDownloader _baseDownloader;
   final Map<PiperTtsModelVariant, CancelToken> _cancelTokens = {};
 
-  PiperTtsDownloader()
-      : _dio = Dio(),
-        _baseDownloader = ModelDownloader();
+  PiperTtsDownloader() : _dio = Dio(), _baseDownloader = ModelDownloader();
 
   Future<Directory> _getEngineDir() async {
     final ttsDir = await _baseDownloader.getTtsDir();
@@ -39,7 +37,9 @@ class PiperTtsDownloader {
       final modelFile = File('${dir.path}/${variant.modelFileName}');
       final tokensFile = File('${dir.path}/${variant.tokensFileName}');
       final dataDir = Directory('${dir.path}/${variant.dataDirName}');
-      if (await modelFile.exists() && await tokensFile.exists() && await dataDir.exists()) {
+      if (await modelFile.exists() &&
+          await tokensFile.exists() &&
+          await dataDir.exists()) {
         downloaded.add(variant);
       }
     }
@@ -154,6 +154,8 @@ class PiperTtsDownloader {
   }
 
   Future<Directory> getDataDir(PiperTtsModelVariant variant) async {
-    return Directory('${(await _getVariantDir(variant)).path}/${variant.dataDirName}');
+    return Directory(
+      '${(await _getVariantDir(variant)).path}/${variant.dataDirName}',
+    );
   }
 }

@@ -67,8 +67,10 @@ class SidebarWidget extends ConsumerWidget {
                 delay: 60.ms,
                 acts: [.fadeIn(), .slideX(from: -0.04)],
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: ShadButton(
                     width: double.infinity,
                     leading: const HugeIcon(

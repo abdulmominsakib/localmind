@@ -2,12 +2,7 @@ import 'dart:convert';
 
 /// Structured API error details from LM Studio, OpenAI-compatible, etc.
 class ChatApiError {
-  const ChatApiError({
-    required this.message,
-    this.type,
-    this.code,
-    this.param,
-  });
+  const ChatApiError({required this.message, this.type, this.code, this.param});
 
   final String message;
   final String? type;
@@ -22,11 +17,11 @@ class ChatApiError {
   String encode() => jsonEncode(toMap());
 
   Map<String, dynamic> toMap() => {
-        'message': message,
-        if (type != null && type!.isNotEmpty) 'type': type,
-        if (code != null && code!.isNotEmpty) 'code': code,
-        if (param != null && param!.isNotEmpty) 'param': param,
-      };
+    'message': message,
+    if (type != null && type!.isNotEmpty) 'type': type,
+    if (code != null && code!.isNotEmpty) 'code': code,
+    if (param != null && param!.isNotEmpty) 'param': param,
+  };
 
   ChatApiError copyWithCodeIfMissing(String? newCode) {
     if (code != null && code!.isNotEmpty) return this;

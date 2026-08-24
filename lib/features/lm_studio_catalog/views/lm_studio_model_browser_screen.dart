@@ -42,14 +42,14 @@ class _LmStudioModelBrowserScreenState
       vsync: this,
       duration: const Duration(milliseconds: 280),
     );
-    _panelSlide = Tween<Offset>(
-      begin: const Offset(1, 0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _panelController,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    ));
+    _panelSlide = Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _panelController,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          ),
+        );
     _listScrollController.addListener(_onListScroll);
   }
 
@@ -100,9 +100,7 @@ class _LmStudioModelBrowserScreenState
     final isSearching = trimmedQuery.isNotEmpty;
 
     final staffPicksAsync = ref.watch(lmStudioStaffPicksProvider);
-    final searchState = isSearching
-        ? ref.watch(lmCatalogSearchProvider)
-        : null;
+    final searchState = isSearching ? ref.watch(lmCatalogSearchProvider) : null;
 
     return PopScope(
       canPop: _selectedModel == null,
@@ -111,95 +109,102 @@ class _LmStudioModelBrowserScreenState
         _closeDetails();
       },
       child: Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(
-        title: Text(l10n.lm_studio_model_browser_title),
-        actions: const [
-          LmDownloadIndicatorButton(),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
-                  decoration: InputDecoration(
-                    hintText: l10n.lm_studio_model_search_hint,
-                    prefixIcon: const Center(
-                      widthFactor: 1.0,
-                      heightFactor: 1.0,
-                      child: HugeIcon(icon: HugeIcons.strokeRoundedSearch01, size: 20),
+        backgroundColor: isDark
+            ? AppColors.darkBackground
+            : AppColors.lightBackground,
+        appBar: AppBar(
+          title: Text(l10n.lm_studio_model_browser_title),
+          actions: const [LmDownloadIndicatorButton()],
+        ),
+        body: Stack(
+          children: [
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    decoration: InputDecoration(
+                      hintText: l10n.lm_studio_model_search_hint,
+                      prefixIcon: const Center(
+                        widthFactor: 1.0,
+                        heightFactor: 1.0,
+                        child: HugeIcon(
+                          icon: HugeIcons.strokeRoundedSearch01,
+                          size: 20,
+                        ),
+                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const HugeIcon(
+                                icon: HugeIcons.strokeRoundedCancel01,
+                                size: 18,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _onSearchChanged('');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: isDark
+                          ? AppColors.darkSurface
+                          : AppColors.lightSurface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              _onSearchChanged('');
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor:
-                        isDark ? AppColors.darkSurface : AppColors.lightSurface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                  ),
+                ),
+                Expanded(
+                  child: isSearching
+                      ? _buildSearchList(searchState, l10n, theme)
+                      : staffPicksAsync.when(
+                          loading: () =>
+                              const Center(child: CircularProgressIndicator()),
+                          error: (error, _) => Center(
+                            child: Text(
+                              l10n.error_with_message(error.toString()),
+                            ),
+                          ),
+                          data: (models) =>
+                              _buildModelList(models, l10n, theme, null),
+                        ),
+                ),
+              ],
+            ),
+            if (_selectedModel != null) ...[
+              GestureDetector(
+                onTap: _closeDetails,
+                child: AnimatedBuilder(
+                  animation: _panelController,
+                  builder: (context, _) => Container(
+                    color: Colors.black.withValues(
+                      alpha: 0.45 * _panelController.value,
                     ),
                   ),
                 ),
               ),
-              Expanded(
-                child: isSearching
-                    ? _buildSearchList(searchState, l10n, theme)
-                    : staffPicksAsync.when(
-                        loading: () =>
-                            const Center(child: CircularProgressIndicator()),
-                        error: (error, _) => Center(
-                          child:
-                              Text(l10n.error_with_message(error.toString())),
-                        ),
-                        data: (models) =>
-                            _buildModelList(models, l10n, theme, null),
-                      ),
+              SlideTransition(
+                position: _panelSlide,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: SizedBox(
+                    width: MediaQuery.sizeOf(context).width * 0.85,
+                    child: _ModelDetailPanel(
+                      server: widget.server,
+                      model: _selectedModel!,
+                      onClose: _closeDetails,
+                      onSwipeDismiss: _closeDetails,
+                    ),
+                  ),
+                ),
               ),
             ],
-          ),
-          if (_selectedModel != null) ...[
-            GestureDetector(
-              onTap: _closeDetails,
-              child: AnimatedBuilder(
-                animation: _panelController,
-                builder: (context, _) => Container(
-                  color: Colors.black.withValues(
-                    alpha: 0.45 * _panelController.value,
-                  ),
-                ),
-              ),
-            ),
-            SlideTransition(
-              position: _panelSlide,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: SizedBox(
-                  width: MediaQuery.sizeOf(context).width * 0.85,
-                  child: _ModelDetailPanel(
-                    server: widget.server,
-                    model: _selectedModel!,
-                    onClose: _closeDetails,
-                    onSwipeDismiss: _closeDetails,
-                  ),
-                ),
-              ),
-            ),
           ],
-        ],
-      ),
+        ),
       ),
     );
   }
@@ -238,7 +243,9 @@ class _LmStudioModelBrowserScreenState
   }) {
     final isSearching = _searchQuery.trim().isNotEmpty;
     final staff = isSearching ? (staffMatches ?? []) : models;
-    final community = isSearching ? (communityModels ?? []) : const <LmCatalogModel>[];
+    final community = isSearching
+        ? (communityModels ?? [])
+        : const <LmCatalogModel>[];
 
     return ListView(
       controller: _listScrollController,
@@ -326,8 +333,9 @@ class _ModelListTile extends StatelessWidget {
 
     return Material(
       color: selected
-          ? (isDark ? AppColors.darkAccent : AppColors.lightAccent)
-              .withValues(alpha: 0.18)
+          ? (isDark ? AppColors.darkAccent : AppColors.lightAccent).withValues(
+              alpha: 0.18,
+            )
           : Colors.transparent,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
@@ -346,8 +354,7 @@ class _ModelListTile extends StatelessWidget {
                         width: 40,
                         height: 40,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) =>
-                            _FallbackIcon(model: model),
+                        errorBuilder: (_, _, _) => _FallbackIcon(model: model),
                       )
                     : _FallbackIcon(model: model),
               ),
@@ -369,8 +376,8 @@ class _ModelListTile extends StatelessWidget {
                           ),
                         ),
                         if (model.isVerified)
-                          HugeIcon(icon: 
-                            HugeIcons.strokeRoundedCheckmarkBadge01,
+                          HugeIcon(
+                            icon: HugeIcons.strokeRoundedCheckmarkBadge01,
                             size: 16,
                             color: isDark
                                 ? AppColors.darkAccent
@@ -378,8 +385,8 @@ class _ModelListTile extends StatelessWidget {
                           ),
                         if (model.isStaffPick) ...[
                           const SizedBox(width: 4),
-                          HugeIcon(icon: 
-                            HugeIcons.strokeRoundedSparkles,
+                          HugeIcon(
+                            icon: HugeIcons.strokeRoundedSparkles,
                             size: 14,
                             color: Colors.purple.shade300,
                           ),
@@ -410,8 +417,11 @@ class _ModelListTile extends StatelessWidget {
                         _CapabilityIcons(model: model),
                         const Spacer(),
                         if (model.likes > 0) ...[
-                          HugeIcon(icon: HugeIcons.strokeRoundedFavourite,
-                              size: 14, color: theme.hintColor),
+                          HugeIcon(
+                            icon: HugeIcons.strokeRoundedFavourite,
+                            size: 14,
+                            color: theme.hintColor,
+                          ),
                           const SizedBox(width: 2),
                           Text(
                             _formatCount(model.likes),
@@ -420,8 +430,11 @@ class _ModelListTile extends StatelessWidget {
                           const SizedBox(width: 8),
                         ],
                         if (model.downloads > 0) ...[
-                          HugeIcon(icon: HugeIcons.strokeRoundedDownload01,
-                              size: 14, color: theme.hintColor),
+                          HugeIcon(
+                            icon: HugeIcons.strokeRoundedDownload01,
+                            size: 14,
+                            color: theme.hintColor,
+                          ),
                           const SizedBox(width: 2),
                           Text(
                             _formatCount(model.downloads),
@@ -560,14 +573,16 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
     final l10n = AppLocalizations.of(context)!;
     final quant = _effectiveQuant(detail.quants);
     if (detail.quants.isNotEmpty && quant == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.lm_studio_download_options)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.lm_studio_download_options)));
       return;
     }
 
     try {
-      await ref.read(lmDownloadManagerProvider.notifier).startDownload(
+      await ref
+          .read(lmDownloadManagerProvider.notifier)
+          .startDownload(
             server: widget.server,
             model: widget.model,
             detail: detail,
@@ -612,20 +627,23 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
             data: (detail) {
               final selectedQuant = _effectiveQuant(detail.quants);
               final activeJob = _activeJobFor(detail);
-              final selectedSize = selectedQuant?.sizeBytes ??
+              final selectedSize =
+                  selectedQuant?.sizeBytes ??
                   detail.model.metadata.minMemoryUsageBytes;
               final compatibility = estimateMemoryCompatibility(
                 modelSizeBytes: selectedSize,
                 availableRamGb: widget.server.availableRamGb,
                 availableVramGb: widget.server.availableVramGb,
               );
-              final serverModels =
-                  ref.watch(availableModelsProvider(widget.server.id));
+              final serverModels = ref.watch(
+                availableModelsProvider(widget.server.id),
+              );
               final downloadedModels = serverModels.maybeWhen(
                 data: downloadedModelsList,
                 orElse: () => const <ModelInfo>[],
               );
-              final selectedDownloaded = selectedQuant != null &&
+              final selectedDownloaded =
+                  selectedQuant != null &&
                   isQuantDownloaded(
                     model: widget.model,
                     quant: selectedQuant,
@@ -640,7 +658,9 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const HugeIcon(icon: HugeIcons.strokeRoundedArrowLeft01),
+                          icon: const HugeIcon(
+                            icon: HugeIcons.strokeRoundedArrowLeft01,
+                          ),
                           onPressed: widget.onClose,
                         ),
                         Expanded(
@@ -654,7 +674,9 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
                           ),
                         ),
                         IconButton(
-                          icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01),
+                          icon: const HugeIcon(
+                            icon: HugeIcons.strokeRoundedCancel01,
+                          ),
                           onPressed: widget.onClose,
                         ),
                       ],
@@ -691,15 +713,21 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
                           Row(
                             children: [
                               if (widget.model.likes > 0) ...[
-                                HugeIcon(icon: HugeIcons.strokeRoundedFavourite,
-                                    size: 16, color: theme.hintColor),
+                                HugeIcon(
+                                  icon: HugeIcons.strokeRoundedFavourite,
+                                  size: 16,
+                                  color: theme.hintColor,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(_formatCount(widget.model.likes)),
                                 const SizedBox(width: 16),
                               ],
                               if (widget.model.downloads > 0) ...[
-                                HugeIcon(icon: HugeIcons.strokeRoundedDownload01,
-                                    size: 16, color: theme.hintColor),
+                                HugeIcon(
+                                  icon: HugeIcons.strokeRoundedDownload01,
+                                  size: 16,
+                                  color: theme.hintColor,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(_formatCount(widget.model.downloads)),
                               ],
@@ -725,21 +753,26 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
                             if (widget.model.metadata.paramsStrings.isNotEmpty)
                               _MetaChip(
                                 label: l10n.lm_studio_params,
-                                value: widget.model.metadata.paramsStrings
-                                    .join(', '),
+                                value: widget.model.metadata.paramsStrings.join(
+                                  ', ',
+                                ),
                               ),
                             if (widget.model.metadata.architectures.isNotEmpty)
                               _MetaChip(
                                 label: l10n.lm_studio_arch,
-                                value: widget.model.metadata.architectures
-                                    .join(', '),
+                                value: widget.model.metadata.architectures.join(
+                                  ', ',
+                                ),
                               ),
                             _MetaChip(
                               label: l10n.lm_studio_domain,
                               value: widget.model.metadata.type.toUpperCase(),
                             ),
                             if (widget
-                                .model.metadata.compatibilityTypes.isNotEmpty)
+                                .model
+                                .metadata
+                                .compatibilityTypes
+                                .isNotEmpty)
                               _MetaChip(
                                 label: l10n.lm_studio_format,
                                 value: widget.model.metadata.compatibilityTypes
@@ -811,8 +844,8 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
                                       value: activeJob.progressFraction,
                                     ),
                                   )
-                                : HugeIcon(icon: 
-                                    selectedDownloaded
+                                : HugeIcon(
+                                    icon: selectedDownloaded
                                         ? HugeIcons.strokeRoundedTick01
                                         : HugeIcons.strokeRoundedDownload01,
                                   ),
@@ -823,12 +856,12 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
                                           .round(),
                                     )
                                   : selectedDownloaded
-                                      ? l10n.downloaded
-                                      : selectedSize != null
-                                          ? l10n.lm_studio_download_size(
-                                              formatBytes(selectedSize),
-                                            )
-                                          : l10n.lm_studio_download,
+                                  ? l10n.downloaded
+                                  : selectedSize != null
+                                  ? l10n.lm_studio_download_size(
+                                      formatBytes(selectedSize),
+                                    )
+                                  : l10n.lm_studio_download,
                             ),
                           ),
                         ),
@@ -953,13 +986,31 @@ class _CapabilityRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final caps = <Widget>[];
     if (model.metadata.vision) {
-      caps.add(_capLabel(HugeIcons.strokeRoundedEye, l10n.lm_studio_vision, Colors.amber));
+      caps.add(
+        _capLabel(
+          HugeIcons.strokeRoundedEye,
+          l10n.lm_studio_vision,
+          Colors.amber,
+        ),
+      );
     }
     if (model.metadata.trainedForToolUse) {
-      caps.add(_capLabel(HugeIcons.strokeRoundedTools, l10n.lm_studio_tool_use, Colors.blue));
+      caps.add(
+        _capLabel(
+          HugeIcons.strokeRoundedTools,
+          l10n.lm_studio_tool_use,
+          Colors.blue,
+        ),
+      );
     }
     if (model.metadata.reasoning) {
-      caps.add(_capLabel(HugeIcons.strokeRoundedBrain, l10n.lm_studio_reasoning, Colors.green));
+      caps.add(
+        _capLabel(
+          HugeIcons.strokeRoundedBrain,
+          l10n.lm_studio_reasoning,
+          Colors.green,
+        ),
+      );
     }
     if (caps.isEmpty) return const SizedBox.shrink();
     return Wrap(spacing: 8, runSpacing: 8, children: caps);
@@ -1026,7 +1077,11 @@ class _CompatibilityBadge extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
           ),
         ],
       ),

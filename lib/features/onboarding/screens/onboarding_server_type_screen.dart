@@ -99,10 +99,7 @@ class _OnboardingServerTypeScreenState
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Actor(
-                      acts: [
-                        .fadeIn(),
-                        .slideY(from: 0.08),
-                      ],
+                      acts: [.fadeIn(), .slideY(from: 0.08)],
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -120,7 +117,9 @@ class _OnboardingServerTypeScreenState
                             l10n.onboarding_connect_desc,
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
                               height: 1.5,
                             ),
                           ),
@@ -129,14 +128,12 @@ class _OnboardingServerTypeScreenState
                     ),
                     Actor(
                       delay: 60.ms,
-                      acts: [
-                        .fadeIn(),
-                        .slideY(from: 0.08),
-                      ],
+                      acts: [.fadeIn(), .slideY(from: 0.08)],
                       child: LayoutBuilder(
                         builder: (context, constraints) {
-                          final crossAxisCount =
-                              constraints.maxWidth >= 560 ? 3 : 2;
+                          final crossAxisCount = constraints.maxWidth >= 560
+                              ? 3
+                              : 2;
 
                           return Column(
                             children: [
@@ -155,7 +152,8 @@ class _OnboardingServerTypeScreenState
                                     subtitle: l10n.server_type_on_device_desc,
                                     iconWidget: HugeIcon(
                                       icon: HugeIcons.strokeRoundedSmartPhone01,
-                                      color: _selectedType == ServerType.onDevice
+                                      color:
+                                          _selectedType == ServerType.onDevice
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurface,
                                     ),
@@ -166,8 +164,10 @@ class _OnboardingServerTypeScreenState
                                     title: l10n.server_type_lm_studio,
                                     subtitle: l10n.server_type_lm_studio_desc,
                                     iconWidget: HugeIcon(
-                                      icon: HugeIcons.strokeRoundedComputerTerminal01,
-                                      color: _selectedType == ServerType.lmStudio
+                                      icon: HugeIcons
+                                          .strokeRoundedComputerTerminal01,
+                                      color:
+                                          _selectedType == ServerType.lmStudio
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurface,
                                     ),
@@ -205,7 +205,9 @@ class _OnboardingServerTypeScreenState
                                     subtitle: l10n.server_type_ollama_cloud_sub,
                                     iconWidget: HugeIcon(
                                       icon: HugeIcons.strokeRoundedAiCloud,
-                                      color: _selectedType == ServerType.ollamaCloud
+                                      color:
+                                          _selectedType ==
+                                              ServerType.ollamaCloud
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurface,
                                     ),
@@ -217,7 +219,8 @@ class _OnboardingServerTypeScreenState
                                     subtitle: l10n.server_type_openrouter_sub,
                                     iconWidget: HugeIcon(
                                       icon: HugeIcons.strokeRoundedCloudServer,
-                                      color: _selectedType == ServerType.openRouter
+                                      color:
+                                          _selectedType == ServerType.openRouter
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurface,
                                     ),
@@ -243,10 +246,7 @@ class _OnboardingServerTypeScreenState
             ),
             Actor(
               delay: 120.ms,
-              acts: [
-                .fadeIn(),
-                .slideY(from: 0.08),
-              ],
+              acts: [.fadeIn(), .slideY(from: 0.08)],
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
@@ -352,7 +352,7 @@ class _OnboardingServerTypeScreenState
         decoration: BoxDecoration(
           color: disabled
               ? theme.colorScheme.surface.withValues(alpha: 0.5)
-          : theme.colorScheme.surface,
+              : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected && !disabled
@@ -361,11 +361,11 @@ class _OnboardingServerTypeScreenState
             width: isSelected && !disabled ? 1.5 : 1,
           ),
         ),
-              child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -384,8 +384,8 @@ class _OnboardingServerTypeScreenState
                 ),
                 const Spacer(),
                 if (disabled)
-                  const HugeIcon(icon: 
-                    HugeIcons.strokeRoundedLock,
+                  const HugeIcon(
+                    icon: HugeIcons.strokeRoundedLock,
                     size: 18,
                     color: Colors.orange,
                   ),

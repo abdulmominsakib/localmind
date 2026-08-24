@@ -19,7 +19,9 @@ void main() {
     test('tracks lifecycle across start-arguments-success events', () {
       final adapter = LmStudioToolAdapter();
       adapter.consumeEvent('tool_call.start', {'tool': 'calc.add'});
-      adapter.consumeEvent('tool_call.arguments', {'arguments': {'a': 1, 'b': 2}});
+      adapter.consumeEvent('tool_call.arguments', {
+        'arguments': {'a': 1, 'b': 2},
+      });
       adapter.consumeEvent('tool_call.success', {'output': '3'});
       final calls = adapter.takeServerExecutedCalls();
       expect(calls.length, 1);

@@ -297,10 +297,11 @@ class _ModelPickerHeader extends ConsumerWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: (isDark
-                                  ? AppColors.darkAccent
-                                  : AppColors.lightAccent)
-                              .withValues(alpha: 0.15),
+                          color:
+                              (isDark
+                                      ? AppColors.darkAccent
+                                      : AppColors.lightAccent)
+                                  .withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(

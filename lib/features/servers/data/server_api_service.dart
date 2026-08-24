@@ -210,7 +210,9 @@ class ServerApiService {
           }
           return modelId;
         } on DioException catch (e) {
-          throw Exception(_extractApiErrorMessage(e.response?.data) ?? e.message);
+          throw Exception(
+            _extractApiErrorMessage(e.response?.data) ?? e.message,
+          );
         }
       case ServerType.ollama:
       case ServerType.ollamaCloud:
@@ -225,7 +227,10 @@ class ServerApiService {
     }
   }
 
-  Future<void> unloadAllInstances(Server server, Set<String> instanceIds) async {
+  Future<void> unloadAllInstances(
+    Server server,
+    Set<String> instanceIds,
+  ) async {
     for (final instanceId in instanceIds) {
       await unloadModel(server, instanceId, instanceId: instanceId);
     }
@@ -270,11 +275,7 @@ class ServerApiService {
       case ServerType.ollama:
         await _dio.post(
           server.unloadModelEndpoint,
-          data: {
-            'model': modelId,
-            'keep_alive': 0,
-            'prompt': '',
-          },
+          data: {'model': modelId, 'keep_alive': 0, 'prompt': ''},
           options: Options(headers: buildServerAuthHeaders(server)),
         );
         break;
@@ -326,7 +327,8 @@ class ServerApiService {
     if (modelItems is List) {
       for (final item in modelItems) {
         if (item is! Map) continue;
-        final id = item['key']?.toString() ??
+        final id =
+            item['key']?.toString() ??
             item['name']?.toString() ??
             item['id']?.toString() ??
             '';
@@ -386,7 +388,8 @@ class ServerApiService {
     if (modelItems != null && modelItems is List) {
       for (final item in modelItems) {
         if (item is! Map) continue;
-        final id = item['key']?.toString() ??
+        final id =
+            item['key']?.toString() ??
             item['name']?.toString() ??
             item['id']?.toString() ??
             '';
@@ -395,7 +398,7 @@ class ServerApiService {
         final displayName = item['display_name']?.toString();
         final quantization = item['quantization'];
         final paramsString = item['params_string']?.toString();
-        
+
         final meta = metaById[id] ?? (item['meta'] as Map<String, dynamic>?);
         if (meta == null && metaById.isNotEmpty && data['models'] != null) {
           Log.warning('Metadata join failed for model: $id');
@@ -422,12 +425,13 @@ class ServerApiService {
             id: id,
             name: displayName ?? _formatModelName(id),
             description: item['description']?.toString(),
-            parameterCount: _parseParameterString(paramsString) ??
+            parameterCount:
+                _parseParameterString(paramsString) ??
                 _paramCountFromMeta(finalMeta['n_params']),
-            contextLength: _toInt(item['max_context_length']) ??
+            contextLength:
+                _toInt(item['max_context_length']) ??
                 _toInt(finalMeta['n_ctx_train']),
-            fileSize: _toInt(item['size_bytes']) ??
-                _toInt(finalMeta['size']),
+            fileSize: _toInt(item['size_bytes']) ?? _toInt(finalMeta['size']),
             quantization: quantName,
             architecture: archName,
             serverType: server.type,
@@ -450,11 +454,8 @@ class ServerApiService {
     return null;
   }
 
-  ({
-    bool supportsVision,
-    bool supportsReasoning,
-    bool supportsToolUse,
-  }) _parseModelCapabilities(dynamic raw) {
+  ({bool supportsVision, bool supportsReasoning, bool supportsToolUse})
+  _parseModelCapabilities(dynamic raw) {
     if (raw is! Map) {
       return (
         supportsVision: false,
@@ -568,7 +569,8 @@ class ServerApiService {
     for (final item in items) {
       if (item is! Map) continue;
       final modality = item['architecture']?['modality'] as String?;
-      final isTextModel = modality == null ||
+      final isTextModel =
+          modality == null ||
           modality.isEmpty ||
           !modality.contains('->') ||
           modality.split('->').last.contains('text');
@@ -606,10 +608,12 @@ class ServerApiService {
     List<String>? supportedReasoningEfforts,
     String? defaultReasoningEffort,
     bool reasoningMandatory,
-  }) _parseOpenRouterCapabilities(Map<dynamic, dynamic> item) {
+  })
+  _parseOpenRouterCapabilities(Map<dynamic, dynamic> item) {
     final architecture = item['architecture'];
     final arch = architecture is Map ? architecture : const <String, dynamic>{};
-    final inputModalities = (arch['input_modalities'] as List?)
+    final inputModalities =
+        (arch['input_modalities'] as List?)
             ?.map((e) => e.toString().trim().toLowerCase())
             .toSet() ??
         <String>{};
@@ -617,11 +621,13 @@ class ServerApiService {
     final supportsVision =
         inputModalities.contains('image') || modality.contains('image');
 
-    final supportedParams = (item['supported_parameters'] as List?)
+    final supportedParams =
+        (item['supported_parameters'] as List?)
             ?.map((e) => e.toString().trim().toLowerCase())
             .toSet() ??
         <String>{};
-    final supportsToolUse = supportedParams.contains('tools') ||
+    final supportsToolUse =
+        supportedParams.contains('tools') ||
         supportedParams.contains('tool_choice');
 
     final reasoningField = item['reasoning'];
@@ -629,15 +635,19 @@ class ServerApiService {
     final supportedEffortsRaw = reasoning?['supported_efforts'];
     final supportedReasoningEfforts = supportedEffortsRaw is List
         ? supportedEffortsRaw
-            .map((e) => e.toString().trim().toLowerCase())
-            .where((e) => e.isNotEmpty)
-            .toList(growable: false)
+              .map((e) => e.toString().trim().toLowerCase())
+              .where((e) => e.isNotEmpty)
+              .toList(growable: false)
         : null;
-    final defaultReasoningEffort =
-        reasoning?['default_effort']?.toString().trim().toLowerCase();
+    final defaultReasoningEffort = reasoning?['default_effort']
+        ?.toString()
+        .trim()
+        .toLowerCase();
     final reasoningMandatory = reasoning?['mandatory'] == true;
-    final supportsReasoning = reasoning != null && reasoning.isNotEmpty ||
-        supportedReasoningEfforts != null && supportedReasoningEfforts.isNotEmpty ||
+    final supportsReasoning =
+        reasoning != null && reasoning.isNotEmpty ||
+        supportedReasoningEfforts != null &&
+            supportedReasoningEfforts.isNotEmpty ||
         reasoningMandatory ||
         supportedParams.contains('reasoning') ||
         supportedParams.contains('include_reasoning');
@@ -656,7 +666,7 @@ class ServerApiService {
   /// quotes prices per token (e.g. `0.0000025`), so the value is scaled by
   /// 1,000,000 for display-friendly numbers.
   ({double? inputPricePerMillion, double? outputPricePerMillion})
-      _parseOpenRouterPricing(dynamic raw) {
+  _parseOpenRouterPricing(dynamic raw) {
     if (raw is! Map) {
       return (inputPricePerMillion: null, outputPricePerMillion: null);
     }
@@ -687,9 +697,7 @@ class ServerApiService {
   double? _parseParameterSize(String size) {
     final cleaned = size.trim();
     if (cleaned.endsWith('B') || cleaned.endsWith('b')) {
-      return double.tryParse(
-        cleaned.substring(0, cleaned.length - 1).trim(),
-      );
+      return double.tryParse(cleaned.substring(0, cleaned.length - 1).trim());
     }
     if (cleaned.endsWith('M') || cleaned.endsWith('m')) {
       final val = double.tryParse(
@@ -728,7 +736,8 @@ class ServerApiService {
     if (map is! Map) return;
 
     final hasError = map.containsKey('error') && map['error'] != null;
-    final isFailedStatus = map['status'] == 'error' ||
+    final isFailedStatus =
+        map['status'] == 'error' ||
         map['status'] == 'failed' ||
         map['success'] == false;
 
@@ -764,8 +773,11 @@ class ServerApiService {
       final code = error['code']?.toString();
       if (message != null && message.trim().isNotEmpty) {
         if (type != null && type.trim().isNotEmpty) return '$type: $message';
-        if (code != null && code.trim().isNotEmpty) return 'Error $code: $message';
-        return message;
+        if (code != null && code.trim().isNotEmpty) {
+          return 'Error $code: $message';
+        } else {
+          return message;
+        }
       }
       return type ?? code;
     } else if (error is String && error.trim().isNotEmpty) {

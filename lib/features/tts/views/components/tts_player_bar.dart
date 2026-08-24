@@ -108,19 +108,21 @@ class TtsPlayerBar extends ConsumerWidget {
     final preview = _truncateContent(ttsState.playingContent);
     final canJumpToMessage = ttsState.playingMessageId != null;
     final skipSeconds = ref.watch(settingsProvider).ttsSkipSeconds;
-    final settingsEngine =
-        ref.watch(settingsProvider.select((s) => s.ttsEngine));
-    final isSystemTts = ttsState.activeEngine == EngineId.system ||
+    final settingsEngine = ref.watch(
+      settingsProvider.select((s) => s.ttsEngine),
+    );
+    final isSystemTts =
+        ttsState.activeEngine == EngineId.system ||
         settingsEngine == EngineId.system ||
         (ttsState.activeEngine == null && settingsEngine == EngineId.system);
     final showSeekControls = !isSystemTts;
     final hasTimeline = showSeekControls && ttsState.duration > Duration.zero;
     final progress = showSeekControls
         ? (ttsState.duration > Duration.zero
-            ? (ttsState.position.inMilliseconds /
-                    ttsState.duration.inMilliseconds)
-                .clamp(0.0, 1.0)
-            : 0.0)
+              ? (ttsState.position.inMilliseconds /
+                        ttsState.duration.inMilliseconds)
+                    .clamp(0.0, 1.0)
+              : 0.0)
         : null;
     final speedLabel =
         '${ttsState.playbackSpeed.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '')}x';
@@ -158,11 +160,13 @@ class TtsPlayerBar extends ConsumerWidget {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.secondary.withValues(alpha: 0.1),
+                        color: theme.colorScheme.secondary.withValues(
+                          alpha: 0.1,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: HugeIcon(icon: 
-                        ttsState.isPaused
+                      child: HugeIcon(
+                        icon: ttsState.isPaused
                             ? HugeIcons.strokeRoundedPlay
                             : HugeIcons.strokeRoundedPause,
                         size: 20,
@@ -242,7 +246,10 @@ class TtsPlayerBar extends ConsumerWidget {
                 if (!ttsState.isInitializing &&
                     ttsState.activeEngine != EngineId.system)
                   IconButton(
-                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedDownload01, size: 20),
+                    icon: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedDownload01,
+                      size: 20,
+                    ),
                     tooltip: l10n.download_tts_audio,
                     visualDensity: VisualDensity.compact,
                     onPressed: () async {
@@ -285,8 +292,8 @@ class TtsPlayerBar extends ConsumerWidget {
                         color: theme.colorScheme.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: HugeIcon(icon: 
-                        HugeIcons.strokeRoundedStop,
+                      child: HugeIcon(
+                        icon: HugeIcons.strokeRoundedStop,
                         size: 20,
                         color: theme.colorScheme.error,
                       ),
@@ -408,8 +415,8 @@ class _TtsSeekSliderState extends State<_TtsSeekSlider> {
                     setState(() => _dragValue = null);
                     await widget.onSeek(
                       Duration(
-                        milliseconds:
-                            (v * widget.duration.inMilliseconds).round(),
+                        milliseconds: (v * widget.duration.inMilliseconds)
+                            .round(),
                       ),
                     );
                   }
@@ -425,9 +432,9 @@ class _TtsSeekSliderState extends State<_TtsSeekSlider> {
                 widget.formatDuration(
                   _dragValue != null
                       ? Duration(
-                          milliseconds: (_dragValue! *
-                                  widget.duration.inMilliseconds)
-                              .round(),
+                          milliseconds:
+                              (_dragValue! * widget.duration.inMilliseconds)
+                                  .round(),
                         )
                       : widget.position,
                 ),
@@ -522,10 +529,14 @@ class _WaveformIndicatorState extends State<_WaveformIndicator>
               ? 4.0 + 12.0 * (0.5 + 0.5 * math.sin(t * 2 * math.pi))
               : 4.0;
           final h2 = widget.isPlaying
-              ? 4.0 + 12.0 * (0.5 + 0.5 * math.sin(t * 2 * math.pi + math.pi / 3))
+              ? 4.0 +
+                    12.0 * (0.5 + 0.5 * math.sin(t * 2 * math.pi + math.pi / 3))
               : 6.0;
           final h3 = widget.isPlaying
-              ? 4.0 + 12.0 * (0.5 + 0.5 * math.sin(t * 2 * math.pi + 2 * math.pi / 3))
+              ? 4.0 +
+                    12.0 *
+                        (0.5 +
+                            0.5 * math.sin(t * 2 * math.pi + 2 * math.pi / 3))
               : 4.0;
 
           return Row(

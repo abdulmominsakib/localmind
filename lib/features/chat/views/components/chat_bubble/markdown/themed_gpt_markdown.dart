@@ -62,7 +62,9 @@ class ThemedGptMarkdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final gptTheme = GptMarkdownThemeData(
       brightness: isDark ? Brightness.dark : Brightness.light,
-      highlightColor: isDark ? const Color(0xFF334155) : const Color(0xFFDBEAFE),
+      highlightColor: isDark
+          ? const Color(0xFF334155)
+          : const Color(0xFFDBEAFE),
       linkColor: isDark ? AppColors.darkAccent : AppColors.lightAccent,
       linkHoverColor: isDark ? AppColors.darkAccent : AppColors.lightAccent,
       hrLineColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
@@ -98,7 +100,11 @@ class ThemedGptMarkdown extends StatelessWidget {
   }
 
   Widget _buildImageOrAudio(
-      BuildContext context, String url, double? width, double? height) {
+    BuildContext context,
+    String url,
+    double? width,
+    double? height,
+  ) {
     if (_isAudioUrl(url)) {
       return AudioPlayerWidget(source: url, height: 56);
     }
@@ -113,14 +119,19 @@ class ThemedGptMarkdown extends StatelessWidget {
             child: CircularProgressIndicator(
               value: loadingProgress.expectedTotalBytes != null
                   ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
+                        loadingProgress.expectedTotalBytes!
                   : null,
             ),
           );
         },
         errorBuilder: (context, error, stackTrace) => Container(
           color: Colors.grey[800],
-          child: const Center(child: HugeIcon(icon: HugeIcons.strokeRoundedImageNotFound01, color: Colors.white54)),
+          child: const Center(
+            child: HugeIcon(
+              icon: HugeIcons.strokeRoundedImageNotFound01,
+              color: Colors.white54,
+            ),
+          ),
         ),
       ),
     );
@@ -128,7 +139,11 @@ class ThemedGptMarkdown extends StatelessWidget {
 }
 
 class MarkdownContent extends StatelessWidget {
-  const MarkdownContent({super.key, required this.content, required this.isDark});
+  const MarkdownContent({
+    super.key,
+    required this.content,
+    required this.isDark,
+  });
 
   final String content;
   final bool isDark;
@@ -143,7 +158,11 @@ class MarkdownContent extends StatelessWidget {
 }
 
 class MarkdownBodyContent extends StatelessWidget {
-  const MarkdownBodyContent({super.key, required this.content, required this.isDark});
+  const MarkdownBodyContent({
+    super.key,
+    required this.content,
+    required this.isDark,
+  });
 
   final String content;
   final bool isDark;

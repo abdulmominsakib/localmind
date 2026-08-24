@@ -55,13 +55,13 @@ class BuiltInToolProvider implements ToolProvider {
                 'type': 'string',
                 'description':
                     'Start date in ISO 8601 format (e.g. 2025-01-15T09:00:00). '
-                        'Defaults to today.',
+                    'Defaults to today.',
               },
               'end_date': {
                 'type': 'string',
                 'description':
                     'End date in ISO 8601 format (e.g. 2025-01-22T23:59:59). '
-                        'Defaults to 7 days from start.',
+                    'Defaults to 7 days from start.',
               },
             },
           },
@@ -75,10 +75,7 @@ class BuiltInToolProvider implements ToolProvider {
           inputSchema: {
             'type': 'object',
             'properties': {
-              'title': {
-                'type': 'string',
-                'description': 'Event title / name.',
-              },
+              'title': {'type': 'string', 'description': 'Event title / name.'},
               'start_date': {
                 'type': 'string',
                 'description':
@@ -101,8 +98,8 @@ class BuiltInToolProvider implements ToolProvider {
                 'type': 'string',
                 'description':
                     'Optional calendar ID to create the event in. '
-                        'Use calendar.list_calendars to see available calendars. '
-                        'If omitted, the device default calendar is used.',
+                    'Use calendar.list_calendars to see available calendars. '
+                    'If omitted, the device default calendar is used.',
               },
             },
             'required': ['title', 'start_date', 'end_date'],
@@ -115,10 +112,7 @@ class BuiltInToolProvider implements ToolProvider {
               'List all calendars available on the user\'s device. '
               'Returns calendar ID, name, account, and read-only status. '
               'Use this to find the right calendar_id for creating events.',
-          inputSchema: {
-            'type': 'object',
-            'properties': {},
-          },
+          inputSchema: {'type': 'object', 'properties': {}},
           providerType: ToolProviderType.builtIn,
         ),
       ]);

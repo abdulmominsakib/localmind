@@ -64,170 +64,196 @@ void main() {
   });
 
   group('Issue #60 & #63: Server API Error Handling', () {
-    test('fetchModels throws clean formatted error on 401 unauthorized with top-level message', () async {
-      final dio = Dio();
-      dio.httpClientAdapter = _MockHttpClientAdapter((options) {
-        return ResponseBody.fromString(
-          '{"message":"Invalid API key or unauthorized.","type":"authentication_error"}',
-          401,
-          headers: {
-            Headers.contentTypeHeader: [Headers.jsonContentType],
-          },
+    test(
+      'fetchModels throws clean formatted error on 401 unauthorized with top-level message',
+      () async {
+        final dio = Dio();
+        dio.httpClientAdapter = _MockHttpClientAdapter((options) {
+          return ResponseBody.fromString(
+            '{"message":"Invalid API key or unauthorized.","type":"authentication_error"}',
+            401,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        });
+
+        final apiService = ServerApiService(dio);
+        final server = Server(
+          id: 'test-server',
+          name: 'OpenRouter',
+          host: 'openrouter.ai',
+          port: 443,
+          type: ServerType.openRouter,
+          apiKey: 'invalid-key',
+          createdAt: now,
+          lastConnectedAt: now,
         );
-      });
 
-      final apiService = ServerApiService(dio);
-      final server = Server(
-        id: 'test-server',
-        name: 'OpenRouter',
-        host: 'openrouter.ai',
-        port: 443,
-        type: ServerType.openRouter,
-        apiKey: 'invalid-key',
-        createdAt: now,
-        lastConnectedAt: now,
-      );
-
-      expect(
-        () => apiService.fetchModels(server),
-        throwsA(
-          predicate((e) =>
-              e is Exception &&
-              e.toString().contains('Failed to fetch models: authentication_error: Invalid API key or unauthorized.')),
-        ),
-      );
-    });
-
-    test('fetchModels throws clean formatted error on 500 error payload', () async {
-      final dio = Dio();
-      dio.httpClientAdapter = _MockHttpClientAdapter((options) {
-        return ResponseBody.fromString(
-          '{"error":{"code":500,"message":"Internal engine crash"}}',
-          500,
-          headers: {
-            Headers.contentTypeHeader: [Headers.jsonContentType],
-          },
-        );
-      });
-
-      final apiService = ServerApiService(dio);
-      final server = Server(
-        id: 'test-server-500',
-        name: 'Local Server',
-        host: 'localhost',
-        port: 1234,
-        type: ServerType.openAICompatible,
-        createdAt: now,
-        lastConnectedAt: now,
-      );
-
-      expect(
-        () => apiService.fetchModels(server),
-        throwsA(
-          predicate((e) =>
-              e is Exception &&
-              e.toString().contains('Failed to fetch models: Error 500: Internal engine crash')),
-        ),
-      );
-    });
-
-    test('loadModelWithInstanceId throws clean formatted error on top-level API error map', () async {
-      final dio = Dio();
-      dio.httpClientAdapter = _MockHttpClientAdapter((options) {
-        return ResponseBody.fromString(
-          '{"message":"Model not found on disk","type":"not_found"}',
-          404,
-          headers: {
-            Headers.contentTypeHeader: [Headers.jsonContentType],
-          },
-        );
-      });
-
-      final apiService = ServerApiService(dio);
-      final server = Server(
-        id: 'test-server',
-        name: 'LM Studio',
-        host: 'localhost',
-        port: 1234,
-        type: ServerType.lmStudio,
-        createdAt: now,
-        lastConnectedAt: now,
-      );
-
-      expect(
-        () => apiService.loadModelWithInstanceId(server, 'missing-model'),
-        throwsA(
-          predicate((e) =>
-              e is Exception &&
-              e.toString().contains('not_found: Model not found on disk')),
-        ),
-      );
-    });
-
-    testWidgets('showModelInfoSheet gracefully handles availableModelsProvider error', (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-
-      final server = Server(
-        id: 'error-server',
-        name: 'Error Server',
-        host: 'localhost',
-        port: 1234,
-        type: ServerType.openAICompatible,
-        createdAt: now,
-        lastConnectedAt: now,
-      );
-
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
-          activeServerProvider.overrideWith(() => _StubActiveServerNotifier(server)),
-          serversProvider.overrideWith(() => _StubServersNotifier(server)),
-          availableModelsProvider(server.id).overrideWith(
-            (ref) async => throw Exception('Server connection failed'),
+        expect(
+          () => apiService.fetchModels(server),
+          throwsA(
+            predicate(
+              (e) =>
+                  e is Exception &&
+                  e.toString().contains(
+                    'Failed to fetch models: authentication_error: Invalid API key or unauthorized.',
+                  ),
+            ),
           ),
-        ],
-      );
-      addTearDown(container.dispose);
+        );
+      },
+    );
 
-      late BuildContext capturedContext;
-      late WidgetRef capturedRef;
+    test(
+      'fetchModels throws clean formatted error on 500 error payload',
+      () async {
+        final dio = Dio();
+        dio.httpClientAdapter = _MockHttpClientAdapter((options) {
+          return ResponseBody.fromString(
+            '{"error":{"code":500,"message":"Internal engine crash"}}',
+            500,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        });
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: ShadTheme(
-              data: AppTheme.lightShadTheme,
-              child: Scaffold(
-                body: Consumer(
-                  builder: (context, ref, _) {
-                    capturedContext = context;
-                    capturedRef = ref;
-                    return const SizedBox();
-                  },
+        final apiService = ServerApiService(dio);
+        final server = Server(
+          id: 'test-server-500',
+          name: 'Local Server',
+          host: 'localhost',
+          port: 1234,
+          type: ServerType.openAICompatible,
+          createdAt: now,
+          lastConnectedAt: now,
+        );
+
+        expect(
+          () => apiService.fetchModels(server),
+          throwsA(
+            predicate(
+              (e) =>
+                  e is Exception &&
+                  e.toString().contains(
+                    'Failed to fetch models: Error 500: Internal engine crash',
+                  ),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'loadModelWithInstanceId throws clean formatted error on top-level API error map',
+      () async {
+        final dio = Dio();
+        dio.httpClientAdapter = _MockHttpClientAdapter((options) {
+          return ResponseBody.fromString(
+            '{"message":"Model not found on disk","type":"not_found"}',
+            404,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        });
+
+        final apiService = ServerApiService(dio);
+        final server = Server(
+          id: 'test-server',
+          name: 'LM Studio',
+          host: 'localhost',
+          port: 1234,
+          type: ServerType.lmStudio,
+          createdAt: now,
+          lastConnectedAt: now,
+        );
+
+        expect(
+          () => apiService.loadModelWithInstanceId(server, 'missing-model'),
+          throwsA(
+            predicate(
+              (e) =>
+                  e is Exception &&
+                  e.toString().contains('not_found: Model not found on disk'),
+            ),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'showModelInfoSheet gracefully handles availableModelsProvider error',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final server = Server(
+          id: 'error-server',
+          name: 'Error Server',
+          host: 'localhost',
+          port: 1234,
+          type: ServerType.openAICompatible,
+          createdAt: now,
+          lastConnectedAt: now,
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+            activeServerProvider.overrideWith(
+              () => _StubActiveServerNotifier(server),
+            ),
+            serversProvider.overrideWith(() => _StubServersNotifier(server)),
+            availableModelsProvider(server.id).overrideWith(
+              (ref) async => throw Exception('Server connection failed'),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        late BuildContext capturedContext;
+        late WidgetRef capturedRef;
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: ShadTheme(
+                data: AppTheme.lightShadTheme,
+                child: Scaffold(
+                  body: Consumer(
+                    builder: (context, ref, _) {
+                      capturedContext = context;
+                      capturedRef = ref;
+                      return const SizedBox();
+                    },
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Trigger showModelInfoSheet and ensure no uncaught exception is thrown
-      showModelInfoSheet(capturedContext, capturedRef, 'test-model-id');
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        // Trigger showModelInfoSheet and ensure no uncaught exception is thrown
+        showModelInfoSheet(capturedContext, capturedRef, 'test-model-id');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('Issue #61: ModelList Unmounted Ref Access Guard', () {
-    testWidgets('does not throw when unmounted while model is loading', (tester) async {
+    testWidgets('does not throw when unmounted while model is loading', (
+      tester,
+    ) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
@@ -260,11 +286,19 @@ void main() {
           settingsProvider.overrideWith(_TestSettingsNotifier.new),
           chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
           serverApiServiceProvider.overrideWithValue(mockApiService),
-          activeServerProvider.overrideWith(() => _StubActiveServerNotifier(server)),
+          activeServerProvider.overrideWith(
+            () => _StubActiveServerNotifier(server),
+          ),
           serversProvider.overrideWith(() => _StubServersNotifier(server)),
-          connectionStatusProvider.overrideWith(_StubConnectedStatusNotifier.new),
-          availableModelsProvider(server.id).overrideWith((ref) => Future.value([testModel])),
-          loadedModelsProvider(server).overrideWith((ref) => Future.value(<String>{})),
+          connectionStatusProvider.overrideWith(
+            _StubConnectedStatusNotifier.new,
+          ),
+          availableModelsProvider(
+            server.id,
+          ).overrideWith((ref) => Future.value([testModel])),
+          loadedModelsProvider(
+            server,
+          ).overrideWith((ref) => Future.value(<String>{})),
         ],
       );
       addTearDown(container.dispose);
@@ -296,9 +330,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: Scaffold(body: SizedBox()),
-          ),
+          child: const MaterialApp(home: Scaffold(body: SizedBox())),
         ),
       );
       await tester.pumpAndSettle();
@@ -309,287 +341,439 @@ void main() {
   });
 
   group('Issue #64: Server Setup Screens Unmounted testConnection Guard', () {
-    testWidgets('OnboardingServerSetupScreen does not crash when unmounted during testConnection', (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
+    testWidgets(
+      'OnboardingServerSetupScreen does not crash when unmounted during testConnection',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
 
-      final connectionCompleter = Completer<ResponseBody>();
-      final mockDio = Dio();
-      mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
-        return connectionCompleter.future;
-      });
-      final mockApiService = ServerApiService(mockDio);
+        final connectionCompleter = Completer<ResponseBody>();
+        final mockDio = Dio();
+        mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
+          return connectionCompleter.future;
+        });
+        final mockApiService = ServerApiService(mockDio);
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          settingsProvider.overrideWith(_TestSettingsNotifier.new),
-          chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
-          serverApiServiceProvider.overrideWithValue(mockApiService),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsProvider.overrideWith(_TestSettingsNotifier.new),
+            chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+            serverApiServiceProvider.overrideWithValue(mockApiService),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: ShadTheme(
-            data: AppTheme.lightShadTheme,
-            child: const MaterialApp(
-              locale: Locale('en'),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: OnboardingServerSetupScreen(
-                selectedType: ServerType.lmStudio,
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: ShadTheme(
+              data: AppTheme.lightShadTheme,
+              child: const MaterialApp(
+                locale: Locale('en'),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: OnboardingServerSetupScreen(
+                  selectedType: ServerType.lmStudio,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Test Connection'), findsOneWidget);
+        expect(find.text('Test Connection'), findsOneWidget);
 
-      // Tap Test Connection
-      await tester.tap(find.text('Test Connection'));
-      await tester.pump();
+        // Tap Test Connection
+        await tester.tap(find.text('Test Connection'));
+        await tester.pump();
 
-      // Immediately unmount OnboardingServerSetupScreen while test is in flight
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            home: Scaffold(body: SizedBox()),
+        // Immediately unmount OnboardingServerSetupScreen while test is in flight
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: Scaffold(body: SizedBox())),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Now complete the network response
-      connectionCompleter.complete(
-        ResponseBody.fromString('{"models":[]}', 200),
-      );
-      await tester.pumpAndSettle();
+        // Now complete the network response
+        connectionCompleter.complete(
+          ResponseBody.fromString('{"models":[]}', 200),
+        );
+        await tester.pumpAndSettle();
 
-      // Ensure no Null check operator or setState exception was thrown
-      expect(tester.takeException(), isNull);
-    });
+        // Ensure no Null check operator or setState exception was thrown
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('AddServerScreen does not crash when unmounted during testConnection', (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
+    testWidgets(
+      'AddServerScreen does not crash when unmounted during testConnection',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
 
-      final connectionCompleter = Completer<ResponseBody>();
-      final mockDio = Dio();
-      mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
-        return connectionCompleter.future;
-      });
-      final mockApiService = ServerApiService(mockDio);
+        final connectionCompleter = Completer<ResponseBody>();
+        final mockDio = Dio();
+        mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
+          return connectionCompleter.future;
+        });
+        final mockApiService = ServerApiService(mockDio);
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          settingsProvider.overrideWith(_TestSettingsNotifier.new),
-          chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
-          serverApiServiceProvider.overrideWithValue(mockApiService),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsProvider.overrideWith(_TestSettingsNotifier.new),
+            chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+            serverApiServiceProvider.overrideWithValue(mockApiService),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: ShadTheme(
-            data: AppTheme.lightShadTheme,
-            child: const MaterialApp(
-              locale: Locale('en'),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: AddServerScreen(),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: ShadTheme(
+              data: AppTheme.lightShadTheme,
+              child: const MaterialApp(
+                locale: Locale('en'),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: AddServerScreen(),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Test Connection'), findsOneWidget);
+        expect(find.text('Test Connection'), findsOneWidget);
 
-      // Tap Test Connection
-      await tester.tap(find.text('Test Connection'));
-      await tester.pump();
+        // Tap Test Connection
+        await tester.tap(find.text('Test Connection'));
+        await tester.pump();
 
-      // Immediately unmount AddServerScreen while test is in flight
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            home: Scaffold(body: SizedBox()),
+        // Immediately unmount AddServerScreen while test is in flight
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: Scaffold(body: SizedBox())),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Now complete the network response
-      connectionCompleter.complete(
-        ResponseBody.fromString('{"models":[]}', 200),
-      );
-      await tester.pumpAndSettle();
+        // Now complete the network response
+        connectionCompleter.complete(
+          ResponseBody.fromString('{"models":[]}', 200),
+        );
+        await tester.pumpAndSettle();
 
-      // Ensure no Null check operator or setState exception was thrown
-      expect(tester.takeException(), isNull);
-    });
+        // Ensure no Null check operator or setState exception was thrown
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('Issue #65: Server Setup Screens Unmounted setState finally-guard', () {
     testWidgets(
-        'OnboardingServerSetupScreen does not crash when testConnection completes after unmount',
-        (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
+      'OnboardingServerSetupScreen does not crash when testConnection completes after unmount',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
 
-      // Use a Completer so we control when the network response resolves —
-      // this lets us unmount the widget before the await resumes, then
-      // resume the future and verify the `finally` setState is a no-op.
-      final connectionCompleter = Completer<ResponseBody>();
-      final mockDio = Dio();
-      mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
-        return connectionCompleter.future;
-      });
-      final mockApiService = ServerApiService(mockDio);
+        // Use a Completer so we control when the network response resolves —
+        // this lets us unmount the widget before the await resumes, then
+        // resume the future and verify the `finally` setState is a no-op.
+        final connectionCompleter = Completer<ResponseBody>();
+        final mockDio = Dio();
+        mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
+          return connectionCompleter.future;
+        });
+        final mockApiService = ServerApiService(mockDio);
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          settingsProvider.overrideWith(_TestSettingsNotifier.new),
-          chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
-          serverApiServiceProvider.overrideWithValue(mockApiService),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsProvider.overrideWith(_TestSettingsNotifier.new),
+            chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+            serverApiServiceProvider.overrideWithValue(mockApiService),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: ShadTheme(
-            data: AppTheme.lightShadTheme,
-            child: const MaterialApp(
-              locale: Locale('en'),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: OnboardingServerSetupScreen(
-                selectedType: ServerType.lmStudio,
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: ShadTheme(
+              data: AppTheme.lightShadTheme,
+              child: const MaterialApp(
+                locale: Locale('en'),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: OnboardingServerSetupScreen(
+                  selectedType: ServerType.lmStudio,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Test Connection'), findsOneWidget);
+        expect(find.text('Test Connection'), findsOneWidget);
 
-      // Kick off the test connection (this enters the try block and awaits).
-      await tester.tap(find.text('Test Connection'));
-      await tester.pump();
+        // Kick off the test connection (this enters the try block and awaits).
+        await tester.tap(find.text('Test Connection'));
+        await tester.pump();
 
-      // Unmount the screen *while* the await is pending. This simulates a
-      // user navigating away (or any other reason for the widget to be
-      // disposed) before the network response arrives.
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            home: Scaffold(body: SizedBox()),
+        // Unmount the screen *while* the await is pending. This simulates a
+        // user navigating away (or any other reason for the widget to be
+        // disposed) before the network response arrives.
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: Scaffold(body: SizedBox())),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Now resume the future — this should run the remaining setState
-      // calls in the try, catch, and finally blocks. Without the mounted
-      // guards this would crash with
-      // "Null check operator used on a null value" at
-      // package:flutter/src/widgets/framework.dart:1219 from
-      // `_element!.markNeedsBuild()` (issue #65).
-      connectionCompleter.complete(
-        ResponseBody.fromString('{"models":[]}', 200),
-      );
-      await tester.pumpAndSettle();
+        // Now resume the future — this should run the remaining setState
+        // calls in the try, catch, and finally blocks. Without the mounted
+        // guards this would crash with
+        // "Null check operator used on a null value" at
+        // package:flutter/src/widgets/framework.dart:1219 from
+        // `_element!.markNeedsBuild()` (issue #65).
+        connectionCompleter.complete(
+          ResponseBody.fromString('{"models":[]}', 200),
+        );
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets(
-        'OnboardingServerSetupScreen does not crash when testConnection fails after unmount',
-        (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
+      'OnboardingServerSetupScreen does not crash when testConnection fails after unmount',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
 
-      // Completer that returns a 500 response — exercises the failure
-      // branch (isConnected == false) + the `finally` block while the
-      // widget is already unmounted.
-      final connectionCompleter = Completer<ResponseBody>();
-      final mockDio = Dio();
-      mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
-        return connectionCompleter.future;
-      });
-      final mockApiService = ServerApiService(mockDio);
+        // Completer that returns a 500 response — exercises the failure
+        // branch (isConnected == false) + the `finally` block while the
+        // widget is already unmounted.
+        final connectionCompleter = Completer<ResponseBody>();
+        final mockDio = Dio();
+        mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
+          return connectionCompleter.future;
+        });
+        final mockApiService = ServerApiService(mockDio);
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          settingsProvider.overrideWith(_TestSettingsNotifier.new),
-          chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
-          serverApiServiceProvider.overrideWithValue(mockApiService),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsProvider.overrideWith(_TestSettingsNotifier.new),
+            chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+            serverApiServiceProvider.overrideWithValue(mockApiService),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: ShadTheme(
-            data: AppTheme.lightShadTheme,
-            child: const MaterialApp(
-              locale: Locale('en'),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: OnboardingServerSetupScreen(
-                selectedType: ServerType.openAICompatible,
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: ShadTheme(
+              data: AppTheme.lightShadTheme,
+              child: const MaterialApp(
+                locale: Locale('en'),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: OnboardingServerSetupScreen(
+                  selectedType: ServerType.openAICompatible,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Test Connection'));
-      await tester.pump();
+        await tester.tap(find.text('Test Connection'));
+        await tester.pump();
 
-      // Unmount before completing the in-flight request.
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            home: Scaffold(body: SizedBox()),
+        // Unmount before completing the in-flight request.
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: Scaffold(body: SizedBox())),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Complete with a 500 response so the testConnection method returns
-      // false (no exception thrown). This drives both the try branch
-      // (isConnected == false) and the finally branch (sets
-      // _isTesting = false) on the now-disposed state. Without the
-      // mounted guard, the finally setState would crash with
-      // "Null check operator used on a null value" (#65).
-      connectionCompleter.complete(
-        ResponseBody.fromString('{"error":"server error"}', 500),
-      );
-      await tester.pumpAndSettle();
+        // Complete with a 500 response so the testConnection method returns
+        // false (no exception thrown). This drives both the try branch
+        // (isConnected == false) and the finally branch (sets
+        // _isTesting = false) on the now-disposed state. Without the
+        // mounted guard, the finally setState would crash with
+        // "Null check operator used on a null value" (#65).
+        connectionCompleter.complete(
+          ResponseBody.fromString('{"error":"server error"}', 500),
+        );
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
+
+  group('Issue #69: Riverpod Ref Disposed Async Race Protection', () {
+    test(
+      'ConnectionStatusNotifier does not throw or access disposed Ref when container is disposed during testConnection',
+      () async {
+        final completer = Completer<ResponseBody>();
+        final dio = Dio()
+          ..httpClientAdapter = _MockHttpClientAdapter((_) => completer.future);
+        final apiService = ServerApiService(dio);
+
+        final server = Server(
+          id: 'server-69-a',
+          name: 'Ollama Test',
+          host: '127.0.0.1',
+          port: 11434,
+          type: ServerType.ollama,
+          createdAt: now,
+          lastConnectedAt: now,
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            serverApiServiceProvider.overrideWithValue(apiService),
+            activeServerProvider.overrideWith(
+              () => _StubActiveServerNotifier(server),
+            ),
+            serversProvider.overrideWith(() => _StubServersNotifier(server)),
+          ],
+        );
+
+        // Read connection status to trigger build and microtask
+        expect(
+          container.read(connectionStatusProvider),
+          ConnectionStatus.checking,
+        );
+
+        // Allow microtask to run
+        await Future<void>.delayed(Duration.zero);
+
+        // Dispose container while connection test is in flight
+        container.dispose();
+
+        // Complete the network request after disposal
+        completer.complete(
+          ResponseBody.fromString(
+            '{"version":"0.1.0"}',
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          ),
+        );
+
+        // Allow any microtasks / async continuations to run without throwing StateError
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      },
+    );
+
+    test(
+      'ConnectionStatusNotifier ignores stale older generation when server switches rapidly',
+      () async {
+        final completer1 = Completer<ResponseBody>();
+        final completer2 = Completer<ResponseBody>();
+
+        var callCount = 0;
+        final dio = Dio()
+          ..httpClientAdapter = _MockHttpClientAdapter((options) {
+            callCount++;
+            if (callCount == 1) return completer1.future;
+            return completer2.future;
+          });
+        final apiService = ServerApiService(dio);
+
+        final serverA = Server(
+          id: 'server-69-a',
+          name: 'Server A',
+          host: '127.0.0.1',
+          port: 11434,
+          type: ServerType.ollama,
+          createdAt: now,
+          lastConnectedAt: now,
+        );
+        final serverB = Server(
+          id: 'server-69-b',
+          name: 'Server B',
+          host: '127.0.0.1',
+          port: 1234,
+          type: ServerType.lmStudio,
+          createdAt: now,
+          lastConnectedAt: now,
+        );
+
+        final activeNotifier = _MutableActiveServerNotifier(serverA);
+
+        final container = ProviderContainer(
+          overrides: [
+            serverApiServiceProvider.overrideWithValue(apiService),
+            activeServerProvider.overrideWith(() => activeNotifier),
+            serversProvider.overrideWith(() => _StubServersNotifier(serverA)),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        expect(
+          container.read(connectionStatusProvider),
+          ConnectionStatus.checking,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        // Switch active server to Server B before Server A's check completes
+        activeNotifier.setServer(serverB);
+        container.read(connectionStatusProvider);
+        await Future<void>.delayed(Duration.zero);
+
+        // Server A completes as disconnected
+        completer1.complete(ResponseBody.fromString('error', 500));
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        // Server B completes as connected
+        completer2.complete(
+          ResponseBody.fromString(
+            '{"data":[]}',
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        // State should reflect Server B's connected status, not Server A's error
+        expect(
+          container.read(connectionStatusProvider),
+          ConnectionStatus.connected,
+        );
+      },
+    );
+  });
+}
+
+class _MutableActiveServerNotifier extends ActiveServerNotifier {
+  _MutableActiveServerNotifier(this._server);
+
+  Server? _server;
+
+  @override
+  Server? build() => _server;
+
+  void setServer(Server? server) {
+    _server = server;
+    state = server;
+  }
 }
 
 class _StubActiveServerNotifier extends ActiveServerNotifier {
@@ -635,8 +819,5 @@ class _MockHttpClientAdapter implements HttpClientAdapter {
 
 class _TestSettingsNotifier extends SettingsNotifier {
   @override
-  AppSettings build() => AppSettings(
-    unloadModelsBeforeLoad: false,
-  );
+  AppSettings build() => AppSettings(unloadModelsBeforeLoad: false);
 }
-

@@ -30,10 +30,12 @@ class RecentConversationItem extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            HugeIcon(icon: 
-              HugeIcons.strokeRoundedChatting01,
+            HugeIcon(
+              icon: HugeIcons.strokeRoundedChatting01,
               size: 18,
-              color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+              color: isDark
+                  ? AppColors.darkMutedText
+                  : AppColors.lightMutedText,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -55,7 +57,9 @@ class RecentConversationItem extends ConsumerWidget {
                       conversation.lastMessagePreview!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                        color: isDark
+                            ? AppColors.darkMutedText
+                            : AppColors.lightMutedText,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -63,12 +67,14 @@ class RecentConversationItem extends ConsumerWidget {
                 ],
               ),
             ),
-            HugeIcon(icon: 
-              Directionality.of(context) == TextDirection.rtl
+            HugeIcon(
+              icon: Directionality.of(context) == TextDirection.rtl
                   ? HugeIcons.strokeRoundedArrowLeft01
                   : HugeIcons.strokeRoundedArrowRight01,
               size: 18,
-              color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+              color: isDark
+                  ? AppColors.darkMutedText
+                  : AppColors.lightMutedText,
             ),
           ],
         ),

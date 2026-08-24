@@ -7,10 +7,7 @@ import '../../data/models/server.dart';
 class HttpsSchemeHint extends StatelessWidget {
   final TextEditingController controller;
 
-  const HttpsSchemeHint({
-    super.key,
-    required this.controller,
-  });
+  const HttpsSchemeHint({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +39,8 @@ class HttpsSchemeHint extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                HugeIcon(icon: 
-                  HugeIcons.strokeRoundedLock,
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedLock,
                   size: 18,
                   color: colorScheme.tertiary,
                 ),

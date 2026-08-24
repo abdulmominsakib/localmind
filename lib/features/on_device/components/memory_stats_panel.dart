@@ -94,8 +94,8 @@ class _MemoryPanelContent extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    HugeIcon(icon: 
-                      HugeIcons.strokeRoundedCpu,
+                    HugeIcon(
+                      icon: HugeIcons.strokeRoundedCpu,
                       size: 20,
                       color: theme.colorScheme.primary,
                     ),
@@ -112,7 +112,10 @@ class _MemoryPanelContent extends StatelessWidget {
                 ShadButton.ghost(
                   size: ShadButtonSize.sm,
                   onPressed: () => ref.invalidate(deviceMemoryProvider),
-                  child: const HugeIcon(icon: HugeIcons.strokeRoundedRefresh, size: 18),
+                  child: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedRefresh,
+                    size: 18,
+                  ),
                 ),
               ],
             ),
@@ -127,7 +130,9 @@ class _MemoryPanelContent extends StatelessWidget {
                     Text(
                       l10n.ram_usage,
                       style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
                       ),
                     ),
                     Container(
@@ -199,7 +204,9 @@ class _MemoryPanelContent extends StatelessWidget {
                     Text(
                       '${_formatMb(usedMb)} / ${info.totalMemoryFormatted}',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                     ),
                   ],
@@ -264,7 +271,8 @@ class _MemoryStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final iconColor = color ?? theme.colorScheme.onSurface.withValues(alpha: 0.4);
+    final iconColor =
+        color ?? theme.colorScheme.onSurface.withValues(alpha: 0.4);
 
     return Column(
       crossAxisAlignment: alignment,
@@ -292,12 +300,15 @@ class _MemoryStat extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           value,
-          style: (isPrimary ? theme.textTheme.titleMedium : theme.textTheme.bodyMedium)
-              ?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-                letterSpacing: isPrimary ? -0.5 : null,
-              ),
+          style:
+              (isPrimary
+                      ? theme.textTheme.titleMedium
+                      : theme.textTheme.bodyMedium)
+                  ?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    letterSpacing: isPrimary ? -0.5 : null,
+                  ),
         ),
       ],
     );

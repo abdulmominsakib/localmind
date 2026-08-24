@@ -15,9 +15,7 @@ class ModelSearchNotifier extends Notifier<String> {
 enum ModelSortOption { favorites, nameAsc, sizeAsc, sizeDesc, contextDesc }
 
 final modelSortOptionProvider =
-    NotifierProvider<ModelSortNotifier, ModelSortOption>(
-      ModelSortNotifier.new,
-    );
+    NotifierProvider<ModelSortNotifier, ModelSortOption>(ModelSortNotifier.new);
 
 class ModelSortNotifier extends Notifier<ModelSortOption> {
   @override

@@ -28,7 +28,10 @@ void main() {
           {
             'delta': {
               'tool_calls': [
-                {'index': 0, 'function': {'arguments': '{"a":1,"b":2}'}},
+                {
+                  'index': 0,
+                  'function': {'arguments': '{"a":1,"b":2}'},
+                },
               ],
             },
           },

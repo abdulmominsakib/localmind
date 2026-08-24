@@ -142,8 +142,7 @@ class CrashErrorWidget extends StatelessWidget {
                           ),
                           child: SelectableText(
                             previewLines.isEmpty
-                                ? (l10n?.crash_report_empty_stack ??
-                                    '<empty>')
+                                ? (l10n?.crash_report_empty_stack ?? '<empty>')
                                 : previewLines,
                             style: const TextStyle(
                               fontFamily: 'monospace',
@@ -239,9 +238,7 @@ class CrashErrorWidget extends StatelessWidget {
       if (messenger != null) {
         messenger.showSnackBar(
           SnackBar(
-            content: Text(
-              l10n?.crash_report_copied ?? 'Copied to clipboard',
-            ),
+            content: Text(l10n?.crash_report_copied ?? 'Copied to clipboard'),
           ),
         );
       }

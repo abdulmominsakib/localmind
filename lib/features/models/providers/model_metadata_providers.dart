@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/storage_providers.dart';
 import '../data/model_metadata_repository.dart';
 
-final modelMetadataRepositoryProvider = Provider<ModelMetadataRepository>((ref) {
+final modelMetadataRepositoryProvider = Provider<ModelMetadataRepository>((
+  ref,
+) {
   return ModelMetadataRepository(ref.watch(sharedPreferencesProvider));
 });
 

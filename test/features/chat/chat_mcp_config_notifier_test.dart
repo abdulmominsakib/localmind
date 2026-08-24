@@ -69,15 +69,21 @@ void main() {
       final state = container.read(chatMcpConfigProvider);
       expect(state.integrations.length, equals(3));
 
-      final playwright = state.integrations.firstWhere((i) => i.serverLabel == 'playwright');
+      final playwright = state.integrations.firstWhere(
+        (i) => i.serverLabel == 'playwright',
+      );
       expect(playwright.type, equals(McpIntegrationType.plugin));
       expect(playwright.pluginId, equals('mcp/playwright'));
 
-      final ddgPlugin = state.integrations.firstWhere((i) => i.serverLabel == 'danielsig/duckduckgo');
+      final ddgPlugin = state.integrations.firstWhere(
+        (i) => i.serverLabel == 'danielsig/duckduckgo',
+      );
       expect(ddgPlugin.type, equals(McpIntegrationType.plugin));
       expect(ddgPlugin.pluginId, equals('danielsig/duckduckgo'));
 
-      final ddg = state.integrations.firstWhere((i) => i.serverLabel == 'duckduckgo');
+      final ddg = state.integrations.firstWhere(
+        (i) => i.serverLabel == 'duckduckgo',
+      );
       expect(ddg.type, equals(McpIntegrationType.ephemeralMcp));
       expect(ddg.serverUrl, equals('http://localhost:8000/sse'));
     });
@@ -92,13 +98,22 @@ void main() {
         ),
       );
 
-      expect(container.read(chatMcpConfigProvider).integrations[0].enabled, isTrue);
+      expect(
+        container.read(chatMcpConfigProvider).integrations[0].enabled,
+        isTrue,
+      );
 
       notifier.toggleIntegration(0, false);
-      expect(container.read(chatMcpConfigProvider).integrations[0].enabled, isFalse);
+      expect(
+        container.read(chatMcpConfigProvider).integrations[0].enabled,
+        isFalse,
+      );
 
       notifier.toggleIntegration(0, true);
-      expect(container.read(chatMcpConfigProvider).integrations[0].enabled, isTrue);
+      expect(
+        container.read(chatMcpConfigProvider).integrations[0].enabled,
+        isTrue,
+      );
     });
 
     test('addIntegrationFromInput connects an HTTPS MCP server', () {

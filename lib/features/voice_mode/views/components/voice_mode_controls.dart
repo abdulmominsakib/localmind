@@ -55,14 +55,15 @@ class VoiceModeControls extends StatelessWidget {
             icon: phase == VoiceModePhase.listening
                 ? HugeIcons.strokeRoundedSent
                 : phase == VoiceModePhase.speaking
-                    ? HugeIcons.strokeRoundedStop
-                    : HugeIcons.strokeRoundedMic01,
+                ? HugeIcons.strokeRoundedStop
+                : HugeIcons.strokeRoundedMic01,
             label: phase == VoiceModePhase.listening
                 ? 'Send'
                 : phase == VoiceModePhase.speaking
-                    ? 'Stop'
-                    : 'Speak',
-            isActive: phase == VoiceModePhase.listening ||
+                ? 'Stop'
+                : 'Speak',
+            isActive:
+                phase == VoiceModePhase.listening ||
                 phase == VoiceModePhase.speaking,
             activeColor: VoiceModePalette.accentFor(
               VoiceModePhase.listening,
@@ -132,14 +133,14 @@ class _PillControl extends StatelessWidget {
     final bgColor = isActive
         ? activeColor.withValues(alpha: 0.14)
         : (isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.04));
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.04));
 
     final iconColor = isActive
         ? activeColor
         : (isDark
-            ? Colors.white.withValues(alpha: 0.7)
-            : Colors.black.withValues(alpha: 0.55));
+              ? Colors.white.withValues(alpha: 0.7)
+              : Colors.black.withValues(alpha: 0.55));
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -161,11 +162,7 @@ class _PillControl extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            HugeIcon(
-              icon: icon,
-              size: 22,
-              color: iconColor,
-            ),
+            HugeIcon(icon: icon, size: 22, color: iconColor),
             const SizedBox(height: 4),
             Text(
               label,
@@ -176,8 +173,8 @@ class _PillControl extends StatelessWidget {
                 color: isActive
                     ? activeColor
                     : (isDark
-                        ? Colors.white.withValues(alpha: 0.55)
-                        : Colors.black.withValues(alpha: 0.5)),
+                          ? Colors.white.withValues(alpha: 0.55)
+                          : Colors.black.withValues(alpha: 0.5)),
               ),
             ),
           ],

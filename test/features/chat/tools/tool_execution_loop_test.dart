@@ -11,7 +11,9 @@ class FakeToolAdapter implements ToolTransportAdapter {
   int callCount = 0;
 
   FakeToolAdapter.singleToolCall(String name, Map<String, dynamic> args)
-      : callsToReturn = [ParsedToolCall(id: 'call_1', name: name, arguments: args)];
+    : callsToReturn = [
+        ParsedToolCall(id: 'call_1', name: name, arguments: args),
+      ];
 
   @override
   Map<String, dynamic> buildToolDefinitionPayload(List<ToolDefinition> tools) {
@@ -51,7 +53,10 @@ void main() {
         initialUserMessage: 'add 1 and 2',
         assistantContent: 'The result is 3',
       );
-      expect(result.events.any((e) => e.status == ToolEventStatus.completed), true);
+      expect(
+        result.events.any((e) => e.status == ToolEventStatus.completed),
+        true,
+      );
       expect(result.finalAssistantContent, 'The result is 3');
     });
 
@@ -62,11 +67,17 @@ void main() {
       );
 
       final result = await loop.run(initialUserMessage: 'do something');
-      expect(result.events.any((e) => e.status == ToolEventStatus.failed), true);
+      expect(
+        result.events.any((e) => e.status == ToolEventStatus.failed),
+        true,
+      );
     });
 
     test('respects maxIterations', () async {
-      final adapter = FakeToolAdapter.singleToolCall('calc.add', {'a': 1, 'b': 2});
+      final adapter = FakeToolAdapter.singleToolCall('calc.add', {
+        'a': 1,
+        'b': 2,
+      });
       final loop = ToolExecutionLoop(
         adapter: adapter,
         registry: ToolRegistry(providers: [BuiltInToolProvider()]),
@@ -74,7 +85,10 @@ void main() {
       );
 
       final result = await loop.run(initialUserMessage: 'add');
-      expect(result.events.any((e) => e.status == ToolEventStatus.completed), true);
+      expect(
+        result.events.any((e) => e.status == ToolEventStatus.completed),
+        true,
+      );
       expect(result.toolCallCount, greaterThan(0));
     });
 
@@ -96,8 +110,14 @@ void main() {
       );
 
       final result = await loop.run(initialUserMessage: 'add');
-      expect(result.events.any((e) => e.status == ToolEventStatus.approved), true);
-      expect(result.events.any((e) => e.status == ToolEventStatus.completed), true);
+      expect(
+        result.events.any((e) => e.status == ToolEventStatus.approved),
+        true,
+      );
+      expect(
+        result.events.any((e) => e.status == ToolEventStatus.completed),
+        true,
+      );
     });
 
     test('rejects tool when approval callback returns false', () async {
@@ -108,24 +128,36 @@ void main() {
       );
 
       final result = await loop.run(initialUserMessage: 'add');
-      expect(result.events.any((e) => e.status == ToolEventStatus.rejected), true);
-      expect(result.events.any((e) => e.status == ToolEventStatus.completed), false);
+      expect(
+        result.events.any((e) => e.status == ToolEventStatus.rejected),
+        true,
+      );
+      expect(
+        result.events.any((e) => e.status == ToolEventStatus.completed),
+        false,
+      );
     });
 
-    test('loop runs with tool calls and returns events with assistant content', () async {
-      final adapter = FakeToolAdapter.singleToolCall('calc.add', {'a': 1, 'b': 2});
-      final loop = ToolExecutionLoop(
-        adapter: adapter,
-        registry: ToolRegistry(providers: [BuiltInToolProvider()]),
-      );
+    test(
+      'loop runs with tool calls and returns events with assistant content',
+      () async {
+        final adapter = FakeToolAdapter.singleToolCall('calc.add', {
+          'a': 1,
+          'b': 2,
+        });
+        final loop = ToolExecutionLoop(
+          adapter: adapter,
+          registry: ToolRegistry(providers: [BuiltInToolProvider()]),
+        );
 
-      final result = await loop.run(
-        initialUserMessage: 'hello',
-        assistantContent: 'Hi there!',
-      );
-      expect(result.finalAssistantContent, 'Hi there!');
-      expect(result.events, isNotEmpty);
-    });
+        final result = await loop.run(
+          initialUserMessage: 'hello',
+          assistantContent: 'Hi there!',
+        );
+        expect(result.finalAssistantContent, 'Hi there!');
+        expect(result.events, isNotEmpty);
+      },
+    );
 
     test('loop processes preParsedCalls when provided', () async {
       final loop = ToolExecutionLoop(
@@ -136,15 +168,25 @@ void main() {
       final result = await loop.run(
         initialUserMessage: 'add',
         preParsedCalls: [
-          const ParsedToolCall(id: 'pc_1', name: 'calc.add', arguments: {'a': 1, 'b': 2}),
+          const ParsedToolCall(
+            id: 'pc_1',
+            name: 'calc.add',
+            arguments: {'a': 1, 'b': 2},
+          ),
         ],
       );
-      expect(result.events.any((e) => e.status == ToolEventStatus.completed), true);
+      expect(
+        result.events.any((e) => e.status == ToolEventStatus.completed),
+        true,
+      );
       expect(result.toolCallCount, 1);
     });
 
     test('loop returns empty result when no tool calls', () async {
-      final adapter = FakeToolAdapter.singleToolCall('calc.add', {'a': 1, 'b': 2});
+      final adapter = FakeToolAdapter.singleToolCall('calc.add', {
+        'a': 1,
+        'b': 2,
+      });
       final loop = ToolExecutionLoop(
         adapter: adapter,
         registry: ToolRegistry(providers: [BuiltInToolProvider()]),

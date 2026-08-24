@@ -33,7 +33,10 @@ class MessageSearchService {
       final content = entity.content;
       final index = content.toLowerCase().indexOf(normalizedQuery);
       final start = index > 40 ? index - 40 : 0;
-      final end = (index + normalizedQuery.length + 40).clamp(0, content.length);
+      final end = (index + normalizedQuery.length + 40).clamp(
+        0,
+        content.length,
+      );
       var snippet = content.substring(start, end);
       if (start > 0) snippet = '…$snippet';
       if (end < content.length) snippet = '$snippet…';
@@ -74,7 +77,9 @@ class MessageSearchService {
     if (conversationIds.isEmpty) return const {};
 
     final query = db.conversationBox
-        .query(ConversationEntity_.id.oneOf(conversationIds.toList(growable: false)))
+        .query(
+          ConversationEntity_.id.oneOf(conversationIds.toList(growable: false)),
+        )
         .build();
     final entities = query.find();
     query.close();

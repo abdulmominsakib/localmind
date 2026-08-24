@@ -57,100 +57,111 @@ class BootstrapScreen extends StatelessWidget {
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
       ],
-      child: Builder(builder: (context) {
-        final l10n = AppLocalizations.of(context)!;
-        return Directionality(
-          textDirection: locale.languageCode.startsWith('ar')
-              ? TextDirection.rtl
-              : TextDirection.ltr,
-          child: Material(
-            color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
-            child: SafeArea(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
-                          'assets/images/logo.webp',
-                          width: 72,
-                          height: 72,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        l10n.app_name,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.darkPrimaryText
-                              : AppColors.lightPrimaryText,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 48),
-                      if (state.stage != BootstrapStage.error) ...[
-                        LoadingAnimationWidget.fourRotatingDots(
-                          size: 32,
-                          color: isDark
-                              ? AppColors.darkPrimaryText
-                              : AppColors.lightPrimaryText,
+      child: Builder(
+        builder: (context) {
+          final l10n = AppLocalizations.of(context)!;
+          return Directionality(
+            textDirection: locale.languageCode.startsWith('ar')
+                ? TextDirection.rtl
+                : TextDirection.ltr,
+            child: Material(
+              color: isDark
+                  ? AppColors.darkBackground
+                  : AppColors.lightBackground,
+              child: SafeArea(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.asset(
+                            'assets/images/logo.webp',
+                            width: 72,
+                            height: 72,
+                          ),
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          _stageMessage(l10n),
-                          textAlign: TextAlign.center,
+                          l10n.app_name,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
                             color: isDark
-                                ? AppColors.darkMutedText
-                                : AppColors.lightMutedText,
+                                ? AppColors.darkPrimaryText
+                                : AppColors.lightPrimaryText,
+                            letterSpacing: 1,
                           ),
                         ),
-                      ] else ...[
-                        HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, size: 40, color: AppColors.error),
-                        const SizedBox(height: 16),
-                        Text(
-                          l10n.something_went_wrong,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(height: 48),
+                        if (state.stage != BootstrapStage.error) ...[
+                          LoadingAnimationWidget.fourRotatingDots(
+                            size: 32,
                             color: isDark
                                 ? AppColors.darkPrimaryText
                                 : AppColors.lightPrimaryText,
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          state.error?.toString() ?? l10n.unknown_error,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark
-                                ? AppColors.darkMutedText
-                                : AppColors.lightMutedText,
+                          const SizedBox(height: 24),
+                          Text(
+                            _stageMessage(l10n),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDark
+                                  ? AppColors.darkMutedText
+                                  : AppColors.lightMutedText,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        if (onRetry != null)
-                          ElevatedButton.icon(
-                            onPressed: onRetry,
-                            icon: const HugeIcon(icon: HugeIcons.strokeRoundedRefresh, size: 18),
-                            label: Text(l10n.retry),
+                        ] else ...[
+                          HugeIcon(
+                            icon: HugeIcons.strokeRoundedInformationCircle,
+                            size: 40,
+                            color: AppColors.error,
                           ),
+                          const SizedBox(height: 16),
+                          Text(
+                            l10n.something_went_wrong,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.darkPrimaryText
+                                  : AppColors.lightPrimaryText,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            state.error?.toString() ?? l10n.unknown_error,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark
+                                  ? AppColors.darkMutedText
+                                  : AppColors.lightMutedText,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          if (onRetry != null)
+                            ElevatedButton.icon(
+                              onPressed: onRetry,
+                              icon: const HugeIcon(
+                                icon: HugeIcons.strokeRoundedRefresh,
+                                size: 18,
+                              ),
+                              label: Text(l10n.retry),
+                            ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 }

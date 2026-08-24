@@ -84,11 +84,13 @@ void ttsWorkerEntry(SendPort mainSendPort) {
         mainSendPort.send(TtsWorkerResponse(isInitResponse: true));
       } else if (message is TtsSynthesizeRequest) {
         if (activeEngineId == null || tts == null || activeInit == null) {
-          mainSendPort.send(TtsWorkerResponse(
-            chunkIndex: message.chunkIndex,
-            sessionId: message.sessionId,
-            error: 'No engine initialized in worker',
-          ));
+          mainSendPort.send(
+            TtsWorkerResponse(
+              chunkIndex: message.chunkIndex,
+              sessionId: message.sessionId,
+              error: 'No engine initialized in worker',
+            ),
+          );
           return;
         }
 
@@ -99,22 +101,29 @@ void ttsWorkerEntry(SendPort mainSendPort) {
           silenceScale: 0.2,
         );
 
-        final audio = tts!.generateWithConfig(text: message.text, config: genConfig);
+        final audio = tts!.generateWithConfig(
+          text: message.text,
+          config: genConfig,
+        );
         if (audio.samples.isEmpty) {
-          mainSendPort.send(TtsWorkerResponse(
-            chunkIndex: message.chunkIndex,
-            sessionId: message.sessionId,
-            error: 'Empty PCM generated',
-          ));
+          mainSendPort.send(
+            TtsWorkerResponse(
+              chunkIndex: message.chunkIndex,
+              sessionId: message.sessionId,
+              error: 'Empty PCM generated',
+            ),
+          );
           return;
         }
 
         final wavBytes = _createWav(audio.samples, audio.sampleRate);
-        mainSendPort.send(TtsWorkerResponse(
-          chunkIndex: message.chunkIndex,
-          sessionId: message.sessionId,
-          wavBytes: wavBytes,
-        ));
+        mainSendPort.send(
+          TtsWorkerResponse(
+            chunkIndex: message.chunkIndex,
+            sessionId: message.sessionId,
+            wavBytes: wavBytes,
+          ),
+        );
       } else if (message is TtsStopRequest) {
         // No-op: the main isolate handles queue cancellation.
       }

@@ -8,7 +8,11 @@ class ModelMetadata {
   final bool isFavorite;
   final String? note;
 
-  ModelMetadata copyWith({bool? isFavorite, String? note, bool clearNote = false}) {
+  ModelMetadata copyWith({
+    bool? isFavorite,
+    String? note,
+    bool clearNote = false,
+  }) {
     return ModelMetadata(
       isFavorite: isFavorite ?? this.isFavorite,
       note: clearNote ? null : (note ?? this.note),

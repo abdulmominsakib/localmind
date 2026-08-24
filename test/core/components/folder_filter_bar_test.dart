@@ -17,9 +17,7 @@ void main() {
         locale: const Locale('en'),
         home: Scaffold(
           body: FolderFilterBar(
-            folders: const [
-              FolderFilterItem(id: 'research', name: 'Research'),
-            ],
+            folders: const [FolderFilterItem(id: 'research', name: 'Research')],
             selectedFolderId: null,
             onFilterChanged: (_) {},
             onCreateFolder: () {},
@@ -48,8 +46,9 @@ void main() {
     expect(capturedPos, isNotNull);
   });
 
-  testWidgets('FolderFilterBar does not throw when onFolderAction is null',
-      (tester) async {
+  testWidgets('FolderFilterBar does not throw when onFolderAction is null', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -57,9 +56,7 @@ void main() {
         locale: const Locale('en'),
         home: Scaffold(
           body: FolderFilterBar(
-            folders: const [
-              FolderFilterItem(id: 'a', name: 'A'),
-            ],
+            folders: const [FolderFilterItem(id: 'a', name: 'A')],
             selectedFolderId: null,
             onFilterChanged: (_) {},
             onCreateFolder: () {},

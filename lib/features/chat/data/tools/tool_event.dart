@@ -1,6 +1,13 @@
 import 'tool_definition.dart';
 
-enum ToolEventStatus { requested, approved, rejected, running, completed, failed }
+enum ToolEventStatus {
+  requested,
+  approved,
+  rejected,
+  running,
+  completed,
+  failed,
+}
 
 class ToolEvent {
   final String eventId;
@@ -33,16 +40,15 @@ class ToolEvent {
     required ToolProviderType providerType,
     String? providerRef,
     Map<String, dynamic>? arguments,
-  }) =>
-      ToolEvent(
-        eventId: eventId,
-        timestamp: DateTime.now(),
-        status: ToolEventStatus.requested,
-        toolName: toolName,
-        providerType: providerType,
-        providerRef: providerRef,
-        arguments: arguments,
-      );
+  }) => ToolEvent(
+    eventId: eventId,
+    timestamp: DateTime.now(),
+    status: ToolEventStatus.requested,
+    toolName: toolName,
+    providerType: providerType,
+    providerRef: providerRef,
+    arguments: arguments,
+  );
 
   Map<String, dynamic> toMap() {
     return {

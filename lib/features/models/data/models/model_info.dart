@@ -20,18 +20,23 @@ class ModelInfo {
   final bool supportsVision;
   final bool supportsReasoning;
   final bool supportsToolUse;
+
   /// Effort strings the model advertises for reasoning (OpenRouter
   /// `reasoning.supported_efforts`), e.g. `["minimal","low","medium","high"]`.
   /// Null for providers that don't expose per-model efforts.
   final List<String>? supportedReasoningEfforts;
+
   /// The model's default reasoning effort (OpenRouter
   /// `reasoning.default_effort`), e.g. `"medium"`.
   final String? defaultReasoningEffort;
+
   /// When true the model cannot run without reasoning (OpenRouter
   /// `reasoning.mandatory`); the "Off" toggle should be hidden.
   final bool reasoningMandatory;
+
   /// Input token price in USD per 1M tokens (OpenRouter `pricing.prompt`).
   final double? inputPricePerMillion;
+
   /// Output token price in USD per 1M tokens (OpenRouter `pricing.completion`).
   final double? outputPricePerMillion;
 
@@ -184,8 +189,7 @@ class ModelInfo {
       defaultReasoningEffort:
           defaultReasoningEffort ?? this.defaultReasoningEffort,
       reasoningMandatory: reasoningMandatory ?? this.reasoningMandatory,
-      inputPricePerMillion:
-          inputPricePerMillion ?? this.inputPricePerMillion,
+      inputPricePerMillion: inputPricePerMillion ?? this.inputPricePerMillion,
       outputPricePerMillion:
           outputPricePerMillion ?? this.outputPricePerMillion,
     );

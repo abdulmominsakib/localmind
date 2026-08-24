@@ -145,7 +145,9 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
         context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isEditing ? l10n.persona_updated : l10n.persona_created),
+            content: Text(
+              _isEditing ? l10n.persona_updated : l10n.persona_created,
+            ),
           ),
         );
       }
@@ -153,7 +155,9 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.error_with_message(e.toString())),
+            content: Text(
+              AppLocalizations.of(context)!.error_with_message(e.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -316,8 +320,10 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: HugeIcon(icon: 
-                        _showPreview ? HugeIcons.strokeRoundedPencilEdit02 : HugeIcons.strokeRoundedEye,
+                      icon: HugeIcon(
+                        icon: _showPreview
+                            ? HugeIcons.strokeRoundedPencilEdit02
+                            : HugeIcons.strokeRoundedEye,
                         size: 18,
                       ),
                       tooltip: _showPreview ? l10n.edit : l10n.preview,
@@ -383,8 +389,10 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
               onTap: () => setState(() => _showAdvanced = !_showAdvanced),
               child: Row(
                 children: [
-                  HugeIcon(icon: 
-                    _showAdvanced ? HugeIcons.strokeRoundedArrowUp01 : HugeIcons.strokeRoundedArrowDown01,
+                  HugeIcon(
+                    icon: _showAdvanced
+                        ? HugeIcons.strokeRoundedArrowUp01
+                        : HugeIcons.strokeRoundedArrowDown01,
                     color: isDark
                         ? const Color(0xFF888888)
                         : const Color(0xFF999999),
@@ -420,8 +428,11 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return null;
                         final val = double.tryParse(v.trim());
-                        if (val == null || val < 0 || val > 2) return l10n.range_0_2;
-                        return null;
+                        if (val == null || val < 0 || val > 2) {
+                          return l10n.range_0_2;
+                        } else {
+                          return null;
+                        }
                       },
                     ),
                   ),
@@ -439,8 +450,11 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return null;
                         final val = double.tryParse(v.trim());
-                        if (val == null || val < 0 || val > 1) return l10n.range_0_1;
-                        return null;
+                        if (val == null || val < 0 || val > 1) {
+                          return l10n.range_0_1;
+                        } else {
+                          return null;
+                        }
                       },
                     ),
                   ),

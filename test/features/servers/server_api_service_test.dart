@@ -11,11 +11,9 @@ class TestInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    handler.resolve(Response(
-      requestOptions: options,
-      data: responseData,
-      statusCode: 200,
-    ));
+    handler.resolve(
+      Response(requestOptions: options, data: responseData, statusCode: 200),
+    );
   }
 }
 
@@ -128,74 +126,78 @@ void main() {
       );
     });
 
-    test('parses models successfully using fallback data array (llama.cpp / OpenAI standard)', () async {
-      final mockData = {
-        "object": "list",
-        "data": [
-          {
-            "id": "meta-llama/Llama-3-8B-Instruct",
-            "object": "model",
-            "created": 1677610602,
-            "owned_by": "openai",
-            "meta": {
-              "n_ctx_train": 8192,
-              "n_params": 8000000000,
-              "size": 4800000000
-            }
-          }
-        ]
-      };
-
-      final dio = Dio()..interceptors.add(TestInterceptor(mockData));
-      final service = ServerApiService(dio);
-
-      final models = await service.fetchModels(testServer);
-
-      expect(models, hasLength(1));
-      final model = models.first;
-      expect(model.id, "meta-llama/Llama-3-8B-Instruct");
-      expect(model.name, "Meta Llama/Llama 3 8B Instruct");
-      expect(model.contextLength, 8192);
-      expect(model.parameterCount, 8.0); // 8000000000 / 1000000000
-      expect(model.fileSize, 4800000000);
-      expect(model.serverType, ServerType.openAICompatible);
-      expect(model.serverId, testServer.id);
-    });
-
-    test('parses models successfully using custom models array (LM Studio)', () async {
-      final mockData = {
-        "models": [
-          {
-            "key": "lmstudio-community/Meta-Llama-3-8B-Instruct-GGUF",
-            "display_name": "Llama 3 8B Instruct",
-            "description": "LM Studio test model",
-            "params_string": "8B",
-            "max_context_length": 4096,
-            "size_bytes": 5000000000,
-            "quantization": {
-              "name": "Q4_K_M"
+    test(
+      'parses models successfully using fallback data array (llama.cpp / OpenAI standard)',
+      () async {
+        final mockData = {
+          "object": "list",
+          "data": [
+            {
+              "id": "meta-llama/Llama-3-8B-Instruct",
+              "object": "model",
+              "created": 1677610602,
+              "owned_by": "openai",
+              "meta": {
+                "n_ctx_train": 8192,
+                "n_params": 8000000000,
+                "size": 4800000000,
+              },
             },
-            "architecture": "llama"
-          }
-        ]
-      };
+          ],
+        };
 
-      final dio = Dio()..interceptors.add(TestInterceptor(mockData));
-      final service = ServerApiService(dio);
+        final dio = Dio()..interceptors.add(TestInterceptor(mockData));
+        final service = ServerApiService(dio);
 
-      final models = await service.fetchModels(testServer);
+        final models = await service.fetchModels(testServer);
 
-      expect(models, hasLength(1));
-      final model = models.first;
-      expect(model.id, "lmstudio-community/Meta-Llama-3-8B-Instruct-GGUF");
-      expect(model.name, "Llama 3 8B Instruct");
-      expect(model.description, "LM Studio test model");
-      expect(model.parameterCount, 8.0);
-      expect(model.contextLength, 4096);
-      expect(model.fileSize, 5000000000);
-      expect(model.quantization, "Q4_K_M");
-      expect(model.architecture, "llama");
-    });
+        expect(models, hasLength(1));
+        final model = models.first;
+        expect(model.id, "meta-llama/Llama-3-8B-Instruct");
+        expect(model.name, "Meta Llama/Llama 3 8B Instruct");
+        expect(model.contextLength, 8192);
+        expect(model.parameterCount, 8.0); // 8000000000 / 1000000000
+        expect(model.fileSize, 4800000000);
+        expect(model.serverType, ServerType.openAICompatible);
+        expect(model.serverId, testServer.id);
+      },
+    );
+
+    test(
+      'parses models successfully using custom models array (LM Studio)',
+      () async {
+        final mockData = {
+          "models": [
+            {
+              "key": "lmstudio-community/Meta-Llama-3-8B-Instruct-GGUF",
+              "display_name": "Llama 3 8B Instruct",
+              "description": "LM Studio test model",
+              "params_string": "8B",
+              "max_context_length": 4096,
+              "size_bytes": 5000000000,
+              "quantization": {"name": "Q4_K_M"},
+              "architecture": "llama",
+            },
+          ],
+        };
+
+        final dio = Dio()..interceptors.add(TestInterceptor(mockData));
+        final service = ServerApiService(dio);
+
+        final models = await service.fetchModels(testServer);
+
+        expect(models, hasLength(1));
+        final model = models.first;
+        expect(model.id, "lmstudio-community/Meta-Llama-3-8B-Instruct-GGUF");
+        expect(model.name, "Llama 3 8B Instruct");
+        expect(model.description, "LM Studio test model");
+        expect(model.parameterCount, 8.0);
+        expect(model.contextLength, 4096);
+        expect(model.fileSize, 5000000000);
+        expect(model.quantization, "Q4_K_M");
+        expect(model.architecture, "llama");
+      },
+    );
 
     test('parses model capabilities from LM Studio models array', () async {
       final mockData = {
@@ -203,10 +205,7 @@ void main() {
           {
             "key": "google/gemma-4-e2b",
             "display_name": "Gemma 4 E2B",
-            "capabilities": {
-              "vision": true,
-              "trained_for_tool_use": true,
-            },
+            "capabilities": {"vision": true, "trained_for_tool_use": true},
           },
           {
             "key": "mistralai/ministral-3-14b-reasoning",
@@ -223,10 +222,7 @@ void main() {
           {
             "key": "mradermacher/kimi-vl-a3b-thinking-2506-i1",
             "display_name": "Kimi VL A3B Thinking 2506 I1",
-            "capabilities": {
-              "vision": false,
-              "trained_for_tool_use": false,
-            },
+            "capabilities": {"vision": false, "trained_for_tool_use": false},
           },
         ],
       };
@@ -251,60 +247,57 @@ void main() {
       expect(models[2].supportsReasoning, isFalse);
     });
 
-    test('handles running models with fallback data array (llama.cpp)', () async {
-      final mockData = {
-        "object": "list",
-        "data": [
-          {
-            "id": "active-model",
-            "object": "model"
-          }
-        ]
-      };
+    test(
+      'handles running models with fallback data array (llama.cpp)',
+      () async {
+        final mockData = {
+          "object": "list",
+          "data": [
+            {"id": "active-model", "object": "model"},
+          ],
+        };
 
-      final dio = Dio()..interceptors.add(TestInterceptor(mockData));
-      final service = ServerApiService(dio);
+        final dio = Dio()..interceptors.add(TestInterceptor(mockData));
+        final service = ServerApiService(dio);
 
-      final lmStudioServer = testServer.copyWith(type: ServerType.lmStudio);
-      final running = await service.fetchRunningModels(lmStudioServer);
+        final lmStudioServer = testServer.copyWith(type: ServerType.lmStudio);
+        final running = await service.fetchRunningModels(lmStudioServer);
 
-      expect(running, contains("active-model"));
-    });
+        expect(running, contains("active-model"));
+      },
+    );
 
-    test('handles running models with custom models array and loaded instances (LM Studio)', () async {
-      final mockData = {
-        "models": [
-          {
-            "key": "active-model-lm",
-            "loaded_instances": [
-              {"id": "inst_1"}
-            ]
-          },
-          {
-            "key": "inactive-model-lm",
-            "loaded_instances": []
-          }
-        ]
-      };
+    test(
+      'handles running models with custom models array and loaded instances (LM Studio)',
+      () async {
+        final mockData = {
+          "models": [
+            {
+              "key": "active-model-lm",
+              "loaded_instances": [
+                {"id": "inst_1"},
+              ],
+            },
+            {"key": "inactive-model-lm", "loaded_instances": []},
+          ],
+        };
 
-      final dio = Dio()..interceptors.add(TestInterceptor(mockData));
-      final service = ServerApiService(dio);
+        final dio = Dio()..interceptors.add(TestInterceptor(mockData));
+        final service = ServerApiService(dio);
 
-      final lmStudioServer = testServer.copyWith(type: ServerType.lmStudio);
-      final running = await service.fetchRunningModels(lmStudioServer);
+        final lmStudioServer = testServer.copyWith(type: ServerType.lmStudio);
+        final running = await service.fetchRunningModels(lmStudioServer);
 
-      expect(running, contains("inst_1"));
-      expect(running, isNot(contains("inactive-model-lm")));
-    });
+        expect(running, contains("inst_1"));
+        expect(running, isNot(contains("inactive-model-lm")));
+      },
+    );
 
     test('handles custom string quantization value gracefully', () async {
       final mockData = {
         "data": [
-          {
-            "id": "model-with-string-quant",
-            "quantization": "Q5_K_M"
-          }
-        ]
+          {"id": "model-with-string-quant", "quantization": "Q5_K_M"},
+        ],
       };
 
       final dio = Dio()..interceptors.add(TestInterceptor(mockData));
@@ -314,117 +307,134 @@ void main() {
       expect(models.first.quantization, "Q5_K_M");
     });
 
-    test('handles actual user llama.cpp endpoint output successfully with Map architecture', () async {
-      final mockData = {
-        "data": [
-          {
-            "id": "Gemma-4-31B:IQ4_XS",
-            "aliases": [],
-            "tags": [],
-            "object": "model",
-            "owned_by": "llamacpp",
-            "created": 1779851034,
-            "status": {
-              "value": "unloaded",
-              "args": [
-                "D:\\llamacpp\\llama-server.exe",
-                "--host",
-                "127.0.0.1",
-                "--jinja",
-                "--mlock",
-                "--no-mmap",
-                "--port",
-                "0",
-                "--alias",
-                "Gemma-4-31B:IQ4_XS",
-                "--ctx-size",
-                "65536",
-                "--cache-type-k",
-                "q4_0",
-                "--cache-type-v",
-                "q4_0",
-                "--flash-attn",
-                "true",
-                "--model",
-                "./models/gemma-4-31B-it-llmfan-i1-IQ4_XS.gguf",
-                "--parallel",
-                "1",
-                "--reasoning",
-                "off"
-              ],
-              "preset": "[Gemma-4-31B:IQ4_XS]\njinja = true\nmlock = 1\nmmap = 0\nctx-size = 65536\ncache-type-k = q4_0\ncache-type-v = q4_0\nflash-attn = true\nmodel = ./models/gemma-4-31B-it-llmfan-i1-IQ4_XS.gguf\nparallel = 1\nreasoning = off\n\n"
+    test(
+      'handles actual user llama.cpp endpoint output successfully with Map architecture',
+      () async {
+        final mockData = {
+          "data": [
+            {
+              "id": "Gemma-4-31B:IQ4_XS",
+              "aliases": [],
+              "tags": [],
+              "object": "model",
+              "owned_by": "llamacpp",
+              "created": 1779851034,
+              "status": {
+                "value": "unloaded",
+                "args": [
+                  "D:\\llamacpp\\llama-server.exe",
+                  "--host",
+                  "127.0.0.1",
+                  "--jinja",
+                  "--mlock",
+                  "--no-mmap",
+                  "--port",
+                  "0",
+                  "--alias",
+                  "Gemma-4-31B:IQ4_XS",
+                  "--ctx-size",
+                  "65536",
+                  "--cache-type-k",
+                  "q4_0",
+                  "--cache-type-v",
+                  "q4_0",
+                  "--flash-attn",
+                  "true",
+                  "--model",
+                  "./models/gemma-4-31B-it-llmfan-i1-IQ4_XS.gguf",
+                  "--parallel",
+                  "1",
+                  "--reasoning",
+                  "off",
+                ],
+                "preset":
+                    "[Gemma-4-31B:IQ4_XS]\njinja = true\nmlock = 1\nmmap = 0\nctx-size = 65536\ncache-type-k = q4_0\ncache-type-v = q4_0\nflash-attn = true\nmodel = ./models/gemma-4-31B-it-llmfan-i1-IQ4_XS.gguf\nparallel = 1\nreasoning = off\n\n",
+              },
+              "architecture": {
+                "input_modalities": ["text"],
+                "output_modalities": ["text"],
+              },
             },
-            "architecture": {
-              "input_modalities": ["text"],
-              "output_modalities": ["text"]
-            }
-          }
-        ],
-        "object": "list"
-      };
+          ],
+          "object": "list",
+        };
 
-      final dio = Dio()..interceptors.add(TestInterceptor(mockData));
-      final service = ServerApiService(dio);
+        final dio = Dio()..interceptors.add(TestInterceptor(mockData));
+        final service = ServerApiService(dio);
 
-      final models = await service.fetchModels(testServer);
-      expect(models, hasLength(1));
-      expect(models.first.id, "Gemma-4-31B:IQ4_XS");
-      expect(models.first.architecture, isNull);
-    });
+        final models = await service.fetchModels(testServer);
+        expect(models, hasLength(1));
+        expect(models.first.id, "Gemma-4-31B:IQ4_XS");
+        expect(models.first.architecture, isNull);
+      },
+    );
   });
 
   group('ServerApiService - Ollama load behavior', () {
-    test('loadModel is a no-op for Ollama (does not POST /api/generate)', () async {
-      final ollamaServer = Server(
-        id: 'test-ollama',
-        name: 'Test Ollama',
-        type: ServerType.ollama,
-        host: 'localhost',
-        port: 11434,
-        createdAt: DateTime.now(),
-        lastConnectedAt: DateTime.now(),
-      );
+    test(
+      'loadModel is a no-op for Ollama (does not POST /api/generate)',
+      () async {
+        final ollamaServer = Server(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          type: ServerType.ollama,
+          host: 'localhost',
+          port: 11434,
+          createdAt: DateTime.now(),
+          lastConnectedAt: DateTime.now(),
+        );
 
-      final dio = Dio()..interceptors.add(RequestRecordingInterceptor());
-      final service = ServerApiService(dio);
+        final dio = Dio()..interceptors.add(RequestRecordingInterceptor());
+        final service = ServerApiService(dio);
 
-      await service.loadModel(ollamaServer, 'llama3.2:latest');
-      await service.loadModelWithInstanceId(ollamaServer, 'llama3.2:latest');
+        await service.loadModel(ollamaServer, 'llama3.2:latest');
+        await service.loadModelWithInstanceId(ollamaServer, 'llama3.2:latest');
 
-      final recorder =
-          dio.interceptors.firstWhere((i) => i is RequestRecordingInterceptor)
-              as RequestRecordingInterceptor;
-      expect(recorder.requests, isEmpty,
-          reason: 'Ollama should not issue an explicit load request; '
+        final recorder =
+            dio.interceptors.firstWhere((i) => i is RequestRecordingInterceptor)
+                as RequestRecordingInterceptor;
+        expect(
+          recorder.requests,
+          isEmpty,
+          reason:
+              'Ollama should not issue an explicit load request; '
               'calling /api/generate without a prompt can trigger an '
-              'auto-pull of the model from the Ollama registry.');
-    });
+              'auto-pull of the model from the Ollama registry.',
+        );
+      },
+    );
 
-    test('unloadModel for Ollama posts keep_alive=0 and a valid payload', () async {
-      final ollamaServer = Server(
-        id: 'test-ollama',
-        name: 'Test Ollama',
-        type: ServerType.ollama,
-        host: 'localhost',
-        port: 11434,
-        createdAt: DateTime.now(),
-        lastConnectedAt: DateTime.now(),
-      );
+    test(
+      'unloadModel for Ollama posts keep_alive=0 and a valid payload',
+      () async {
+        final ollamaServer = Server(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          type: ServerType.ollama,
+          host: 'localhost',
+          port: 11434,
+          createdAt: DateTime.now(),
+          lastConnectedAt: DateTime.now(),
+        );
 
-      final dio = Dio()..interceptors.add(RequestRecordingInterceptor());
-      final service = ServerApiService(dio);
+        final dio = Dio()..interceptors.add(RequestRecordingInterceptor());
+        final service = ServerApiService(dio);
 
-      await service.unloadModel(ollamaServer, 'llama3.2:latest');
+        await service.unloadModel(ollamaServer, 'llama3.2:latest');
 
-      final recorder =
-          dio.interceptors.firstWhere((i) => i is RequestRecordingInterceptor)
-              as RequestRecordingInterceptor;
-      expect(recorder.requests, hasLength(1));
-      expect(recorder.requests.first.path, endsWith('/api/generate'));
-      expect(recorder.requests.first.data, containsPair('keep_alive', 0));
-      expect(recorder.requests.first.data, containsPair('model', 'llama3.2:latest'));
-      expect(recorder.requests.first.data, containsPair('prompt', ''));
-    });
+        final recorder =
+            dio.interceptors.firstWhere((i) => i is RequestRecordingInterceptor)
+                as RequestRecordingInterceptor;
+        expect(recorder.requests, hasLength(1));
+        expect(recorder.requests.first.path, endsWith('/api/generate'));
+        expect(recorder.requests.first.data, containsPair('keep_alive', 0));
+        expect(
+          recorder.requests.first.data,
+          containsPair('model', 'llama3.2:latest'),
+        );
+        expect(recorder.requests.first.data, containsPair('prompt', ''));
+      },
+    );
 
     test(
       'fetchModels enriches Ollama models with vision capability from /api/show',
@@ -517,108 +527,114 @@ void main() {
       );
     });
 
-    test('parses capabilities and per-1M pricing for OpenRouter models', () async {
-      final data = {
-        'data': [
-          {
-            'id': 'openai/gpt-4o',
-            'name': 'OpenAI: GPT-4o',
-            'created': 1715558400,
-            'context_length': 128000,
-            'architecture': {
-              'modality': 'text+image+file->text',
-              'input_modalities': ['text', 'image', 'file'],
-              'output_modalities': ['text'],
-              'tokenizer': 'GPT',
-              'instruct_type': null,
+    test(
+      'parses capabilities and per-1M pricing for OpenRouter models',
+      () async {
+        final data = {
+          'data': [
+            {
+              'id': 'openai/gpt-4o',
+              'name': 'OpenAI: GPT-4o',
+              'created': 1715558400,
+              'context_length': 128000,
+              'architecture': {
+                'modality': 'text+image+file->text',
+                'input_modalities': ['text', 'image', 'file'],
+                'output_modalities': ['text'],
+                'tokenizer': 'GPT',
+                'instruct_type': null,
+              },
+              'pricing': {'prompt': '0.0000025', 'completion': '0.00001'},
             },
-            'pricing': {'prompt': '0.0000025', 'completion': '0.00001'},
-          },
-          {
-            'id': 'deepseek/deepseek-reasoner',
-            'name': 'DeepSeek: R1',
-            'context_length': 163840,
-            'architecture': {
-              'modality': 'text->text',
-              'input_modalities': ['text'],
-              'output_modalities': ['text'],
-              'tokenizer': 'DeepSeek',
+            {
+              'id': 'deepseek/deepseek-reasoner',
+              'name': 'DeepSeek: R1',
+              'context_length': 163840,
+              'architecture': {
+                'modality': 'text->text',
+                'input_modalities': ['text'],
+                'output_modalities': ['text'],
+                'tokenizer': 'DeepSeek',
+              },
+              'reasoning': {
+                'mandatory': false,
+                'default_effort': 'high',
+                'supported_efforts': ['max', 'high', 'low'],
+              },
+              'supported_parameters': ['tools', 'reasoning', 'temperature'],
             },
-            'reasoning': {
-              'mandatory': false,
-              'default_effort': 'high',
-              'supported_efforts': ['max', 'high', 'low'],
+            {
+              'id': 'meta-llama/llama-3.1-8b-instruct:free',
+              'name': 'Meta: Llama 3.1 8B (Free)',
+              'context_length': 131072,
+              'architecture': {
+                'modality': 'text->text',
+                'input_modalities': ['text'],
+                'output_modalities': ['text'],
+                'tokenizer': 'Llama3',
+              },
+              'pricing': {'prompt': '0', 'completion': '0'},
             },
-            'supported_parameters': ['tools', 'reasoning', 'temperature'],
-          },
-          {
-            'id': 'meta-llama/llama-3.1-8b-instruct:free',
-            'name': 'Meta: Llama 3.1 8B (Free)',
-            'context_length': 131072,
-            'architecture': {
-              'modality': 'text->text',
-              'input_modalities': ['text'],
-              'output_modalities': ['text'],
-              'tokenizer': 'Llama3',
+          ],
+        };
+
+        final service = ServerApiService(
+          Dio()..interceptors.add(TestInterceptor(data)),
+        );
+        final models = await service.fetchModels(openRouterServer);
+
+        expect(models, hasLength(3));
+        final byId = {for (final m in models) m.id: m};
+
+        final gpt4o = byId['openai/gpt-4o']!;
+        expect(gpt4o.supportsVision, isTrue);
+        expect(gpt4o.inputPricePerMillion, closeTo(2.5, 0.0001));
+        expect(gpt4o.outputPricePerMillion, closeTo(10.0, 0.0001));
+        expect(gpt4o.pricingLabel, '\$2.50/\$10.00');
+
+        final reasoner = byId['deepseek/deepseek-reasoner']!;
+        expect(reasoner.supportsReasoning, isTrue);
+        expect(reasoner.supportsToolUse, isTrue);
+        expect(reasoner.supportsVision, isFalse);
+        expect(reasoner.reasoningMandatory, isFalse);
+        expect(reasoner.defaultReasoningEffort, 'high');
+        expect(reasoner.supportedReasoningEfforts, ['max', 'high', 'low']);
+
+        final free = byId['meta-llama/llama-3.1-8b-instruct:free']!;
+        expect(free.isPricingFree, isTrue);
+        expect(free.pricingLabel, 'Free');
+      },
+    );
+
+    test(
+      'detects vision via modality when input_modalities is absent',
+      () async {
+        final data = {
+          'data': [
+            {
+              'id': 'google/gemini-pro',
+              'name': 'Google: Gemini Pro',
+              'context_length': 32768,
+              'architecture': {
+                'modality': 'text+image->text',
+                'tokenizer': 'Gemini',
+              },
             },
-            'pricing': {'prompt': '0', 'completion': '0'},
-          },
-        ],
-      };
+          ],
+        };
 
-      final service = ServerApiService(
-        Dio()..interceptors.add(TestInterceptor(data)),
-      );
-      final models = await service.fetchModels(openRouterServer);
+        final service = ServerApiService(
+          Dio()..interceptors.add(TestInterceptor(data)),
+        );
+        final models = await service.fetchModels(openRouterServer);
 
-      expect(models, hasLength(3));
-      final byId = {for (final m in models) m.id: m};
-
-      final gpt4o = byId['openai/gpt-4o']!;
-      expect(gpt4o.supportsVision, isTrue);
-      expect(gpt4o.inputPricePerMillion, closeTo(2.5, 0.0001));
-      expect(gpt4o.outputPricePerMillion, closeTo(10.0, 0.0001));
-      expect(gpt4o.pricingLabel, '\$2.50/\$10.00');
-
-      final reasoner = byId['deepseek/deepseek-reasoner']!;
-      expect(reasoner.supportsReasoning, isTrue);
-      expect(reasoner.supportsToolUse, isTrue);
-      expect(reasoner.supportsVision, isFalse);
-      expect(reasoner.reasoningMandatory, isFalse);
-      expect(reasoner.defaultReasoningEffort, 'high');
-      expect(reasoner.supportedReasoningEfforts, ['max', 'high', 'low']);
-
-      final free = byId['meta-llama/llama-3.1-8b-instruct:free']!;
-      expect(free.isPricingFree, isTrue);
-      expect(free.pricingLabel, 'Free');
-    });
-
-    test('detects vision via modality when input_modalities is absent', () async {
-      final data = {
-        'data': [
-          {
-            'id': 'google/gemini-pro',
-            'name': 'Google: Gemini Pro',
-            'context_length': 32768,
-            'architecture': {
-              'modality': 'text+image->text',
-              'tokenizer': 'Gemini',
-            },
-          },
-        ],
-      };
-
-      final service = ServerApiService(
-        Dio()..interceptors.add(TestInterceptor(data)),
-      );
-      final models = await service.fetchModels(openRouterServer);
-
-      expect(models, hasLength(1));
-      expect(models.single.supportsVision, isTrue);
-      expect(models.single.supportsReasoning, isFalse);
-      expect(models.single.inputPricePerMillion, isNull);
-      expect(models.single.pricingLabel, isNull);
-    });
+        expect(models, hasLength(1));
+        expect(models.single.supportsVision, isTrue);
+        expect(models.single.supportsReasoning, isFalse);
+        expect(models.single.inputPricePerMillion, isNull);
+        expect(models.single.pricingLabel, isNull);
+      },
+    );
 
     test('parses mandatory reasoning with a single supported effort', () async {
       final data = {
@@ -627,10 +643,7 @@ void main() {
             'id': 'openai/gpt-5-pro',
             'name': 'OpenAI: GPT-5 Pro',
             'context_length': 200000,
-            'architecture': {
-              'modality': 'text->text',
-              'tokenizer': 'GPT',
-            },
+            'architecture': {'modality': 'text->text', 'tokenizer': 'GPT'},
             'reasoning': {
               'mandatory': true,
               'default_effort': 'high',
@@ -653,16 +666,14 @@ void main() {
       expect(model.defaultReasoningEffort, 'high');
     });
 
-    test('treats non-finite pricing values as unknown', () async {      final data = {
+    test('treats non-finite pricing values as unknown', () async {
+      final data = {
         'data': [
           {
             'id': 'weird/model',
             'name': 'Weird Model',
             'context_length': 8192,
-            'architecture': {
-              'modality': 'text->text',
-              'tokenizer': 'X',
-            },
+            'architecture': {'modality': 'text->text', 'tokenizer': 'X'},
             'pricing': {'prompt': '1e309', 'completion': 'Infinity'},
           },
         ],
@@ -695,76 +706,85 @@ void main() {
       );
     });
 
-    test('loadModelWithInstanceId succeeds with LM Studio response having "type": "llm"', () async {
-      final successData = {
-        'type': 'llm',
-        'instance_id': 'liquid/lfm2-1.2b',
-        'load_config': {
-          'context_length': 4096,
-        },
-      };
+    test(
+      'loadModelWithInstanceId succeeds with LM Studio response having "type": "llm"',
+      () async {
+        final successData = {
+          'type': 'llm',
+          'instance_id': 'liquid/lfm2-1.2b',
+          'load_config': {'context_length': 4096},
+        };
 
-      final dio = Dio()..interceptors.add(TestInterceptor(successData));
-      final service = ServerApiService(dio);
+        final dio = Dio()..interceptors.add(TestInterceptor(successData));
+        final service = ServerApiService(dio);
 
-      final instanceId = await service.loadModelWithInstanceId(
-        lmStudioServer,
-        'liquid/lfm2-1.2b',
-        contextLength: 4096,
-      );
-
-      expect(instanceId, 'liquid/lfm2-1.2b');
-    });
-
-    test('loadModelWithInstanceId throws when response contains error object', () async {
-      final errorData = {
-        'error': {
-          'type': 'invalid_request_error',
-          'message': 'Context length exceeds model limit',
-        },
-      };
-
-      final dio = Dio()..interceptors.add(TestInterceptor(errorData));
-      final service = ServerApiService(dio);
-
-      expect(
-        () => service.loadModelWithInstanceId(
+        final instanceId = await service.loadModelWithInstanceId(
           lmStudioServer,
           'liquid/lfm2-1.2b',
-          contextLength: 999999,
-        ),
-        throwsA(
-          predicate(
-            (e) =>
-                e is Exception &&
-                e.toString().contains('invalid_request_error: Context length exceeds model limit'),
+          contextLength: 4096,
+        );
+
+        expect(instanceId, 'liquid/lfm2-1.2b');
+      },
+    );
+
+    test(
+      'loadModelWithInstanceId throws when response contains error object',
+      () async {
+        final errorData = {
+          'error': {
+            'type': 'invalid_request_error',
+            'message': 'Context length exceeds model limit',
+          },
+        };
+
+        final dio = Dio()..interceptors.add(TestInterceptor(errorData));
+        final service = ServerApiService(dio);
+
+        expect(
+          () => service.loadModelWithInstanceId(
+            lmStudioServer,
+            'liquid/lfm2-1.2b',
+            contextLength: 999999,
           ),
-        ),
-      );
-    });
-
-    test('loadModelWithInstanceId throws when response contains status error', () async {
-      final errorData = {
-        'status': 'error',
-        'message': 'Failed to allocate memory',
-      };
-
-      final dio = Dio()..interceptors.add(TestInterceptor(errorData));
-      final service = ServerApiService(dio);
-
-      expect(
-        () => service.loadModelWithInstanceId(
-          lmStudioServer,
-          'liquid/lfm2-1.2b',
-        ),
-        throwsA(
-          predicate(
-            (e) =>
-                e is Exception &&
-                e.toString().contains('Failed to allocate memory'),
+          throwsA(
+            predicate(
+              (e) =>
+                  e is Exception &&
+                  e.toString().contains(
+                    'invalid_request_error: Context length exceeds model limit',
+                  ),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
+
+    test(
+      'loadModelWithInstanceId throws when response contains status error',
+      () async {
+        final errorData = {
+          'status': 'error',
+          'message': 'Failed to allocate memory',
+        };
+
+        final dio = Dio()..interceptors.add(TestInterceptor(errorData));
+        final service = ServerApiService(dio);
+
+        expect(
+          () => service.loadModelWithInstanceId(
+            lmStudioServer,
+            'liquid/lfm2-1.2b',
+          ),
+          throwsA(
+            predicate(
+              (e) =>
+                  e is Exception &&
+                  e.toString().contains('Failed to allocate memory'),
+            ),
+          ),
+        );
+      },
+    );
   });
 }

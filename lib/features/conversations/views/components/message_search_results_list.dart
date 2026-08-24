@@ -38,8 +38,8 @@ class MessageSearchResultsList extends ConsumerWidget {
           itemBuilder: (context, index) {
             final hit = hits[index];
             return ListTile(
-              leading: HugeIcon(icon: 
-                hit.role == MessageRole.user
+              leading: HugeIcon(
+                icon: hit.role == MessageRole.user
                     ? HugeIcons.strokeRoundedUser
                     : HugeIcons.strokeRoundedRobot01,
               ),

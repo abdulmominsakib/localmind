@@ -100,7 +100,10 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
                 if (hasOverrides)
                   ShadButton.ghost(
                     onPressed: () => _resetToDefaults(ref, activeConv?.id),
-                    leading: const HugeIcon(icon: HugeIcons.strokeRoundedRefresh, size: 16),
+                    leading: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedRefresh,
+                      size: 16,
+                    ),
                     child: Text(l10n.reset_defaults),
                   ),
               ],
@@ -231,8 +234,8 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
               ),
               child: Row(
                 children: [
-                  const HugeIcon(icon: 
-                    HugeIcons.strokeRoundedAlertCircle,
+                  const HugeIcon(
+                    icon: HugeIcons.strokeRoundedAlertCircle,
                     color: Colors.orange,
                     size: 20,
                   ),
@@ -357,9 +360,7 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
                         leading: HugeIcon(
                           icon: HugeIcons.strokeRoundedPuzzle,
                           size: 18,
-                          color: integration.enabled
-                              ? null
-                              : Colors.grey,
+                          color: integration.enabled ? null : Colors.grey,
                         ),
                         title: Text(
                           integration.serverLabel ?? integration.pluginId ?? '',
@@ -371,8 +372,8 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
                             color: integration.enabled
                                 ? null
                                 : (isDark
-                                    ? AppColors.darkMutedText
-                                    : AppColors.lightMutedText),
+                                      ? AppColors.darkMutedText
+                                      : AppColors.lightMutedText),
                           ),
                         ),
                         subtitle: Text(
@@ -430,10 +431,7 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
           ),
           title: Row(
             children: [
-              const HugeIcon(
-                icon: HugeIcons.strokeRoundedFileImport,
-                size: 22,
-              ),
+              const HugeIcon(icon: HugeIcons.strokeRoundedFileImport, size: 22),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -507,8 +505,9 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
                             ? l10n.mcp_import_success(importedCount)
                             : l10n.mcp_import_failed,
                       ),
-                      backgroundColor:
-                          importedCount > 0 ? Colors.green : Colors.red,
+                      backgroundColor: importedCount > 0
+                          ? Colors.green
+                          : Colors.red,
                     ),
                   );
                 }

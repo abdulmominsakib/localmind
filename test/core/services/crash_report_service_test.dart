@@ -52,9 +52,7 @@ void main() {
 
     test('shortError sanitizes user-specific paths', () {
       final report = _makeReport(
-        error: Exception(
-          'File not found: /Users/janedoe/Documents/secret.txt',
-        ),
+        error: Exception('File not found: /Users/janedoe/Documents/secret.txt'),
         stack: StackTrace.current,
       );
       expect(report.shortError, isNot(contains('/Users/janedoe')));
@@ -105,9 +103,7 @@ void main() {
 
     test('markdownBody sanitizes user-specific paths', () {
       final report = _makeReport(
-        error: Exception(
-          'File not found: /Users/janedoe/Documents/secret.txt',
-        ),
+        error: Exception('File not found: /Users/janedoe/Documents/secret.txt'),
         stack: StackTrace.fromString(
           '#0 frame (/home/johndoe/app/main.dart:1:2)',
         ),

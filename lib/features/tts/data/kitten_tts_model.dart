@@ -136,12 +136,12 @@ enum KittenTtsModelVariant {
   List<KittenTtsModelFile> get files {
     return [
       KittenTtsModelFile(
-      fileName: 'config.json',
-      downloadUrl:
-          'https://huggingface.co/$huggingFaceRepoId/resolve/main/config.json',
-      sizeBytes: 2 * 1024,
-    ),
-    KittenTtsModelFile(
+        fileName: 'config.json',
+        downloadUrl:
+            'https://huggingface.co/$huggingFaceRepoId/resolve/main/config.json',
+        sizeBytes: 2 * 1024,
+      ),
+      KittenTtsModelFile(
         fileName: sourceModelFileName,
         downloadUrl:
             'https://huggingface.co/$huggingFaceRepoId/resolve/main/$sourceModelFileName',

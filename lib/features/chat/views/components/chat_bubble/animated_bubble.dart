@@ -2,7 +2,11 @@ import 'package:cue/cue.dart';
 import 'package:flutter/material.dart';
 
 class AnimatedBubble extends StatelessWidget {
-  const AnimatedBubble({super.key, required this.child, required this.alignment});
+  const AnimatedBubble({
+    super.key,
+    required this.child,
+    required this.alignment,
+  });
 
   final Widget child;
   final AlignmentDirectional alignment;
@@ -16,8 +20,8 @@ class AnimatedBubble extends StatelessWidget {
     final Offset translateOffset = isUserRight
         ? const Offset(12, 0)
         : isAssistantLeft
-            ? const Offset(-12, 0)
-            : const Offset(0, 8);
+        ? const Offset(-12, 0)
+        : const Offset(0, 8);
 
     return Cue.onMount(
       motion: .smooth(),

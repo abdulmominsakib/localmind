@@ -68,10 +68,7 @@ void main() {
 
     test('returns clean message for FileSystemException', () {
       final error = const FileSystemException('File is corrupted');
-      expect(
-        SafeFilePicker.getErrorMessage(error, l10n),
-        'File is corrupted',
-      );
+      expect(SafeFilePicker.getErrorMessage(error, l10n), 'File is corrupted');
     });
 
     test('strips Exception prefix for standard exceptions', () {
@@ -89,14 +86,14 @@ void main() {
     test('pickFiles catches PlatformException and returns null', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('miguelruivo.flutter.plugins.filepicker'),
-        (MethodCall methodCall) async {
-          throw PlatformException(
-            code: 'explorer_not_found',
-            message: "Can't find a valid activity to handle the request.",
+            const MethodChannel('miguelruivo.flutter.plugins.filepicker'),
+            (MethodCall methodCall) async {
+              throw PlatformException(
+                code: 'explorer_not_found',
+                message: "Can't find a valid activity to handle the request.",
+              );
+            },
           );
-        },
-      );
 
       final result = await SafeFilePicker.pickFiles();
       expect(result, isNull);
@@ -105,14 +102,14 @@ void main() {
     test('saveFile catches PlatformException and returns null', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('miguelruivo.flutter.plugins.filepicker'),
-        (MethodCall methodCall) async {
-          throw PlatformException(
-            code: 'explorer_not_found',
-            message: "Can't find a valid activity to handle the request.",
+            const MethodChannel('miguelruivo.flutter.plugins.filepicker'),
+            (MethodCall methodCall) async {
+              throw PlatformException(
+                code: 'explorer_not_found',
+                message: "Can't find a valid activity to handle the request.",
+              );
+            },
           );
-        },
-      );
 
       final result = await SafeFilePicker.saveFile(
         dialogTitle: 'Save File',
@@ -121,38 +118,41 @@ void main() {
       expect(result, isNull);
     });
 
-    test('getDirectoryPath catches PlatformException and returns null', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-        const MethodChannel('miguelruivo.flutter.plugins.filepicker'),
-        (MethodCall methodCall) async {
-          throw PlatformException(
-            code: 'explorer_not_found',
-            message: "Can't find a valid activity to handle the request.",
-          );
-        },
-      );
+    test(
+      'getDirectoryPath catches PlatformException and returns null',
+      () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('miguelruivo.flutter.plugins.filepicker'),
+              (MethodCall methodCall) async {
+                throw PlatformException(
+                  code: 'explorer_not_found',
+                  message: "Can't find a valid activity to handle the request.",
+                );
+              },
+            );
 
-      final result = await SafeFilePicker.getDirectoryPath();
-      expect(result, isNull);
-    });
+        final result = await SafeFilePicker.getDirectoryPath();
+        expect(result, isNull);
+      },
+    );
 
     test('pickFiles returns result when platform succeeds', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('miguelruivo.flutter.plugins.filepicker'),
-        (MethodCall methodCall) async {
-          return [
-            {
-              'path': '/path/to/file.txt',
-              'name': 'file.txt',
-              'size': 123,
-              'bytes': null,
-              'identifier': null,
-            }
-          ];
-        },
-      );
+            const MethodChannel('miguelruivo.flutter.plugins.filepicker'),
+            (MethodCall methodCall) async {
+              return [
+                {
+                  'path': '/path/to/file.txt',
+                  'name': 'file.txt',
+                  'size': 123,
+                  'bytes': null,
+                  'identifier': null,
+                },
+              ];
+            },
+          );
 
       final result = await SafeFilePicker.pickFiles();
       expect(result, isNotNull);
@@ -160,4 +160,3 @@ void main() {
     });
   });
 }
-

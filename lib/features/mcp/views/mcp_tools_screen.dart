@@ -116,9 +116,7 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                     value: settings.mcpEnabled,
                     badges: [_FeatureBadge(label: l10n.experimental_label)],
                     onChanged: (value) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setMcpEnabled(value);
+                      ref.read(settingsProvider.notifier).setMcpEnabled(value);
                       _refreshTools();
                     },
                   ),
@@ -147,8 +145,9 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content:
-                                      Text(l10n.calendar_permission_denied),
+                                  content: Text(
+                                    l10n.calendar_permission_denied,
+                                  ),
                                 ),
                               );
                             }
@@ -431,8 +430,8 @@ class _ToolRow extends StatelessWidget {
               icon: isMcp
                   ? HugeIcons.strokeRoundedShare01
                   : (tool.name.startsWith('calendar.')
-                      ? HugeIcons.strokeRoundedCalendar01
-                      : HugeIcons.strokeRoundedCalculate),
+                        ? HugeIcons.strokeRoundedCalendar01
+                        : HugeIcons.strokeRoundedCalculate),
               size: 18,
               color: isMcp
                   ? theme.colorScheme.primary

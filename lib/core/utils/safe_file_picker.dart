@@ -96,9 +96,9 @@ class SafeFilePicker {
         final l10n = AppLocalizations.of(context);
         if (l10n != null) {
           final msg = getErrorMessage(e, l10n);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(msg)));
         }
       } else if (onError != null) {
         onError(e.toString());
@@ -135,9 +135,9 @@ class SafeFilePicker {
         final l10n = AppLocalizations.of(context);
         if (l10n != null) {
           final msg = getErrorMessage(e, l10n);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(msg)));
         }
       } else if (onError != null) {
         onError(e.toString());
@@ -166,9 +166,9 @@ class SafeFilePicker {
         final l10n = AppLocalizations.of(context);
         if (l10n != null) {
           final msg = getErrorMessage(e, l10n);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(msg)));
         }
       } else if (onError != null) {
         onError(e.toString());
@@ -200,9 +200,9 @@ class SafeFilePicker {
         final l10n = AppLocalizations.of(context);
         if (l10n != null) {
           final msg = getErrorMessage(e, l10n);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(msg)));
         }
       } else if (onError != null) {
         onError(e.toString());
@@ -238,9 +238,9 @@ class SafeFilePicker {
         final l10n = AppLocalizations.of(context);
         if (l10n != null) {
           final msg = getErrorMessage(e, l10n);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(msg)));
         }
       } else if (onError != null) {
         onError(e.toString());

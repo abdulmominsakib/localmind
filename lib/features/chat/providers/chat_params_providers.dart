@@ -13,8 +13,7 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
   final activeConv = ref.watch(conv.activeConversationProvider);
   final selectedModel = ref.watch(selectedModelProvider);
   final reasoningConfig = ref.watch(chatReasoningConfigProvider);
-  final modelSupportsReasoning =
-      selectedModel?.supportsReasoning ?? false;
+  final modelSupportsReasoning = selectedModel?.supportsReasoning ?? false;
   // Mandatory-reasoning models can't run with thinking off, so force it on
   // regardless of the toggle state.
   final reasoningEnabled = modelSupportsReasoning
@@ -73,6 +72,9 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
     contextLength: contextLength,
     systemPrompt: systemPrompt,
     reasoningEnabled: reasoningEnabled,
-    reasoningEffort: resolveEffortForModel(selectedModel, reasoningConfig.effort),
+    reasoningEffort: resolveEffortForModel(
+      selectedModel,
+      reasoningConfig.effort,
+    ),
   );
 });

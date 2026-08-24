@@ -23,8 +23,10 @@ class ConnectionBanner extends StatelessWidget {
           : Colors.orange.withValues(alpha: 0.1),
       child: Row(
         children: [
-          HugeIcon(icon: 
-            isError ? HugeIcons.strokeRoundedInformationCircle : HugeIcons.strokeRoundedWifiOff01,
+          HugeIcon(
+            icon: isError
+                ? HugeIcons.strokeRoundedInformationCircle
+                : HugeIcons.strokeRoundedWifiOff01,
             size: 16,
             color: isError ? Colors.red : Colors.orange,
           ),

@@ -46,14 +46,17 @@ class ModelSortControl extends ConsumerWidget {
       initialValue: current,
       onSelected: (option) =>
           ref.read(modelSortOptionProvider.notifier).setOption(option),
-      icon: const HugeIcon(icon: HugeIcons.strokeRoundedSlidersHorizontal, size: 20),
+      icon: const HugeIcon(
+        icon: HugeIcons.strokeRoundedSlidersHorizontal,
+        size: 20,
+      ),
       itemBuilder: (context) => ModelSortOption.values.map((option) {
         return PopupMenuItem(
           value: option,
           child: Row(
             children: [
-              HugeIcon(icon: 
-                _iconFor(option),
+              HugeIcon(
+                icon: _iconFor(option),
                 size: 18,
                 color: option == current
                     ? Theme.of(context).colorScheme.primary
@@ -63,8 +66,9 @@ class ModelSortControl extends ConsumerWidget {
               Text(
                 _labelFor(l10n, option),
                 style: TextStyle(
-                  fontWeight:
-                      option == current ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: option == current
+                      ? FontWeight.w600
+                      : FontWeight.normal,
                   color: option == current
                       ? Theme.of(context).colorScheme.primary
                       : null,

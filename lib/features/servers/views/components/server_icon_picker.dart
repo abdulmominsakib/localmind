@@ -131,7 +131,10 @@ class _ServerIconPickerState extends State<ServerIconPicker> {
                 placeholder: Text(l10n.search_icons_hint),
                 leading: const Padding(
                   padding: EdgeInsetsDirectional.only(start: 8),
-                  child: HugeIcon(icon: HugeIcons.strokeRoundedSearch01, size: 18),
+                  child: HugeIcon(
+                    icon: HugeIcons.strokeRoundedSearch01,
+                    size: 18,
+                  ),
                 ),
                 onChanged: _filterIcons,
               ),

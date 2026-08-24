@@ -43,13 +43,8 @@ Server _buildServer({
 
 void main() {
   group('ServerCard', () {
-    testWidgets('renders server name, type chip and address',
-        (tester) async {
-      await tester.pumpWidget(
-        _wrapWithApp(
-          ServerCard(server: _buildServer()),
-        ),
-      );
+    testWidgets('renders server name, type chip and address', (tester) async {
+      await tester.pumpWidget(_wrapWithApp(ServerCard(server: _buildServer())));
       await tester.pump();
 
       expect(find.text('llama home'), findsOneWidget);
@@ -59,25 +54,21 @@ void main() {
       expect(find.text('192.168.0.210:11434'), findsOneWidget);
     });
 
-    testWidgets('shows the Offline status pill when disconnected',
-        (tester) async {
-      await tester.pumpWidget(
-        _wrapWithApp(
-          ServerCard(server: _buildServer()),
-        ),
-      );
+    testWidgets('shows the Offline status pill when disconnected', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrapWithApp(ServerCard(server: _buildServer())));
       await tester.pump();
 
       expect(find.text('Offline'), findsOneWidget);
     });
 
-    testWidgets('shows the Connected status pill when connected',
-        (tester) async {
+    testWidgets('shows the Connected status pill when connected', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrapWithApp(
-          ServerCard(
-            server: _buildServer(status: ConnectionStatus.connected),
-          ),
+          ServerCard(server: _buildServer(status: ConnectionStatus.connected)),
         ),
       );
       await tester.pump();
@@ -85,13 +76,12 @@ void main() {
       expect(find.text('Connected'), findsOneWidget);
     });
 
-    testWidgets('shows the Checking status pill while checking',
-        (tester) async {
+    testWidgets('shows the Checking status pill while checking', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrapWithApp(
-          ServerCard(
-            server: _buildServer(status: ConnectionStatus.checking),
-          ),
+          ServerCard(server: _buildServer(status: ConnectionStatus.checking)),
         ),
       );
       await tester.pump();
@@ -99,12 +89,11 @@ void main() {
       expect(find.text('Checking'), findsOneWidget);
     });
 
-    testWidgets('shows the default star indicator when server is default',
-        (tester) async {
+    testWidgets('shows the default star indicator when server is default', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        _wrapWithApp(
-          ServerCard(server: _buildServer(isDefault: true)),
-        ),
+        _wrapWithApp(ServerCard(server: _buildServer(isDefault: true))),
       );
       await tester.pump();
 
@@ -115,12 +104,7 @@ void main() {
     testWidgets('invokes onTap when the card is tapped', (tester) async {
       var taps = 0;
       await tester.pumpWidget(
-        _wrapWithApp(
-          ServerCard(
-            server: _buildServer(),
-            onTap: () => taps++,
-          ),
-        ),
+        _wrapWithApp(ServerCard(server: _buildServer(), onTap: () => taps++)),
       );
       await tester.pump();
 
@@ -130,8 +114,9 @@ void main() {
       expect(taps, 1);
     });
 
-    testWidgets('renders different content for on-device servers',
-        (tester) async {
+    testWidgets('renders different content for on-device servers', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrapWithApp(
           ServerCard(

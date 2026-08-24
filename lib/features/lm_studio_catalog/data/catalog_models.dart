@@ -29,6 +29,7 @@ class LmCatalogModel {
   final LmCatalogMetadata metadata;
   final String? url;
   final LmCatalogSource source;
+
   /// Hugging Face repo used for quant listing / HF downloads.
   final String? hfRepoId;
 
@@ -46,7 +47,8 @@ class LmCatalogModel {
       'https://lmstudio.ai/api/v1/artifacts/$owner/$name/revision/$revisionNumber?action=readme';
 
   String? get hfDownloadBaseUrl {
-    final repo = hfRepoId ?? (source == LmCatalogSource.huggingFace ? id : null);
+    final repo =
+        hfRepoId ?? (source == LmCatalogSource.huggingFace ? id : null);
     if (repo == null || repo.isEmpty) return null;
     return 'https://huggingface.co/$repo';
   }
@@ -81,7 +83,8 @@ class LmCatalogModel {
     final parts = modelId.split('/');
     final owner = parts.isNotEmpty ? parts.first : '';
     final name = parts.length > 1 ? parts.sublist(1).join('/') : modelId;
-    final tags = (json['tags'] as List<dynamic>?)
+    final tags =
+        (json['tags'] as List<dynamic>?)
             ?.map((e) => e.toString().toLowerCase())
             .toList() ??
         const [];
@@ -97,8 +100,8 @@ class LmCatalogModel {
       updatedAt: json['lastModified'] != null
           ? DateTime.tryParse(json['lastModified'].toString())
           : (json['createdAt'] != null
-              ? DateTime.tryParse(json['createdAt'].toString())
-              : null),
+                ? DateTime.tryParse(json['createdAt'].toString())
+                : null),
       isStaffPick: false,
       isVerified: false,
       metadata: LmCatalogMetadata(
@@ -181,7 +184,8 @@ class LmCatalogMetadata {
       trainedForToolUse: json['trainedForToolUse'] == true,
       vision: json['vision'] == true,
       reasoning: json['reasoning'] == true,
-      contextLengths: (json['contextLengths'] as List<dynamic>?)
+      contextLengths:
+          (json['contextLengths'] as List<dynamic>?)
               ?.map((e) => (e as num).toInt())
               .toList() ??
           const [],
@@ -190,11 +194,7 @@ class LmCatalogMetadata {
 }
 
 class LmArtifactManifest {
-  const LmArtifactManifest({
-    this.hfRepoId,
-    this.downloadCount,
-    this.readme,
-  });
+  const LmArtifactManifest({this.hfRepoId, this.downloadCount, this.readme});
 
   final String? hfRepoId;
   final int? downloadCount;
@@ -276,8 +276,9 @@ class LmModelQuantOption {
   static LmModelQuantOption? recommended(List<LmModelQuantOption> quants) {
     if (quants.isEmpty) return null;
     for (final preferred in preferredQuantOrder) {
-      final match =
-          quants.where((q) => q.quantization == preferred).firstOrNull;
+      final match = quants
+          .where((q) => q.quantization == preferred)
+          .firstOrNull;
       if (match != null) return match;
     }
     return quants.first;
@@ -462,10 +463,7 @@ enum LmDownloadStatus {
 }
 
 class HfSearchPage {
-  const HfSearchPage({
-    required this.models,
-    this.nextUrl,
-  });
+  const HfSearchPage({required this.models, this.nextUrl});
 
   final List<LmCatalogModel> models;
   final String? nextUrl;

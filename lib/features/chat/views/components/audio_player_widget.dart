@@ -9,13 +9,10 @@ class AudioPlayerWidget extends StatefulWidget {
   final String source;
   final double? height;
 
-  const AudioPlayerWidget({
-    super.key,
-    required this.source,
-    this.height,
-  });
+  const AudioPlayerWidget({super.key, required this.source, this.height});
 
-  bool get isUrl => source.startsWith('http://') || source.startsWith('https://');
+  bool get isUrl =>
+      source.startsWith('http://') || source.startsWith('https://');
 
   @override
   State<AudioPlayerWidget> createState() => _AudioPlayerWidgetState();
@@ -96,8 +93,10 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            icon: HugeIcon(icon: 
-              _state == PlayerState.playing ? HugeIcons.strokeRoundedPauseCircle : HugeIcons.strokeRoundedPlayCircle,
+            icon: HugeIcon(
+              icon: _state == PlayerState.playing
+                  ? HugeIcons.strokeRoundedPauseCircle
+                  : HugeIcons.strokeRoundedPlayCircle,
               size: 28,
               color: isDark ? Colors.white : Colors.black87,
             ),
@@ -138,9 +137,12 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                           borderRadius: BorderRadius.circular(2),
                           child: LinearProgressIndicator(
                             value: _duration.inMilliseconds > 0
-                                ? _position.inMilliseconds / _duration.inMilliseconds
+                                ? _position.inMilliseconds /
+                                      _duration.inMilliseconds
                                 : 0,
-                            backgroundColor: isDark ? Colors.white12 : Colors.black12,
+                            backgroundColor: isDark
+                                ? Colors.white12
+                                : Colors.black12,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               isDark ? Colors.white60 : Colors.black54,
                             ),

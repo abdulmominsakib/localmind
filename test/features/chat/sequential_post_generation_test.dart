@@ -184,7 +184,10 @@ void main() {
 }
 
 class _MockChatNotifier extends ChatNotifier {
-  _MockChatNotifier({this.initialState = const ChatState(), this.onWaitForTitle});
+  _MockChatNotifier({
+    this.initialState = const ChatState(),
+    this.onWaitForTitle,
+  });
 
   final ChatState initialState;
   final Future<void> Function(String convId)? onWaitForTitle;

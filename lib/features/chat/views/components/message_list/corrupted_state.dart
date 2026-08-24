@@ -29,7 +29,8 @@ class CorruptedChatState extends ConsumerWidget {
         actions: [
           ShadButton.outline(
             onPressed: () {
-              final data = '''
+              final data =
+                  '''
 ID: ${conversation.id}
 Title: ${conversation.title}
 Expected: ${conversation.messageCount}
@@ -123,8 +124,8 @@ Error: $errorMessage
                 color: Colors.red.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const HugeIcon(icon: 
-                HugeIcons.strokeRoundedClock01,
+              child: const HugeIcon(
+                icon: HugeIcons.strokeRoundedClock01,
                 size: 48,
                 color: Colors.red,
               ),
@@ -153,7 +154,10 @@ Error: $errorMessage
               children: [
                 ShadButton(
                   onPressed: onStartNewChat,
-                  leading: const HugeIcon(icon: HugeIcons.strokeRoundedAdd01, size: 20),
+                  leading: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedAdd01,
+                    size: 20,
+                  ),
                   child: Text(l10n.start_new_chat),
                 ),
                 const SizedBox(width: 12),

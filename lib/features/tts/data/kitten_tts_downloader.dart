@@ -165,6 +165,8 @@ class KittenTtsDownloader {
   }
 
   Future<Directory> getDataDir(KittenTtsModelVariant variant) async {
-    return Directory('${(await _getVariantDir(variant)).path}/${variant.dataDirName}');
+    return Directory(
+      '${(await _getVariantDir(variant)).path}/${variant.dataDirName}',
+    );
   }
 }

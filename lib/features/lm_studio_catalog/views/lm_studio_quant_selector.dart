@@ -51,7 +51,10 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
     );
   }
 
-  Widget _compatBadge(MemoryCompatibility compatibility, AppLocalizations l10n) {
+  Widget _compatBadge(
+    MemoryCompatibility compatibility,
+    AppLocalizations l10n,
+  ) {
     if (compatibility == MemoryCompatibility.unknown) {
       return const SizedBox.shrink();
     }
@@ -144,8 +147,10 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  HugeIcon(icon: 
-                    _expanded ? HugeIcons.strokeRoundedArrowUp01 : HugeIcons.strokeRoundedArrowDown01,
+                  HugeIcon(
+                    icon: _expanded
+                        ? HugeIcons.strokeRoundedArrowUp01
+                        : HugeIcons.strokeRoundedArrowDown01,
                     color: theme.hintColor,
                   ),
                 ],
@@ -157,7 +162,9 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+              color: isDark
+                  ? AppColors.darkBackground
+                  : AppColors.lightBackground,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -191,11 +198,14 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
                   final downloaded = _isDownloaded(quant);
                   final compat = _compat(quant);
                   final isRecommended =
-                      recommended != null && quant.fileName == recommended.fileName;
+                      recommended != null &&
+                      quant.fileName == recommended.fileName;
                   return Material(
                     color: isSelected
-                        ? (isDark ? AppColors.darkAccent : AppColors.lightAccent)
-                            .withValues(alpha: 0.12)
+                        ? (isDark
+                                  ? AppColors.darkAccent
+                                  : AppColors.lightAccent)
+                              .withValues(alpha: 0.12)
                         : Colors.transparent,
                     child: InkWell(
                       onTap: () {
@@ -210,15 +220,15 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            HugeIcon(icon: 
-                              isSelected
+                            HugeIcon(
+                              icon: isSelected
                                   ? HugeIcons.strokeRoundedCheckmarkCircle01
                                   : HugeIcons.strokeRoundedCircle,
                               size: 18,
                               color: isSelected
                                   ? (isDark
-                                      ? AppColors.darkAccent
-                                      : AppColors.lightAccent)
+                                        ? AppColors.darkAccent
+                                        : AppColors.lightAccent)
                                   : theme.hintColor,
                             ),
                             const SizedBox(width: 8),
@@ -229,21 +239,43 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
                                   Wrap(
                                     spacing: 6,
                                     runSpacing: 4,
-                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
                                     children: [
                                       _GgufTag(compact: true),
                                       Text(
                                         quant.quantization,
                                         style: theme.textTheme.titleSmall
-                                            ?.copyWith(fontWeight: FontWeight.w600),
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                       ),
-                                      if (widget.modelCapabilities.metadata.vision)
-                                        _CapIcon(HugeIcons.strokeRoundedEye, Colors.amber),
-                                      if (widget.modelCapabilities.metadata.reasoning)
-                                        _CapIcon(HugeIcons.strokeRoundedBrain, Colors.green),
-                                      if (widget.modelCapabilities.metadata.trainedForToolUse)
-                                        _CapIcon(HugeIcons.strokeRoundedTools, Colors.blue),
-                                      if (isRecommended) _RecommendedTag(l10n: l10n),
+                                      if (widget
+                                          .modelCapabilities
+                                          .metadata
+                                          .vision)
+                                        _CapIcon(
+                                          HugeIcons.strokeRoundedEye,
+                                          Colors.amber,
+                                        ),
+                                      if (widget
+                                          .modelCapabilities
+                                          .metadata
+                                          .reasoning)
+                                        _CapIcon(
+                                          HugeIcons.strokeRoundedBrain,
+                                          Colors.green,
+                                        ),
+                                      if (widget
+                                          .modelCapabilities
+                                          .metadata
+                                          .trainedForToolUse)
+                                        _CapIcon(
+                                          HugeIcons.strokeRoundedTools,
+                                          Colors.blue,
+                                        ),
+                                      if (isRecommended)
+                                        _RecommendedTag(l10n: l10n),
                                     ],
                                   ),
                                   const SizedBox(height: 4),
@@ -273,7 +305,11 @@ class _LmStudioQuantSelectorState extends State<LmStudioQuantSelector> {
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      HugeIcon(icon: HugeIcons.strokeRoundedTick01, size: 14, color: Colors.green.shade400),
+                                      HugeIcon(
+                                        icon: HugeIcons.strokeRoundedTick01,
+                                        size: 14,
+                                        color: Colors.green.shade400,
+                                      ),
                                       const SizedBox(width: 2),
                                       Text(
                                         l10n.downloaded,

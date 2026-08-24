@@ -40,10 +40,12 @@ class ToolBubble extends StatelessWidget {
           children: [
             Row(
               children: [
-                HugeIcon(icon: 
-                  HugeIcons.strokeRoundedTools,
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedTools,
                   size: 14,
-                  color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                  color: isDark
+                      ? AppColors.darkMutedText
+                      : AppColors.lightMutedText,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -53,7 +55,9 @@ class ToolBubble extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                    color: isDark
+                        ? AppColors.darkMutedText
+                        : AppColors.lightMutedText,
                   ),
                 ),
               ],

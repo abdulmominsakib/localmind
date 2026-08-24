@@ -73,25 +73,45 @@ class ToolExecutionLoop {
       toolCallCount++;
       final baseId = '${_sessionId}_${iteration}_${call.id}';
       final toolDefinition = toolDefinitions[call.name];
-      final providerType = toolDefinition?.providerType ?? ToolProviderType.builtIn;
+      final providerType =
+          toolDefinition?.providerType ?? ToolProviderType.builtIn;
       final providerRef = toolDefinition?.providerRef;
 
       if (onRequestApproval != null) {
-        _events.add(ToolEvent(
-          eventId: '$baseId.requested',
-          timestamp: DateTime.now(),
-          status: ToolEventStatus.requested,
-          toolName: call.name,
-          providerType: providerType,
-          providerRef: providerRef,
-          arguments: call.arguments,
-        ));
+        _events.add(
+          ToolEvent(
+            eventId: '$baseId.requested',
+            timestamp: DateTime.now(),
+            status: ToolEventStatus.requested,
+            toolName: call.name,
+            providerType: providerType,
+            providerRef: providerRef,
+            arguments: call.arguments,
+          ),
+        );
 
         try {
-          final approved = await onRequestApproval!(call)
-              .timeout(approvalTimeout);
+          final approved = await onRequestApproval!(
+            call,
+          ).timeout(approvalTimeout);
           if (!approved) {
-            _events.add(ToolEvent(
+            _events.add(
+              ToolEvent(
+                eventId: '$baseId.rejected',
+                timestamp: DateTime.now(),
+                status: ToolEventStatus.rejected,
+                toolName: call.name,
+                providerType: providerType,
+                providerRef: providerRef,
+                arguments: call.arguments,
+                error: 'Rejected by user',
+              ),
+            );
+            continue;
+          }
+        } on TimeoutException {
+          _events.add(
+            ToolEvent(
               eventId: '$baseId.rejected',
               timestamp: DateTime.now(),
               status: ToolEventStatus.rejected,
@@ -99,56 +119,50 @@ class ToolExecutionLoop {
               providerType: providerType,
               providerRef: providerRef,
               arguments: call.arguments,
-              error: 'Rejected by user',
-            ));
-            continue;
-          }
-        } on TimeoutException {
-          _events.add(ToolEvent(
-            eventId: '$baseId.rejected',
-            timestamp: DateTime.now(),
-            status: ToolEventStatus.rejected,
-            toolName: call.name,
-            providerType: providerType,
-            providerRef: providerRef,
-            arguments: call.arguments,
-            error: 'Approval timed out',
-          ));
+              error: 'Approval timed out',
+            ),
+          );
           continue;
         } catch (_) {
-          _events.add(ToolEvent(
-            eventId: '$baseId.failed',
-            timestamp: DateTime.now(),
-            status: ToolEventStatus.failed,
-            toolName: call.name,
-            providerType: providerType,
-            providerRef: providerRef,
-            arguments: call.arguments,
-            error: 'Approval callback error',
-          ));
+          _events.add(
+            ToolEvent(
+              eventId: '$baseId.failed',
+              timestamp: DateTime.now(),
+              status: ToolEventStatus.failed,
+              toolName: call.name,
+              providerType: providerType,
+              providerRef: providerRef,
+              arguments: call.arguments,
+              error: 'Approval callback error',
+            ),
+          );
           continue;
         }
 
-        _events.add(ToolEvent(
-          eventId: '$baseId.approved',
+        _events.add(
+          ToolEvent(
+            eventId: '$baseId.approved',
+            timestamp: DateTime.now(),
+            status: ToolEventStatus.approved,
+            toolName: call.name,
+            providerType: providerType,
+            providerRef: providerRef,
+            arguments: call.arguments,
+          ),
+        );
+      }
+
+      _events.add(
+        ToolEvent(
+          eventId: '$baseId.running',
           timestamp: DateTime.now(),
-          status: ToolEventStatus.approved,
+          status: ToolEventStatus.running,
           toolName: call.name,
           providerType: providerType,
           providerRef: providerRef,
           arguments: call.arguments,
-        ));
-      }
-
-      _events.add(ToolEvent(
-        eventId: '$baseId.running',
-        timestamp: DateTime.now(),
-        status: ToolEventStatus.running,
-        toolName: call.name,
-        providerType: providerType,
-        providerRef: providerRef,
-        arguments: call.arguments,
-      ));
+        ),
+      );
 
       final stopwatch = Stopwatch()..start();
       try {
@@ -158,32 +172,38 @@ class ToolExecutionLoop {
 
         stopwatch.stop();
 
-        _events.add(ToolEvent(
-          eventId: '$baseId.${result.success ? "completed" : "failed"}',
-          timestamp: DateTime.now(),
-          status: result.success ? ToolEventStatus.completed : ToolEventStatus.failed,
-          toolName: call.name,
-          providerType: providerType,
-          providerRef: providerRef,
-          arguments: call.arguments,
-          result: result.success ? result.output : null,
-          error: result.success ? null : result.error,
-          durationMs: stopwatch.elapsedMilliseconds,
-        ));
+        _events.add(
+          ToolEvent(
+            eventId: '$baseId.${result.success ? "completed" : "failed"}',
+            timestamp: DateTime.now(),
+            status: result.success
+                ? ToolEventStatus.completed
+                : ToolEventStatus.failed,
+            toolName: call.name,
+            providerType: providerType,
+            providerRef: providerRef,
+            arguments: call.arguments,
+            result: result.success ? result.output : null,
+            error: result.success ? null : result.error,
+            durationMs: stopwatch.elapsedMilliseconds,
+          ),
+        );
       } catch (e) {
         stopwatch.stop();
 
-        _events.add(ToolEvent(
-          eventId: '$baseId.failed',
-          timestamp: DateTime.now(),
-          status: ToolEventStatus.failed,
-          toolName: call.name,
-          providerType: providerType,
-          providerRef: providerRef,
-          arguments: call.arguments,
-          error: 'Timeout or error: $e',
-          durationMs: stopwatch.elapsedMilliseconds,
-        ));
+        _events.add(
+          ToolEvent(
+            eventId: '$baseId.failed',
+            timestamp: DateTime.now(),
+            status: ToolEventStatus.failed,
+            toolName: call.name,
+            providerType: providerType,
+            providerRef: providerRef,
+            arguments: call.arguments,
+            error: 'Timeout or error: $e',
+            durationMs: stopwatch.elapsedMilliseconds,
+          ),
+        );
       }
     }
 

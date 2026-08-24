@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 class StreamingTextContent extends StatelessWidget {
-  const StreamingTextContent({super.key, required this.content, required this.isDark});
+  const StreamingTextContent({
+    super.key,
+    required this.content,
+    required this.isDark,
+  });
 
   final String content;
   final bool isDark;

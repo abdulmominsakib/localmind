@@ -51,7 +51,11 @@ class ConversationTile extends StatelessWidget {
     } else if (diff.inDays < 7) {
       return l10n.conversation_days_ago(diff.inDays);
     } else {
-      return l10n.conversation_date(dateTime.month, dateTime.day, dateTime.year);
+      return l10n.conversation_date(
+        dateTime.month,
+        dateTime.day,
+        dateTime.year,
+      );
     }
   }
 
@@ -68,8 +72,8 @@ class ConversationTile extends StatelessWidget {
         alignment: AlignmentDirectional.centerStart,
         padding: const EdgeInsetsDirectional.only(start: 16),
         color: Colors.blue,
-        child: HugeIcon(icon: 
-          conversation.isArchived
+        child: HugeIcon(
+          icon: conversation.isArchived
               ? HugeIcons.strokeRoundedArchive
               : HugeIcons.strokeRoundedArchive,
           color: Colors.white,
@@ -79,7 +83,10 @@ class ConversationTile extends StatelessWidget {
         alignment: AlignmentDirectional.centerEnd,
         padding: const EdgeInsetsDirectional.only(end: 16),
         color: Colors.red,
-        child: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, color: Colors.white),
+        child: const HugeIcon(
+          icon: HugeIcons.strokeRoundedDelete01,
+          color: Colors.white,
+        ),
       ),
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
@@ -105,8 +112,8 @@ class ConversationTile extends StatelessWidget {
                 if (selectionMode)
                   Checkbox(value: isSelected, onChanged: (_) => onTap())
                 else
-                  HugeIcon(icon: 
-                    conversation.isPinned
+                  HugeIcon(
+                    icon: conversation.isPinned
                         ? HugeIcons.strokeRoundedPin
                         : HugeIcons.strokeRoundedChatting01,
                     size: 20,
@@ -130,7 +137,9 @@ class ConversationTile extends StatelessWidget {
                           fontWeight: isActive
                               ? FontWeight.w600
                               : FontWeight.w500,
-                          color: isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText,
+                          color: isDark
+                              ? AppColors.darkPrimaryText
+                              : AppColors.lightPrimaryText,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -152,10 +161,16 @@ class ConversationTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         [
-                          l10n.conversation_message_count(conversation.messageCount),
-                          l10n.conversation_character_count(conversation.characterCount),
+                          l10n.conversation_message_count(
+                            conversation.messageCount,
+                          ),
+                          l10n.conversation_character_count(
+                            conversation.characterCount,
+                          ),
                           if (conversation.totalTokenCount != null)
-                            l10n.total_tokens_count(conversation.totalTokenCount!),
+                            l10n.total_tokens_count(
+                              conversation.totalTokenCount!,
+                            ),
                         ].join(' · '),
                         style: TextStyle(
                           fontSize: 11,
@@ -200,7 +215,11 @@ class ConversationTile extends StatelessWidget {
     );
   }
 
-  void _showContextMenu(BuildContext context, AppLocalizations l10n, bool isDark) {
+  void _showContextMenu(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
     showModalBottomSheet(
       context: context,
       builder: (ctx) {
@@ -210,7 +229,9 @@ class ConversationTile extends StatelessWidget {
             children: [
               if (onEnterSelectionMode != null)
                 ListTile(
-                  leading: const HugeIcon(icon: HugeIcons.strokeRoundedCheckList),
+                  leading: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedCheckList,
+                  ),
                   title: Text(l10n.select),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -218,8 +239,8 @@ class ConversationTile extends StatelessWidget {
                   },
                 ),
               ListTile(
-                leading: HugeIcon(icon: 
-                  conversation.isPinned
+                leading: HugeIcon(
+                  icon: conversation.isPinned
                       ? HugeIcons.strokeRoundedPin
                       : HugeIcons.strokeRoundedPin,
                 ),
@@ -230,7 +251,9 @@ class ConversationTile extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: const HugeIcon(icon: HugeIcons.strokeRoundedPencilEdit02),
+                leading: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedPencilEdit02,
+                ),
                 title: Text(l10n.rename),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -262,8 +285,8 @@ class ConversationTile extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: HugeIcon(icon: 
-                  conversation.isArchived
+                leading: HugeIcon(
+                  icon: conversation.isArchived
                       ? HugeIcons.strokeRoundedArchive
                       : HugeIcons.strokeRoundedArchive,
                 ),
@@ -278,7 +301,10 @@ class ConversationTile extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, color: Colors.red),
+                leading: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedDelete01,
+                  color: Colors.red,
+                ),
                 title: Text(
                   l10n.delete,
                   style: const TextStyle(color: Colors.red),

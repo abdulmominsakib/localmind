@@ -32,7 +32,9 @@ class ConversationDrawerHeader extends ConsumerWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText,
+              color: isDark
+                  ? AppColors.darkPrimaryText
+                  : AppColors.lightPrimaryText,
             ),
           ),
         ],

@@ -284,11 +284,11 @@ class _OnboardingLanguageScreenState
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            mainAxisExtent: 92,
-                          ),
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                mainAxisExtent: 92,
+                              ),
                           itemCount: _languages.length,
                           itemBuilder: (context, index) {
                             final lang = _languages[index];
@@ -343,8 +343,9 @@ class _OnboardingLanguageScreenState
                                           height: 24,
                                           decoration: BoxDecoration(
                                             color: Colors.white,
-                                            borderRadius:
-                                                BorderRadius.circular(5),
+                                            borderRadius: BorderRadius.circular(
+                                              5,
+                                            ),
                                             border: Border.all(
                                               color: theme.colorScheme.outline
                                                   .withValues(alpha: 0.15),
@@ -362,22 +363,23 @@ class _OnboardingLanguageScreenState
                                           ),
                                           alignment: Alignment.center,
                                           child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
                                             child: Image.asset(
                                               lang.flagAsset,
                                               width: 36,
                                               height: 24,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error,
-                                                  stackTrace) {
-                                                return Text(
-                                                  lang.flag,
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                  ),
-                                                );
-                                              },
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                    return Text(
+                                                      lang.flag,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                      ),
+                                                    );
+                                                  },
                                             ),
                                           ),
                                         ),
@@ -422,8 +424,8 @@ class _OnboardingLanguageScreenState
                                           overflow: TextOverflow.ellipsis,
                                           style: theme.textTheme.titleSmall
                                               ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
@@ -432,10 +434,12 @@ class _OnboardingLanguageScreenState
                                           overflow: TextOverflow.ellipsis,
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            color: theme.colorScheme.onSurface
-                                                .withValues(alpha: 0.5),
-                                            fontSize: 10,
-                                          ),
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withValues(alpha: 0.5),
+                                                fontSize: 10,
+                                              ),
                                         ),
                                       ],
                                     ),

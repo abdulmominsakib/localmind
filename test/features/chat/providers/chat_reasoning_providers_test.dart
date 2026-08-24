@@ -6,15 +6,24 @@ import 'package:localmind/core/models/enums.dart';
 void main() {
   group('effortsForModel', () {
     test('falls back to low/medium/high when efforts are unknown', () {
-      expect(effortsForModel(null), [ReasoningEffort.low, ReasoningEffort.medium, ReasoningEffort.high]);
-      expect(effortsForModel(const []), [ReasoningEffort.low, ReasoningEffort.medium, ReasoningEffort.high]);
+      expect(effortsForModel(null), [
+        ReasoningEffort.low,
+        ReasoningEffort.medium,
+        ReasoningEffort.high,
+      ]);
+      expect(effortsForModel(const []), [
+        ReasoningEffort.low,
+        ReasoningEffort.medium,
+        ReasoningEffort.high,
+      ]);
     });
 
     test('filters and orders advertised efforts lightest to heaviest', () {
-      expect(
-        effortsForModel(const ['max', 'high', 'low']),
-        [ReasoningEffort.low, ReasoningEffort.high, ReasoningEffort.max],
-      );
+      expect(effortsForModel(const ['max', 'high', 'low']), [
+        ReasoningEffort.low,
+        ReasoningEffort.high,
+        ReasoningEffort.max,
+      ]);
       expect(
         effortsForModel(const ['xhigh', 'high', 'medium', 'low', 'minimal']),
         [
@@ -28,10 +37,11 @@ void main() {
     });
 
     test('falls back when no advertised effort maps to the enum', () {
-      expect(
-        effortsForModel(const ['bogus']),
-        [ReasoningEffort.low, ReasoningEffort.medium, ReasoningEffort.high],
-      );
+      expect(effortsForModel(const ['bogus']), [
+        ReasoningEffort.low,
+        ReasoningEffort.medium,
+        ReasoningEffort.high,
+      ]);
     });
   });
 
@@ -48,7 +58,10 @@ void main() {
     }
 
     test('returns current unchanged when no efforts are advertised', () {
-      expect(resolveEffortForModel(null, ReasoningEffort.low), ReasoningEffort.low);
+      expect(
+        resolveEffortForModel(null, ReasoningEffort.low),
+        ReasoningEffort.low,
+      );
       expect(
         resolveEffortForModel(modelWithEfforts(const []), ReasoningEffort.high),
         ReasoningEffort.high,
@@ -56,19 +69,35 @@ void main() {
     });
 
     test('keeps current when it is supported', () {
-      final model = modelWithEfforts(const ['max', 'high', 'low'], defaultEffort: 'high');
-      expect(resolveEffortForModel(model, ReasoningEffort.high), ReasoningEffort.high);
+      final model = modelWithEfforts(const [
+        'max',
+        'high',
+        'low',
+      ], defaultEffort: 'high');
+      expect(
+        resolveEffortForModel(model, ReasoningEffort.high),
+        ReasoningEffort.high,
+      );
     });
 
     test('snaps to the advertised default when current is unsupported', () {
       final model = modelWithEfforts(const ['high'], defaultEffort: 'high');
-      expect(resolveEffortForModel(model, ReasoningEffort.low), ReasoningEffort.high);
+      expect(
+        resolveEffortForModel(model, ReasoningEffort.low),
+        ReasoningEffort.high,
+      );
     });
 
-    test('picks the heaviest supported effort when no default is advertised', () {
-      final model = modelWithEfforts(const ['high', 'max']);
-      expect(resolveEffortForModel(model, ReasoningEffort.low), ReasoningEffort.max);
-    });
+    test(
+      'picks the heaviest supported effort when no default is advertised',
+      () {
+        final model = modelWithEfforts(const ['high', 'max']);
+        expect(
+          resolveEffortForModel(model, ReasoningEffort.low),
+          ReasoningEffort.max,
+        );
+      },
+    );
   });
 
   group('ReasoningEffort.fromApiValue', () {

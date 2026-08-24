@@ -354,7 +354,10 @@ class _MessageList extends ConsumerWidget {
                   alignment: Alignment.centerLeft,
                   child: OutlinedButton.icon(
                     onPressed: onGenerateResponse,
-                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedSparkles, size: 16),
+                    icon: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedSparkles,
+                      size: 16,
+                    ),
                     label: Text(
                       AppLocalizations.of(context)!.generate_ai_response,
                     ),

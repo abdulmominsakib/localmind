@@ -303,8 +303,7 @@ class LMStudioChatService implements ChatService {
           }
 
           // Prefer the SSE `event:` line, fall back to the JSON `type` field.
-          final eventType =
-              currentEventName ?? json['type'] as String? ?? '';
+          final eventType = currentEventName ?? json['type'] as String? ?? '';
 
           switch (eventType) {
             case 'chat.start':
@@ -405,8 +404,8 @@ class LMStudioChatService implements ChatService {
                           tool: m['tool'] as String? ?? '',
                           arguments:
                               (m['arguments'] as Map?)
-                                      ?.cast<String, dynamic>() ??
-                                  {},
+                                  ?.cast<String, dynamic>() ??
+                              {},
                           output: m['output'] as String?,
                           providerInfo: _providerInfoFromMap(
                             (m['provider_info'] as Map?)
@@ -593,13 +592,13 @@ class LMStudioChatService implements ChatService {
     return ChatStats(
       inputTokens: (stats['input_tokens'] as num?)?.toInt() ?? 0,
       totalOutputTokens: (stats['total_output_tokens'] as num?)?.toInt() ?? 0,
-      reasoningOutputTokens:
-          (stats['reasoning_output_tokens'] as num?)?.toInt(),
+      reasoningOutputTokens: (stats['reasoning_output_tokens'] as num?)
+          ?.toInt(),
       tokensPerSecond: (stats['tokens_per_second'] as num?)?.toDouble(),
-      timeToFirstTokenSeconds:
-          (stats['time_to_first_token_seconds'] as num?)?.toDouble(),
-      modelLoadTimeSeconds:
-          (stats['model_load_time_seconds'] as num?)?.toDouble(),
+      timeToFirstTokenSeconds: (stats['time_to_first_token_seconds'] as num?)
+          ?.toDouble(),
+      modelLoadTimeSeconds: (stats['model_load_time_seconds'] as num?)
+          ?.toDouble(),
     );
   }
 
@@ -781,7 +780,8 @@ class OpenAICompatibleChatService implements ChatService {
 
                 final content = (delta['content'] ?? delta['text']) as String?;
                 final reasoning =
-                    (delta['reasoning'] ?? delta['reasoning_content']) as String?;
+                    (delta['reasoning'] ?? delta['reasoning_content'])
+                        as String?;
                 final refusal = delta['refusal'] as String?;
 
                 // Check if content is empty/null (processing but not outputting)
@@ -833,10 +833,7 @@ class OpenAICompatibleChatService implements ChatService {
       for (final call in toolAdapter.takeCompletedCalls()) {
         yield ChatResponse(
           type: ChatResponseType.toolCall,
-          toolCall: ToolCallData(
-            tool: call.name,
-            arguments: call.arguments,
-          ),
+          toolCall: ToolCallData(tool: call.name, arguments: call.arguments),
         );
       }
     } catch (e) {
@@ -978,7 +975,8 @@ class OllamaChatService implements ChatService {
         Log.error('Ollama HTTP $statusCode: ${parsedError ?? rawError}');
         yield ChatResponse(
           type: ChatResponseType.error,
-          content: parsedError ??
+          content:
+              parsedError ??
               (rawError.trim().isNotEmpty
                   ? rawError.trim()
                   : 'Ollama request failed (HTTP $statusCode).'),
@@ -1240,110 +1238,111 @@ class OpenRouterChatService implements ChatService {
             return;
           }
 
-        buffer += chunk;
-        final lines = buffer.split('\n');
-        buffer = lines.removeLast();
+          buffer += chunk;
+          final lines = buffer.split('\n');
+          buffer = lines.removeLast();
 
-        for (final line in lines) {
-          logCounter++;
-          if (logCounter % 10 == 0) {
-            Log.debug('OpenRouter SSE line #$logCounter: $line');
-          }
-
-          if (line.startsWith('data: ')) {
-            final data = line.substring(6);
-            if (data == '[DONE]') {
-              _timeoutTimer?.cancel();
-              Log.debug('OpenRouter: Received [DONE]');
-              for (final call in toolAdapter.takeCompletedCalls()) {
-                yield ChatResponse(
-                  type: ChatResponseType.toolCall,
-                  toolCall: ToolCallData(
-                    tool: call.name,
-                    arguments: call.arguments,
-                  ),
-                );
-              }
-              yield const ChatResponse(type: ChatResponseType.done);
-              return;
+          for (final line in lines) {
+            logCounter++;
+            if (logCounter % 10 == 0) {
+              Log.debug('OpenRouter SSE line #$logCounter: $line');
             }
-            try {
-              final json = jsonDecode(data) as Map<String, dynamic>;
-              toolAdapter.consumeDynamicChunk(json);
 
-              // Check for errors in the response
-              if (json['error'] != null) {
+            if (line.startsWith('data: ')) {
+              final data = line.substring(6);
+              if (data == '[DONE]') {
                 _timeoutTimer?.cancel();
-                final errorContent = _formatApiErrorContent(json['error']);
-                Log.error('OpenRouter mid-stream error: $errorContent');
-                yield ChatResponse(
-                  type: ChatResponseType.error,
-                  content: errorContent,
-                );
+                Log.debug('OpenRouter: Received [DONE]');
+                for (final call in toolAdapter.takeCompletedCalls()) {
+                  yield ChatResponse(
+                    type: ChatResponseType.toolCall,
+                    toolCall: ToolCallData(
+                      tool: call.name,
+                      arguments: call.arguments,
+                    ),
+                  );
+                }
+                yield const ChatResponse(type: ChatResponseType.done);
                 return;
               }
+              try {
+                final json = jsonDecode(data) as Map<String, dynamic>;
+                toolAdapter.consumeDynamicChunk(json);
 
-              final choices = json['choices'] as List<dynamic>?;
-              if (choices == null || choices.isEmpty) {
-                continue;
-              }
-
-              final firstChoice = choices[0] as Map<String, dynamic>?;
-              if (firstChoice == null) continue;
-
-              final delta = firstChoice['delta'];
-              if (delta == null || delta is! Map<String, dynamic>) continue;
-
-              final content = (delta['content'] ?? delta['text']) as String?;
-              final reasoning =
-                  (delta['reasoning'] ?? delta['reasoning_content']) as String?;
-              final refusal = delta['refusal'] as String?;
-
-              // Check if content is empty/null (processing but not outputting)
-              final hasContent = content != null && content.isNotEmpty;
-              final hasReasoning = reasoning != null && reasoning.isNotEmpty;
-              final hasRefusal = refusal != null && refusal.isNotEmpty;
-
-              if (!hasContent && !hasReasoning && !hasRefusal) {
-                emptyDeltaCount++;
-                if (emptyDeltaCount % 10 == 0) {
-                  yield const ChatResponse(type: ChatResponseType.processing);
-                }
-              } else {
-                emptyDeltaCount = 0;
-                lastContentReceived = DateTime.now();
-
-                if (hasRefusal) {
+                // Check for errors in the response
+                if (json['error'] != null) {
+                  _timeoutTimer?.cancel();
+                  final errorContent = _formatApiErrorContent(json['error']);
+                  Log.error('OpenRouter mid-stream error: $errorContent');
                   yield ChatResponse(
                     type: ChatResponseType.error,
-                    content: 'Refusal: $refusal',
+                    content: errorContent,
                   );
                   return;
                 }
-                if (hasContent) {
-                  yield ChatResponse(
-                    type: ChatResponseType.message,
-                    content: content,
-                  );
+
+                final choices = json['choices'] as List<dynamic>?;
+                if (choices == null || choices.isEmpty) {
+                  continue;
                 }
-                if (hasReasoning) {
-                  yield ChatResponse(
-                    type: ChatResponseType.reasoning,
-                    reasoningContent: reasoning,
-                  );
+
+                final firstChoice = choices[0] as Map<String, dynamic>?;
+                if (firstChoice == null) continue;
+
+                final delta = firstChoice['delta'];
+                if (delta == null || delta is! Map<String, dynamic>) continue;
+
+                final content = (delta['content'] ?? delta['text']) as String?;
+                final reasoning =
+                    (delta['reasoning'] ?? delta['reasoning_content'])
+                        as String?;
+                final refusal = delta['refusal'] as String?;
+
+                // Check if content is empty/null (processing but not outputting)
+                final hasContent = content != null && content.isNotEmpty;
+                final hasReasoning = reasoning != null && reasoning.isNotEmpty;
+                final hasRefusal = refusal != null && refusal.isNotEmpty;
+
+                if (!hasContent && !hasReasoning && !hasRefusal) {
+                  emptyDeltaCount++;
+                  if (emptyDeltaCount % 10 == 0) {
+                    yield const ChatResponse(type: ChatResponseType.processing);
+                  }
+                } else {
+                  emptyDeltaCount = 0;
+                  lastContentReceived = DateTime.now();
+
+                  if (hasRefusal) {
+                    yield ChatResponse(
+                      type: ChatResponseType.error,
+                      content: 'Refusal: $refusal',
+                    );
+                    return;
+                  }
+                  if (hasContent) {
+                    yield ChatResponse(
+                      type: ChatResponseType.message,
+                      content: content,
+                    );
+                  }
+                  if (hasReasoning) {
+                    yield ChatResponse(
+                      type: ChatResponseType.reasoning,
+                      reasoningContent: reasoning,
+                    );
+                  }
                 }
+              } catch (e) {
+                Log.error('OpenRouter parsing error: $e');
               }
-            } catch (e) {
-              Log.error('OpenRouter parsing error: $e');
-            }
-          } else if (line.startsWith(': ')) {
-            // SSE comment (keep-alive)
-            if (logCounter % 50 == 0) {
-              Log.debug('OpenRouter SSE comment: $line');
+            } else if (line.startsWith(': ')) {
+              // SSE comment (keep-alive)
+              if (logCounter % 50 == 0) {
+                Log.debug('OpenRouter SSE comment: $line');
+              }
             }
           }
         }
-      }
       } finally {
         _timeoutTimer?.cancel();
       }
@@ -1353,10 +1352,7 @@ class OpenRouterChatService implements ChatService {
       for (final call in toolAdapter.takeCompletedCalls()) {
         yield ChatResponse(
           type: ChatResponseType.toolCall,
-          toolCall: ToolCallData(
-            tool: call.name,
-            arguments: call.arguments,
-          ),
+          toolCall: ToolCallData(tool: call.name, arguments: call.arguments),
         );
       }
     } catch (e) {
@@ -1619,11 +1615,12 @@ bool _looksLikePng(Uint8List bytes) {
 /// from streaming chunks. LM Studio and on-device servers collect tool calls
 /// directly from [ChatResponseType.toolCall] events emitted during streaming
 /// and feed them to the loop via [ToolExecutionLoop.run]'s [preParsedCalls].
-ToolTransportAdapter createAdapterForServerType(ServerType type) => switch (type) {
-  ServerType.openAICompatible => OpenAiToolAdapter(),
-  ServerType.openRouter => OpenRouterToolAdapter(),
-  ServerType.lmStudio => OpenAiToolAdapter(),
-  ServerType.onDevice => OpenAiToolAdapter(),
-  ServerType.ollama => OllamaToolAdapter(),
-  ServerType.ollamaCloud => OllamaToolAdapter(),
-};
+ToolTransportAdapter createAdapterForServerType(ServerType type) =>
+    switch (type) {
+      ServerType.openAICompatible => OpenAiToolAdapter(),
+      ServerType.openRouter => OpenRouterToolAdapter(),
+      ServerType.lmStudio => OpenAiToolAdapter(),
+      ServerType.onDevice => OpenAiToolAdapter(),
+      ServerType.ollama => OllamaToolAdapter(),
+      ServerType.ollamaCloud => OllamaToolAdapter(),
+    };

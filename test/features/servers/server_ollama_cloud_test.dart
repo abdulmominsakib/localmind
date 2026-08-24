@@ -51,9 +51,7 @@ void main() {
 
     test('api key is sent as Bearer authorization header', () {
       final server = makeCloudServer(apiKey: 'test-key-123');
-      expect(server.authHeaders, {
-        'Authorization': 'Bearer test-key-123',
-      });
+      expect(server.authHeaders, {'Authorization': 'Bearer test-key-123'});
     });
 
     test('no Authorization header when api key is missing', () {

@@ -22,8 +22,9 @@ Widget _wrapWithApp(Widget child) {
 }
 
 void main() {
-  testWidgets('shows OpenAI Compatible on the onboarding server picker',
-      (tester) async {
+  testWidgets('shows OpenAI Compatible on the onboarding server picker', (
+    tester,
+  ) async {
     await tester.pumpWidget(_wrapWithApp(const OnboardingServerTypeScreen()));
     await tester.pumpAndSettle();
 
@@ -37,11 +38,7 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      _wrapWithApp(
-        Material(
-          child: HttpsSchemeHint(controller: controller),
-        ),
-      ),
+      _wrapWithApp(Material(child: HttpsSchemeHint(controller: controller))),
     );
 
     expect(find.text('HTTPS requires SSL'), findsNothing);

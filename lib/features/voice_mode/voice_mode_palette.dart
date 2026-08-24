@@ -42,7 +42,10 @@ class VoiceModePalette {
   }
 
   /// Full 3D sphere gradient stops for a given phase.
-  static List<Color> sphereGradientFor(VoiceModePhase phase, {required bool isDark}) {
+  static List<Color> sphereGradientFor(
+    VoiceModePhase phase, {
+    required bool isDark,
+  }) {
     final accent = accentFor(phase, isDark: isDark);
     final secondary = secondaryFor(phase, isDark: isDark);
 
@@ -50,36 +53,36 @@ class VoiceModePalette {
       case VoiceModePhase.listening:
         return [
           const Color(0xFFA7F3D0), // Soft mint top highlight
-          accent,                  // Emerald / Teal accent
-          secondary,               // Cyan blue
+          accent, // Emerald / Teal accent
+          secondary, // Cyan blue
           const Color(0xFF0284C7), // Deep cyan edge
         ];
       case VoiceModePhase.processing:
         return [
           const Color(0xFFF0ABFC), // Bright violet light top
-          accent,                  // Deep purple
-          secondary,               // Magenta shimmer
+          accent, // Deep purple
+          secondary, // Magenta shimmer
           const Color(0xFF4C1D95), // Deep dark indigo edge
         ];
       case VoiceModePhase.speaking:
         return [
           const Color(0xFFFFAEE2), // Light peach pink top
           const Color(0xFFF472B6), // Pink
-          accent,                  // Indigo / Purple
-          secondary,               // Deep rose / cyan bottom
+          accent, // Indigo / Purple
+          secondary, // Deep rose / cyan bottom
         ];
       case VoiceModePhase.idle:
         return [
           const Color(0xFFCBD5E1), // Cool grey light
-          accent,                  // Slate blue
-          secondary,               // Dark slate
+          accent, // Slate blue
+          secondary, // Dark slate
           const Color(0xFF334155), // Charcoal edge
         ];
       case VoiceModePhase.error:
         return [
           const Color(0xFFFECDD3), // Soft rose pink highlight
           const Color(0xFFF87171), // Vibrant coral red
-          accent,                  // Crimson red
+          accent, // Crimson red
           const Color(0xFF991B1B), // Dark burgundy edge
         ];
     }

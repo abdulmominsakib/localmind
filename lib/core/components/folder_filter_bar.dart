@@ -31,7 +31,7 @@ class FolderFilterBar extends StatelessWidget {
   /// (long-press on touch devices, right-click on desktop). When `null`,
   /// folder chips are not interactive for management actions.
   final void Function(FolderFilterItem folder, Offset globalPosition)?
-      onFolderAction;
+  onFolderAction;
   final bool isLoading;
   final bool showCreateFolder;
 
@@ -74,8 +74,8 @@ class FolderFilterBar extends StatelessWidget {
                     ? null
                     : (globalPos) => onFolderAction!(folder, globalPos),
                 child: FilterChip(
-                  avatar: HugeIcon(icon: 
-                    HugeIcons.strokeRoundedFolder01,
+                  avatar: HugeIcon(
+                    icon: HugeIcons.strokeRoundedFolder01,
                     size: 16,
                     color: selectedFolderId == folder.id
                         ? theme.colorScheme.onSecondaryContainer
@@ -92,8 +92,8 @@ class FolderFilterBar extends StatelessWidget {
           if (showCreateFolder) ...[
             const SizedBox(width: 6),
             ActionChip(
-              avatar: HugeIcon(icon: 
-                HugeIcons.strokeRoundedFolderAdd,
+              avatar: HugeIcon(
+                icon: HugeIcons.strokeRoundedFolderAdd,
                 size: 16,
                 color: theme.colorScheme.primary,
               ),
@@ -134,18 +134,18 @@ class SystemFolderFilterChip extends StatelessWidget {
     final theme = Theme.of(context);
     final bgColor = selected
         ? (outlined
-            ? theme.colorScheme.surfaceContainerHighest
-            : theme.colorScheme.secondaryContainer)
+              ? theme.colorScheme.surfaceContainerHighest
+              : theme.colorScheme.secondaryContainer)
         : Colors.transparent;
     final borderColor = outlined
         ? (isDark ? const Color(0xFF444444) : const Color(0xFFCCCCCC))
         : (selected
-            ? theme.colorScheme.secondaryContainer
-            : (isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0)));
+              ? theme.colorScheme.secondaryContainer
+              : (isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0)));
 
     return FilterChip(
-      avatar: HugeIcon(icon: 
-        icon,
+      avatar: HugeIcon(
+        icon: icon,
         size: 16,
         color: selected
             ? theme.colorScheme.onSecondaryContainer

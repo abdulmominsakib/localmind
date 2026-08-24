@@ -88,6 +88,7 @@ class TtsDownloadNotifier
         .downloadModel(model)
         .listen(
           (progress) {
+            if (!ref.mounted) return;
             final variantMap = Map<String, KittenTtsFileProgress>.from(
               state[variant] ?? {},
             );
@@ -96,7 +97,9 @@ class TtsDownloadNotifier
           },
           onDone: () {
             _subscriptions.remove(variant);
-            ref.invalidate(downloadedKittenTtsVariantsProvider);
+            if (ref.mounted) {
+              ref.invalidate(downloadedKittenTtsVariantsProvider);
+            }
             if (!completer.isCompleted) completer.complete();
           },
           onError: (e) {
@@ -112,6 +115,7 @@ class TtsDownloadNotifier
 
   /// Cancel an in-flight download.
   void cancelDownload(KittenTtsModelVariant variant) {
+    if (!ref.mounted) return;
     ref.read(kittenTtsDownloaderProvider).cancelDownload(variant);
     _subscriptions[variant]?.cancel();
     _subscriptions.remove(variant);
@@ -126,8 +130,10 @@ class TtsDownloadNotifier
 
   /// Delete a downloaded variant.
   Future<void> deleteVariant(KittenTtsModelVariant variant) async {
+    if (!ref.mounted) return;
     cancelDownload(variant);
     await ref.read(kittenTtsDownloaderProvider).deleteVariant(variant);
+    if (!ref.mounted) return;
 
     final newState =
         Map<KittenTtsModelVariant, Map<String, KittenTtsFileProgress>>.from(
@@ -201,6 +207,7 @@ class PiperTtsDownloadNotifier
         .downloadModel(variant)
         .listen(
           (progress) {
+            if (!ref.mounted) return;
             final variantMap = Map<String, PiperTtsFileProgress>.from(
               state[variant] ?? {},
             );
@@ -210,7 +217,9 @@ class PiperTtsDownloadNotifier
           onDone: () {
             _subscriptions.remove(variant);
             _completers.remove(variant);
-            ref.invalidate(downloadedPiperTtsVariantsProvider);
+            if (ref.mounted) {
+              ref.invalidate(downloadedPiperTtsVariantsProvider);
+            }
             if (!completer.isCompleted) completer.complete();
           },
           onError: (e) {
@@ -226,6 +235,7 @@ class PiperTtsDownloadNotifier
   }
 
   void cancelDownload(PiperTtsModelVariant variant) {
+    if (!ref.mounted) return;
     ref.read(piperTtsDownloaderProvider).cancelDownload(variant);
     _subscriptions[variant]?.cancel();
     _subscriptions.remove(variant);
@@ -243,8 +253,10 @@ class PiperTtsDownloadNotifier
   }
 
   Future<void> deleteVariant(PiperTtsModelVariant variant) async {
+    if (!ref.mounted) return;
     cancelDownload(variant);
     await ref.read(piperTtsDownloaderProvider).deleteVariant(variant);
+    if (!ref.mounted) return;
 
     final newState =
         Map<PiperTtsModelVariant, Map<String, PiperTtsFileProgress>>.from(

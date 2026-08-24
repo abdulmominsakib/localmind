@@ -38,8 +38,7 @@ class _AttachSheet extends StatelessWidget {
         ? AppColors.darkSurfaceInput
         : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45);
     final fg = isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText;
-    final mutedFg =
-        isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+    final mutedFg = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -89,10 +88,7 @@ class _AttachSheet extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             l10n.choose_attachment_subtitle,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: mutedFg,
-                            ),
+                            style: TextStyle(fontSize: 13, color: mutedFg),
                           ),
                         ],
                       ),
@@ -144,8 +140,9 @@ class _AttachSheet extends StatelessWidget {
                         tileColor: tileBg,
                         foreground: fg,
                         accent: const Color(0xFF22C55E),
-                        onTap: () => Navigator.of(context)
-                            .pop(AttachAction.savedMessage),
+                        onTap: () => Navigator.of(
+                          context,
+                        ).pop(AttachAction.savedMessage),
                       ),
                     ),
                   ],
@@ -200,11 +197,7 @@ class _AttachTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
-                  child: HugeIcon(
-                    icon: icon,
-                    color: accent,
-                    size: 22,
-                  ),
+                  child: HugeIcon(icon: icon, color: accent, size: 22),
                 ),
               ),
               const SizedBox(height: 8),

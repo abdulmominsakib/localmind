@@ -42,7 +42,9 @@ class GitHubRepoCard extends StatelessWidget {
                 HugeIcon(
                   icon: HugeIcons.strokeRoundedGithub,
                   size: 20,
-                  color: isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText,
+                  color: isDark
+                      ? AppColors.darkPrimaryText
+                      : AppColors.lightPrimaryText,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -55,7 +57,9 @@ class GitHubRepoCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText,
+                          color: isDark
+                              ? AppColors.darkPrimaryText
+                              : AppColors.lightPrimaryText,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -64,16 +68,20 @@ class GitHubRepoCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
+                          color: isDark
+                              ? AppColors.darkAccent
+                              : AppColors.lightAccent,
                         ),
                       ),
                     ],
                   ),
                 ),
-                HugeIcon(icon: 
-                  HugeIcons.strokeRoundedShare01,
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedShare01,
                   size: 14,
-                  color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                  color: isDark
+                      ? AppColors.darkMutedText
+                      : AppColors.lightMutedText,
                 ),
               ],
             ),

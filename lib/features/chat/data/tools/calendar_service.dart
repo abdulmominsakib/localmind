@@ -34,13 +34,15 @@ class CalendarService {
   Future<List<Map<String, dynamic>>> listCalendars() async {
     final calendars = await _plugin.listCalendars();
     return calendars
-        .map((c) => {
-              'id': c.id,
-              'name': c.name,
-              'is_read_only': c.readOnly,
-              'is_primary': c.isPrimary,
-              'account_name': c.accountName,
-            })
+        .map(
+          (c) => {
+            'id': c.id,
+            'name': c.name,
+            'is_read_only': c.readOnly,
+            'is_primary': c.isPrimary,
+            'account_name': c.accountName,
+          },
+        )
         .toList();
   }
 
@@ -58,16 +60,18 @@ class CalendarService {
 
     final events = await _plugin.listEvents(from, to);
     return events
-        .map((e) => {
-              'id': e.eventId,
-              'title': e.title,
-              'start': e.startDate.toIso8601String(),
-              'end': e.endDate.toIso8601String(),
-              'all_day': e.isAllDay,
-              'location': e.location,
-              'description': e.description,
-              'calendar_id': e.calendarId,
-            })
+        .map(
+          (e) => {
+            'id': e.eventId,
+            'title': e.title,
+            'start': e.startDate.toIso8601String(),
+            'end': e.endDate.toIso8601String(),
+            'all_day': e.isAllDay,
+            'location': e.location,
+            'description': e.description,
+            'calendar_id': e.calendarId,
+          },
+        )
         .toList();
   }
 
@@ -100,10 +104,7 @@ class CalendarService {
         'message': 'Event "$title" created successfully.',
       };
     } on DeviceCalendarException catch (e) {
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
+      return {'success': false, 'error': e.toString()};
     }
   }
 

@@ -48,10 +48,7 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
 
   List<String> _initialSelectedIds() {
     if (widget.mode == PersonaPickerMode.preselection) {
-      return ref
-          .read(selectedPersonasProvider)
-          .map((p) => p.id)
-          .toList();
+      return ref.read(selectedPersonasProvider).map((p) => p.id).toList();
     }
     final activeConv = ref.read(conv.activeConversationProvider);
     return PersonaPromptUtils.parsePersonaIds(activeConv?.personaId);
@@ -126,8 +123,7 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
                 ),
                 if (_selectedIds.isNotEmpty)
                   TextButton(
-                    onPressed: () =>
-                        _clear(personasAsync.value ?? const []),
+                    onPressed: () => _clear(personasAsync.value ?? const []),
                     child: Text(l10n.clear_personas),
                   ),
                 TextButton(
@@ -148,7 +144,10 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
                         .firstOrNull;
                     if (persona == null) return const SizedBox.shrink();
                     return InputChip(
-                      avatar: Text(persona.emoji, style: const TextStyle(fontSize: 14)),
+                      avatar: Text(
+                        persona.emoji,
+                        style: const TextStyle(fontSize: 14),
+                      ),
                       label: Text(persona.name),
                       onDeleted: () =>
                           _toggle(persona, personasAsync.value ?? const []),
@@ -192,8 +191,8 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
                   final personas = selectedCategory == null
                       ? allPersonas
                       : allPersonas
-                          .where((p) => p.category == selectedCategory)
-                          .toList();
+                            .where((p) => p.category == selectedCategory)
+                            .toList();
                   if (personas.isEmpty) {
                     return Padding(
                       padding: const EdgeInsets.all(24),
@@ -220,17 +219,23 @@ class _PersonaPickerSheetState extends ConsumerState<PersonaPickerSheet> {
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
                           backgroundColor: selected
-                              ? theme.colorScheme.primary.withValues(alpha: 0.15)
+                              ? theme.colorScheme.primary.withValues(
+                                  alpha: 0.15,
+                                )
                               : (isDark
-                                  ? AppColors.darkSurface
-                                  : AppColors.lightSurface),
-                          child: Text(persona.emoji, style: const TextStyle(fontSize: 20)),
+                                    ? AppColors.darkSurface
+                                    : AppColors.lightSurface),
+                          child: Text(
+                            persona.emoji,
+                            style: const TextStyle(fontSize: 20),
+                          ),
                         ),
                         title: Text(
                           persona.name,
                           style: TextStyle(
-                            fontWeight:
-                                selected ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                           ),
                         ),
                         subtitle: persona.description != null

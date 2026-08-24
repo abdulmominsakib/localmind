@@ -23,8 +23,7 @@ class MessageVariantNavigator extends StatelessWidget {
 
     final currentIndex = MessageVariants.activeVariantIndex(variants);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final muted =
-        isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
 
     return Padding(
       padding: const EdgeInsets.only(top: 6),
@@ -36,7 +35,11 @@ class MessageVariantNavigator extends StatelessWidget {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
             onPressed: currentIndex > 0 ? () => onCycle(-1) : null,
-            icon: HugeIcon(icon: HugeIcons.strokeRoundedArrowLeft01, size: 18, color: muted),
+            icon: HugeIcon(
+              icon: HugeIcons.strokeRoundedArrowLeft01,
+              size: 18,
+              color: muted,
+            ),
           ),
           Text(
             '${currentIndex + 1} / ${variants.length}',
@@ -50,9 +53,14 @@ class MessageVariantNavigator extends StatelessWidget {
             visualDensity: VisualDensity.compact,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            onPressed:
-                currentIndex < variants.length - 1 ? () => onCycle(1) : null,
-            icon: HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, size: 18, color: muted),
+            onPressed: currentIndex < variants.length - 1
+                ? () => onCycle(1)
+                : null,
+            icon: HugeIcon(
+              icon: HugeIcons.strokeRoundedArrowRight01,
+              size: 18,
+              color: muted,
+            ),
           ),
         ],
       ),

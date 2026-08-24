@@ -2,11 +2,7 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
 
 class ListFilterOption<T> {
-  const ListFilterOption({
-    required this.value,
-    required this.label,
-    this.icon,
-  });
+  const ListFilterOption({required this.value, required this.label, this.icon});
 
   final T value;
   final String label;
@@ -46,8 +42,8 @@ class ListFilterButton<T> extends StatelessWidget {
       icon: Badge(
         isLabelVisible: _hasActiveFilter,
         smallSize: 8,
-        child: HugeIcon(icon: 
-          icon,
+        child: HugeIcon(
+          icon: icon,
           color: _hasActiveFilter
               ? theme.colorScheme.primary
               : theme.iconTheme.color,
@@ -68,8 +64,8 @@ class ListFilterButton<T> extends StatelessWidget {
               ...options.map(
                 (option) => ListTile(
                   leading: option.icon != null
-                      ? HugeIcon(icon: 
-                          option.icon!,
+                      ? HugeIcon(
+                          icon: option.icon!,
                           color: selected == option.value
                               ? Theme.of(ctx).colorScheme.primary
                               : null,
@@ -77,8 +73,8 @@ class ListFilterButton<T> extends StatelessWidget {
                       : null,
                   title: Text(option.label),
                   trailing: selected == option.value
-                      ? HugeIcon(icon: 
-                          HugeIcons.strokeRoundedTick01,
+                      ? HugeIcon(
+                          icon: HugeIcons.strokeRoundedTick01,
                           color: Theme.of(ctx).colorScheme.primary,
                         )
                       : null,

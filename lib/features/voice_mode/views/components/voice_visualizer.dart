@@ -265,10 +265,7 @@ class _OrbWavePainter extends CustomPainter {
         ..setFloat(8, secondary.b);
 
       final shaderPaint = Paint()..shader = shader!;
-      canvas.drawRect(
-        Offset.zero & size,
-        shaderPaint,
-      );
+      canvas.drawRect(Offset.zero & size, shaderPaint);
 
       canvas.restore();
       return;

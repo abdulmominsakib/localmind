@@ -44,8 +44,8 @@ Future<void> showSaveMessageSheet(
                   ),
                 ),
               ListTile(
-                leading: HugeIcon(icon: 
-                  selectedFolderId == null
+                leading: HugeIcon(
+                  icon: selectedFolderId == null
                       ? HugeIcons.strokeRoundedCheckmarkCircle01
                       : HugeIcons.strokeRoundedCircle,
                 ),
@@ -54,8 +54,8 @@ Future<void> showSaveMessageSheet(
               ),
               ...folders.map(
                 (folder) => ListTile(
-                  leading: HugeIcon(icon: 
-                    selectedFolderId == folder.id
+                  leading: HugeIcon(
+                    icon: selectedFolderId == folder.id
                         ? HugeIcons.strokeRoundedCheckmarkCircle01
                         : HugeIcons.strokeRoundedCircle,
                   ),
@@ -73,14 +73,18 @@ Future<void> showSaveMessageSheet(
                     ref.invalidate(isMessageSavedProvider(message.id));
                     if (context.mounted) Navigator.pop(context);
                   },
-                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedBookmarkRemove01),
+                  icon: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedBookmarkRemove01,
+                  ),
                   label: Text(l10n.remove_from_saved),
                 ),
               const SizedBox(height: 8),
               ShadButton(
                 width: double.infinity,
                 onPressed: () async {
-                  await ref.read(savedMessagesProvider.notifier).saveMessage(
+                  await ref
+                      .read(savedMessagesProvider.notifier)
+                      .saveMessage(
                         message,
                         folderId: selectedFolderId,
                         isTemporaryChat: isTemporaryChat,

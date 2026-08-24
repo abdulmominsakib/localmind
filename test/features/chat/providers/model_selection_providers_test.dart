@@ -15,99 +15,106 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('autoSelectFirstLoadedModelProvider', () {
-    test('selects the configured default model when it is already loaded',
-        () async {
-      SharedPreferences.setMockInitialValues({
-        'appSettings': AppSettings(
-          defaultModelId: 'model-a',
-          defaultModelServerId: 'server-1',
-        ).toJson(),
-      });
-      final prefs = await SharedPreferences.getInstance();
+    test(
+      'selects the configured default model when it is already loaded',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'appSettings': AppSettings(
+            defaultModelId: 'model-a',
+            defaultModelServerId: 'server-1',
+          ).toJson(),
+        });
+        final prefs = await SharedPreferences.getInstance();
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          activeServerProvider.overrideWith(_StubActiveServerNotifier.new),
-          availableModelsProvider('server-1').overrideWith(
-            (ref) async => _models(),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            activeServerProvider.overrideWith(_StubActiveServerNotifier.new),
+            availableModelsProvider(
+              'server-1',
+            ).overrideWith((ref) async => _models()),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      // Mark the on-device engine as having the default model loaded.
-      container.read(onDeviceEngineProvider.notifier).state =
-          const OnDeviceEngineState(
-        status: OnDeviceEngineStatus.loaded,
-        loadedModelId: 'model-a',
-      );
+        // Mark the on-device engine as having the default model loaded.
+        container
+            .read(onDeviceEngineProvider.notifier)
+            .state = const OnDeviceEngineState(
+          status: OnDeviceEngineStatus.loaded,
+          loadedModelId: 'model-a',
+        );
 
-      await container.read(autoSelectFirstLoadedModelProvider.future);
+        await container.read(autoSelectFirstLoadedModelProvider.future);
 
-      final selected = container.read(selectedModelProvider);
-      expect(selected?.id, 'model-a');
-    });
+        final selected = container.read(selectedModelProvider);
+        expect(selected?.id, 'model-a');
+      },
+    );
 
-    test('selects the default model even when it is not loaded for LM Studio',
-        () async {
-      SharedPreferences.setMockInitialValues({
-        'appSettings': AppSettings(
-          defaultModelId: 'model-a',
-          defaultModelServerId: 'server-1',
-        ).toJson(),
-      });
-      final prefs = await SharedPreferences.getInstance();
+    test(
+      'selects the default model even when it is not loaded for LM Studio',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'appSettings': AppSettings(
+            defaultModelId: 'model-a',
+            defaultModelServerId: 'server-1',
+          ).toJson(),
+        });
+        final prefs = await SharedPreferences.getInstance();
 
-      final api = _FakeServerApiService(loadedModelIds: const {});
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          activeServerProvider.overrideWith(_StubLmStudioActiveServer.new),
-          connectionStatusProvider.overrideWith(
-            _StubConnectedStatusNotifier.new,
-          ),
-          availableModelsProvider('server-1').overrideWith(
-            (ref) async => _models(),
-          ),
-          serverApiServiceProvider.overrideWithValue(api),
-        ],
-      );
-      addTearDown(container.dispose);
+        final api = _FakeServerApiService(loadedModelIds: const {});
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            activeServerProvider.overrideWith(_StubLmStudioActiveServer.new),
+            connectionStatusProvider.overrideWith(
+              _StubConnectedStatusNotifier.new,
+            ),
+            availableModelsProvider(
+              'server-1',
+            ).overrideWith((ref) async => _models()),
+            serverApiServiceProvider.overrideWithValue(api),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(autoSelectFirstLoadedModelProvider.future);
+        await container.read(autoSelectFirstLoadedModelProvider.future);
 
-      final selected = container.read(selectedModelProvider);
-      expect(selected?.id, 'model-a');
-      expect(api.loadedIds, contains('model-a'));
-    });
+        final selected = container.read(selectedModelProvider);
+        expect(selected?.id, 'model-a');
+        expect(api.loadedIds, contains('model-a'));
+      },
+    );
 
-    test('falls back to the first loaded model when no default is set',
-        () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
+    test(
+      'falls back to the first loaded model when no default is set',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
 
-      final api = _FakeServerApiService(loadedModelIds: const {'model-b'});
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          activeServerProvider.overrideWith(_StubLmStudioActiveServer.new),
-          connectionStatusProvider.overrideWith(
-            _StubConnectedStatusNotifier.new,
-          ),
-          availableModelsProvider('server-1').overrideWith(
-            (ref) async => _models(),
-          ),
-          serverApiServiceProvider.overrideWithValue(api),
-        ],
-      );
-      addTearDown(container.dispose);
+        final api = _FakeServerApiService(loadedModelIds: const {'model-b'});
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            activeServerProvider.overrideWith(_StubLmStudioActiveServer.new),
+            connectionStatusProvider.overrideWith(
+              _StubConnectedStatusNotifier.new,
+            ),
+            availableModelsProvider(
+              'server-1',
+            ).overrideWith((ref) async => _models()),
+            serverApiServiceProvider.overrideWithValue(api),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(autoSelectFirstLoadedModelProvider.future);
+        await container.read(autoSelectFirstLoadedModelProvider.future);
 
-      final selected = container.read(selectedModelProvider);
-      expect(selected?.id, 'model-b');
-    });
+        final selected = container.read(selectedModelProvider);
+        expect(selected?.id, 'model-b');
+      },
+    );
 
     test('selects the default model for cloud providers', () async {
       SharedPreferences.setMockInitialValues({
@@ -125,9 +132,9 @@ void main() {
           connectionStatusProvider.overrideWith(
             _StubConnectedStatusNotifier.new,
           ),
-          availableModelsProvider('server-1').overrideWith(
-            (ref) async => _models(),
-          ),
+          availableModelsProvider(
+            'server-1',
+          ).overrideWith((ref) async => _models()),
         ],
       );
       addTearDown(container.dispose);
@@ -138,57 +145,60 @@ void main() {
       expect(selected?.id, 'model-a');
     });
 
-    test('does not throw or access disposed Ref when container is disposed during execution',
-        () async {
-      SharedPreferences.setMockInitialValues({
-        'appSettings': AppSettings(
-          defaultModelId: 'model-a',
-          defaultModelServerId: 'server-1',
-        ).toJson(),
-      });
-      final prefs = await SharedPreferences.getInstance();
+    test(
+      'does not throw or access disposed Ref when container is disposed during execution',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'appSettings': AppSettings(
+            defaultModelId: 'model-a',
+            defaultModelServerId: 'server-1',
+          ).toJson(),
+        });
+        final prefs = await SharedPreferences.getInstance();
 
-      final api = _FakeServerApiService(loadedModelIds: const {});
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          activeServerProvider.overrideWith(_StubLmStudioActiveServer.new),
-          connectionStatusProvider.overrideWith(
-            _StubConnectedStatusNotifier.new,
-          ),
-          availableModelsProvider('server-1').overrideWith(
-            (ref) async {
+        final api = _FakeServerApiService(loadedModelIds: const {});
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            activeServerProvider.overrideWith(_StubLmStudioActiveServer.new),
+            connectionStatusProvider.overrideWith(
+              _StubConnectedStatusNotifier.new,
+            ),
+            availableModelsProvider('server-1').overrideWith((ref) async {
               await Future.delayed(const Duration(milliseconds: 50));
               return _models();
-            },
-          ),
-          serverApiServiceProvider.overrideWithValue(api),
-        ],
-      );
+            }),
+            serverApiServiceProvider.overrideWithValue(api),
+          ],
+        );
 
-      // Start the future and dispose container immediately
-      final future = container.read(autoSelectFirstLoadedModelProvider.future);
-      container.dispose();
+        // Start the future and dispose container immediately
+        final future = container.read(
+          autoSelectFirstLoadedModelProvider.future,
+        );
+        container.dispose();
 
-      // Should complete without uncaught StateError
-      expect(future, completes);
-    });
+        // Should complete without uncaught StateError
+        expect(future, completes);
+      },
+    );
   });
 }
+
 List<ModelInfo> _models() => [
-      ModelInfo(
-        id: 'model-a',
-        name: 'Model A',
-        serverType: ServerType.lmStudio,
-        serverId: 'server-1',
-      ),
-      ModelInfo(
-        id: 'model-b',
-        name: 'Model B',
-        serverType: ServerType.lmStudio,
-        serverId: 'server-1',
-      ),
-    ];
+  ModelInfo(
+    id: 'model-a',
+    name: 'Model A',
+    serverType: ServerType.lmStudio,
+    serverId: 'server-1',
+  ),
+  ModelInfo(
+    id: 'model-b',
+    name: 'Model B',
+    serverType: ServerType.lmStudio,
+    serverId: 'server-1',
+  ),
+];
 
 class _StubActiveServerNotifier extends ActiveServerNotifier {
   @override
@@ -243,5 +253,8 @@ class _FakeServerApiService extends ServerApiService {
   }
 
   @override
-  Future<void> unloadAllInstances(Server server, Set<String> instanceIds) async {}
+  Future<void> unloadAllInstances(
+    Server server,
+    Set<String> instanceIds,
+  ) async {}
 }

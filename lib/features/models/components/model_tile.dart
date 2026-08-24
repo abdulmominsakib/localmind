@@ -85,8 +85,12 @@ class ModelTile extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? AppColors.darkAccent.withValues(alpha: 0.18)
-                                    : AppColors.lightAccent.withValues(alpha: 0.15),
+                                    ? AppColors.darkAccent.withValues(
+                                        alpha: 0.18,
+                                      )
+                                    : AppColors.lightAccent.withValues(
+                                        alpha: 0.15,
+                                      ),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(

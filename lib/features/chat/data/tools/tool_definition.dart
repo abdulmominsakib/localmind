@@ -21,11 +21,7 @@ class ToolExecutionResult {
   final String output;
   final String? error;
 
-  const ToolExecutionResult.success(this.output)
-      : success = true,
-        error = null;
+  const ToolExecutionResult.success(this.output) : success = true, error = null;
 
-  const ToolExecutionResult.failure(this.error)
-      : success = false,
-        output = '';
+  const ToolExecutionResult.failure(this.error) : success = false, output = '';
 }

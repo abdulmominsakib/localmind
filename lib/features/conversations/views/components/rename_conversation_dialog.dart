@@ -66,7 +66,10 @@ Future<void> showRenameConversationDialog(
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const HugeIcon(icon: HugeIcons.strokeRoundedSparkles, size: 18),
+                      : const HugeIcon(
+                          icon: HugeIcons.strokeRoundedSparkles,
+                          size: 18,
+                        ),
                   label: Text(
                     isGenerating
                         ? l10n.generating_title

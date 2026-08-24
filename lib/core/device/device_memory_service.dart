@@ -28,7 +28,9 @@ class DeviceMemoryInfo {
 
 class DeviceMemoryService {
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
-  static const MethodChannel _memoryChannel = MethodChannel('localmind/device_memory');
+  static const MethodChannel _memoryChannel = MethodChannel(
+    'localmind/device_memory',
+  );
 
   Future<DeviceMemoryInfo> getMemoryInfo() async {
     int totalMb = 0;
@@ -36,7 +38,9 @@ class DeviceMemoryService {
 
     if (Platform.isAndroid) {
       try {
-        final memory = await _memoryChannel.invokeMapMethod<String, dynamic>('getMemoryInfo');
+        final memory = await _memoryChannel.invokeMapMethod<String, dynamic>(
+          'getMemoryInfo',
+        );
         if (memory != null) {
           totalMb = (memory['totalMemoryMb'] as num?)?.toInt() ?? 0;
           availableMb = (memory['availableMemoryMb'] as num?)?.toInt() ?? 0;

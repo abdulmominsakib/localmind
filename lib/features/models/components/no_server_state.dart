@@ -14,8 +14,8 @@ class NoServerState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          HugeIcon(icon: 
-            HugeIcons.strokeRoundedComputer,
+          HugeIcon(
+            icon: HugeIcons.strokeRoundedComputer,
             size: 48,
             color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
           ),
@@ -33,7 +33,9 @@ class NoServerState extends StatelessWidget {
             l10n.add_server_first,
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+              color: isDark
+                  ? AppColors.darkMutedText
+                  : AppColors.lightMutedText,
             ),
           ),
         ],

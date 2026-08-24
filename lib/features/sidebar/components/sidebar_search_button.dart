@@ -29,9 +29,7 @@ class SidebarSearchButton extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.darkSurfaceInput
-                : AppColors.lightSurface,
+            color: isDark ? AppColors.darkSurfaceInput : AppColors.lightSurface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -42,7 +40,9 @@ class SidebarSearchButton extends ConsumerWidget {
               HugeIcon(
                 icon: HugeIcons.strokeRoundedSearch01,
                 size: 18,
-                color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                color: isDark
+                    ? AppColors.darkMutedText
+                    : AppColors.lightMutedText,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -50,7 +50,9 @@ class SidebarSearchButton extends ConsumerWidget {
                   'Search conversations...',
                   style: TextStyle(
                     fontSize: 13,
-                    color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                    color: isDark
+                        ? AppColors.darkMutedText
+                        : AppColors.lightMutedText,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -60,7 +62,9 @@ class SidebarSearchButton extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
+                  color: isDark
+                      ? AppColors.darkMutedText
+                      : AppColors.lightMutedText,
                   letterSpacing: 0.5,
                 ),
               ),

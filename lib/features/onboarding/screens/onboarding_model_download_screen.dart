@@ -82,8 +82,9 @@ class _OnboardingModelDownloadScreenState
                               ),
                               child: Row(
                                 children: [
-                                  const HugeIcon(icon: 
-                                    HugeIcons.strokeRoundedInformationCircle,
+                                  const HugeIcon(
+                                    icon: HugeIcons
+                                        .strokeRoundedInformationCircle,
                                     color: Colors.orange,
                                     size: 20,
                                   ),
@@ -280,7 +281,11 @@ class _MemoryStat extends StatelessWidget {
     final theme = Theme.of(context);
     return Row(
       children: [
-        HugeIcon(icon: icon, size: 16, color: color ?? theme.colorScheme.primary),
+        HugeIcon(
+          icon: icon,
+          size: 16,
+          color: color ?? theme.colorScheme.primary,
+        ),
         const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,8 +387,8 @@ class _ModelCard extends ConsumerWidget {
               padding: const EdgeInsets.only(top: 4),
               child: Row(
                 children: [
-                  const HugeIcon(icon: 
-                    HugeIcons.strokeRoundedAlertCircle,
+                  const HugeIcon(
+                    icon: HugeIcons.strokeRoundedAlertCircle,
                     color: Colors.orange,
                     size: 14,
                   ),
@@ -426,7 +431,11 @@ class _ModelCard extends ConsumerWidget {
           if (isDownloaded)
             Row(
               children: [
-                const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01, color: Colors.green, size: 18),
+                const HugeIcon(
+                  icon: HugeIcons.strokeRoundedCheckmarkCircle01,
+                  color: Colors.green,
+                  size: 18,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   l10n.downloaded,
@@ -526,8 +535,7 @@ class _ModelCard extends ConsumerWidget {
       if (model.supportsVision) 'Vision',
       model.languagesLabel,
       if (model.backendNote != null) model.backendNote!,
-      if (model.requiresHuggingFaceToken)
-        l10n.model_requires_huggingface_token,
+      if (model.requiresHuggingFaceToken) l10n.model_requires_huggingface_token,
     ];
 
     return Wrap(

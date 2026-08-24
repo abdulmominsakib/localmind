@@ -50,14 +50,8 @@ Future<void> showModelInfoSheet(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _ModelInfoRow(
-            label: l10n.model_name,
-            value: displayName,
-          ),
-          _ModelInfoRow(
-            label: l10n.model_identifier,
-            value: identifier,
-          ),
+          _ModelInfoRow(label: l10n.model_name, value: displayName),
+          _ModelInfoRow(label: l10n.model_identifier, value: identifier),
           if (capabilities.isNotEmpty)
             _ModelInfoRow(
               label: l10n.model_capabilities,
@@ -74,7 +68,7 @@ Future<void> showModelInfoSheet(
               value: model!.isPricingFree
                   ? l10n.openrouter_pricing_free
                   : '${model.formattedInputPrice ?? '—'} / '
-                      '${model.formattedOutputPrice ?? '—'}',
+                        '${model.formattedOutputPrice ?? '—'}',
             ),
         ],
       ),
@@ -100,9 +94,9 @@ class _ModelInfoRow extends StatelessWidget {
         onPressed: () async {
           await Clipboard.setData(ClipboardData(text: value));
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.copied_to_clipboard)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(l10n.copied_to_clipboard)));
           }
         },
       ),

@@ -31,10 +31,7 @@ class LmStudioDownloadService {
     }
 
     if (hfUrl != null) {
-      return LmDownloadRequest(
-        model: hfUrl,
-        displayName: model.displayLabel,
-      );
+      return LmDownloadRequest(model: hfUrl, displayName: model.displayLabel);
     }
 
     if (model.source == LmCatalogSource.lmStudio) {
@@ -76,7 +73,9 @@ class LmStudioDownloadService {
       final message = error is Map
           ? error['message']?.toString()
           : error?.toString();
-      throw Exception(message ?? 'Download failed (status ${response.statusCode})');
+      throw Exception(
+        message ?? 'Download failed (status ${response.statusCode})',
+      );
     }
 
     final data = response.data ?? <String, dynamic>{};

@@ -203,8 +203,9 @@ class LmStudioCatalogService {
     final trimmed = query.trim().toLowerCase();
     if (trimmed.isEmpty) return staffPicks;
 
-    final staffMatches =
-        staffPicks.where((model) => model.matchesQuery(trimmed)).toList();
+    final staffMatches = staffPicks
+        .where((model) => model.matchesQuery(trimmed))
+        .toList();
 
     List<LmCatalogModel> community = [];
     try {

@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:localmind/features/chat/data/chat_api_error.dart';
 
 class ChatErrorDisplay extends StatelessWidget {
-  const ChatErrorDisplay({
-    super.key,
-    required this.errorMessage,
-  });
+  const ChatErrorDisplay({super.key, required this.errorMessage});
 
   final String errorMessage;
 

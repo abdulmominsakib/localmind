@@ -859,4 +859,3 @@ class _FadedScrollContainerState extends State<_FadedScrollContainer> {
     );
   }
 }
-

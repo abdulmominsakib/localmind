@@ -37,8 +37,8 @@ class BackendSelector extends ConsumerWidget {
                   .setPreferredBackend(backend),
               child: Row(
                 children: [
-                  HugeIcon(icon: 
-                    isSelected
+                  HugeIcon(
+                    icon: isSelected
                         ? HugeIcons.strokeRoundedCheckmarkCircle01
                         : HugeIcons.strokeRoundedCircle,
                     size: 20,
@@ -61,8 +61,9 @@ class BackendSelector extends ConsumerWidget {
                           _backendDescription(backend, context),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.6),
                               ),
                         ),
                       ],

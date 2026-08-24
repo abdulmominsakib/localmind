@@ -43,7 +43,9 @@ class ChatHistoryScreen extends ConsumerWidget {
                 bottom: 16,
               ),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
+                color: isDark
+                    ? const Color(0xFF0A0A0A)
+                    : const Color(0xFFFAFAFA),
                 border: Border(
                   bottom: BorderSide(
                     color: isDark
@@ -56,7 +58,9 @@ class ChatHistoryScreen extends ConsumerWidget {
                   ? Row(
                       children: [
                         IconButton(
-                          icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01),
+                          icon: const HugeIcon(
+                            icon: HugeIcons.strokeRoundedCancel01,
+                          ),
                           onPressed: () => ref
                               .read(historySelectionModeProvider.notifier)
                               .disable(),
@@ -72,30 +76,44 @@ class ChatHistoryScreen extends ConsumerWidget {
                           ),
                         ),
                         IconButton(
-                          icon: const HugeIcon(icon: HugeIcons.strokeRoundedFolder01),
+                          icon: const HugeIcon(
+                            icon: HugeIcons.strokeRoundedFolder01,
+                          ),
                           tooltip: l10n.move_to_folder,
                           onPressed: selectedIds.isEmpty
                               ? null
                               : () => showBulkMoveToFolderSheet(
-                                  context, ref, selectedIds),
+                                  context,
+                                  ref,
+                                  selectedIds,
+                                ),
                         ),
                         IconButton(
-                          icon: const HugeIcon(icon: HugeIcons.strokeRoundedShare01),
+                          icon: const HugeIcon(
+                            icon: HugeIcons.strokeRoundedShare01,
+                          ),
                           tooltip: l10n.export_conversation,
                           onPressed: selectedIds.isEmpty
                               ? null
                               : () => runBulkExportConversations(
-                                  context, ref, selectedIds),
+                                  context,
+                                  ref,
+                                  selectedIds,
+                                ),
                         ),
                         IconButton(
-                          icon: const HugeIcon(icon: HugeIcons.strokeRoundedSparkles),
+                          icon: const HugeIcon(
+                            icon: HugeIcons.strokeRoundedSparkles,
+                          ),
                           tooltip: l10n.ai_rename_tooltip,
                           onPressed: selectedIds.isEmpty
                               ? null
                               : () async {
                                   final ids = selectedIds.toList();
                                   ref
-                                      .read(historySelectionModeProvider.notifier)
+                                      .read(
+                                        historySelectionModeProvider.notifier,
+                                      )
                                       .disable();
                                   await runBulkAiRename(context, ref, ids);
                                 },
@@ -106,7 +124,9 @@ class ChatHistoryScreen extends ConsumerWidget {
                       children: [
                         Builder(
                           builder: (context) => IconButton(
-                            icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
+                            icon: const HugeIcon(
+                              icon: HugeIcons.strokeRoundedMenu01,
+                            ),
                             onPressed: () => Scaffold.of(context).openDrawer(),
                           ),
                         ),
@@ -121,7 +141,9 @@ class ChatHistoryScreen extends ConsumerWidget {
                         ),
                         const Spacer(),
                         IconButton(
-                          icon: const HugeIcon(icon: HugeIcons.strokeRoundedCheckList),
+                          icon: const HugeIcon(
+                            icon: HugeIcons.strokeRoundedCheckList,
+                          ),
                           tooltip: l10n.select,
                           onPressed: () => ref
                               .read(historySelectionModeProvider.notifier)
@@ -181,8 +203,10 @@ class ChatHistoryScreen extends ConsumerWidget {
             if (messageSearchHits.isNotEmpty)
               ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxHeight: (MediaQuery.sizeOf(context).height * 0.35)
-                      .clamp(120.0, 280.0),
+                  maxHeight: (MediaQuery.sizeOf(context).height * 0.35).clamp(
+                    120.0,
+                    280.0,
+                  ),
                 ),
                 child: const SingleChildScrollView(
                   child: MessageSearchResultsList(),
@@ -192,7 +216,9 @@ class ChatHistoryScreen extends ConsumerWidget {
             Expanded(
               child: groupedConversations.when(
                 data: (grouped) => grouped.isEmpty
-                    ? ConversationEmptyState(isSearching: searchQuery.isNotEmpty)
+                    ? ConversationEmptyState(
+                        isSearching: searchQuery.isNotEmpty,
+                      )
                     : ConversationList(
                         groupedConversations: grouped,
                         activeConversation: activeConversation,
@@ -217,12 +243,11 @@ class ChatHistoryScreen extends ConsumerWidget {
             child: FloatingActionButton(
               tooltip: l10n.new_chat_in_folder_tooltip,
               onPressed: () {
-                final folderId = (currentFolder != null && currentFolder.isNotEmpty)
+                final folderId =
+                    (currentFolder != null && currentFolder.isNotEmpty)
                     ? currentFolder
                     : null;
-                ref
-                    .read(pendingNewChatFolderIdProvider.notifier)
-                    .set(folderId);
+                ref.read(pendingNewChatFolderIdProvider.notifier).set(folderId);
                 ref.read(chatProvider.notifier).startNewConversation();
                 context.go(AppRoutes.home);
               },

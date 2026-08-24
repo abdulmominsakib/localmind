@@ -67,7 +67,9 @@ class ChatErrorFormatter {
 
     if (errorType != null) {
       final fromStatus = _genericFromStatus(statusCode);
-      return fromStatus.copyWithTypeIfMissing(_dioTypeLabel(errorType)).encode();
+      return fromStatus
+          .copyWithTypeIfMissing(_dioTypeLabel(errorType))
+          .encode();
     }
 
     return ChatApiError(message: error.toString()).encode();

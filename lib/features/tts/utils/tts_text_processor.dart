@@ -23,7 +23,10 @@ class TtsTextProcessor {
       (m) => m.group(1)?.isNotEmpty == true ? m.group(1)! : ' ',
     );
     // Links [text](url)
-    s = s.replaceAllMapped(RegExp(r'\[([^\]]+)\]\([^)]*\)'), (m) => m.group(1)!);
+    s = s.replaceAllMapped(
+      RegExp(r'\[([^\]]+)\]\([^)]*\)'),
+      (m) => m.group(1)!,
+    );
     // Bold / italic
     s = s.replaceAllMapped(RegExp(r'\*\*\*(.+?)\*\*\*'), (m) => m.group(1)!);
     s = s.replaceAllMapped(RegExp(r'\*\*(.+?)\*\*'), (m) => m.group(1)!);

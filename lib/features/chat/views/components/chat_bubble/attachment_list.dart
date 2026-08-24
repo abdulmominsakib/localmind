@@ -37,9 +37,9 @@ class _AttachmentItem extends StatelessWidget {
     if (!context.mounted) return;
     if (text == null) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.could_not_read_file)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.could_not_read_file)));
       return;
     }
     showModalBottomSheet<void>(
@@ -92,8 +92,8 @@ class _AttachmentItem extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              HugeIcon(icon: 
-                HugeIcons.strokeRoundedFile01,
+              HugeIcon(
+                icon: HugeIcons.strokeRoundedFile01,
                 size: 20,
                 color: theme.colorScheme.primary,
               ),
@@ -139,8 +139,8 @@ class _AttachmentItem extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          HugeIcon(icon: 
-            HugeIcons.strokeRoundedFile01,
+          HugeIcon(
+            icon: HugeIcons.strokeRoundedFile01,
             size: 20,
             color: isDark ? AppColors.darkMutedText : AppColors.lightMutedText,
           ),
@@ -189,7 +189,9 @@ class _TextPreviewSheet extends StatelessWidget {
                 width: 32,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF444444) : const Color(0xFFDDDDDD),
+                  color: isDark
+                      ? const Color(0xFF444444)
+                      : const Color(0xFFDDDDDD),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -197,7 +199,10 @@ class _TextPreviewSheet extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    HugeIcon(icon: HugeIcons.strokeRoundedFile01, color: theme.colorScheme.primary),
+                    HugeIcon(
+                      icon: HugeIcons.strokeRoundedFile01,
+                      color: theme.colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -210,7 +215,9 @@ class _TextPreviewSheet extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01),
+                      icon: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedCancel01,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],

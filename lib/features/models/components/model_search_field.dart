@@ -25,19 +25,19 @@ class ModelSearchField extends ConsumerWidget {
           horizontal: 12,
           vertical: 10,
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         suffixIcon: searchQuery.isNotEmpty
             ? IconButton(
-                icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, size: 18),
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedCancel01,
+                  size: 18,
+                ),
                 onPressed: () =>
                     ref.read(modelSearchQueryProvider.notifier).clear(),
               )
             : null,
       ),
-      onChanged: (q) =>
-          ref.read(modelSearchQueryProvider.notifier).setQuery(q),
+      onChanged: (q) => ref.read(modelSearchQueryProvider.notifier).setQuery(q),
     );
   }
 }

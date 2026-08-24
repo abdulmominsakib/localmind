@@ -14,13 +14,15 @@ class McpToolProvider implements ToolProvider {
     for (final label in serverManager.serverLabels) {
       final serverTools = serverManager.getTools(label);
       for (final tool in serverTools) {
-        tools.add(ToolDefinition(
-          name: tool.name,
-          description: tool.description ?? '',
-          inputSchema: tool.inputSchema,
-          providerType: ToolProviderType.mcp,
-          providerRef: label,
-        ));
+        tools.add(
+          ToolDefinition(
+            name: tool.name,
+            description: tool.description ?? '',
+            inputSchema: tool.inputSchema,
+            providerType: ToolProviderType.mcp,
+            providerRef: label,
+          ),
+        );
       }
     }
     return tools;

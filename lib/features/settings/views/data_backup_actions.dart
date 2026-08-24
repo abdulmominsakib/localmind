@@ -40,9 +40,9 @@ class DataBackupActions extends ConsumerWidget {
       );
       if (saved == null) return;
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.export_data_success)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.export_data_success)));
       }
     } catch (e) {
       if (context.mounted) {
@@ -86,9 +86,9 @@ class DataBackupActions extends ConsumerWidget {
       );
       if (saved == null) return;
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.export_data_success)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.export_data_success)));
       }
     } catch (e) {
       if (context.mounted) {
@@ -151,9 +151,9 @@ class DataBackupActions extends ConsumerWidget {
       await importer(json);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.import_data_success)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.import_data_success)));
       }
     } catch (e) {
       if (context.mounted) {
@@ -207,8 +207,9 @@ class DataBackupActions extends ConsumerWidget {
       final archive = ZipDecoder().decodeBytes(bytes);
       for (final file in archive.files) {
         if (!file.isFile || file.name != 'settings.json') continue;
-        final decoded = jsonDecode(utf8.decode(file.content as List<int>))
-            as Map<String, dynamic>;
+        final decoded =
+            jsonDecode(utf8.decode(file.content as List<int>))
+                as Map<String, dynamic>;
         await _applySettingsPayload(ref, decoded);
       }
 
@@ -222,9 +223,9 @@ class DataBackupActions extends ConsumerWidget {
       });
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.import_data_success)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.import_data_success)));
       }
     } catch (e) {
       if (context.mounted) {
@@ -259,15 +260,9 @@ class DataBackupActions extends ConsumerWidget {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          ShadButton.outline(
-            onPressed: onExport,
-            child: Text(l10n.export),
-          ),
+          ShadButton.outline(onPressed: onExport, child: Text(l10n.export)),
           const SizedBox(width: 8),
-          ShadButton.outline(
-            onPressed: onImport,
-            child: Text(l10n.import),
-          ),
+          ShadButton.outline(onPressed: onImport, child: Text(l10n.import)),
         ],
       ),
     );
@@ -292,16 +287,11 @@ class DataBackupActions extends ConsumerWidget {
             'localmind_conversations_${DateTime.now().millisecondsSinceEpoch}.json',
             service.exportConversationsAsJson(db.store),
           ),
-          onImport: () => _importJsonFile(
-            context,
-            ref,
-            (json) async {
-              await service.importFromJson(db.store, json);
-              ref.invalidate(conversationsProvider);
-              ref.invalidate(savedMessagesProvider);
-            },
-            l10n.import_data_confirm,
-          ),
+          onImport: () => _importJsonFile(context, ref, (json) async {
+            await service.importFromJson(db.store, json);
+            ref.invalidate(conversationsProvider);
+            ref.invalidate(savedMessagesProvider);
+          }, l10n.import_data_confirm),
         ),
         _categoryRow(
           label: l10n.personas_label,
@@ -312,15 +302,10 @@ class DataBackupActions extends ConsumerWidget {
             'localmind_personas_${DateTime.now().millisecondsSinceEpoch}.json',
             service.exportPersonasAsJson(db.store),
           ),
-          onImport: () => _importJsonFile(
-            context,
-            ref,
-            (json) async {
-              await service.importFromJson(db.store, json);
-              ref.invalidate(personasNotifierProvider);
-            },
-            l10n.import_data_confirm,
-          ),
+          onImport: () => _importJsonFile(context, ref, (json) async {
+            await service.importFromJson(db.store, json);
+            ref.invalidate(personasNotifierProvider);
+          }, l10n.import_data_confirm),
         ),
         _categoryRow(
           label: l10n.settings_label,
@@ -335,16 +320,11 @@ class DataBackupActions extends ConsumerWidget {
               prefs: prefs,
             ),
           ),
-          onImport: () => _importJsonFile(
-            context,
-            ref,
-            (json) async {
-              final decoded = jsonDecode(json) as Map<String, dynamic>;
-              await service.importFromJson(db.store, json);
-              await _applySettingsPayload(ref, decoded);
-            },
-            l10n.import_settings_confirm,
-          ),
+          onImport: () => _importJsonFile(context, ref, (json) async {
+            final decoded = jsonDecode(json) as Map<String, dynamic>;
+            await service.importFromJson(db.store, json);
+            await _applySettingsPayload(ref, decoded);
+          }, l10n.import_settings_confirm),
         ),
         const SizedBox(height: 8),
         ShadButton.outline(
@@ -355,7 +335,10 @@ class DataBackupActions extends ConsumerWidget {
             'localmind_backup_${DateTime.now().millisecondsSinceEpoch}.zip',
           ),
           width: double.infinity,
-          leading: const HugeIcon(icon: HugeIcons.strokeRoundedFolder01, size: 16),
+          leading: const HugeIcon(
+            icon: HugeIcons.strokeRoundedFolder01,
+            size: 16,
+          ),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(l10n.export_all_zip),
@@ -365,7 +348,10 @@ class DataBackupActions extends ConsumerWidget {
         ShadButton.outline(
           onPressed: () => _importZipFile(context, ref),
           width: double.infinity,
-          leading: const HugeIcon(icon: HugeIcons.strokeRoundedArchive, size: 16),
+          leading: const HugeIcon(
+            icon: HugeIcons.strokeRoundedArchive,
+            size: 16,
+          ),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(l10n.import_all_zip),

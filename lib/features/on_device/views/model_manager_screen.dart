@@ -288,7 +288,9 @@ class _ManagerHeader extends StatelessWidget {
                   value: _ImportAction.localFile,
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const HugeIcon(icon: HugeIcons.strokeRoundedFolder01),
+                    leading: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedFolder01,
+                    ),
                     title: Text(l10n.gguf_import_local_title),
                     subtitle: Text(l10n.gguf_import_local_subtitle),
                   ),
@@ -297,7 +299,9 @@ class _ManagerHeader extends StatelessWidget {
                   value: _ImportAction.huggingFace,
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const HugeIcon(icon: HugeIcons.strokeRoundedCloudDownload),
+                    leading: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedCloudDownload,
+                    ),
                     title: Text(l10n.gguf_import_huggingface_title),
                     subtitle: Text(l10n.gguf_import_huggingface_subtitle),
                   ),
@@ -317,8 +321,8 @@ class _ManagerHeader extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    HugeIcon(icon: 
-                      HugeIcons.strokeRoundedAddCircle,
+                    HugeIcon(
+                      icon: HugeIcons.strokeRoundedAddCircle,
                       size: 18,
                       color: theme.colorScheme.primary,
                     ),
@@ -378,8 +382,8 @@ class _ImportOverviewCard extends StatelessWidget {
                   color: theme.colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: HugeIcon(icon: 
-                  HugeIcons.strokeRoundedCpu,
+                child: HugeIcon(
+                  icon: HugeIcons.strokeRoundedCpu,
                   color: theme.colorScheme.primary,
                 ),
               ),
@@ -440,7 +444,9 @@ class _ImportOverviewCard extends StatelessWidget {
               ),
               OutlinedButton.icon(
                 onPressed: onImportFromHuggingFace,
-                icon: const HugeIcon(icon: HugeIcons.strokeRoundedCloudDownload),
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedCloudDownload,
+                ),
                 label: Text(l10n.gguf_import_huggingface_title),
               ),
             ],
@@ -570,7 +576,9 @@ class _EmptyImportedModelsCard extends StatelessWidget {
               ),
               OutlinedButton.icon(
                 onPressed: onImportFromHuggingFace,
-                icon: const HugeIcon(icon: HugeIcons.strokeRoundedCloudDownload),
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedCloudDownload,
+                ),
                 label: Text(l10n.gguf_import_huggingface_title),
               ),
             ],
@@ -637,8 +645,8 @@ class _HuggingFaceGgufImportDialogState
               color: theme.colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: HugeIcon(icon: 
-              HugeIcons.strokeRoundedCloudDownload,
+            child: HugeIcon(
+              icon: HugeIcons.strokeRoundedCloudDownload,
               color: theme.colorScheme.primary,
             ),
           ),
@@ -687,7 +695,10 @@ class _HuggingFaceGgufImportDialogState
                   prefixIcon: const Center(
                     widthFactor: 1.0,
                     heightFactor: 1.0,
-                    child: HugeIcon(icon: HugeIcons.strokeRoundedLink01, size: 20),
+                    child: HugeIcon(
+                      icon: HugeIcons.strokeRoundedLink01,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
@@ -698,21 +709,30 @@ class _HuggingFaceGgufImportDialogState
                 children: [
                   OutlinedButton.icon(
                     onPressed: _isImporting ? null : _pasteFromClipboard,
-                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedClipboard, size: 18),
+                    icon: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedClipboard,
+                      size: 18,
+                    ),
                     label: Text(l10n.paste),
                   ),
                   OutlinedButton.icon(
                     onPressed: _isImporting || input.isEmpty
                         ? null
                         : _clearInput,
-                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, size: 18),
+                    icon: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedCancel01,
+                      size: 18,
+                    ),
                     label: Text(l10n.clear_huggingface_token),
                   ),
                   OutlinedButton.icon(
                     onPressed: _isImporting
                         ? null
                         : () => _openHuggingFace(context),
-                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedShare01, size: 18),
+                    icon: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedShare01,
+                      size: 18,
+                    ),
                     label: Text(l10n.gguf_browse),
                   ),
                 ],
@@ -735,8 +755,8 @@ class _HuggingFaceGgufImportDialogState
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    HugeIcon(icon: 
-                      hasHuggingFaceToken
+                    HugeIcon(
+                      icon: hasHuggingFaceToken
                           ? HugeIcons.strokeRoundedCheckmarkBadge01
                           : HugeIcons.strokeRoundedInformationCircle,
                       size: 18,
@@ -854,8 +874,8 @@ class _HuggingFaceGgufImportDialogState
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const HugeIcon(icon: 
-                        HugeIcons.strokeRoundedInformationCircle,
+                      const HugeIcon(
+                        icon: HugeIcons.strokeRoundedInformationCircle,
                         color: Colors.red,
                         size: 18,
                       ),
@@ -889,7 +909,10 @@ class _HuggingFaceGgufImportDialogState
         ),
         ElevatedButton.icon(
           onPressed: _isImporting || input.isEmpty ? null : _startImport,
-          icon: const HugeIcon(icon: HugeIcons.strokeRoundedDownload01, size: 18),
+          icon: const HugeIcon(
+            icon: HugeIcons.strokeRoundedDownload01,
+            size: 18,
+          ),
           label: Text(l10n.gguf_import_action),
         ),
       ],
@@ -1273,7 +1296,11 @@ class _EngineStatusCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const HugeIcon(icon: HugeIcons.strokeRoundedCpu, color: Colors.green, size: 20),
+            const HugeIcon(
+              icon: HugeIcons.strokeRoundedCpu,
+              color: Colors.green,
+              size: 20,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

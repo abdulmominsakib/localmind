@@ -26,6 +26,9 @@ void main() {
     expect(l10n.app_name, 'LocalMind');
     expect(l10n.cancel, 'Annuler');
     expect(l10n.settings_language, 'Langue');
-    expect(l10n.onboarding_choose_language, 'Découvrez les langues de LocalMind');
+    expect(
+      l10n.onboarding_choose_language,
+      'Découvrez les langues de LocalMind',
+    );
   });
 }

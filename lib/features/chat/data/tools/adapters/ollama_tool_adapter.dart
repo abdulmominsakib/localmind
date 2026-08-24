@@ -9,14 +9,18 @@ class OllamaToolAdapter implements ToolTransportAdapter {
   @override
   Map<String, dynamic> buildToolDefinitionPayload(List<ToolDefinition> tools) {
     return {
-      'tools': tools.map((t) => {
-        'type': 'function',
-        'function': {
-          'name': t.name,
-          'description': t.description,
-          'parameters': t.inputSchema,
-        },
-      }).toList(),
+      'tools': tools
+          .map(
+            (t) => {
+              'type': 'function',
+              'function': {
+                'name': t.name,
+                'description': t.description,
+                'parameters': t.inputSchema,
+              },
+            },
+          )
+          .toList(),
     };
   }
 
@@ -29,13 +33,15 @@ class OllamaToolAdapter implements ToolTransportAdapter {
     for (final tc in toolCalls) {
       final func = tc['function'] as Map<String, dynamic>?;
       if (func == null) continue;
-      _completedCalls.add(ParsedToolCall(
-        id: tc['id'] ?? '',
-        name: func['name'] as String? ?? '',
-        arguments: Map<String, dynamic>.from(
-          jsonDecode(func['arguments'] as String? ?? '{}') as Map,
+      _completedCalls.add(
+        ParsedToolCall(
+          id: tc['id'] ?? '',
+          name: func['name'] as String? ?? '',
+          arguments: Map<String, dynamic>.from(
+            jsonDecode(func['arguments'] as String? ?? '{}') as Map,
+          ),
         ),
-      ));
+      );
     }
   }
 
@@ -51,10 +57,6 @@ class OllamaToolAdapter implements ToolTransportAdapter {
     required ParsedToolCall call,
     required String output,
   }) {
-    return {
-      'role': 'tool',
-      'tool_name': call.name,
-      'content': output,
-    };
+    return {'role': 'tool', 'tool_name': call.name, 'content': output};
   }
 }

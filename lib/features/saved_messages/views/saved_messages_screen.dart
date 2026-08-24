@@ -51,7 +51,9 @@ class SavedMessagesScreen extends ConsumerWidget {
               ? Row(
                   children: [
                     IconButton(
-                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01),
+                      icon: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedCancel01,
+                      ),
                       onPressed: () => ref
                           .read(savedMessageSelectionModeProvider.notifier)
                           .disable(),
@@ -67,12 +69,17 @@ class SavedMessagesScreen extends ConsumerWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedFolder01),
+                      icon: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedFolder01,
+                      ),
                       tooltip: l10n.move_to_folder,
                       onPressed: selectedIds.isEmpty
                           ? null
                           : () => showSavedMessagesBulkMoveToFolderSheet(
-                              context, ref, selectedIds),
+                              context,
+                              ref,
+                              selectedIds,
+                            ),
                     ),
                   ],
                 )
@@ -80,7 +87,9 @@ class SavedMessagesScreen extends ConsumerWidget {
                   children: [
                     Builder(
                       builder: (context) => IconButton(
-                        icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
+                        icon: const HugeIcon(
+                          icon: HugeIcons.strokeRoundedMenu01,
+                        ),
                         onPressed: () => Scaffold.of(context).openDrawer(),
                       ),
                     ),
@@ -95,7 +104,9 @@ class SavedMessagesScreen extends ConsumerWidget {
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedCheckList),
+                      icon: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedCheckList,
+                      ),
                       tooltip: l10n.select,
                       onPressed: () => ref
                           .read(savedMessageSelectionModeProvider.notifier)
@@ -187,7 +198,9 @@ class SavedMessagesScreen extends ConsumerWidget {
                       if (saved.conversationId.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(l10n.saved_message_temp_snap_unavailable),
+                            content: Text(
+                              l10n.saved_message_temp_snap_unavailable,
+                            ),
                           ),
                         );
                         return;
