@@ -22,6 +22,7 @@ import '../../utils/attachment_helpers.dart';
 import '../../utils/image_upload_utils.dart';
 import '../../../models/views/model_picker_sheet.dart';
 import '../../../models/components/thinking_mode_chip.dart';
+import '../../../os_widget/providers/os_widget_providers.dart';
 import 'attach_sheet.dart';
 import 'image_preview_dialog.dart';
 import 'model_chip.dart';
@@ -132,6 +133,19 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               _handleGenerateAiUser();
             }
           });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pendingPrompt = ref.read(widgetPendingPromptProvider);
+      if (pendingPrompt != null && pendingPrompt.isNotEmpty) {
+        _controller.text = pendingPrompt;
+        _controller.selection = TextSelection.fromPosition(
+          TextPosition(offset: _controller.text.length),
+        );
+        _activeFocus.requestFocus();
+        ref.read(widgetPendingPromptProvider.notifier).consumePrompt();
+      }
+    });
   }
 
   @override
@@ -808,6 +822,17 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         _micAnimController.reset();
       }
     }
+
+    ref.listen<String?>(widgetPendingPromptProvider, (previous, next) {
+      if (next != null && next.isNotEmpty) {
+        _controller.text = next;
+        _controller.selection = TextSelection.fromPosition(
+          TextPosition(offset: _controller.text.length),
+        );
+        _activeFocus.requestFocus();
+        ref.read(widgetPendingPromptProvider.notifier).consumePrompt();
+      }
+    });
 
     ref.listen<String?>(sttProvider.select((s) => s.error), (previous, next) {
       if (next != null) {

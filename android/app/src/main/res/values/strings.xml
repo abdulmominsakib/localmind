@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LocalMind</string>
+    <string name="widget_ask_hint">Ask LocalMind...</string>
+    <string name="widget_new_chat">New Chat</string>
+    <string name="widget_voice">Voice</string>
+    <string name="widget_no_model">No default model</string>
+</resources>

@@ -17,6 +17,7 @@ import 'features/chat/views/chat_screen.dart';
 import 'features/conversations/views/chat_history_screen.dart';
 import 'features/mcp/views/mcp_tools_screen.dart';
 import 'features/on_device/views/model_manager_screen.dart';
+import 'features/os_widget/views/os_widget_invocation_host.dart';
 import 'features/onboarding/screens/onboarding_language_screen.dart';
 import 'features/onboarding/screens/onboarding_model_download_screen.dart';
 import 'features/onboarding/screens/onboarding_notification_permission_screen.dart';
@@ -101,7 +102,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) {
-          return AndroidAssistantInvocationHost(child: AppShell(child: child));
+          return OsWidgetInvocationHost(
+            child: AndroidAssistantInvocationHost(
+              child: AppShell(child: child),
+            ),
+          );
         },
         routes: [
           GoRoute(

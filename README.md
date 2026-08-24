@@ -102,7 +102,7 @@ LocalMind is rapidly evolving. Here is what's coming next:
 - [x] **Multimodal Support**: Attach images and documents for vision-capable models.
 - [x] **Tablet/Desktop Optimization**: A split-view layout for large-screen productivity.
 - [x] **Export Options**: Export your chats to Markdown or PDF to share or archive.
-- [ ] **Quick Shortcuts**: OS-level widgets and shortcuts for launching new chats instantly.
+- [x] **Quick Shortcuts**: OS-level widgets and shortcuts for launching new chats instantly.
 - [x] **Voice-to-Voice Mode**: Engage in real-time, low-latency spoken conversations with local models.
 - [x] **S3 Cloud Sync**: End-to-end encrypted cloud sync for settings, custom personas, and chats in your own S3 server.
 

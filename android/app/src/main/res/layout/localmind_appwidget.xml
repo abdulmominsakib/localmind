@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_card_bg"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- Header: App Name & Active Model Badge -->
+    <LinearLayout
+        android:id="@+id/widget_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/appwidget_icon"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="6dp"
+            android:contentDescription="@string/app_name"
+            android:src="@drawable/ic_widget_sparkle" />
+
+        <TextView
+            android:id="@+id/appwidget_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/app_name"
+            android:textColor="#F3F4F6"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/appwidget_model_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/widget_badge_bg"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:maxWidth="160dp"
+            android:paddingBottom="2dp"
+            android:paddingEnd="8dp"
+            android:paddingStart="8dp"
+            android:paddingTop="2dp"
+            android:text="@string/widget_no_model"
+            android:textColor="#9CA3AF"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Search/Prompt Bar Trigger -->
+    <LinearLayout
+        android:id="@+id/appwidget_search_bar"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/widget_search_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingEnd="8dp"
+        android:paddingStart="10dp">
+
+        <ImageView
+            android:id="@+id/appwidget_search_icon"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@string/widget_ask_hint"
+            android:src="@drawable/ic_widget_search" />
+
+        <TextView
+            android:id="@+id/appwidget_search_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/widget_ask_hint"
+            android:textColor="#9CA3AF"
+            android:textSize="13sp" />
+
+        <ImageView
+            android:id="@+id/appwidget_btn_voice"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="@drawable/widget_button_bg"
+            android:contentDescription="@string/widget_voice"
+            android:padding="5dp"
+            android:src="@drawable/ic_widget_mic" />
+    </LinearLayout>
+
+    <!-- Quick Action Buttons -->
+    <LinearLayout
+        android:id="@+id/widget_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/appwidget_btn_new_chat"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_button_bg"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginEnd="4dp"
+                android:contentDescription="@string/widget_new_chat"
+                android:src="@drawable/ic_widget_chat" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/widget_new_chat"
+                android:textColor="#E5E7EB"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/appwidget_btn_ask_model"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_button_bg"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginEnd="4dp"
+                android:contentDescription="@string/widget_ask_hint"
+                android:src="@drawable/ic_widget_sparkle" />
+
+            <TextView
+                android:id="@+id/appwidget_btn_ask_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Ask Model"
+                android:textColor="#E5E7EB"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
