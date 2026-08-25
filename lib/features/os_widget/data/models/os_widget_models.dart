@@ -1,4 +1,4 @@
-enum OsWidgetAction { chat, newChat, voice, unknown }
+enum OsWidgetAction { chat, newChat, voice }
 
 class OsWidgetInvocation {
   final OsWidgetAction action;
@@ -16,7 +16,8 @@ class OsWidgetInvocation {
     final action = switch (actionParam) {
       'new_chat' || 'newChat' => OsWidgetAction.newChat,
       'voice' => OsWidgetAction.voice,
-      'chat' => OsWidgetAction.chat,
+      // Default to chat for "chat" and any unrecognized action so the
+      // user always lands on a usable surface.
       _ => OsWidgetAction.chat,
     };
 

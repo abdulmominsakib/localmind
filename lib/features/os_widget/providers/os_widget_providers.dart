@@ -31,13 +31,22 @@ final widgetPendingPromptProvider =
       WidgetPendingPromptNotifier.new,
     );
 
-final osWidgetSnapshotSyncProvider = Provider<void>((ref) {
+/// Pure selector for the model name + configured flag that should be shown on
+/// the home-screen widget. Pure function of Riverpod state — no side effects.
+///
+/// Side effects (calling out to the home_widget plugin) live in
+/// `OsWidgetInvocationHost` via `ref.listen`, so this stays declarative.
+class OsWidgetSnapshot {
+  final String? modelName;
+  final bool isConfigured;
+
+  const OsWidgetSnapshot({this.modelName, required this.isConfigured});
+}
+
+final osWidgetSnapshotProvider = Provider<OsWidgetSnapshot>((ref) {
   final settings = ref.watch(settingsProvider);
   final defaultModelId = settings.defaultModelId;
   final defaultModelServerId = settings.defaultModelServerId;
-  final service = ref.watch(osWidgetServiceProvider);
-
-  if (!service.isSupportedPlatform) return;
 
   final isConfigured =
       defaultModelId != null &&
@@ -46,8 +55,7 @@ final osWidgetSnapshotSyncProvider = Provider<void>((ref) {
       defaultModelServerId.isNotEmpty;
 
   if (!isConfigured) {
-    service.updateWidgetSnapshot(modelName: null, isConfigured: false);
-    return;
+    return const OsWidgetSnapshot(modelName: null, isConfigured: false);
   }
 
   final availableAsync = ref.watch(
@@ -55,7 +63,23 @@ final osWidgetSnapshotSyncProvider = Provider<void>((ref) {
   );
   final models = availableAsync.value ?? const <ModelInfo>[];
   final model = models.where((m) => m.id == defaultModelId).firstOrNull;
-  final modelName = model?.displayName ?? defaultModelId;
-
-  service.updateWidgetSnapshot(modelName: modelName, isConfigured: true);
+  return OsWidgetSnapshot(
+    modelName: model?.displayName ?? defaultModelId,
+    isConfigured: true,
+  );
 });
+
+/// Push the snapshot to the native widget. Convenience for `ref.listen`
+/// callbacks that have a WidgetRef handy; reads the service for the caller.
+Future<void> pushOsWidgetSnapshot(
+  WidgetRef ref, {
+  required String? modelName,
+  required bool isConfigured,
+}) async {
+  final service = ref.read(osWidgetServiceProvider);
+  if (!service.isSupportedPlatform) return;
+  await service.updateWidgetSnapshot(
+    modelName: modelName,
+    isConfigured: isConfigured,
+  );
+}

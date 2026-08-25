@@ -61,6 +61,52 @@ void main() {
 
   group('OsWidgetInvocationHost', () {
     testWidgets(
+      'voice invocation with a prompt surfaces the prompt as pending',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final service = OsWidgetService(isSupportedOverride: true);
+
+        late ProviderContainer container;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              osWidgetServiceProvider.overrideWithValue(service),
+              settingsProvider.overrideWith(_TestSettingsNotifier.new),
+              serversProvider.overrideWith(_StubServersNotifier.new),
+            ],
+            child: Consumer(
+              builder: (context, ref, _) {
+                container = ProviderScope.containerOf(context);
+                return const ShadApp(
+                  home: Scaffold(
+                    body: OsWidgetInvocationHost(child: Text('Root Body')),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        service.dispatchInvocation(
+          const OsWidgetInvocation(
+            action: OsWidgetAction.voice,
+            prompt: 'Voice-mode preset prompt',
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final pending = container.read(widgetPendingPromptProvider);
+        expect(pending, 'Voice-mode preset prompt');
+      },
+    );
+
+    testWidgets(
       'renders child and handles widget prompt when default model is unset',
       (tester) async {
         final service = OsWidgetService(isSupportedOverride: true);

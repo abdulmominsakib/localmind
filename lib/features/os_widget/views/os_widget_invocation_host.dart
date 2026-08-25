@@ -40,6 +40,7 @@ class _OsWidgetInvocationHostState
   String _loadingStatusMessage = 'Loading model into memory...';
   bool _isShowingVoiceMode = false;
   bool _isCanceled = false;
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -50,8 +51,6 @@ class _OsWidgetInvocationHostState
     _subscription = service.invocations.listen(_handleInvocation);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(service.initialize());
-      // Initialize widget snapshot sync
-      ref.read(osWidgetSnapshotSyncProvider);
     });
   }
 
@@ -60,7 +59,7 @@ class _OsWidgetInvocationHostState
 
     switch (invocation.action) {
       case OsWidgetAction.voice:
-        await _handleVoiceInvocation();
+        await _handleVoiceInvocation(prompt: invocation.prompt);
         break;
       case OsWidgetAction.newChat:
         await _handleChatInvocation(
@@ -69,7 +68,6 @@ class _OsWidgetInvocationHostState
         );
         break;
       case OsWidgetAction.chat:
-      case OsWidgetAction.unknown:
         await _handleChatInvocation(
           prompt: invocation.prompt,
           startNewChat: false,
@@ -78,9 +76,17 @@ class _OsWidgetInvocationHostState
     }
   }
 
-  Future<void> _handleVoiceInvocation() async {
+  Future<void> _handleVoiceInvocation({String? prompt}) async {
     if (!mounted || _isShowingVoiceMode) return;
     if (ref.read(voiceModeProvider).isActive) return;
+
+    // If a text prompt was attached to the voice invocation, surface it as
+    // a pending chat prompt rather than dropping it on the floor — the user
+    // will still land on voice mode but the text won't be lost if they
+    // dismiss voice and continue in chat.
+    if (prompt != null && prompt.isNotEmpty) {
+      ref.read(widgetPendingPromptProvider.notifier).setPrompt(prompt);
+    }
 
     _isShowingVoiceMode = true;
     try {
@@ -94,7 +100,7 @@ class _OsWidgetInvocationHostState
     String? prompt,
     required bool startNewChat,
   }) async {
-    if (!mounted) return;
+    if (!mounted || _isDisposed) return;
 
     final settings = ref.read(settingsProvider);
     final defaultModelId = settings.defaultModelId;
@@ -121,6 +127,7 @@ class _OsWidgetInvocationHostState
     }
 
     final servers = await ref.read(serversProvider.future);
+    if (!mounted || _isDisposed) return;
     final defaultServer = servers
         .where((s) => s.id == defaultModelServerId)
         .firstOrNull;
@@ -172,6 +179,12 @@ class _OsWidgetInvocationHostState
       _loadingStatusMessage = 'Loading model into memory...';
     });
 
+    // Tracks whether the post-load state mutations should be applied.
+    // Set to false if the user cancels or the host is torn down before
+    // the model finishes loading — otherwise the user's chosen cancellation
+    // would still be overridden by these mutations.
+    var applyPostLoadState = true;
+
     try {
       // 1. Set active server
       ref.read(activeServerIdProvider.notifier).setActiveServer(defaultServer);
@@ -190,6 +203,10 @@ class _OsWidgetInvocationHostState
             defaultModelId,
             settings.preferredBackend,
           );
+          if (_isCanceled || !mounted || _isDisposed) {
+            applyPostLoadState = false;
+            return;
+          }
         }
       } else if (defaultServer.type == ServerType.lmStudio) {
         final apiService = ref.read(serverApiServiceProvider);
@@ -197,7 +214,11 @@ class _OsWidgetInvocationHostState
           _loadingStatusMessage = 'Checking LM Studio instance...';
         });
         final running = await apiService.fetchRunningModels(defaultServer);
-        if (!running.contains(defaultModelId) && !_isCanceled) {
+        if (_isCanceled || !mounted || _isDisposed) {
+          applyPostLoadState = false;
+          return;
+        }
+        if (!running.contains(defaultModelId)) {
           setState(() {
             _loadingStatusMessage = 'Loading model in LM Studio...';
           });
@@ -212,15 +233,21 @@ class _OsWidgetInvocationHostState
             defaultModelId,
             contextLength: ref.read(chatParamsProvider).contextLength,
           );
+          if (_isCanceled || !mounted || _isDisposed) {
+            applyPostLoadState = false;
+            return;
+          }
         }
       }
-
-      if (_isCanceled || !mounted) return;
 
       // 3. Set selected model
       final available = await ref.read(
         availableModelsProvider(defaultServer.id).future,
       );
+      if (_isCanceled || !mounted || _isDisposed) {
+        applyPostLoadState = false;
+        return;
+      }
       final targetModel =
           available.where((m) => m.id == defaultModelId).firstOrNull ??
           ModelInfo(
@@ -244,6 +271,7 @@ class _OsWidgetInvocationHostState
       }
     } catch (e) {
       Log.error('Error loading default model from widget: $e');
+      applyPostLoadState = false;
       if (mounted) {
         ShadToaster.of(context).show(
           ShadToast.destructive(
@@ -253,7 +281,10 @@ class _OsWidgetInvocationHostState
         );
       }
     } finally {
-      if (mounted) {
+      // Only close the overlay if no cancellation/disposal happened during
+      // the load. When cancelled, _cancelLoading already set _isLoadingModel
+      // to false; when the host was disposed, the overlay widget is gone.
+      if (applyPostLoadState && mounted && !_isDisposed) {
         setState(() {
           _isLoadingModel = false;
         });
@@ -263,6 +294,7 @@ class _OsWidgetInvocationHostState
 
   void _cancelLoading() {
     _isCanceled = true;
+    if (!mounted || _isDisposed) return;
     setState(() {
       _isLoadingModel = false;
     });
@@ -270,14 +302,30 @@ class _OsWidgetInvocationHostState
 
   @override
   void dispose() {
+    _isDisposed = true;
     unawaited(_subscription?.cancel());
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Keep widget snapshot synced with active settings
-    ref.watch(osWidgetSnapshotSyncProvider);
+    // Push the snapshot to the native widget whenever settings / model list
+    // change. We use listen (not watch) so the host doesn't rebuild — the
+    // rebuild side-effect lived in a Provider<void> previously, which made
+    // the data flow harder to follow.
+    ref.listen<OsWidgetSnapshot>(osWidgetSnapshotProvider, (previous, next) {
+      if (previous?.modelName == next.modelName &&
+          previous?.isConfigured == next.isConfigured) {
+        return;
+      }
+      unawaited(
+        pushOsWidgetSnapshot(
+          ref,
+          modelName: next.modelName,
+          isConfigured: next.isConfigured,
+        ),
+      );
+    });
 
     return Stack(
       children: [
