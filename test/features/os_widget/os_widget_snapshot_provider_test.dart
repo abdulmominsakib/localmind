@@ -28,26 +28,29 @@ class _StubServersNotifier extends ServersNotifier {
 
 void main() {
   group('osWidgetSnapshotProvider', () {
-    test('returns unconfigured snapshot when no default model is set', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
+    test(
+      'returns unconfigured snapshot when no default model is set',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          settingsProvider.overrideWith(_TestSettingsNotifier.new),
-          serversProvider.overrideWith(_StubServersNotifier.new),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsProvider.overrideWith(_TestSettingsNotifier.new),
+            serversProvider.overrideWith(_StubServersNotifier.new),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      // Force settings to build
-      container.read(settingsProvider);
+        // Force settings to build
+        container.read(settingsProvider);
 
-      final snapshot = container.read(osWidgetSnapshotProvider);
-      expect(snapshot.isConfigured, isFalse);
-      expect(snapshot.modelName, isNull);
-    });
+        final snapshot = container.read(osWidgetSnapshotProvider);
+        expect(snapshot.isConfigured, isFalse);
+        expect(snapshot.modelName, isNull);
+      },
+    );
 
     test('returns configured snapshot with model display name', () async {
       SharedPreferences.setMockInitialValues({});
@@ -81,7 +84,9 @@ void main() {
             () => _TestSettingsNotifier(customSettings: settings),
           ),
           serversProvider.overrideWith(() => _StubServersNotifier([server])),
-          availableModelsProvider(server.id).overrideWith((ref) async => [model]),
+          availableModelsProvider(
+            server.id,
+          ).overrideWith((ref) async => [model]),
         ],
       );
       addTearDown(container.dispose);
@@ -94,43 +99,45 @@ void main() {
       expect(snapshot.modelName, 'Llama 3 8B');
     });
 
-    test('falls back to model id when model is missing from available list',
-        () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
+    test(
+      'falls back to model id when model is missing from available list',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
 
-      final server = Server(
-        id: 'srv-1',
-        name: 'Test Server',
-        host: 'http://localhost',
-        port: 11434,
-        type: ServerType.ollama,
-        createdAt: DateTime.now(),
-        lastConnectedAt: DateTime.now(),
-      );
+        final server = Server(
+          id: 'srv-1',
+          name: 'Test Server',
+          host: 'http://localhost',
+          port: 11434,
+          type: ServerType.ollama,
+          createdAt: DateTime.now(),
+          lastConnectedAt: DateTime.now(),
+        );
 
-      final settings = AppSettings(
-        defaultModelId: 'missing-model',
-        defaultModelServerId: server.id,
-      );
+        final settings = AppSettings(
+          defaultModelId: 'missing-model',
+          defaultModelServerId: server.id,
+        );
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          settingsProvider.overrideWith(
-            () => _TestSettingsNotifier(customSettings: settings),
-          ),
-          serversProvider.overrideWith(() => _StubServersNotifier([server])),
-          availableModelsProvider(server.id).overrideWith((ref) async => []),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsProvider.overrideWith(
+              () => _TestSettingsNotifier(customSettings: settings),
+            ),
+            serversProvider.overrideWith(() => _StubServersNotifier([server])),
+            availableModelsProvider(server.id).overrideWith((ref) async => []),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(availableModelsProvider(server.id).future);
+        await container.read(availableModelsProvider(server.id).future);
 
-      final snapshot = container.read(osWidgetSnapshotProvider);
-      expect(snapshot.isConfigured, isTrue);
-      expect(snapshot.modelName, 'missing-model');
-    });
+        final snapshot = container.read(osWidgetSnapshotProvider);
+        expect(snapshot.isConfigured, isTrue);
+        expect(snapshot.modelName, 'missing-model');
+      },
+    );
   });
 }

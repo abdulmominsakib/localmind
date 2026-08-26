@@ -89,6 +89,8 @@ dependencies:
   auto_size_text_plus: ^3.0.2
   device_calendar_plus: ^0.8.0
   home_widget: ^0.9.3
+  apple_mlx:
+    path: packages/apple_mlx
 
 dev_dependencies:
   flutter_test:

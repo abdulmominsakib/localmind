@@ -25,6 +25,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  apple_mlx:
+    dependency: "direct main"
+    description:
+      path: "packages/apple_mlx"
+      relative: true
+    source: path
+    version: "0.1.0"
   archive:
     dependency: "direct main"
     description:
@@ -49,6 +56,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.1"
+  audio_core:
+    dependency: transitive
+    description:
+      name: audio_core
+      sha256: "6996bd8f5df465a6fa8d08736487bd53f8b78d4ffee411fcfa4dbfdc2e2437ad"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   audio_service:
     dependency: transitive
     description:
@@ -1093,6 +1108,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  lib_mlx:
+    dependency: transitive
+    description:
+      name: lib_mlx
+      sha256: dcb32359d834425cabb820de7de051a8f85d536e96218abb1d68d5973cf7044d
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
   lints:
     dependency: transitive
     description:
@@ -1181,6 +1204,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  mlx:
+    dependency: transitive
+    description:
+      name: mlx
+      sha256: d735465e4a8f55dc209d7e53aaf3039b9063101aa3cced0da2843b64e884a721
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
+  mlx_audio:
+    dependency: transitive
+    description:
+      name: mlx_audio
+      sha256: "5a94ffaea1bce9e75f3757722e1a92dd8514a3c8bb139377a07b4e7f6c304874"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.2"
   mutex:
     dependency: transitive
     description:
@@ -1762,6 +1801,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.2"
+  speech_core:
+    dependency: transitive
+    description:
+      name: speech_core
+      sha256: bc0cd35c890528638ba4a55792e05a8b5afe23bfc4b2ba30873ebb3813c97bad
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
+  speech_mlx:
+    dependency: transitive
+    description:
+      name: speech_mlx
+      sha256: "35aae05aa0e5b94695fd0038cb2dcada83e4c310e0268e4ef29a3ece7973bd25"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
   speech_to_text:
     dependency: "direct main"
     description:
@@ -2099,6 +2154,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
+  wav:
+    dependency: transitive
+    description:
+      name: wav
+      sha256: "2c932c74a531befedcb1d44bb24dd95fea8c801590d560c73fa94f35c5ef6551"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.5.0"
   web:
     dependency: transitive
     description:

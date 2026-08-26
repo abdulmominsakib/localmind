@@ -16,6 +16,7 @@ import '../data/models/on_device_model.dart';
 import '../data/notification_permission_service.dart';
 import '../data/on_device_gemma_service.dart';
 import '../data/on_device_llama_service.dart';
+import '../data/on_device_mlx_service.dart';
 import '../../servers/providers/server_providers.dart';
 
 final notificationPermissionServiceProvider =
@@ -31,6 +32,12 @@ final onDeviceGemmaServiceProvider = Provider<OnDeviceGemmaService>((ref) {
 
 final onDeviceLlamaServiceProvider = Provider<OnDeviceLlamaService>((ref) {
   final service = OnDeviceLlamaService();
+  ref.onDispose(() => service.dispose());
+  return service;
+});
+
+final onDeviceMlxServiceProvider = Provider<OnDeviceMlxService>((ref) {
+  final service = OnDeviceMlxService(ref.read(dioProvider));
   ref.onDispose(() => service.dispose());
   return service;
 });
@@ -55,14 +62,21 @@ final onDeviceEngineProvider =
 
 final onDeviceModelsProvider = Provider<List<OnDeviceModel>>((ref) {
   final imported = ref.watch(importedGgufModelsProvider);
-  return [...OnDeviceModel.curatedModels, ...imported];
+  final mlxModels = Platform.isIOS
+      ? OnDeviceModel.curatedMlxModels
+      : const <OnDeviceModel>[];
+  return [...mlxModels, ...OnDeviceModel.curatedModels, ...imported];
 });
 
 final downloadedModelsProvider = FutureProvider<Set<String>>((ref) async {
   final gemmaService = ref.read(onDeviceGemmaServiceProvider);
   final installed = await gemmaService.getInstalledModelIds();
+  final mlxService = ref.read(onDeviceMlxServiceProvider);
+  final mlxInstalled = Platform.isIOS
+      ? await mlxService.getInstalledModelIds()
+      : const <String>{};
   final imported = ref.watch(importedGgufModelsProvider);
-  return {...installed, ...imported.map((model) => model.id)};
+  return {...installed, ...mlxInstalled, ...imported.map((model) => model.id)};
 });
 
 final onDeviceModelStateProvider =
@@ -239,6 +253,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       ref.read(onDeviceGemmaServiceProvider);
   OnDeviceLlamaService get _llamaService =>
       ref.read(onDeviceLlamaServiceProvider);
+  OnDeviceMlxService get _mlxService => ref.read(onDeviceMlxServiceProvider);
 
   Future<void> loadModel(String modelId, PreferredBackend backend) async {
     if (!ref.mounted) return;
@@ -287,12 +302,31 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
 
         final settings = ref.read(settingsProvider);
         await _gemmaService.unloadModel();
+        await _mlxService.unloadModel();
         if (!ref.mounted) return;
         await _llamaService.loadModel(
           model,
           contextLength: settings.contextLength,
           useGpu: !model.isCpuOnly && effectiveBackend == PreferredBackend.gpu,
         );
+        if (!ref.mounted) return;
+      } else if (model.runtime == OnDeviceModelRuntime.mlx) {
+        final isInstalled = await _mlxService.isModelInstalled(modelId);
+        if (!ref.mounted) return;
+        if (!isInstalled) {
+          state = state.copyWith(
+            status: OnDeviceEngineStatus.error,
+            loadedModelId: null,
+            loadedRuntime: null,
+            error: 'MLX Model not found. Please download it first.',
+          );
+          return;
+        }
+
+        await _gemmaService.unloadModel();
+        await _llamaService.unloadModel();
+        if (!ref.mounted) return;
+        await _mlxService.loadModel(model);
         if (!ref.mounted) return;
       } else {
         final isInstalled = await _gemmaService.isModelInstalled(modelId);
@@ -308,6 +342,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
         }
 
         await _llamaService.unloadModel();
+        await _mlxService.unloadModel();
         if (!ref.mounted) return;
         await _gemmaService.loadModel(modelId, effectiveBackend);
         if (!ref.mounted) return;
@@ -327,10 +362,14 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
         final onDeviceServer = servers
             .where((s) => s.type == ServerType.onDevice)
             .firstOrNull;
-        if (onDeviceServer != null) {
-          ref
-              .read(activeServerIdProvider.notifier)
-              .setActiveServer(onDeviceServer);
+        if (onDeviceServer != null && ref.mounted) {
+          Future.microtask(() {
+            if (ref.mounted) {
+              ref
+                  .read(activeServerIdProvider.notifier)
+                  .setActiveServer(onDeviceServer);
+            }
+          });
         }
       }
 
@@ -364,6 +403,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
   Future<void> unloadModel() async {
     final gemma = ref.mounted ? _gemmaService : null;
     final llama = ref.mounted ? _llamaService : null;
+    final mlx = ref.mounted ? _mlxService : null;
     if (gemma != null) {
       try {
         await gemma.unloadModel();
@@ -378,6 +418,13 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
         Log.error('Failed to unload llama.cpp model: $e');
       }
     }
+    if (mlx != null) {
+      try {
+        await mlx.unloadModel();
+      } catch (e) {
+        Log.error('Failed to unload MLX model: $e');
+      }
+    }
     if (ref.mounted) {
       state = const OnDeviceEngineState();
     }
@@ -386,6 +433,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
   Future<void> disposeService() async {
     _gemmaService.dispose();
     _llamaService.dispose();
+    _mlxService.dispose();
     state = const OnDeviceEngineState();
   }
 }

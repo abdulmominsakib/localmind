@@ -158,9 +158,15 @@ final availableModelsProvider = FutureProvider.family<List<dynamic>, String>((
               m.parameterLabel.replaceAll(RegExp(r'[^0-9\.]'), ''),
             ),
             fileSize: m.fileSizeBytes,
-            quantization: m.format == OnDeviceModelFormat.gguf ? 'GGUF' : null,
+            quantization: m.format == OnDeviceModelFormat.gguf
+                ? 'GGUF'
+                : m.format == OnDeviceModelFormat.mlx
+                ? 'MLX 4-bit'
+                : null,
             architecture: m.runtime == OnDeviceModelRuntime.llamaCpp
                 ? 'llama.cpp'
+                : m.runtime == OnDeviceModelRuntime.mlx
+                ? 'Apple MLX'
                 : null,
             serverType: ServerType.onDevice,
             serverId: server.id,
