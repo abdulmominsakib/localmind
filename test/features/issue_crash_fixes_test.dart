@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -23,8 +22,11 @@ import 'package:localmind/features/servers/data/server_api_service.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/onboarding/screens/onboarding_server_setup_screen.dart';
 import 'package:localmind/features/servers/views/add_server_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:localmind/features/settings/data/models/app_settings.dart';
+import 'package:localmind/features/sidebar/components/github_repo_card.dart';
 import 'package:localmind/l10n/app_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -757,6 +759,35 @@ void main() {
           container.read(connectionStatusProvider),
           ConnectionStatus.connected,
         );
+      },
+    );
+  });
+
+  group('Issue #71: GitHub URL Launcher Safe Failure Handling', () {
+    testWidgets(
+      'GitHubRepoCard does not throw an unhandled exception when tapped',
+      (tester) async {
+        // In the test environment there is no native URL launcher. The
+        // try/catch in _launchUrl must swallow any failure so the app
+        // does not crash — that is the regression guard for issue #71.
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: Center(child: GitHubRepoCard())),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(GitHubRepoCard));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
       },
     );
   });
