@@ -8,12 +8,37 @@ import '../../../l10n/app_localizations.dart';
 class GitHubRepoCard extends StatelessWidget {
   const GitHubRepoCard({super.key});
 
-  final String repoUrl = 'https://github.com/abdulmominsakib/localmind';
+  static final Uri _repoUri = Uri.parse(
+    'https://github.com/abdulmominsakib/localmind',
+  );
 
-  Future<void> _launchUrl() async {
-    final Uri url = Uri.parse(repoUrl);
-    if (!await launchUrl(url)) {
-      throw Exception('Could not launch $url');
+  Future<void> _launchUrl(BuildContext context) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final l10n = AppLocalizations.of(context);
+    try {
+      final launched = await launchUrl(
+        _repoUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && messenger != null) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n?.could_not_open_github ?? 'Could not open GitHub.',
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (messenger != null) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n?.could_not_open_github ?? 'Could not open GitHub.',
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -33,7 +58,7 @@ class GitHubRepoCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: InkWell(
-          onTap: _launchUrl,
+          onTap: () => _launchUrl(context),
           borderRadius: BorderRadius.circular(8),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

@@ -944,18 +944,30 @@ class _HuggingFaceGgufImportDialogState
 
   Future<void> _openHuggingFace(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
-    final launched = await launchUrl(
-      _huggingFaceModelsUri,
-      mode: LaunchMode.externalApplication,
-    );
-    if (!launched && context.mounted) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.could_not_open_huggingface,
-          ),
-        ),
+    try {
+      final launched = await launchUrl(
+        _huggingFaceModelsUri,
+        mode: LaunchMode.externalApplication,
       );
+      if (!launched && context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.could_not_open_huggingface,
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.could_not_open_huggingface,
+            ),
+          ),
+        );
+      }
     }
   }
 

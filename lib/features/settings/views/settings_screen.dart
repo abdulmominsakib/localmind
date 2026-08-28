@@ -2526,6 +2526,38 @@ class _PrivacyPolicyLink extends StatelessWidget {
     'https://momin.pro/privacy-policy-localmind/',
   );
 
+  Future<void> _openPrivacyPolicy(BuildContext context) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final l10n = AppLocalizations.of(context);
+    try {
+      final ok = await launchUrl(
+        _privacyUrl,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!ok && messenger != null) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n?.failed_to_open_url(_privacyUrl.toString()) ??
+                  'Failed to open URL: $_privacyUrl',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (messenger != null) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n?.failed_to_open_url(e.toString()) ??
+                  'Failed to open URL: $e',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -2534,8 +2566,7 @@ class _PrivacyPolicyLink extends StatelessWidget {
 
     return Center(
       child: InkWell(
-        onTap: () =>
-            launchUrl(_privacyUrl, mode: LaunchMode.externalApplication),
+        onTap: () => _openPrivacyPolicy(context),
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
