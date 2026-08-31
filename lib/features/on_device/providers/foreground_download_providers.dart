@@ -9,6 +9,7 @@ import '../../../core/providers/review_prompt_providers.dart';
 import '../../../core/providers/storage_providers.dart';
 import '../data/models/download_progress_info.dart';
 import '../data/models/download_status.dart';
+import '../data/models/on_device_model.dart';
 import 'on_device_providers.dart';
 
 final foregroundDownloadNotifierProvider =
@@ -92,42 +93,82 @@ class ForegroundDownloadNotifier
     _saveState();
 
     final gemmaService = ref.read(onDeviceGemmaServiceProvider);
+    final mlxService = ref.read(onDeviceMlxServiceProvider);
     final hfToken = ref.read(
       settingsProvider.select((s) => s.huggingFaceToken),
     );
 
     try {
-      await gemmaService.installModel(
-        model,
-        token: (hfToken != null && hfToken.isNotEmpty) ? hfToken : null,
-        onProgress: (progress) {
-          if (!ref.mounted || _activeDownloads[modelId] != true) return;
+      if (model.runtime == OnDeviceModelRuntime.mlx) {
+        await mlxService.downloadModel(
+          model,
+          huggingFaceToken: (hfToken != null && hfToken.isNotEmpty)
+              ? hfToken
+              : null,
+          onProgress: (received, total) {
+            if (!ref.mounted || _activeDownloads[modelId] != true) return;
 
-          final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
-          final elapsed = DateTime.now().difference(startTime).inSeconds;
-          final total = model.fileSizeBytes;
-          final received = ((progress / 100.0) * total).round();
+            final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
+            final elapsed = DateTime.now().difference(startTime).inSeconds;
+            final bytesPerSecond = elapsed > 0
+                ? (received / elapsed).round()
+                : 0;
+            final etaSeconds = bytesPerSecond > 0
+                ? ((total - received) / bytesPerSecond).round()
+                : null;
 
-          final bytesPerSecond = elapsed > 0 ? (received / elapsed).round() : 0;
-          final etaSeconds = bytesPerSecond > 0
-              ? ((total - received) / bytesPerSecond).round()
-              : null;
+            final progress = total > 0 ? (received / total) : 0.0;
 
-          state = {
-            ...state,
-            modelId: DownloadProgressInfo(
-              modelId: modelId,
-              status: DownloadStatus.running,
-              progress: progress / 100.0,
-              receivedBytes: received,
-              totalBytes: total,
-              bytesPerSecond: bytesPerSecond,
-              etaSeconds: etaSeconds,
-            ),
-          };
-          _saveState();
-        },
-      );
+            state = {
+              ...state,
+              modelId: DownloadProgressInfo(
+                modelId: modelId,
+                status: DownloadStatus.running,
+                progress: progress.clamp(0.0, 1.0),
+                receivedBytes: received,
+                totalBytes: total,
+                bytesPerSecond: bytesPerSecond,
+                etaSeconds: etaSeconds,
+              ),
+            };
+            _saveState();
+          },
+        );
+      } else {
+        await gemmaService.installModel(
+          model,
+          token: (hfToken != null && hfToken.isNotEmpty) ? hfToken : null,
+          onProgress: (progress) {
+            if (!ref.mounted || _activeDownloads[modelId] != true) return;
+
+            final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
+            final elapsed = DateTime.now().difference(startTime).inSeconds;
+            final total = model.fileSizeBytes;
+            final received = ((progress / 100.0) * total).round();
+
+            final bytesPerSecond = elapsed > 0
+                ? (received / elapsed).round()
+                : 0;
+            final etaSeconds = bytesPerSecond > 0
+                ? ((total - received) / bytesPerSecond).round()
+                : null;
+
+            state = {
+              ...state,
+              modelId: DownloadProgressInfo(
+                modelId: modelId,
+                status: DownloadStatus.running,
+                progress: progress / 100.0,
+                receivedBytes: received,
+                totalBytes: total,
+                bytesPerSecond: bytesPerSecond,
+                etaSeconds: etaSeconds,
+              ),
+            };
+            _saveState();
+          },
+        );
+      }
 
       // Download completed
       if (_activeDownloads[modelId] == true) {
@@ -187,6 +228,8 @@ class ForegroundDownloadNotifier
   }
 
   Future<void> cancelDownload(String modelId) async {
+    final mlxService = ref.read(onDeviceMlxServiceProvider);
+    mlxService.cancelDownload(modelId);
     _activeDownloads.remove(modelId);
     _downloadStartTimes.remove(modelId);
     state = {...state}..remove(modelId);

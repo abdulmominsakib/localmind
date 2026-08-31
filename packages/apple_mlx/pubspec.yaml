@@ -1,0 +1,22 @@
+name: apple_mlx
+description: Local package bridging Apple MLX models (LLM text generation, STT, TTS, turn detection) for LocalMind.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.12.0 <4.0.0"
+  flutter: ">=3.44.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  lib_mlx: ^0.1.1
+  speech_mlx: ^0.2.0
+  mlx_audio: ^0.2.2
+  speech_core: ^0.2.0
+  audio_core: ^0.1.0
+  http: ^1.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

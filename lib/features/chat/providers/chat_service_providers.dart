@@ -11,6 +11,7 @@ import 'package:localmind/features/on_device/data/on_device_chat_service.dart';
 import 'package:localmind/features/on_device/data/on_device_gemma_service.dart';
 import 'package:localmind/features/on_device/data/on_device_llama_service.dart';
 import 'package:localmind/features/on_device/data/models/on_device_model.dart';
+import 'package:localmind/features/on_device/data/on_device_mlx_service.dart';
 import '../data/chat_service.dart';
 import '../data/smart_reply_service.dart';
 import '../data/title_generation_service.dart';
@@ -33,6 +34,7 @@ final chatServiceProvider = Provider<ChatService?>((ref) {
     dio: ref.read(dioProvider),
     onDeviceGemmaService: ref.read(onDeviceGemmaServiceProvider),
     onDeviceLlamaService: ref.read(onDeviceLlamaServiceProvider),
+    onDeviceMlxService: ref.read(onDeviceMlxServiceProvider),
     loadedOnDeviceRuntime: loadedRuntime,
     imageCompressionEnabled: settings.$1,
     imageCompressionLevel: settings.$2,
@@ -53,6 +55,7 @@ ChatService createChatServiceForServer({
   required Dio dio,
   required OnDeviceGemmaService onDeviceGemmaService,
   required OnDeviceLlamaService onDeviceLlamaService,
+  OnDeviceMlxService? onDeviceMlxService,
   OnDeviceModelRuntime? loadedOnDeviceRuntime,
   bool imageCompressionEnabled = true,
   ImageCompressionLevel imageCompressionLevel = ImageCompressionLevel.medium,
@@ -60,6 +63,10 @@ ChatService createChatServiceForServer({
   if (server.type == ServerType.onDevice) {
     if (loadedOnDeviceRuntime == OnDeviceModelRuntime.llamaCpp) {
       return OnDeviceLlamaChatService(onDeviceLlamaService);
+    }
+    if (loadedOnDeviceRuntime == OnDeviceModelRuntime.mlx &&
+        onDeviceMlxService != null) {
+      return OnDeviceMlxChatService(onDeviceMlxService);
     }
 
     return ChatService.forServer(

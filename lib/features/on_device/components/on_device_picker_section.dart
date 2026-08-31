@@ -327,6 +327,26 @@ class _OnDeviceModelTile extends ConsumerWidget {
                                 ),
                               ),
                             ),
+                          if (model.isMlx)
+                            Container(
+                              margin: const EdgeInsets.only(left: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                ' MLX',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.purple,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                       if (!Platform.isIOS &&
@@ -384,9 +404,9 @@ class _OnDeviceModelTile extends ConsumerWidget {
                             ],
                           ),
                         ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Wrap(
-                        spacing: 6,
+                        spacing: 4,
                         runSpacing: 4,
                         children: [
                           MetadataChip(
@@ -400,6 +420,8 @@ class _OnDeviceModelTile extends ConsumerWidget {
                             ),
                           if (model.runtime == OnDeviceModelRuntime.llamaCpp)
                             MetadataChip(label: 'llama.cpp', isDark: isDark),
+                          if (model.runtime == OnDeviceModelRuntime.mlx)
+                            MetadataChip(label: ' Apple MLX', isDark: isDark),
                           if (!model.isImported)
                             MetadataChip(label: model.license, isDark: isDark),
                           if (!model.isImported)

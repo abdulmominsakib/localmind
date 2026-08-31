@@ -166,6 +166,22 @@ class _ModelCardHeader extends StatelessWidget {
               ),
             ),
           ),
+        if (model.isMlx)
+          Container(
+            margin: const EdgeInsets.only(left: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.purple.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              ' Apple MLX',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: Colors.purple,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -218,12 +234,14 @@ class _CapabilityChips extends StatelessWidget {
     final chips = <String>[
       if (model.format == OnDeviceModelFormat.gguf) 'GGUF',
       if (model.runtime == OnDeviceModelRuntime.llamaCpp) 'llama.cpp',
+      if (model.runtime == OnDeviceModelRuntime.mlx) ' Metal GPU',
       if (model.supportsFunctionCalling) 'Tools',
       if (model.supportsThinking) 'Thinking',
       if (model.supportsVision) 'Vision',
       model.languagesLabel,
       if (model.backendNote != null &&
-          model.backendNote!.toLowerCase() != 'llama.cpp')
+          model.backendNote!.toLowerCase() != 'llama.cpp' &&
+          model.backendNote!.toLowerCase() != 'apple mlx')
         model.backendNote!,
       if (model.requiresHuggingFaceToken) l10n.model_requires_huggingface_token,
     ];
@@ -519,6 +537,9 @@ class _DownloadedActions extends ConsumerWidget {
         await ref
             .read(importedGgufModelsProvider.notifier)
             .deleteModel(model.id);
+      } else if (model.runtime == OnDeviceModelRuntime.mlx) {
+        final mlxService = ref.read(onDeviceMlxServiceProvider);
+        await mlxService.deleteModel(model.id);
       } else {
         final gemmaService = ref.read(onDeviceGemmaServiceProvider);
         await gemmaService.deleteModel(model.id);

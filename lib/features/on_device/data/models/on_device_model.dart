@@ -2,9 +2,9 @@ import 'package:flutter_gemma/flutter_gemma.dart';
 
 import '../../../../core/models/enums.dart';
 
-enum OnDeviceModelRuntime { gemma, llamaCpp }
+enum OnDeviceModelRuntime { gemma, llamaCpp, mlx }
 
-enum OnDeviceModelFormat { litertlm, task, binary, gguf }
+enum OnDeviceModelFormat { litertlm, task, binary, gguf, mlx }
 
 enum OnDeviceImportedSource { localFile, huggingFace }
 
@@ -76,6 +76,7 @@ class OnDeviceModel {
   }
 
   bool get isLlamaCpp => runtime == OnDeviceModelRuntime.llamaCpp;
+  bool get isMlx => runtime == OnDeviceModelRuntime.mlx;
 
   bool get isImportedFromLocalFile =>
       importedSource == OnDeviceImportedSource.localFile;
@@ -309,6 +310,80 @@ class OnDeviceModel {
       languagesLabel: '55 languages',
       backendNote: 'CPU-only',
       isCpuOnly: true,
+    ),
+  ];
+
+  static const List<OnDeviceModel> curatedMlxModels = [
+    OnDeviceModel(
+      id: 'mlx-qwen-2.5-0.5b',
+      name: 'Qwen 2.5 0.5B (MLX)',
+      huggingFaceUrl:
+          'https://huggingface.co/mlx-community/Qwen2.5-0.5B-Instruct-4bit',
+      fileSizeBytes: 408944640,
+      license: 'Apache-2.0',
+      description:
+          'High efficiency compact Qwen 2.5 4-bit model running via Apple MLX.',
+      isRecommended: true,
+      minRamMb: 1536,
+      parameterLabel: '0.5B (4-bit)',
+      bestFor: 'Compact multilingual chat with tiny footprint',
+      languagesLabel: 'Multilingual',
+      backendNote: 'Apple MLX',
+      runtime: OnDeviceModelRuntime.mlx,
+      format: OnDeviceModelFormat.mlx,
+    ),
+    OnDeviceModel(
+      id: 'mlx-llama-3.2-1b',
+      name: 'Llama 3.2 1B (MLX)',
+      huggingFaceUrl:
+          'https://huggingface.co/mlx-community/Llama-3.2-1B-Instruct-4bit',
+      fileSizeBytes: 786432000,
+      license: 'Llama-3.2',
+      description:
+          'Compact, ultra-fast Llama 3.2 4-bit model powered by Apple MLX Metal kernels.',
+      isRecommended: true,
+      minRamMb: 2048,
+      parameterLabel: '1B (4-bit)',
+      bestFor: 'Lightweight high-speed text generation',
+      supportsThinking: false,
+      languagesLabel: 'Multilingual',
+      backendNote: 'Apple MLX',
+      runtime: OnDeviceModelRuntime.mlx,
+      format: OnDeviceModelFormat.mlx,
+    ),
+    OnDeviceModel(
+      id: 'mlx-gemma-2-2b',
+      name: 'Gemma 2 2B (MLX)',
+      huggingFaceUrl: 'https://huggingface.co/mlx-community/gemma-2-2b-it-4bit',
+      fileSizeBytes: 1530920960,
+      license: 'Gemma',
+      description:
+          'Native Apple MLX 4-bit model running with Metal GPU acceleration.',
+      minRamMb: 4096,
+      parameterLabel: '2B (4-bit)',
+      bestFor: 'Fast chat on Apple Silicon',
+      supportsThinking: false,
+      languagesLabel: 'Multilingual',
+      backendNote: 'Apple MLX',
+      runtime: OnDeviceModelRuntime.mlx,
+      format: OnDeviceModelFormat.mlx,
+    ),
+    OnDeviceModel(
+      id: 'mlx-smollm2-135m',
+      name: 'SmolLM2 135M (MLX)',
+      huggingFaceUrl:
+          'https://huggingface.co/mlx-community/SmolLM2-135M-Instruct',
+      fileSizeBytes: 272629760,
+      license: 'Apache-2.0',
+      description:
+          'Ultra-compact 135M MLX model for near-instant on-device inference.',
+      minRamMb: 1024,
+      parameterLabel: '135M',
+      bestFor: 'Instant local inference and memory efficiency',
+      languagesLabel: 'English',
+      backendNote: 'Apple MLX',
+      runtime: OnDeviceModelRuntime.mlx,
+      format: OnDeviceModelFormat.mlx,
     ),
   ];
 }

@@ -1714,6 +1714,7 @@ class ChatNotifier extends Notifier<ChatState> {
       dio: ref.read(dioProvider),
       onDeviceGemmaService: ref.read(onDeviceGemmaServiceProvider),
       onDeviceLlamaService: ref.read(onDeviceLlamaServiceProvider),
+      onDeviceMlxService: ref.read(onDeviceMlxServiceProvider),
       loadedOnDeviceRuntime: ref.read(
         onDeviceEngineProvider.select((s) => s.loadedRuntime),
       ),
