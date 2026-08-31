@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/logger/app_logger.dart';
 import 'package:localmind/core/models/enums.dart';
@@ -868,6 +869,8 @@ class ChatNotifier extends Notifier<ChatState> {
 
     await _saveMessage(userMessage);
     await _saveMessage(assistantMessage);
+
+    if (!ref.mounted) return;
 
     if (!_isInMemoryChat && _currentConversationId != null) {
       final preview = trimmedContent.isNotEmpty
@@ -2567,7 +2570,10 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> _saveMessage(Message message) async {
-    if (_isInMemoryChat || !ref.mounted) return;
+    // Check `ref.mounted` before touching `state` (via `_isInMemoryChat`).
+    // On a disposed notifier, accessing `state` throws "Cannot use the Ref of
+    // NotifierProvider ... after it has been disposed" — see issue #73.
+    if (!ref.mounted || _isInMemoryChat) return;
     final db = ref.read(databaseProvider);
     await db.store.runInTransactionAsync(
       TxMode.write,
@@ -2575,6 +2581,12 @@ class ChatNotifier extends Notifier<ChatState> {
       message,
     );
   }
+
+  /// Test-only hook that exposes [_saveMessage] so we can verify it is safe
+  /// to call on a disposed notifier (issue #73).
+  @visibleForTesting
+  Future<void> debugSaveMessageForTest(Message message) =>
+      _saveMessage(message);
 
   static void _saveMessageInBackground(Store store, Message message) {
     final box = store.box<MessageEntity>();
