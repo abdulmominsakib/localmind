@@ -378,6 +378,27 @@ class _ModelCard extends ConsumerWidget {
                     ),
                   ),
                 ),
+              if (model.isBuiltIn)
+                Container(
+                  margin: const EdgeInsets.only(left: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.teal.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    Platform.isIOS || Platform.isMacOS
+                        ? ' Apple Intelligence'
+                        : '⚡ Built-in AI',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.teal,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
             ],
           ),
           if (!Platform.isIOS &&
@@ -530,6 +551,7 @@ class _ModelCard extends ConsumerWidget {
   Widget _buildCapabilityChips(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final chips = <String>[
+      if (model.isBuiltIn) '⚡ Built-in',
       if (model.supportsFunctionCalling) 'Tools',
       if (model.supportsThinking) 'Thinking',
       if (model.supportsVision) 'Vision',

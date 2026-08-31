@@ -139,12 +139,12 @@ class ForegroundDownloadNotifier
           model,
           token: (hfToken != null && hfToken.isNotEmpty) ? hfToken : null,
           onProgress: (progress) {
-            if (!ref.mounted || _activeDownloads[modelId] != true) return;
-
             final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
             final elapsed = DateTime.now().difference(startTime).inSeconds;
-            final total = model.fileSizeBytes;
-            final received = ((progress / 100.0) * total).round();
+            final total = model.fileSizeBytes > 0 ? model.fileSizeBytes : 100;
+            final received = model.fileSizeBytes > 0
+                ? ((progress / 100.0) * total).round()
+                : progress;
 
             final bytesPerSecond = elapsed > 0
                 ? (received / elapsed).round()
@@ -179,8 +179,8 @@ class ForegroundDownloadNotifier
               modelId: modelId,
               status: DownloadStatus.complete,
               progress: 1.0,
-              receivedBytes: model.fileSizeBytes,
-              totalBytes: model.fileSizeBytes,
+              receivedBytes: model.fileSizeBytes > 0 ? model.fileSizeBytes : 100,
+              totalBytes: model.fileSizeBytes > 0 ? model.fileSizeBytes : 100,
             ),
           };
           _saveState();

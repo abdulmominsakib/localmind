@@ -162,11 +162,15 @@ final availableModelsProvider = FutureProvider.family<List<dynamic>, String>((
                 ? 'GGUF'
                 : m.format == OnDeviceModelFormat.mlx
                 ? 'MLX 4-bit'
+                : m.format == OnDeviceModelFormat.builtIn
+                ? 'System AI'
                 : null,
             architecture: m.runtime == OnDeviceModelRuntime.llamaCpp
                 ? 'llama.cpp'
                 : m.runtime == OnDeviceModelRuntime.mlx
                 ? 'Apple MLX'
+                : m.isBuiltIn
+                ? 'Built-in OS AI'
                 : null,
             serverType: ServerType.onDevice,
             serverId: server.id,

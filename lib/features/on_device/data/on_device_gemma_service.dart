@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -71,8 +72,8 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     final specName = restoredActiveModelName;
     if (specName == null) return;
 
-    final model = OnDeviceModel.curatedModels.firstWhere(
-      (m) => m.fileName == specName,
+    final model = OnDeviceModel.allCuratedModels.firstWhere(
+      (m) => m.fileName == specName || m.id == specName,
       orElse: () => throw StateError('No curated model for $specName'),
     );
 
@@ -82,7 +83,10 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
 
   static Future<void> initialize({String? huggingFaceToken}) async {
     await FlutterGemma.initialize(
-      inferenceEngines: const [LiteRtLmEngine()],
+      inferenceEngines: const [
+        LiteRtLmEngine(),
+        BuiltInAiEngine(),
+      ],
       huggingFaceToken: huggingFaceToken,
       maxDownloadRetries: 10,
     );
@@ -93,6 +97,19 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     void Function(int)? onProgress,
     String? token,
   }) async {
+    if (model.isBuiltIn) {
+      Log.info('Installing built-in model ${model.id}');
+      await BuiltInAi.ensureReady(
+        onProgress: onProgress,
+      );
+      await FlutterGemma.installModel(
+        modelType: ModelType.general,
+        fileType: ModelFileType.builtIn,
+      ).fromBundled(model.fileName).install();
+      Log.info('Built-in model ${model.id} ready');
+      return;
+    }
+
     Log.info('Installing model ${model.id} from ${model.huggingFaceUrl}');
 
     await FlutterGemma.installModel(
@@ -109,10 +126,18 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   }
 
   Future<bool> isModelInstalled(String modelId) async {
-    final model = OnDeviceModel.curatedModels.firstWhere(
-      (m) => m.id == modelId,
+    final model = OnDeviceModel.allCuratedModels.firstWhere(
+      (m) => m.id == modelId || m.fileName == modelId,
       orElse: () => throw Exception('Model not found: $modelId'),
     );
+    if (model.isBuiltIn) {
+      try {
+        final availability = await BuiltInAi.availability();
+        if (availability == BuiltInAiAvailability.available) {
+          return true;
+        }
+      } catch (_) {}
+    }
     return FlutterGemma.isModelInstalled(model.fileName);
   }
 
@@ -121,7 +146,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     final installedSet = installed.toSet();
     final installedIds = <String>[];
 
-    for (final model in OnDeviceModel.curatedModels) {
+    for (final model in OnDeviceModel.allCuratedModels) {
       if (installedSet.contains(model.fileName)) {
         installedIds.add(model.id);
       }
@@ -130,11 +155,16 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   }
 
   Future<void> deleteModel(String modelId) async {
-    final model = OnDeviceModel.curatedModels.firstWhere(
-      (m) => m.id == modelId,
+    final model = OnDeviceModel.allCuratedModels.firstWhere(
+      (m) => m.id == modelId || m.fileName == modelId,
       orElse: () => throw Exception('Model not found: $modelId'),
     );
     await FlutterGemma.uninstallModel(model.fileName);
+
+    if (model.isBuiltIn) {
+      Log.info('Built-in model $modelId uninstalled');
+      return;
+    }
 
     // Also clean up old custom download location if it exists
     try {
@@ -174,17 +204,36 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
       'Loading model $modelId with backend=$backend, maxTokens=$maxTokens',
     );
 
-    final model = OnDeviceModel.curatedModels.firstWhere(
-      (m) => m.id == modelId,
+    final model = OnDeviceModel.allCuratedModels.firstWhere(
+      (m) => m.id == modelId || m.fileName == modelId,
       orElse: () => throw Exception('Model not found: $modelId'),
     );
 
-    final spec = InferenceModelSpec(
-      name: model.fileName,
-      modelSource: ModelSource.network(model.huggingFaceUrl),
-      modelType: model.flutterGemmaModelType,
-      fileType: ModelFileType.litertlm,
-    );
+    final InferenceModelSpec spec;
+    if (model.isBuiltIn) {
+      await BuiltInAi.ensureReady();
+      final installed = await FlutterGemma.isModelInstalled(model.fileName);
+      if (!installed) {
+        await FlutterGemma.installModel(
+          modelType: ModelType.general,
+          fileType: ModelFileType.builtIn,
+        ).fromBundled(model.fileName).install();
+      }
+      spec = InferenceModelSpec(
+        name: model.fileName,
+        modelSource: ModelSource.bundled(model.fileName),
+        modelType: ModelType.general,
+        fileType: ModelFileType.builtIn,
+      );
+    } else {
+      spec = InferenceModelSpec(
+        name: model.fileName,
+        modelSource: ModelSource.network(model.huggingFaceUrl),
+        modelType: model.flutterGemmaModelType,
+        fileType: ModelFileType.litertlm,
+      );
+    }
+
     FlutterGemmaPlugin.instance.modelManager.setActiveModel(spec);
 
     _model = await FlutterGemma.getActiveModel(

@@ -76,7 +76,7 @@ final activeChatTargetProvider = Provider<ActiveChatTarget>((ref) {
       : null;
   final model = modelId == null
       ? null
-      : OnDeviceModel.curatedModels
+      : OnDeviceModel.allCuratedModels
             .where((candidate) => candidate.id == modelId)
             .firstOrNull;
 
@@ -248,7 +248,33 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
       return;
     }
 
-    if (loadedModels.isEmpty) return;
+    if (loadedModels.isEmpty) {
+      if (activeServer.type == ServerType.onDevice) {
+        final downloadedAsync = await ref.read(downloadedModelsProvider.future);
+        if (!ref.mounted) return;
+        if (hasDefaultForServer) {
+          final defaultModel = typedModels
+              .where(
+                (m) =>
+                    m.id == defaultModelId && downloadedAsync.contains(m.id),
+              )
+              .firstOrNull;
+          if (defaultModel != null && ref.mounted) {
+            ref.read(selectedModelProvider.notifier).setModel(defaultModel);
+            return;
+          }
+        }
+        final firstAvailableModel = typedModels
+            .where((m) => downloadedAsync.contains(m.id))
+            .firstOrNull;
+        if (firstAvailableModel != null && ref.mounted) {
+          ref
+              .read(selectedModelProvider.notifier)
+              .setModel(firstAvailableModel);
+        }
+      }
+      return;
+    }
 
     final firstLoadedModel = typedModels
         .where((m) => isModelKeyLoaded(loadedModels, m.id))

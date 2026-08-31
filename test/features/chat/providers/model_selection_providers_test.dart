@@ -53,6 +53,73 @@ void main() {
     );
 
     test(
+      'preselects available on-device model when none is loaded yet',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            activeServerProvider.overrideWith(_StubActiveServerNotifier.new),
+            downloadedModelsProvider.overrideWith(
+              (ref) async => {'model-b'},
+            ),
+            availableModelsProvider(
+              'server-1',
+            ).overrideWith((ref) async => _models()),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // Engine has no model loaded
+        container.read(onDeviceEngineProvider.notifier).state =
+            const OnDeviceEngineState(status: OnDeviceEngineStatus.notLoaded);
+
+        await container.read(autoSelectFirstLoadedModelProvider.future);
+
+        final selected = container.read(selectedModelProvider);
+        expect(selected?.id, 'model-b');
+      },
+    );
+
+    test(
+      'preselects default on-device model when available even if not loaded yet',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'appSettings': AppSettings(
+            defaultModelId: 'model-a',
+            defaultModelServerId: 'server-1',
+          ).toJson(),
+        });
+        final prefs = await SharedPreferences.getInstance();
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            activeServerProvider.overrideWith(_StubActiveServerNotifier.new),
+            downloadedModelsProvider.overrideWith(
+              (ref) async => {'model-a', 'model-b'},
+            ),
+            availableModelsProvider(
+              'server-1',
+            ).overrideWith((ref) async => _models()),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // Engine has no model loaded
+        container.read(onDeviceEngineProvider.notifier).state =
+            const OnDeviceEngineState(status: OnDeviceEngineStatus.notLoaded);
+
+        await container.read(autoSelectFirstLoadedModelProvider.future);
+
+        final selected = container.read(selectedModelProvider);
+        expect(selected?.id, 'model-a');
+      },
+    );
+
+    test(
       'selects the default model even when it is not loaded for LM Studio',
       () async {
         SharedPreferences.setMockInitialValues({

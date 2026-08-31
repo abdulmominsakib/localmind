@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:apple_mlx/apple_mlx.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -23,12 +24,15 @@ class OnDeviceMlxService {
     this.modelsDirectoryProvider,
     AppleMlxLlmManager Function()? llmManagerFactory,
     bool? nativeInferenceAvailable,
+    bool? isApplePlatform,
     bool? isIOS,
   }) : _llmManagerFactory = llmManagerFactory ?? AppleMlxLlmManager.new,
        _nativeInferenceAvailable =
            nativeInferenceAvailable ??
            AppleMlxCapabilities.nativeLlmInferenceAvailable,
-       _isIOS = isIOS ?? Platform.isIOS;
+       _isApplePlatform =
+           isApplePlatform ??
+           (isIOS ?? (!kIsWeb && (Platform.isIOS || Platform.isMacOS)));
 
   static const String _downloadCompleteFileName = '.download_complete';
 
@@ -36,7 +40,7 @@ class OnDeviceMlxService {
   final Future<Directory> Function()? modelsDirectoryProvider;
   final AppleMlxLlmManager Function() _llmManagerFactory;
   final bool _nativeInferenceAvailable;
-  final bool _isIOS;
+  final bool _isApplePlatform;
   AppleMlxLlmManager? _llmManager;
   String? _currentModelId;
   bool _currentModelSupportsThinking = false;
@@ -114,7 +118,7 @@ class OnDeviceMlxService {
 
   /// Returns a set of installed MLX model IDs.
   Future<Set<String>> getInstalledModelIds() async {
-    if (!_nativeInferenceAvailable || !_isIOS) {
+    if (!_nativeInferenceAvailable || !_isApplePlatform) {
       return const <String>{};
     }
     try {
@@ -144,9 +148,9 @@ class OnDeviceMlxService {
     CancelToken? cancelToken,
   }) async {
     _ensureNativeInferenceAvailable();
-    if (!_isIOS) {
+    if (!_isApplePlatform) {
       throw UnsupportedError(
-        'Apple MLX text generation is only supported on iOS.',
+        'Apple MLX text generation is only supported on Apple platforms (iOS, iPadOS, macOS).',
       );
     }
     if (model.runtime != OnDeviceModelRuntime.mlx) {
@@ -323,9 +327,9 @@ class OnDeviceMlxService {
       throw StateError('OnDeviceMlxService has been disposed');
     }
     _ensureNativeInferenceAvailable();
-    if (!_isIOS) {
+    if (!_isApplePlatform) {
       throw UnsupportedError(
-        'Apple MLX text generation is only supported on iOS.',
+        'Apple MLX text generation is only supported on Apple platforms (iOS, iPadOS, macOS).',
       );
     }
     if (model.runtime != OnDeviceModelRuntime.mlx) {

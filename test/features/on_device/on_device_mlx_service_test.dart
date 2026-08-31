@@ -123,19 +123,52 @@ void main() {
     expect(responses.last.type, ChatResponseType.done);
     expect(manager.generateCount, 0);
   });
+
+  test('supports macOS platform for loading models', () async {
+    final manager = _FakeMlxManager();
+    final service = OnDeviceMlxService(
+      Dio(),
+      modelsDirectoryProvider: () async => modelsDirectory,
+      llmManagerFactory: () => manager,
+      nativeInferenceAvailable: true,
+      isApplePlatform: true,
+    );
+    final model = OnDeviceModel.curatedMlxModels.first;
+    await _writeInstalledModel(service, model);
+    await service.loadModel(model);
+
+    expect(service.isLoaded, isTrue);
+    expect(service.currentModelId, model.id);
+  });
+
+  test('throws UnsupportedError on non-Apple platforms', () async {
+    final service = OnDeviceMlxService(
+      Dio(),
+      modelsDirectoryProvider: () async => modelsDirectory,
+      nativeInferenceAvailable: true,
+      isApplePlatform: false,
+    );
+    final model = OnDeviceModel.curatedMlxModels.first;
+
+    expect(
+      () => service.loadModel(model),
+      throwsA(isA<UnsupportedError>()),
+    );
+  });
 }
 
 OnDeviceMlxService _service({
   required Directory modelsDirectory,
   _FakeMlxManager? manager,
   bool nativeInferenceAvailable = false,
+  bool isApplePlatform = true,
 }) {
   return OnDeviceMlxService(
     Dio(),
     modelsDirectoryProvider: () async => modelsDirectory,
     llmManagerFactory: () => manager ?? _FakeMlxManager(),
     nativeInferenceAvailable: nativeInferenceAvailable,
-    isIOS: true,
+    isApplePlatform: isApplePlatform,
   );
 }
 

@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:apple_mlx/apple_mlx.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_gemma/flutter_gemma.dart' show PreferredBackend;
+import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/logger/app_logger.dart';
@@ -61,28 +63,89 @@ final onDeviceEngineProvider =
       return OnDeviceEngineNotifier();
     });
 
-List<OnDeviceModel> availableCuratedMlxModels({required bool isIOS}) {
-  if (!isIOS || !AppleMlxCapabilities.nativeLlmInferenceAvailable) {
+List<OnDeviceModel> availableCuratedBuiltInModels({
+  bool? isAndroid,
+  bool? isIOS,
+  bool? isMacOS,
+  bool? isWeb,
+}) {
+  final android = isAndroid ?? (!kIsWeb && Platform.isAndroid);
+  final ios = isIOS ?? (!kIsWeb && Platform.isIOS);
+  final macos = isMacOS ?? (!kIsWeb && Platform.isMacOS);
+  final web = isWeb ?? kIsWeb;
+
+  if (android || web) {
+    return const [OnDeviceModel.geminiNanoBuiltIn];
+  }
+  if (ios || macos) {
+    return const [OnDeviceModel.appleFoundationModelsBuiltIn];
+  }
+  return const [];
+}
+
+List<OnDeviceModel> availableCuratedMlxModels({
+  bool? isApplePlatform,
+  bool? isIOS,
+  bool? isMacOS,
+}) {
+  final applePlatform = isApplePlatform ??
+      ((isIOS ?? false) ||
+          (isMacOS ?? false) ||
+          (!kIsWeb && (Platform.isIOS || Platform.isMacOS)));
+  if (!applePlatform || !AppleMlxCapabilities.nativeLlmInferenceAvailable) {
     return const <OnDeviceModel>[];
   }
   return OnDeviceModel.curatedMlxModels;
 }
 
+final builtInAiAvailabilityProvider =
+    FutureProvider<BuiltInAiAvailability>((ref) async {
+      try {
+        return await BuiltInAi.availability();
+      } catch (e) {
+        return BuiltInAiAvailability.unavailableOther;
+      }
+    });
+
 final onDeviceModelsProvider = Provider<List<OnDeviceModel>>((ref) {
   final imported = ref.watch(importedGgufModelsProvider);
-  final mlxModels = availableCuratedMlxModels(isIOS: Platform.isIOS);
-  return [...mlxModels, ...OnDeviceModel.curatedModels, ...imported];
+  final mlxModels = availableCuratedMlxModels();
+  final builtInModels = availableCuratedBuiltInModels();
+  return [
+    ...builtInModels,
+    ...mlxModels,
+    ...OnDeviceModel.curatedModels,
+    ...imported,
+  ];
 });
 
 final downloadedModelsProvider = FutureProvider<Set<String>>((ref) async {
   final gemmaService = ref.read(onDeviceGemmaServiceProvider);
   final installed = await gemmaService.getInstalledModelIds();
   final mlxService = ref.read(onDeviceMlxServiceProvider);
-  final mlxInstalled = Platform.isIOS
+  final isApple = !kIsWeb && (Platform.isIOS || Platform.isMacOS);
+  final mlxInstalled = isApple
       ? await mlxService.getInstalledModelIds()
       : const <String>{};
   final imported = ref.watch(importedGgufModelsProvider);
-  return {...installed, ...mlxInstalled, ...imported.map((model) => model.id)};
+
+  final builtInIds = <String>{};
+  try {
+    final builtInAvailability =
+        await ref.watch(builtInAiAvailabilityProvider.future);
+    if (builtInAvailability == BuiltInAiAvailability.available) {
+      for (final model in availableCuratedBuiltInModels()) {
+        builtInIds.add(model.id);
+      }
+    }
+  } catch (_) {}
+
+  return {
+    ...builtInIds,
+    ...installed,
+    ...mlxInstalled,
+    ...imported.map((model) => model.id),
+  };
 });
 
 final onDeviceModelStateProvider =
@@ -504,5 +567,6 @@ class OnDeviceModelStateNotifier
 }
 
 final isOnDevicePlatformSupportedProvider = Provider<bool>((ref) {
-  return Platform.isAndroid || Platform.isIOS;
+  if (kIsWeb) return true;
+  return Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
 });

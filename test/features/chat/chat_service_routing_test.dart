@@ -54,9 +54,23 @@ void main() {
     });
   });
 
-  test('does not expose MLX downloads while the native backend is a mock', () {
-    expect(availableCuratedMlxModels(isIOS: true), isEmpty);
-    expect(availableCuratedMlxModels(isIOS: false), isEmpty);
+  test('exposes MLX downloads on Apple platforms (iOS, iPadOS, macOS)', () {
+    expect(
+      availableCuratedMlxModels(isIOS: true),
+      OnDeviceModel.curatedMlxModels,
+    );
+    expect(
+      availableCuratedMlxModels(isMacOS: true),
+      OnDeviceModel.curatedMlxModels,
+    );
+    expect(
+      availableCuratedMlxModels(
+        isApplePlatform: false,
+        isIOS: false,
+        isMacOS: false,
+      ),
+      isEmpty,
+    );
   });
 
   group('chatServiceProvider', () {

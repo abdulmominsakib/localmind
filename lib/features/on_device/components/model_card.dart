@@ -182,6 +182,24 @@ class _ModelCardHeader extends StatelessWidget {
               ),
             ),
           ),
+        if (model.isBuiltIn)
+          Container(
+            margin: const EdgeInsets.only(left: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.teal.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              Platform.isIOS || Platform.isMacOS
+                  ? ' Apple Intelligence'
+                  : '⚡ Built-in AI',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: Colors.teal,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -235,6 +253,7 @@ class _CapabilityChips extends StatelessWidget {
       if (model.format == OnDeviceModelFormat.gguf) 'GGUF',
       if (model.runtime == OnDeviceModelRuntime.llamaCpp) 'llama.cpp',
       if (model.runtime == OnDeviceModelRuntime.mlx) ' Metal GPU',
+      if (model.isBuiltIn) '⚡ Built-in',
       if (model.supportsFunctionCalling) 'Tools',
       if (model.supportsThinking) 'Thinking',
       if (model.supportsVision) 'Vision',
@@ -483,12 +502,14 @@ class _DownloadedActions extends ConsumerWidget {
                 onPressed: () => _loadModel(context, ref),
                 child: Text(l10n.load),
               ),
-            const SizedBox(width: 8),
-            ShadButton.outline(
-              size: ShadButtonSize.sm,
-              onPressed: () => _deleteModel(context, ref),
-              child: Text(l10n.delete),
-            ),
+            if (!model.isBuiltIn) ...[
+              const SizedBox(width: 8),
+              ShadButton.outline(
+                size: ShadButtonSize.sm,
+                onPressed: () => _deleteModel(context, ref),
+                child: Text(l10n.delete),
+              ),
+            ],
           ],
         ),
         if (isLoading) ...[

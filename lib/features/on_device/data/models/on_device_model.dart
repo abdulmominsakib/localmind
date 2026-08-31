@@ -4,7 +4,7 @@ import '../../../../core/models/enums.dart';
 
 enum OnDeviceModelRuntime { gemma, llamaCpp, mlx }
 
-enum OnDeviceModelFormat { litertlm, task, binary, gguf, mlx }
+enum OnDeviceModelFormat { litertlm, task, binary, gguf, mlx, builtIn }
 
 enum OnDeviceImportedSource { localFile, huggingFace }
 
@@ -60,6 +60,9 @@ class OnDeviceModel {
   });
 
   String get fileSizeFormatted {
+    if (isBuiltIn || fileSizeBytes == 0) {
+      return 'Built-in';
+    }
     final gb = fileSizeBytes / (1024 * 1024 * 1024);
     if (gb >= 1) {
       return '${gb.toStringAsFixed(2)} GB';
@@ -69,12 +72,16 @@ class OnDeviceModel {
   }
 
   String get fileName {
+    if (isBuiltIn) {
+      return id;
+    }
     if (localPath != null && localPath!.isNotEmpty) {
       return localPath!.split('/').last;
     }
     return huggingFaceUrl.split('/').last;
   }
 
+  bool get isBuiltIn => format == OnDeviceModelFormat.builtIn;
   bool get isLlamaCpp => runtime == OnDeviceModelRuntime.llamaCpp;
   bool get isMlx => runtime == OnDeviceModelRuntime.mlx;
 
@@ -385,6 +392,59 @@ class OnDeviceModel {
       runtime: OnDeviceModelRuntime.mlx,
       format: OnDeviceModelFormat.mlx,
     ),
+  ];
+
+  static const OnDeviceModel geminiNanoBuiltIn = OnDeviceModel(
+    id: 'gemini-nano',
+    name: 'Gemini Nano (System AI)',
+    huggingFaceUrl: '',
+    fileSizeBytes: 0,
+    license: 'System / Google',
+    description:
+        'Google on-device foundation model powered by Android AICore / Chrome Prompt API. Zero download required.',
+    isRecommended: true,
+    minRamMb: 0,
+    parameterLabel: 'System',
+    bestFor: 'Built-in on-device system AI (zero download)',
+    supportsFunctionCalling: true,
+    supportsThinking: false,
+    supportsVision: true,
+    languagesLabel: 'Multilingual',
+    backendNote: 'System AI',
+    format: OnDeviceModelFormat.builtIn,
+    runtime: OnDeviceModelRuntime.gemma,
+  );
+
+  static const OnDeviceModel appleFoundationModelsBuiltIn = OnDeviceModel(
+    id: 'apple-foundation-models',
+    name: 'Apple Foundation Models',
+    huggingFaceUrl: '',
+    fileSizeBytes: 0,
+    license: 'Apple Intelligence',
+    description:
+        'Apple on-device system foundation model powered by Apple Intelligence. Zero download required.',
+    isRecommended: true,
+    minRamMb: 0,
+    parameterLabel: 'System',
+    bestFor: 'Built-in Apple Intelligence on-device model (zero download)',
+    supportsFunctionCalling: true,
+    supportsThinking: false,
+    supportsVision: false,
+    languagesLabel: 'Multilingual',
+    backendNote: 'Apple Intelligence',
+    format: OnDeviceModelFormat.builtIn,
+    runtime: OnDeviceModelRuntime.gemma,
+  );
+
+  static const List<OnDeviceModel> curatedBuiltInModels = [
+    geminiNanoBuiltIn,
+    appleFoundationModelsBuiltIn,
+  ];
+
+  static List<OnDeviceModel> get allCuratedModels => [
+    ...curatedBuiltInModels,
+    ...curatedMlxModels,
+    ...curatedModels,
   ];
 }
 

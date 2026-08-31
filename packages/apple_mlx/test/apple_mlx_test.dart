@@ -112,9 +112,12 @@ void main() {
     });
   });
 
-  test('native LLM inference remains disabled for the mock backend', () {
-    expect(AppleMlxCapabilities.nativeLlmInferenceAvailable, isFalse);
-    expect(AppleMlxCapabilities.nativeLlmUnavailableReason, contains('mock'));
+  test('native LLM inference is enabled for Apple platforms', () {
+    expect(AppleMlxCapabilities.nativeLlmInferenceAvailable, isTrue);
+    expect(
+      AppleMlxCapabilities.nativeLlmUnavailableReason,
+      contains('Apple platforms'),
+    );
   });
 }
 

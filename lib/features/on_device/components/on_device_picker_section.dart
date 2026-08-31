@@ -347,6 +347,28 @@ class _OnDeviceModelTile extends ConsumerWidget {
                                 ),
                               ),
                             ),
+                          if (model.isBuiltIn)
+                            Container(
+                              margin: const EdgeInsets.only(left: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.teal.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                Platform.isIOS || Platform.isMacOS
+                                    ? ' Built-in'
+                                    : '⚡ Built-in',
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                       if (!Platform.isIOS &&
@@ -413,6 +435,11 @@ class _OnDeviceModelTile extends ConsumerWidget {
                             label: model.fileSizeFormatted,
                             isDark: isDark,
                           ),
+                          if (model.isBuiltIn)
+                            MetadataChip(
+                              label: '⚡ Built-in',
+                              isDark: isDark,
+                            ),
                           if (model.format == OnDeviceModelFormat.gguf)
                             MetadataChip(
                               label: l10n.gguf_format_label,
@@ -475,18 +502,20 @@ class _OnDeviceModelTile extends ConsumerWidget {
                     tooltip: l10n.load,
                     onPressed: () => _loadModel(context, ref),
                   ),
-                  const SizedBox(width: 4),
-                  _IconButton(
-                    icon: HugeIcon(
-                      icon: HugeIcons.strokeRoundedDelete01,
-                      size: 18,
-                      color: isDark
-                          ? AppColors.darkMutedText
-                          : AppColors.lightMutedText,
+                  if (!model.isBuiltIn) ...[
+                    const SizedBox(width: 4),
+                    _IconButton(
+                      icon: HugeIcon(
+                        icon: HugeIcons.strokeRoundedDelete01,
+                        size: 18,
+                        color: isDark
+                            ? AppColors.darkMutedText
+                            : AppColors.lightMutedText,
+                      ),
+                      tooltip: l10n.delete,
+                      onPressed: () => _deleteModel(context, ref),
                     ),
-                    tooltip: l10n.delete,
-                    onPressed: () => _deleteModel(context, ref),
-                  ),
+                  ],
                 ] else if (isDownloading) ...[
                   _IconButton(
                     icon: HugeIcon(
