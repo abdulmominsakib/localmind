@@ -13,12 +13,39 @@ import '../../chat/data/tools/tool_definition.dart';
 import '../../servers/data/models/server.dart';
 import 'on_device_gemma_service.dart';
 
+/// Synthetic message ids whose presence signals an auxiliary generation
+/// (title, smart-reply, AI-suggested user message) rather than a real chat
+/// turn. Auxiliary runs are isolated from any retained chat session so their
+/// system prompts and context do not bleed into the user's primary
+/// conversation. Keep this list in sync with the synthetic ids emitted by
+/// `title_generation_service.dart` and `smart_reply_service.dart`.
+const Set<String> _auxiliaryMessageIds = {
+  'title-generation-prompt',
+  'smart-reply-prompt',
+  'ai-user-response-prompt',
+};
+
+/// How long an on-device chat session is retained after a successful turn
+/// without further activity. Retained sessions keep their KV cache in memory;
+/// this bounds the cost of background retention when a user abandons a
+/// conversation mid-stream.
+const Duration _defaultRetainedSessionTtl = Duration(minutes: 10);
+
 class OnDeviceChatService implements ChatService {
-  OnDeviceChatService(this._gemmaService);
+  OnDeviceChatService(
+    this._gemmaService, {
+    Duration retainedSessionTtl = _defaultRetainedSessionTtl,
+    // The retained-session TTL is a separate constructor parameter (rather
+    // than an initializing formal) so it can have a default value; the
+    // lint suggestion doesn't apply when a default is involved.
+    // ignore: prefer_initializing_formals
+  }) : _retainedSessionTtl = retainedSessionTtl;
 
   final OnDeviceInferenceService _gemmaService;
+  final Duration _retainedSessionTtl;
   final Set<_InferenceRun> _activeRuns = <_InferenceRun>{};
   _RetainedConversation? _retainedConversation;
+  Timer? _retainedExpirationTimer;
   int _nextRunSequence = 0;
   int _latestRunSequence = 0;
   bool _isDisposed = false;
@@ -79,11 +106,13 @@ class OnDeviceChatService implements ChatService {
       late final bool reusedSession;
       if (retained != null && retained.canContinueWith(input, modelId)) {
         _retainedConversation = null;
+        _cancelRetainedExpiration();
         session = retained.session;
         reusedSession = true;
       } else {
         if (retained != null && !input.isAuxiliary) {
           _retainedConversation = null;
+          _cancelRetainedExpiration();
           await retained.session.close();
         }
         session = await _gemmaService.createChat(
@@ -330,6 +359,7 @@ class OnDeviceChatService implements ChatService {
     }
 
     final previous = _retainedConversation;
+    _cancelRetainedExpiration();
     _retainedConversation = _RetainedConversation(
       session: session,
       conversationId: input.conversationId,
@@ -337,9 +367,28 @@ class OnDeviceChatService implements ChatService {
       baseSystemInstruction: input.baseSystemInstruction,
       timeline: input.completedTimeline(run.generatedContent.toString()),
     );
+    _armRetainedExpiration();
     if (previous != null && !identical(previous.session, session)) {
       await previous.session.close();
     }
+  }
+
+  void _armRetainedExpiration() {
+    _retainedExpirationTimer?.cancel();
+    _retainedExpirationTimer = Timer(_retainedSessionTtl, () {
+      if (_isDisposed) return;
+      final retained = _retainedConversation;
+      _retainedConversation = null;
+      _retainedExpirationTimer = null;
+      if (retained != null) {
+        unawaited(retained.session.close());
+      }
+    });
+  }
+
+  void _cancelRetainedExpiration() {
+    _retainedExpirationTimer?.cancel();
+    _retainedExpirationTimer = null;
   }
 
   Future<void> _closeController(
@@ -394,11 +443,7 @@ class OnDeviceChatService implements ChatService {
 
     final currentMessage = timeline.last;
     final history = timeline.sublist(0, timeline.length - 1);
-    final isAuxiliary = const {
-      'title-generation-prompt',
-      'smart-reply-prompt',
-      'ai-user-response-prompt',
-    }.contains(currentMessage.id);
+    final isAuxiliary = _auxiliaryMessageIds.contains(currentMessage.id);
     final messageSystemInstruction = systemMessages.isEmpty
         ? null
         : systemMessages.join('\n\n');
@@ -439,6 +484,7 @@ class OnDeviceChatService implements ChatService {
     if (_isDisposed) return;
     _isDisposed = true;
     cancelStream();
+    _cancelRetainedExpiration();
     final retained = _retainedConversation;
     _retainedConversation = null;
     if (retained != null) {
