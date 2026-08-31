@@ -18,6 +18,9 @@ class OnDeviceChatService implements ChatService {
 
   final OnDeviceInferenceService _gemmaService;
   final Set<_InferenceRun> _activeRuns = <_InferenceRun>{};
+  _RetainedConversation? _retainedConversation;
+  int _nextRunSequence = 0;
+  int _latestRunSequence = 0;
   bool _isDisposed = false;
 
   @override
@@ -32,7 +35,9 @@ class OnDeviceChatService implements ChatService {
   }) {
     late final _InferenceRun run;
     final controller = StreamController<ChatResponse>();
-    run = _InferenceRun(controller);
+    final sequence = ++_nextRunSequence;
+    _latestRunSequence = sequence;
+    run = _InferenceRun(controller, sequence);
     controller.onCancel = () => _cancelRun(run, notifyListener: false);
 
     if (_isDisposed) {
@@ -61,13 +66,32 @@ class OnDeviceChatService implements ChatService {
     ChatParameters params,
   ) async {
     try {
-      final systemInstruction = params.systemPrompt?.isNotEmpty == true
-          ? params.systemPrompt
-          : null;
-      final session = await _gemmaService.createChat(
-        systemInstruction: systemInstruction,
-        tools: const [],
-      );
+      final input = _prepareInput(modelId, messages, params);
+      if (input == null) {
+        await _finishWithError(run, 'On-device chat requires a user message.');
+        return;
+      }
+      run.input = input;
+
+      final retained = _retainedConversation;
+
+      late final OnDeviceInferenceSession session;
+      late final bool reusedSession;
+      if (retained != null && retained.canContinueWith(input, modelId)) {
+        _retainedConversation = null;
+        session = retained.session;
+        reusedSession = true;
+      } else {
+        if (retained != null && !input.isAuxiliary) {
+          _retainedConversation = null;
+          await retained.session.close();
+        }
+        session = await _gemmaService.createChat(
+          systemInstruction: input.baseSystemInstruction,
+          tools: const [],
+        );
+        reusedSession = false;
+      }
       run.session = session;
 
       if (run.isCancelled) {
@@ -75,13 +99,9 @@ class OnDeviceChatService implements ChatService {
         return;
       }
 
-      for (final message in _convertMessages(messages)) {
-        if (run.isCancelled) {
-          await _closeSession(run, stopGeneration: false);
-          return;
-        }
-        await session.addQueryChunk(message);
-      }
+      await session.addQueryChunk(
+        input.toGemmaMessage(includeHistory: !reusedSession),
+      );
 
       if (run.isCancelled) {
         await _closeSession(run, stopGeneration: false);
@@ -129,6 +149,7 @@ class OnDeviceChatService implements ChatService {
         final content =
             run.textDecoder?.decodeChunk(response.token) ?? response.token;
         if (content.isNotEmpty) {
+          run.generatedContent.write(content);
           run.controller.add(
             ChatResponse(type: ChatResponseType.message, content: content),
           );
@@ -173,6 +194,7 @@ class OnDeviceChatService implements ChatService {
         final finalToken = run.textDecoder?.flush() ?? '';
         final finalReasoning = run.reasoningDecoder?.flush() ?? '';
         if (finalToken.isNotEmpty) {
+          run.generatedContent.write(finalToken);
           run.controller.add(
             ChatResponse(type: ChatResponseType.message, content: finalToken),
           );
@@ -190,7 +212,7 @@ class OnDeviceChatService implements ChatService {
       }
     }
 
-    await _closeSession(run, stopGeneration: false);
+    await _retainOrCloseSession(run);
     await _closeController(run, notifyListener: !run.isCancelled);
     _activeRuns.remove(run);
     _completeRunFuture(run);
@@ -292,6 +314,34 @@ class OnDeviceChatService implements ChatService {
     }
   }
 
+  Future<void> _retainOrCloseSession(_InferenceRun run) async {
+    final session = run.session;
+    run.session = null;
+    final input = run.input;
+    if (session == null) return;
+
+    if (run.isCancelled ||
+        input == null ||
+        input.isAuxiliary ||
+        run.sequence != _latestRunSequence ||
+        run.generatedContent.isEmpty) {
+      await session.close();
+      return;
+    }
+
+    final previous = _retainedConversation;
+    _retainedConversation = _RetainedConversation(
+      session: session,
+      conversationId: input.conversationId,
+      modelId: input.modelId,
+      baseSystemInstruction: input.baseSystemInstruction,
+      timeline: input.completedTimeline(run.generatedContent.toString()),
+    );
+    if (previous != null && !identical(previous.session, session)) {
+      await previous.session.close();
+    }
+  }
+
   Future<void> _closeController(
     _InferenceRun run, {
     required bool notifyListener,
@@ -303,27 +353,79 @@ class OnDeviceChatService implements ChatService {
     await run.controller.close();
   }
 
-  List<gemma.Message> _convertMessages(List<Message> messages) {
-    var list = messages;
-    if (list.isNotEmpty &&
-        list.last.role == MessageRole.assistant &&
-        list.last.content.isEmpty) {
-      list = list.sublist(0, list.length - 1);
-    }
-    return list
+  _PreparedInput? _prepareInput(
+    String modelId,
+    List<Message> messages,
+    ChatParameters params,
+  ) {
+    final relevant = messages
         .where(
           (message) =>
               message.role == MessageRole.user ||
               message.role == MessageRole.assistant ||
               message.role == MessageRole.system,
         )
-        .map(
-          (message) => gemma.Message.text(
-            text: message.content,
-            isUser: message.role == MessageRole.user,
-          ),
+        .toList(growable: true);
+
+    Message? pendingAssistant;
+    if (relevant.isNotEmpty &&
+        relevant.last.role == MessageRole.assistant &&
+        relevant.last.content.isEmpty) {
+      pendingAssistant = relevant.removeLast();
+    }
+
+    final systemMessages = relevant
+        .where(
+          (message) =>
+              message.role == MessageRole.system &&
+              message.content.trim().isNotEmpty,
         )
-        .toList();
+        .map((message) => message.content.trim())
+        .toList(growable: false);
+    final timeline = relevant
+        .where(
+          (message) =>
+              message.role == MessageRole.user ||
+              message.role == MessageRole.assistant,
+        )
+        .map(_MessageSnapshot.fromMessage)
+        .toList(growable: false);
+    if (timeline.isEmpty) return null;
+
+    final currentMessage = timeline.last;
+    final history = timeline.sublist(0, timeline.length - 1);
+    final isAuxiliary = const {
+      'title-generation-prompt',
+      'smart-reply-prompt',
+      'ai-user-response-prompt',
+    }.contains(currentMessage.id);
+    final messageSystemInstruction = systemMessages.isEmpty
+        ? null
+        : systemMessages.join('\n\n');
+    final baseSystemInstruction = isAuxiliary
+        ? _nonEmpty(params.systemPrompt) ?? messageSystemInstruction
+        : messageSystemInstruction ?? _nonEmpty(params.systemPrompt);
+    if (currentMessage.role != MessageRole.user) {
+      Log.warning(
+        'Rebuilding an on-device session for assistant continuation; '
+        'history will be supplied as a transcript.',
+      );
+    }
+
+    return _PreparedInput(
+      conversationId: currentMessage.conversationId,
+      modelId: modelId,
+      baseSystemInstruction: baseSystemInstruction,
+      history: history,
+      currentMessage: currentMessage,
+      pendingAssistantId: pendingAssistant?.id,
+      isAuxiliary: isAuxiliary,
+    );
+  }
+
+  static String? _nonEmpty(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
   @override
@@ -337,18 +439,26 @@ class OnDeviceChatService implements ChatService {
     if (_isDisposed) return;
     _isDisposed = true;
     cancelStream();
+    final retained = _retainedConversation;
+    _retainedConversation = null;
+    if (retained != null) {
+      unawaited(retained.session.close());
+    }
   }
 }
 
 class _InferenceRun {
-  _InferenceRun(this.controller);
+  _InferenceRun(this.controller, this.sequence);
 
   final StreamController<ChatResponse> controller;
+  final int sequence;
   StreamSubscription<gemma.ModelResponse>? subscription;
   OnDeviceInferenceSession? session;
   Completer<void>? streamCompleter;
   BpeDecoder? textDecoder;
   BpeDecoder? reasoningDecoder;
+  _PreparedInput? input;
+  final StringBuffer generatedContent = StringBuffer();
   bool generationStarted = false;
   bool isCancelled = false;
   bool _isFinishing = false;
@@ -358,4 +468,143 @@ class _InferenceRun {
     _isFinishing = true;
     return true;
   }
+}
+
+class _PreparedInput {
+  const _PreparedInput({
+    required this.conversationId,
+    required this.modelId,
+    required this.baseSystemInstruction,
+    required this.history,
+    required this.currentMessage,
+    required this.pendingAssistantId,
+    required this.isAuxiliary,
+  });
+
+  final String conversationId;
+  final String modelId;
+  final String? baseSystemInstruction;
+  final List<_MessageSnapshot> history;
+  final _MessageSnapshot currentMessage;
+  final String? pendingAssistantId;
+  final bool isAuxiliary;
+
+  gemma.Message toGemmaMessage({required bool includeHistory}) {
+    if (!includeHistory || history.isEmpty) {
+      return currentMessage.toGemmaMessage();
+    }
+    final transcript = history
+        .map(
+          (message) =>
+              '${message.role == MessageRole.user ? 'User' : 'Assistant'}: '
+              '${message.content}',
+        )
+        .join('\n\n');
+    final currentLabel = currentMessage.role == MessageRole.user
+        ? 'Current user message'
+        : 'Assistant response to continue';
+    return gemma.Message.text(
+      text:
+          'Earlier conversation transcript (context only):\n\n$transcript\n\n'
+          '$currentLabel:\n${currentMessage.content}',
+      isUser: currentMessage.role == MessageRole.user,
+    );
+  }
+
+  List<_MessageSnapshot> completedTimeline(String response) {
+    if (currentMessage.role == MessageRole.assistant) {
+      return [
+        ...history,
+        currentMessage.copyWith(content: '${currentMessage.content}$response'),
+      ];
+    }
+    return [
+      ...history,
+      currentMessage,
+      _MessageSnapshot(
+        id: pendingAssistantId ?? 'generated-${currentMessage.id}',
+        conversationId: conversationId,
+        role: MessageRole.assistant,
+        content: response,
+      ),
+    ];
+  }
+}
+
+class _RetainedConversation {
+  const _RetainedConversation({
+    required this.session,
+    required this.conversationId,
+    required this.modelId,
+    required this.baseSystemInstruction,
+    required this.timeline,
+  });
+
+  final OnDeviceInferenceSession session;
+  final String conversationId;
+  final String modelId;
+  final String? baseSystemInstruction;
+  final List<_MessageSnapshot> timeline;
+
+  bool canContinueWith(_PreparedInput input, String requestedModelId) {
+    return input.currentMessage.role == MessageRole.user &&
+        conversationId == input.conversationId &&
+        modelId == requestedModelId &&
+        baseSystemInstruction == input.baseSystemInstruction &&
+        _listEquals(timeline, input.history);
+  }
+
+  static bool _listEquals(
+    List<_MessageSnapshot> first,
+    List<_MessageSnapshot> second,
+  ) {
+    if (first.length != second.length) return false;
+    for (var index = 0; index < first.length; index++) {
+      if (first[index] != second[index]) return false;
+    }
+    return true;
+  }
+}
+
+class _MessageSnapshot {
+  const _MessageSnapshot({
+    required this.id,
+    required this.conversationId,
+    required this.role,
+    required this.content,
+  });
+
+  factory _MessageSnapshot.fromMessage(Message message) => _MessageSnapshot(
+    id: message.id,
+    conversationId: message.conversationId,
+    role: message.role,
+    content: message.content,
+  );
+
+  final String id;
+  final String conversationId;
+  final MessageRole role;
+  final String content;
+
+  gemma.Message toGemmaMessage() =>
+      gemma.Message.text(text: content, isUser: role == MessageRole.user);
+
+  _MessageSnapshot copyWith({String? content}) => _MessageSnapshot(
+    id: id,
+    conversationId: conversationId,
+    role: role,
+    content: content ?? this.content,
+  );
+
+  @override
+  bool operator ==(Object other) {
+    return other is _MessageSnapshot &&
+        id == other.id &&
+        conversationId == other.conversationId &&
+        role == other.role &&
+        content == other.content;
+  }
+
+  @override
+  int get hashCode => Object.hash(id, conversationId, role, content);
 }

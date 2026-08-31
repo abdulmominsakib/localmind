@@ -53,7 +53,11 @@ void main() {
           .listen(secondResponses.add)
           .asFuture<void>();
 
-      await _waitFor(() => inferenceService.sessions.length == 2);
+      await _waitFor(
+        () =>
+            inferenceService.sessions.length == 2 &&
+            inferenceService.sessions.every((session) => session.didGenerate),
+      );
       final first = inferenceService.sessions[0];
       final second = inferenceService.sessions[1];
 
@@ -65,7 +69,7 @@ void main() {
 
       expect(inferenceService.createCount, 2);
       expect(first.closeCount, 1);
-      expect(second.closeCount, 1);
+      expect(second.closeCount, 0);
       expect(first.stopCount, 0);
       expect(second.stopCount, 0);
       expect(
@@ -78,6 +82,279 @@ void main() {
       );
     },
   );
+
+  test('reuses a chat session and only sends the new user turn', () async {
+    final firstDone = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'qwen3-0.6b',
+          messages: [
+            _message('first', id: 'user-1'),
+            _message('', id: 'assistant-1', role: MessageRole.assistant),
+          ],
+          params: ChatParameters.defaults(),
+        )
+        .listen((_) {})
+        .asFuture<void>();
+
+    await _waitFor(
+      () =>
+          inferenceService.sessions.length == 1 &&
+          inferenceService.sessions.single.generationCount == 1,
+    );
+    final session = inferenceService.sessions.single;
+    session.responses.add(const gemma.TextResponse('first answer'));
+    await session.responses.close();
+    await firstDone;
+
+    final secondDone = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'qwen3-0.6b',
+          messages: [
+            _message('first', id: 'user-1'),
+            _message(
+              'first answer',
+              id: 'assistant-1',
+              role: MessageRole.assistant,
+            ),
+            _message('second', id: 'user-2'),
+            _message('', id: 'assistant-2', role: MessageRole.assistant),
+          ],
+          params: ChatParameters.defaults(),
+        )
+        .listen((_) {})
+        .asFuture<void>();
+
+    await _waitFor(() => session.generationCount == 2);
+    session.responses.add(const gemma.TextResponse('second answer'));
+    await session.responses.close();
+    await secondDone;
+
+    expect(inferenceService.createCount, 1);
+    expect(session.messages.map((message) => message.text).toList(), [
+      'first',
+      'second',
+    ]);
+    expect(session.messages.every((message) => message.isUser), isTrue);
+    expect(session.closeCount, 0);
+  });
+
+  test(
+    'passes system content once and never stages it as a chat turn',
+    () async {
+      final done = chatService
+          .sendMessage(
+            server: _server(),
+            modelId: 'qwen3-0.6b',
+            messages: [
+              _message(
+                'You are concise.',
+                id: 'system',
+                role: MessageRole.system,
+              ),
+              _message('hello', id: 'user'),
+              _message('', id: 'assistant', role: MessageRole.assistant),
+            ],
+            params: ChatParameters.defaults().copyWith(
+              systemPrompt: 'You are concise.',
+            ),
+          )
+          .listen((_) {})
+          .asFuture<void>();
+
+      await _waitFor(
+        () =>
+            inferenceService.sessions.isNotEmpty &&
+            inferenceService.sessions.single.didGenerate,
+      );
+      final session = inferenceService.sessions.single;
+      session.responses.add(const gemma.TextResponse('hi'));
+      await session.responses.close();
+      await done;
+
+      expect(inferenceService.systemInstructions, ['You are concise.']);
+      expect(session.messages.map((message) => message.text).toList(), [
+        'hello',
+      ]);
+    },
+  );
+
+  test('restores existing history as a role-labelled transcript', () async {
+    final done = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'qwen3-0.6b',
+          messages: [
+            _message('first', id: 'user-1'),
+            _message(
+              'first answer',
+              id: 'assistant-1',
+              role: MessageRole.assistant,
+            ),
+            _message('second', id: 'user-2'),
+            _message('', id: 'assistant-2', role: MessageRole.assistant),
+          ],
+          params: ChatParameters.defaults(),
+        )
+        .listen((_) {})
+        .asFuture<void>();
+
+    await _waitFor(
+      () =>
+          inferenceService.sessions.isNotEmpty &&
+          inferenceService.sessions.single.didGenerate,
+    );
+    final session = inferenceService.sessions.single;
+    session.responses.add(const gemma.TextResponse('second answer'));
+    await session.responses.close();
+    await done;
+
+    expect(session.messages, hasLength(1));
+    expect(
+      session.messages.single.text,
+      contains('User: first\n\nAssistant: first answer'),
+    );
+    expect(
+      session.messages.single.text,
+      contains('Current user message:\nsecond'),
+    );
+    expect(inferenceService.systemInstructions.single, isNull);
+  });
+
+  test('rebuilds the session when the upstream timeline diverges', () async {
+    final firstDone = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'qwen3-0.6b',
+          messages: [
+            _message('first', id: 'user-1'),
+            _message('', id: 'assistant-1', role: MessageRole.assistant),
+          ],
+          params: ChatParameters.defaults(),
+        )
+        .listen((_) {})
+        .asFuture<void>();
+    await _waitFor(
+      () =>
+          inferenceService.sessions.length == 1 &&
+          inferenceService.sessions.single.didGenerate,
+    );
+    final firstSession = inferenceService.sessions.single;
+    firstSession.responses.add(const gemma.TextResponse('first answer'));
+    await firstSession.responses.close();
+    await firstDone;
+
+    final branchDone = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'qwen3-0.6b',
+          messages: [
+            _message('edited first', id: 'user-1'),
+            _message('second', id: 'user-2'),
+            _message('', id: 'assistant-2', role: MessageRole.assistant),
+          ],
+          params: ChatParameters.defaults(),
+        )
+        .listen((_) {})
+        .asFuture<void>();
+    await _waitFor(
+      () =>
+          inferenceService.sessions.length == 2 &&
+          inferenceService.sessions.last.didGenerate,
+    );
+    final branchSession = inferenceService.sessions.last;
+    branchSession.responses.add(const gemma.TextResponse('branch answer'));
+    await branchSession.responses.close();
+    await branchDone;
+
+    expect(firstSession.closeCount, 1);
+    expect(branchSession.messages, hasLength(1));
+    expect(branchSession.messages.single.text, contains('User: edited first'));
+  });
+
+  test('auxiliary generation does not replace the retained chat', () async {
+    final firstDone = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'qwen3-0.6b',
+          messages: [
+            _message('first', id: 'user-1'),
+            _message('', id: 'assistant-1', role: MessageRole.assistant),
+          ],
+          params: ChatParameters.defaults(),
+        )
+        .listen((_) {})
+        .asFuture<void>();
+    await _waitFor(
+      () =>
+          inferenceService.sessions.length == 1 &&
+          inferenceService.sessions.single.didGenerate,
+    );
+    final chatSession = inferenceService.sessions.single;
+    chatSession.responses.add(const gemma.TextResponse('first answer'));
+    await chatSession.responses.close();
+    await firstDone;
+
+    final titleDone = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'qwen3-0.6b',
+          messages: [
+            _message('first', id: 'user-1'),
+            _message(
+              'first answer',
+              id: 'assistant-1',
+              role: MessageRole.assistant,
+            ),
+            _message('Create a title', id: 'title-generation-prompt'),
+          ],
+          params: ChatParameters.defaults().copyWith(
+            systemPrompt: 'Generate only a title.',
+          ),
+        )
+        .listen((_) {})
+        .asFuture<void>();
+    await _waitFor(
+      () =>
+          inferenceService.sessions.length == 2 &&
+          inferenceService.sessions.last.didGenerate,
+    );
+    final titleSession = inferenceService.sessions.last;
+    titleSession.responses.add(const gemma.TextResponse('A title'));
+    await titleSession.responses.close();
+    await titleDone;
+
+    final secondDone = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'qwen3-0.6b',
+          messages: [
+            _message('first', id: 'user-1'),
+            _message(
+              'first answer',
+              id: 'assistant-1',
+              role: MessageRole.assistant,
+            ),
+            _message('second', id: 'user-2'),
+            _message('', id: 'assistant-2', role: MessageRole.assistant),
+          ],
+          params: ChatParameters.defaults(),
+        )
+        .listen((_) {})
+        .asFuture<void>();
+    await _waitFor(() => chatSession.generationCount == 2);
+    chatSession.responses.add(const gemma.TextResponse('second answer'));
+    await chatSession.responses.close();
+    await secondDone;
+
+    expect(inferenceService.createCount, 2);
+    expect(titleSession.closeCount, 1);
+    expect(chatSession.messages.map((message) => message.text).toList(), [
+      'first',
+      'second',
+    ]);
+  });
 
   test('cancelling one subscription only closes its session', () async {
     final firstSubscription = chatService
@@ -134,7 +411,11 @@ void main() {
         .listen(responses.add)
         .asFuture<void>();
 
-    await _waitFor(() => inferenceService.sessions.isNotEmpty);
+    await _waitFor(
+      () =>
+          inferenceService.sessions.isNotEmpty &&
+          inferenceService.sessions.single.didGenerate,
+    );
     inferenceService.sessions.single.responses.addError(
       StateError('expected inference failure'),
       StackTrace.current,
@@ -184,6 +465,7 @@ void main() {
 
 class _FakeInferenceService implements OnDeviceInferenceService {
   final List<_FakeInferenceSession> sessions = [];
+  final List<String?> systemInstructions = [];
   int createCount = 0;
 
   @override
@@ -195,6 +477,7 @@ class _FakeInferenceService implements OnDeviceInferenceService {
     List<gemma.Tool> tools = const [],
   }) async {
     createCount++;
+    systemInstructions.add(systemInstruction);
     final session = _FakeInferenceSession();
     sessions.add(session);
     return session;
@@ -202,11 +485,13 @@ class _FakeInferenceService implements OnDeviceInferenceService {
 }
 
 class _FakeInferenceSession implements OnDeviceInferenceSession {
-  final StreamController<gemma.ModelResponse> responses = StreamController();
+  final List<StreamController<gemma.ModelResponse>> _responseStreams = [];
   final List<gemma.Message> messages = [];
   int stopCount = 0;
   int closeCount = 0;
   bool didGenerate = false;
+  int get generationCount => _responseStreams.length;
+  StreamController<gemma.ModelResponse> get responses => _responseStreams.last;
 
   @override
   Future<void> addQueryChunk(gemma.Message message) async {
@@ -216,6 +501,8 @@ class _FakeInferenceSession implements OnDeviceInferenceSession {
   @override
   Stream<gemma.ModelResponse> generateChatResponseAsync() {
     didGenerate = true;
+    final responses = StreamController<gemma.ModelResponse>();
+    _responseStreams.add(responses);
     return responses.stream;
   }
 
@@ -238,10 +525,14 @@ Future<void> _waitFor(bool Function() condition) async {
   fail('Condition was not met');
 }
 
-Message _message(String content) => Message(
-  id: content,
+Message _message(
+  String content, {
+  String? id,
+  MessageRole role = MessageRole.user,
+}) => Message(
+  id: id ?? content,
   conversationId: 'conversation',
-  role: MessageRole.user,
+  role: role,
   content: content,
   createdAt: DateTime.utc(2026, 8, 9),
 );
