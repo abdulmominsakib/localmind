@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:apple_mlx/apple_mlx.dart';
@@ -17,11 +18,28 @@ import '../../chat/data/chat_service.dart';
 import 'models/on_device_model.dart';
 
 class OnDeviceMlxService {
-  OnDeviceMlxService(this._dio);
+  OnDeviceMlxService(
+    this._dio, {
+    this.modelsDirectoryProvider,
+    AppleMlxLlmManager Function()? llmManagerFactory,
+    bool? nativeInferenceAvailable,
+    bool? isIOS,
+  }) : _llmManagerFactory = llmManagerFactory ?? AppleMlxLlmManager.new,
+       _nativeInferenceAvailable =
+           nativeInferenceAvailable ??
+           AppleMlxCapabilities.nativeLlmInferenceAvailable,
+       _isIOS = isIOS ?? Platform.isIOS;
+
+  static const String _downloadCompleteFileName = '.download_complete';
 
   final Dio _dio;
+  final Future<Directory> Function()? modelsDirectoryProvider;
+  final AppleMlxLlmManager Function() _llmManagerFactory;
+  final bool _nativeInferenceAvailable;
+  final bool _isIOS;
   AppleMlxLlmManager? _llmManager;
   String? _currentModelId;
+  bool _currentModelSupportsThinking = false;
   bool _isDisposed = false;
   final Map<String, CancelToken> _activeDownloads = {};
 
@@ -30,8 +48,16 @@ class OnDeviceMlxService {
 
   /// Returns the base directory where MLX models are stored.
   Future<Directory> get _modelsDirectory async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final mlxDir = Directory(p.join(appDir.path, 'models', 'mlx'));
+    final override = modelsDirectoryProvider;
+    final mlxDir = override != null
+        ? await override()
+        : Directory(
+            p.join(
+              (await getApplicationDocumentsDirectory()).path,
+              'models',
+              'mlx',
+            ),
+          );
     if (!await mlxDir.exists()) {
       await mlxDir.create(recursive: true);
     }
@@ -51,15 +77,33 @@ class OnDeviceMlxService {
       final dir = await getModelDirectory(modelId);
       if (!await dir.exists()) return false;
 
+      final completionMarker = File(
+        p.join(dir.path, _downloadCompleteFileName),
+      );
+      if (!await completionMarker.exists()) return false;
+
+      final markerData = jsonDecode(await completionMarker.readAsString());
+      if (markerData is! Map || markerData['files'] is! List) return false;
+      final manifestFiles = (markerData['files'] as List)
+          .whereType<String>()
+          .toList(growable: false);
+      if (manifestFiles.isEmpty) return false;
+
+      for (final relativePath in manifestFiles) {
+        final filePath = p.normalize(p.join(dir.path, relativePath));
+        if (!p.isWithin(dir.path, filePath) || !await File(filePath).exists()) {
+          return false;
+        }
+      }
+
       final config = File(p.join(dir.path, 'config.json'));
       if (!await config.exists()) return false;
 
-      final files = await dir.list().toList();
-      final hasWeights = files.any(
-        (f) =>
-            f.path.endsWith('.safetensors') ||
-            f.path.endsWith('.npz') ||
-            f.path.endsWith('.bin'),
+      final hasWeights = manifestFiles.any(
+        (path) =>
+            path.endsWith('.safetensors') ||
+            path.endsWith('.npz') ||
+            path.endsWith('.bin'),
       );
       return hasWeights;
     } catch (e) {
@@ -70,7 +114,7 @@ class OnDeviceMlxService {
 
   /// Returns a set of installed MLX model IDs.
   Future<Set<String>> getInstalledModelIds() async {
-    if (!Platform.isIOS && !Platform.isMacOS) {
+    if (!_nativeInferenceAvailable || !_isIOS) {
       return const <String>{};
     }
     try {
@@ -99,15 +143,29 @@ class OnDeviceMlxService {
     void Function(int receivedBytes, int totalBytes)? onProgress,
     CancelToken? cancelToken,
   }) async {
-    if (!Platform.isIOS && !Platform.isMacOS) {
+    _ensureNativeInferenceAvailable();
+    if (!_isIOS) {
       throw UnsupportedError(
-        'Apple MLX models are only supported on Apple Silicon (iOS/macOS).',
+        'Apple MLX text generation is only supported on iOS.',
+      );
+    }
+    if (model.runtime != OnDeviceModelRuntime.mlx) {
+      throw ArgumentError.value(
+        model.runtime,
+        'model.runtime',
+        'Expected an Apple MLX model',
       );
     }
 
     final targetDir = await getModelDirectory(model.id);
     if (!await targetDir.exists()) {
       await targetDir.create(recursive: true);
+    }
+    final completionMarker = File(
+      p.join(targetDir.path, _downloadCompleteFileName),
+    );
+    if (await completionMarker.exists()) {
+      await completionMarker.delete();
     }
 
     // Extract repo ID from huggingFaceUrl if needed
@@ -124,7 +182,8 @@ class OnDeviceMlxService {
       };
 
       // 1. Fetch file list from Hugging Face API
-      final apiUrl = 'https://huggingface.co/api/models/$repoId/tree/main';
+      final apiUrl =
+          'https://huggingface.co/api/models/$repoId/tree/main?recursive=true';
       List<String> filesToDownload = [];
       int totalModelBytes = model.fileSizeBytes;
 
@@ -177,10 +236,19 @@ class OnDeviceMlxService {
       final fileSizes = <String, int>{};
 
       for (final fileName in filesToDownload) {
-        if (effectiveCancelToken.isCancelled) break;
+        if (effectiveCancelToken.isCancelled) {
+          throw StateError('MLX model download was cancelled.');
+        }
 
         final fileUrl = 'https://huggingface.co/$repoId/resolve/main/$fileName';
-        final savePath = p.join(targetDir.path, fileName);
+        final savePath = p.normalize(p.join(targetDir.path, fileName));
+        if (!p.isWithin(targetDir.path, savePath)) {
+          throw StateError('Invalid model file path returned by Hugging Face.');
+        }
+        final parent = Directory(p.dirname(savePath));
+        if (!await parent.exists()) {
+          await parent.create(recursive: true);
+        }
         int fileDownloadedBefore = fileSizes[fileName] ?? 0;
 
         await _dio.download(
@@ -201,6 +269,20 @@ class OnDeviceMlxService {
           },
         );
       }
+
+      if (effectiveCancelToken.isCancelled) {
+        throw StateError('MLX model download was cancelled.');
+      }
+      for (final fileName in filesToDownload) {
+        if (!await File(p.join(targetDir.path, fileName)).exists()) {
+          throw StateError('MLX model download is missing $fileName.');
+        }
+      }
+      await completionMarker.writeAsString(
+        jsonEncode({'repository': repoId, 'files': filesToDownload}),
+        flush: true,
+      );
+      onProgress?.call(totalModelBytes, totalModelBytes);
 
       Log.info(
         'MLX model ${model.id} successfully downloaded to ${targetDir.path}',
@@ -240,6 +322,20 @@ class OnDeviceMlxService {
     if (_isDisposed) {
       throw StateError('OnDeviceMlxService has been disposed');
     }
+    _ensureNativeInferenceAvailable();
+    if (!_isIOS) {
+      throw UnsupportedError(
+        'Apple MLX text generation is only supported on iOS.',
+      );
+    }
+    if (model.runtime != OnDeviceModelRuntime.mlx) {
+      throw ArgumentError.value(
+        model.runtime,
+        'model.runtime',
+        'Expected an Apple MLX model',
+      );
+    }
+    if (_currentModelId == model.id && isLoaded) return;
 
     final dir = await getModelDirectory(model.id);
     if (!await isModelInstalled(model.id)) {
@@ -251,7 +347,7 @@ class OnDeviceMlxService {
     await unloadModel();
 
     Log.info('Loading MLX model ${model.id} from ${dir.path}');
-    final manager = AppleMlxLlmManager();
+    final manager = _llmManagerFactory();
     await manager.loadAndStartServer(
       modelPath: dir.path,
       modelId: _extractRepoId(model.huggingFaceUrl),
@@ -260,16 +356,20 @@ class OnDeviceMlxService {
 
     _llmManager = manager;
     _currentModelId = model.id;
+    _currentModelSupportsThinking = model.supportsThinking;
     Log.info('MLX model ${model.id} loaded successfully');
   }
 
   /// Unloads the active MLX model.
   Future<void> unloadModel() async {
-    if (_llmManager != null) {
-      Log.info('Unloading MLX model $_currentModelId');
-      await _llmManager!.dispose();
-      _llmManager = null;
-      _currentModelId = null;
+    final manager = _llmManager;
+    final modelId = _currentModelId;
+    _llmManager = null;
+    _currentModelId = null;
+    _currentModelSupportsThinking = false;
+    if (manager != null) {
+      Log.info('Unloading MLX model $modelId');
+      await manager.dispose();
     }
   }
 
@@ -288,6 +388,16 @@ class OnDeviceMlxService {
       yield const ChatResponse(type: ChatResponseType.done);
       return;
     }
+    if (_currentModelId != modelId) {
+      yield ChatResponse(
+        type: ChatResponseType.error,
+        content:
+            'MLX model $modelId is not loaded. The active model is '
+            '${_currentModelId ?? 'unknown'}.',
+      );
+      yield const ChatResponse(type: ChatResponseType.done);
+      return;
+    }
 
     final formattedMessages = <Map<String, String>>[];
 
@@ -299,6 +409,9 @@ class OnDeviceMlxService {
     }
 
     for (final m in messages) {
+      if (m.role == MessageRole.system && m.content == params.systemPrompt) {
+        continue;
+      }
       final role = m.role == MessageRole.user
           ? 'user'
           : m.role == MessageRole.assistant
@@ -307,12 +420,18 @@ class OnDeviceMlxService {
       formattedMessages.add({'role': role, 'content': m.content});
     }
 
+    while (formattedMessages.isNotEmpty &&
+        formattedMessages.last['role'] == 'assistant' &&
+        formattedMessages.last['content']!.isEmpty) {
+      formattedMessages.removeLast();
+    }
+
     try {
       final stream = manager.generateStream(
         messages: formattedMessages,
         temperature: params.temperature,
         maxTokens: params.maxTokens,
-        thinking: true,
+        thinking: _currentModelSupportsThinking,
       );
 
       await for (final delta in stream) {
@@ -325,7 +444,7 @@ class OnDeviceMlxService {
             delta.reasoningContent!.isNotEmpty) {
           yield ChatResponse(
             type: ChatResponseType.reasoning,
-            content: delta.reasoningContent!,
+            reasoningContent: delta.reasoningContent!,
           );
         }
 
@@ -353,6 +472,12 @@ class OnDeviceMlxService {
     }
     _activeDownloads.clear();
     unawaited(unloadModel());
+  }
+
+  void _ensureNativeInferenceAvailable() {
+    if (!_nativeInferenceAvailable) {
+      throw UnsupportedError(AppleMlxCapabilities.nativeLlmUnavailableReason);
+    }
   }
 
   String _extractRepoId(String url) {

@@ -8,6 +8,7 @@ export 'package:speech_core/speech_core.dart';
 export 'package:audio_core/audio_core.dart';
 
 // LocalMind MLX Suite
+export 'src/mlx_capabilities.dart';
 export 'src/mlx_models.dart';
 export 'src/mlx_speech_manager.dart';
 export 'src/mlx_llm_manager.dart';

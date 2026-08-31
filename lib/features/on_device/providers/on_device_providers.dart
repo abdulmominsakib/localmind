@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:apple_mlx/apple_mlx.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_gemma/flutter_gemma.dart' show PreferredBackend;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,11 +61,16 @@ final onDeviceEngineProvider =
       return OnDeviceEngineNotifier();
     });
 
+List<OnDeviceModel> availableCuratedMlxModels({required bool isIOS}) {
+  if (!isIOS || !AppleMlxCapabilities.nativeLlmInferenceAvailable) {
+    return const <OnDeviceModel>[];
+  }
+  return OnDeviceModel.curatedMlxModels;
+}
+
 final onDeviceModelsProvider = Provider<List<OnDeviceModel>>((ref) {
   final imported = ref.watch(importedGgufModelsProvider);
-  final mlxModels = Platform.isIOS
-      ? OnDeviceModel.curatedMlxModels
-      : const <OnDeviceModel>[];
+  final mlxModels = availableCuratedMlxModels(isIOS: Platform.isIOS);
   return [...mlxModels, ...OnDeviceModel.curatedModels, ...imported];
 });
 

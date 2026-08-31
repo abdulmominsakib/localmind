@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'package:lib_mlx/lib_mlx.dart';
 
+import 'mlx_capabilities.dart';
+
+typedef AppleMlxOpenAiClientFactory = LibMlxOpenAiClient Function(Uri baseUri);
+
 /// Represents streaming chunk delta from an MLX LLM generation.
 class AppleMlxChatDelta {
   /// Regular content delta chunk.
@@ -23,15 +27,23 @@ class AppleMlxChatDelta {
   });
 }
 
-/// High-level manager for running MLX LLM text generation models natively on Apple devices.
+/// High-level client for the native `lib_mlx` lifecycle and localhost server.
+///
+/// Check [AppleMlxCapabilities.nativeLlmInferenceAvailable] before exposing
+/// this manager as an inference backend.
 class AppleMlxLlmManager {
   final LibMlxRuntime _runtime;
+  final AppleMlxOpenAiClientFactory _clientFactory;
   LibMlxOpenAiClient? _client;
   MlxModelHandle? _handle;
   MlxServerInfo? _serverInfo;
 
-  AppleMlxLlmManager({LibMlxRuntime? runtime})
-    : _runtime = runtime ?? const LibMlxRuntime();
+  AppleMlxLlmManager({
+    LibMlxRuntime? runtime,
+    AppleMlxOpenAiClientFactory? clientFactory,
+  }) : _runtime = runtime ?? const LibMlxRuntime(),
+       _clientFactory =
+           clientFactory ?? ((baseUri) => LibMlxOpenAiClient(baseUri: baseUri));
 
   bool get isModelLoaded => _handle != null;
   bool get isServerRunning => _serverInfo != null;
@@ -47,7 +59,6 @@ class AppleMlxLlmManager {
     int port = 0,
     int queueLimit = 1,
   }) async {
-    // Unload existing session if present
     await dispose();
 
     final config = MlxModelConfig(
@@ -57,18 +68,29 @@ class AppleMlxLlmManager {
       lazyEncoders: lazyEncoders,
     );
 
-    _handle = await _runtime.loadModel(config);
+    try {
+      _handle = await _runtime.loadModel(config);
 
-    final serverConfig = MlxServerConfig(
-      port: port,
-      modelId: modelId,
-      queueLimit: queueLimit,
-    );
+      final serverConfig = MlxServerConfig(
+        port: port,
+        modelId: modelId,
+        queueLimit: queueLimit,
+      );
 
-    _serverInfo = await _runtime.startServer(_handle!, config: serverConfig);
-    _client = LibMlxOpenAiClient(baseUri: _serverInfo!.uri);
-
-    return _serverInfo!;
+      final serverInfo = await _runtime.startServer(
+        _handle!,
+        config: serverConfig,
+      );
+      _serverInfo = serverInfo;
+      _client = _clientFactory(serverInfo.uri);
+      return serverInfo;
+    } catch (_) {
+      // Loading succeeds before the server is started. If either server start
+      // or client construction fails, release that resident native handle so
+      // the next attempt does not leak model memory.
+      await dispose();
+      rethrow;
+    }
   }
 
   /// Streams chat completions using Server-Sent Events (SSE).
@@ -98,27 +120,35 @@ class AppleMlxLlmManager {
 
     await for (final event in sseStream) {
       if (event.done) {
-        yield const AppleMlxChatDelta(isDone: true);
         break;
       }
 
-      final choices = event.data?['choices'] as List?;
-      final choice = choices?.firstOrNull as Map?;
-      final delta = choice?['delta'] as Map?;
+      final choices = event.data?['choices'];
+      if (choices is! List || choices.isEmpty) continue;
 
-      if (delta != null) {
-        final content = delta['content'] as String?;
-        final reasoning = delta['reasoning_content'] as String?;
+      final choice = choices.first;
+      if (choice is! Map) continue;
 
-        if (content != null || reasoning != null) {
-          yield AppleMlxChatDelta(
-            content: content,
-            reasoningContent: reasoning,
-            rawData: event.data,
-          );
-        }
+      final delta = choice['delta'];
+      if (delta is! Map) continue;
+
+      final rawContent = delta['content'];
+      final rawReasoning = delta['reasoning_content'];
+      final content = rawContent is String ? rawContent : null;
+      final reasoning = rawReasoning is String ? rawReasoning : null;
+
+      if (content != null || reasoning != null) {
+        yield AppleMlxChatDelta(
+          content: content,
+          reasoningContent: reasoning,
+          rawData: event.data,
+        );
       }
     }
+
+    // Some HTTP servers close a valid SSE response without a final [DONE]
+    // sentinel. Always terminate the higher-level stream consistently.
+    yield const AppleMlxChatDelta(isDone: true);
   }
 
   /// Generates non-streaming completion response.
@@ -143,12 +173,17 @@ class AppleMlxLlmManager {
     };
 
     final response = await client.chatCompletions(request);
-    final choices = response['choices'] as List?;
-    if (choices != null && choices.isNotEmpty) {
-      final first = choices.first as Map?;
-      final message = first?['message'] as Map?;
-      return message?['content'] as String? ?? '';
-    }
+    final choices = response['choices'];
+    if (choices is! List || choices.isEmpty) return '';
+
+    final first = choices.first;
+    if (first is! Map) return '';
+
+    final message = first['message'];
+    if (message is! Map) return '';
+
+    final content = message['content'];
+    if (content is String) return content;
     return '';
   }
 
@@ -161,10 +196,14 @@ class AppleMlxLlmManager {
 
   /// Stops server, unloads model, and releases memory.
   Future<void> dispose() async {
-    _client?.close();
-    _client = null;
-
+    final client = _client;
     final handle = _handle;
+
+    _client = null;
+    _handle = null;
+    _serverInfo = null;
+    client?.close(force: true);
+
     if (handle != null) {
       try {
         await _runtime.stopServer(handle);
@@ -172,8 +211,6 @@ class AppleMlxLlmManager {
       try {
         await _runtime.unloadModel(handle);
       } catch (_) {}
-      _handle = null;
     }
-    _serverInfo = null;
   }
 }

@@ -3,6 +3,8 @@ class AppleMlxModelIds {
   const AppleMlxModelIds._();
 
   // LLM / Text Generation Models (Hugging Face mlx-community)
+  static const String gemma4E2b = 'mlx-community/gemma-4-e2b-it-4bit';
+  static const String gemma4E4b = 'mlx-community/gemma-4-e4b-it-4bit';
   static const String gemma22b = 'mlx-community/gemma-2-2b-it-4bit';
   static const String llama321b = 'mlx-community/Llama-3.2-1B-Instruct-4bit';
   static const String llama323b = 'mlx-community/Llama-3.2-3B-Instruct-4bit';

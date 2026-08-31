@@ -8,6 +8,7 @@ import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:localmind/features/on_device/data/on_device_chat_service.dart';
 import 'package:localmind/features/on_device/data/on_device_gemma_service.dart';
 import 'package:localmind/features/on_device/data/on_device_llama_service.dart';
+import 'package:localmind/features/on_device/data/on_device_mlx_service.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
@@ -38,6 +39,24 @@ void main() {
 
       expect(service, isA<OnDeviceChatService>());
     });
+
+    test('routes an MLX runtime to the MLX chat adapter', () {
+      final service = createChatServiceForServer(
+        server: _onDeviceServer(),
+        dio: Dio(),
+        onDeviceGemmaService: OnDeviceGemmaService(),
+        onDeviceLlamaService: OnDeviceLlamaService(),
+        onDeviceMlxService: OnDeviceMlxService(Dio()),
+        loadedOnDeviceRuntime: OnDeviceModelRuntime.mlx,
+      );
+
+      expect(service, isA<OnDeviceMlxChatService>());
+    });
+  });
+
+  test('does not expose MLX downloads while the native backend is a mock', () {
+    expect(availableCuratedMlxModels(isIOS: true), isEmpty);
+    expect(availableCuratedMlxModels(isIOS: false), isEmpty);
   });
 
   group('chatServiceProvider', () {

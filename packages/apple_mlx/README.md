@@ -1,16 +1,24 @@
 # Apple MLX Support (`apple_mlx`)
 
-Local package integrating Apple's **MLX** ecosystem (`lib_mlx`, `speech_mlx`, `mlx_audio`, and `mlx-c`) with Dart & Flutter to run LLM Text Generation, Speech-to-Text, and Text-to-Speech natively on Apple Silicon (iOS and macOS).
+Local package collecting experimental Dart wrappers around `lib_mlx`,
+`speech_mlx`, and `mlx_audio`.
+
+> **Development status:** Native LLM inference is disabled in LocalMind. The
+> current `lib_mlx` 0.1.1 dependency ships a mock model core that returns stub
+> responses; it does not execute downloaded MLX weights. Its bridge targets
+> iOS only. The speech dependencies target macOS Apple Silicon and are not
+> integrated into the LocalMind mobile app.
 
 ## Capabilities
 
 ### 1. LLM Text Generation (`AppleMlxLlmManager` & `lib_mlx`)
-- **Native Apple Silicon Inference**: Runs quantized MLX models (Gemma, Llama 3.2, Qwen 2.5, SmolLM2) directly on device via Unified Memory and Metal.
-- **OpenAI-Compatible Local Endpoint**: Zero-overhead localhost HTTP/SSE streaming client.
-- **Reasoning / Thinking Support**: Separates `<thinking>` tokens from final assistant content.
-- **Tool Calling Support**: Function and tool calling protocol.
+- **Prototype only**: Exercises the native lifecycle and local OpenAI-compatible
+  HTTP/SSE contract against the upstream mock core.
+- **Not user-facing**: `AppleMlxCapabilities.nativeLlmInferenceAvailable` stays
+  `false` until a real, device-validated backend replaces the mock.
 
 ### 2. Speech-To-Text (`AppleMlxSpeechManager` & `speech_mlx` / `mlx_audio`)
+- **macOS only**: These dependencies do not provide iOS speech inference.
 - **Parakeet-TDT & Whisper**: High-accuracy local speech recognition.
 - **Isolate Offloading**: Dedicated worker isolates keep audio processing and resampling off the UI isolate.
 
@@ -26,6 +34,9 @@ Local package integrating Apple's **MLX** ecosystem (`lib_mlx`, `speech_mlx`, `m
 ## Quickstart
 
 ### LLM Text Generation
+
+The following example is for bridge development and contract testing only. It
+does not perform real inference with `lib_mlx` 0.1.1.
 
 ```dart
 import 'package:apple_mlx/apple_mlx.dart';
