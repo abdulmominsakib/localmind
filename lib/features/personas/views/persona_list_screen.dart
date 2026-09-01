@@ -51,7 +51,7 @@ class PersonaListScreen extends ConsumerWidget {
                   Builder(
                     builder: (context) => IconButton(
                       icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
-                      onPressed: () => Scaffold.of(context).openDrawer(),
+                      onPressed: () => Scaffold.maybeOf(context)?.openDrawer(),
                     ),
                   ),
                   const SizedBox(width: 8),

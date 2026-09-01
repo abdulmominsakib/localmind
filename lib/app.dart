@@ -351,7 +351,10 @@ class AppShell extends ConsumerWidget {
                   // On the empty home screen, open the side drawer instead
                   // of exiting the app — matches the menu icon on the
                   // top-left. This context must be below the Scaffold.
-                  Scaffold.of(scaffoldContext).openDrawer();
+                  // Use maybeOf so we never throw if no Scaffold ancestor
+                  // is present (e.g. when this widget is embedded in a
+                  // route or surface that doesn't provide one).
+                  Scaffold.maybeOf(scaffoldContext)?.openDrawer();
                   return;
                 }
                 handleBack();

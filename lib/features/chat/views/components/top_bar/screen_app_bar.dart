@@ -115,7 +115,7 @@ class ScreenAppBar extends ConsumerWidget {
                 if (isDesktop) return const SizedBox.shrink();
                 return IconButton(
                   icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
+                  onPressed: () => Scaffold.maybeOf(context)?.openDrawer(),
                 );
               },
             ),
