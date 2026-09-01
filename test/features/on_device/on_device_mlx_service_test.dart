@@ -150,10 +150,7 @@ void main() {
     );
     final model = OnDeviceModel.curatedMlxModels.first;
 
-    expect(
-      () => service.loadModel(model),
-      throwsA(isA<UnsupportedError>()),
-    );
+    expect(() => service.loadModel(model), throwsA(isA<UnsupportedError>()));
   });
 }
 

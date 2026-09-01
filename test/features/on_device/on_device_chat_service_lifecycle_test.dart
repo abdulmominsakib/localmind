@@ -431,88 +431,81 @@ void main() {
     },
   );
 
-  test(
-    'retained sessions are closed after the TTL elapses',
-    () async {
-      final ttlService = OnDeviceChatService(
-        inferenceService,
-        retainedSessionTtl: const Duration(milliseconds: 50),
+  test('retained sessions are closed after the TTL elapses', () async {
+    final ttlService = OnDeviceChatService(
+      inferenceService,
+      retainedSessionTtl: const Duration(milliseconds: 50),
+    );
+    try {
+      final firstDone = ttlService
+          .sendMessage(
+            server: _server(),
+            modelId: 'qwen3-0.6b',
+            messages: [
+              _message('hi', id: 'user-1'),
+              _message('', id: 'assistant-1', role: MessageRole.assistant),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .listen((_) {})
+          .asFuture<void>();
+      await _waitFor(
+        () =>
+            inferenceService.sessions.length == 1 &&
+            inferenceService.sessions.single.didGenerate,
       );
-      try {
-        final firstDone = ttlService
-            .sendMessage(
-              server: _server(),
-              modelId: 'qwen3-0.6b',
-              messages: [
-                _message('hi', id: 'user-1'),
-                _message(
-                  '',
-                  id: 'assistant-1',
-                  role: MessageRole.assistant,
-                ),
-              ],
-              params: ChatParameters.defaults(),
-            )
-            .listen((_) {})
-            .asFuture<void>();
-        await _waitFor(
-          () =>
-              inferenceService.sessions.length == 1 &&
-              inferenceService.sessions.single.didGenerate,
-        );
-        final session = inferenceService.sessions.single;
-        session.responses.add(const gemma.TextResponse('hello'));
-        await session.responses.close();
-        await firstDone;
+      final session = inferenceService.sessions.single;
+      session.responses.add(const gemma.TextResponse('hello'));
+      await session.responses.close();
+      await firstDone;
 
-        // Session is retained immediately after completion.
-        expect(session.closeCount, 0);
+      // Session is retained immediately after completion.
+      expect(session.closeCount, 0);
 
-        // After the TTL elapses, the retained session is closed.
-        await _waitFor(() => session.closeCount == 1);
+      // After the TTL elapses, the retained session is closed.
+      await _waitFor(() => session.closeCount == 1);
 
-        // A subsequent send with a different conversation id forces a
-        // rebuild — the retained session has been closed by the TTL.
-        final secondDone = ttlService
-            .sendMessage(
-              server: _server(),
-              modelId: 'qwen3-0.6b',
-              messages: [
-                Message(
-                  id: 'user-1',
-                  conversationId: 'other-conversation',
-                  role: MessageRole.user,
-                  content: 'hi',
-                  createdAt: DateTime.utc(2026, 8, 9),
-                ),
-                Message(
-                  id: 'assistant-1',
-                  conversationId: 'other-conversation',
-                  role: MessageRole.assistant,
-                  content: '',
-                  createdAt: DateTime.utc(2026, 8, 9),
-                ),
-              ],
-              params: ChatParameters.defaults(),
-            )
-            .listen((_) {})
-            .asFuture<void>();
-        await _waitFor(
-          () =>
-              inferenceService.sessions.length == 2 &&
-              inferenceService.sessions.last.didGenerate,
-        );
-        final secondSession = inferenceService.sessions.last;
-        secondSession.responses.add(const gemma.TextResponse('reply'));
-        await secondSession.responses.close();
-        await secondDone;
+      // A subsequent send with a different conversation id forces a
+      // rebuild — the retained session has been closed by the TTL.
+      final secondDone = ttlService
+          .sendMessage(
+            server: _server(),
+            modelId: 'qwen3-0.6b',
+            messages: [
+              Message(
+                id: 'user-1',
+                conversationId: 'other-conversation',
+                role: MessageRole.user,
+                content: 'hi',
+                createdAt: DateTime.utc(2026, 8, 9),
+              ),
+              Message(
+                id: 'assistant-1',
+                conversationId: 'other-conversation',
+                role: MessageRole.assistant,
+                content: '',
+                createdAt: DateTime.utc(2026, 8, 9),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .listen((_) {})
+          .asFuture<void>();
+      await _waitFor(
+        () =>
+            inferenceService.sessions.length == 2 &&
+            inferenceService.sessions.last.didGenerate,
+      );
+      final secondSession = inferenceService.sessions.last;
+      secondSession.responses.add(const gemma.TextResponse('reply'));
+      await secondSession.responses.close();
+      await secondDone;
 
-        expect(inferenceService.createCount, 2);
-      } finally {
-        ttlService.dispose();
-      }
-    },
-  );
+      expect(inferenceService.createCount, 2);
+    } finally {
+      ttlService.dispose();
+    }
+  });
 
   test(
     'reusing a retained session re-arms its TTL from the reuse point',
@@ -528,11 +521,7 @@ void main() {
               modelId: 'qwen3-0.6b',
               messages: [
                 _message('hi', id: 'user-1'),
-                _message(
-                  '',
-                  id: 'assistant-1',
-                  role: MessageRole.assistant,
-                ),
+                _message('', id: 'assistant-1', role: MessageRole.assistant),
               ],
               params: ChatParameters.defaults(),
             )
@@ -563,11 +552,7 @@ void main() {
                   role: MessageRole.assistant,
                 ),
                 _message('again', id: 'user-2'),
-                _message(
-                  '',
-                  id: 'assistant-2',
-                  role: MessageRole.assistant,
-                ),
+                _message('', id: 'assistant-2', role: MessageRole.assistant),
               ],
               params: ChatParameters.defaults(),
             )

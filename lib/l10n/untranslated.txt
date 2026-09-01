@@ -2,7 +2,11 @@
   "ar": [
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ],
 
   "bn": [
@@ -12,7 +16,11 @@
     "image_pick_failed",
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ],
 
   "de": [
@@ -22,7 +30,11 @@
     "image_pick_failed",
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ],
 
   "es": [
@@ -32,7 +44,11 @@
     "image_pick_failed",
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ],
 
   "fr": [
@@ -42,7 +58,11 @@
     "image_pick_failed",
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ],
 
   "hi": [
@@ -52,7 +72,11 @@
     "image_pick_failed",
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ],
 
   "it": [
@@ -62,7 +86,11 @@
     "image_pick_failed",
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ],
 
   "ja": [
@@ -72,7 +100,11 @@
     "image_pick_failed",
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ],
 
   "ru": [
@@ -82,7 +114,11 @@
     "image_pick_failed",
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ],
 
   "tr": [
@@ -92,7 +128,11 @@
     "image_pick_failed",
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ],
 
   "zh": [
@@ -102,7 +142,11 @@
     "image_pick_failed",
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ],
 
   "zh_TW": [
@@ -112,6 +156,10 @@
     "image_pick_failed",
     "calendar_access",
     "calendar_access_desc",
-    "calendar_permission_denied"
+    "calendar_permission_denied",
+    "builtin_ai_not_supported",
+    "builtin_ai_unsupported_desc",
+    "builtin_ai_unsupported_chip",
+    "builtin_ai_enable"
   ]
 }

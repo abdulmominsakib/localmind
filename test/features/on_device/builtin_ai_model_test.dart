@@ -72,5 +72,21 @@ void main() {
       );
       expect(webModels, [OnDeviceModel.geminiNanoBuiltIn]);
     });
+
+    test('Gemini Nano is built-in format and general model type', () {
+      const model = OnDeviceModel.geminiNanoBuiltIn;
+      expect(model.isBuiltIn, isTrue);
+      expect(model.flutterGemmaModelType.name, 'general');
+    });
+
+    test(
+      'Apple Foundation Models is built-in format and general model type',
+      () {
+        const model = OnDeviceModel.appleFoundationModelsBuiltIn;
+        expect(model.isBuiltIn, isTrue);
+        expect(model.format, OnDeviceModelFormat.builtIn);
+        expect(model.flutterGemmaModelType.name, 'general');
+      },
+    );
   });
 }

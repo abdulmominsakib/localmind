@@ -10,6 +10,7 @@ import '../core/providers/highlighter_provider.dart';
 import '../core/providers/storage_providers.dart';
 import '../core/storage/objectbox_store.dart';
 import '../features/on_device/data/on_device_gemma_service.dart';
+import '../features/on_device/providers/on_device_providers.dart';
 import '../core/models/enums.dart';
 import '../features/personas/providers/personas_providers.dart';
 import '../features/servers/data/models/server.dart';
@@ -106,6 +107,14 @@ class _BootstrapHostState extends State<BootstrapHost> {
         );
         await container.read(serversProvider.notifier).addServer(server);
       }
+
+      // Eagerly resolve foundational state providers so their initial state
+      // is stable before UncontrolledProviderScope mounts the widget tree.
+      container.read(settingsProvider);
+      container.read(activeServerIdProvider);
+      container.read(activeServerProvider);
+      container.read(connectionStatusProvider);
+      container.read(onDeviceEngineProvider);
 
       _container = container;
       _updateStage(BootstrapStage.done, 'Ready');

@@ -1,3 +1,4 @@
+import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'dart:io';
 
@@ -421,12 +422,22 @@ class _ModelCardActions extends ConsumerWidget {
       );
     }
 
+    final builtInAvailability = model.isBuiltIn
+        ? ref.watch(builtInAiAvailabilityProvider).value
+        : null;
+    final isBuiltInUnsupported =
+        model.isBuiltIn &&
+        (builtInAvailability ==
+                BuiltInAiAvailability.unavailableDeviceUnsupported ||
+            builtInAvailability == BuiltInAiAvailability.unavailableOther);
+
     if (downloadProgress?.status == DownloadStatus.failed) {
       return _FailedDownloadActions(
         model: model,
         downloadProgress: downloadProgress,
         theme: theme,
         l10n: l10n,
+        isUnsupported: isBuiltInUnsupported,
       );
     }
 
@@ -437,6 +448,10 @@ class _ModelCardActions extends ConsumerWidget {
         theme: theme,
         l10n: l10n,
       );
+    }
+
+    if (isBuiltInUnsupported) {
+      return _BuiltInUnsupportedActions(model: model, theme: theme, l10n: l10n);
     }
 
     return _NotDownloadedActions(
@@ -661,30 +676,89 @@ class _FailedDownloadActions extends ConsumerWidget {
     this.downloadProgress,
     required this.theme,
     required this.l10n,
+    this.isUnsupported = false,
   });
 
   final OnDeviceModel model;
   final DownloadProgressInfo? downloadProgress;
   final ThemeData theme;
   final AppLocalizations l10n;
+  final bool isUnsupported;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final rawError = downloadProgress?.error;
+    final isDeviceUnsupported =
+        isUnsupported ||
+        (model.isBuiltIn &&
+            (rawError != null &&
+                (rawError.contains('unavailableDeviceUnsupported') ||
+                    rawError.contains('BuiltInAiUnavailableException') ||
+                    rawError.contains('unavailableOther'))));
+
+    final displayError = isDeviceUnsupported
+        ? l10n.builtin_ai_not_supported
+        : (rawError ?? l10n.download_failed);
+
     return Row(
       children: [
+        HugeIcon(
+          icon: isDeviceUnsupported
+              ? HugeIcons.strokeRoundedUnavailable
+              : HugeIcons.strokeRoundedAlertCircle,
+          color: Colors.red[400]!,
+          size: 18,
+        ),
+        const SizedBox(width: 6),
         Expanded(
           child: Text(
-            downloadProgress?.error ?? l10n.download_failed,
-            style: theme.textTheme.bodySmall?.copyWith(color: Colors.red),
+            displayError,
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.red[400]),
           ),
         ),
-        const SizedBox(width: 8),
-        ShadButton.outline(
-          size: ShadButtonSize.sm,
-          onPressed: () => ref
-              .read(foregroundDownloadNotifierProvider.notifier)
-              .retryDownload(model.id),
-          child: Text(l10n.retry),
+        if (!isDeviceUnsupported) ...[
+          const SizedBox(width: 8),
+          ShadButton.outline(
+            size: ShadButtonSize.sm,
+            onPressed: () => ref
+                .read(foregroundDownloadNotifierProvider.notifier)
+                .retryDownload(model.id),
+            child: Text(l10n.retry),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _BuiltInUnsupportedActions extends StatelessWidget {
+  const _BuiltInUnsupportedActions({
+    required this.model,
+    required this.theme,
+    required this.l10n,
+  });
+
+  final OnDeviceModel model;
+  final ThemeData theme;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        HugeIcon(
+          icon: HugeIcons.strokeRoundedUnavailable,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          size: 18,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            l10n.builtin_ai_not_supported,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
         ),
       ],
     );
@@ -759,13 +833,14 @@ class _NotDownloadedActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final label = model.isBuiltIn ? l10n.builtin_ai_enable : l10n.download;
     return Row(
       children: [
         const Spacer(),
         ShadButton.outline(
           size: ShadButtonSize.sm,
           onPressed: () => _startDownload(context, ref),
-          child: Text(l10n.download),
+          child: Text(label),
         ),
       ],
     );

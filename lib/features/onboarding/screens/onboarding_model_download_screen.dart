@@ -1,3 +1,4 @@
+import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'dart:async';
 import 'dart:io';
@@ -334,6 +335,14 @@ class _ModelCard extends ConsumerWidget {
     final isPaused =
         progressInfo?.status == DownloadStatus.paused ||
         progressInfo?.status == DownloadStatus.canceled;
+    final builtInAvailability = model.isBuiltIn
+        ? ref.watch(builtInAiAvailabilityProvider).value
+        : null;
+    final isBuiltInUnsupported =
+        model.isBuiltIn &&
+        (builtInAvailability ==
+                BuiltInAiAvailability.unavailableDeviceUnsupported ||
+            builtInAvailability == BuiltInAiAvailability.unavailableOther);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -520,6 +529,39 @@ class _ModelCard extends ConsumerWidget {
                 ),
               ],
             )
+          else if (progressInfo?.status == DownloadStatus.failed)
+            Row(
+              children: [
+                HugeIcon(
+                  icon: isBuiltInUnsupported
+                      ? HugeIcons.strokeRoundedUnavailable
+                      : HugeIcons.strokeRoundedAlertCircle,
+                  color: Colors.red[400]!,
+                  size: 18,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    isBuiltInUnsupported
+                        ? l10n.builtin_ai_not_supported
+                        : (progressInfo?.error ?? l10n.download_failed),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.red[400],
+                    ),
+                  ),
+                ),
+                if (!isBuiltInUnsupported) ...[
+                  const SizedBox(width: 8),
+                  ShadButton.outline(
+                    size: ShadButtonSize.sm,
+                    onPressed: () => ref
+                        .read(foregroundDownloadNotifierProvider.notifier)
+                        .retryDownload(model.id),
+                    child: Text(l10n.retry),
+                  ),
+                ],
+              ],
+            )
           else if (isPaused)
             Row(
               children: [
@@ -537,11 +579,32 @@ class _ModelCard extends ConsumerWidget {
                 ),
               ],
             )
+          else if (isBuiltInUnsupported)
+            Row(
+              children: [
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedUnavailable,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  size: 18,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    l10n.builtin_ai_not_supported,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+              ],
+            )
           else
             ShadButton.outline(
               size: ShadButtonSize.sm,
               onPressed: () => _startDownload(context, ref),
-              child: Text(l10n.download),
+              child: Text(
+                model.isBuiltIn ? l10n.builtin_ai_enable : l10n.download,
+              ),
             ),
         ],
       ),

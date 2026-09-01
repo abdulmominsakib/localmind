@@ -10,6 +10,7 @@ import '../../../core/providers/storage_providers.dart';
 import '../data/models/download_progress_info.dart';
 import '../data/models/download_status.dart';
 import '../data/models/on_device_model.dart';
+import '../utils/on_device_error_formatter.dart';
 import 'on_device_providers.dart';
 
 final foregroundDownloadNotifierProvider =
@@ -179,7 +180,9 @@ class ForegroundDownloadNotifier
               modelId: modelId,
               status: DownloadStatus.complete,
               progress: 1.0,
-              receivedBytes: model.fileSizeBytes > 0 ? model.fileSizeBytes : 100,
+              receivedBytes: model.fileSizeBytes > 0
+                  ? model.fileSizeBytes
+                  : 100,
               totalBytes: model.fileSizeBytes > 0 ? model.fileSizeBytes : 100,
             ),
           };
@@ -199,13 +202,17 @@ class ForegroundDownloadNotifier
     } catch (e) {
       Log.error('Download failed for $modelId: $e');
       if (_activeDownloads[modelId] == true && ref.mounted) {
+        final formattedError = formatOnDeviceError(
+          e,
+          isBuiltIn: model.isBuiltIn,
+        );
         state = {
           ...state,
           modelId: DownloadProgressInfo(
             modelId: modelId,
             status: DownloadStatus.failed,
             progress: state[modelId]?.progress ?? 0.0,
-            error: 'Download failed: ${e.toString()}',
+            error: formattedError,
           ),
         };
         _saveState();

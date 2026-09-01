@@ -127,7 +127,8 @@ class ChatHistoryScreen extends ConsumerWidget {
                             icon: const HugeIcon(
                               icon: HugeIcons.strokeRoundedMenu01,
                             ),
-                            onPressed: () => Scaffold.maybeOf(context)?.openDrawer(),
+                            onPressed: () =>
+                                Scaffold.maybeOf(context)?.openDrawer(),
                           ),
                         ),
                         const SizedBox(width: 8),

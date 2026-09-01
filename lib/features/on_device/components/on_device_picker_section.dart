@@ -1,3 +1,4 @@
+import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'dart:io';
 
@@ -236,9 +237,26 @@ class _OnDeviceModelTile extends ConsumerWidget {
         (downloadProgress.status == DownloadStatus.running ||
             downloadProgress.status == DownloadStatus.pending);
     final isPaused = downloadProgress?.status == DownloadStatus.paused;
+    final builtInAvailability = model.isBuiltIn
+        ? ref.watch(builtInAiAvailabilityProvider).value
+        : null;
+    final isBuiltInUnsupported =
+        model.isBuiltIn &&
+        (builtInAvailability ==
+                BuiltInAiAvailability.unavailableDeviceUnsupported ||
+            builtInAvailability == BuiltInAiAvailability.unavailableOther);
 
     return InkWell(
       onTap: () {
+        if (isBuiltInUnsupported) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.builtin_ai_not_supported),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          return;
+        }
         if (isLoaded) {
           _selectModel(context, ref);
         } else if (isDownloaded && !isCurrentlyLoading && !isDownloading) {
@@ -436,10 +454,7 @@ class _OnDeviceModelTile extends ConsumerWidget {
                             isDark: isDark,
                           ),
                           if (model.isBuiltIn)
-                            MetadataChip(
-                              label: '⚡ Built-in',
-                              isDark: isDark,
-                            ),
+                            MetadataChip(label: '⚡ Built-in', isDark: isDark),
                           if (model.format == OnDeviceModelFormat.gguf)
                             MetadataChip(
                               label: l10n.gguf_format_label,
@@ -531,44 +546,73 @@ class _OnDeviceModelTile extends ConsumerWidget {
                         .cancelDownload(model.id),
                   ),
                 ] else if (!isCurrentlyLoading) ...[
-                  _IconButton(
-                    icon: HugeIcon(
-                      icon: HugeIcons.strokeRoundedCloudDownload,
-                      size: 18,
+                  if (isBuiltInUnsupported) ...[
+                    HugeIcon(
+                      icon: HugeIcons.strokeRoundedUnavailable,
+                      size: 16,
                       color: isDark
                           ? AppColors.darkMutedText
                           : AppColors.lightMutedText,
                     ),
-                    tooltip: l10n.download,
-                    onPressed: () async {
-                      final result = await ref
-                          .read(foregroundDownloadNotifierProvider.notifier)
-                          .startDownload(model.id);
-                      if (result == 'missing_huggingface_token' &&
-                          context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.model_missing_huggingface_token),
-                            duration: const Duration(seconds: 6),
-                            action: SnackBarAction(
-                              label: l10n.settings_title,
-                              onPressed: () => context.push(AppRoutes.settings),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.builtin_ai_unsupported_chip,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark
+                            ? AppColors.darkMutedText
+                            : AppColors.lightMutedText,
+                      ),
+                    ),
+                  ] else ...[
+                    _IconButton(
+                      icon: HugeIcon(
+                        icon: model.isBuiltIn
+                            ? HugeIcons.strokeRoundedFlash
+                            : HugeIcons.strokeRoundedCloudDownload,
+                        size: 18,
+                        color: isDark
+                            ? AppColors.darkMutedText
+                            : AppColors.lightMutedText,
+                      ),
+                      tooltip: model.isBuiltIn
+                          ? l10n.builtin_ai_enable
+                          : l10n.download,
+                      onPressed: () async {
+                        final result = await ref
+                            .read(foregroundDownloadNotifierProvider.notifier)
+                            .startDownload(model.id);
+                        if (result == 'missing_huggingface_token' &&
+                            context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                l10n.model_missing_huggingface_token,
+                              ),
+                              duration: const Duration(seconds: 6),
+                              action: SnackBarAction(
+                                label: l10n.settings_title,
+                                onPressed: () =>
+                                    context.push(AppRoutes.settings),
+                              ),
                             ),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    l10n.not_downloaded,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isDark
-                          ? AppColors.darkMutedText
-                          : AppColors.lightMutedText,
+                          );
+                        }
+                      },
                     ),
-                  ),
+                    const SizedBox(width: 4),
+                    Text(
+                      model.isBuiltIn
+                          ? l10n.builtin_ai_enable
+                          : l10n.not_downloaded,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark
+                            ? AppColors.darkMutedText
+                            : AppColors.lightMutedText,
+                      ),
+                    ),
+                  ],
                 ],
                 if (isSelected) ...[
                   const SizedBox(width: 4),

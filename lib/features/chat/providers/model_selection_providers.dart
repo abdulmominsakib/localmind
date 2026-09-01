@@ -255,8 +255,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
         if (hasDefaultForServer) {
           final defaultModel = typedModels
               .where(
-                (m) =>
-                    m.id == defaultModelId && downloadedAsync.contains(m.id),
+                (m) => m.id == defaultModelId && downloadedAsync.contains(m.id),
               )
               .firstOrNull;
           if (defaultModel != null && ref.mounted) {

@@ -83,10 +83,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
 
   static Future<void> initialize({String? huggingFaceToken}) async {
     await FlutterGemma.initialize(
-      inferenceEngines: const [
-        LiteRtLmEngine(),
-        BuiltInAiEngine(),
-      ],
+      inferenceEngines: const [LiteRtLmEngine(), BuiltInAiEngine()],
       huggingFaceToken: huggingFaceToken,
       maxDownloadRetries: 10,
     );
@@ -99,9 +96,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   }) async {
     if (model.isBuiltIn) {
       Log.info('Installing built-in model ${model.id}');
-      await BuiltInAi.ensureReady(
-        onProgress: onProgress,
-      );
+      await BuiltInAi.ensureReady(onProgress: onProgress);
       await FlutterGemma.installModel(
         modelType: ModelType.general,
         fileType: ModelFileType.builtIn,
@@ -282,11 +277,21 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     required String? systemInstruction,
     required List<Tool> tools,
   }) async {
-    final chat = await _model!.openChat(
-      systemInstruction: systemInstruction,
-      tools: tools,
-      supportsFunctionCalls: tools.isNotEmpty,
-    );
+    final model = _model!;
+    final InferenceChat chat;
+    if (model.fileType == ModelFileType.builtIn) {
+      chat = await model.createChat(
+        systemInstruction: systemInstruction,
+        tools: tools,
+        supportsFunctionCalls: tools.isNotEmpty,
+      );
+    } else {
+      chat = await model.openChat(
+        systemInstruction: systemInstruction,
+        tools: tools,
+        supportsFunctionCalls: tools.isNotEmpty,
+      );
+    }
     return _GemmaInferenceSession(chat);
   }
 

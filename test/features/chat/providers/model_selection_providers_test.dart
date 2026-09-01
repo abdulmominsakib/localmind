@@ -62,9 +62,7 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             activeServerProvider.overrideWith(_StubActiveServerNotifier.new),
-            downloadedModelsProvider.overrideWith(
-              (ref) async => {'model-b'},
-            ),
+            downloadedModelsProvider.overrideWith((ref) async => {'model-b'}),
             availableModelsProvider(
               'server-1',
             ).overrideWith((ref) async => _models()),

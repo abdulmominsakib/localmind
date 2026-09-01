@@ -3025,4 +3025,18 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get calendar_permission_denied =>
       'Calendar permission denied. Please grant calendar access in your device settings.';
+
+  @override
+  String get builtin_ai_not_supported =>
+      'Built-in AI is not supported on this device.';
+
+  @override
+  String get builtin_ai_unsupported_desc =>
+      'Your device hardware or OS does not support on-device system AI (e.g. Gemini Nano / Apple Intelligence). Please choose a downloadable model instead.';
+
+  @override
+  String get builtin_ai_unsupported_chip => 'Not Supported';
+
+  @override
+  String get builtin_ai_enable => 'Enable';
 }

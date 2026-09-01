@@ -5656,6 +5656,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Calendar permission denied. Please grant calendar access in your device settings.'**
   String get calendar_permission_denied;
+
+  /// Error shown when built-in AI (Gemini Nano / Apple Intelligence) is not supported on the user's hardware or OS
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in AI is not supported on this device.'**
+  String get builtin_ai_not_supported;
+
+  /// Explanation shown when built-in AI is unavailable on this device
+  ///
+  /// In en, this message translates to:
+  /// **'Your device hardware or OS does not support on-device system AI (e.g. Gemini Nano / Apple Intelligence). Please choose a downloadable model instead.'**
+  String get builtin_ai_unsupported_desc;
+
+  /// Chip or badge indicating the built-in model is not supported on this device
+  ///
+  /// In en, this message translates to:
+  /// **'Not Supported'**
+  String get builtin_ai_unsupported_chip;
+
+  /// Button label to enable or initialize built-in on-device AI
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get builtin_ai_enable;
 }
 
 class _AppLocalizationsDelegate

@@ -20,6 +20,7 @@ import '../data/notification_permission_service.dart';
 import '../data/on_device_gemma_service.dart';
 import '../data/on_device_llama_service.dart';
 import '../data/on_device_mlx_service.dart';
+import '../utils/on_device_error_formatter.dart';
 import '../../servers/providers/server_providers.dart';
 
 final notificationPermissionServiceProvider =
@@ -88,7 +89,8 @@ List<OnDeviceModel> availableCuratedMlxModels({
   bool? isIOS,
   bool? isMacOS,
 }) {
-  final applePlatform = isApplePlatform ??
+  final applePlatform =
+      isApplePlatform ??
       ((isIOS ?? false) ||
           (isMacOS ?? false) ||
           (!kIsWeb && (Platform.isIOS || Platform.isMacOS)));
@@ -98,14 +100,15 @@ List<OnDeviceModel> availableCuratedMlxModels({
   return OnDeviceModel.curatedMlxModels;
 }
 
-final builtInAiAvailabilityProvider =
-    FutureProvider<BuiltInAiAvailability>((ref) async {
-      try {
-        return await BuiltInAi.availability();
-      } catch (e) {
-        return BuiltInAiAvailability.unavailableOther;
-      }
-    });
+final builtInAiAvailabilityProvider = FutureProvider<BuiltInAiAvailability>((
+  ref,
+) async {
+  try {
+    return await BuiltInAi.availability();
+  } catch (e) {
+    return BuiltInAiAvailability.unavailableOther;
+  }
+});
 
 final onDeviceModelsProvider = Provider<List<OnDeviceModel>>((ref) {
   final imported = ref.watch(importedGgufModelsProvider);
@@ -131,8 +134,9 @@ final downloadedModelsProvider = FutureProvider<Set<String>>((ref) async {
 
   final builtInIds = <String>{};
   try {
-    final builtInAvailability =
-        await ref.watch(builtInAiAvailabilityProvider.future);
+    final builtInAvailability = await ref.watch(
+      builtInAiAvailabilityProvider.future,
+    );
     if (builtInAvailability == BuiltInAiAvailability.available) {
       for (final model in availableCuratedBuiltInModels()) {
         builtInIds.add(model.id);
@@ -458,11 +462,12 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     } catch (e) {
       if (!ref.mounted) return;
       Log.error('Failed to load model $modelId: $e');
+      final formattedError = formatOnDeviceError(e, isBuiltIn: model.isBuiltIn);
       state = state.copyWith(
         status: OnDeviceEngineStatus.error,
         loadedModelId: null,
         loadedRuntime: null,
-        error: 'Failed to load model: ${e.toString()}',
+        error: formattedError,
       );
     } finally {
       await bgService.stop();

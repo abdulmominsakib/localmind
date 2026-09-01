@@ -385,23 +385,12 @@ class ConnectionStatusNotifier extends Notifier<ConnectionStatus> {
     try {
       final isConnected = await apiService.testConnection(server);
       if (!ref.mounted || generation != _checkGeneration) return;
-      final status = isConnected
+      state = isConnected
           ? ConnectionStatus.connected
           : ConnectionStatus.disconnected;
-      state = status;
-      if (ref.mounted) {
-        ref
-            .read(serversProvider.notifier)
-            .updateServerStatus(server.id, status);
-      }
     } catch (e) {
       if (!ref.mounted || generation != _checkGeneration) return;
       state = ConnectionStatus.error;
-      if (ref.mounted) {
-        ref
-            .read(serversProvider.notifier)
-            .updateServerStatus(server.id, ConnectionStatus.disconnected);
-      }
     }
   }
 
