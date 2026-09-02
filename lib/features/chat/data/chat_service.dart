@@ -222,21 +222,23 @@ class LMStudioChatService implements ChatService {
       body['repeat_penalty'] = params.repeatPenalty;
     }
     // LM Studio's native /api/v1/chat expects `reasoning` as a *string*
-    // ('off' | 'low' | 'medium' | 'high' | 'on'), and does NOT accept the
-    // OpenAI-compatible `reasoning_effort` / `think` / `enable_thinking`
+    // ('off' | 'low' | 'medium' | 'high' | 'xhigh'), and does NOT accept
+    // the OpenAI-compatible `reasoning_effort` / `think` / `enable_thinking`
     // keys that the shared [_applyReasoningControl] writes. Sending the
     // object form causes HTTP 400 `invalid_request` for every
     // reasoning-capable model (and ChatReasoningConfig defaults to
     // enabled). We therefore apply reasoning in the native shape here.
     //
-    // 'on' is universally accepted by reasoning-capable models (it means
-    // "use the model's default effort"); per-model effort strings such as
-    // 'low'/'medium'/'high' are not guaranteed to be supported (e.g. Gemma
-    // only allows 'off'/'on'), so we avoid them.
+    // We send the user's selected [ReasoningEffort] (already snapped via
+    // [resolveEffortForModel] to whatever the active model advertises)
+    // rather than the generic 'on', because newer models — e.g.
+    // meta/muse-glimmer — reject 'on' with HTTP 400 and only accept the
+    // enum effort values. Older models that don't advertise efforts get
+    // the classic 'low'/'medium'/'high' fallback, which they accept.
     if (params.reasoningEnabled == false) {
       body['reasoning'] = 'off';
     } else if (params.reasoningEnabled == true) {
-      body['reasoning'] = 'on';
+      body['reasoning'] = params.reasoningEffort.apiValue;
     }
     if (params.contextLength > 0) {
       body['context_length'] = params.contextLength;

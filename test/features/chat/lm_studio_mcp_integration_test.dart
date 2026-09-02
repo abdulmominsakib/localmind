@@ -8,6 +8,7 @@ import 'package:localmind/features/chat/data/chat_service.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
 import 'package:localmind/features/chat/data/models/chat_parameters.dart';
 import 'package:localmind/features/chat/data/models/mcp_integration.dart';
+import 'package:localmind/features/chat/providers/chat_reasoning_providers.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 
 class CapturingStreamInterceptor extends Interceptor {
@@ -173,7 +174,7 @@ void main() {
         // object and extra OpenAI-compat keys (reasoning_effort/think/
         // enable_thinking). LM Studio's native /api/v1/chat rejects all of
         // those with HTTP 400, so LMStudioChatService must emit the native
-        // string form ('off'|'low'|'medium'|'high'|'on') only.
+        // string form ('off'|'low'|'medium'|'high'|'xhigh') only.
         final interceptor = CapturingStreamInterceptor([
           'event: chat.start',
           'data: {"type":"chat.start","model_instance_id":"test-model"}',
@@ -192,6 +193,7 @@ void main() {
               messages: [userMessage],
               params: ChatParameters.defaults().copyWith(
                 reasoningEnabled: true,
+                reasoningEffort: ReasoningEffort.medium,
               ),
             )
             .toList();
@@ -204,12 +206,67 @@ void main() {
           isA<String>(),
           reason: 'native endpoint expects reasoning as a string',
         );
-        expect(body['reasoning'], equals('on'));
+        // Must send the actual effort enum value (e.g. 'medium'), not the
+        // generic 'on' which newer models like meta/muse-glimmer reject.
+        expect(body['reasoning'], equals('medium'));
 
         // The OpenAI-compatible reasoning keys must NOT be sent.
         expect(body.containsKey('reasoning_effort'), isFalse);
         expect(body.containsKey('think'), isFalse);
         expect(body.containsKey('enable_thinking'), isFalse);
+      },
+    );
+
+    test(
+      'reasoning enabled sends the requested enum value, not "on" '
+      '(muse-glimmer regression)',
+      () async {
+        // Regression for https://github.com/abdulmominsakib/localmind/issues/75
+        // meta/muse-glimmer accepts only 'low'|'medium'|'high'|'xhigh' and
+        // rejects 'on'/'off' with HTTP 400. The native LM Studio chat
+        // service must forward the user's selected effort instead of the
+        // hard-coded 'on'.
+        for (final effort in ReasoningEffort.values) {
+          // 'max' isn't part of the LM Studio enum, so we only assert the
+          // values the server actually accepts. Skip if the enum value
+          // exceeds what LM Studio supports.
+          if (effort == ReasoningEffort.max) continue;
+
+          final interceptor = CapturingStreamInterceptor([
+            'event: chat.start',
+            'data: {"type":"chat.start","model_instance_id":"meta/muse-glimmer"}',
+            '',
+            'event: chat.end',
+            'data: {"type":"chat.end","result":{"model_instance_id":"meta/muse-glimmer","output":[],"stats":{"input_tokens":1,"total_output_tokens":1}}}',
+            '',
+          ]);
+          final dio = Dio()..interceptors.add(interceptor);
+          final service = LMStudioChatService(dio);
+
+          await service
+              .sendMessage(
+                server: server,
+                modelId: 'meta/muse-glimmer',
+                messages: [userMessage],
+                params: ChatParameters.defaults().copyWith(
+                  reasoningEnabled: true,
+                  reasoningEffort: effort,
+                ),
+              )
+              .toList();
+
+          final body = interceptor.capturedRequest!.data
+              as Map<String, dynamic>;
+          expect(
+            body['reasoning'],
+            equals(effort.apiValue),
+            reason:
+                'effort $effort should be forwarded as its enum string',
+          );
+          // And it must never be the generic 'on' that muse-glimmer
+          // rejects.
+          expect(body['reasoning'], isNot(equals('on')));
+        }
       },
     );
 

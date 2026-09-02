@@ -22,7 +22,11 @@ class _NotificationPermissionBannerState
   @override
   void initState() {
     super.initState();
-    _checkStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _checkStatus();
+      }
+    });
   }
 
   Future<void> _checkStatus() async {
@@ -31,6 +35,8 @@ class _NotificationPermissionBannerState
 
     final service = ref.read(notificationPermissionServiceProvider);
     final granted = await service.isPermissionGranted();
+
+    if (!mounted) return;
 
     if (!granted) {
       setState(() => _isVisible = true);

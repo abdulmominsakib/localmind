@@ -13,49 +13,26 @@ import '../../../core/providers/app_providers.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/utils/system_insets.dart';
 
-class McpToolsScreen extends ConsumerStatefulWidget {
+class McpToolsScreen extends ConsumerWidget {
   const McpToolsScreen({super.key});
 
-  @override
-  ConsumerState<McpToolsScreen> createState() => _McpToolsScreenState();
-}
-
-class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
-  Future<List<ToolDefinition>>? _toolsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _toolsFuture = _loadTools();
-  }
-
-  Future<List<ToolDefinition>> _loadTools() {
-    return ref.read(toolRegistryProvider).listTools();
-  }
-
-  void _refreshTools() {
-    ref.invalidate(toolRegistryProvider);
-    setState(() {
-      _toolsFuture = _loadTools();
-    });
-  }
-
-  void _toggleExampleServer() {
+  void _toggleExampleServer(WidgetRef ref) {
     final manager = ref.read(mcpServerManagerProvider);
     if (manager.hasExampleServer()) {
       manager.removeServer(exampleMcpServerLabel);
     } else {
       manager.addExampleServer();
     }
-    _refreshTools();
+    ref.invalidate(availableToolsProvider);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
     final manager = ref.watch(mcpServerManagerProvider);
     final hasExampleServer = manager.hasExampleServer();
+    final toolsAsync = ref.watch(availableToolsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final topPadding = MediaQuery.of(context).padding.top;
     final bottomInset = bottomSystemInset(context);
@@ -117,7 +94,6 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                     badges: [_FeatureBadge(label: l10n.experimental_label)],
                     onChanged: (value) {
                       ref.read(settingsProvider.notifier).setMcpEnabled(value);
-                      _refreshTools();
                     },
                   ),
                   if (settings.mcpEnabled) ...[
@@ -140,7 +116,6 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                             ref
                                 .read(settingsProvider.notifier)
                                 .setCalendarToolsEnabled(true);
-                            _refreshTools();
                           } else {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -156,7 +131,6 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                           ref
                               .read(settingsProvider.notifier)
                               .setCalendarToolsEnabled(false);
-                          _refreshTools();
                         }
                       },
                     ),
@@ -164,7 +138,7 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                       label: l10n.enable_example_server,
                       description: l10n.example_mcp_server_desc,
                       value: hasExampleServer,
-                      onChanged: (_) => _toggleExampleServer(),
+                      onChanged: (_) => _toggleExampleServer(ref),
                     ),
                   ],
                 ],
@@ -174,7 +148,9 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                 title: l10n.available_tools,
                 accent: const Color(0xFF22C55E),
                 icon: HugeIcons.strokeRoundedPuzzle,
-                children: [_buildToolsContent(l10n, settings.mcpEnabled)],
+                children: [
+                  _buildToolsContent(l10n, settings.mcpEnabled, toolsAsync),
+                ],
               );
 
               return ListView(
@@ -195,7 +171,8 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
                           if (settings.mcpEnabled) ...[
                             const SizedBox(height: 16),
                             _ConfiguredMcpServersCard(
-                              onServersChanged: _refreshTools,
+                              onServersChanged: () =>
+                                  ref.invalidate(availableToolsProvider),
                             ),
                           ],
                           const SizedBox(height: 16),
@@ -213,7 +190,11 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
     );
   }
 
-  Widget _buildToolsContent(AppLocalizations l10n, bool mcpEnabled) {
+  Widget _buildToolsContent(
+    AppLocalizations l10n,
+    bool mcpEnabled,
+    AsyncValue<List<ToolDefinition>> toolsAsync,
+  ) {
     if (!mcpEnabled) {
       return _StatusPanel(
         icon: HugeIcons.strokeRoundedAlertCircle,
@@ -222,33 +203,25 @@ class _McpToolsScreenState extends ConsumerState<McpToolsScreen> {
       );
     }
 
-    return FutureBuilder<List<ToolDefinition>>(
-      future: _toolsFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _McpPanel(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: const CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
+    return toolsAsync.when(
+      loading: () => _McpPanel(
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return _StatusPanel(
-            icon: HugeIcons.strokeRoundedInformationCircle,
-            title: l10n.unable_load_tools,
-            body: snapshot.error.toString(),
-          );
-        }
-
-        final tools = snapshot.data ?? const <ToolDefinition>[];
+          ),
+        ),
+      ),
+      error: (error, _) => _StatusPanel(
+        icon: HugeIcons.strokeRoundedInformationCircle,
+        title: l10n.unable_load_tools,
+        body: error.toString(),
+      ),
+      data: (tools) {
         if (tools.isEmpty) {
           return _StatusPanel(
             icon: HugeIcons.strokeRoundedPuzzle,
