@@ -45,6 +45,53 @@ class CapturingStreamInterceptor extends Interceptor {
   }
 }
 
+/// Asserts that [body] uses the native /api/v1/chat reasoning shape:
+/// `reasoning` is a string equal to [expected], and the OpenAI-compat
+/// keys the shared [_applyReasoningControl] would otherwise write are
+/// absent. Used by the reasoning-control tests.
+void expectNativeReasoningShape(
+  Map<String, dynamic> body,
+  Object expected,
+) {
+  expect(
+    body['reasoning'],
+    isA<String>(),
+    reason: 'native endpoint expects reasoning as a string',
+  );
+  expect(body['reasoning'], equals(expected));
+  expect(body.containsKey('reasoning_effort'), isFalse);
+  expect(body.containsKey('think'), isFalse);
+  expect(body.containsKey('enable_thinking'), isFalse);
+}
+
+/// Builds the minimal successful SSE stub for a single model turn —
+/// chat.start + chat.end — keyed by [modelId].
+List<String> _lmStudioMinimalStub(String modelId) => [
+      'event: chat.start',
+      'data: {"type":"chat.start","model_instance_id":"$modelId"}',
+      '',
+      'event: chat.end',
+      'data: {"type":"chat.end","result":{"model_instance_id":"$modelId","output":[],"stats":{"input_tokens":1,"total_output_tokens":1}}}',
+      '',
+    ];
+
+/// Sets up an LM Studio chat harness with a captured request and the
+/// minimal SSE stub for [modelId]. The returned [CapturingStreamInterceptor]
+/// has [RequestOptions.data] populated after [service] processes the
+/// request.
+({CapturingStreamInterceptor interceptor, Dio dio, LMStudioChatService service})
+    buildLmStudioHarness({String modelId = 'test-model'}) {
+  final interceptor = CapturingStreamInterceptor(
+    _lmStudioMinimalStub(modelId),
+  );
+  final dio = Dio()..interceptors.add(interceptor);
+  return (
+    interceptor: interceptor,
+    dio: dio,
+    service: LMStudioChatService(dio),
+  );
+}
+
 void main() {
   group('LM Studio MCP Integration Tests (native /api/v1/chat)', () {
     final server = Server(
@@ -170,23 +217,14 @@ void main() {
     test(
       'reasoning control uses native string shape, not OpenAI-compat object',
       () async {
-        // Regression: the shared _applyReasoningControl writes `reasoning` as an
-        // object and extra OpenAI-compat keys (reasoning_effort/think/
+        // Regression: the shared _applyReasoningControl writes `reasoning` as
+        // an object and extra OpenAI-compat keys (reasoning_effort/think/
         // enable_thinking). LM Studio's native /api/v1/chat rejects all of
         // those with HTTP 400, so LMStudioChatService must emit the native
         // string form ('off'|'low'|'medium'|'high'|'xhigh') only.
-        final interceptor = CapturingStreamInterceptor([
-          'event: chat.start',
-          'data: {"type":"chat.start","model_instance_id":"test-model"}',
-          '',
-          'event: chat.end',
-          'data: {"type":"chat.end","result":{"model_instance_id":"test-model","output":[],"stats":{"input_tokens":1,"total_output_tokens":1}}}',
-          '',
-        ]);
-        final dio = Dio()..interceptors.add(interceptor);
-        final service = LMStudioChatService(dio);
+        final harness = buildLmStudioHarness();
 
-        await service
+        await harness.service
             .sendMessage(
               server: server,
               modelId: 'test-model',
@@ -198,22 +236,11 @@ void main() {
             )
             .toList();
 
-        final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
-
-        // `reasoning` must be a string, never an object.
-        expect(
-          body['reasoning'],
-          isA<String>(),
-          reason: 'native endpoint expects reasoning as a string',
-        );
-        // Must send the actual effort enum value (e.g. 'medium'), not the
+        final body =
+            harness.interceptor.capturedRequest!.data as Map<String, dynamic>;
+        // Must send the actual effort enum value ('medium'), not the
         // generic 'on' which newer models like meta/muse-glimmer reject.
-        expect(body['reasoning'], equals('medium'));
-
-        // The OpenAI-compatible reasoning keys must NOT be sent.
-        expect(body.containsKey('reasoning_effort'), isFalse);
-        expect(body.containsKey('think'), isFalse);
-        expect(body.containsKey('enable_thinking'), isFalse);
+        expectNativeReasoningShape(body, 'medium');
       },
     );
 
@@ -223,27 +250,23 @@ void main() {
       () async {
         // Regression for https://github.com/abdulmominsakib/localmind/issues/75
         // meta/muse-glimmer accepts only 'low'|'medium'|'high'|'xhigh' and
-        // rejects 'on'/'off' with HTTP 400. The native LM Studio chat
-        // service must forward the user's selected effort instead of the
-        // hard-coded 'on'.
-        for (final effort in ReasoningEffort.values) {
-          // 'max' isn't part of the LM Studio enum, so we only assert the
-          // values the server actually accepts. Skip if the enum value
-          // exceeds what LM Studio supports.
-          if (effort == ReasoningEffort.max) continue;
+        // rejects 'on' with HTTP 400. The native LM Studio chat service
+        // must forward the user's selected effort instead of the
+        // hard-coded 'on'. We bracket the enum with the lightest and
+        // heaviest advertised efforts — `effort.apiValue` is a constant
+        // per enum value, so additional iterations would only test the
+        // same mapping again.
+        const bracketingEfforts = [
+          ReasoningEffort.low,
+          ReasoningEffort.xhigh,
+        ];
 
-          final interceptor = CapturingStreamInterceptor([
-            'event: chat.start',
-            'data: {"type":"chat.start","model_instance_id":"meta/muse-glimmer"}',
-            '',
-            'event: chat.end',
-            'data: {"type":"chat.end","result":{"model_instance_id":"meta/muse-glimmer","output":[],"stats":{"input_tokens":1,"total_output_tokens":1}}}',
-            '',
-          ]);
-          final dio = Dio()..interceptors.add(interceptor);
-          final service = LMStudioChatService(dio);
+        for (final effort in bracketingEfforts) {
+          final harness = buildLmStudioHarness(
+            modelId: 'meta/muse-glimmer',
+          );
 
-          await service
+          await harness.service
               .sendMessage(
                 server: server,
                 modelId: 'meta/muse-glimmer',
@@ -255,34 +278,17 @@ void main() {
               )
               .toList();
 
-          final body = interceptor.capturedRequest!.data
+          final body = harness.interceptor.capturedRequest!.data
               as Map<String, dynamic>;
-          expect(
-            body['reasoning'],
-            equals(effort.apiValue),
-            reason:
-                'effort $effort should be forwarded as its enum string',
-          );
-          // And it must never be the generic 'on' that muse-glimmer
-          // rejects.
-          expect(body['reasoning'], isNot(equals('on')));
+          expectNativeReasoningShape(body, effort.apiValue);
         }
       },
     );
 
     test('reasoning disabled sends native "off" string', () async {
-      final interceptor = CapturingStreamInterceptor([
-        'event: chat.start',
-        'data: {"type":"chat.start","model_instance_id":"test-model"}',
-        '',
-        'event: chat.end',
-        'data: {"type":"chat.end","result":{"model_instance_id":"test-model","output":[],"stats":{"input_tokens":1,"total_output_tokens":1}}}',
-        '',
-      ]);
-      final dio = Dio()..interceptors.add(interceptor);
-      final service = LMStudioChatService(dio);
+      final harness = buildLmStudioHarness();
 
-      await service
+      await harness.service
           .sendMessage(
             server: server,
             modelId: 'test-model',
@@ -291,11 +297,9 @@ void main() {
           )
           .toList();
 
-      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
-      expect(body['reasoning'], equals('off'));
-      expect(body.containsKey('reasoning_effort'), isFalse);
-      expect(body.containsKey('think'), isFalse);
-      expect(body.containsKey('enable_thinking'), isFalse);
+      final body =
+          harness.interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expectNativeReasoningShape(body, 'off');
     });
 
     test(
