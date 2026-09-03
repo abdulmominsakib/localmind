@@ -22,6 +22,7 @@ import 'tools/adapters/openrouter_tool_adapter.dart';
 import 'tools/adapters/ollama_tool_adapter.dart';
 import 'chat_api_error.dart';
 import 'chat_error_formatter.dart';
+import '../providers/chat_reasoning_providers.dart';
 
 abstract class ChatService {
   Stream<ChatResponse> sendMessage({
@@ -224,16 +225,21 @@ class LMStudioChatService implements ChatService {
     // LM Studio's native /api/v1/chat rejects the OpenAI-compat shape
     // [_applyReasoningControl] writes (object `reasoning`,
     // `reasoning_effort`, `think`, `enable_thinking`) with HTTP 400. It
-    // wants `reasoning` as a string from {'off'|'low'|'medium'|'high'|
-    // 'xhigh'}. meta/muse-glimmer additionally rejects 'on', so we
-    // forward `params.reasoningEffort.apiValue` (already snapped via
-    // [resolveEffortForModel]) rather than a generic 'on'. When the
-    // model doesn't support reasoning, `reasoningEnabled` is null and
-    // we omit the key entirely.
-    if (params.reasoningEnabled != null) {
-      body['reasoning'] = params.reasoningEnabled!
-          ? params.reasoningEffort.apiValue
-          : 'off';
+    // wants `reasoning` as a string. The exact allowed values are per-model
+    // (`capabilities.reasoning.allowed_options`, e.g. `["off","on"]` for
+    // binary models or `["low","medium","high","xhigh"]` for
+    // meta/muse-glimmer which rejects both 'on' and 'off'). We therefore
+    // resolve via [resolveLmStudioReasoningValue] and omit the key when it
+    // returns null (unsupported model, or disabled while `off` isn't
+    // allowed — omitting falls back to the server default instead of 400).
+    final reasoningValue = resolveLmStudioReasoningValue(
+      enabled: params.reasoningEnabled,
+      effort: params.reasoningEffort,
+      allowedOptions: params.reasoningAllowedOptions,
+      defaultOption: params.reasoningDefaultOption,
+    );
+    if (reasoningValue != null) {
+      body['reasoning'] = reasoningValue;
     }
     if (params.contextLength > 0) {
       body['context_length'] = params.contextLength;

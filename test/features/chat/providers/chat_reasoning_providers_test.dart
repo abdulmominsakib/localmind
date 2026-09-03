@@ -43,6 +43,34 @@ void main() {
         ReasoningEffort.high,
       ]);
     });
+
+    test('binary on/off models yield a single placeholder', () {
+      expect(effortsForModel(const ['off', 'on']), [ReasoningEffort.medium]);
+      expect(effortsForModel(const ['ON', 'OFF']), [ReasoningEffort.medium]);
+    });
+
+    test('filters off/on out of granular lists', () {
+      expect(effortsForModel(const ['off', 'low', 'medium', 'on']), [
+        ReasoningEffort.low,
+        ReasoningEffort.medium,
+      ]);
+    });
+  });
+
+  group('hasGranularReasoningChoice', () {
+    test('true for unknown and granular lists', () {
+      expect(hasGranularReasoningChoice(null), isTrue);
+      expect(hasGranularReasoningChoice(const []), isTrue);
+      expect(
+        hasGranularReasoningChoice(const ['low', 'medium', 'high', 'xhigh']),
+        isTrue,
+      );
+    });
+
+    test('false for binary on/off lists', () {
+      expect(hasGranularReasoningChoice(const ['off', 'on']), isFalse);
+      expect(hasGranularReasoningChoice(const ['on']), isFalse);
+    });
   });
 
   group('resolveEffortForModel', () {
@@ -98,6 +126,108 @@ void main() {
         );
       },
     );
+
+    test('keeps current for binary on/off models', () {
+      final model = modelWithEfforts(const ['off', 'on']);
+      expect(
+        resolveEffortForModel(model, ReasoningEffort.low),
+        ReasoningEffort.low,
+      );
+    });
+
+    test('matches case-insensitively for LM Studio caps', () {
+      final model = modelWithEfforts(const ['Low', 'Medium']);
+      expect(
+        resolveEffortForModel(model, ReasoningEffort.low),
+        ReasoningEffort.low,
+      );
+    });
+  });
+
+  group('resolveLmStudioReasoningValue', () {
+    test('omits when reasoning is unsupported', () {
+      expect(
+        resolveLmStudioReasoningValue(
+          enabled: null,
+          effort: ReasoningEffort.low,
+        ),
+        isNull,
+      );
+    });
+
+    test('legacy null caps send effort or off', () {
+      expect(
+        resolveLmStudioReasoningValue(
+          enabled: true,
+          effort: ReasoningEffort.medium,
+        ),
+        'medium',
+      );
+      expect(
+        resolveLmStudioReasoningValue(
+          enabled: false,
+          effort: ReasoningEffort.low,
+        ),
+        'off',
+      );
+    });
+
+    test('omits off when the model does not advertise it (glimmer)', () {
+      expect(
+        resolveLmStudioReasoningValue(
+          enabled: false,
+          effort: ReasoningEffort.low,
+          allowedOptions: const ['low', 'medium', 'high', 'xhigh'],
+          defaultOption: 'medium',
+        ),
+        isNull,
+      );
+      expect(
+        resolveLmStudioReasoningValue(
+          enabled: true,
+          effort: ReasoningEffort.medium,
+          allowedOptions: const ['low', 'medium', 'high', 'xhigh'],
+        ),
+        'medium',
+      );
+    });
+
+    test('binary models send literal on/off', () {
+      expect(
+        resolveLmStudioReasoningValue(
+          enabled: true,
+          effort: ReasoningEffort.low,
+          allowedOptions: const ['off', 'on'],
+          defaultOption: 'on',
+        ),
+        'on',
+      );
+      expect(
+        resolveLmStudioReasoningValue(
+          enabled: false,
+          effort: ReasoningEffort.low,
+          allowedOptions: const ['off', 'on'],
+        ),
+        'off',
+      );
+    });
+
+    test('snaps minimal/max to the LM Studio range', () {
+      expect(
+        resolveLmStudioReasoningValue(
+          enabled: true,
+          effort: ReasoningEffort.minimal,
+        ),
+        'low',
+      );
+      expect(
+        resolveLmStudioReasoningValue(
+          enabled: true,
+          effort: ReasoningEffort.max,
+        ),
+        'xhigh',
+      );
+    });
   });
 
   group('ReasoningEffort.fromApiValue', () {

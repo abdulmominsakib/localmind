@@ -134,7 +134,12 @@ class SelectedModelNotifier extends Notifier<ModelInfo?> {
       notifier.setEnabled(true);
     }
     final supported = model.supportedReasoningEfforts;
-    if (supported != null && !supported.contains(reasoning.effort.apiValue)) {
+    if (supported == null || supported.isEmpty) return;
+    // Binary on/off models have no granular choice; leave the effort alone
+    // (the request layer sends literal "on").
+    if (!hasGranularReasoningChoice(supported)) return;
+    final normalized = supported.map((e) => e.trim().toLowerCase()).toSet();
+    if (!normalized.contains(reasoning.effort.apiValue)) {
       notifier.setEffort(resolveEffortForModel(model, reasoning.effort));
     }
   }

@@ -55,9 +55,15 @@ class ThinkingModeChip extends ConsumerWidget {
     final notifier = ref.read(chatReasoningConfigProvider.notifier);
 
     // Mandatory-reasoning models can't be turned off, so the toggle side is
-    // non-interactive and the effort picker stays visible.
+    // non-interactive and the effort picker stays visible. Binary on/off
+    // models (e.g. LM Studio ["off","on"]) have no granular choice, so the
+    // picker is hidden and the chip is a pure toggle (the request layer
+    // sends literal "on").
     final canDisable = !(model?.reasoningMandatory ?? false);
-    final showPicker = config.enabled || !canDisable;
+    final hasGranularChoice = hasGranularReasoningChoice(
+      model?.supportedReasoningEfforts,
+    );
+    final showPicker = (config.enabled || !canDisable) && hasGranularChoice;
 
     final accent = theme.colorScheme.primary;
     final enabledFg = accent;

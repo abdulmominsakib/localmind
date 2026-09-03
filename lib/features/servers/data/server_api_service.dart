@@ -439,6 +439,9 @@ class ServerApiService {
             supportsVision: capabilities.supportsVision,
             supportsReasoning: capabilities.supportsReasoning,
             supportsToolUse: capabilities.supportsToolUse,
+            supportedReasoningEfforts: capabilities.supportedReasoningEfforts,
+            defaultReasoningEffort: capabilities.defaultReasoningEffort,
+            reasoningMandatory: capabilities.reasoningMandatory,
           ),
         );
       }
@@ -454,21 +457,90 @@ class ServerApiService {
     return null;
   }
 
-  ({bool supportsVision, bool supportsReasoning, bool supportsToolUse})
+  ({
+    bool supportsVision,
+    bool supportsReasoning,
+    bool supportsToolUse,
+    List<String>? supportedReasoningEfforts,
+    String? defaultReasoningEffort,
+    bool reasoningMandatory,
+  })
   _parseModelCapabilities(dynamic raw) {
     if (raw is! Map) {
       return (
         supportsVision: false,
         supportsReasoning: false,
         supportsToolUse: false,
+        supportedReasoningEfforts: null,
+        defaultReasoningEffort: null,
+        reasoningMandatory: false,
       );
     }
 
     final reasoning = raw['reasoning'];
+    final supportsVision = raw['vision'] == true;
+    final supportsToolUse = raw['trained_for_tool_use'] == true;
+    if (reasoning is! Map || reasoning.isEmpty) {
+      return (
+        supportsVision: supportsVision,
+        supportsReasoning: false,
+        supportsToolUse: supportsToolUse,
+        supportedReasoningEfforts: null,
+        defaultReasoningEffort: null,
+        reasoningMandatory: false,
+      );
+    }
+
+    // LM Studio native shape: `reasoning: {allowed_options: [...],
+    // default: ...}`. Examples: ["off","on"], ["on"] (mandatory),
+    // ["low","medium","high","xhigh"] (e.g. meta/muse-glimmer, mandatory
+    // because "off" is absent). Preserve the raw list (lower-cased) so the
+    // chat layer can send exactly what the server advertises instead of a
+    // generic "on"/"off" it may reject with HTTP 400.
+    final allowedRaw = reasoning['allowed_options'];
+    List<String>? allowedOptions;
+    if (allowedRaw is List) {
+      final parsed = allowedRaw
+          .map((e) => e.toString().trim().toLowerCase())
+          .where((e) => e.isNotEmpty)
+          .toList(growable: false);
+      if (parsed.isNotEmpty) allowedOptions = parsed;
+    }
+    final defaultOption = reasoning['default']?.toString().trim().toLowerCase();
+
+    final supportsReasoning = allowedOptions == null
+        // Legacy map without allowed_options (or unexpected shape):
+        // keep the old "non-empty means supported" behaviour.
+        ? true
+        // ["off"] alone means no reasoning to enable.
+        : allowedOptions.any((o) => o != 'off');
+
+    final reasoningMandatory =
+        supportsReasoning &&
+        allowedOptions != null &&
+        !allowedOptions.contains('off');
+
+    if (!supportsReasoning) {
+      return (
+        supportsVision: supportsVision,
+        supportsReasoning: false,
+        supportsToolUse: supportsToolUse,
+        supportedReasoningEfforts: null,
+        defaultReasoningEffort: null,
+        reasoningMandatory: false,
+      );
+    }
+
     return (
-      supportsVision: raw['vision'] == true,
-      supportsReasoning: reasoning is Map && reasoning.isNotEmpty,
-      supportsToolUse: raw['trained_for_tool_use'] == true,
+      supportsVision: supportsVision,
+      supportsReasoning: supportsReasoning,
+      supportsToolUse: supportsToolUse,
+      supportedReasoningEfforts: allowedOptions,
+      defaultReasoningEffort:
+          (defaultOption != null && defaultOption.isNotEmpty)
+          ? defaultOption
+          : null,
+      reasoningMandatory: reasoningMandatory,
     );
   }
 

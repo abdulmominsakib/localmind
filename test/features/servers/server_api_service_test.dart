@@ -247,6 +247,78 @@ void main() {
       expect(models[2].supportsReasoning, isFalse);
     });
 
+    test('parses LM Studio allowed_options/default/mandatory', () async {
+      final mockData = {
+        "models": [
+          {
+            "key": "meta/muse-glimmer",
+            "display_name": "Muse Glimmer",
+            "capabilities": {
+              "reasoning": {
+                "allowed_options": ["low", "medium", "high", "xhigh"],
+                "default": "medium",
+              },
+            },
+          },
+          {
+            "key": "google/gemma-4-e2b",
+            "display_name": "Gemma 4 E2B",
+            "capabilities": {
+              "reasoning": {
+                "allowed_options": ["off", "on"],
+                "default": "on",
+              },
+            },
+          },
+          {
+            "key": "deepseek-r1",
+            "display_name": "DeepSeek R1",
+            "capabilities": {
+              "reasoning": {
+                "allowed_options": ["on"],
+                "default": "on",
+              },
+            },
+          },
+          {
+            "key": "plain-model",
+            "display_name": "Plain",
+            "capabilities": {"vision": false},
+          },
+        ],
+      };
+
+      final dio = Dio()..interceptors.add(TestInterceptor(mockData));
+      final service = ServerApiService(dio);
+
+      final models = await service.fetchModels(testServer);
+      expect(models, hasLength(4));
+      final byId = {for (final m in models) m.id: m};
+
+      final glimmer = byId['meta/muse-glimmer']!;
+      expect(glimmer.supportsReasoning, isTrue);
+      expect(glimmer.reasoningMandatory, isTrue);
+      expect(glimmer.supportedReasoningEfforts, [
+        'low',
+        'medium',
+        'high',
+        'xhigh',
+      ]);
+      expect(glimmer.defaultReasoningEffort, 'medium');
+
+      final gemma = byId['google/gemma-4-e2b']!;
+      expect(gemma.supportsReasoning, isTrue);
+      expect(gemma.reasoningMandatory, isFalse);
+      expect(gemma.supportedReasoningEfforts, ['off', 'on']);
+
+      final r1 = byId['deepseek-r1']!;
+      expect(r1.supportsReasoning, isTrue);
+      expect(r1.reasoningMandatory, isTrue);
+
+      expect(byId['plain-model']!.supportsReasoning, isFalse);
+      expect(byId['plain-model']!.supportedReasoningEfforts, isNull);
+    });
+
     test(
       'handles running models with fallback data array (llama.cpp)',
       () async {

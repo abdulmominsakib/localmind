@@ -76,5 +76,7 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
       selectedModel,
       reasoningConfig.effort,
     ),
+    reasoningAllowedOptions: selectedModel?.supportedReasoningEfforts,
+    reasoningDefaultOption: selectedModel?.defaultReasoningEffort,
   );
 });

@@ -49,10 +49,7 @@ class CapturingStreamInterceptor extends Interceptor {
 /// `reasoning` is a string equal to [expected], and the OpenAI-compat
 /// keys the shared [_applyReasoningControl] would otherwise write are
 /// absent. Used by the reasoning-control tests.
-void expectNativeReasoningShape(
-  Map<String, dynamic> body,
-  Object expected,
-) {
+void expectNativeReasoningShape(Map<String, dynamic> body, Object expected) {
   expect(
     body['reasoning'],
     isA<String>(),
@@ -67,23 +64,21 @@ void expectNativeReasoningShape(
 /// Builds the minimal successful SSE stub for a single model turn —
 /// chat.start + chat.end — keyed by [modelId].
 List<String> _lmStudioMinimalStub(String modelId) => [
-      'event: chat.start',
-      'data: {"type":"chat.start","model_instance_id":"$modelId"}',
-      '',
-      'event: chat.end',
-      'data: {"type":"chat.end","result":{"model_instance_id":"$modelId","output":[],"stats":{"input_tokens":1,"total_output_tokens":1}}}',
-      '',
-    ];
+  'event: chat.start',
+  'data: {"type":"chat.start","model_instance_id":"$modelId"}',
+  '',
+  'event: chat.end',
+  'data: {"type":"chat.end","result":{"model_instance_id":"$modelId","output":[],"stats":{"input_tokens":1,"total_output_tokens":1}}}',
+  '',
+];
 
 /// Sets up an LM Studio chat harness with a captured request and the
 /// minimal SSE stub for [modelId]. The returned [CapturingStreamInterceptor]
 /// has [RequestOptions.data] populated after [service] processes the
 /// request.
 ({CapturingStreamInterceptor interceptor, Dio dio, LMStudioChatService service})
-    buildLmStudioHarness({String modelId = 'test-model'}) {
-  final interceptor = CapturingStreamInterceptor(
-    _lmStudioMinimalStub(modelId),
-  );
+buildLmStudioHarness({String modelId = 'test-model'}) {
+  final interceptor = CapturingStreamInterceptor(_lmStudioMinimalStub(modelId));
   final dio = Dio()..interceptors.add(interceptor);
   return (
     interceptor: interceptor,
@@ -244,46 +239,134 @@ void main() {
       },
     );
 
-    test(
-      'reasoning enabled sends the requested enum value, not "on" '
-      '(muse-glimmer regression)',
-      () async {
-        // Regression for https://github.com/abdulmominsakib/localmind/issues/75
-        // meta/muse-glimmer accepts only 'low'|'medium'|'high'|'xhigh' and
-        // rejects 'on' with HTTP 400. The native LM Studio chat service
-        // must forward the user's selected effort instead of the
-        // hard-coded 'on'. We bracket the enum with the lightest and
-        // heaviest advertised efforts — `effort.apiValue` is a constant
-        // per enum value, so additional iterations would only test the
-        // same mapping again.
-        const bracketingEfforts = [
-          ReasoningEffort.low,
-          ReasoningEffort.xhigh,
-        ];
+    test('reasoning enabled sends the requested enum value, not "on" '
+        '(muse-glimmer regression)', () async {
+      // Regression for https://github.com/abdulmominsakib/localmind/issues/75
+      // meta/muse-glimmer accepts only 'low'|'medium'|'high'|'xhigh' and
+      // rejects 'on' with HTTP 400. The native LM Studio chat service
+      // must forward the user's selected effort instead of the
+      // hard-coded 'on'. We bracket the enum with the lightest and
+      // heaviest advertised efforts — `effort.apiValue` is a constant
+      // per enum value, so additional iterations would only test the
+      // same mapping again.
+      const glimmerAllowed = ['low', 'medium', 'high', 'xhigh'];
+      const bracketingEfforts = [ReasoningEffort.low, ReasoningEffort.xhigh];
 
-        for (final effort in bracketingEfforts) {
-          final harness = buildLmStudioHarness(
+      for (final effort in bracketingEfforts) {
+        final harness = buildLmStudioHarness(modelId: 'meta/muse-glimmer');
+
+        await harness.service
+            .sendMessage(
+              server: server,
+              modelId: 'meta/muse-glimmer',
+              messages: [userMessage],
+              params: ChatParameters.defaults().copyWith(
+                reasoningEnabled: true,
+                reasoningEffort: effort,
+                reasoningAllowedOptions: glimmerAllowed,
+                reasoningDefaultOption: 'medium',
+              ),
+            )
+            .toList();
+
+        final body =
+            harness.interceptor.capturedRequest!.data as Map<String, dynamic>;
+        expectNativeReasoningShape(body, effort.apiValue);
+      }
+    });
+
+    test('reasoning disabled omits key when off is not advertised '
+        '(muse-glimmer follow-up)', () async {
+      // Follow-up on #75: muse-glimmer also rejects 'off' with HTTP 400
+      // (supported: low|medium|high|xhigh). Disabling thinking must omit
+      // the key so the server falls back to its default instead of 400.
+      final harness = buildLmStudioHarness(modelId: 'meta/muse-glimmer');
+
+      await harness.service
+          .sendMessage(
+            server: server,
             modelId: 'meta/muse-glimmer',
-          );
+            messages: [userMessage],
+            params: ChatParameters.defaults().copyWith(
+              reasoningEnabled: false,
+              reasoningEffort: ReasoningEffort.low,
+              reasoningAllowedOptions: const ['low', 'medium', 'high', 'xhigh'],
+              reasoningDefaultOption: 'medium',
+            ),
+          )
+          .toList();
 
-          await harness.service
-              .sendMessage(
-                server: server,
-                modelId: 'meta/muse-glimmer',
-                messages: [userMessage],
-                params: ChatParameters.defaults().copyWith(
-                  reasoningEnabled: true,
-                  reasoningEffort: effort,
-                ),
-              )
-              .toList();
+      final body =
+          harness.interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expect(body.containsKey('reasoning'), isFalse);
+      expect(body.containsKey('reasoning_effort'), isFalse);
+      expect(body.containsKey('think'), isFalse);
+      expect(body.containsKey('enable_thinking'), isFalse);
+    });
 
-          final body = harness.interceptor.capturedRequest!.data
-              as Map<String, dynamic>;
-          expectNativeReasoningShape(body, effort.apiValue);
-        }
-      },
-    );
+    test('binary on/off model sends literal "on" when enabled', () async {
+      final harness = buildLmStudioHarness();
+
+      await harness.service
+          .sendMessage(
+            server: server,
+            modelId: 'test-model',
+            messages: [userMessage],
+            params: ChatParameters.defaults().copyWith(
+              reasoningEnabled: true,
+              reasoningEffort: ReasoningEffort.low,
+              reasoningAllowedOptions: const ['off', 'on'],
+              reasoningDefaultOption: 'on',
+            ),
+          )
+          .toList();
+
+      final body =
+          harness.interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expectNativeReasoningShape(body, 'on');
+    });
+
+    test('minimal/max efforts snap to LM Studio range', () async {
+      for (final (effort, expected) in [
+        (ReasoningEffort.minimal, 'low'),
+        (ReasoningEffort.max, 'xhigh'),
+      ]) {
+        final harness = buildLmStudioHarness();
+
+        await harness.service
+            .sendMessage(
+              server: server,
+              modelId: 'test-model',
+              messages: [userMessage],
+              params: ChatParameters.defaults().copyWith(
+                reasoningEnabled: true,
+                reasoningEffort: effort,
+              ),
+            )
+            .toList();
+
+        final body =
+            harness.interceptor.capturedRequest!.data as Map<String, dynamic>;
+        expectNativeReasoningShape(body, expected);
+      }
+    });
+
+    test('unsupported model omits reasoning key entirely', () async {
+      final harness = buildLmStudioHarness();
+
+      await harness.service
+          .sendMessage(
+            server: server,
+            modelId: 'test-model',
+            messages: [userMessage],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final body =
+          harness.interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expect(body.containsKey('reasoning'), isFalse);
+    });
 
     test('reasoning disabled sends native "off" string', () async {
       final harness = buildLmStudioHarness();

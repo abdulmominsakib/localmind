@@ -1450,8 +1450,11 @@ class ChatNotifier extends Notifier<ChatState> {
     final messages = <Message>[];
 
     final reasoningConfig = ref.read(chatReasoningConfigProvider);
+    final reasoningMandatory = selectedModel?.reasoningMandatory ?? false;
     final shouldDisableThinking =
-        (selectedModel?.supportsReasoning ?? false) && !reasoningConfig.enabled;
+        (selectedModel?.supportsReasoning ?? false) &&
+        !reasoningMandatory &&
+        !reasoningConfig.enabled;
 
     final personaPrompt = _getPersonaSystemPrompt();
     var systemContent =
