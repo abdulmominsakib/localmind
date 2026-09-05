@@ -119,6 +119,9 @@ class MessageArea extends ConsumerWidget {
           initialContent: currentContent,
         );
         if (result == null || result.content == currentContent) return;
+        // Guard every ref-touching statement post-await — the user can
+        // pop this screen or open another conversation mid-edit.
+        if (!context.mounted) return;
         if (result.regenerate) {
           await ref
               .read(chatProvider.notifier)
@@ -137,6 +140,7 @@ class MessageArea extends ConsumerWidget {
           description: editL10n.edit_assistant_message_desc,
           saveLabel: editL10n.save,
         );
+        if (!context.mounted) return;
         if (newContent != null && newContent != currentContent) {
           await ref
               .read(chatProvider.notifier)

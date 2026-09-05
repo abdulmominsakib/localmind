@@ -72,9 +72,10 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
 
   Future<void> _endSession() async {
     await ref.read(voiceModeProvider.notifier).endSession();
-    if (mounted) {
-      context.pop();
-    }
+    // Guard every ref access post-await — endSession() releases audio
+    // resources asynchronously and the overlay may close during that window.
+    if (!mounted) return;
+    context.pop();
   }
 
   void _handleCenterAction() {

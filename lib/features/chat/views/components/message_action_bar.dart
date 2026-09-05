@@ -64,6 +64,9 @@ class _MessageActionBarState extends ConsumerState<MessageActionBar> {
     } else {
       if (ttsState.isSpeaking || ttsState.isPaused) {
         await ttsNotifier.stop();
+        // Guard every ref-touching statement post-await — the user can
+        // unmount this message's action bar while TTS is stopping.
+        if (!mounted) return;
       }
       try {
         await ttsNotifier.speak(

@@ -247,7 +247,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         ],
       ),
     ).then((value) {
-      if (mounted) setState(() => _isApprovalDialogOpen = false);
+      // `mounted` must guard every ref-touching branch here, not just the
+      // setState — calling `ref.read` on a deactivated State throws
+      // "Using 'ref' when a widget is about to or has been unmounted is unsafe".
+      if (!mounted) return;
+      setState(() => _isApprovalDialogOpen = false);
       ref.read(chatProvider.notifier).approveTool(value ?? false);
     });
   }

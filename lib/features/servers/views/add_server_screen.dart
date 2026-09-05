@@ -226,10 +226,14 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       } else {
         await ref.read(serversProvider.notifier).addServer(server);
       }
+      // Guard every ref-touching statement post-await — the user can pop
+      // this screen after the provider mutation succeeds.
+      if (!mounted) return;
       final apiService = ref.read(serverApiServiceProvider);
       await ref
           .read(serversProvider.notifier)
           .testConnection(server.id, apiService);
+      if (!mounted) return;
       invalidateAvailableModelsCache(server.id);
 
       if (mounted) {

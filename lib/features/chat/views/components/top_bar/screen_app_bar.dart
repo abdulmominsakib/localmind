@@ -299,6 +299,9 @@ class ScreenAppBar extends ConsumerWidget {
                 for (final id in selectedIds) {
                   await ref.read(chatProvider.notifier).deleteMessage(id);
                 }
+                // Guard every ref-touching statement post-await — the
+                // user can dismiss this screen while the deletions run.
+                if (!context.mounted) return;
                 ref.read(messageSelectionModeProvider.notifier).disable();
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),

@@ -195,7 +195,9 @@ class _OnboardingModelDownloadScreenState
       );
 
       await ref.read(serversProvider.notifier).addServer(server);
+      if (!mounted) return;
       await ref.read(serversProvider.notifier).setDefault(server.id);
+      if (!mounted) return;
       ref.read(activeServerIdProvider.notifier).setActiveServer(server);
 
       if (mounted) {

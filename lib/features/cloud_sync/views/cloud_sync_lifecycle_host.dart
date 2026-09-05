@@ -42,6 +42,10 @@ class _CloudSyncLifecycleHostState extends ConsumerState<CloudSyncLifecycleHost>
         .store
         .entityChanges
         .listen((types) {
+          // The stream may emit one last event between cancel() and full
+          // shutdown, so guard every ref access even though we cancel in
+          // dispose.
+          if (!mounted) return;
           if (types.any(_syncedTypes.contains)) {
             ref.read(cloudSyncControllerProvider.notifier).scheduleSync();
           }
@@ -50,6 +54,10 @@ class _CloudSyncLifecycleHostState extends ConsumerState<CloudSyncLifecycleHost>
       ref.read(cloudSyncControllerProvider.notifier).scheduleSync();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Same guard — the post-frame callback runs after initState returns,
+      // and the State may already be deactivated if the host was rebuilt
+      // and torn down quickly.
+      if (!mounted) return;
       ref
           .read(cloudSyncControllerProvider.notifier)
           .scheduleSync(delay: Duration.zero);

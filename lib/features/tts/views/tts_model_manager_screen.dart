@@ -1086,19 +1086,20 @@ class _VoiceChipsState extends ConsumerState<_VoiceChips> {
     final l10n = AppLocalizations.of(context)!;
     if (_playingVoice == voice) {
       await ref.read(tts.ttsProvider.notifier).stop();
-      if (mounted) setState(() => _playingVoice = null);
+      if (!mounted) return;
+      setState(() => _playingVoice = null);
       return;
     }
     try {
-      if (mounted) setState(() => _playingVoice = voice);
+      if (!mounted) return;
+      setState(() => _playingVoice = voice);
       await ref.read(tts.ttsProvider.notifier).previewVoice(voice);
     } catch (e) {
-      if (mounted) {
-        setState(() => _playingVoice = null);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.preview_failed(e.toString()))),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _playingVoice = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.preview_failed(e.toString()))),
+      );
     }
   }
 }

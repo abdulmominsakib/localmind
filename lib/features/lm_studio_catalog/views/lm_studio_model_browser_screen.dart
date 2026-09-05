@@ -62,6 +62,9 @@ class _LmStudioModelBrowserScreenState
   }
 
   void _onListScroll() {
+    // The scroll listener can fire one last time during dispose, after which
+    // the State's `ref` is no longer safe to use.
+    if (!mounted) return;
     if (_searchQuery.trim().isEmpty) return;
     if (!_listScrollController.hasClients) return;
     final pos = _listScrollController.position;

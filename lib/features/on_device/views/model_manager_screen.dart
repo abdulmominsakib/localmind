@@ -31,9 +31,12 @@ class _OnDeviceModelManagerScreenState
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => ref.read(importedGgufModelsProvider.notifier).pruneMissing(),
-    );
+    Future.microtask(() {
+      // The microtask runs on the next event loop tick — by then the State
+      // may already be deactivated, so we must guard the ref access.
+      if (!mounted) return;
+      ref.read(importedGgufModelsProvider.notifier).pruneMissing();
+    });
   }
 
   @override

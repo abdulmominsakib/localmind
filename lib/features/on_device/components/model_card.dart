@@ -564,22 +564,30 @@ class _DownloadedActions extends ConsumerWidget {
     );
 
     if (confirm == true) {
+      // Guard every ref-touching statement post-await — the parent widget
+      // tree can rebuild and unmount this card during the long-running
+      // delete operations (especially model-file removal on disk).
+      if (!context.mounted) return;
       final engineState = ref.read(onDeviceEngineProvider);
       if (engineState.loadedModelId == model.id) {
         await ref.read(onDeviceEngineProvider.notifier).unloadModel();
       }
+      if (!context.mounted) return;
 
       if (model.isImported) {
         await ref
             .read(importedGgufModelsProvider.notifier)
             .deleteModel(model.id);
       } else if (model.runtime == OnDeviceModelRuntime.mlx) {
+        if (!context.mounted) return;
         final mlxService = ref.read(onDeviceMlxServiceProvider);
         await mlxService.deleteModel(model.id);
       } else {
+        if (!context.mounted) return;
         final gemmaService = ref.read(onDeviceGemmaServiceProvider);
         await gemmaService.deleteModel(model.id);
       }
+      if (!context.mounted) return;
       ref.invalidate(downloadedModelsProvider);
     }
   }

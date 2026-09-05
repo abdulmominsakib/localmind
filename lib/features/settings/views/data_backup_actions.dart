@@ -173,8 +173,9 @@ class DataBackupActions extends ConsumerWidget {
 
   Future<void> _applySettingsPayload(
     WidgetRef ref,
-    Map<String, dynamic> decoded,
-  ) async {
+    Map<String, dynamic> decoded, {
+    required BuildContext context,
+  }) async {
     final prefs = ref.read(sharedPreferencesProvider);
     final settingsMap = decoded['settings'];
     if (settingsMap is Map) {
@@ -184,6 +185,9 @@ class DataBackupActions extends ConsumerWidget {
     if (metadata is Map) {
       await prefs.setString('modelMetadata', jsonEncode(metadata));
     }
+    // Guard every ref-touching statement post-await — the
+    // ConsumerWidget may have been deactivated during the writes.
+    if (!context.mounted) return;
     ref.invalidate(settingsProvider);
     ref.invalidate(serversProvider);
   }
@@ -210,12 +214,17 @@ class DataBackupActions extends ConsumerWidget {
         final decoded =
             jsonDecode(utf8.decode(file.content as List<int>))
                 as Map<String, dynamic>;
-        await _applySettingsPayload(ref, decoded);
+        await _applySettingsPayload(ref, decoded, context: context);
       }
+
+      // Guard every ref-touching statement post-await — the
+      // ConsumerWidget may have been deactivated during the import.
+      if (!context.mounted) return;
 
       // Defer invalidations until after the current build frame so widgets that
       // watch these providers (e.g. SettingsViews) don't flush them during build.
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
         ref.invalidate(conversationsProvider);
         ref.invalidate(personasNotifierProvider);
         ref.invalidate(savedMessagesProvider);
@@ -289,6 +298,9 @@ class DataBackupActions extends ConsumerWidget {
           ),
           onImport: () => _importJsonFile(context, ref, (json) async {
             await service.importFromJson(db.store, json);
+            // Guard every ref-touching statement post-await — the
+            // ConsumerWidget may have been deactivated during the import.
+            if (!context.mounted) return;
             ref.invalidate(conversationsProvider);
             ref.invalidate(savedMessagesProvider);
           }, l10n.import_data_confirm),
@@ -304,6 +316,7 @@ class DataBackupActions extends ConsumerWidget {
           ),
           onImport: () => _importJsonFile(context, ref, (json) async {
             await service.importFromJson(db.store, json);
+            if (!context.mounted) return;
             ref.invalidate(personasNotifierProvider);
           }, l10n.import_data_confirm),
         ),
@@ -323,7 +336,8 @@ class DataBackupActions extends ConsumerWidget {
           onImport: () => _importJsonFile(context, ref, (json) async {
             final decoded = jsonDecode(json) as Map<String, dynamic>;
             await service.importFromJson(db.store, json);
-            await _applySettingsPayload(ref, decoded);
+            if (!context.mounted) return;
+            await _applySettingsPayload(ref, decoded, context: context);
           }, l10n.import_settings_confirm),
         ),
         const SizedBox(height: 8),

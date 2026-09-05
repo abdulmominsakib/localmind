@@ -25,7 +25,11 @@ import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/objectbox.g.dart';
 import '../data/chat_service.dart';
+import '../data/models/chat_parameters.dart';
+import '../data/models/mcp_integration.dart';
 import '../data/models/message.dart' hide ToolCallData;
+import '../data/models/message.dart' as msg_model
+    show ToolCallData;
 import '../data/title_generation_service.dart';
 import '../data/tools/tool_definition.dart';
 import '../data/tools/tool_event.dart';
@@ -1226,6 +1230,49 @@ class ChatNotifier extends Notifier<ChatState> {
                           toolEvents: toolEvents,
                         );
                       }
+
+                      // After successful tool execution the chat must
+                      // continue: the model has emitted a tool call, the
+                      // client (or server) executed it, and now we need to
+                      // send a follow-up chat completion containing the
+                      // tool-role result(s) so the model can produce the
+                      // final answer. Without this, the conversation just
+                      // ends as soon as the tool returns — see issue #77.
+                      final completedResults = toolEvents
+                          .where((e) => e.status == ToolEventStatus.completed)
+                          .toList();
+                      if (ref.mounted &&
+                          completedResults.isNotEmpty &&
+                          chatService != null) {
+                        await _sendFollowupWithToolResults(
+                          previousAssistant: finalMessage,
+                          toolEvents: toolEvents,
+                          server: server,
+                          selectedModel: selectedModel,
+                          effectiveModelId: effectiveModelId,
+                          chatService: chatService,
+                          chatParams: chatParams,
+                          tools: tools,
+                          integrations: integrations,
+                          streamConvId: streamConvId,
+                          isCurrentContext: isCurrentContext,
+                        );
+                        // After the follow-up the original `finalMessage`
+                        // already contains its `toolEvents` and is on disk;
+                        // mark it as final and bail out of the rest of the
+                        // post-stream bookkeeping that was meant for the
+                        // first turn only.
+                        if (ref.mounted) {
+                          await _saveMessage(finalMessage);
+                          if (isCurrentContext) {
+                            _replaceMessageInState(
+                              finalMessage,
+                              clearStreaming: true,
+                            );
+                          }
+                        }
+                        return;
+                      }
                     } catch (e) {
                       Log.error('Tool execution loop failed: $e');
                     }
@@ -2013,6 +2060,146 @@ class ChatNotifier extends Notifier<ChatState> {
     _updateSavedMetrics(assistantMessage);
 
     await _runAssistantStream(assistantMessage, selectedModel);
+  }
+
+  /// After successful tool execution (issue #77), build `tool` role messages
+  /// for each completed tool event, persist them, and re-issue the chat
+  /// completion so the model can produce the final answer.
+  ///
+  /// The assistant message emitted in the first turn has its `toolCalls`
+  /// field populated with the executed results, plus matching `MessageRole.tool`
+  /// messages are appended right after it so the OpenAI-compatible protocol
+  /// gets the `tool_call_id` ↔ `tool_calls[].id` pairing the model needs to
+  /// continue the turn.
+  Future<void> _sendFollowupWithToolResults({
+    required Message previousAssistant,
+    required List<ToolEvent> toolEvents,
+    required Server server,
+    required ModelInfo? selectedModel,
+    required String effectiveModelId,
+    required ChatService chatService,
+    required ChatParameters chatParams,
+    required List<ToolDefinition> tools,
+    required List<McpIntegration>? integrations,
+    required String streamConvId,
+    required bool isCurrentContext,
+  }) async {
+    if (!ref.mounted) return;
+
+    final completed = toolEvents
+        .where((e) => e.status == ToolEventStatus.completed)
+        .toList();
+    if (completed.isEmpty) return;
+
+    // Synthesize stable tool-call IDs that match between the assistant
+    // message's `tool_calls[].id` and the tool role message's `tool_call_id`.
+    // The streaming-side `ToolCallData` doesn't carry an OpenAI `id`, so we
+    // mint one here and reuse it on both sides.
+    String toolCallIdFor(ToolEvent event) {
+      final uniqueSuffix = event.eventId.isNotEmpty
+          ? event.eventId
+          : '${event.toolName}_${event.timestamp.microsecondsSinceEpoch}';
+      return 'call_${uniqueSuffix}_completed';
+    }
+
+    final toolCallEntries = completed
+        .map(
+          (e) => msg_model.ToolCallData(
+            id: toolCallIdFor(e),
+            toolName: e.toolName,
+            arguments: e.arguments ?? const {},
+            result: e.result,
+          ),
+        )
+        .toList();
+
+    final assistantWithToolCalls = previousAssistant.copyWith(
+      toolCalls: toolCallEntries,
+      stopReason: 'tool_use',
+    );
+    await _saveMessage(assistantWithToolCalls);
+    if (!ref.mounted) return;
+    if (isCurrentContext) {
+      _replaceMessageInAll(assistantWithToolCalls, clearStreaming: true);
+    }
+
+    final toolMessages = completed.map((e) {
+      final callId = toolCallIdFor(e);
+      return Message(
+        id: 'tool_${callId}_${e.timestamp.microsecondsSinceEpoch}',
+        conversationId: previousAssistant.conversationId,
+        role: MessageRole.tool,
+        content: e.result ?? e.error ?? '',
+        createdAt: e.timestamp,
+        status: MessageStatus.complete,
+        toolCallId: callId,
+        toolSessionId: previousAssistant.toolSessionId,
+        parentMessageId: previousAssistant.id,
+        threadOrder: previousAssistant.threadOrder + 0,
+        variantGroupId: previousAssistant.variantGroupId,
+        variantIndex: previousAssistant.variantIndex,
+      );
+    }).toList();
+
+    for (final tm in toolMessages) {
+      await _saveMessage(tm);
+    }
+
+    if (!ref.mounted) return;
+
+    // Persist the assistant+tool messages into state.allMessages so future
+    // `_buildMessagesForApi(selectedModel)` calls (used by the follow-up
+    // stream) include them. Without this the next request would be missing
+    // the tool history and the model would re-emit the same tool call.
+    final newAll = [...state.allMessages, ...toolMessages];
+    final activeTimeline = MessageVariants.resolveActiveTimeline(newAll);
+    state = state.copyWith(
+      allMessages: newAll,
+      messages: activeTimeline,
+    );
+
+    // Create a new assistant message that will receive the model's final
+    // answer. It shares the variant group with the previous assistant turn
+    // so users see a single grouped assistant card that contains both the
+    // tool-call turn and the follow-up answer.
+    final continuationThreadOrder = MessageVariants.nextThreadOrder(
+      state.allMessages,
+    );
+    final continuationMessage = Message(
+      id: generateUuid(),
+      conversationId: previousAssistant.conversationId,
+      role: MessageRole.assistant,
+      content: '',
+      createdAt: DateTime.now(),
+      status: MessageStatus.streaming,
+      modelId: effectiveModelId,
+      variantGroupId: previousAssistant.variantGroupId,
+      variantIndex: previousAssistant.variantIndex + 1,
+      threadOrder: continuationThreadOrder,
+      isActiveVariant: true,
+      parentMessageId: previousAssistant.id,
+    );
+
+    final newAllWithAssistant = [...newAll, continuationMessage];
+    state = state.copyWith(
+      allMessages: newAllWithAssistant,
+      messages: MessageVariants.resolveActiveTimeline(newAllWithAssistant),
+      isStreaming: true,
+      streamingMessage: continuationMessage,
+      clearStreaming: false,
+    );
+    ref.read(isStreamingProvider.notifier).setStreaming(true);
+    ref.read(chatBackgroundServiceProvider).start();
+    await _saveMessage(continuationMessage);
+    if (!ref.mounted) return;
+
+    // Reuse the streaming logic — `_runAssistantStream` builds the API
+    // message list from state, which now contains the tool history, and
+    // will issue a fresh chat completion. If the model emits another tool
+    // call, the same onDone flow will execute it again until the model
+    // yields a final answer or `maxIterations` (enforced inside
+    // `ToolExecutionLoop`) is reached.
+    await _runAssistantStream(continuationMessage, selectedModel);
   }
 
   Future<void> _runAssistantStream(

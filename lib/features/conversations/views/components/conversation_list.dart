@@ -367,9 +367,13 @@ Future<void> runBulkAiRename(
 
   for (final id in conversationIds) {
     try {
+      // Guard every ref-touching statement post-await — the user may pop
+      // this screen while the AI rename loop is running.
+      if (!context.mounted) return;
       final title = await ref
           .read(chatProvider.notifier)
           .generateTitleWithAi(id);
+      if (!context.mounted) return;
       if (title != null && title.isNotEmpty) {
         await ref
             .read(conversationsProvider.notifier)

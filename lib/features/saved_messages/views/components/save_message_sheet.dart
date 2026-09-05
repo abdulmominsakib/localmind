@@ -70,6 +70,9 @@ Future<void> showSaveMessageSheet(
                     await ref
                         .read(savedMessagesProvider.notifier)
                         .removeBySourceMessageId(message.id);
+                    // Guard every ref-touching statement post-await — the
+                    // sheet can be dismissed while the provider mutation runs.
+                    if (!context.mounted) return;
                     ref.invalidate(isMessageSavedProvider(message.id));
                     if (context.mounted) Navigator.pop(context);
                   },
@@ -89,6 +92,7 @@ Future<void> showSaveMessageSheet(
                         folderId: selectedFolderId,
                         isTemporaryChat: isTemporaryChat,
                       );
+                  if (!context.mounted) return;
                   ref.invalidate(isMessageSavedProvider(message.id));
                   if (context.mounted) Navigator.pop(context);
                 },

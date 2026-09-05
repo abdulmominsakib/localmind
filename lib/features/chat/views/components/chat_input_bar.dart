@@ -854,29 +854,42 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     // Voice-to-voice: when the LLM stops producing output and any auto-TTS
     // playback has finished (or was never scheduled), restart the mic so the
     // user can speak again without pressing the mic button.
-    ref.listen<bool>(isStreamingProvider, (previous, next) async {
-      if (previous == true && next == false && mounted) {
-        if (!ref.read(settingsProvider).autoSpeakEnabled) return;
-        final voiceState = ref.read(voiceModeProvider);
-        final voiceActive =
-            voiceState.isActive || voiceState.phase != VoiceModePhase.idle;
-        if (voiceActive) return;
-        final ttsSpeaking = ref.read(ttsProvider).isSpeaking;
-        final sttActive = ref.read(sttProvider).isListening;
-        if (ttsSpeaking || sttActive) return;
+    //
+    // NOTE: This callback is intentionally not async. Riverpod's `ref.listen`
+    // subscribes synchronously and tears the listener down when the widget
+    // deactivates, but an async listener that touches `ref` after an `await`
+    // throws
+    // "Using 'ref' when a widget is about to or has been unmounted is unsafe"
+    // if the State deactivates between the await and the next ref read.
+    // Schedule the actual restart on the microtask queue instead.
+    ref.listen<bool>(isStreamingProvider, (previous, next) {
+      if (previous != true || next != false || !mounted) return;
+      final shouldAutoSpeak =
+          ref.read(settingsProvider).autoSpeakEnabled;
+      final voiceState = ref.read(voiceModeProvider);
+      final voiceActive =
+          voiceState.isActive || voiceState.phase != VoiceModePhase.idle;
+      final ttsSpeaking = ref.read(ttsProvider).isSpeaking;
+      final sttActive = ref.read(sttProvider).isListening;
+      if (!shouldAutoSpeak || voiceActive || ttsSpeaking || sttActive) return;
 
+      _preSpeechText = _controller.text;
+      final preSpeechText = _preSpeechText;
+      Future.microtask(() async {
         // Small delay so the OS finishes releasing the audio session before
         // we ask for the microphone again.
         await Future.delayed(const Duration(milliseconds: 200));
         if (!mounted) return;
         if (ref.read(sttProvider).isListening) return;
         if (ref.read(isStreamingProvider)) return;
-
-        _preSpeechText = _controller.text;
         await ref
             .read(sttProvider.notifier)
             .startListening(onResult: _onSpeechResult);
-      }
+        // Ensure _preSpeechText didn't drift while the async chain ran.
+        if (mounted && _preSpeechText == preSpeechText) {
+          _preSpeechText = _controller.text;
+        }
+      });
     });
 
     final canSend =

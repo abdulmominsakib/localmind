@@ -223,6 +223,9 @@ class SavedMessagesScreen extends ConsumerWidget {
                       await ref
                           .read(chatProvider.notifier)
                           .loadConversation(conversation);
+                      // Guard every ref access post-await — the user can pop
+                      // this screen while loadConversation is running.
+                      if (!context.mounted) return;
                       ref
                           .read(chatOriginProvider.notifier)
                           .set(ChatOrigin.savedMessages);

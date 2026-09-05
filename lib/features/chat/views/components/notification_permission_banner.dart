@@ -41,6 +41,9 @@ class _NotificationPermissionBannerState
     if (!granted) {
       setState(() => _isVisible = true);
     } else {
+      // Guard every ref access after an await — the State may have been
+      // deactivated while the permission request was in flight.
+      if (!mounted) return;
       await ref
           .read(settingsProvider.notifier)
           .updateSettings(settings.copyWith(hasAskedForNotifications: true));
@@ -50,6 +53,7 @@ class _NotificationPermissionBannerState
   Future<void> _requestPermission() async {
     final service = ref.read(notificationPermissionServiceProvider);
     await service.requestPermission();
+    if (!mounted) return;
     await _dismiss(true);
   }
 
@@ -58,6 +62,7 @@ class _NotificationPermissionBannerState
     await ref
         .read(settingsProvider.notifier)
         .updateSettings(settings.copyWith(hasAskedForNotifications: true));
+    if (!mounted) return;
     setState(() => _isVisible = false);
   }
 
