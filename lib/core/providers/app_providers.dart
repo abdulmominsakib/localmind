@@ -139,6 +139,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(showSystemMessagesInChat: value));
   void setCalendarToolsEnabled(bool value) =>
       _update(state.copyWith(calendarToolsEnabled: value));
+  void setLocationToolsEnabled(bool value) =>
+      _update(state.copyWith(locationToolsEnabled: value));
   void setAutoCollapseThinking(bool value) =>
       _update(state.copyWith(autoCollapseThinking: value));
 

@@ -5657,6 +5657,24 @@ abstract class AppLocalizations {
   /// **'Calendar permission denied. Please grant calendar access in your device settings.'**
   String get calendar_permission_denied;
 
+  /// Toggle for location tools feature
+  ///
+  /// In en, this message translates to:
+  /// **'Location Access'**
+  String get location_access;
+
+  /// Description for location tools toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Allow AI to get your current location with place name'**
+  String get location_access_desc;
+
+  /// Snackbar message when location permission is denied
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied. Please grant location access in your device settings.'**
+  String get location_permission_denied;
+
   /// Error shown when built-in AI (Gemini Nano / Apple Intelligence) is not supported on the user's hardware or OS
   ///
   /// In en, this message translates to:

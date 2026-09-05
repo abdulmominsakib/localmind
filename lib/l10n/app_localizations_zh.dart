@@ -2958,6 +2958,17 @@ class AppLocalizationsZh extends AppLocalizations {
       'Calendar permission denied. Please grant calendar access in your device settings.';
 
   @override
+  String get location_access => 'Location Access';
+
+  @override
+  String get location_access_desc =>
+      'Allow AI to get your current location with place name';
+
+  @override
+  String get location_permission_denied =>
+      'Location permission denied. Please grant location access in your device settings.';
+
+  @override
   String get builtin_ai_not_supported =>
       'Built-in AI is not supported on this device.';
 

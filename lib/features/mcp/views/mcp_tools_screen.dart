@@ -6,6 +6,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../chat/data/mcp_server_manager.dart';
 import '../../chat/data/tools/calendar_service.dart';
+import '../../chat/data/tools/location_service.dart';
 import '../../chat/data/tools/tool_definition.dart';
 import '../../chat/providers/chat_mcp_providers.dart';
 import '../../chat/providers/tooling_providers.dart';
@@ -131,6 +132,36 @@ class McpToolsScreen extends ConsumerWidget {
                           ref
                               .read(settingsProvider.notifier)
                               .setCalendarToolsEnabled(false);
+                        }
+                      },
+                    ),
+                    _McpToggleSetting(
+                      label: l10n.location_access,
+                      description: l10n.location_access_desc,
+                      value: settings.locationToolsEnabled,
+                      onChanged: (value) async {
+                        if (value) {
+                          final location = LocationService.instance;
+                          final granted = await location.requestAccess();
+                          if (granted) {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setLocationToolsEnabled(true);
+                          } else {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    l10n.location_permission_denied,
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        } else {
+                          ref
+                              .read(settingsProvider.notifier)
+                              .setLocationToolsEnabled(false);
                         }
                       },
                     ),
@@ -404,7 +435,9 @@ class _ToolRow extends StatelessWidget {
                   ? HugeIcons.strokeRoundedShare01
                   : (tool.name.startsWith('calendar.')
                         ? HugeIcons.strokeRoundedCalendar01
-                        : HugeIcons.strokeRoundedCalculate),
+                        : (tool.name.startsWith('location.')
+                              ? HugeIcons.strokeRoundedLocation01
+                              : HugeIcons.strokeRoundedCalculate)),
               size: 18,
               color: isMcp
                   ? theme.colorScheme.primary

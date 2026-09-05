@@ -107,6 +107,8 @@
 	<string>Full access to view and edit your calendar events through AI chat.</string>
 	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
 	<string>Add calendar events through AI chat without reading existing events.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Share your current location with AI chat only when you ask, including a human-readable place name.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

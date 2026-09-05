@@ -3,11 +3,16 @@ import 'dart:convert';
 import 'tool_definition.dart';
 import 'tool_registry.dart';
 import 'calendar_service.dart';
+import 'location_service.dart';
 
 class BuiltInToolProvider implements ToolProvider {
   final bool calendarToolsEnabled;
+  final bool locationToolsEnabled;
 
-  BuiltInToolProvider({this.calendarToolsEnabled = false});
+  BuiltInToolProvider({
+    this.calendarToolsEnabled = false,
+    this.locationToolsEnabled = false,
+  });
 
   @override
   Future<List<ToolDefinition>> listTools() async {
@@ -118,6 +123,22 @@ class BuiltInToolProvider implements ToolProvider {
       ]);
     }
 
+    if (locationToolsEnabled) {
+      tools.addAll(const [
+        ToolDefinition(
+          name: 'location.get_current_location',
+          description:
+              'Get the user\'s current location from the device GPS. '
+              'Returns latitude, longitude, accuracy, and a reverse-geocoded '
+              'human-readable place (city, region, country, formatted address). '
+              'Use this when the user asks for local context such as nearby '
+              'places, weather, or directions.',
+          inputSchema: {'type': 'object', 'properties': {}},
+          providerType: ToolProviderType.builtIn,
+        ),
+      ]);
+    }
+
     return tools;
   }
 
@@ -141,6 +162,10 @@ class BuiltInToolProvider implements ToolProvider {
         return _createEvent(args);
       case 'calendar.list_calendars':
         return _listCalendars();
+
+      // -- Location tools --
+      case 'location.get_current_location':
+        return _getCurrentLocation();
 
       default:
         return const ToolExecutionResult.failure('Unknown built-in tool');
@@ -247,6 +272,31 @@ class BuiltInToolProvider implements ToolProvider {
       );
     } catch (e) {
       return ToolExecutionResult.failure('Failed to list calendars: $e');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Location tool implementations
+  // ---------------------------------------------------------------------------
+
+  Future<ToolExecutionResult> _getCurrentLocation() async {
+    try {
+      final location = LocationService.instance;
+      if (!await location.hasAccess()) {
+        return const ToolExecutionResult.failure(
+          'Location permission not granted. '
+          'Please enable Location Access in Settings.',
+        );
+      }
+
+      final result = await location.getCurrentLocation();
+      return ToolExecutionResult.success(
+        const JsonEncoder.withIndent('  ').convert(result),
+      );
+    } on StateError catch (e) {
+      return ToolExecutionResult.failure(e.message);
+    } catch (e) {
+      return ToolExecutionResult.failure('Failed to get location: $e');
     }
   }
 }

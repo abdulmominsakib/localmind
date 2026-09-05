@@ -15,6 +15,7 @@ final builtInToolProviderProvider = Provider<BuiltInToolProvider>((ref) {
   final settings = ref.watch(settingsProvider);
   return BuiltInToolProvider(
     calendarToolsEnabled: settings.calendarToolsEnabled,
+    locationToolsEnabled: settings.locationToolsEnabled,
   );
 });
 

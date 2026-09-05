@@ -58,6 +58,7 @@ class AppSettings {
   final bool roleSwapButtonEnabled;
   final bool showSystemMessagesInChat;
   final bool calendarToolsEnabled;
+  final bool locationToolsEnabled;
   final bool autoCollapseThinking;
   final List<McpIntegration> savedMcpIntegrations;
 
@@ -107,6 +108,7 @@ class AppSettings {
     this.roleSwapButtonEnabled = false,
     this.showSystemMessagesInChat = true,
     this.calendarToolsEnabled = false,
+    this.locationToolsEnabled = false,
     this.autoCollapseThinking = false,
     this.savedMcpIntegrations = const [],
   });
@@ -157,6 +159,7 @@ class AppSettings {
     bool? roleSwapButtonEnabled,
     bool? showSystemMessagesInChat,
     bool? calendarToolsEnabled,
+    bool? locationToolsEnabled,
     bool? autoCollapseThinking,
     List<McpIntegration>? savedMcpIntegrations,
   }) {
@@ -229,6 +232,7 @@ class AppSettings {
       showSystemMessagesInChat:
           showSystemMessagesInChat ?? this.showSystemMessagesInChat,
       calendarToolsEnabled: calendarToolsEnabled ?? this.calendarToolsEnabled,
+      locationToolsEnabled: locationToolsEnabled ?? this.locationToolsEnabled,
       autoCollapseThinking: autoCollapseThinking ?? this.autoCollapseThinking,
       savedMcpIntegrations: savedMcpIntegrations ?? this.savedMcpIntegrations,
     );
@@ -281,6 +285,7 @@ class AppSettings {
       'roleSwapButtonEnabled': roleSwapButtonEnabled,
       'showSystemMessagesInChat': showSystemMessagesInChat,
       'calendarToolsEnabled': calendarToolsEnabled,
+      'locationToolsEnabled': locationToolsEnabled,
       'autoCollapseThinking': autoCollapseThinking,
       'savedMcpIntegrations': savedMcpIntegrations
           .map((i) => i.toJson())
@@ -337,6 +342,7 @@ class AppSettings {
       roleSwapButtonEnabled: map['roleSwapButtonEnabled'] ?? false,
       showSystemMessagesInChat: map['showSystemMessagesInChat'] ?? true,
       calendarToolsEnabled: map['calendarToolsEnabled'] ?? false,
+      locationToolsEnabled: map['locationToolsEnabled'] ?? false,
       autoCollapseThinking: map['autoCollapseThinking'] ?? false,
       savedMcpIntegrations: _parseSavedMcpIntegrations(
         map['savedMcpIntegrations'],

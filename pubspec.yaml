@@ -92,6 +92,8 @@ dependencies:
   apple_mlx:
     path: packages/apple_mlx
   flutter_gemma_builtin_ai: ^0.2.1
+  geolocator: ^14.0.3
+  geocoding: ^5.0.0
 
 dev_dependencies:
   flutter_test:

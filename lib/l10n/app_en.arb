@@ -3369,6 +3369,18 @@
   "@calendar_permission_denied": {
     "description": "Snackbar message when calendar permission is denied"
   },
+  "location_access": "Location Access",
+  "@location_access": {
+    "description": "Toggle for location tools feature"
+  },
+  "location_access_desc": "Allow AI to get your current location with place name",
+  "@location_access_desc": {
+    "description": "Description for location tools toggle"
+  },
+  "location_permission_denied": "Location permission denied. Please grant location access in your device settings.",
+  "@location_permission_denied": {
+    "description": "Snackbar message when location permission is denied"
+  },
   "builtin_ai_not_supported": "Built-in AI is not supported on this device.",
   "@builtin_ai_not_supported": {
     "description": "Error shown when built-in AI (Gemini Nano / Apple Intelligence) is not supported on the user's hardware or OS"
