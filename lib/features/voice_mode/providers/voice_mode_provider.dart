@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/logger/app_logger.dart';
+import '../../../core/providers/chat_background_service_provider.dart';
 import '../../../services/voice_feedback_service.dart';
 import '../../chat/providers/chat_providers.dart';
 import '../../stt/providers/stt_providers.dart';
@@ -164,6 +165,11 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
 
     ref.read(voiceFeedbackProvider).playListening();
 
+    // Hold a microphone-typed foreground service so that voice capture
+    // survives when the app is backgrounded on Android 14+. Must run
+    // before SpeechRecognizer.startListening() begins consuming the mic.
+    await ref.read(chatBackgroundServiceProvider).startMic();
+
     final stt = ref.read(sttProvider.notifier);
     await stt.startListening(
       onResult: (words) {
@@ -199,6 +205,10 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
 
     final stt = ref.read(sttProvider.notifier);
     await stt.stopListening();
+    // Release the microphone-typed foreground service as soon as capture
+    // is done. The transcript is in hand and the LLM will be polled by
+    // the inference FGS path, not the mic one.
+    await ref.read(chatBackgroundServiceProvider).stopMic();
     if (!_active || !ref.mounted) return;
 
     final transcript = state.transcript.trim();
@@ -247,6 +257,13 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     _active = false;
     _isSendingTranscript = false;
     _generatingFired = false;
+
+    // Always release the mic FGS, even if listening never started cleanly.
+    try {
+      await ref.read(chatBackgroundServiceProvider).stopMic();
+    } catch (e) {
+      Log.error('Voice mode mic service stop error: $e');
+    }
 
     if (ref.mounted) {
       ref.read(voiceFeedbackProvider).playDisconnected();

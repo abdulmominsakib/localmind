@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -81,10 +82,10 @@
             android:name=".ChatForegroundService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="specialUse">
+            android:foregroundServiceType="specialUse|microphone">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Used to keep the local AI model inference process alive when the user switches apps, preventing the OS from terminating the heavy background computation." />
+                android:value="Used to keep the local AI model inference process alive when the user switches apps, and to keep microphone capture active for the assistant voice session when invoked from the lock screen or another app." />
         </service>
 
         <service

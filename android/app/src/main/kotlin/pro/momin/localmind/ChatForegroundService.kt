@@ -12,9 +12,17 @@ class ChatForegroundService : Service() {
     companion object {
         private const val CHANNEL_ID = "chat_generation_channel"
         private const val NOTIFICATION_ID = 1001
-        
+        private const val EXTRA_TYPE = "type"
+        private const val TYPE_SPECIAL_USE = "specialUse"
+        private const val TYPE_MICROPHONE = "microphone"
+
         fun startService(context: Context) {
+            startService(context, TYPE_SPECIAL_USE)
+        }
+
+        fun startService(context: Context, type: String) {
             val intent = Intent(context, ChatForegroundService::class.java)
+                .putExtra(EXTRA_TYPE, type)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
@@ -30,16 +38,23 @@ class ChatForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
-        
+
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, notificationIntent,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
         )
 
+        val type = intent?.getStringExtra(EXTRA_TYPE) ?: TYPE_SPECIAL_USE
+        val notificationText = if (type == TYPE_MICROPHONE) {
+            "Listening…"
+        } else {
+            "Generating response…"
+        }
+
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("LocalMind")
-            .setContentText("Generating response…")
+            .setContentText(notificationText)
             .setSmallIcon(android.R.drawable.stat_notify_chat)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
@@ -47,11 +62,15 @@ class ChatForegroundService : Service() {
             .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            val fgType = when (type) {
+                TYPE_MICROPHONE -> ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                else -> ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            }
+            startForeground(NOTIFICATION_ID, notification, fgType)
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
-        
+
         return START_STICKY
     }
 

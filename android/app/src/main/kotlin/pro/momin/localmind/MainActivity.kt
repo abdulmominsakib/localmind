@@ -48,6 +48,14 @@ class MainActivity : AudioServiceActivity() {
                     ChatForegroundService.stopService(this)
                     result.success(null)
                 }
+                "startForegroundMic" -> {
+                    ChatForegroundService.startService(this, "microphone")
+                    result.success(null)
+                }
+                "stopForegroundMic" -> {
+                    ChatForegroundService.stopService(this)
+                    result.success(null)
+                }
                 else -> {
                     result.notImplemented()
                 }
