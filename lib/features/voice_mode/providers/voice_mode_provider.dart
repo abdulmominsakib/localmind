@@ -86,6 +86,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
   /// listeners don't fire after the session has been torn down.
   bool _active = false;
   bool _isSendingTranscript = false;
+  int _listenAttempt = 0;
 
   /// Whether the "generating" feedback cue has already fired for the
   /// current streamed response. Reset on session start; consumed once
@@ -151,6 +152,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
   /// Start listening for user speech.
   Future<void> startListening() async {
     if (!_active || !ref.mounted) return;
+    final attempt = ++_listenAttempt;
     if (!_ensureChatTarget()) return;
 
     _isSendingTranscript = false;
@@ -165,12 +167,39 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
 
     ref.read(voiceFeedbackProvider).playListening();
 
+    final stt = ref.read(sttProvider.notifier);
+    final available = await stt.initSpeech();
+    if (!_isCurrentListenAttempt(attempt)) return;
+    if (!available) {
+      state = state.copyWith(
+        phase: VoiceModePhase.error,
+        error: 'Microphone permission is required for voice mode.',
+        micLevel: 0,
+      );
+      ref.read(voiceFeedbackProvider).playDisconnected();
+      return;
+    }
+
     // Hold a microphone-typed foreground service so that voice capture
     // survives when the app is backgrounded on Android 14+. Must run
-    // before SpeechRecognizer.startListening() begins consuming the mic.
-    await ref.read(chatBackgroundServiceProvider).startMic();
+    // after permission has been granted and while this activity is visible.
+    final background = ref.read(chatBackgroundServiceProvider);
+    final micStarted = await background.startMic();
+    if (!_isCurrentListenAttempt(attempt)) {
+      if (micStarted) await background.stopMic();
+      return;
+    }
+    if (!micStarted) {
+      state = state.copyWith(
+        phase: VoiceModePhase.error,
+        error:
+            'Could not start microphone access. Open LocalMind and try again.',
+        micLevel: 0,
+      );
+      ref.read(voiceFeedbackProvider).playDisconnected();
+      return;
+    }
 
-    final stt = ref.read(sttProvider.notifier);
     await stt.startListening(
       onResult: (words) {
         if (!_active || !ref.mounted) return;
@@ -202,6 +231,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
   /// Stop listening and send the captured transcript to the LLM.
   Future<void> stopListeningAndSend() async {
     if (!_active || !ref.mounted) return;
+    _listenAttempt++;
 
     final stt = ref.read(sttProvider.notifier);
     await stt.stopListening();
@@ -255,8 +285,20 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
   /// End the entire voice session and reset everything.
   Future<void> endSession() async {
     _active = false;
+    _listenAttempt++;
     _isSendingTranscript = false;
     _generatingFired = false;
+
+    // Cancel speech recognition before releasing the microphone service so
+    // the recognizer never continues using an already-stopped FGS.
+    try {
+      if (ref.mounted) {
+        final stt = ref.read(sttProvider.notifier);
+        await stt.cancelListening();
+      }
+    } catch (e) {
+      Log.error('Voice mode STT cancel error: $e');
+    }
 
     // Always release the mic FGS, even if listening never started cleanly.
     try {
@@ -267,16 +309,6 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
 
     if (ref.mounted) {
       ref.read(voiceFeedbackProvider).playDisconnected();
-    }
-
-    // Stop STT if still listening.
-    try {
-      if (ref.mounted) {
-        final stt = ref.read(sttProvider.notifier);
-        await stt.cancelListening();
-      }
-    } catch (e) {
-      Log.error('Voice mode STT cancel error: $e');
     }
 
     // Stop TTS if still speaking.
@@ -416,6 +448,10 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
       micLevel: 0,
     );
     return false;
+  }
+
+  bool _isCurrentListenAttempt(int attempt) {
+    return _active && ref.mounted && attempt == _listenAttempt;
   }
 }
 

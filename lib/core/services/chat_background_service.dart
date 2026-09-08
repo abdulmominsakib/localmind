@@ -40,16 +40,18 @@ class ChatBackgroundService {
   /// survives when the app is backgrounded (Android 14+ requirement).
   /// Does not toggle Wakelock — STT is short-lived and the overlay is
   /// already on-screen when listening starts.
-  Future<void> startMic() async {
-    if (_isMicActive) return;
+  Future<bool> startMic() async {
+    if (_isMicActive) return true;
     try {
       Log.info('Starting background mic service');
       if (Platform.isAndroid) {
         await _channel.invokeMethod('startForegroundMic');
       }
       _isMicActive = true;
+      return true;
     } catch (e) {
       Log.error('Failed to start background mic service: $e');
+      return false;
     }
   }
 

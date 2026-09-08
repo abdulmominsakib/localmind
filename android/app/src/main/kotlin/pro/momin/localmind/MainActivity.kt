@@ -49,8 +49,22 @@ class MainActivity : AudioServiceActivity() {
                     result.success(null)
                 }
                 "startForegroundMic" -> {
-                    ChatForegroundService.startService(this, "microphone")
-                    result.success(null)
+                    try {
+                        ChatForegroundService.startService(this, "microphone")
+                        result.success(null)
+                    } catch (error: SecurityException) {
+                        result.error(
+                            "microphone_permission_required",
+                            error.message ?: "Microphone permission is required.",
+                            null
+                        )
+                    } catch (error: IllegalStateException) {
+                        result.error(
+                            "microphone_service_unavailable",
+                            error.message ?: "The microphone service could not start.",
+                            null
+                        )
+                    }
                 }
                 "stopForegroundMic" -> {
                     ChatForegroundService.stopService(this)

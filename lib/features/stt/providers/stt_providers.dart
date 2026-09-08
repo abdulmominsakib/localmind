@@ -39,6 +39,7 @@ class SttState {
 class SttNotifier extends Notifier<SttState> {
   late SpeechToText _speech;
   bool _isInit = false;
+  Future<bool>? _initialization;
   // Monotonically increasing counter; status callbacks from a previous
   // session cannot clobber state set by a newer one.
   int _session = 0;
@@ -59,8 +60,12 @@ class SttNotifier extends Notifier<SttState> {
     return const SttState();
   }
 
-  Future<bool> initSpeech() async {
-    if (_isInit) return state.isAvailable;
+  Future<bool> initSpeech() {
+    if (_isInit) return Future.value(state.isAvailable);
+    return _initialization ??= _initializeSpeech();
+  }
+
+  Future<bool> _initializeSpeech() async {
     try {
       final available = await _speech.initialize(
         onError: (val) {
@@ -81,16 +86,21 @@ class SttNotifier extends Notifier<SttState> {
             state = state.copyWith(isListening: false);
           }
         },
+        options: [SpeechToText.androidNoBluetooth],
       );
       if (!ref.mounted) return false;
-      _isInit = true;
-      state = state.copyWith(isAvailable: available);
+      // A denied permission must remain retryable after the user changes it
+      // in Android Settings. Do not cache an unsuccessful initialization.
+      _isInit = available;
+      state = state.copyWith(isAvailable: available, clearError: available);
       return available;
     } catch (e) {
       if (!ref.mounted) return false;
       Log.error('STT initialization failed: $e');
       state = state.copyWith(isAvailable: false, error: e.toString());
       return false;
+    } finally {
+      _initialization = null;
     }
   }
 

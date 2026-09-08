@@ -1,12 +1,15 @@
 package pro.momin.localmind
 
 import android.app.*
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 
 class ChatForegroundService : Service() {
     companion object {
@@ -21,6 +24,15 @@ class ChatForegroundService : Service() {
         }
 
         fun startService(context: Context, type: String) {
+            if (type == TYPE_MICROPHONE &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.RECORD_AUDIO
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                throw SecurityException("RECORD_AUDIO permission has not been granted")
+            }
+
             val intent = Intent(context, ChatForegroundService::class.java)
                 .putExtra(EXTRA_TYPE, type)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -46,6 +58,15 @@ class ChatForegroundService : Service() {
         )
 
         val type = intent?.getStringExtra(EXTRA_TYPE) ?: TYPE_SPECIAL_USE
+        if (type == TYPE_MICROPHONE &&
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
         val notificationText = if (type == TYPE_MICROPHONE) {
             "Listening…"
         } else {
