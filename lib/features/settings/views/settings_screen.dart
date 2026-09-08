@@ -1230,6 +1230,8 @@ class _LanguageSetting extends StatelessWidget {
     ('tr', 'Türkçe', 'assets/images/flag_tr.png', '🇹🇷'),
     ('fr', 'Français', 'assets/images/flag_fr.png', '🇫🇷'),
     ('de', 'Deutsch', 'assets/images/flag_de.png', '🇩🇪'),
+    ('pt', 'Português', 'assets/images/flag_br.png', '🇧🇷'),
+    ('ko', '한국어', 'assets/images/flag_kr.png', '🇰🇷'),
   ];
 
   final String? current;

@@ -26,10 +26,8 @@ import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/objectbox.g.dart';
 import '../data/chat_service.dart';
 import '../data/models/chat_parameters.dart';
-import '../data/models/mcp_integration.dart';
 import '../data/models/message.dart' hide ToolCallData;
-import '../data/models/message.dart' as msg_model
-    show ToolCallData;
+import '../data/models/message.dart' as msg_model show ToolCallData;
 import '../data/title_generation_service.dart';
 import '../data/tools/tool_definition.dart';
 import '../data/tools/tool_event.dart';
@@ -1241,9 +1239,7 @@ class ChatNotifier extends Notifier<ChatState> {
                       final completedResults = toolEvents
                           .where((e) => e.status == ToolEventStatus.completed)
                           .toList();
-                      if (ref.mounted &&
-                          completedResults.isNotEmpty &&
-                          chatService != null) {
+                      if (ref.mounted && completedResults.isNotEmpty) {
                         await _sendFollowupWithToolResults(
                           previousAssistant: finalMessage,
                           toolEvents: toolEvents,
@@ -2153,10 +2149,7 @@ class ChatNotifier extends Notifier<ChatState> {
     // the tool history and the model would re-emit the same tool call.
     final newAll = [...state.allMessages, ...toolMessages];
     final activeTimeline = MessageVariants.resolveActiveTimeline(newAll);
-    state = state.copyWith(
-      allMessages: newAll,
-      messages: activeTimeline,
-    );
+    state = state.copyWith(allMessages: newAll, messages: activeTimeline);
 
     // Create a new assistant message that will receive the model's final
     // answer. It shares the variant group with the previous assistant turn

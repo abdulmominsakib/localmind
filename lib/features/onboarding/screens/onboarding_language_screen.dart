@@ -162,6 +162,26 @@ const _languages = [
     shortText: 'De',
     gradient: [Color(0xFFF59E0B), Color(0xFFEF4444)],
   ),
+  _LanguageOption(
+    code: 'pt',
+    nativeName: 'Português',
+    englishName: 'Portuguese',
+    flag: '🇧🇷',
+    flagAsset: 'assets/images/flag_br.png',
+    countryCode: 'BR',
+    shortText: 'Pt',
+    gradient: [Color(0xFF10B981), Color(0xFF059669)],
+  ),
+  _LanguageOption(
+    code: 'ko',
+    nativeName: '한국어',
+    englishName: 'Korean',
+    flag: '🇰🇷',
+    flagAsset: 'assets/images/flag_kr.png',
+    countryCode: 'KR',
+    shortText: 'Ko',
+    gradient: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+  ),
 ];
 
 class OnboardingLanguageScreen extends ConsumerStatefulWidget {
@@ -238,7 +258,7 @@ class _OnboardingLanguageScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       Actor(
                         acts: [.fadeIn(), .slideY(from: 0.08)],
                         child: Column(
@@ -252,7 +272,7 @@ class _OnboardingLanguageScreenState
                                 height: 1.1,
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 10),
                             Text(
                               l10n.onboarding_choose_language,
                               textAlign: TextAlign.center,
@@ -261,7 +281,7 @@ class _OnboardingLanguageScreenState
                                 color: theme.colorScheme.primary,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 6),
                             Text(
                               l10n.onboarding_choose_language_desc,
                               textAlign: TextAlign.center,
@@ -269,13 +289,13 @@ class _OnboardingLanguageScreenState
                                 color: theme.colorScheme.onSurface.withValues(
                                   alpha: 0.7,
                                 ),
-                                height: 1.5,
+                                height: 1.4,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 20),
                       Actor(
                         delay: 60.ms,
                         acts: [.fadeIn(), .slideY(from: 0.08)],
@@ -284,10 +304,10 @@ class _OnboardingLanguageScreenState
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 12,
-                                crossAxisSpacing: 12,
-                                mainAxisExtent: 92,
+                                crossAxisCount: 3,
+                                mainAxisSpacing: 8,
+                                crossAxisSpacing: 8,
+                                mainAxisExtent: 108,
                               ),
                           itemCount: _languages.length,
                           itemBuilder: (context, index) {
@@ -306,7 +326,7 @@ class _OnboardingLanguageScreenState
                               },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   color: theme.colorScheme.surface,
                                   borderRadius: BorderRadius.circular(16),
@@ -339,8 +359,8 @@ class _OnboardingLanguageScreenState
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Container(
-                                          width: 36,
-                                          height: 24,
+                                          width: 34,
+                                          height: 23,
                                           decoration: BoxDecoration(
                                             color: Colors.white,
                                             borderRadius: BorderRadius.circular(
@@ -368,8 +388,8 @@ class _OnboardingLanguageScreenState
                                             ),
                                             child: Image.asset(
                                               lang.flagAsset,
-                                              width: 36,
-                                              height: 24,
+                                              width: 34,
+                                              height: 23,
                                               fit: BoxFit.cover,
                                               errorBuilder:
                                                   (context, error, stackTrace) {
@@ -387,8 +407,8 @@ class _OnboardingLanguageScreenState
                                           duration: const Duration(
                                             milliseconds: 200,
                                           ),
-                                          width: 20,
-                                          height: 20,
+                                          width: 18,
+                                          height: 18,
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
                                             color: isSelected
@@ -407,7 +427,7 @@ class _OnboardingLanguageScreenState
                                                   icon: HugeIcons
                                                       .strokeRoundedTick01,
                                                   color: Colors.white,
-                                                  size: 12,
+                                                  size: 11,
                                                 )
                                               : null,
                                         ),
@@ -425,12 +445,13 @@ class _OnboardingLanguageScreenState
                                           style: theme.textTheme.titleSmall
                                               ?.copyWith(
                                                 fontWeight: FontWeight.bold,
+                                                fontSize: 13,
                                               ),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           '${lang.englishName} • ${lang.shortText.toUpperCase()}',
-                                          maxLines: 1,
+                                          maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
@@ -439,6 +460,7 @@ class _OnboardingLanguageScreenState
                                                     .onSurface
                                                     .withValues(alpha: 0.5),
                                                 fontSize: 10,
+                                                height: 1.15,
                                               ),
                                         ),
                                       ],

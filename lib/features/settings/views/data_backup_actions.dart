@@ -208,12 +208,14 @@ class DataBackupActions extends ConsumerWidget {
       final db = ref.read(databaseProvider);
       await DataBackupService().importZip(db.store, bytes);
 
+      if (!context.mounted) return;
       final archive = ZipDecoder().decodeBytes(bytes);
       for (final file in archive.files) {
         if (!file.isFile || file.name != 'settings.json') continue;
         final decoded =
             jsonDecode(utf8.decode(file.content as List<int>))
                 as Map<String, dynamic>;
+        if (!context.mounted) return;
         await _applySettingsPayload(ref, decoded, context: context);
       }
 
