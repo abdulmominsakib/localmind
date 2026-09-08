@@ -97,11 +97,15 @@ class RoutingInterceptor extends Interceptor {
   }
 
   String? _bodyName(dynamic data) {
-    if (data is Map) return data['name']?.toString();
+    if (data is Map) {
+      return data['model']?.toString() ?? data['name']?.toString();
+    }
     if (data is String && data.isNotEmpty) {
       try {
         final decoded = jsonDecode(data);
-        if (decoded is Map) return decoded['name']?.toString();
+        if (decoded is Map) {
+          return decoded['model']?.toString() ?? decoded['name']?.toString();
+        }
       } catch (_) {
         // Not JSON — leave name null.
       }
@@ -559,6 +563,226 @@ void main() {
         final byId = {for (final m in models) m.id: m};
         expect(byId['qwen3-vl:2b']?.supportsVision, isTrue);
         expect(byId['llama3.2:3b']?.supportsVision, isFalse);
+      },
+    );
+
+    test('fetchModels sends canonical model key to Ollama /api/show', () async {
+      final ollamaServer = Server(
+        id: 'test-ollama',
+        name: 'Test Ollama',
+        type: ServerType.ollama,
+        host: 'localhost',
+        port: 11434,
+        createdAt: DateTime.now(),
+        lastConnectedAt: DateTime.now(),
+      );
+
+      final showBodies = <dynamic>[];
+      final dio = Dio()
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              if (options.path.endsWith('/api/tags')) {
+                handler.resolve(
+                  Response(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: {
+                      'models': [
+                        {
+                          'name': 'qwen3.5:9b',
+                          'size': 6600000000,
+                          'details': {
+                            'parameter_size': '9.7B',
+                            'quantization_level': 'Q4_K_M',
+                            'family': 'qwen35',
+                          },
+                        },
+                      ],
+                    },
+                  ),
+                );
+                return;
+              }
+              if (options.path.endsWith('/api/show')) {
+                showBodies.add(options.data);
+                handler.resolve(
+                  Response(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: {
+                      'capabilities': ['completion', 'thinking'],
+                    },
+                  ),
+                );
+                return;
+              }
+              handler.next(options);
+            },
+          ),
+        );
+
+      final service = ServerApiService(dio);
+      final models = await service.fetchModels(ollamaServer);
+
+      expect(models, hasLength(1));
+      expect(showBodies, hasLength(1));
+      final showBody = showBodies.single;
+      expect(showBody, isA<Map>());
+      expect((showBody as Map).containsKey('model'), isTrue);
+      expect(showBody['model'], 'qwen3.5:9b');
+      expect(showBody.containsKey('name'), isFalse);
+    });
+
+    test(
+      'fetchModels marks Ollama thinking capability with binary off/on',
+      () async {
+        final ollamaServer = Server(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          type: ServerType.ollama,
+          host: 'localhost',
+          port: 11434,
+          createdAt: DateTime.now(),
+          lastConnectedAt: DateTime.now(),
+        );
+
+        final interceptor = RoutingInterceptor({
+          'GET /api/tags': {
+            'models': [
+              {
+                'name': 'qwen3.5:9b',
+                'size': 6600000000,
+                'details': {
+                  'parameter_size': '9.7B',
+                  'quantization_level': 'Q4_K_M',
+                  'family': 'qwen35',
+                },
+              },
+              {
+                'name': 'llama3.2:3b',
+                'size': 2000000000,
+                'details': {
+                  'parameter_size': '3B',
+                  'quantization_level': 'Q4_K_M',
+                  'family': 'llama',
+                },
+              },
+            ],
+          },
+          'POST /api/show:qwen3.5:9b': {
+            'capabilities': ['completion', 'tools', 'thinking'],
+            'details': {
+              'family': 'qwen35',
+              'families': ['qwen35'],
+            },
+          },
+          'POST /api/show:llama3.2:3b': {
+            'capabilities': ['completion'],
+          },
+        });
+
+        final service = ServerApiService(Dio()..interceptors.add(interceptor));
+        final models = await service.fetchModels(ollamaServer);
+
+        expect(models, hasLength(2));
+        final byId = {for (final m in models) m.id: m};
+        final thinker = byId['qwen3.5:9b']!;
+        expect(thinker.supportsReasoning, isTrue);
+        expect(thinker.supportedReasoningEfforts, ['off', 'on']);
+        expect(thinker.reasoningMandatory, isFalse);
+        expect(thinker.supportsToolUse, isTrue);
+
+        final plain = byId['llama3.2:3b']!;
+        expect(plain.supportsReasoning, isFalse);
+        expect(plain.supportedReasoningEfforts, isNull);
+        expect(plain.reasoningMandatory, isFalse);
+      },
+    );
+
+    test(
+      'fetchModels treats Ollama gptoss family as mandatory granular',
+      () async {
+        final ollamaServer = Server(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          type: ServerType.ollama,
+          host: 'localhost',
+          port: 11434,
+          createdAt: DateTime.now(),
+          lastConnectedAt: DateTime.now(),
+        );
+
+        final interceptor = RoutingInterceptor({
+          'GET /api/tags': {
+            'models': [
+              {
+                'name': 'gpt-oss:20b',
+                'size': 13700000000,
+                'details': {
+                  'parameter_size': '20.9B',
+                  'quantization_level': 'MXFP4',
+                  'family': 'gptoss',
+                },
+              },
+            ],
+          },
+          'POST /api/show:gpt-oss:20b': {
+            'capabilities': ['completion'],
+            'details': {
+              'family': 'gptoss',
+              'families': ['gptoss'],
+            },
+          },
+        });
+
+        final service = ServerApiService(Dio()..interceptors.add(interceptor));
+        final models = await service.fetchModels(ollamaServer);
+
+        expect(models, hasLength(1));
+        final model = models.single;
+        expect(model.supportsReasoning, isTrue);
+        expect(model.supportedReasoningEfforts, ['low', 'medium', 'high']);
+        expect(model.reasoningMandatory, isTrue);
+      },
+    );
+
+    test(
+      'fetchModels handles absent or malformed Ollama capabilities',
+      () async {
+        final ollamaServer = Server(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          type: ServerType.ollama,
+          host: 'localhost',
+          port: 11434,
+          createdAt: DateTime.now(),
+          lastConnectedAt: DateTime.now(),
+        );
+
+        final interceptor = RoutingInterceptor({
+          'GET /api/tags': {
+            'models': [
+              {'name': 'missing-caps:latest', 'size': 1000, 'details': {}},
+              {'name': 'malformed-caps:latest', 'size': 1000, 'details': {}},
+              {'name': 'failing-caps:latest', 'size': 1000, 'details': {}},
+            ],
+          },
+          'POST /api/show:missing-caps:latest': {'details': {}},
+          'POST /api/show:malformed-caps:latest': {'capabilities': 'thinking'},
+          // No mock for failing-caps:latest — enrichment must fall back to the
+          // base model instead of failing the whole fetch.
+        });
+
+        final service = ServerApiService(Dio()..interceptors.add(interceptor));
+        final models = await service.fetchModels(ollamaServer);
+
+        expect(models, hasLength(3));
+        for (final model in models) {
+          expect(model.supportsReasoning, isFalse);
+          expect(model.supportedReasoningEfforts, isNull);
+          expect(model.reasoningMandatory, isFalse);
+        }
       },
     );
 

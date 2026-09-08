@@ -567,13 +567,17 @@ class ServerApiService {
         try {
           final response = await _dio.post(
             server.modelDetailsEndpoint,
-            data: {'name': model.id},
+            data: {'model': model.id},
             options: Options(headers: buildServerAuthHeaders(server)),
           );
           final capabilities = _parseOllamaCapabilityList(response.data);
           return model.copyWith(
             supportsVision: capabilities.supportsVision,
+            supportsReasoning: capabilities.supportsReasoning,
             supportsToolUse: capabilities.supportsToolUse,
+            supportedReasoningEfforts: capabilities.supportedReasoningEfforts,
+            defaultReasoningEffort: capabilities.defaultReasoningEffort,
+            reasoningMandatory: capabilities.reasoningMandatory,
           );
         } catch (error) {
           Log.warning(
@@ -585,22 +589,61 @@ class ServerApiService {
     );
   }
 
-  ({bool supportsVision, bool supportsToolUse}) _parseOllamaCapabilityList(
-    dynamic data,
-  ) {
+  ({
+    bool supportsVision,
+    bool supportsReasoning,
+    bool supportsToolUse,
+    List<String>? supportedReasoningEfforts,
+    String? defaultReasoningEffort,
+    bool reasoningMandatory,
+  })
+  _parseOllamaCapabilityList(dynamic data) {
     if (data is! Map) {
-      return (supportsVision: false, supportsToolUse: false);
+      return (
+        supportsVision: false,
+        supportsReasoning: false,
+        supportsToolUse: false,
+        supportedReasoningEfforts: null,
+        defaultReasoningEffort: null,
+        reasoningMandatory: false,
+      );
     }
     final rawCapabilities = data['capabilities'];
-    if (rawCapabilities is! List) {
-      return (supportsVision: false, supportsToolUse: false);
+    final capabilities = rawCapabilities is List
+        ? rawCapabilities
+              .map((value) => value.toString().trim().toLowerCase())
+              .toSet()
+        : <String>{};
+
+    final details = data['details'];
+    final familyNames = <String>{};
+    if (details is Map) {
+      final family = details['family']?.toString().trim().toLowerCase();
+      if (family != null && family.isNotEmpty) familyNames.add(family);
+      final families = details['families'];
+      if (families is List) {
+        familyNames.addAll(
+          families
+              .map((value) => value.toString().trim().toLowerCase())
+              .where((value) => value.isNotEmpty),
+        );
+      }
     }
-    final capabilities = rawCapabilities
-        .map((value) => value.toString().trim().toLowerCase())
-        .toSet();
+    final isGptOss = familyNames.any(
+      (family) => family == 'gptoss' || family == 'gpt-oss',
+    );
+    final supportsReasoning = capabilities.contains('thinking') || isGptOss;
+    final reasoningMandatory = isGptOss;
+
     return (
       supportsVision: capabilities.contains('vision'),
+      supportsReasoning: supportsReasoning,
       supportsToolUse: capabilities.contains('tools'),
+      supportedReasoningEfforts: supportsReasoning
+          ? (isGptOss ? const ['low', 'medium', 'high'] : const ['off', 'on'])
+          : null,
+      defaultReasoningEffort: null,
+      reasoningMandatory: reasoningMandatory,
     );
   }
 

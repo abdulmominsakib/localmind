@@ -107,6 +107,65 @@ ReasoningEffort resolveEffortForModel(
   return ReasoningEffort.fromApiValue(supported.first);
 }
 
+/// Resolves the exact `think` value for Ollama's native `/api/chat`, or null
+/// when the key should be omitted (model doesn't support reasoning or the
+/// model can't run with thinking off).
+///
+/// - [enabled] null (model doesn't support reasoning) → null (omit).
+/// - Disabled + `off` advertised (or unknown caps) → `false`.
+/// - Disabled + `off` NOT advertised (e.g. GPT-OSS `["low","medium","high"]`)
+///   → null (omit). Sending `false` there is ignored, so omitting lets the
+///   server use its default instead of implying an unsupported mode.
+/// - Enabled → `true` for binary `["off","on"]` models; the granular level
+///   (`"low"`, `"medium"`, `"high"`, `"max"`) when advertised;
+///   `minimal`→`"low"` and `xhigh`→`"high"` normalization for Ollama, which
+///   never advertises those two.
+Object? resolveOllamaThinkValue({
+  required bool? enabled,
+  required ReasoningEffort effort,
+  List<String>? allowedOptions,
+  String? defaultOption,
+}) {
+  if (enabled == null) return null;
+  final allowed = allowedOptions
+      ?.map((e) => e.trim().toLowerCase())
+      .where((e) => e.isNotEmpty)
+      .toSet();
+  final def = defaultOption?.trim().toLowerCase();
+
+  if (!enabled) {
+    if (allowed == null || allowed.isEmpty) return false;
+    if (allowed.contains('off')) return false;
+    return null;
+  }
+
+  if (allowed == null || allowed.isEmpty) return true;
+
+  const ollamaLevels = ['low', 'medium', 'high', 'max'];
+  final granularAllowed = ollamaLevels
+      .where((level) => allowed.contains(level))
+      .toList(growable: false);
+
+  if (granularAllowed.isEmpty) {
+    if (allowed.contains('on')) return true;
+    if (def != null && allowed.contains(def)) {
+      if (def == 'on') return true;
+      if (ollamaLevels.contains(def)) return def;
+    }
+    return true;
+  }
+
+  var candidate = effort.apiValue;
+  if (effort == ReasoningEffort.minimal) candidate = 'low';
+  if (effort == ReasoningEffort.xhigh) candidate = 'high';
+
+  if (allowed.contains(candidate)) return candidate;
+
+  if (def != null && granularAllowed.contains(def)) return def;
+  if (candidate == 'low') return granularAllowed.first;
+  return granularAllowed.last;
+}
+
 /// Resolves the exact `reasoning` string for LM Studio's native
 /// `/api/v1/chat`, or null when the key should be omitted (server default).
 ///

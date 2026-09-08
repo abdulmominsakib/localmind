@@ -22,8 +22,10 @@ class ModelInfo {
   final bool supportsToolUse;
 
   /// Effort strings the model advertises for reasoning (OpenRouter
-  /// `reasoning.supported_efforts`), e.g. `["minimal","low","medium","high"]`.
-  /// Null for providers that don't expose per-model efforts.
+  /// `reasoning.supported_efforts`), e.g. `["minimal","low","medium","high"]`;
+  /// LM Studio `allowed_options`; Ollama binary `["off","on"]` or GPT-OSS
+  /// `["low","medium","high"]`. Null for providers that don't expose
+  /// per-model efforts.
   final List<String>? supportedReasoningEfforts;
 
   /// The model's default reasoning effort (OpenRouter
@@ -31,7 +33,8 @@ class ModelInfo {
   final String? defaultReasoningEffort;
 
   /// When true the model cannot run without reasoning (OpenRouter
-  /// `reasoning.mandatory`); the "Off" toggle should be hidden.
+  /// `reasoning.mandatory`, Ollama GPT-OSS); the "Off" toggle should be
+  /// hidden.
   final bool reasoningMandatory;
 
   /// Input token price in USD per 1M tokens (OpenRouter `pricing.prompt`).

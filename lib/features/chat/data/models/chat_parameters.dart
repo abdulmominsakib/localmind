@@ -16,15 +16,16 @@ class ChatParameters {
   final bool? reasoningEnabled;
   final ReasoningEffort reasoningEffort;
 
-  /// Raw LM Studio `allowed_options` for the active model (e.g.
-  /// `["low","medium","high","xhigh"]`, `["off","on"]`). Null when unknown
-  /// (legacy servers) or for non-LM-Studio providers. Lets
-  /// [LMStudioChatService] send exactly what the server advertises and omit
-  /// the key when `off` isn't allowed instead of triggering HTTP 400.
+  /// Raw reasoning `allowed_options` for the active model (e.g. LM Studio
+  /// `["low","medium","high","xhigh"]`, `["off","on"]`; Ollama binary
+  /// `["off","on"]` or GPT-OSS `["low","medium","high"]`). Null when unknown
+  /// (legacy servers) or for providers without per-model options. Lets
+  /// [LMStudioChatService] and Ollama send exactly what the server advertises
+  /// and omit the key when `off` isn't allowed instead of triggering HTTP 400.
   final List<String>? reasoningAllowedOptions;
 
-  /// Raw LM Studio `reasoning.default` for the active model. Used as a
-  /// tie-breaker when snapping efforts.
+  /// Raw reasoning default for the active model. Used as a tie-breaker when
+  /// snapping efforts.
   final String? reasoningDefaultOption;
 
   const ChatParameters({

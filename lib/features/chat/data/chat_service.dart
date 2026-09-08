@@ -920,6 +920,11 @@ class OllamaChatService implements ChatService {
     for (final message in messages) {
       apiMessages.add(await _messageToOllamaMapWithImages(message));
     }
+    // Strip the trailing empty assistant placeholder created for streaming.
+    // Ollama's Qwen 3.5 parser treats any trailing assistant turn as an open
+    // prefill; an empty one misclassifies the generated continuation as
+    // `message.thinking` (see ollama/ollama#17187 and localmind#78).
+    _normalizeAssistantPrefill(apiMessages, continueGeneration);
 
     final body = <String, dynamic>{
       'model': modelId,
@@ -931,7 +936,7 @@ class OllamaChatService implements ChatService {
         'num_predict': params.maxTokens,
       },
     };
-    _applyReasoningControl(body, params);
+    _applyOllamaReasoningControl(body, params);
 
     if (tools != null && tools.isNotEmpty) {
       final toolsPayload = toolAdapter.buildToolDefinitionPayload(tools);
@@ -1383,10 +1388,13 @@ class OpenRouterChatService implements ChatService {
 /// Applies the Think toggle to a request body. Different local/hosted
 /// backends expose "disable reasoning for this hybrid model" a handful of
 /// different ways (a `reasoning` object, a top-level `reasoning_effort`,
-/// llama.cpp's `enable_thinking`, Ollama's `think`) — send all of them so
-/// whichever one the connected server actually understands takes effect.
+/// llama.cpp's `enable_thinking`) — send all of them so whichever one the
+/// connected server actually understands takes effect.
 /// No-op when [ChatParameters.reasoningEnabled] is null, i.e. the active
 /// model doesn't support reasoning.
+///
+/// Ollama has its own native `think` field and must not receive the generic
+/// keys; use [_applyOllamaReasoningControl] for [OllamaChatService].
 void _applyReasoningControl(Map<String, dynamic> body, ChatParameters params) {
   if (params.reasoningEnabled == false) {
     body['reasoning'] = {
@@ -1402,6 +1410,24 @@ void _applyReasoningControl(Map<String, dynamic> body, ChatParameters params) {
     body['reasoning'] = {'effort': effort};
     body['reasoning_effort'] = effort;
   }
+}
+
+/// Applies the Think toggle using only Ollama's native `/api/chat` `think`
+/// field (`true`/`false` or `"low"`/`"medium"`/`"high"`/`"max"`). Omits the
+/// key when the model doesn't support reasoning or can't run with thinking
+/// off, so strict servers and proxies never see unrelated `reasoning`,
+/// `reasoning_effort`, or `enable_thinking` keys.
+void _applyOllamaReasoningControl(
+  Map<String, dynamic> body,
+  ChatParameters params,
+) {
+  final think = resolveOllamaThinkValue(
+    enabled: params.reasoningEnabled,
+    effort: params.reasoningEffort,
+    allowedOptions: params.reasoningAllowedOptions,
+    defaultOption: params.reasoningDefaultOption,
+  );
+  if (think != null) body['think'] = think;
 }
 
 String _formatApiErrorContent(dynamic error) {
@@ -1480,13 +1506,15 @@ String _roleToString(MessageRole role) {
   }
 }
 
-/// Normalises the trailing assistant message in an OpenAI-style `messages`
-/// array. When NOT continuing generation, drops trailing empty assistant
-/// prefill messages (they trigger "prefill incompatible with
-/// enable_thinking" errors on thinking models). When continuing generation,
-/// keeps the trailing assistant prefill but ensures its `content` is a
-/// plain string (image content-part arrays are only valid on user messages,
-/// and [_buildOpenAiApiMessage] never produces them for assistants anyway).
+/// Normalises the trailing assistant message in a chat `messages` array.
+/// When NOT continuing generation, drops trailing empty assistant prefill
+/// messages. Besides triggering "prefill incompatible with enable_thinking"
+/// errors on OpenAI-style thinking models, an empty trailing assistant turn
+/// makes Ollama's Qwen 3.5 parser misclassify the generated continuation as
+/// `message.thinking`. When continuing generation, keeps the trailing
+/// assistant prefill but ensures its `content` is a plain string (image
+/// content-part arrays are only valid on user messages, and
+/// [_buildOpenAiApiMessage] never produces them for assistants anyway).
 void _normalizeAssistantPrefill(
   List<Map<String, dynamic>> apiMessages,
   bool continueGeneration,

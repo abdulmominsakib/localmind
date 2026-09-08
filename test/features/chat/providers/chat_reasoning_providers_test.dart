@@ -230,6 +230,102 @@ void main() {
     });
   });
 
+  group('resolveOllamaThinkValue', () {
+    test('omits when reasoning is unsupported', () {
+      expect(
+        resolveOllamaThinkValue(enabled: null, effort: ReasoningEffort.low),
+        isNull,
+      );
+    });
+
+    test('legacy null caps send boolean true/false', () {
+      expect(
+        resolveOllamaThinkValue(enabled: true, effort: ReasoningEffort.low),
+        isTrue,
+      );
+      expect(
+        resolveOllamaThinkValue(enabled: false, effort: ReasoningEffort.low),
+        isFalse,
+      );
+    });
+
+    test('binary off/on models send booleans', () {
+      expect(
+        resolveOllamaThinkValue(
+          enabled: true,
+          effort: ReasoningEffort.low,
+          allowedOptions: const ['off', 'on'],
+        ),
+        isTrue,
+      );
+      expect(
+        resolveOllamaThinkValue(
+          enabled: false,
+          effort: ReasoningEffort.low,
+          allowedOptions: const ['off', 'on'],
+        ),
+        isFalse,
+      );
+    });
+
+    test('omits off when the model cannot disable thinking', () {
+      expect(
+        resolveOllamaThinkValue(
+          enabled: false,
+          effort: ReasoningEffort.low,
+          allowedOptions: const ['low', 'medium', 'high'],
+        ),
+        isNull,
+      );
+    });
+
+    test('granular models send the selected level', () {
+      expect(
+        resolveOllamaThinkValue(
+          enabled: true,
+          effort: ReasoningEffort.medium,
+          allowedOptions: const ['low', 'medium', 'high'],
+        ),
+        'medium',
+      );
+      expect(
+        resolveOllamaThinkValue(
+          enabled: true,
+          effort: ReasoningEffort.low,
+          allowedOptions: const ['low', 'medium', 'high'],
+        ),
+        'low',
+      );
+    });
+
+    test('snaps efforts Ollama does not advertise', () {
+      expect(
+        resolveOllamaThinkValue(
+          enabled: true,
+          effort: ReasoningEffort.minimal,
+          allowedOptions: const ['low', 'medium', 'high'],
+        ),
+        'low',
+      );
+      expect(
+        resolveOllamaThinkValue(
+          enabled: true,
+          effort: ReasoningEffort.xhigh,
+          allowedOptions: const ['low', 'medium', 'high'],
+        ),
+        'high',
+      );
+      expect(
+        resolveOllamaThinkValue(
+          enabled: true,
+          effort: ReasoningEffort.max,
+          allowedOptions: const ['low', 'medium', 'high'],
+        ),
+        'high',
+      );
+    });
+  });
+
   group('ReasoningEffort.fromApiValue', () {
     test('maps known values', () {
       expect(ReasoningEffort.fromApiValue('minimal'), ReasoningEffort.minimal);

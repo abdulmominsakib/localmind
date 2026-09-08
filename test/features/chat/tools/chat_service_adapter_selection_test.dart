@@ -9,6 +9,7 @@ import 'package:localmind/features/chat/data/chat_api_error.dart';
 import 'package:localmind/features/chat/data/chat_service.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
 import 'package:localmind/features/chat/data/models/chat_parameters.dart';
+import 'package:localmind/features/chat/providers/chat_reasoning_providers.dart';
 import 'package:localmind/features/chat/data/tools/tool_definition.dart';
 import 'package:localmind/features/chat/data/tools/adapters/ollama_tool_adapter.dart';
 import 'package:localmind/features/chat/data/tools/adapters/openai_tool_adapter.dart';
@@ -829,6 +830,236 @@ void main() {
       final msgs = (body['messages'] as List).cast<Map<String, dynamic>>();
       expect(msgs, hasLength(1));
       expect(msgs.last['role'], 'user');
+    });
+  });
+
+  group('Ollama thinking control and prefill handling', () {
+    test(
+      'strips trailing empty assistant placeholder on normal generation',
+      () async {
+        final interceptor = CapturingStreamInterceptor(['{"done":true}']);
+        final service = OllamaChatService(Dio()..interceptors.add(interceptor));
+
+        await service
+            .sendMessage(
+              server: _ollamaTestServer(),
+              modelId: 'qwen3.5:9b',
+              messages: [
+                Message(
+                  id: 'u1',
+                  conversationId: 'c',
+                  role: MessageRole.user,
+                  content: 'hi',
+                  createdAt: DateTime.now(),
+                ),
+                Message(
+                  id: 'a1',
+                  conversationId: 'c',
+                  role: MessageRole.assistant,
+                  content: '',
+                  createdAt: DateTime.now(),
+                ),
+              ],
+              params: ChatParameters.defaults(),
+            )
+            .toList();
+
+        final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+        final msgs = (body['messages'] as List).cast<Map<String, dynamic>>();
+        expect(msgs, hasLength(1));
+        expect(msgs.single['role'], 'user');
+      },
+    );
+
+    test('keeps non-empty assistant prefill when continuing', () async {
+      final interceptor = CapturingStreamInterceptor(['{"done":true}']);
+      final service = OllamaChatService(Dio()..interceptors.add(interceptor));
+
+      await service
+          .sendMessage(
+            server: _ollamaTestServer(),
+            modelId: 'qwen3.5:9b',
+            messages: [
+              Message(
+                id: 'u1',
+                conversationId: 'c',
+                role: MessageRole.user,
+                content: 'hi',
+                createdAt: DateTime.now(),
+              ),
+              Message(
+                id: 'a1',
+                conversationId: 'c',
+                role: MessageRole.assistant,
+                content: 'Sure, ',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+            continueGeneration: true,
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      final msgs = (body['messages'] as List).cast<Map<String, dynamic>>();
+      expect(msgs, hasLength(2));
+      expect(msgs.last['role'], 'assistant');
+      expect(msgs.last['content'], 'Sure, ');
+    });
+
+    test('sends think:false for binary model when disabled', () async {
+      final interceptor = CapturingStreamInterceptor(['{"done":true}']);
+      final service = OllamaChatService(Dio()..interceptors.add(interceptor));
+
+      await service
+          .sendMessage(
+            server: _ollamaTestServer(),
+            modelId: 'qwen3.5:9b',
+            messages: [
+              Message(
+                id: 'u1',
+                conversationId: 'c',
+                role: MessageRole.user,
+                content: 'hi',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults().copyWith(
+              reasoningEnabled: false,
+              reasoningAllowedOptions: const ['off', 'on'],
+            ),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expect(body['think'], isFalse);
+      expect(body.containsKey('reasoning'), isFalse);
+      expect(body.containsKey('reasoning_effort'), isFalse);
+      expect(body.containsKey('enable_thinking'), isFalse);
+    });
+
+    test('sends think:true for binary model when enabled', () async {
+      final interceptor = CapturingStreamInterceptor(['{"done":true}']);
+      final service = OllamaChatService(Dio()..interceptors.add(interceptor));
+
+      await service
+          .sendMessage(
+            server: _ollamaTestServer(),
+            modelId: 'qwen3.5:9b',
+            messages: [
+              Message(
+                id: 'u1',
+                conversationId: 'c',
+                role: MessageRole.user,
+                content: 'hi',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults().copyWith(
+              reasoningEnabled: true,
+              reasoningEffort: ReasoningEffort.low,
+              reasoningAllowedOptions: const ['off', 'on'],
+            ),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expect(body['think'], isTrue);
+      expect(body.containsKey('reasoning'), isFalse);
+      expect(body.containsKey('reasoning_effort'), isFalse);
+      expect(body.containsKey('enable_thinking'), isFalse);
+    });
+
+    test('omits think when reasoning is unsupported', () async {
+      final interceptor = CapturingStreamInterceptor(['{"done":true}']);
+      final service = OllamaChatService(Dio()..interceptors.add(interceptor));
+
+      await service
+          .sendMessage(
+            server: _ollamaTestServer(),
+            modelId: 'llama3.2:3b',
+            messages: [
+              Message(
+                id: 'u1',
+                conversationId: 'c',
+                role: MessageRole.user,
+                content: 'hi',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expect(body.containsKey('think'), isFalse);
+      expect(body.containsKey('reasoning'), isFalse);
+      expect(body.containsKey('reasoning_effort'), isFalse);
+      expect(body.containsKey('enable_thinking'), isFalse);
+    });
+
+    test('sends granular level for GPT-OSS when enabled', () async {
+      final interceptor = CapturingStreamInterceptor(['{"done":true}']);
+      final service = OllamaChatService(Dio()..interceptors.add(interceptor));
+
+      await service
+          .sendMessage(
+            server: _ollamaTestServer(),
+            modelId: 'gpt-oss:20b',
+            messages: [
+              Message(
+                id: 'u1',
+                conversationId: 'c',
+                role: MessageRole.user,
+                content: 'hi',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults().copyWith(
+              reasoningEnabled: true,
+              reasoningEffort: ReasoningEffort.medium,
+              reasoningAllowedOptions: const ['low', 'medium', 'high'],
+            ),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expect(body['think'], 'medium');
+      expect(body.containsKey('reasoning'), isFalse);
+      expect(body.containsKey('reasoning_effort'), isFalse);
+      expect(body.containsKey('enable_thinking'), isFalse);
+    });
+
+    test('streams separate reasoning and content from one chunk', () async {
+      final interceptor = CapturingStreamInterceptor([
+        '{"message":{"thinking":"Let me think","content":"Final answer"},"done":false}',
+        '{"done":true}',
+      ]);
+      final service = OllamaChatService(Dio()..interceptors.add(interceptor));
+
+      final responses = await service
+          .sendMessage(
+            server: _ollamaTestServer(),
+            modelId: 'qwen3.5:9b',
+            messages: [
+              Message(
+                id: 'u1',
+                conversationId: 'c',
+                role: MessageRole.user,
+                content: 'hi',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      expect(responses, hasLength(3));
+      expect(responses[0].type, ChatResponseType.reasoning);
+      expect(responses[0].reasoningContent, 'Let me think');
+      expect(responses[1].type, ChatResponseType.message);
+      expect(responses[1].content, 'Final answer');
+      expect(responses[2].type, ChatResponseType.done);
     });
   });
 }
