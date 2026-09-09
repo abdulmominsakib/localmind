@@ -33,7 +33,7 @@ class _OnboardingServerTypeScreenState
   }
 
   Future<void> _openRepoUrl() async {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
     final l10n = AppLocalizations.of(context)!;
     try {
       final launched = await launchUrl(
@@ -41,13 +41,13 @@ class _OnboardingServerTypeScreenState
         mode: LaunchMode.externalApplication,
       );
       if (!launched && mounted) {
-        messenger.showSnackBar(
+        messenger?.showSnackBar(
           SnackBar(content: Text(l10n.could_not_open_github)),
         );
       }
     } catch (_) {
       if (mounted) {
-        messenger.showSnackBar(
+        messenger?.showSnackBar(
           SnackBar(content: Text(l10n.could_not_open_github)),
         );
       }
@@ -334,7 +334,7 @@ class _OnboardingServerTypeScreenState
       onTap: disabled
           ? () {
               if (disabledReason != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                   SnackBar(
                     content: Text(disabledReason),
                     backgroundColor: theme.colorScheme.error,

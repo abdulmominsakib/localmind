@@ -498,7 +498,7 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
                       .importIntegrationsFromJson(jsonStr);
                   Navigator.of(dialogContext).pop();
 
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                     SnackBar(
                       content: Text(
                         importedCount > 0

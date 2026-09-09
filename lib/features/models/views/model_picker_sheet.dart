@@ -61,13 +61,16 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
                   .map((m) => m.name)
                   .followedBy([loadedId])
                   .first;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              l10n.model_loaded(loadedName, next.backend?.name ?? 'CPU'),
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text(
+                l10n.model_loaded(loadedName, next.backend?.name ?? 'CPU'),
+              ),
             ),
-          ),
-        );
+          );
+        });
       }
     });
 
@@ -200,13 +203,13 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
       if (context.mounted) {
         ref.invalidate(loadedModelsProvider(activeServer));
         ref.read(selectedModelProvider.notifier).clear();
-        ScaffoldMessenger.of(
+        ScaffoldMessenger.maybeOf(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.all_models_unloaded)));
+        )?.showSnackBar(SnackBar(content: Text(l10n.all_models_unloaded)));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(l10n.model_unload_failed(e.toString())),
             backgroundColor: Colors.red,

@@ -82,7 +82,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       await action();
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               l10n?.s3_connection_succeeded ?? 'S3 connection succeeded.',
@@ -92,9 +92,9 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        ScaffoldMessenger.maybeOf(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+        )?.showSnackBar(SnackBar(content: Text(error.toString())));
       }
     } finally {
       if (mounted) setState(() => _working = false);

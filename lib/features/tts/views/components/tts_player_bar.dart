@@ -87,13 +87,16 @@ class TtsPlayerBar extends ConsumerWidget {
 
     ref.listen<tts.TtsState>(tts.ttsProvider, (prev, next) {
       if (next.error != null && prev?.error != next.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error!),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text(next.error!),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        });
       }
     });
 
@@ -256,7 +259,7 @@ class TtsPlayerBar extends ConsumerWidget {
                       try {
                         final ok = await notifier.downloadCurrentAudio();
                         if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                           SnackBar(
                             content: Text(
                               ok
@@ -267,7 +270,7 @@ class TtsPlayerBar extends ConsumerWidget {
                         );
                       } catch (e) {
                         if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                           SnackBar(
                             content: Text(
                               SafeFilePicker.getErrorMessage(

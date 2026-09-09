@@ -124,7 +124,7 @@ class _OnDeviceModelManagerScreenState
   }
 
   Future<void> _importLocalGguf(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
     final l10n = AppLocalizations.of(context)!;
     try {
       final result = await SafeFilePicker.pickFiles(
@@ -135,7 +135,8 @@ class _OnDeviceModelManagerScreenState
 
       final path = result.files.single.path;
       if (path == null || !path.toLowerCase().endsWith('.gguf')) {
-        messenger.showSnackBar(
+        if (!mounted) return;
+        messenger?.showSnackBar(
           SnackBar(content: Text(l10n.gguf_only_supported)),
         );
         return;
@@ -144,13 +145,15 @@ class _OnDeviceModelManagerScreenState
       final model = await ref
           .read(importedGgufModelsProvider.notifier)
           .importModel(path);
-      messenger.showSnackBar(
+      if (!mounted) return;
+      messenger?.showSnackBar(
         SnackBar(
           content: Text('${model.name} ${l10n.gguf_imported_from_local_file}'),
         ),
       );
     } catch (e) {
-      messenger.showSnackBar(
+      if (!mounted) return;
+      messenger?.showSnackBar(
         SnackBar(
           content: Text(
             '${l10n.gguf_import_failed}: ${_friendlyErrorForL10n(l10n, e)}',
@@ -161,7 +164,7 @@ class _OnDeviceModelManagerScreenState
   }
 
   Future<void> _importFromHuggingFace(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
     final l10n = AppLocalizations.of(context)!;
     final importedModel = await showDialog<OnDeviceModel>(
       context: context,
@@ -170,7 +173,7 @@ class _OnDeviceModelManagerScreenState
     );
 
     if (!mounted || importedModel == null) return;
-    messenger.showSnackBar(
+    messenger?.showSnackBar(
       SnackBar(
         content: Text(
           '${importedModel.name} ${l10n.gguf_imported_from_huggingface}',
@@ -927,7 +930,7 @@ class _HuggingFaceGgufImportDialogState
     final text = data?.text?.trim();
     if (!mounted) return;
     if (text == null || text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.clipboard_empty)),
       );
       return;
@@ -946,14 +949,14 @@ class _HuggingFaceGgufImportDialogState
   }
 
   Future<void> _openHuggingFace(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       final launched = await launchUrl(
         _huggingFaceModelsUri,
         mode: LaunchMode.externalApplication,
       );
       if (!launched && context.mounted) {
-        messenger.showSnackBar(
+        messenger?.showSnackBar(
           SnackBar(
             content: Text(
               AppLocalizations.of(context)!.could_not_open_huggingface,
@@ -963,7 +966,7 @@ class _HuggingFaceGgufImportDialogState
       }
     } catch (_) {
       if (context.mounted) {
-        messenger.showSnackBar(
+        messenger?.showSnackBar(
           SnackBar(
             content: Text(
               AppLocalizations.of(context)!.could_not_open_huggingface,

@@ -73,7 +73,7 @@ class MessageArea extends ConsumerWidget {
         onQuickPrompt: (prompt) {
           if (!ref.read(activeChatTargetProvider).isReady) {
             final toastL10n = AppLocalizations.of(context)!;
-            ScaffoldMessenger.of(context).showSnackBar(
+            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
               SnackBar(content: Text(toastL10n.model_required_toast)),
             );
             showModalBottomSheet(

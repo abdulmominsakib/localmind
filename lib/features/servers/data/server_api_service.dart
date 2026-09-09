@@ -570,7 +570,10 @@ class ServerApiService {
             data: {'model': model.id},
             options: Options(headers: buildServerAuthHeaders(server)),
           );
-          final capabilities = _parseOllamaCapabilityList(response.data);
+          final capabilities = _parseOllamaCapabilityList(
+            response.data,
+            modelId: model.id,
+          );
           return model.copyWith(
             supportsVision: capabilities.supportsVision,
             supportsReasoning: capabilities.supportsReasoning,
@@ -597,7 +600,7 @@ class ServerApiService {
     String? defaultReasoningEffort,
     bool reasoningMandatory,
   })
-  _parseOllamaCapabilityList(dynamic data) {
+  _parseOllamaCapabilityList(dynamic data, {required String modelId}) {
     if (data is! Map) {
       return (
         supportsVision: false,
@@ -632,15 +635,36 @@ class ServerApiService {
     final isGptOss = familyNames.any(
       (family) => family == 'gptoss' || family == 'gpt-oss',
     );
-    final supportsReasoning = capabilities.contains('thinking') || isGptOss;
-    final reasoningMandatory = isGptOss;
+    final modelfile = data['modelfile']?.toString().toLowerCase() ?? '';
+    final normalizedModelId = modelId.trim().toLowerCase();
+    // Ollama currently advertises only the broad `thinking` capability, not
+    // whether a model can actually stop generating a reasoning trace. The
+    // LFM2.5 Thinking renderer is reasoning-only: `think: false` disables its
+    // parser and leaks the raw <think> block into message.content instead of
+    // disabling generation (ollama/ollama#14622). Treat that exact renderer
+    // as mandatory so LocalMind keeps the parser enabled and the channels
+    // separate. The model-id check covers older /api/show responses that omit
+    // renderer metadata.
+    final isLfmThinkingOnly =
+        familyNames.contains('lfm2') &&
+        (modelfile.contains('renderer lfm2-thinking') ||
+            modelfile.contains('parser lfm2-thinking') ||
+            normalizedModelId.startsWith('lfm2.5-thinking:') ||
+            normalizedModelId == 'lfm2.5-thinking');
+    final supportsReasoning =
+        capabilities.contains('thinking') || isGptOss || isLfmThinkingOnly;
+    final reasoningMandatory = isGptOss || isLfmThinkingOnly;
 
     return (
       supportsVision: capabilities.contains('vision'),
       supportsReasoning: supportsReasoning,
       supportsToolUse: capabilities.contains('tools'),
       supportedReasoningEfforts: supportsReasoning
-          ? (isGptOss ? const ['low', 'medium', 'high'] : const ['off', 'on'])
+          ? (isGptOss
+                ? const ['low', 'medium', 'high']
+                : isLfmThinkingOnly
+                ? const ['on']
+                : const ['off', 'on'])
           : null,
       defaultReasoningEffort: null,
       reasoningMandatory: reasoningMandatory,

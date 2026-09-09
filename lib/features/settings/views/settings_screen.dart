@@ -368,7 +368,7 @@ class SettingsViews extends ConsumerWidget {
                       ref
                           .read(settingsProvider.notifier)
                           .setHuggingFaceToken(value);
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                         SnackBar(
                           content: Text(
                             value == null || value.isEmpty
@@ -442,7 +442,7 @@ class SettingsViews extends ConsumerWidget {
                           .read(personasNotifierProvider.notifier)
                           .restoreBuiltInPersonas();
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                           SnackBar(
                             content: Text(
                               l10n.restore_builtin_personas_success,
@@ -671,7 +671,7 @@ class _AndroidAssistantSettingState
       await _refreshStatus();
     } on PlatformException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               AppLocalizations.of(context)!.assistant_error(e.toString()),
@@ -1986,7 +1986,7 @@ class _DangerousAction extends StatelessWidget {
                   onPressed: () {
                     Navigator.pop(dialogContext);
                     onConfirm();
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                       SnackBar(content: Text(l10n.label_completed(label))),
                     );
                   },

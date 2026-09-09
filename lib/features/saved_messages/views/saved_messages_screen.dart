@@ -197,7 +197,7 @@ class SavedMessagesScreen extends ConsumerWidget {
                         return;
                       }
                       if (saved.conversationId.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                           SnackBar(
                             content: Text(
                               l10n.saved_message_temp_snap_unavailable,
@@ -241,7 +241,7 @@ class SavedMessagesScreen extends ConsumerWidget {
                         ClipboardData(text: saved.content),
                       );
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                           SnackBar(content: Text(l10n.copied_to_clipboard)),
                         );
                       }

@@ -21,6 +21,7 @@ class OnboardingNotificationPermissionScreen extends ConsumerStatefulWidget {
 class _OnboardingNotificationPermissionScreenState
     extends ConsumerState<OnboardingNotificationPermissionScreen> {
   bool _isProcessing = false;
+  bool _hasNavigated = false;
 
   Future<void> _completeOnboarding() async {
     final settings = ref.read(settingsProvider);
@@ -34,6 +35,7 @@ class _OnboardingNotificationPermissionScreenState
         );
 
     if (mounted) {
+      _hasNavigated = true;
       context.go(AppRoutes.home);
     }
   }
@@ -47,7 +49,7 @@ class _OnboardingNotificationPermissionScreenState
       await notificationService.requestPermission();
       await _completeOnboarding();
     } finally {
-      if (mounted) {
+      if (mounted && !_hasNavigated) {
         setState(() => _isProcessing = false);
       }
     }

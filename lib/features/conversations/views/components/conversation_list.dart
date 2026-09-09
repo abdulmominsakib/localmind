@@ -112,7 +112,7 @@ class ConversationList extends ConsumerWidget {
                     ref
                         .read(conversationsProvider.notifier)
                         .duplicateConversation(conversation.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                       SnackBar(content: Text(l10n.duplicate_chat_success)),
                     );
                   },

@@ -249,7 +249,7 @@ class _OnDeviceModelTile extends ConsumerWidget {
     return InkWell(
       onTap: () {
         if (isBuiltInUnsupported) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
             SnackBar(
               content: Text(l10n.builtin_ai_not_supported),
               duration: const Duration(seconds: 4),
@@ -584,7 +584,7 @@ class _OnDeviceModelTile extends ConsumerWidget {
                             .startDownload(model.id);
                         if (result == 'missing_huggingface_token' &&
                             context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                             SnackBar(
                               content: Text(
                                 l10n.model_missing_huggingface_token,

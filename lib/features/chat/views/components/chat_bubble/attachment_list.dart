@@ -37,9 +37,9 @@ class _AttachmentItem extends StatelessWidget {
     if (!context.mounted) return;
     if (text == null) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(
+      ScaffoldMessenger.maybeOf(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.could_not_read_file)));
+      )?.showSnackBar(SnackBar(content: Text(l10n.could_not_read_file)));
       return;
     }
     showModalBottomSheet<void>(

@@ -40,14 +40,14 @@ class DataBackupActions extends ConsumerWidget {
       );
       if (saved == null) return;
       if (context.mounted) {
-        ScaffoldMessenger.of(
+        ScaffoldMessenger.maybeOf(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.export_data_success)));
+        )?.showSnackBar(SnackBar(content: Text(l10n.export_data_success)));
       }
     } catch (e) {
       if (context.mounted) {
         final msg = SafeFilePicker.getErrorMessage(e, l10n);
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               SafeFilePicker.isExplorerNotFoundError(e)
@@ -86,14 +86,14 @@ class DataBackupActions extends ConsumerWidget {
       );
       if (saved == null) return;
       if (context.mounted) {
-        ScaffoldMessenger.of(
+        ScaffoldMessenger.maybeOf(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.export_data_success)));
+        )?.showSnackBar(SnackBar(content: Text(l10n.export_data_success)));
       }
     } catch (e) {
       if (context.mounted) {
         final msg = SafeFilePicker.getErrorMessage(e, l10n);
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               SafeFilePicker.isExplorerNotFoundError(e)
@@ -151,14 +151,14 @@ class DataBackupActions extends ConsumerWidget {
       await importer(json);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(
+        ScaffoldMessenger.maybeOf(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.import_data_success)));
+        )?.showSnackBar(SnackBar(content: Text(l10n.import_data_success)));
       }
     } catch (e) {
       if (context.mounted) {
         final msg = SafeFilePicker.getErrorMessage(e, l10n);
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               SafeFilePicker.isExplorerNotFoundError(e)
@@ -234,14 +234,14 @@ class DataBackupActions extends ConsumerWidget {
       });
 
       if (context.mounted) {
-        ScaffoldMessenger.of(
+        ScaffoldMessenger.maybeOf(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.import_data_success)));
+        )?.showSnackBar(SnackBar(content: Text(l10n.import_data_success)));
       }
     } catch (e) {
       if (context.mounted) {
         final msg = SafeFilePicker.getErrorMessage(e, l10n);
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               SafeFilePicker.isExplorerNotFoundError(e)

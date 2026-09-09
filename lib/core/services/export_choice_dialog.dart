@@ -42,9 +42,9 @@ Future<void> showExportChoiceDialog(
   if (choice == _ExportChoice.clipboard) {
     await Clipboard.setData(ClipboardData(text: content));
     if (context.mounted) {
-      ScaffoldMessenger.of(
+      ScaffoldMessenger.maybeOf(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.copied_to_clipboard)));
+      )?.showSnackBar(SnackBar(content: Text(l10n.copied_to_clipboard)));
     }
   } else {
     await ShareService.shareText(content, subject: subject);

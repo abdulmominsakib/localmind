@@ -748,6 +748,91 @@ void main() {
     );
 
     test(
+      'fetchModels treats the Ollama LFM2 thinking renderer as mandatory',
+      () async {
+        final ollamaServer = Server(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          type: ServerType.ollama,
+          host: 'localhost',
+          port: 11434,
+          createdAt: DateTime.now(),
+          lastConnectedAt: DateTime.now(),
+        );
+
+        final interceptor = RoutingInterceptor({
+          'GET /api/tags': {
+            'models': [
+              {
+                'name': 'lfm2.5-thinking:latest',
+                'size': 731163903,
+                'details': {
+                  'parameter_size': '1.2B',
+                  'quantization_level': 'Q4_K_M',
+                  'family': 'lfm2',
+                },
+              },
+            ],
+          },
+          'POST /api/show:lfm2.5-thinking:latest': {
+            'capabilities': ['completion', 'tools', 'thinking'],
+            'details': {
+              'family': 'lfm2',
+              'families': ['lfm2'],
+            },
+            'modelfile':
+                'TEMPLATE {{ .Prompt }}\n'
+                'RENDERER lfm2-thinking\n'
+                'PARSER lfm2-thinking',
+          },
+        });
+
+        final service = ServerApiService(Dio()..interceptors.add(interceptor));
+        final model = (await service.fetchModels(ollamaServer)).single;
+
+        expect(model.supportsReasoning, isTrue);
+        expect(model.supportedReasoningEfforts, ['on']);
+        expect(model.reasoningMandatory, isTrue);
+        expect(model.supportsToolUse, isTrue);
+      },
+    );
+
+    test(
+      'fetchModels recognizes an older LFM2 thinking response by model id',
+      () async {
+        final ollamaServer = Server(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          type: ServerType.ollama,
+          host: 'localhost',
+          port: 11434,
+          createdAt: DateTime.now(),
+          lastConnectedAt: DateTime.now(),
+        );
+        final interceptor = RoutingInterceptor({
+          'GET /api/tags': {
+            'models': [
+              {
+                'name': 'lfm2.5-thinking:latest',
+                'details': {'family': 'lfm2'},
+              },
+            ],
+          },
+          'POST /api/show:lfm2.5-thinking:latest': {
+            'capabilities': ['completion'],
+            'details': {'family': 'lfm2'},
+          },
+        });
+
+        final service = ServerApiService(Dio()..interceptors.add(interceptor));
+        final model = (await service.fetchModels(ollamaServer)).single;
+
+        expect(model.supportedReasoningEfforts, ['on']);
+        expect(model.reasoningMandatory, isTrue);
+      },
+    );
+
+    test(
       'fetchModels handles absent or malformed Ollama capabilities',
       () async {
         final ollamaServer = Server(

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/core/models/enums.dart';
-import 'package:localmind/features/chat/data/models/message.dart' as m
+import 'package:localmind/features/chat/data/models/message.dart'
+    as m
     show Message, ToolCallData;
 import 'package:localmind/features/chat/data/tools/tool_event.dart';
 import 'package:localmind/features/chat/data/tools/tool_definition.dart';
@@ -23,10 +24,7 @@ import 'package:localmind/features/chat/data/tools/tool_definition.dart';
 // follow-up request will be malformed and the model will not produce a
 // final answer — the original symptom in #77.
 
-m.Message _previousAssistant({
-  required String id,
-  required String toolName,
-}) {
+m.Message _previousAssistant({required String id, required String toolName}) {
   return m.Message(
     id: id,
     conversationId: 'conv-1',
@@ -223,11 +221,7 @@ void main() {
     test('assistant stopReason is set to tool_use', () {
       final assistant = _previousAssistant(id: 'asst-1', toolName: 't');
       final events = [
-        _completedEvent(
-          sessionId: 's',
-          toolName: 't',
-          result: 'ok',
-        ),
+        _completedEvent(sessionId: 's', toolName: 't', result: 'ok'),
       ];
 
       final built = _buildFollowup(

@@ -119,7 +119,7 @@ class McpToolsScreen extends ConsumerWidget {
                                 .setCalendarToolsEnabled(true);
                           } else {
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                                 SnackBar(
                                   content: Text(
                                     l10n.calendar_permission_denied,
@@ -149,7 +149,7 @@ class McpToolsScreen extends ConsumerWidget {
                                 .setLocationToolsEnabled(true);
                           } else {
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                                 SnackBar(
                                   content: Text(
                                     l10n.location_permission_denied,
@@ -746,7 +746,7 @@ class __ConfiguredMcpServersCardState
                   Navigator.of(dialogContext).pop();
                   widget.onServersChanged();
 
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                     SnackBar(
                       content: Text(
                         count > 0

@@ -86,7 +86,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       chatProvider.select((s) => s.pendingToolApproval),
       (previous, next) {
         if (next != null && !_isApprovalDialogOpen) {
-          _showToolApprovalDialog(context, next);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || _isApprovalDialogOpen) return;
+            _showToolApprovalDialog(context, next);
+          });
         }
       },
     );

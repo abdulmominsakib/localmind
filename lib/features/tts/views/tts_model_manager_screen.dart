@@ -889,7 +889,11 @@ class _VoiceChipsState extends ConsumerState<_VoiceChips> {
     ref.listen<tts.TtsState>(tts.ttsProvider, (previous, next) {
       if (!next.isSpeaking && (previous?.isSpeaking ?? false)) {
         if (mounted && _playingVoice != null) {
-          setState(() => _playingVoice = null);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _playingVoice != null) {
+              setState(() => _playingVoice = null);
+            }
+          });
         }
       }
     });
@@ -1097,7 +1101,7 @@ class _VoiceChipsState extends ConsumerState<_VoiceChips> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _playingVoice = null);
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(content: Text(l10n.preview_failed(e.toString()))),
       );
     }

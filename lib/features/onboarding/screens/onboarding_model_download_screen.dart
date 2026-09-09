@@ -205,7 +205,7 @@ class _OnboardingModelDownloadScreenState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               AppLocalizations.of(context)!.error_with_message(e.toString()),
@@ -668,7 +668,7 @@ class _ModelCard extends ConsumerWidget {
         .startDownload(model.id);
 
     if (result == 'missing_huggingface_token' && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(
             AppLocalizations.of(context)!.model_missing_huggingface_token,

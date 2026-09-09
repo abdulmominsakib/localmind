@@ -94,9 +94,9 @@ class _ModelInfoRow extends StatelessWidget {
         onPressed: () async {
           await Clipboard.setData(ClipboardData(text: value));
           if (context.mounted) {
-            ScaffoldMessenger.of(
+            ScaffoldMessenger.maybeOf(
               context,
-            ).showSnackBar(SnackBar(content: Text(l10n.copied_to_clipboard)));
+            )?.showSnackBar(SnackBar(content: Text(l10n.copied_to_clipboard)));
           }
         },
       ),

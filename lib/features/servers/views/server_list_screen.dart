@@ -112,7 +112,9 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
                                   ref
                                       .read(activeServerIdProvider.notifier)
                                       .setActiveServer(server);
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  ScaffoldMessenger.maybeOf(
+                                    context,
+                                  )?.showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         l10n.switched_to_server(server.name),

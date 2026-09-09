@@ -116,7 +116,7 @@ class _MessageActionBarState extends ConsumerState<MessageActionBar> {
             await Clipboard.setData(ClipboardData(text: widget.content));
             widget.onCopy?.call();
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                 SnackBar(
                   content: Text(l10n.copied_to_clipboard),
                   duration: const Duration(seconds: 2),
@@ -297,7 +297,7 @@ class _MessageActionBarState extends ConsumerState<MessageActionBar> {
                 onTap: () {
                   Navigator.pop(ctx);
                   Clipboard.setData(ClipboardData(text: widget.content));
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                     SnackBar(content: Text(sheetL10n.copied_markdown)),
                   );
                 },

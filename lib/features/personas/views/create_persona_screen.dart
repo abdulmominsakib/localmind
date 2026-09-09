@@ -117,6 +117,7 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
       if (topP != null) params['topP'] = topP;
     }
 
+    var hasPopped = false;
     try {
       if (_isEditing) {
         await notifier.updatePersona(
@@ -141,29 +142,41 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
       }
 
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditing ? l10n.persona_updated : l10n.persona_created,
+        final l10n = AppLocalizations.of(context);
+        final messenger = ScaffoldMessenger.maybeOf(context);
+        hasPopped = true;
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          context.pop();
+        }
+        if (l10n != null && messenger != null) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                _isEditing ? l10n.persona_updated : l10n.persona_created,
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     } catch (e) {
+      hasPopped = false;
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(context)!.error_with_message(e.toString()),
+              AppLocalizations.of(context)?.error_with_message(e.toString()) ??
+                  'Error: $e',
             ),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted && !hasPopped) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 

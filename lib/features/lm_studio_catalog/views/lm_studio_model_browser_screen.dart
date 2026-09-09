@@ -576,9 +576,9 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
     final l10n = AppLocalizations.of(context)!;
     final quant = _effectiveQuant(detail.quants);
     if (detail.quants.isNotEmpty && quant == null) {
-      ScaffoldMessenger.of(
+      ScaffoldMessenger.maybeOf(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.lm_studio_download_options)));
+      )?.showSnackBar(SnackBar(content: Text(l10n.lm_studio_download_options)));
       return;
     }
 
@@ -593,7 +593,7 @@ class _ModelDetailPanelState extends ConsumerState<_ModelDetailPanel> {
           );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(l10n.error_with_message(e.toString())),
           backgroundColor: Colors.red,

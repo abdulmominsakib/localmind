@@ -112,9 +112,9 @@ class SmartReplyChipsWrapper extends ConsumerWidget {
       onSend: (message) {
         if (!ref.read(activeChatTargetProvider).isReady) {
           final l10n = AppLocalizations.of(context)!;
-          ScaffoldMessenger.of(
+          ScaffoldMessenger.maybeOf(
             context,
-          ).showSnackBar(SnackBar(content: Text(l10n.model_required_toast)));
+          )?.showSnackBar(SnackBar(content: Text(l10n.model_required_toast)));
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,

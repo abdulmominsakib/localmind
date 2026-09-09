@@ -814,7 +814,7 @@ class _PausedDownloadActions extends ConsumerWidget {
         .startDownload(model.id);
 
     if (result == 'missing_huggingface_token' && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(l10n.model_missing_huggingface_token),
           duration: const Duration(seconds: 6),
@@ -876,7 +876,7 @@ class _NotDownloadedActions extends ConsumerWidget {
         .startDownload(model.id);
 
     if (result == 'missing_huggingface_token' && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(l10n.model_missing_huggingface_token),
           duration: const Duration(seconds: 6),

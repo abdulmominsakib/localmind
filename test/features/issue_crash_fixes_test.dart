@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:localmind/bootstrap/safe_riverpod_scope_host.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/providers/service_providers.dart';
@@ -21,6 +22,9 @@ import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/data/server_api_service.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/onboarding/screens/onboarding_server_setup_screen.dart';
+import 'package:localmind/features/personas/data/models/persona.dart';
+import 'package:localmind/features/personas/providers/personas_providers.dart';
+import 'package:localmind/features/personas/views/create_persona_screen.dart';
 import 'package:localmind/features/servers/views/add_server_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:localmind/features/settings/data/models/app_settings.dart';
@@ -791,6 +795,301 @@ void main() {
       },
     );
   });
+
+  group(
+    'Issue Crash Fix: Riverpod UncontrolledProviderScope setState during build on route pop',
+    () {
+      testWidgets(
+        'SafeRiverpodScopeHost prevents setState during build when resuming paused providers on route pop',
+        (tester) async {
+          final serverA = Server(
+            id: 'server-initial',
+            name: 'Initial Server',
+            host: '127.0.0.1',
+            port: 11434,
+            type: ServerType.ollama,
+            createdAt: now,
+            lastConnectedAt: now,
+          );
+
+          final serversNotifier = _MutableServersNotifier([serverA]);
+          final container = ProviderContainer(
+            overrides: [serversProvider.overrideWith(() => serversNotifier)],
+          );
+          addTearDown(container.dispose);
+
+          final navigatorKey = GlobalKey<NavigatorState>();
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: SafeRiverpodScopeHost(
+                container: container,
+                child: MaterialApp(
+                  navigatorKey: navigatorKey,
+                  home: Consumer(
+                    builder: (context, ref, _) {
+                      final servers = ref.watch(serversProvider);
+                      return Scaffold(
+                        body: Text('Count: ${servers.value?.length ?? 0}'),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Count: 1'), findsOneWidget);
+
+          // Push a modal route on top (this pauses the home route's subscriptions in Riverpod 3.x)
+          navigatorKey.currentState!.push(
+            MaterialPageRoute(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () {
+                    final serverB = Server(
+                      id: 'server-added',
+                      name: 'Added Server',
+                      host: '127.0.0.1',
+                      port: 1234,
+                      type: ServerType.lmStudio,
+                      createdAt: now,
+                      lastConnectedAt: now,
+                    );
+                    serversNotifier.addServerSync(serverB);
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Add & Pop'),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Add & Pop'), findsOneWidget);
+
+          // Tap Add & Pop. This mutates serversProvider and pops while the home route was paused.
+          // Resuming during route pop triggers the build-phase flush.
+          await tester.tap(find.text('Add & Pop'));
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('Count: 2'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'AddServerScreen save flow and route pop does not crash with setState during build',
+        (tester) async {
+          SharedPreferences.setMockInitialValues({});
+          final prefs = await SharedPreferences.getInstance();
+
+          final serverA = Server(
+            id: 'server-existing',
+            name: 'Existing Server',
+            host: '127.0.0.1',
+            port: 11434,
+            type: ServerType.ollama,
+            createdAt: now,
+            lastConnectedAt: now,
+          );
+
+          final mockDio = Dio();
+          mockDio.httpClientAdapter = _MockHttpClientAdapter((options) {
+            return ResponseBody.fromString('{"models":[]}', 200);
+          });
+          final mockApiService = ServerApiService(mockDio);
+          final serversNotifier = _MutableServersNotifier([serverA]);
+
+          final container = ProviderContainer(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              settingsProvider.overrideWith(_TestSettingsNotifier.new),
+              chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+              serverApiServiceProvider.overrideWithValue(mockApiService),
+              serversProvider.overrideWith(() => serversNotifier),
+              activeServerProvider.overrideWith(
+                () => _StubActiveServerNotifier(serverA),
+              ),
+              connectionStatusProvider.overrideWith(
+                _StubConnectedStatusNotifier.new,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          final navigatorKey = GlobalKey<NavigatorState>();
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: SafeRiverpodScopeHost(
+                container: container,
+                child: ShadTheme(
+                  data: AppTheme.lightShadTheme,
+                  child: MaterialApp(
+                    navigatorKey: navigatorKey,
+                    locale: const Locale('en'),
+                    localizationsDelegates:
+                        AppLocalizations.localizationsDelegates,
+                    supportedLocales: AppLocalizations.supportedLocales,
+                    home: Consumer(
+                      builder: (context, ref, _) {
+                        final servers = ref.watch(serversProvider);
+                        return Scaffold(
+                          body: Center(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const AddServerScreen(),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                'Open Add Screen (${servers.value?.length ?? 0})',
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          tester.view.physicalSize = const Size(800, 1800);
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          // Open Add Server screen
+          navigatorKey.currentState!.push(
+            MaterialPageRoute(builder: (_) => const AddServerScreen()),
+          );
+          await tester.pumpAndSettle();
+
+          // Enter server details
+          final textFields = find.byType(TextFormField);
+          expect(textFields, findsWidgets);
+
+          await tester.enterText(textFields.at(0), 'New Ollama');
+          await tester.enterText(textFields.at(1), '127.0.0.1');
+          await tester.enterText(textFields.at(2), '11434');
+          await tester.pump();
+
+          // Tap Save Server
+          final saveButton = find.widgetWithText(ElevatedButton, 'Save Server');
+          expect(saveButton, findsOneWidget);
+
+          await tester.tap(saveButton);
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('Open Add Screen (2)'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'CreatePersonaScreen save flow and route pop does not crash with setState during build',
+        (tester) async {
+          SharedPreferences.setMockInitialValues({});
+          final prefs = await SharedPreferences.getInstance();
+
+          final personasNotifier = _StubPersonasNotifier([]);
+
+          final container = ProviderContainer(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              personasNotifierProvider.overrideWith(() => personasNotifier),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          final navigatorKey = GlobalKey<NavigatorState>();
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: SafeRiverpodScopeHost(
+                container: container,
+                child: MaterialApp(
+                  navigatorKey: navigatorKey,
+                  locale: const Locale('en'),
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: Consumer(
+                    builder: (context, ref, _) {
+                      final personas = ref.watch(personasNotifierProvider);
+                      return Scaffold(
+                        body: Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const CreatePersonaScreen(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Open Persona Screen (${personas.value?.length ?? 0})',
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          tester.view.physicalSize = const Size(800, 1800);
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          // Open Create Persona screen
+          navigatorKey.currentState!.push(
+            MaterialPageRoute(builder: (_) => const CreatePersonaScreen()),
+          );
+          await tester.pumpAndSettle();
+
+          // Enter persona details
+          final textFields = find.byType(TextFormField);
+          expect(textFields, findsWidgets);
+
+          await tester.enterText(textFields.at(0), 'Assistant Persona');
+          await tester.enterText(
+            textFields.at(2),
+            'You are a helpful coding assistant.',
+          );
+          await tester.pump();
+
+          // Tap Create Persona button
+          final createButton = find.widgetWithText(FilledButton, 'Create');
+          expect(createButton, findsOneWidget);
+
+          await tester.tap(createButton);
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('Open Persona Screen (1)'), findsOneWidget);
+        },
+      );
+    },
+  );
 }
 
 class _MutableActiveServerNotifier extends ActiveServerNotifier {
@@ -825,6 +1124,45 @@ class _StubServersNotifier extends ServersNotifier {
   Future<List<Server>> build() async => [server];
 }
 
+class _MutableServersNotifier extends ServersNotifier {
+  _MutableServersNotifier(this._servers);
+
+  List<Server> _servers;
+
+  @override
+  Future<List<Server>> build() async => _servers;
+
+  void addServerSync(Server server) {
+    _servers = [..._servers, server];
+    state = AsyncData(_servers);
+  }
+
+  @override
+  Future<void> addServer(Server server) async {
+    _servers = [..._servers, server];
+    state = AsyncData(_servers);
+  }
+
+  @override
+  Future<void> updateServer(Server server) async {
+    final index = _servers.indexWhere((s) => s.id == server.id);
+    if (index != -1) {
+      _servers[index] = server;
+    } else {
+      _servers = [..._servers, server];
+    }
+    state = AsyncData(_servers);
+  }
+
+  @override
+  Future<ConnectionStatus> testConnection(
+    String serverId,
+    dynamic apiService,
+  ) async {
+    return ConnectionStatus.connected;
+  }
+}
+
 class _StubConnectedStatusNotifier extends ConnectionStatusNotifier {
   @override
   ConnectionStatus build() => ConnectionStatus.connected;
@@ -851,4 +1189,37 @@ class _MockHttpClientAdapter implements HttpClientAdapter {
 class _TestSettingsNotifier extends SettingsNotifier {
   @override
   AppSettings build() => AppSettings(unloadModelsBeforeLoad: false);
+}
+
+class _StubPersonasNotifier extends PersonasNotifier {
+  _StubPersonasNotifier(this._personas);
+  final List<Persona> _personas;
+
+  @override
+  Future<List<Persona>> build() async => _personas;
+
+  @override
+  Future<Persona> createPersona({
+    required String name,
+    required String emoji,
+    required String systemPrompt,
+    String? description,
+    String? category,
+    Map<String, dynamic>? preferredParams,
+  }) async {
+    final persona = Persona(
+      id: 'p-${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      emoji: emoji,
+      systemPrompt: systemPrompt,
+      description: description,
+      category: category,
+      preferredParams: preferredParams,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    _personas.add(persona);
+    state = AsyncData([..._personas]);
+    return persona;
+  }
 }

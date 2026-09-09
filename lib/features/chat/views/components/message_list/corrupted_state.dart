@@ -37,7 +37,7 @@ Expected: ${conversation.messageCount}
 Error: $errorMessage
 ''';
               Clipboard.setData(ClipboardData(text: data));
-              ScaffoldMessenger.of(context).showSnackBar(
+              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                 SnackBar(content: Text(debugL10n.copied_to_clipboard)),
               );
             },

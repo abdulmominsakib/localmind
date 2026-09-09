@@ -42,6 +42,7 @@ class InlineThinkingSelector extends ConsumerWidget {
 
     final accent = theme.colorScheme.primary;
     final efforts = effortsForModel(supportedEfforts);
+    final hasGranularChoice = hasGranularReasoningChoice(supportedEfforts);
 
     final options = <_ThinkingOption>[
       if (!reasoningMandatory)
@@ -50,11 +51,18 @@ class InlineThinkingSelector extends ConsumerWidget {
           isEnabled: false,
           effort: ReasoningEffort.low,
         ),
-      for (final effort in efforts)
+      if (hasGranularChoice)
+        for (final effort in efforts)
+          _ThinkingOption(
+            label: effort.shortLabel(l10n),
+            isEnabled: true,
+            effort: effort,
+          )
+      else
         _ThinkingOption(
-          label: effort.shortLabel(l10n),
+          label: l10n.model_reasoning_on,
           isEnabled: true,
-          effort: effort,
+          effort: ReasoningEffort.medium,
         ),
     ];
 
@@ -87,7 +95,9 @@ class InlineThinkingSelector extends ConsumerWidget {
                   final isActive =
                       isSelected &&
                       (opt.isEnabled == config.enabled) &&
-                      (!opt.isEnabled || opt.effort == config.effort);
+                      (!opt.isEnabled ||
+                          !hasGranularChoice ||
+                          opt.effort == config.effort);
 
                   final chipBg = isActive
                       ? accent.withValues(alpha: 0.2)
@@ -118,7 +128,9 @@ class InlineThinkingSelector extends ConsumerWidget {
                             notifier.setEnabled(false);
                           } else {
                             notifier.setEnabled(true);
-                            notifier.setEffort(opt.effort);
+                            if (hasGranularChoice) {
+                              notifier.setEffort(opt.effort);
+                            }
                           }
                         },
                         borderRadius: BorderRadius.circular(6),

@@ -246,7 +246,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               SafeFilePicker.getErrorMessage(
@@ -282,7 +282,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               SafeFilePicker.getErrorMessage(
@@ -436,7 +436,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         onPressed: !modelReady
             ? () {
                 ref.read(appHapticsProvider).light();
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                   SnackBar(content: Text(l10n.model_required_toast)),
                 );
                 showModalBottomSheet(
@@ -536,9 +536,9 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
   bool _ensureChatTarget() {
     if (ref.read(activeChatTargetProvider).isReady) return true;
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(
+    ScaffoldMessenger.maybeOf(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.model_required_toast)));
+    )?.showSnackBar(SnackBar(content: Text(l10n.model_required_toast)));
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -825,17 +825,20 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     ref.listen<String?>(widgetPendingPromptProvider, (previous, next) {
       if (next != null && next.isNotEmpty) {
-        _controller.text = next;
-        _controller.selection = TextSelection.fromPosition(
-          TextPosition(offset: _controller.text.length),
-        );
-        _activeFocus.requestFocus();
-        ref.read(widgetPendingPromptProvider.notifier).consumePrompt();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _controller.text = next;
+          _controller.selection = TextSelection.fromPosition(
+            TextPosition(offset: _controller.text.length),
+          );
+          _activeFocus.requestFocus();
+          ref.read(widgetPendingPromptProvider.notifier).consumePrompt();
+        });
       }
     });
 
     ref.listen<String?>(sttProvider.select((s) => s.error), (previous, next) {
-      if (next != null) {
+      if (next != null && mounted) {
         final voiceState = ref.read(voiceModeProvider);
         final voiceActive =
             voiceState.isActive || voiceState.phase != VoiceModePhase.idle;
@@ -844,9 +847,12 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         final message = _mapSttError(next);
 
         if (message != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            ScaffoldMessenger.maybeOf(
+              context,
+            )?.showSnackBar(SnackBar(content: Text(message)));
+          });
         }
       }
     });
@@ -864,8 +870,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     // Schedule the actual restart on the microtask queue instead.
     ref.listen<bool>(isStreamingProvider, (previous, next) {
       if (previous != true || next != false || !mounted) return;
-      final shouldAutoSpeak =
-          ref.read(settingsProvider).autoSpeakEnabled;
+      final shouldAutoSpeak = ref.read(settingsProvider).autoSpeakEnabled;
       final voiceState = ref.read(voiceModeProvider);
       final voiceActive =
           voiceState.isActive || voiceState.phase != VoiceModePhase.idle;

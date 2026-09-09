@@ -20,6 +20,7 @@ import '../core/logger/app_logger.dart';
 import '../core/utils/locale_utils.dart';
 import 'bootstrap_screen.dart';
 import 'bootstrap_state.dart';
+import 'safe_riverpod_scope_host.dart';
 
 class BootstrapHost extends StatefulWidget {
   const BootstrapHost({super.key});
@@ -146,7 +147,10 @@ class _BootstrapHostState extends State<BootstrapHost> {
     if (_container != null) {
       return UncontrolledProviderScope(
         container: _container!,
-        child: const CloudSyncLifecycleHost(child: App()),
+        child: SafeRiverpodScopeHost(
+          container: _container!,
+          child: const CloudSyncLifecycleHost(child: App()),
+        ),
       );
     }
 

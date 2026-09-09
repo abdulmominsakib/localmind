@@ -60,9 +60,7 @@ void main() {
         'On': true,
         'Model default': null,
       }.entries) {
-        await tester.tap(find.byType(DropdownButtonFormField<String>));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(entry.key).last);
+        await tester.tap(find.text(entry.key));
         await tester.pumpAndSettle();
         expect(repository.load().single.reasoningEnabled, entry.value);
         expect(

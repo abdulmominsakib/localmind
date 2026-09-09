@@ -86,7 +86,9 @@ class ThinkingModeChip extends ConsumerWidget {
     if (fullWidth) {
       labelText = l10n.thinking_mode_title;
     } else if (config.enabled || !canDisable) {
-      labelText = _effortShortLabel(l10n, config.effort);
+      labelText = hasGranularChoice
+          ? _effortShortLabel(l10n, config.effort)
+          : l10n.model_reasoning_on;
     } else {
       labelText = l10n.reasoning_effort_off;
     }

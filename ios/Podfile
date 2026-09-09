@@ -1,6 +1,4 @@
-# Uncomment this line to define a global platform for your project
-# Bumped to 16.4 by llamadart_llama_cpp_flutter (0.0.4) for the GGUF import path.
-platform :ios, '16.4'
+platform :ios, '17.6'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -40,6 +38,9 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.6'
+    end
   end
 
   # Add a build phase to Runner target to patch missing MinimumOSVersion in embedded frameworks

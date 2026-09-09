@@ -432,7 +432,7 @@ class _ModelListState extends ConsumerState<ModelList> {
                       ref.read(modelLoadingProvider.notifier).setLoaded();
                     }
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                         SnackBar(
                           content: Text(l10n.model_load_failed(e.toString())),
                           backgroundColor: Colors.red,
@@ -476,13 +476,13 @@ class _ModelListState extends ConsumerState<ModelList> {
                     final message = activeServer.isOllamaFamily
                         ? l10n.model_unloaded_ollama(model.name)
                         : l10n.model_unloaded_success(model.name);
-                    ScaffoldMessenger.of(
+                    ScaffoldMessenger.maybeOf(
                       context,
-                    ).showSnackBar(SnackBar(content: Text(message)));
+                    )?.showSnackBar(SnackBar(content: Text(message)));
                   }
                 } catch (e) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                       SnackBar(
                         content: Text(l10n.model_unload_failed(e.toString())),
                         backgroundColor: Colors.red,

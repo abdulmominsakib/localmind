@@ -227,7 +227,7 @@ class _OnboardingServerSetupScreenState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               AppLocalizations.of(context)?.error_with_message(e.toString()) ??

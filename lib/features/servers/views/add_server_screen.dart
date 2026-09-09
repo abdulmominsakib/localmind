@@ -218,6 +218,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       _isSaving = true;
     });
 
+    var hasPopped = false;
     try {
       final server = _buildServer();
 
@@ -238,9 +239,15 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
 
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        context.pop();
-        if (l10n != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
+        final messenger = ScaffoldMessenger.maybeOf(context);
+        hasPopped = true;
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          context.pop();
+        }
+        if (l10n != null && messenger != null) {
+          messenger.showSnackBar(
             SnackBar(
               content: Text(
                 _isEditing ? l10n.server_updated : l10n.server_added,
@@ -251,8 +258,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
         }
       }
     } catch (e) {
+      hasPopped = false;
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               AppLocalizations.of(context)?.error_with_message(e.toString()) ??
@@ -263,7 +271,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted && !hasPopped) {
         setState(() {
           _isSaving = false;
         });

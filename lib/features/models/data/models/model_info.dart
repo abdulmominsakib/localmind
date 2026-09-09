@@ -33,8 +33,8 @@ class ModelInfo {
   final String? defaultReasoningEffort;
 
   /// When true the model cannot run without reasoning (OpenRouter
-  /// `reasoning.mandatory`, Ollama GPT-OSS); the "Off" toggle should be
-  /// hidden.
+  /// `reasoning.mandatory`, Ollama GPT-OSS and reasoning-only renderers); the
+  /// "Off" toggle should be hidden.
   final bool reasoningMandatory;
 
   /// Input token price in USD per 1M tokens (OpenRouter `pricing.prompt`).

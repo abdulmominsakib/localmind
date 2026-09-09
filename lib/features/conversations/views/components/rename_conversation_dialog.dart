@@ -31,7 +31,7 @@ Future<void> showRenameConversationDialog(
               if (title != null && title.isNotEmpty) {
                 controller.text = title;
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                   SnackBar(content: Text(l10n.generate_title_failed)),
                 );
               }
