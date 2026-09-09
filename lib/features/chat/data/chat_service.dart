@@ -1,3 +1,4 @@
+import 'ollama_reasoning_decoder.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -915,6 +916,8 @@ class OllamaChatService implements ChatService {
   }) async* {
     _cancelToken = CancelToken();
     final toolAdapter = OllamaToolAdapter();
+    final contentDecoder = OllamaReasoningDecoder();
+    var hasNativeThinking = false;
 
     final apiMessages = <Map<String, dynamic>>[];
     for (final message in messages) {
@@ -992,70 +995,83 @@ class OllamaChatService implements ChatService {
         return;
       }
 
-      final stream = responseBody.stream.cast<List<int>>().transform(
-        utf8.decoder,
-      );
-      String buffer = '';
+      final lines = responseBody.stream
+          .cast<List<int>>()
+          .transform(utf8.decoder)
+          .transform(const LineSplitter());
 
-      await for (final chunk in stream) {
-        buffer += chunk;
-        final lines = buffer.split('\n');
-        buffer = lines.removeLast();
+      await for (final line in lines) {
+        if (line.isNotEmpty) {
+          try {
+            final json = jsonDecode(line) as Map<String, dynamic>;
+            toolAdapter.consumeDynamicChunk(json);
 
-        for (final line in lines) {
-          if (line.isNotEmpty) {
-            try {
-              final json = jsonDecode(line) as Map<String, dynamic>;
-              toolAdapter.consumeDynamicChunk(json);
-
-              // Ollama surfaces mid-stream errors as a top-level `error`
-              // field, often alongside HTTP 200. Surface them so the UI
-              // shows something more specific than the generic
-              // "unknown error" fallback when — for instance — the
-              // selected model doesn't actually support images.
-              final errorField = json['error'];
-              if (errorField != null) {
-                yield ChatResponse(
-                  type: ChatResponseType.error,
-                  content: _formatOllamaErrorContent(errorField),
-                );
-                return;
-              }
-
-              final message = json['message'];
-              if (message != null && message is Map<String, dynamic>) {
-                final content = message['content'] as String?;
-                final thinking = message['thinking'] as String?;
-
-                if (thinking != null && thinking.isNotEmpty) {
-                  yield ChatResponse(
-                    type: ChatResponseType.reasoning,
-                    reasoningContent: thinking,
-                  );
-                }
-                if (content != null && content.isNotEmpty) {
-                  yield ChatResponse(
-                    type: ChatResponseType.message,
-                    content: content,
-                  );
-                }
-              }
-              if (json['done'] == true) {
-                for (final call in toolAdapter.takeCompletedCalls()) {
-                  yield ChatResponse(
-                    type: ChatResponseType.toolCall,
-                    toolCall: ToolCallData(
-                      tool: call.name,
-                      arguments: call.arguments,
-                    ),
-                  );
-                }
-                yield const ChatResponse(type: ChatResponseType.done);
-                return;
-              }
-            } catch (e) {
-              Log.error('Ollama chunk parsing error: $e');
+            // Ollama surfaces mid-stream errors as a top-level `error`
+            // field, often alongside HTTP 200. Surface them so the UI
+            // shows something more specific than the generic
+            // "unknown error" fallback when — for instance — the
+            // selected model doesn't actually support images.
+            final errorField = json['error'];
+            if (errorField != null) {
+              yield ChatResponse(
+                type: ChatResponseType.error,
+                content: _formatOllamaErrorContent(errorField),
+              );
+              return;
             }
+
+            final message = json['message'];
+            if (message != null && message is Map<String, dynamic>) {
+              final content = message['content'] as String?;
+              final thinking = message['thinking'] as String?;
+              hasNativeThinking = hasNativeThinking || thinking != null;
+
+              if (thinking != null && thinking.isNotEmpty) {
+                yield ChatResponse(
+                  type: ChatResponseType.reasoning,
+                  reasoningContent: thinking,
+                );
+              }
+              if (content != null && content.isNotEmpty) {
+                for (final part in contentDecoder.add(
+                  content,
+                  nativeThinking: hasNativeThinking,
+                )) {
+                  yield ChatResponse(
+                    type: part.isReasoning
+                        ? ChatResponseType.reasoning
+                        : ChatResponseType.message,
+                    content: part.isReasoning ? null : part.text,
+                    reasoningContent: part.isReasoning ? part.text : null,
+                  );
+                }
+              }
+            }
+            if (json['done'] == true) {
+              for (final part in contentDecoder.flush()) {
+                yield ChatResponse(
+                  type: part.isReasoning
+                      ? ChatResponseType.reasoning
+                      : ChatResponseType.message,
+                  content: part.isReasoning ? null : part.text,
+                  reasoningContent: part.isReasoning ? part.text : null,
+                );
+              }
+
+              for (final call in toolAdapter.takeCompletedCalls()) {
+                yield ChatResponse(
+                  type: ChatResponseType.toolCall,
+                  toolCall: ToolCallData(
+                    tool: call.name,
+                    arguments: call.arguments,
+                  ),
+                );
+              }
+              yield const ChatResponse(type: ChatResponseType.done);
+              return;
+            }
+          } catch (e) {
+            Log.error('Ollama chunk parsing error: $e');
           }
         }
       }
@@ -1066,6 +1082,15 @@ class OllamaChatService implements ChatService {
           : _handleChatError(e);
       yield ChatResponse(type: ChatResponseType.error, content: content);
       return;
+    }
+    for (final part in contentDecoder.flush()) {
+      yield ChatResponse(
+        type: part.isReasoning
+            ? ChatResponseType.reasoning
+            : ChatResponseType.message,
+        content: part.isReasoning ? null : part.text,
+        reasoningContent: part.isReasoning ? part.text : null,
+      );
     }
     yield const ChatResponse(type: ChatResponseType.done);
   }

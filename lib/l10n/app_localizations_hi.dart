@@ -3066,4 +3066,18 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Enable';
+
+  @override
+  String get model_reasoning_default => 'मॉडल का डिफ़ॉल्ट';
+
+  @override
+  String get model_reasoning_on => 'चालू';
+
+  @override
+  String get model_reasoning_help =>
+      'अगले उत्तर पर लागू होगा। बंद करने से चिंतन अक्षम होगा, यदि मॉडल का चैट टेम्पलेट इसका समर्थन करता है।';
+
+  @override
+  String get model_reasoning_save_error =>
+      'चिंतन मोड सहेजा नहीं जा सका। फिर से कोशिश करें।';
 }

@@ -922,6 +922,9 @@
   "file_explorer_not_found": "لم يتم العثور على متصفح ملفات. يرجى التأكد من تثبيت وتفعيل تطبيق إدارة الملفات على جهازك.",
   "export_data_failed": "فشل تصدير النسخة الاحتياطية: {error}",
   "file_pick_failed": "فشل اختيار الملف: {error}",
-  "image_pick_failed": "فشل اختيار الصورة: {error}"
+  "image_pick_failed": "فشل اختيار الصورة: {error}",
+  "model_reasoning_default": "الإعداد الافتراضي للنموذج",
+  "model_reasoning_on": "تشغيل",
+  "model_reasoning_help": "يُطبّق على الرد التالي. يؤدي الإيقاف إلى تعطيل التفكير إذا كان قالب المحادثة الخاص بالنموذج يدعم ذلك.",
+  "model_reasoning_save_error": "تعذّر حفظ وضع التفكير. يُرجى المحاولة مرة أخرى."
 }
-

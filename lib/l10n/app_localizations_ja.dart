@@ -3005,4 +3005,17 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Enable';
+
+  @override
+  String get model_reasoning_default => 'モデルのデフォルト';
+
+  @override
+  String get model_reasoning_on => 'オン';
+
+  @override
+  String get model_reasoning_help =>
+      '次の応答に適用されます。モデルのチャットテンプレートが対応している場合、オフにすると思考を無効にします。';
+
+  @override
+  String get model_reasoning_save_error => '思考モードを保存できませんでした。もう一度お試しください。';
 }

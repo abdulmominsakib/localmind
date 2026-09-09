@@ -17,6 +17,7 @@ class ImportedGgufModelMetadata {
   final DateTime importedAt;
   final OnDeviceImportedSource source;
   final String? sourceUrl;
+  final bool? reasoningEnabled;
 
   const ImportedGgufModelMetadata({
     required this.id,
@@ -26,6 +27,7 @@ class ImportedGgufModelMetadata {
     required this.importedAt,
     required this.source,
     this.sourceUrl,
+    this.reasoningEnabled,
   });
 
   String get fileName => p.basename(filePath);
@@ -67,6 +69,7 @@ class ImportedGgufModelMetadata {
       importedAt: importedAt,
       isImported: true,
       importedSource: source,
+      reasoningEnabled: reasoningEnabled,
     );
   }
 
@@ -79,6 +82,7 @@ class ImportedGgufModelMetadata {
       'importedAt': importedAt.toIso8601String(),
       'source': source.name,
       'sourceUrl': sourceUrl,
+      'reasoningEnabled': reasoningEnabled,
     };
   }
 
@@ -91,6 +95,7 @@ class ImportedGgufModelMetadata {
       importedAt: DateTime.parse(json['importedAt'] as String),
       source: _sourceFromJson(json['source']),
       sourceUrl: json['sourceUrl'] as String?,
+      reasoningEnabled: json['reasoningEnabled'] as bool?,
     );
   }
 
@@ -127,6 +132,17 @@ class ImportedGgufModelRepository {
               ImportedGgufModelMetadata.fromJson(item as Map<String, dynamic>),
         )
         .toList();
+  }
+
+  Future<void> updateReasoning(String modelId, bool? enabled) async {
+    final models = load();
+    final index = models.indexWhere((model) => model.id == modelId);
+    if (index < 0) throw StateError('Imported model no longer exists');
+    models[index] = ImportedGgufModelMetadata.fromJson({
+      ...models[index].toJson(),
+      'reasoningEnabled': enabled,
+    });
+    await saveAll(models);
   }
 
   Future<List<ImportedGgufModelMetadata>> loadExisting() async {
@@ -283,7 +299,9 @@ class ImportedGgufModelRepository {
 
   Future<void> saveAll(List<ImportedGgufModelMetadata> models) async {
     final encoded = json.encode(models.map((m) => m.toJson()).toList());
-    await _prefs.setString(_storageKey, encoded);
+    if (!await _prefs.setString(_storageKey, encoded)) {
+      throw StateError('Could not save imported models');
+    }
   }
 
   Future<Directory> _modelsDirectory() async {

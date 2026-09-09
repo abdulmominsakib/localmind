@@ -3095,4 +3095,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Habilitar';
+
+  @override
+  String get model_reasoning_default => 'Padrão do modelo';
+
+  @override
+  String get model_reasoning_on => 'Ativado';
+
+  @override
+  String get model_reasoning_help =>
+      'Aplica-se à próxima resposta. Desativado impede o raciocínio se o modelo de chat permitir.';
+
+  @override
+  String get model_reasoning_save_error =>
+      'Não foi possível salvar o modo de raciocínio. Tente novamente.';
 }

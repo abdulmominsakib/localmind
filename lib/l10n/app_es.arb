@@ -918,5 +918,9 @@
   "settings_concise_voice_responses_desc": "Mantén las respuestas del modelo breves (1 párrafo corto) y haz preguntas de seguimiento en modo voz.",
   "s3_connection_succeeded": "Conexión a S3 realizada con éxito.",
   "failed_to_open_url": "Error al abrir la URL: {error}",
-  "failed_to_copy": "Error al copiar: {error}"
+  "failed_to_copy": "Error al copiar: {error}",
+  "model_reasoning_default": "Predeterminado del modelo",
+  "model_reasoning_on": "Activado",
+  "model_reasoning_help": "Se aplica a la siguiente respuesta. Desactivado impide el razonamiento si la plantilla de chat del modelo lo permite.",
+  "model_reasoning_save_error": "No se pudo guardar el modo de razonamiento. Inténtalo de nuevo."
 }

@@ -2981,6 +2981,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Enable';
+
+  @override
+  String get model_reasoning_default => '模型默认';
+
+  @override
+  String get model_reasoning_on => '开启';
+
+  @override
+  String get model_reasoning_help => '应用于下一条回复。如果模型的聊天模板支持，关闭后将禁用思考。';
+
+  @override
+  String get model_reasoning_save_error => '无法保存思考模式。请重试。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -5906,4 +5918,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String failed_to_copy(String error) {
     return '複製失敗: $error';
   }
+
+  @override
+  String get model_reasoning_default => '模型預設';
+
+  @override
+  String get model_reasoning_on => '開啟';
+
+  @override
+  String get model_reasoning_help => '套用至下一則回覆。如果模型的聊天範本支援，關閉後將停用思考。';
+
+  @override
+  String get model_reasoning_save_error => '無法儲存思考模式。請再試一次。';
 }

@@ -3065,4 +3065,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Enable';
+
+  @override
+  String get model_reasoning_default => 'Modellstandard';
+
+  @override
+  String get model_reasoning_on => 'Ein';
+
+  @override
+  String get model_reasoning_help =>
+      'Gilt für die nächste Antwort. Aus deaktiviert das Denken, sofern die Chatvorlage des Modells dies unterstützt.';
+
+  @override
+  String get model_reasoning_save_error =>
+      'Denkmodus konnte nicht gespeichert werden. Bitte erneut versuchen.';
 }

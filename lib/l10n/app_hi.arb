@@ -918,5 +918,9 @@
   "settings_concise_voice_responses_desc": "वॉयस मोड में LLM उत्तरों को संक्षिप्त (1 छोटा अनुच्छेद) रखें और अनुवर्ती प्रश्न पूछें।",
   "s3_connection_succeeded": "S3 कनेक्शन सफल रहा।",
   "failed_to_open_url": "URL खोलने में विफल: {error}",
-  "failed_to_copy": "कॉपी करने में विफल: {error}"
+  "failed_to_copy": "कॉपी करने में विफल: {error}",
+  "model_reasoning_default": "मॉडल का डिफ़ॉल्ट",
+  "model_reasoning_on": "चालू",
+  "model_reasoning_help": "अगले उत्तर पर लागू होगा। बंद करने से चिंतन अक्षम होगा, यदि मॉडल का चैट टेम्पलेट इसका समर्थन करता है।",
+  "model_reasoning_save_error": "चिंतन मोड सहेजा नहीं जा सका। फिर से कोशिश करें।"
 }

@@ -13,6 +13,13 @@ import '../../servers/data/models/server.dart';
 import 'models/on_device_model.dart';
 
 class OnDeviceLlamaService {
+  OnDeviceLlamaService({this.reasoningPreference, this.engineFactory});
+
+  final llama.LlamaEngine Function()? engineFactory;
+
+  /// Read at generation time so edits also apply to a model already in memory.
+  final bool? Function(String modelId)? reasoningPreference;
+
   llama.LlamaEngine? _engine;
   llama.ChatSession? _session;
   String? _currentModelId;
@@ -55,7 +62,8 @@ class OnDeviceLlamaService {
       'Loading GGUF model ${model.id} from ${model.localPath} '
       '(context=$contextLength, gpuLayers=$gpuLayers)',
     );
-    final engine = llama.LlamaEngine(llama.LlamaBackend());
+    final engine =
+        engineFactory?.call() ?? llama.LlamaEngine(llama.LlamaBackend());
     await engine.loadModel(
       model.localPath!,
       modelParams: llama.ModelParams(
@@ -174,6 +182,10 @@ class OnDeviceLlamaService {
       try {
         await for (final chunk in _session!.create(
           [llama.LlamaTextContent(text)],
+          enableThinking:
+              reasoningPreference?.call(modelId) ??
+              params.reasoningEnabled ??
+              true,
           params: llama.GenerationParams(
             maxTokens: params.maxTokens,
             temp: params.temperature,

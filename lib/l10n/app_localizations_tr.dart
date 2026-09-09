@@ -3085,4 +3085,18 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Enable';
+
+  @override
+  String get model_reasoning_default => 'Model varsayılanı';
+
+  @override
+  String get model_reasoning_on => 'Açık';
+
+  @override
+  String get model_reasoning_help =>
+      'Sonraki yanıta uygulanır. Modelin sohbet şablonu destekliyorsa Kapalı seçeneği düşünmeyi devre dışı bırakır.';
+
+  @override
+  String get model_reasoning_save_error =>
+      'Düşünme modu kaydedilemedi. Lütfen tekrar deneyin.';
 }

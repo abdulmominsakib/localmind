@@ -61,7 +61,140 @@ class CapturingStreamInterceptor extends StreamInterceptor {
   }
 }
 
+class ByteStreamInterceptor extends Interceptor {
+  ByteStreamInterceptor(this.raw);
+  final String raw;
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    handler.resolve(
+      Response(
+        requestOptions: options,
+        statusCode: 200,
+        data: ResponseBody(
+          Stream.fromIterable(
+            utf8.encode(raw).map((byte) => Uint8List.fromList([byte])),
+          ),
+          200,
+        ),
+      ),
+    );
+  }
+}
+
 void main() {
+  group('Ollama stream boundaries', () {
+    Future<List<ChatResponse>> run(List<Map<String, dynamic>> chunks) {
+      final raw = chunks.map(jsonEncode).join('\n');
+      final service = OllamaChatService(
+        Dio()..interceptors.add(ByteStreamInterceptor(raw)),
+      );
+      return service
+          .sendMessage(
+            server: _ollamaTestServer(),
+            modelId: 'qwen3.5:9b',
+            messages: [],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+    }
+
+    test(
+      'retains final native answer without newline and across UTF-8 boundaries',
+      () async {
+        final responses = await run([
+          {
+            'message': {'thinking': 'Reason'},
+            'done': false,
+          },
+          {
+            'message': {'content': 'উত্তর 🌍'},
+            'done': true,
+          },
+        ]);
+        expect(responses.map((r) => r.type), [
+          ChatResponseType.reasoning,
+          ChatResponseType.message,
+          ChatResponseType.done,
+        ]);
+        expect(responses[1].content, 'উত্তর 🌍');
+      },
+    );
+
+    test('separates legacy think tags split across message chunks', () async {
+      final responses = await run([
+        for (final text in ['<thi', 'nk>Reason', '</thi', 'nk>Answer'])
+          {
+            'message': {'content': text},
+            'done': false,
+          },
+        {'done': true},
+      ]);
+      expect(
+        responses
+            .where((r) => r.type == ChatResponseType.reasoning)
+            .map((r) => r.reasoningContent)
+            .join(),
+        'Reason',
+      );
+      expect(
+        responses
+            .where((r) => r.type == ChatResponseType.message)
+            .map((r) => r.content)
+            .join(),
+        'Answer',
+      );
+    });
+
+    test(
+      'native thinking makes content authoritative even when it contains tags',
+      () async {
+        final responses = await run([
+          {
+            'message': {
+              'thinking': 'Reason',
+              'content': '<think>example</think>',
+            },
+            'done': true,
+          },
+        ]);
+        expect(responses[0].reasoningContent, 'Reason');
+        expect(responses[1].content, '<think>example</think>');
+      },
+    );
+
+    test(
+      'an empty native thinking field still keeps content authoritative',
+      () async {
+        final responses = await run([
+          {
+            'message': {'thinking': '', 'content': '<think>example</think>'},
+            'done': true,
+          },
+        ]);
+        expect(responses.first.type, ChatResponseType.message);
+        expect(responses.first.content, '<think>example</think>');
+        expect(
+          responses.where((r) => r.type == ChatResponseType.reasoning),
+          isEmpty,
+        );
+      },
+    );
+
+    test(
+      'flushes an incomplete tag at clean EOF without a done event',
+      () async {
+        final responses = await run([
+          {
+            'message': {'content': '<thi'},
+          },
+        ]);
+        expect(responses.first.content, '<thi');
+        expect(responses.last.type, ChatResponseType.done);
+      },
+    );
+  });
+
   group('createAdapterForServerType', () {
     test('uses OpenAI adapter for OpenAI-compatible servers', () {
       final adapter = createAdapterForServerType(ServerType.openAICompatible);

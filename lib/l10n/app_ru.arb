@@ -915,5 +915,9 @@
   "settings_concise_voice_responses_desc": "Делайте ответы LLM короткими (1 короткий абзац) и задавайте уточняющие вопросы в голосовом режиме.",
   "s3_connection_succeeded": "Подключение к S3 успешно.",
   "failed_to_open_url": "Не удалось открыть URL: {error}",
-  "failed_to_copy": "Не удалось скопировать: {error}"
+  "failed_to_copy": "Не удалось скопировать: {error}",
+  "model_reasoning_default": "По умолчанию для модели",
+  "model_reasoning_on": "Вкл.",
+  "model_reasoning_help": "Применяется к следующему ответу. Выключение отключает рассуждения, если это поддерживается шаблоном чата модели.",
+  "model_reasoning_save_error": "Не удалось сохранить режим рассуждений. Попробуйте ещё раз."
 }

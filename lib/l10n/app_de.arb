@@ -915,5 +915,9 @@
   "settings_concise_voice_responses_desc": "Halten Sie LLM-Antworten im Sprachmodus kurz (1 kurzer Absatz) und stellen Sie Nachfragen.",
   "s3_connection_succeeded": "S3-Verbindung erfolgreich.",
   "failed_to_open_url": "URL konnte nicht geöffnet werden: {error}",
-  "failed_to_copy": "Kopieren fehlgeschlagen: {error}"
+  "failed_to_copy": "Kopieren fehlgeschlagen: {error}",
+  "model_reasoning_default": "Modellstandard",
+  "model_reasoning_on": "Ein",
+  "model_reasoning_help": "Gilt für die nächste Antwort. Aus deaktiviert das Denken, sofern die Chatvorlage des Modells dies unterstützt.",
+  "model_reasoning_save_error": "Denkmodus konnte nicht gespeichert werden. Bitte erneut versuchen."
 }

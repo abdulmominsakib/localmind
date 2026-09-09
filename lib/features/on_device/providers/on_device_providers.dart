@@ -35,7 +35,13 @@ final onDeviceGemmaServiceProvider = Provider<OnDeviceGemmaService>((ref) {
 });
 
 final onDeviceLlamaServiceProvider = Provider<OnDeviceLlamaService>((ref) {
-  final service = OnDeviceLlamaService();
+  final service = OnDeviceLlamaService(
+    reasoningPreference: (modelId) => ref
+        .read(importedGgufModelsProvider)
+        .where((model) => model.id == modelId)
+        .firstOrNull
+        ?.reasoningEnabled,
+  );
   ref.onDispose(() => service.dispose());
   return service;
 });
@@ -245,6 +251,12 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
       state = [...state, model];
     }
     return model;
+  }
+
+  Future<void> updateReasoning(String modelId, bool? enabled) async {
+    await _repository.updateReasoning(modelId, enabled);
+    if (!ref.mounted) return;
+    state = _repository.load().map((model) => model.toOnDeviceModel()).toList();
   }
 
   Future<void> deleteModel(String modelId) async {

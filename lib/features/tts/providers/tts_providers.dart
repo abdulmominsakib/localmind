@@ -17,6 +17,7 @@ import '../../../core/utils/safe_file_picker.dart';
 import '../utils/tts_text_processor.dart';
 import 'tts_model_providers.dart';
 import '../data/piper_tts_model.dart';
+import '../data/system_tts_configuration.dart';
 import 'tts_worker.dart';
 import '../utils/wav_merge.dart';
 
@@ -123,6 +124,7 @@ class TtsState {
 
 class TtsNotifier extends Notifier<TtsState> {
   FlutterTts? _flutterTts;
+  final _systemTtsConfiguration = SystemTtsConfiguration();
   final AudioPlayer _player = AudioPlayer();
   bool _isPlayerDisposed = false;
   bool _isStopping = false;
@@ -728,7 +730,11 @@ class TtsNotifier extends Notifier<TtsState> {
         spokenCharOffset: 0,
       );
       try {
-        await _flutterTts!.setLanguage('en-US');
+        await _systemTtsConfiguration.prepare(
+          _flutterTts!,
+          isAndroid: Platform.isAndroid,
+        );
+        if (_isStopping || speakGeneration != _systemSpeakGeneration) return;
         await _applySystemSpeechRate();
         _flutterTts!.setStartHandler(() {
           if (_isStopping || speakGeneration != _systemSpeakGeneration) return;
@@ -786,10 +792,15 @@ class TtsNotifier extends Notifier<TtsState> {
           if (_isStopping || speakGeneration != _systemSpeakGeneration) return;
         });
         await _flutterTts!.awaitSpeakCompletion(true);
+        if (_isStopping || speakGeneration != _systemSpeakGeneration) return;
         _systemSpeakStart = DateTime.now();
         _startSystemProgressTimer(speakGeneration);
-        await _flutterTts!.speak(text);
+        final result = await _flutterTts!.speak(text);
+        if (result == 0 || result == -1) {
+          throw StateError('The selected TTS engine could not speak');
+        }
       } catch (e) {
+        if (_isStopping || speakGeneration != _systemSpeakGeneration) return;
         _resetSystemSeekState();
         state = state.copyWith(
           isSpeaking: false,

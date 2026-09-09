@@ -3076,4 +3076,18 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Enable';
+
+  @override
+  String get model_reasoning_default => 'মডেলের ডিফল্ট';
+
+  @override
+  String get model_reasoning_on => 'চালু';
+
+  @override
+  String get model_reasoning_help =>
+      'পরবর্তী উত্তরে প্রযোজ্য হবে। মডেলের চ্যাট টেমপ্লেট সমর্থন করলে বন্ধ করলে চিন্তন বন্ধ হবে।';
+
+  @override
+  String get model_reasoning_save_error =>
+      'চিন্তন মোড সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।';
 }

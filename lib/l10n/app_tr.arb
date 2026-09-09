@@ -915,5 +915,9 @@
   "settings_concise_voice_responses_desc": "Sesli modda LLM yanıtlarını kısa tutun (1 kısa paragraf) ve takip soruları sorun.",
   "s3_connection_succeeded": "S3 bağlantısı başarılı.",
   "failed_to_open_url": "URL açılamadı: {error}",
-  "failed_to_copy": "Kopyalanamadı: {error}"
+  "failed_to_copy": "Kopyalanamadı: {error}",
+  "model_reasoning_default": "Model varsayılanı",
+  "model_reasoning_on": "Açık",
+  "model_reasoning_help": "Sonraki yanıta uygulanır. Modelin sohbet şablonu destekliyorsa Kapalı seçeneği düşünmeyi devre dışı bırakır.",
+  "model_reasoning_save_error": "Düşünme modu kaydedilemedi. Lütfen tekrar deneyin."
 }

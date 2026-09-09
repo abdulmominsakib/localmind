@@ -918,5 +918,9 @@
   "settings_concise_voice_responses_desc": "在语音模式下保持 LLM 回复简短（1个短段落）并提出后续问题。",
   "s3_connection_succeeded": "S3 连接成功。",
   "failed_to_open_url": "无法打开 URL: {error}",
-  "failed_to_copy": "复制失败: {error}"
+  "failed_to_copy": "复制失败: {error}",
+  "model_reasoning_default": "模型默认",
+  "model_reasoning_on": "开启",
+  "model_reasoning_help": "应用于下一条回复。如果模型的聊天模板支持，关闭后将禁用思考。",
+  "model_reasoning_save_error": "无法保存思考模式。请重试。"
 }

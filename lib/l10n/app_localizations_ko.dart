@@ -2988,4 +2988,17 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => '활성화';
+
+  @override
+  String get model_reasoning_default => '모델 기본값';
+
+  @override
+  String get model_reasoning_on => '켜짐';
+
+  @override
+  String get model_reasoning_help =>
+      '다음 응답에 적용됩니다. 모델의 채팅 템플릿이 지원하는 경우 끄면 사고가 비활성화됩니다.';
+
+  @override
+  String get model_reasoning_save_error => '사고 모드를 저장하지 못했습니다. 다시 시도해 주세요.';
 }

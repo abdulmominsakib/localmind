@@ -918,5 +918,9 @@
   "settings_concise_voice_responses_desc": "Mantieni le risposte LLM brevi (1 breve paragrafo) e fai domande di approfondimento in modalità vocale.",
   "s3_connection_succeeded": "Connessione S3 riuscita.",
   "failed_to_open_url": "Impossibile aprire l'URL: {error}",
-  "failed_to_copy": "Copia non riuscita: {error}"
+  "failed_to_copy": "Copia non riuscita: {error}",
+  "model_reasoning_default": "Predefinito del modello",
+  "model_reasoning_on": "Attivo",
+  "model_reasoning_help": "Si applica alla prossima risposta. Disattivato impedisce il ragionamento se il template di chat del modello lo supporta.",
+  "model_reasoning_save_error": "Impossibile salvare la modalità di ragionamento. Riprova."
 }

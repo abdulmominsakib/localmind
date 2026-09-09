@@ -3082,4 +3082,18 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Enable';
+
+  @override
+  String get model_reasoning_default => 'Predefinito del modello';
+
+  @override
+  String get model_reasoning_on => 'Attivo';
+
+  @override
+  String get model_reasoning_help =>
+      'Si applica alla prossima risposta. Disattivato impedisce il ragionamento se il template di chat del modello lo supporta.';
+
+  @override
+  String get model_reasoning_save_error =>
+      'Impossibile salvare la modalità di ragionamento. Riprova.';
 }

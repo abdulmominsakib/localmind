@@ -3055,4 +3055,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Enable';
+
+  @override
+  String get model_reasoning_default => 'Model default';
+
+  @override
+  String get model_reasoning_on => 'On';
+
+  @override
+  String get model_reasoning_help =>
+      'Applies to the next response. Off disables thinking when supported by the model’s chat template.';
+
+  @override
+  String get model_reasoning_save_error =>
+      'Could not save thinking mode. Please try again.';
 }

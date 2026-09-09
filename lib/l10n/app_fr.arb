@@ -915,5 +915,9 @@
   "settings_concise_voice_responses_desc": "Conservez les réponses du LLM concises (1 court paragraphe) et posez des questions de suivi en mode vocal.",
   "s3_connection_succeeded": "Connexion S3 réussie.",
   "failed_to_open_url": "Échec de l'ouverture de l'URL : {error}",
-  "failed_to_copy": "Échec de la copie : {error}"
+  "failed_to_copy": "Échec de la copie : {error}",
+  "model_reasoning_default": "Par défaut du modèle",
+  "model_reasoning_on": "Activé",
+  "model_reasoning_help": "S’applique à la prochaine réponse. Désactivé coupe le raisonnement si le modèle de conversation le permet.",
+  "model_reasoning_save_error": "Impossible d’enregistrer le mode de réflexion. Veuillez réessayer."
 }

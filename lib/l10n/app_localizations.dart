@@ -5702,6 +5702,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable'**
   String get builtin_ai_enable;
+
+  /// No description provided for @model_reasoning_default.
+  ///
+  /// In en, this message translates to:
+  /// **'Model default'**
+  String get model_reasoning_default;
+
+  /// No description provided for @model_reasoning_on.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get model_reasoning_on;
+
+  /// No description provided for @model_reasoning_help.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to the next response. Off disables thinking when supported by the model’s chat template.'**
+  String get model_reasoning_help;
+
+  /// No description provided for @model_reasoning_save_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save thinking mode. Please try again.'**
+  String get model_reasoning_save_error;
 }
 
 class _AppLocalizationsDelegate

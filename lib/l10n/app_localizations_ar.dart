@@ -3050,4 +3050,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Enable';
+
+  @override
+  String get model_reasoning_default => 'الإعداد الافتراضي للنموذج';
+
+  @override
+  String get model_reasoning_on => 'تشغيل';
+
+  @override
+  String get model_reasoning_help =>
+      'يُطبّق على الرد التالي. يؤدي الإيقاف إلى تعطيل التفكير إذا كان قالب المحادثة الخاص بالنموذج يدعم ذلك.';
+
+  @override
+  String get model_reasoning_save_error =>
+      'تعذّر حفظ وضع التفكير. يُرجى المحاولة مرة أخرى.';
 }

@@ -3068,4 +3068,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Enable';
+
+  @override
+  String get model_reasoning_default => 'Par défaut du modèle';
+
+  @override
+  String get model_reasoning_on => 'Activé';
+
+  @override
+  String get model_reasoning_help =>
+      'S’applique à la prochaine réponse. Désactivé coupe le raisonnement si le modèle de conversation le permet.';
+
+  @override
+  String get model_reasoning_save_error =>
+      'Impossible d’enregistrer le mode de réflexion. Veuillez réessayer.';
 }

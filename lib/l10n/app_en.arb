@@ -3396,6 +3396,9 @@
   "builtin_ai_enable": "Enable",
   "@builtin_ai_enable": {
     "description": "Button label to enable or initialize built-in on-device AI"
-  }
+  },
+  "model_reasoning_default": "Model default",
+  "model_reasoning_on": "On",
+  "model_reasoning_help": "Applies to the next response. Off disables thinking when supported by the model’s chat template.",
+  "model_reasoning_save_error": "Could not save thinking mode. Please try again."
 }
-

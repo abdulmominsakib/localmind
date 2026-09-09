@@ -929,5 +929,9 @@
   "builtin_ai_not_supported": "내장 AI는 이 장치에서 지원되지 않습니다.",
   "builtin_ai_unsupported_desc": "귀하의 장치 하드웨어 또는 OS는 온디바이스 시스템 AI(예: Gemini Nano / Apple Intelligence)를 지원하지 않습니다. 대신 다운로드 가능한 모델을 선택하세요.",
   "builtin_ai_unsupported_chip": "지원되지 않음",
-  "builtin_ai_enable": "활성화"
+  "builtin_ai_enable": "활성화",
+  "model_reasoning_default": "모델 기본값",
+  "model_reasoning_on": "켜짐",
+  "model_reasoning_help": "다음 응답에 적용됩니다. 모델의 채팅 템플릿이 지원하는 경우 끄면 사고가 비활성화됩니다.",
+  "model_reasoning_save_error": "사고 모드를 저장하지 못했습니다. 다시 시도해 주세요."
 }

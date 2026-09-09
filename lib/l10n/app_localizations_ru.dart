@@ -3080,4 +3080,18 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get builtin_ai_enable => 'Enable';
+
+  @override
+  String get model_reasoning_default => 'По умолчанию для модели';
+
+  @override
+  String get model_reasoning_on => 'Вкл.';
+
+  @override
+  String get model_reasoning_help =>
+      'Применяется к следующему ответу. Выключение отключает рассуждения, если это поддерживается шаблоном чата модели.';
+
+  @override
+  String get model_reasoning_save_error =>
+      'Не удалось сохранить режим рассуждений. Попробуйте ещё раз.';
 }

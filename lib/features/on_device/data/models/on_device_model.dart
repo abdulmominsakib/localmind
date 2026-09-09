@@ -21,6 +21,7 @@ class OnDeviceModel {
   final String bestFor;
   final bool supportsFunctionCalling;
   final bool supportsThinking;
+  final bool? reasoningEnabled;
   final bool supportsVision;
   final String languagesLabel;
   final String? backendNote;
@@ -46,6 +47,7 @@ class OnDeviceModel {
     required this.bestFor,
     this.supportsFunctionCalling = false,
     this.supportsThinking = false,
+    this.reasoningEnabled,
     this.supportsVision = false,
     required this.languagesLabel,
     this.backendNote,

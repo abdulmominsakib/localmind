@@ -1,3 +1,4 @@
+import '../views/components/imported_model_reasoning_setting.dart';
 import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'dart:io';
@@ -91,6 +92,7 @@ class ModelCard extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             _CapabilityChips(model: model, theme: theme),
+            if (model.isImported) ImportedModelReasoningSetting(model: model),
             const SizedBox(height: 8),
             _ModelMetaRow(model: model, theme: theme, l10n: l10n),
             const SizedBox(height: 8),

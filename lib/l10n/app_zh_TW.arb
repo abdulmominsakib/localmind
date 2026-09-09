@@ -918,5 +918,9 @@
   "settings_concise_voice_responses_desc": "在語音模式下保持 LLM 回應精簡（1個短段落）並提出後續問題。",
   "s3_connection_succeeded": "S3 連線成功。",
   "failed_to_open_url": "無法開啟 URL: {error}",
-  "failed_to_copy": "複製失敗: {error}"
+  "failed_to_copy": "複製失敗: {error}",
+  "model_reasoning_default": "模型預設",
+  "model_reasoning_on": "開啟",
+  "model_reasoning_help": "套用至下一則回覆。如果模型的聊天範本支援，關閉後將停用思考。",
+  "model_reasoning_save_error": "無法儲存思考模式。請再試一次。"
 }

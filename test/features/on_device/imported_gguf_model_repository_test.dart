@@ -18,6 +18,37 @@ void main() {
     return ImportedGgufModelRepository(prefs, Dio());
   }
 
+  test(
+    'reasoning settings persist without changing model identity or file metadata',
+    () async {
+      final repo = await createRepository();
+      final metadata = ImportedGgufModelMetadata(
+        id: 'reasoning',
+        name: 'Qwen',
+        filePath: '/tmp/qwen.gguf',
+        fileSizeBytes: 42,
+        importedAt: DateTime.utc(2026),
+        source: OnDeviceImportedSource.localFile,
+      );
+      await repo.saveAll([metadata]);
+      expect(repo.load().single.reasoningEnabled, isNull);
+      for (final enabled in <bool?>[false, true, null]) {
+        await repo.updateReasoning('reasoning', enabled);
+        final restored = repo.load().single;
+        expect(restored.toOnDeviceModel().reasoningEnabled, enabled);
+        expect(restored.toJson(), {
+          ...metadata.toJson(),
+          'reasoningEnabled': enabled,
+        });
+      }
+      await expectLater(
+        repo.updateReasoning('missing', false),
+        throwsStateError,
+      );
+      expect(repo.load(), hasLength(1));
+    },
+  );
+
   group('ImportedGgufModelMetadata', () {
     test('serializes and converts to a llama.cpp on-device model', () {
       final importedAt = DateTime.utc(2026, 6, 21, 12);

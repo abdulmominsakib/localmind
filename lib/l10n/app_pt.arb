@@ -929,5 +929,9 @@
   "builtin_ai_not_supported": "A IA integrada não é compatível com este dispositivo.",
   "builtin_ai_unsupported_desc": "O hardware ou sistema operacional do seu dispositivo não oferece suporte à IA do sistema no dispositivo (por exemplo, Gemini Nano/Apple Intelligence). Escolha um modelo para download.",
   "builtin_ai_unsupported_chip": "Não compatível",
-  "builtin_ai_enable": "Habilitar"
+  "builtin_ai_enable": "Habilitar",
+  "model_reasoning_default": "Padrão do modelo",
+  "model_reasoning_on": "Ativado",
+  "model_reasoning_help": "Aplica-se à próxima resposta. Desativado impede o raciocínio se o modelo de chat permitir.",
+  "model_reasoning_save_error": "Não foi possível salvar o modo de raciocínio. Tente novamente."
 }

@@ -918,5 +918,9 @@
   "settings_concise_voice_responses_desc": "音声モードでのLLMの応答を短く（短い1段落）保ち、フォローアップの質問を行います。",
   "s3_connection_succeeded": "S3 接続に成功しました。",
   "failed_to_open_url": "URL を開くことができませんでした: {error}",
-  "failed_to_copy": "コピーに失敗しました: {error}"
+  "failed_to_copy": "コピーに失敗しました: {error}",
+  "model_reasoning_default": "モデルのデフォルト",
+  "model_reasoning_on": "オン",
+  "model_reasoning_help": "次の応答に適用されます。モデルのチャットテンプレートが対応している場合、オフにすると思考を無効にします。",
+  "model_reasoning_save_error": "思考モードを保存できませんでした。もう一度お試しください。"
 }

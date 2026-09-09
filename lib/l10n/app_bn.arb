@@ -918,5 +918,9 @@
   "settings_concise_voice_responses_desc": "ভয়েস মোডে মডেলের উত্তর সংক্ষেপে (১টি ছোট অনুচ্ছেদ) রাখুন এবং ফলো-আপ প্রশ্ন করুন।",
   "s3_connection_succeeded": "S3 সংযোগ সফল হয়েছে।",
   "failed_to_open_url": "ইউআরএল খুলতে ব্যর্থ হয়েছে: {error}",
-  "failed_to_copy": "কপি করতে ব্যর্থ হয়েছে: {error}"
+  "failed_to_copy": "কপি করতে ব্যর্থ হয়েছে: {error}",
+  "model_reasoning_default": "মডেলের ডিফল্ট",
+  "model_reasoning_on": "চালু",
+  "model_reasoning_help": "পরবর্তী উত্তরে প্রযোজ্য হবে। মডেলের চ্যাট টেমপ্লেট সমর্থন করলে বন্ধ করলে চিন্তন বন্ধ হবে।",
+  "model_reasoning_save_error": "চিন্তন মোড সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।"
 }
