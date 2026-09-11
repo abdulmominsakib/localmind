@@ -47,6 +47,40 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       _selectedType == ServerType.openRouter ||
       _selectedType == ServerType.ollamaCloud;
 
+  String _lastHostScheme = '';
+
+  int _defaultPortForType(ServerType type) {
+    return switch (type) {
+      ServerType.lmStudio => AppConstants.lmStudioDefaultPort,
+      ServerType.openAICompatible => AppConstants.openAICompatibleDefaultPort,
+      ServerType.ollama => AppConstants.ollamaDefaultPort,
+      ServerType.ollamaCloud => AppConstants.ollamaCloudDefaultPort,
+      ServerType.openRouter => 443,
+      ServerType.onDevice => 0,
+    };
+  }
+
+  void _onHostChanged() {
+    final text = _hostController.text.trim();
+    final parsed = parseServerAddressInput(text);
+    if (parsed == null) return;
+
+    if (parsed.hasPort) {
+      _portController.text = parsed.port.toString();
+    } else if (parsed.scheme == 'https' && _lastHostScheme != 'https') {
+      final currentPort = int.tryParse(_portController.text.trim());
+      if (currentPort == _defaultPortForType(_selectedType)) {
+        _portController.text = '443';
+      }
+    } else if (parsed.scheme == 'http' && _lastHostScheme == 'https') {
+      final currentPort = int.tryParse(_portController.text.trim());
+      if (currentPort == 443) {
+        _portController.text = _defaultPortForType(_selectedType).toString();
+      }
+    }
+    _lastHostScheme = parsed.scheme;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -54,7 +88,12 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     _selectedType = server?.type ?? ServerType.lmStudio;
     _selectedIconName = server?.iconName;
     _nameController = TextEditingController(text: server?.name ?? '');
-    _hostController = TextEditingController(text: server?.host ?? '');
+    final initialHost = server != null
+        ? (server.pathPrefix != null && server.pathPrefix!.isNotEmpty
+              ? '${server.host}${server.pathPrefix}'
+              : server.host)
+        : '';
+    _hostController = TextEditingController(text: initialHost);
     _portController = TextEditingController(
       text:
           server?.port.toString() ??
@@ -67,10 +106,13 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     _vramGbController = TextEditingController(
       text: server?.availableVramGb?.toString() ?? '',
     );
+    _lastHostScheme = isHttpsAddressInput(initialHost) ? 'https' : 'http';
+    _hostController.addListener(_onHostChanged);
   }
 
   @override
   void dispose() {
+    _hostController.removeListener(_onHostChanged);
     _scrollController.dispose();
     _nameController.dispose();
     _hostController.dispose();
@@ -86,11 +128,14 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       _selectedType = type;
       _testResult = null;
 
+      final isHttps = isHttpsAddressInput(_hostController.text);
       if (type == ServerType.openRouter) {
         _portController.text = '443';
       } else if (type == ServerType.ollamaCloud) {
         _portController.text = AppConstants.ollamaCloudDefaultPort.toString();
         _hostController.text = AppConstants.ollamaCloudBaseUrl;
+      } else if (isHttps) {
+        _portController.text = '443';
       } else if (type == ServerType.lmStudio) {
         _portController.text = AppConstants.lmStudioDefaultPort.toString();
       } else if (type == ServerType.openAICompatible) {
@@ -167,20 +212,32 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   Server _buildServer() {
     final rawHost = _hostController.text.trim();
     final rawPort = _portController.text.trim();
-    final host = _selectedType == ServerType.ollamaCloud
-        ? AppConstants.ollamaCloudBaseUrl
-        : rawHost;
-    final defaultPort = switch (_selectedType) {
-      ServerType.lmStudio => AppConstants.lmStudioDefaultPort,
-      ServerType.openAICompatible => AppConstants.openAICompatibleDefaultPort,
-      ServerType.ollama => AppConstants.ollamaDefaultPort,
-      ServerType.ollamaCloud => AppConstants.ollamaCloudDefaultPort,
-      ServerType.openRouter => 443,
-      ServerType.onDevice => 0,
-    };
-    final port = _selectedType == ServerType.ollamaCloud
-        ? AppConstants.ollamaCloudDefaultPort
-        : (int.tryParse(rawPort) ?? defaultPort);
+    final defaultPort = _defaultPortForType(_selectedType);
+    String host;
+    int port;
+    String? pathPrefix;
+
+    if (_selectedType == ServerType.ollamaCloud) {
+      host = AppConstants.ollamaCloudBaseUrl;
+      port = AppConstants.ollamaCloudDefaultPort;
+    } else {
+      final parsed = parseServerAddressInput(rawHost);
+      if (parsed != null) {
+        final hasExplicitPort = parsed.hasPort;
+        host =
+            '${parsed.scheme}://${parsed.host}${hasExplicitPort ? ':${parsed.port}' : ''}';
+        final schemeDefaultPort = parsed.scheme == 'https' ? 443 : defaultPort;
+        port = hasExplicitPort
+            ? parsed.port
+            : (int.tryParse(rawPort) ?? schemeDefaultPort);
+        final prefix = extractPathPrefix(parsed);
+        pathPrefix = prefix.isNotEmpty ? prefix : null;
+      } else {
+        host = rawHost;
+        port = int.tryParse(rawPort) ?? defaultPort;
+        pathPrefix = null;
+      }
+    }
 
     return Server(
       id:
@@ -200,6 +257,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       lastConnectedAt: widget.editServer?.lastConnectedAt ?? DateTime.now(),
       status: widget.editServer?.status ?? ConnectionStatus.disconnected,
       iconName: _selectedIconName,
+      pathPrefix: pathPrefix,
       availableRamGb: _selectedType == ServerType.lmStudio
           ? _parseOptionalGb(_ramGbController.text)
           : widget.editServer?.availableRamGb,

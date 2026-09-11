@@ -21,14 +21,15 @@ class ServerApiService {
       endpointsToTry.add(server.modelsEndpoint);
     }
 
+    final prefix = server.apiPathPrefix;
     if (server.type == ServerType.lmStudio) {
-      endpointsToTry.add('${server.baseUrl}/v1/models');
-      endpointsToTry.add('${server.baseUrl}/api/v0/models');
+      endpointsToTry.add('${server.baseUrl}$prefix/v1/models');
+      endpointsToTry.add('${server.baseUrl}$prefix/api/v0/models');
     } else if (server.type == ServerType.openAICompatible) {
-      endpointsToTry.add('${server.baseUrl}/models');
+      endpointsToTry.add('${server.baseUrl}$prefix/models');
     } else if (server.type == ServerType.ollama) {
-      endpointsToTry.add('${server.baseUrl}/api/tags');
-      endpointsToTry.add('${server.baseUrl}/api/version');
+      endpointsToTry.add('${server.baseUrl}$prefix/api/tags');
+      endpointsToTry.add('${server.baseUrl}$prefix/api/version');
     }
 
     for (final endpoint in endpointsToTry.toSet()) {
@@ -77,7 +78,7 @@ class ServerApiService {
         if (e.response?.statusCode == 404 &&
             server.type == ServerType.lmStudio) {
           response = await _dio.get(
-            '${server.baseUrl}/v1/models',
+            '${server.baseUrl}${server.apiPathPrefix}/v1/models',
             options: Options(headers: buildServerAuthHeaders(server)),
           );
         } else {

@@ -81,10 +81,49 @@ class _OnboardingServerSetupScreenState
     _hostController = TextEditingController(text: defaultHost);
     _portController = TextEditingController(text: defaultPort);
     _apiKeyController = TextEditingController();
+    _lastHostScheme = isHttpsAddressInput(defaultHost) ? 'https' : 'http';
+    _hostController.addListener(_onHostChanged);
+  }
+
+  String _lastHostScheme = '';
+
+  int _defaultPortForType(ServerType type) {
+    return switch (type) {
+      ServerType.lmStudio => AppConstants.lmStudioDefaultPort,
+      ServerType.openAICompatible => AppConstants.openAICompatibleDefaultPort,
+      ServerType.ollama => AppConstants.ollamaDefaultPort,
+      ServerType.ollamaCloud => AppConstants.ollamaCloudDefaultPort,
+      ServerType.openRouter => 443,
+      ServerType.onDevice => 0,
+    };
+  }
+
+  void _onHostChanged() {
+    final text = _hostController.text.trim();
+    final parsed = parseServerAddressInput(text);
+    if (parsed == null) return;
+
+    if (parsed.hasPort) {
+      _portController.text = parsed.port.toString();
+    } else if (parsed.scheme == 'https' && _lastHostScheme != 'https') {
+      final currentPort = int.tryParse(_portController.text.trim());
+      if (currentPort == _defaultPortForType(widget.selectedType)) {
+        _portController.text = '443';
+      }
+    } else if (parsed.scheme == 'http' && _lastHostScheme == 'https') {
+      final currentPort = int.tryParse(_portController.text.trim());
+      if (currentPort == 443) {
+        _portController.text = _defaultPortForType(
+          widget.selectedType,
+        ).toString();
+      }
+    }
+    _lastHostScheme = parsed.scheme;
   }
 
   @override
   void dispose() {
+    _hostController.removeListener(_onHostChanged);
     _nameController.dispose();
     _hostController.dispose();
     _portController.dispose();
@@ -94,20 +133,33 @@ class _OnboardingServerSetupScreenState
 
   Server _buildServer() {
     final requiresCloudConfig = widget.selectedType == ServerType.ollamaCloud;
-    final host = requiresCloudConfig
-        ? AppConstants.ollamaCloudBaseUrl
-        : _hostController.text.trim();
-    final defaultPort = switch (widget.selectedType) {
-      ServerType.lmStudio => AppConstants.lmStudioDefaultPort,
-      ServerType.openAICompatible => AppConstants.openAICompatibleDefaultPort,
-      ServerType.ollama => AppConstants.ollamaDefaultPort,
-      ServerType.ollamaCloud => AppConstants.ollamaCloudDefaultPort,
-      ServerType.openRouter => 443,
-      ServerType.onDevice => 0,
-    };
-    final port = requiresCloudConfig
-        ? AppConstants.ollamaCloudDefaultPort
-        : (int.tryParse(_portController.text.trim()) ?? defaultPort);
+    final defaultPort = _defaultPortForType(widget.selectedType);
+    String host;
+    int port;
+    String? pathPrefix;
+
+    if (requiresCloudConfig) {
+      host = AppConstants.ollamaCloudBaseUrl;
+      port = AppConstants.ollamaCloudDefaultPort;
+    } else {
+      final rawHost = _hostController.text.trim();
+      final parsed = parseServerAddressInput(rawHost);
+      if (parsed != null) {
+        final hasExplicitPort = parsed.hasPort;
+        host =
+            '${parsed.scheme}://${parsed.host}${hasExplicitPort ? ':${parsed.port}' : ''}';
+        final schemeDefaultPort = parsed.scheme == 'https' ? 443 : defaultPort;
+        port = hasExplicitPort
+            ? parsed.port
+            : (int.tryParse(_portController.text.trim()) ?? schemeDefaultPort);
+        final prefix = extractPathPrefix(parsed);
+        pathPrefix = prefix.isNotEmpty ? prefix : null;
+      } else {
+        host = rawHost;
+        port = int.tryParse(_portController.text.trim()) ?? defaultPort;
+        pathPrefix = null;
+      }
+    }
 
     return Server(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -124,6 +176,7 @@ class _OnboardingServerSetupScreenState
       createdAt: DateTime.now(),
       lastConnectedAt: DateTime.now(),
       status: ConnectionStatus.disconnected,
+      pathPrefix: pathPrefix,
     );
   }
 
@@ -137,7 +190,8 @@ class _OnboardingServerSetupScreenState
     if (value == null || value.trim().isEmpty) {
       return l10n?.host_required ?? 'Host is required';
     }
-    if (parseServerAddressInput(value) == null) {
+    final parsed = parseServerAddressInput(value);
+    if (parsed == null) {
       return l10n?.host_valid ?? 'Enter a valid host';
     }
     return null;

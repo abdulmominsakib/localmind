@@ -16,8 +16,15 @@ Uri? parseServerAddressInput(String input) {
   final uri = Uri.tryParse(candidate);
   if (uri == null || uri.host.isEmpty) return null;
   if (uri.scheme != 'http' && uri.scheme != 'https') return null;
-  if (uri.path.isNotEmpty && uri.path != '/') return null;
+  if (uri.hasQuery || uri.hasFragment) return null;
   return uri;
+}
+
+/// Extracts a normalized path prefix from a parsed URI.
+/// Returns `''` for empty path, root `/`, or paths with trailing slashes.
+/// Returns the path as-is otherwise (e.g. `/ollama`).
+String extractPathPrefix(Uri uri) {
+  return normalizeServerPathPrefix(uri.path.isEmpty ? '' : uri.path);
 }
 
 bool isHttpsAddressInput(String input) {
@@ -33,7 +40,12 @@ Uri _normalizeNetworkUri(Uri uri, {int? port}) {
   );
 }
 
-String displayServerAddress(String host, int port, ServerType type) {
+String displayServerAddress(
+  String host,
+  int port,
+  ServerType type, [
+  String? pathPrefix,
+]) {
   if (type == ServerType.openRouter) {
     return 'openrouter.ai';
   }
@@ -45,26 +57,30 @@ String displayServerAddress(String host, int port, ServerType type) {
   }
 
   final trimmedHost = host.trim();
+  final prefix = normalizeServerPathPrefix(pathPrefix);
   if (trimmedHost.isEmpty) {
-    return port > 0 ? 'localhost:$port' : 'localhost';
+    final base = port > 0 ? 'localhost:$port' : 'localhost';
+    return prefix.isNotEmpty ? '$base$prefix' : base;
   }
 
   if (_hasExplicitHttpScheme(trimmedHost)) {
     final uri = parseServerAddressInput(trimmedHost);
     if (uri != null) {
-      return _normalizeNetworkUri(
+      final base = _normalizeNetworkUri(
         uri,
         port: uri.hasPort || port <= 0 ? null : port,
       ).toString();
+      return prefix.isNotEmpty ? '$base$prefix' : base;
     }
-    return trimmedHost;
+    return prefix.isNotEmpty ? '$trimmedHost$prefix' : trimmedHost;
   }
 
   if (trimmedHost.contains(':')) {
-    return trimmedHost;
+    return prefix.isNotEmpty ? '$trimmedHost$prefix' : trimmedHost;
   }
 
-  return port > 0 ? '$trimmedHost:$port' : trimmedHost;
+  final base = port > 0 ? '$trimmedHost:$port' : trimmedHost;
+  return prefix.isNotEmpty ? '$base$prefix' : base;
 }
 
 String buildServerBaseUrl(String host, int port, ServerType type) {
@@ -113,7 +129,7 @@ String normalizeServerPathPrefix(String? raw) {
   var value = raw.trim();
   if (value.isEmpty) return '';
   if (!value.startsWith('/')) value = '/$value';
-  while (value.endsWith('/') && value.length > 1) {
+  while (value.endsWith('/') && value.isNotEmpty) {
     value = value.substring(0, value.length - 1);
   }
   return value;
@@ -162,10 +178,17 @@ class Server {
     if (apiPathPrefix.isEmpty) {
       return suffix;
     }
-    if (type != ServerType.ollama && type != ServerType.ollamaCloud) {
-      return suffix;
-    }
     return '$apiPathPrefix$suffix';
+  }
+
+  String get _openAiPrefix {
+    if (apiPathPrefix.isEmpty) {
+      return '/v1';
+    }
+    if (apiPathPrefix.endsWith('/v1')) {
+      return apiPathPrefix;
+    }
+    return '$apiPathPrefix/v1';
   }
 
   String get baseUrl {
@@ -180,9 +203,9 @@ class Server {
         // LM Studio's native REST endpoint. MCP integrations (both
         // ephemeral_mcp and plugin) are only supported here, not on the
         // OpenAI-compatible /v1/chat/completions or /v1/responses endpoints.
-        return '$baseUrl/api/v1/chat';
+        return '$baseUrl${_apiPath('/api/v1/chat')}';
       case ServerType.openAICompatible:
-        return '$baseUrl/v1/chat/completions';
+        return '$baseUrl$_openAiPrefix/chat/completions';
       case ServerType.ollama:
       case ServerType.ollamaCloud:
         return '$baseUrl${_apiPath('/api/chat')}';
@@ -196,9 +219,9 @@ class Server {
   String get modelsEndpoint {
     switch (type) {
       case ServerType.lmStudio:
-        return '$baseUrl/api/v1/models';
+        return '$baseUrl${_apiPath('/api/v1/models')}';
       case ServerType.openAICompatible:
-        return '$baseUrl/v1/models';
+        return '$baseUrl$_openAiPrefix/models';
       case ServerType.ollama:
       case ServerType.ollamaCloud:
         return '$baseUrl${_apiPath('/api/tags')}';
@@ -212,9 +235,9 @@ class Server {
   String get runningModelsEndpoint {
     switch (type) {
       case ServerType.lmStudio:
-        return '$baseUrl/api/v1/models';
+        return '$baseUrl${_apiPath('/api/v1/models')}';
       case ServerType.openAICompatible:
-        return '$baseUrl/v1/models';
+        return '$baseUrl$_openAiPrefix/models';
       case ServerType.ollama:
         return '$baseUrl${_apiPath('/api/ps')}';
       case ServerType.ollamaCloud:
@@ -240,9 +263,9 @@ class Server {
   String get loadModelEndpoint {
     switch (type) {
       case ServerType.lmStudio:
-        return '$baseUrl/api/v1/models/load';
+        return '$baseUrl${_apiPath('/api/v1/models/load')}';
       case ServerType.openAICompatible:
-        return '$baseUrl/v1/models/load';
+        return '$baseUrl$_openAiPrefix/models/load';
       case ServerType.ollama:
         return '$baseUrl${_apiPath('/api/generate')}';
       case ServerType.ollamaCloud:
@@ -255,9 +278,9 @@ class Server {
   String get unloadModelEndpoint {
     switch (type) {
       case ServerType.lmStudio:
-        return '$baseUrl/api/v1/models/unload';
+        return '$baseUrl${_apiPath('/api/v1/models/unload')}';
       case ServerType.openAICompatible:
-        return '$baseUrl/v1/models/unload';
+        return '$baseUrl$_openAiPrefix/models/unload';
       case ServerType.ollama:
         return '$baseUrl${_apiPath('/api/generate')}';
       case ServerType.ollamaCloud:
@@ -272,7 +295,8 @@ class Server {
   bool get isOllamaFamily =>
       type == ServerType.ollama || type == ServerType.ollamaCloud;
 
-  String get displayAddress => displayServerAddress(host, port, type);
+  String get displayAddress =>
+      displayServerAddress(host, port, type, pathPrefix);
 
   Server copyWith({
     String? id,
