@@ -687,18 +687,24 @@ void main() {
 class _FakeInferenceService implements OnDeviceInferenceService {
   final List<_FakeInferenceSession> sessions = [];
   final List<String?> systemInstructions = [];
+  final List<bool?> supportImages = [];
   int createCount = 0;
 
   @override
   bool get isLoaded => true;
 
   @override
+  bool currentModelSupportsVision = false;
+
+  @override
   Future<OnDeviceInferenceSession> createChat({
     String? systemInstruction,
     List<gemma.Tool> tools = const [],
+    bool? supportImage,
   }) async {
     createCount++;
     systemInstructions.add(systemInstruction);
+    supportImages.add(supportImage);
     final session = _FakeInferenceSession();
     sessions.add(session);
     return session;

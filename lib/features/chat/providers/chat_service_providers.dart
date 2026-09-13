@@ -73,6 +73,8 @@ ChatService createChatServiceForServer({
       server.type,
       dio,
       onDeviceGemma: onDeviceGemmaService,
+      imageCompressionEnabled: imageCompressionEnabled,
+      imageCompressionLevel: imageCompressionLevel,
     );
   }
 

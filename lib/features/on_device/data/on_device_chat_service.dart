@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
 
@@ -10,6 +12,8 @@ import '../../chat/data/models/chat_parameters.dart';
 import '../../chat/data/models/mcp_integration.dart';
 import '../../chat/data/models/message.dart' hide ToolCallData;
 import '../../chat/data/tools/tool_definition.dart';
+import '../../chat/utils/attachment_helpers.dart';
+import '../../chat/utils/image_upload_utils.dart';
 import '../../servers/data/models/server.dart';
 import 'on_device_gemma_service.dart';
 
@@ -35,6 +39,8 @@ class OnDeviceChatService implements ChatService {
   OnDeviceChatService(
     this._gemmaService, {
     Duration retainedSessionTtl = _defaultRetainedSessionTtl,
+    this.imageCompressionEnabled = true,
+    this.imageCompressionLevel = ImageCompressionLevel.medium,
     // The retained-session TTL is a separate constructor parameter (rather
     // than an initializing formal) so it can have a default value; the
     // lint suggestion doesn't apply when a default is involved.
@@ -43,6 +49,8 @@ class OnDeviceChatService implements ChatService {
 
   final OnDeviceInferenceService _gemmaService;
   final Duration _retainedSessionTtl;
+  final bool imageCompressionEnabled;
+  final ImageCompressionLevel imageCompressionLevel;
   final Set<_InferenceRun> _activeRuns = <_InferenceRun>{};
   _RetainedConversation? _retainedConversation;
   Timer? _retainedExpirationTimer;
@@ -93,8 +101,25 @@ class OnDeviceChatService implements ChatService {
     ChatParameters params,
   ) async {
     try {
-      final input = _prepareInput(modelId, messages, params);
-      if (input == null) {
+      final input = await _prepareInput(modelId, messages, params);
+      if (run.isCancelled) {
+        await _closeSession(run, stopGeneration: false);
+        return;
+      }
+      if (input == null ||
+          (input.currentMessage.content.trim().isEmpty && !input.hasImages)) {
+        final lastMsg = messages.isNotEmpty ? messages.last : null;
+        final hasImageAttachment =
+            lastMsg?.attachmentPaths?.any(AttachmentHelpers.isImagePath) ??
+            false;
+        if (hasImageAttachment && !_gemmaService.currentModelSupportsVision) {
+          await _finishWithError(
+            run,
+            'The active model does not support image attachments. '
+            'Please select a vision-supported model like Gemma 4 or FastVLM.',
+          );
+          return;
+        }
         await _finishWithError(run, 'On-device chat requires a user message.');
         return;
       }
@@ -115,9 +140,11 @@ class OnDeviceChatService implements ChatService {
           _cancelRetainedExpiration();
           await retained.session.close();
         }
+        final modelSupportsVision = _gemmaService.currentModelSupportsVision;
         session = await _gemmaService.createChat(
           systemInstruction: input.baseSystemInstruction,
           tools: const [],
+          supportImage: modelSupportsVision && input.hasImages,
         );
         reusedSession = false;
       }
@@ -366,6 +393,8 @@ class OnDeviceChatService implements ChatService {
       modelId: input.modelId,
       baseSystemInstruction: input.baseSystemInstruction,
       timeline: input.completedTimeline(run.generatedContent.toString()),
+      supportsImages:
+          input.hasImages || _gemmaService.currentModelSupportsVision,
     );
     _armRetainedExpiration();
     if (previous != null && !identical(previous.session, session)) {
@@ -402,11 +431,11 @@ class OnDeviceChatService implements ChatService {
     await run.controller.close();
   }
 
-  _PreparedInput? _prepareInput(
+  Future<_PreparedInput?> _prepareInput(
     String modelId,
     List<Message> messages,
     ChatParameters params,
-  ) {
+  ) async {
     final relevant = messages
         .where(
           (message) =>
@@ -423,22 +452,50 @@ class OnDeviceChatService implements ChatService {
       pendingAssistant = relevant.removeLast();
     }
 
-    final systemMessages = relevant
-        .where(
-          (message) =>
-              message.role == MessageRole.system &&
-              message.content.trim().isNotEmpty,
-        )
-        .map((message) => message.content.trim())
-        .toList(growable: false);
-    final timeline = relevant
+    final systemMessages = <String>[];
+    for (final message in relevant) {
+      if (message.role == MessageRole.system) {
+        var content = message.content.trim();
+        final paths = message.attachmentPaths;
+        if (paths != null && paths.isNotEmpty) {
+          for (final path in paths) {
+            if (AttachmentHelpers.isDocumentPath(path)) {
+              final text = await AttachmentHelpers.readDocumentFile(path);
+              if (text != null && text.trim().isNotEmpty) {
+                content = AttachmentHelpers.appendTextAttachment(
+                  content,
+                  AttachmentHelpers.fileNameOf(path),
+                  text,
+                );
+              }
+            }
+          }
+        }
+        if (content.isNotEmpty) {
+          systemMessages.add(content);
+        }
+      }
+    }
+
+    final timelineMessages = relevant
         .where(
           (message) =>
               message.role == MessageRole.user ||
               message.role == MessageRole.assistant,
         )
-        .map(_MessageSnapshot.fromMessage)
         .toList(growable: false);
+
+    final modelSupportsVision = _gemmaService.currentModelSupportsVision;
+    final timeline = <_MessageSnapshot>[];
+    for (final message in timelineMessages) {
+      final snapshot = await _MessageSnapshot.fromMessage(
+        message,
+        supportsVision: modelSupportsVision,
+        imageCompressionEnabled: imageCompressionEnabled,
+        imageCompressionLevel: imageCompressionLevel,
+      );
+      timeline.add(snapshot);
+    }
     if (timeline.isEmpty) return null;
 
     final currentMessage = timeline.last;
@@ -535,6 +592,10 @@ class _PreparedInput {
   final String? pendingAssistantId;
   final bool isAuxiliary;
 
+  bool get hasImages =>
+      currentMessage.images.isNotEmpty ||
+      history.any((message) => message.images.isNotEmpty);
+
   gemma.Message toGemmaMessage({required bool includeHistory}) {
     if (!includeHistory || history.isEmpty) {
       return currentMessage.toGemmaMessage();
@@ -549,10 +610,32 @@ class _PreparedInput {
     final currentLabel = currentMessage.role == MessageRole.user
         ? 'Current user message'
         : 'Assistant response to continue';
+    final fullText =
+        'Earlier conversation transcript (context only):\n\n$transcript\n\n'
+        '$currentLabel:\n${currentMessage.content}';
+
+    final images = currentMessage.images.isNotEmpty
+        ? currentMessage.images
+        : history.reversed
+              .expand((message) => message.images)
+              .toList(growable: false)
+              .reversed
+              .toList(growable: false);
+
+    if (images.isNotEmpty) {
+      var text = fullText;
+      if (text.trim().isEmpty) {
+        text = 'Describe the image.';
+      }
+      return gemma.Message.withImages(
+        text: text,
+        imageBytes: images,
+        isUser: currentMessage.role == MessageRole.user,
+      );
+    }
+
     return gemma.Message.text(
-      text:
-          'Earlier conversation transcript (context only):\n\n$transcript\n\n'
-          '$currentLabel:\n${currentMessage.content}',
+      text: fullText,
       isUser: currentMessage.role == MessageRole.user,
     );
   }
@@ -584,6 +667,7 @@ class _RetainedConversation {
     required this.modelId,
     required this.baseSystemInstruction,
     required this.timeline,
+    required this.supportsImages,
   });
 
   final OnDeviceInferenceSession session;
@@ -591,8 +675,12 @@ class _RetainedConversation {
   final String modelId;
   final String? baseSystemInstruction;
   final List<_MessageSnapshot> timeline;
+  final bool supportsImages;
 
   bool canContinueWith(_PreparedInput input, String requestedModelId) {
+    if (input.hasImages && !supportsImages) {
+      return false;
+    }
     return input.currentMessage.role == MessageRole.user &&
         conversationId == input.conversationId &&
         modelId == requestedModelId &&
@@ -618,28 +706,97 @@ class _MessageSnapshot {
     required this.conversationId,
     required this.role,
     required this.content,
+    this.images = const [],
+    this.attachmentPaths = const [],
   });
 
-  factory _MessageSnapshot.fromMessage(Message message) => _MessageSnapshot(
-    id: message.id,
-    conversationId: message.conversationId,
-    role: message.role,
-    content: message.content,
-  );
+  static Future<_MessageSnapshot> fromMessage(
+    Message message, {
+    bool supportsVision = false,
+    bool imageCompressionEnabled = true,
+    ImageCompressionLevel imageCompressionLevel = ImageCompressionLevel.medium,
+  }) async {
+    var content = message.content;
+    final images = <Uint8List>[];
+
+    final paths = message.attachmentPaths ?? const <String>[];
+
+    for (final path in paths) {
+      if (AttachmentHelpers.isDocumentPath(path)) {
+        final text = await AttachmentHelpers.readDocumentFile(path);
+        if (text != null && text.trim().isNotEmpty) {
+          content = AttachmentHelpers.appendTextAttachment(
+            content,
+            AttachmentHelpers.fileNameOf(path),
+            text,
+          );
+        }
+      } else if (supportsVision && AttachmentHelpers.isImagePath(path)) {
+        final file = File(path);
+        try {
+          if (await file.exists()) {
+            final bytes = await ImageUploadUtils.prepareImageBytes(
+              file,
+              enabled: imageCompressionEnabled,
+              level: imageCompressionLevel,
+            );
+            images.add(bytes);
+          }
+        } catch (e) {
+          Log.warning('Failed to prepare image bytes for $path: $e');
+          try {
+            if (await file.exists()) {
+              images.add(await file.readAsBytes());
+            }
+          } catch (_) {}
+        }
+      }
+    }
+
+    return _MessageSnapshot(
+      id: message.id,
+      conversationId: message.conversationId,
+      role: message.role,
+      content: content,
+      images: List.unmodifiable(images),
+      attachmentPaths: List.unmodifiable(paths),
+    );
+  }
 
   final String id;
   final String conversationId;
   final MessageRole role;
   final String content;
+  final List<Uint8List> images;
+  final List<String> attachmentPaths;
 
-  gemma.Message toGemmaMessage() =>
-      gemma.Message.text(text: content, isUser: role == MessageRole.user);
+  gemma.Message toGemmaMessage({String? promptOverride}) {
+    var text = promptOverride ?? content;
+    final isUser = role == MessageRole.user;
+    if (images.isNotEmpty) {
+      if (text.trim().isEmpty) {
+        text = 'Describe the image.';
+      }
+      return gemma.Message.withImages(
+        text: text,
+        imageBytes: images,
+        isUser: isUser,
+      );
+    }
+    return gemma.Message.text(text: text, isUser: isUser);
+  }
 
-  _MessageSnapshot copyWith({String? content}) => _MessageSnapshot(
+  _MessageSnapshot copyWith({
+    String? content,
+    List<Uint8List>? images,
+    List<String>? attachmentPaths,
+  }) => _MessageSnapshot(
     id: id,
     conversationId: conversationId,
     role: role,
     content: content ?? this.content,
+    images: images ?? this.images,
+    attachmentPaths: attachmentPaths ?? this.attachmentPaths,
   );
 
   @override
@@ -648,9 +805,26 @@ class _MessageSnapshot {
         id == other.id &&
         conversationId == other.conversationId &&
         role == other.role &&
-        content == other.content;
+        content == other.content &&
+        _listEquals(attachmentPaths, other.attachmentPaths) &&
+        images.length == other.images.length;
   }
 
   @override
-  int get hashCode => Object.hash(id, conversationId, role, content);
+  int get hashCode => Object.hash(
+    id,
+    conversationId,
+    role,
+    content,
+    Object.hashAll(attachmentPaths),
+    images.length,
+  );
+
+  static bool _listEquals(List<String> first, List<String> second) {
+    if (first.length != second.length) return false;
+    for (var i = 0; i < first.length; i++) {
+      if (first[i] != second[i]) return false;
+    }
+    return true;
+  }
 }

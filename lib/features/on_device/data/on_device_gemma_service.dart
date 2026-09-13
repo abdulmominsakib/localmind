@@ -20,10 +20,12 @@ abstract interface class OnDeviceInferenceSession {
 
 abstract interface class OnDeviceInferenceService {
   bool get isLoaded;
+  bool get currentModelSupportsVision;
 
   Future<OnDeviceInferenceSession> createChat({
     String? systemInstruction,
     List<Tool> tools,
+    bool? supportImage,
   });
 }
 
@@ -55,6 +57,16 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
 
   InferenceModel? get activeModel => _model;
   String? get currentModelId => _currentModelId;
+  @override
+  bool get currentModelSupportsVision {
+    final id = _currentModelId;
+    if (id == null) return false;
+    final model = OnDeviceModel.allCuratedModels
+        .where((m) => m.id == id || m.fileName == id)
+        .firstOrNull;
+    return model?.supportsVision ?? false;
+  }
+
   @override
   bool get isLoaded => _model != null && !_isDisposed;
   bool get isDisposed => _isDisposed;
@@ -234,6 +246,8 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     _model = await FlutterGemma.getActiveModel(
       maxTokens: maxTokens,
       preferredBackend: backend,
+      supportImage: model.supportsVision,
+      maxNumImages: model.supportsVision ? 5 : null,
     );
     _currentModelId = modelId;
     _currentBackend = backend;
@@ -245,6 +259,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   Future<OnDeviceInferenceSession> createChat({
     String? systemInstruction,
     List<Tool> tools = const [],
+    bool? supportImage,
   }) async {
     await _ensureModelLoaded();
 
@@ -252,6 +267,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
       return await _openChat(
         systemInstruction: systemInstruction,
         tools: tools,
+        supportImage: supportImage,
       );
     } catch (e) {
       if (!_isClosedClientError(e)) rethrow;
@@ -261,7 +277,11 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
         'Reloading the model once.',
       );
       await _recoverClosedModel();
-      return _openChat(systemInstruction: systemInstruction, tools: tools);
+      return _openChat(
+        systemInstruction: systemInstruction,
+        tools: tools,
+        supportImage: supportImage,
+      );
     }
   }
 
@@ -276,14 +296,27 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   Future<OnDeviceInferenceSession> _openChat({
     required String? systemInstruction,
     required List<Tool> tools,
+    bool? supportImage,
   }) async {
     final model = _model!;
+    final visionEnabled = currentModelSupportsVision && (supportImage ?? true);
+
     final InferenceChat chat;
     if (model.fileType == ModelFileType.builtIn) {
       chat = await model.createChat(
         systemInstruction: systemInstruction,
         tools: tools,
         supportsFunctionCalls: tools.isNotEmpty,
+        supportImage: visionEnabled,
+      );
+    } else if (visionEnabled) {
+      // Multimodal .litertlm models MUST use createChat() (single-session)
+      // because openChat() (virtual concurrent session) rejects media.
+      chat = await model.createChat(
+        systemInstruction: systemInstruction,
+        tools: tools,
+        supportsFunctionCalls: tools.isNotEmpty,
+        supportImage: true,
       );
     } else {
       chat = await model.openChat(

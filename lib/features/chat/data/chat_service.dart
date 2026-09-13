@@ -77,7 +77,11 @@ abstract class ChatService {
             'OnDeviceGemmaService is required for onDevice server type',
           );
         }
-        return OnDeviceChatService(onDeviceGemma);
+        return OnDeviceChatService(
+          onDeviceGemma,
+          imageCompressionEnabled: imageCompressionEnabled,
+          imageCompressionLevel: imageCompressionLevel,
+        );
     }
   }
 }
@@ -205,7 +209,7 @@ class LMStudioChatService implements ChatService {
     final String systemPrompt;
     final input = useTypedInput
         ? await _buildNativeTypedInput(messages, continueGeneration)
-        : _buildNativeInputString(messages, continueGeneration);
+        : await _buildNativeInputString(messages, continueGeneration);
     systemPrompt = _extractSystemPrompt(messages) ?? params.systemPrompt ?? '';
 
     final body = <String, dynamic>{
@@ -470,10 +474,10 @@ class LMStudioChatService implements ChatService {
   /// plain-text chats. Conversation history is collapsed into a transcript
   /// because `/api/v1/chat` does not accept an OpenAI-style `messages`
   /// array; system prompt is hoisted to a top-level field by the caller.
-  String _buildNativeInputString(
+  Future<String> _buildNativeInputString(
     List<Message> messages,
     bool continueGeneration,
-  ) {
+  ) async {
     final visible = <Message>[];
     for (final m in messages) {
       if (m.role == MessageRole.system) continue;
@@ -495,7 +499,8 @@ class LMStudioChatService implements ChatService {
         MessageRole.tool => 'Tool',
         MessageRole.system => 'System',
       };
-      buf.writeln('$tag: ${m.content}');
+      final textContent = await _messageTextWithAttachments(m);
+      buf.writeln('$tag: $textContent');
     }
     return buf.toString().trimRight();
   }

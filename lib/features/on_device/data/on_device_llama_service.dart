@@ -9,6 +9,7 @@ import '../../chat/data/models/chat_parameters.dart';
 import '../../chat/data/models/mcp_integration.dart';
 import '../../chat/data/models/message.dart' hide ToolCallData;
 import '../../chat/data/tools/tool_definition.dart';
+import '../../chat/utils/attachment_helpers.dart';
 import '../../servers/data/models/server.dart';
 import 'models/on_device_model.dart';
 
@@ -169,7 +170,23 @@ class OnDeviceLlamaService {
         _lastUserMessageId = null;
       }
 
-      final text = latestUserMessage.content.trim();
+      var text = latestUserMessage.content;
+      final paths = latestUserMessage.attachmentPaths;
+      if (paths != null && paths.isNotEmpty) {
+        for (final path in paths) {
+          if (AttachmentHelpers.isDocumentPath(path)) {
+            final docText = await AttachmentHelpers.readDocumentFile(path);
+            if (docText != null && docText.trim().isNotEmpty) {
+              text = AttachmentHelpers.appendTextAttachment(
+                text,
+                AttachmentHelpers.fileNameOf(path),
+                docText,
+              );
+            }
+          }
+        }
+      }
+      text = text.trim();
       if (text.isEmpty) {
         yield const ChatResponse(
           type: ChatResponseType.error,

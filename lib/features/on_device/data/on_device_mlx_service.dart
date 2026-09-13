@@ -16,6 +16,7 @@ import '../../chat/data/models/message.dart';
 import '../../chat/data/models/mcp_integration.dart';
 import '../../chat/data/tools/tool_definition.dart';
 import '../../chat/data/chat_service.dart';
+import '../../chat/utils/attachment_helpers.dart';
 import 'models/on_device_model.dart';
 
 class OnDeviceMlxService {
@@ -421,7 +422,23 @@ class OnDeviceMlxService {
           : m.role == MessageRole.assistant
           ? 'assistant'
           : 'system';
-      formattedMessages.add({'role': role, 'content': m.content});
+      var text = m.content;
+      final paths = m.attachmentPaths;
+      if (paths != null && paths.isNotEmpty) {
+        for (final path in paths) {
+          if (AttachmentHelpers.isDocumentPath(path)) {
+            final docText = await AttachmentHelpers.readDocumentFile(path);
+            if (docText != null && docText.trim().isNotEmpty) {
+              text = AttachmentHelpers.appendTextAttachment(
+                text,
+                AttachmentHelpers.fileNameOf(path),
+                docText,
+              );
+            }
+          }
+        }
+      }
+      formattedMessages.add({'role': role, 'content': text});
     }
 
     while (formattedMessages.isNotEmpty &&
