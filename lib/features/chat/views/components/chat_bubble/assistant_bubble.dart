@@ -231,7 +231,11 @@ class _StreamingContentState extends State<_StreamingContent> {
 
   @override
   Widget build(BuildContext context) {
-    return MarkdownBodyContent(content: _visibleContent, isDark: widget.isDark);
+    return MarkdownBodyContent(
+      content: _visibleContent,
+      isDark: widget.isDark,
+      selectable: false,
+    );
   }
 }
 

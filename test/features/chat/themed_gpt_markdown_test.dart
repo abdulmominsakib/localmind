@@ -24,4 +24,44 @@ void main() {
         .whereType<NetworkImage>();
     expect(networkImages.map((image) => image.url), contains(url));
   });
+
+  testWidgets(
+    'MarkdownBodyContent wraps with SelectionArea when selectable is true',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: MarkdownBodyContent(
+              content: 'Hello world',
+              isDark: false,
+              selectable: true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(SelectionArea), findsOneWidget);
+      expect(find.text('Hello world'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'MarkdownBodyContent does not wrap with SelectionArea when selectable is false',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: MarkdownBodyContent(
+              content: 'Streaming content',
+              isDark: false,
+              selectable: false,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(SelectionArea), findsNothing);
+      expect(find.text('Streaming content'), findsOneWidget);
+    },
+  );
 }

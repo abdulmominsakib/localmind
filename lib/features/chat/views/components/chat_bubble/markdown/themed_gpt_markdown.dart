@@ -157,28 +157,39 @@ class MarkdownContent extends StatelessWidget {
   }
 }
 
+/// Renders formatted markdown body content.
+///
+/// Set [selectable] to false during active streaming to prevent Flutter
+/// SelectionContainer concurrent modification crashes while the widget
+/// tree is rapidly mutating (Issue #80).
 class MarkdownBodyContent extends StatelessWidget {
   const MarkdownBodyContent({
     super.key,
     required this.content,
     required this.isDark,
+    this.selectable = true,
   });
 
   final String content;
   final bool isDark;
+  final bool selectable;
 
   @override
   Widget build(BuildContext context) {
-    return SelectionArea(
-      child: ThemedGptMarkdown(
-        content: content,
-        isDark: isDark,
-        style: TextStyle(
-          color: isDark ? Colors.white : Colors.black,
-          fontSize: 15,
-          height: 1.5,
-        ),
+    final markdown = ThemedGptMarkdown(
+      content: content,
+      isDark: isDark,
+      style: TextStyle(
+        color: isDark ? Colors.white : Colors.black,
+        fontSize: 15,
+        height: 1.5,
       ),
     );
+
+    if (!selectable) {
+      return markdown;
+    }
+
+    return SelectionArea(child: markdown);
   }
 }
