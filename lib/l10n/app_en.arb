@@ -3381,6 +3381,18 @@
   "@location_permission_denied": {
     "description": "Snackbar message when location permission is denied"
   },
+  "sms_access": "SMS Access",
+  "@sms_access": {
+    "description": "Toggle for SMS tools feature"
+  },
+  "sms_access_desc": "Allow AI to read recent SMS messages (e.g. codes, sender lookup)",
+  "@sms_access_desc": {
+    "description": "Description for SMS tools toggle"
+  },
+  "sms_permission_denied": "SMS permission denied. Please grant SMS access in your device settings.",
+  "@sms_permission_denied": {
+    "description": "Snackbar message when SMS permission is denied"
+  },
   "builtin_ai_not_supported": "Built-in AI is not supported on this device.",
   "@builtin_ai_not_supported": {
     "description": "Error shown when built-in AI (Gemini Nano / Apple Intelligence) is not supported on the user's hardware or OS"
