@@ -252,13 +252,14 @@ void main() {
     });
 
     test(
-      'detects reasoning capability for OpenAI-compatible models without capabilities payload',
+      'only infers standard reasoning-effort models without capabilities',
       () async {
         final mockData = {
           "object": "list",
           "data": [
             {"id": "o1-mini", "object": "model"},
             {"id": "o3-mini", "object": "model"},
+            {"id": "openai/gpt-5-mini", "object": "model"},
             {"id": "deepseek-reasoner", "object": "model"},
             {
               "id": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
@@ -274,7 +275,7 @@ void main() {
 
         final models = await service.fetchModels(testServer);
 
-        expect(models, hasLength(6));
+        expect(models, hasLength(7));
 
         // o1-mini
         expect(models[0].supportsReasoning, isTrue);
@@ -287,19 +288,18 @@ void main() {
         expect(models[1].supportedReasoningEfforts, ['low', 'medium', 'high']);
         expect(models[1].defaultReasoningEffort, 'medium');
 
-        // deepseek-reasoner
+        // gpt-5-mini
         expect(models[2].supportsReasoning, isTrue);
         expect(models[2].supportedReasoningEfforts, ['low', 'medium', 'high']);
 
-        // DeepSeek-R1-Distill-Qwen-32B
-        expect(models[3].supportsReasoning, isTrue);
-
-        // qwq-32b
-        expect(models[4].supportsReasoning, isTrue);
-
-        // non-reasoning: Llama-3.1-8B-Instruct
+        // Provider-specific reasoning models need an explicit capability
+        // payload so LocalMind does not send unsupported request fields.
+        expect(models[3].supportsReasoning, isFalse);
+        expect(models[4].supportsReasoning, isFalse);
         expect(models[5].supportsReasoning, isFalse);
-        expect(models[5].supportedReasoningEfforts, isNull);
+
+        expect(models[6].supportsReasoning, isFalse);
+        expect(models[6].supportedReasoningEfforts, isNull);
       },
     );
 

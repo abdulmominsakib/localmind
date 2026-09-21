@@ -372,23 +372,7 @@ class ServerApiService {
     if (RegExp(r'(^|[/:\-_])o[1-9]([-_/:.]|$)').hasMatch(lower)) {
       return true;
     }
-    if (lower.contains('deepseek-reasoner') ||
-        lower.contains('deepseek-r1') ||
-        RegExp(r'(^|[-_/])r1([-_/.]|$)').hasMatch(lower)) {
-      return true;
-    }
-    if (lower.contains('qwq') || lower.contains('qvq')) {
-      return true;
-    }
-    if (lower.contains('reasoner') ||
-        lower.contains('reasoning') ||
-        lower.contains('thinking') ||
-        lower.contains('thought') ||
-        lower.contains('marco-o1') ||
-        lower.contains('skywork-o1')) {
-      return true;
-    }
-    return false;
+    return RegExp(r'(^|[/_\-])gpt-[5-9]([._:/\-]|$)').hasMatch(lower);
   }
 
   List<ModelInfo> _parseOpenAICompatibleModels(dynamic data, Server server) {

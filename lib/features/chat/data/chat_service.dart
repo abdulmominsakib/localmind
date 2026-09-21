@@ -674,7 +674,7 @@ class OpenAICompatibleChatService implements ChatService {
       'max_tokens': params.maxTokens,
       'stream': true,
     };
-    _applyReasoningControl(body, params);
+    _applyOpenAICompatibleReasoningControl(body, params);
 
     if (integrations != null && integrations.isNotEmpty) {
       body['integrations'] = integrations.map((i) => i.toApiJson()).toList();
@@ -1219,7 +1219,7 @@ class OpenRouterChatService implements ChatService {
       'max_tokens': params.maxTokens,
       'stream': true,
     };
-    _applyReasoningControl(body, params);
+    _applyOpenRouterReasoningControl(body, params);
 
     if (tools != null && tools.isNotEmpty) {
       final toolsPayload = toolAdapter.buildToolDefinitionPayload(tools);
@@ -1415,32 +1415,31 @@ class OpenRouterChatService implements ChatService {
   }
 }
 
-/// Applies the Think toggle to a request body. Different local/hosted
-/// backends expose "disable reasoning for this hybrid model" a handful of
-/// different ways (a `reasoning` object, a top-level `reasoning_effort`,
-/// DeepSeek's `thinking` object, llama.cpp's `enable_thinking`) — send all of
-/// them so whichever one the connected server actually understands takes effect.
-/// No-op when [ChatParameters.reasoningEnabled] is null, i.e. the active
-/// model doesn't support reasoning.
-///
-/// Ollama has its own native `think` field and must not receive the generic
-/// keys; use [_applyOllamaReasoningControl] for [OllamaChatService].
-void _applyReasoningControl(Map<String, dynamic> body, ChatParameters params) {
+/// Applies the standard OpenAI-compatible `reasoning_effort` field. Avoid
+/// broadcasting provider-specific aliases because strict compatible servers
+/// reject unknown request keys.
+void _applyOpenAICompatibleReasoningControl(
+  Map<String, dynamic> body,
+  ChatParameters params,
+) {
   if (params.reasoningEnabled == false) {
-    body['reasoning'] = {
-      'enabled': false,
-      'type': 'disabled',
-      'effort': 'none',
-    };
-    body['thinking'] = {'type': 'disabled'};
     body['reasoning_effort'] = 'none';
-    body['think'] = false;
-    body['enable_thinking'] = false;
   } else if (params.reasoningEnabled == true) {
-    final effort = params.reasoningEffort.apiValue;
-    body['reasoning'] = {'effort': effort};
-    body['thinking'] = {'type': 'enabled'};
-    body['reasoning_effort'] = effort;
+    body['reasoning_effort'] = params.reasoningEffort.apiValue;
+  }
+}
+
+/// OpenRouter defines a `reasoning` object. Use that object alone instead of
+/// mixing it with the shorthand `reasoning_effort` or unrelated local-server
+/// flags.
+void _applyOpenRouterReasoningControl(
+  Map<String, dynamic> body,
+  ChatParameters params,
+) {
+  if (params.reasoningEnabled == false) {
+    body['reasoning'] = {'enabled': false};
+  } else if (params.reasoningEnabled == true) {
+    body['reasoning'] = {'effort': params.reasoningEffort.apiValue};
   }
 }
 

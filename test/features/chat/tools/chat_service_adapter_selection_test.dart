@@ -746,7 +746,7 @@ void main() {
     );
 
     test(
-      'sends reasoning_effort and thinking when reasoning is enabled',
+      'sends only standard reasoning_effort when reasoning is enabled',
       () async {
         final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
         final service = OpenAICompatibleChatService(
@@ -775,13 +775,15 @@ void main() {
 
         final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
         expect(body['reasoning_effort'], 'low');
-        expect(body['reasoning'], {'effort': 'low'});
-        expect(body['thinking'], {'type': 'enabled'});
+        expect(body.containsKey('reasoning'), isFalse);
+        expect(body.containsKey('thinking'), isFalse);
+        expect(body.containsKey('think'), isFalse);
+        expect(body.containsKey('enable_thinking'), isFalse);
       },
     );
 
     test(
-      'sends reasoning_effort:none and disabled flags when reasoning is disabled',
+      'sends only reasoning_effort:none when reasoning is disabled',
       () async {
         final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
         final service = OpenAICompatibleChatService(
@@ -809,14 +811,10 @@ void main() {
 
         final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
         expect(body['reasoning_effort'], 'none');
-        expect(body['reasoning'], {
-          'enabled': false,
-          'type': 'disabled',
-          'effort': 'none',
-        });
-        expect(body['thinking'], {'type': 'disabled'});
-        expect(body['think'], isFalse);
-        expect(body['enable_thinking'], isFalse);
+        expect(body.containsKey('reasoning'), isFalse);
+        expect(body.containsKey('thinking'), isFalse);
+        expect(body.containsKey('think'), isFalse);
+        expect(body.containsKey('enable_thinking'), isFalse);
       },
     );
 
@@ -951,6 +949,71 @@ void main() {
         message['content'],
         'Summarize this\n\n--- notes.txt ---\nattachment text',
       );
+    });
+
+    test('uses only OpenRouter reasoning configuration when enabled', () async {
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenRouterChatService(
+        Dio()..interceptors.add(interceptor),
+      );
+
+      await service
+          .sendMessage(
+            server: _openRouterTestServer(),
+            modelId: 'openai/o3',
+            messages: [
+              Message(
+                id: 'reasoning-message',
+                conversationId: 'conversation',
+                role: MessageRole.user,
+                content: 'Think carefully',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults().copyWith(
+              reasoningEnabled: true,
+              reasoningEffort: ReasoningEffort.high,
+            ),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expect(body['reasoning'], {'effort': 'high'});
+      expect(body.containsKey('reasoning_effort'), isFalse);
+      expect(body.containsKey('thinking'), isFalse);
+      expect(body.containsKey('think'), isFalse);
+      expect(body.containsKey('enable_thinking'), isFalse);
+    });
+
+    test('uses OpenRouter reasoning disable shape without aliases', () async {
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenRouterChatService(
+        Dio()..interceptors.add(interceptor),
+      );
+
+      await service
+          .sendMessage(
+            server: _openRouterTestServer(),
+            modelId: 'deepseek/deepseek-reasoner',
+            messages: [
+              Message(
+                id: 'reasoning-message',
+                conversationId: 'conversation',
+                role: MessageRole.user,
+                content: 'Answer directly',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults().copyWith(reasoningEnabled: false),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expect(body['reasoning'], {'enabled': false});
+      expect(body.containsKey('reasoning_effort'), isFalse);
+      expect(body.containsKey('thinking'), isFalse);
+      expect(body.containsKey('think'), isFalse);
+      expect(body.containsKey('enable_thinking'), isFalse);
     });
   });
 
