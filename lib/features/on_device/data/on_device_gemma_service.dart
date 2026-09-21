@@ -21,6 +21,7 @@ abstract interface class OnDeviceInferenceSession {
 abstract interface class OnDeviceInferenceService {
   bool get isLoaded;
   bool get currentModelSupportsVision;
+  bool get supportsChatSessionReuse;
 
   Future<OnDeviceInferenceSession> createChat({
     String? systemInstruction,
@@ -69,6 +70,10 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
 
   @override
   bool get isLoaded => _model != null && !_isDisposed;
+
+  @override
+  bool get supportsChatSessionReuse =>
+      _model != null && _model!.fileType != ModelFileType.builtIn;
   bool get isDisposed => _isDisposed;
 
   /// The filename of the model restored by the native model manager on app

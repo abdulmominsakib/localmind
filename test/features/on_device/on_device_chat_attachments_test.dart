@@ -523,6 +523,9 @@ class _FakeInferenceService implements OnDeviceInferenceService {
   bool get isLoaded => true;
 
   @override
+  bool get supportsChatSessionReuse => true;
+
+  @override
   bool currentModelSupportsVision = false;
 
   @override

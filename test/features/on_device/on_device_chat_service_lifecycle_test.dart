@@ -141,6 +141,71 @@ void main() {
   });
 
   test(
+    'rebuilds runtimes that close their session after each response',
+    () async {
+      inferenceService.canReuseChatSession = false;
+
+      final firstDone = chatService
+          .sendMessage(
+            server: _server(),
+            modelId: 'apple-foundation-models',
+            messages: [
+              _message('first', id: 'user-1'),
+              _message('', id: 'assistant-1', role: MessageRole.assistant),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .listen((_) {})
+          .asFuture<void>();
+
+      await _waitFor(
+        () =>
+            inferenceService.sessions.length == 1 &&
+            inferenceService.sessions.single.didGenerate,
+      );
+      final firstSession = inferenceService.sessions.single;
+      firstSession.responses.add(const gemma.TextResponse('first answer'));
+      await firstSession.responses.close();
+      await firstDone;
+
+      expect(firstSession.closeCount, 1);
+
+      final secondDone = chatService
+          .sendMessage(
+            server: _server(),
+            modelId: 'apple-foundation-models',
+            messages: [
+              _message('first', id: 'user-1'),
+              _message(
+                'first answer',
+                id: 'assistant-1',
+                role: MessageRole.assistant,
+              ),
+              _message('second', id: 'user-2'),
+              _message('', id: 'assistant-2', role: MessageRole.assistant),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .listen((_) {})
+          .asFuture<void>();
+
+      await _waitFor(
+        () =>
+            inferenceService.sessions.length == 2 &&
+            inferenceService.sessions.last.didGenerate,
+      );
+      final secondSession = inferenceService.sessions.last;
+      expect(secondSession.messages.single.text, contains('first answer'));
+      expect(secondSession.messages.single.text, contains('second'));
+      secondSession.responses.add(const gemma.TextResponse('second answer'));
+      await secondSession.responses.close();
+      await secondDone;
+
+      expect(inferenceService.createCount, 2);
+    },
+  );
+
+  test(
     'passes system content once and never stages it as a chat turn',
     () async {
       final done = chatService
@@ -689,9 +754,13 @@ class _FakeInferenceService implements OnDeviceInferenceService {
   final List<String?> systemInstructions = [];
   final List<bool?> supportImages = [];
   int createCount = 0;
+  bool canReuseChatSession = true;
 
   @override
   bool get isLoaded => true;
+
+  @override
+  bool get supportsChatSessionReuse => canReuseChatSession;
 
   @override
   bool currentModelSupportsVision = false;
