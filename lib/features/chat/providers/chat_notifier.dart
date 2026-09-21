@@ -294,7 +294,9 @@ class ChatNotifier extends Notifier<ChatState> {
       if (!pending.completer.isCompleted) {
         pending.completer.complete(false);
       }
-      state = state.copyWith(clearPendingApproval: true);
+      if (ref.mounted) {
+        state = state.copyWith(clearPendingApproval: true);
+      }
     }
   }
 
@@ -535,6 +537,8 @@ class ChatNotifier extends Notifier<ChatState> {
     _uiUpdateTimer?.cancel();
     _uiUpdateTimer = null;
     _clearPendingApproval();
+
+    if (!ref.mounted) return;
 
     ref.read(chatServiceProvider)?.cancelStream();
     ref.read(chatBackgroundServiceProvider).stop();
@@ -1821,6 +1825,8 @@ class ChatNotifier extends Notifier<ChatState> {
     _uiUpdateTimer?.cancel();
     _uiUpdateTimer = null;
     _clearPendingApproval();
+    if (!ref.mounted) return;
+
     ref.read(chatServiceProvider)?.cancelStream();
     ref.read(chatBackgroundServiceProvider).stop();
 
@@ -1830,6 +1836,7 @@ class ChatNotifier extends Notifier<ChatState> {
     _lastSavedReasoningLength = 0;
 
     await _saveService?.flush();
+    if (!ref.mounted) return;
 
     final streamingMessage = _latestStreamingMessage ?? state.streamingMessage;
     if (streamingMessage != null) {
@@ -1841,9 +1848,11 @@ class ChatNotifier extends Notifier<ChatState> {
         stopReason: 'cancelled',
       );
       await _saveMessage(finalMessage);
+      if (!ref.mounted) return;
       _replaceMessageInState(finalMessage, clearStreaming: true);
     }
 
+    if (!ref.mounted) return;
     state = state.copyWith(isStreaming: false, clearStreaming: true);
     ref.read(isStreamingProvider.notifier).setStreaming(false);
     _latestStreamingMessage = null;
@@ -2475,6 +2484,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   void _replaceMessageInAll(Message message, {bool clearStreaming = false}) {
+    if (!ref.mounted) return;
     final updatedAll = state.allMessages.map((m) {
       return m.id == message.id ? message : m;
     }).toList();
