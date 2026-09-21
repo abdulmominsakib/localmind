@@ -744,6 +744,112 @@ void main() {
         expect(responses.last.type, ChatResponseType.done);
       },
     );
+
+    test(
+      'sends reasoning_effort and thinking when reasoning is enabled',
+      () async {
+        final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+        final service = OpenAICompatibleChatService(
+          Dio()..interceptors.add(interceptor),
+        );
+
+        await service
+            .sendMessage(
+              server: _openAiTestServer(),
+              modelId: 'o3-mini',
+              messages: [
+                Message(
+                  id: 'u1',
+                  conversationId: 'conversation',
+                  role: MessageRole.user,
+                  content: 'Hello',
+                  createdAt: DateTime.now(),
+                ),
+              ],
+              params: ChatParameters.defaults().copyWith(
+                reasoningEnabled: true,
+                reasoningEffort: ReasoningEffort.low,
+              ),
+            )
+            .toList();
+
+        final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+        expect(body['reasoning_effort'], 'low');
+        expect(body['reasoning'], {'effort': 'low'});
+        expect(body['thinking'], {'type': 'enabled'});
+      },
+    );
+
+    test(
+      'sends reasoning_effort:none and disabled flags when reasoning is disabled',
+      () async {
+        final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+        final service = OpenAICompatibleChatService(
+          Dio()..interceptors.add(interceptor),
+        );
+
+        await service
+            .sendMessage(
+              server: _openAiTestServer(),
+              modelId: 'deepseek-reasoner',
+              messages: [
+                Message(
+                  id: 'u1',
+                  conversationId: 'conversation',
+                  role: MessageRole.user,
+                  content: 'Hello',
+                  createdAt: DateTime.now(),
+                ),
+              ],
+              params: ChatParameters.defaults().copyWith(
+                reasoningEnabled: false,
+              ),
+            )
+            .toList();
+
+        final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+        expect(body['reasoning_effort'], 'none');
+        expect(body['reasoning'], {
+          'enabled': false,
+          'type': 'disabled',
+          'effort': 'none',
+        });
+        expect(body['thinking'], {'type': 'disabled'});
+        expect(body['think'], isFalse);
+        expect(body['enable_thinking'], isFalse);
+      },
+    );
+
+    test('omits reasoning keys when reasoning is unsupported (null)', () async {
+      final interceptor = CapturingStreamInterceptor(['data: [DONE]']);
+      final service = OpenAICompatibleChatService(
+        Dio()..interceptors.add(interceptor),
+      );
+
+      await service
+          .sendMessage(
+            server: _openAiTestServer(),
+            modelId: 'meta-llama/Llama-3.1-8B-Instruct',
+            messages: [
+              Message(
+                id: 'u1',
+                conversationId: 'conversation',
+                role: MessageRole.user,
+                content: 'Hello',
+                createdAt: DateTime.now(),
+              ),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final body = interceptor.capturedRequest!.data as Map<String, dynamic>;
+      expect(body.containsKey('reasoning_effort'), isFalse);
+      expect(body.containsKey('reasoning'), isFalse);
+      expect(body.containsKey('thinking'), isFalse);
+      expect(body.containsKey('think'), isFalse);
+      expect(body.containsKey('enable_thinking'), isFalse);
+    });
   });
 
   group('OpenRouter attachment formatting', () {

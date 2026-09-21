@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -51,9 +52,7 @@ class _ImportedModelProjectorSettingState
       );
     } catch (e) {
       if (!mounted) return;
-      messenger?.showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      messenger?.showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -75,9 +74,7 @@ class _ImportedModelProjectorSettingState
       );
     } catch (e) {
       if (!mounted) return;
-      messenger?.showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      messenger?.showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -367,6 +367,30 @@ class ServerApiService {
     return runningModels;
   }
 
+  bool _isOpenAICompatibleReasoningModel(String modelId) {
+    final lower = modelId.trim().toLowerCase();
+    if (RegExp(r'(^|[/:\-_])o[1-9]([-_/:.]|$)').hasMatch(lower)) {
+      return true;
+    }
+    if (lower.contains('deepseek-reasoner') ||
+        lower.contains('deepseek-r1') ||
+        RegExp(r'(^|[-_/])r1([-_/.]|$)').hasMatch(lower)) {
+      return true;
+    }
+    if (lower.contains('qwq') || lower.contains('qvq')) {
+      return true;
+    }
+    if (lower.contains('reasoner') ||
+        lower.contains('reasoning') ||
+        lower.contains('thinking') ||
+        lower.contains('thought') ||
+        lower.contains('marco-o1') ||
+        lower.contains('skywork-o1')) {
+      return true;
+    }
+    return false;
+  }
+
   List<ModelInfo> _parseOpenAICompatibleModels(dynamic data, Server server) {
     final List<ModelInfo> models = [];
     if (data == null) return models;
@@ -419,7 +443,22 @@ class ServerApiService {
           archName = archValue;
         }
 
-        final capabilities = _parseModelCapabilities(item['capabilities']);
+        final rawCapabilities = item['capabilities'];
+        final capabilities = _parseModelCapabilities(rawCapabilities);
+        final isReasoning =
+            capabilities.supportsReasoning ||
+            (rawCapabilities == null &&
+                server.type == ServerType.openAICompatible &&
+                _isOpenAICompatibleReasoningModel(id));
+        final supportedReasoningEfforts = capabilities.supportsReasoning
+            ? capabilities.supportedReasoningEfforts
+            : (isReasoning ? const ['low', 'medium', 'high'] : null);
+        final defaultReasoningEffort = capabilities.supportsReasoning
+            ? capabilities.defaultReasoningEffort
+            : (isReasoning ? 'medium' : null);
+        final reasoningMandatory = capabilities.supportsReasoning
+            ? capabilities.reasoningMandatory
+            : false;
 
         models.add(
           ModelInfo(
@@ -438,11 +477,11 @@ class ServerApiService {
             serverType: server.type,
             serverId: server.id,
             supportsVision: capabilities.supportsVision,
-            supportsReasoning: capabilities.supportsReasoning,
+            supportsReasoning: isReasoning,
             supportsToolUse: capabilities.supportsToolUse,
-            supportedReasoningEfforts: capabilities.supportedReasoningEfforts,
-            defaultReasoningEffort: capabilities.defaultReasoningEffort,
-            reasoningMandatory: capabilities.reasoningMandatory,
+            supportedReasoningEfforts: supportedReasoningEfforts,
+            defaultReasoningEffort: defaultReasoningEffort,
+            reasoningMandatory: reasoningMandatory,
           ),
         );
       }

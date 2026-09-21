@@ -251,6 +251,58 @@ void main() {
       expect(models[2].supportsReasoning, isFalse);
     });
 
+    test(
+      'detects reasoning capability for OpenAI-compatible models without capabilities payload',
+      () async {
+        final mockData = {
+          "object": "list",
+          "data": [
+            {"id": "o1-mini", "object": "model"},
+            {"id": "o3-mini", "object": "model"},
+            {"id": "deepseek-reasoner", "object": "model"},
+            {
+              "id": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+              "object": "model",
+            },
+            {"id": "qwq-32b", "object": "model"},
+            {"id": "meta-llama/Llama-3.1-8B-Instruct", "object": "model"},
+          ],
+        };
+
+        final dio = Dio()..interceptors.add(TestInterceptor(mockData));
+        final service = ServerApiService(dio);
+
+        final models = await service.fetchModels(testServer);
+
+        expect(models, hasLength(6));
+
+        // o1-mini
+        expect(models[0].supportsReasoning, isTrue);
+        expect(models[0].supportedReasoningEfforts, ['low', 'medium', 'high']);
+        expect(models[0].defaultReasoningEffort, 'medium');
+        expect(models[0].reasoningMandatory, isFalse);
+
+        // o3-mini
+        expect(models[1].supportsReasoning, isTrue);
+        expect(models[1].supportedReasoningEfforts, ['low', 'medium', 'high']);
+        expect(models[1].defaultReasoningEffort, 'medium');
+
+        // deepseek-reasoner
+        expect(models[2].supportsReasoning, isTrue);
+        expect(models[2].supportedReasoningEfforts, ['low', 'medium', 'high']);
+
+        // DeepSeek-R1-Distill-Qwen-32B
+        expect(models[3].supportsReasoning, isTrue);
+
+        // qwq-32b
+        expect(models[4].supportsReasoning, isTrue);
+
+        // non-reasoning: Llama-3.1-8B-Instruct
+        expect(models[5].supportsReasoning, isFalse);
+        expect(models[5].supportedReasoningEfforts, isNull);
+      },
+    );
+
     test('parses LM Studio allowed_options/default/mandatory', () async {
       final mockData = {
         "models": [

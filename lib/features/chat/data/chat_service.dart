@@ -1418,8 +1418,8 @@ class OpenRouterChatService implements ChatService {
 /// Applies the Think toggle to a request body. Different local/hosted
 /// backends expose "disable reasoning for this hybrid model" a handful of
 /// different ways (a `reasoning` object, a top-level `reasoning_effort`,
-/// llama.cpp's `enable_thinking`) — send all of them so whichever one the
-/// connected server actually understands takes effect.
+/// DeepSeek's `thinking` object, llama.cpp's `enable_thinking`) — send all of
+/// them so whichever one the connected server actually understands takes effect.
 /// No-op when [ChatParameters.reasoningEnabled] is null, i.e. the active
 /// model doesn't support reasoning.
 ///
@@ -1432,12 +1432,14 @@ void _applyReasoningControl(Map<String, dynamic> body, ChatParameters params) {
       'type': 'disabled',
       'effort': 'none',
     };
+    body['thinking'] = {'type': 'disabled'};
     body['reasoning_effort'] = 'none';
     body['think'] = false;
     body['enable_thinking'] = false;
   } else if (params.reasoningEnabled == true) {
     final effort = params.reasoningEffort.apiValue;
     body['reasoning'] = {'effort': effort};
+    body['thinking'] = {'type': 'enabled'};
     body['reasoning_effort'] = effort;
   }
 }
