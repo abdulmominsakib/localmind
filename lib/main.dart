@@ -23,6 +23,12 @@ Future<void> main() async {
       // window, so the user sees only one crash screen per incident.
       FlutterError.onError = (details) {
         FlutterError.presentError(details);
+        if (CrashReportService.isBenignFrameworkError(
+          details.exception,
+          details.stack,
+        )) {
+          return;
+        }
         crashReports.capture(
           details.exception,
           details.stack ?? StackTrace.current,
@@ -31,6 +37,9 @@ Future<void> main() async {
       };
 
       PlatformDispatcher.instance.onError = (error, stack) {
+        if (CrashReportService.isBenignFrameworkError(error, stack)) {
+          return true;
+        }
         crashReports.capture(error, stack);
         return true;
       };
@@ -53,6 +62,9 @@ Future<void> main() async {
       runApp(const CrashFallbackApp());
     },
     (error, stack) {
+      if (CrashReportService.isBenignFrameworkError(error, stack)) {
+        return;
+      }
       CrashReportService.instance.capture(error, stack);
     },
   );

@@ -233,6 +233,10 @@ class CrashReportService {
       errorWidgetPayload: errorWidgetPayload,
     );
 
+    if (isBenignFrameworkError(error, stack)) {
+      return report;
+    }
+
     // The duplicate check must run before the report is recorded, otherwise
     // the freshly added report matches itself and no crash would ever surface
     // in the UI.
@@ -247,6 +251,27 @@ class CrashReportService {
       _setCurrentCrash(report);
     }
     return report;
+  }
+
+  /// Checks whether an error is a known non-fatal Flutter framework issue that
+  /// should not crash the app or show the crash fallback screen.
+  ///
+  /// Currently handled:
+  /// - flutter/flutter#192081: Concurrent modification during iteration in
+  ///   `MultiSelectableSelectionContainerDelegate.handleClearSelection` when
+  ///   clearing selection across scrollable elements (e.g. Markdown code blocks).
+  static bool isBenignFrameworkError(Object error, [StackTrace? stack]) {
+    final errorStr = error.toString();
+    final stackStr = stack?.toString() ?? '';
+
+    if (errorStr.contains('Concurrent modification during iteration') &&
+        (stackStr.contains('MultiSelectableSelectionContainerDelegate') ||
+            stackStr.contains('selectable_region.dart') ||
+            stackStr.contains('_ScrollableSelectionContainerDelegate'))) {
+      return true;
+    }
+
+    return false;
   }
 
   /// Clear the current crash so the app can re-render normally.
