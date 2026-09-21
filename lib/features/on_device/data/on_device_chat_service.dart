@@ -136,7 +136,9 @@ class OnDeviceChatService implements ChatService {
 
       late final OnDeviceInferenceSession session;
       late final bool reusedSession;
-      if (retained != null && retained.canContinueWith(input, modelId)) {
+      if (retained != null &&
+          _gemmaService.supportsChatSessionReuse &&
+          retained.canContinueWith(input, modelId)) {
         _retainedConversation = null;
         _cancelRetainedExpiration();
         session = retained.session;
@@ -385,7 +387,8 @@ class OnDeviceChatService implements ChatService {
     final input = run.input;
     if (session == null) return;
 
-    if (run.isCancelled ||
+    if (!_gemmaService.supportsChatSessionReuse ||
+        run.isCancelled ||
         input == null ||
         input.isAuxiliary ||
         run.sequence != _latestRunSequence ||
