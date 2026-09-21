@@ -9,6 +9,8 @@ import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/utils/safe_file_picker.dart';
 import 'package:localmind/l10n/app_localizations.dart';
+import 'package:path/path.dart' as p;
+import 'package:localmind/features/on_device/data/imported_gguf_model_repository.dart';
 import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:localmind/features/on_device/providers/foreground_download_providers.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
@@ -130,11 +132,17 @@ class _OnDeviceModelManagerScreenState
       final result = await SafeFilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['gguf'],
+        allowMultiple: true,
       );
       if (result == null || result.files.isEmpty) return;
 
-      final path = result.files.single.path;
-      if (path == null || !path.toLowerCase().endsWith('.gguf')) {
+      final paths = result.files
+          .map((f) => f.path)
+          .whereType<String>()
+          .where((p) => p.toLowerCase().endsWith('.gguf'))
+          .toList();
+
+      if (paths.isEmpty) {
         if (!mounted) return;
         messenger?.showSnackBar(
           SnackBar(content: Text(l10n.gguf_only_supported)),
@@ -142,15 +150,36 @@ class _OnDeviceModelManagerScreenState
         return;
       }
 
-      final model = await ref
-          .read(importedGgufModelsProvider.notifier)
-          .importModel(path);
-      if (!mounted) return;
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text('${model.name} ${l10n.gguf_imported_from_local_file}'),
-        ),
-      );
+      if (paths.length == 1) {
+        final path = paths.single;
+        if (ImportedGgufModelRepository.isProjectorFileName(p.basename(path))) {
+          if (!mounted) return;
+          messenger?.showSnackBar(
+            SnackBar(content: Text(l10n.gguf_is_projector_file)),
+          );
+          return;
+        }
+
+        final model = await ref
+            .read(importedGgufModelsProvider.notifier)
+            .importModel(path);
+        if (!mounted) return;
+        final msg = model.hasProjector
+            ? '${model.name} ${l10n.gguf_imported_from_local_file} (${l10n.gguf_projector_auto_detected(model.projectorFileName ?? "")})'
+            : '${model.name} ${l10n.gguf_imported_from_local_file}';
+        messenger?.showSnackBar(SnackBar(content: Text(msg)));
+      } else {
+        final models = await ref
+            .read(importedGgufModelsProvider.notifier)
+            .importModels(paths);
+        if (!mounted) return;
+        final names = models.map((m) => m.name).join(', ');
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text('$names ${l10n.gguf_imported_from_local_file}'),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       messenger?.showSnackBar(
@@ -610,6 +639,7 @@ class _HuggingFaceGgufImportDialogState
   );
 
   final TextEditingController _urlController = TextEditingController();
+  final TextEditingController _projectorUrlController = TextEditingController();
   CancelToken? _cancelToken;
   bool _isImporting = false;
   String? _error;
@@ -620,6 +650,7 @@ class _HuggingFaceGgufImportDialogState
   void dispose() {
     _cancelToken?.cancel();
     _urlController.dispose();
+    _projectorUrlController.dispose();
     super.dispose();
   }
 
@@ -747,6 +778,27 @@ class _HuggingFaceGgufImportDialogState
                 const SizedBox(height: 14),
                 _ImportPreviewCard(preview: preview),
               ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: _projectorUrlController,
+                enabled: !_isImporting,
+                maxLines: 1,
+                keyboardType: TextInputType.url,
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  labelText: l10n.gguf_projector_url_label,
+                  hintText: l10n.gguf_projector_url_hint,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Center(
+                    widthFactor: 1.0,
+                    heightFactor: 1.0,
+                    child: HugeIcon(
+                      icon: HugeIcons.strokeRoundedImage01,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
@@ -944,6 +996,7 @@ class _HuggingFaceGgufImportDialogState
   void _clearInput() {
     setState(() {
       _urlController.clear();
+      _projectorUrlController.clear();
       _error = null;
     });
   }
@@ -999,10 +1052,12 @@ class _HuggingFaceGgufImportDialogState
       final huggingFaceToken = ref.read(
         settingsProvider.select((settings) => settings.huggingFaceToken),
       );
+      final projectorUrl = _projectorUrlController.text.trim();
       final model = await ref
           .read(importedGgufModelsProvider.notifier)
           .importModelFromHuggingFaceUrl(
             sourceUrl,
+            projectorUrl: projectorUrl.isNotEmpty ? projectorUrl : null,
             huggingFaceToken: huggingFaceToken,
             cancelToken: _cancelToken,
             onProgress: (receivedBytes, totalBytes) {

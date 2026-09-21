@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:llamadart/llamadart.dart' as llama;
 
@@ -37,6 +38,16 @@ class OnDeviceLlamaService {
   String? get currentModelId => _currentModelId;
   bool get isLoaded => _engine != null && !_isDisposed;
 
+  Future<bool> get supportsVision async {
+    final engine = _engine;
+    if (engine == null) return false;
+    try {
+      return await engine.supportsVision;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> loadModel(
     OnDeviceModel model, {
     int contextLength = 4096,
@@ -72,6 +83,24 @@ class OnDeviceLlamaService {
         gpuLayers: gpuLayers,
       ),
     );
+
+    if (model.projectorPath != null && model.projectorPath!.isNotEmpty) {
+      final projFile = File(model.projectorPath!);
+      if (await projFile.exists()) {
+        Log.info('Loading multimodal projector from ${model.projectorPath}');
+        try {
+          await engine.loadMultimodalProjector(model.projectorPath!);
+          final hasVision = await engine.supportsVision;
+          Log.info('Multimodal projector loaded (supportsVision=$hasVision)');
+        } catch (e) {
+          Log.error('Failed to load multimodal projector: $e');
+        }
+      } else {
+        Log.warning(
+          'Configured projector file not found at ${model.projectorPath}',
+        );
+      }
+    }
 
     _engine = engine;
     _currentModelId = model.id;
@@ -172,6 +201,7 @@ class OnDeviceLlamaService {
 
       var text = latestUserMessage.content;
       final paths = latestUserMessage.attachmentPaths;
+      final imagePaths = <String>[];
       if (paths != null && paths.isNotEmpty) {
         for (final path in paths) {
           if (AttachmentHelpers.isDocumentPath(path)) {
@@ -183,22 +213,49 @@ class OnDeviceLlamaService {
                 docText,
               );
             }
+          } else if (AttachmentHelpers.isImagePath(path)) {
+            imagePaths.add(path);
           }
         }
       }
+
+      if (imagePaths.isNotEmpty) {
+        final supportsVision = await engine.supportsVision;
+        if (!supportsVision) {
+          yield const ChatResponse(
+            type: ChatResponseType.error,
+            content:
+                'The active model does not support image attachments. '
+                'Please attach a vision projector (mmproj) to this model or select a vision-supported model.',
+          );
+          yield const ChatResponse(type: ChatResponseType.done);
+          return;
+        }
+      }
+
       text = text.trim();
-      if (text.isEmpty) {
+      if (text.isEmpty && imagePaths.isEmpty) {
         yield const ChatResponse(
           type: ChatResponseType.error,
-          content: 'GGUF chat requires a text prompt.',
+          content: 'GGUF chat requires a text prompt or image attachment.',
         );
         yield const ChatResponse(type: ChatResponseType.done);
         return;
       }
 
+      final contentParts = <llama.LlamaContentPart>[];
+      if (text.isNotEmpty) {
+        contentParts.add(llama.LlamaTextContent(text));
+      } else {
+        contentParts.add(const llama.LlamaTextContent('Describe this image.'));
+      }
+      for (final imagePath in imagePaths) {
+        contentParts.add(llama.LlamaImageContent(path: imagePath));
+      }
+
       try {
         await for (final chunk in _session!.create(
-          [llama.LlamaTextContent(text)],
+          contentParts,
           enableThinking:
               reasoningPreference?.call(modelId) ??
               params.reasoningEnabled ??

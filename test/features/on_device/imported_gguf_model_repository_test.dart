@@ -192,17 +192,121 @@ void main() {
         throwsA(isA<FormatException>()),
       );
     });
+    test('serializes and converts to a llama.cpp on-device model with projector', () {
+      final importedAt = DateTime.utc(2026, 6, 21, 12);
+      final metadata = ImportedGgufModelMetadata(
+        id: 'gguf-vlm',
+        name: 'LLaVA 1.6',
+        filePath: '/tmp/llava.gguf',
+        projectorPath: '/tmp/mmproj-llava.gguf',
+        fileSizeBytes: 1234,
+        importedAt: importedAt,
+        source: OnDeviceImportedSource.localFile,
+      );
+
+      final restored = ImportedGgufModelMetadata.fromJson(
+        json.decode(json.encode(metadata.toJson())) as Map<String, dynamic>,
+      );
+      final model = restored.toOnDeviceModel();
+
+      expect(restored.projectorPath, '/tmp/mmproj-llava.gguf');
+      expect(restored.projectorFileName, 'mmproj-llava.gguf');
+      expect(model.supportsVision, isTrue);
+      expect(model.hasProjector, isTrue);
+      expect(model.projectorPath, '/tmp/mmproj-llava.gguf');
+      expect(model.projectorFileName, 'mmproj-llava.gguf');
+    });
+
+    test('isProjectorFileName correctly identifies vision projector files', () {
+      expect(
+        ImportedGgufModelRepository.isProjectorFileName('mmproj-model-f16.gguf'),
+        isTrue,
+      );
+      expect(
+        ImportedGgufModelRepository.isProjectorFileName('qwen2-vl-mmproj.gguf'),
+        isTrue,
+      );
+      expect(
+        ImportedGgufModelRepository.isProjectorFileName('vision_projector.gguf'),
+        isTrue,
+      );
+      expect(
+        ImportedGgufModelRepository.isProjectorFileName('qwen2.5-7b-instruct.gguf'),
+        isFalse,
+      );
+    });
+
+    test('delete removes both model and projector file', () async {
+      final modelFile = File('${tempDir.path}/vlm.gguf');
+      final projFile = File('${tempDir.path}/mmproj-vlm.gguf');
+      await modelFile.writeAsString('model');
+      await projFile.writeAsString('projector');
+
+      final repository = await createRepository();
+      await repository.saveAll([
+        _metadata(
+          id: 'gguf-vlm-delete',
+          filePath: modelFile.path,
+          projectorPath: projFile.path,
+        ),
+      ]);
+
+      await repository.delete('gguf-vlm-delete');
+
+      expect(await modelFile.exists(), isFalse);
+      expect(await projFile.exists(), isFalse);
+      expect(repository.load(), isEmpty);
+    });
+
+    test('attachProjector and removeProjector update model metadata', () async {
+      final modelFile = File('${tempDir.path}/model.gguf');
+      final projFile = File('${tempDir.path}/mmproj-test.gguf');
+      // Valid GGUF magic bytes: 'G', 'G', 'U', 'F'
+      const ggufBytes = [0x47, 0x47, 0x55, 0x46, 0x00, 0x00];
+      await modelFile.writeAsBytes(ggufBytes);
+      await projFile.writeAsBytes(ggufBytes);
+
+      final repository = await createRepository();
+      await repository.saveAll([
+        _metadata(id: 'gguf-attach-test', filePath: modelFile.path),
+      ]);
+
+      final attached = await repository.attachProjector(
+        'gguf-attach-test',
+        projFile.path,
+      );
+
+      expect(attached.projectorPath, isNotNull);
+      expect(attached.toOnDeviceModel().supportsVision, isTrue);
+
+      final removed = await repository.removeProjector('gguf-attach-test');
+      expect(removed.projectorPath, isNull);
+      expect(removed.toOnDeviceModel().supportsVision, isFalse);
+    });
+
+    test('rejects standalone mmproj file import without model', () async {
+      final projFile = File('${tempDir.path}/mmproj-only.gguf');
+      await projFile.writeAsBytes([0x47, 0x47, 0x55, 0x46]);
+
+      final repository = await createRepository();
+      expect(
+        () => repository.importFromPath(projFile.path),
+        throwsA(isA<FormatException>()),
+      );
+    });
   });
 }
 
 ImportedGgufModelMetadata _metadata({
   required String id,
   required String filePath,
+  String? projectorPath,
 }) {
   return ImportedGgufModelMetadata(
     id: id,
     name: 'Test GGUF',
     filePath: filePath,
+    projectorPath: projectorPath,
     fileSizeBytes: 42,
     importedAt: DateTime.utc(2026, 6, 21),
     source: OnDeviceImportedSource.localFile,
