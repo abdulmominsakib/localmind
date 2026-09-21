@@ -2168,6 +2168,46 @@ class AppLocalizationsAr extends AppLocalizations {
   String get gguf_curated_models_short => 'Curated on-device models';
 
   @override
+  String get gguf_vision_projector => 'Vision Projector';
+
+  @override
+  String get gguf_attach_projector => 'Attach Vision Projector';
+
+  @override
+  String get gguf_change_projector => 'Change Vision Projector';
+
+  @override
+  String get gguf_remove_projector => 'Remove Projector';
+
+  @override
+  String get gguf_projector_attached =>
+      'Vision projector attached successfully';
+
+  @override
+  String get gguf_projector_removed => 'Vision projector removed';
+
+  @override
+  String gguf_projector_auto_detected(String name) {
+    return 'Auto-detected and linked vision projector: $name';
+  }
+
+  @override
+  String get gguf_is_projector_file =>
+      'The selected file is a vision projector (mmproj), not a standalone model.';
+
+  @override
+  String get gguf_projector_url_label =>
+      'Vision Projector URL (optional mmproj)';
+
+  @override
+  String get gguf_projector_url_hint =>
+      'https://huggingface.co/.../mmproj-...gguf';
+
+  @override
+  String get gguf_vision_not_supported_error =>
+      'The active model does not support image attachments. Please attach a vision projector (mmproj) or select a vision-supported model.';
+
+  @override
   String get execute_tool_title => 'Execute Tool';
 
   @override

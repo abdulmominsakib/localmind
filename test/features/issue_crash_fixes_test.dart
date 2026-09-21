@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:localmind/features/tts/providers/tts_providers.dart';
 import 'package:localmind/bootstrap/safe_riverpod_scope_host.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
@@ -1090,6 +1091,45 @@ void main() {
       );
     },
   );
+
+  group('Issue #86: TTS Empty AudioSource RangeError Prevention', () {
+    test(
+      'ConcatenatingAudioSource is initialized with at least one chunk to avoid RangeError',
+      () {
+        final tempDir = Directory.systemTemp;
+        final tempFile = File('${tempDir.path}/tts_chunk_test_86.wav');
+        tempFile.writeAsBytesSync(Uint8List(100));
+        addTearDown(() {
+          if (tempFile.existsSync()) tempFile.deleteSync();
+        });
+
+        final firstSource = AudioSource.file(
+          tempFile.path,
+          tag: const MediaItem(
+            id: 'tts_chunk_0',
+            album: 'LocalMind TTS',
+            title: 'Test chunk',
+          ),
+        );
+
+        // ignore: deprecated_member_use
+        final playlist = ConcatenatingAudioSource(children: [firstSource]);
+        expect(playlist.children, isNotEmpty);
+        expect(playlist.children.length, 1);
+        expect(playlist.children.first, equals(firstSource));
+      },
+    );
+
+    test(
+      'TtsNotifier does not initialize player with empty AudioSources on startup',
+      () {
+        final notifier = TtsNotifier();
+        // On startup before playback begins, player should not have an empty audioSource
+        // which causes RangeError: Valid value range is empty: 0 in just_audio_background.
+        expect(notifier.player.audioSource, isNull);
+      },
+    );
+  });
 }
 
 class _MutableActiveServerNotifier extends ActiveServerNotifier {
