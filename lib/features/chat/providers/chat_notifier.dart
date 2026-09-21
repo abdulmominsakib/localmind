@@ -54,6 +54,15 @@ class PendingToolApproval {
   PendingToolApproval({required this.toolCall, required this.completer});
 }
 
+bool shouldIncludeMessageInChatContext(Message message) {
+  if (message.role == MessageRole.assistant &&
+      message.status == MessageStatus.error &&
+      message.content.trim().isEmpty) {
+    return false;
+  }
+  return true;
+}
+
 class ChatState {
   final List<Message> messages;
   final List<Message> allMessages;
@@ -1545,6 +1554,9 @@ class ChatNotifier extends Notifier<ChatState> {
     }
 
     for (final message in state.messages) {
+      if (!shouldIncludeMessageInChatContext(message)) {
+        continue;
+      }
       if (message.role != MessageRole.system || settings.showSystemMessages) {
         messages.add(message);
       }
