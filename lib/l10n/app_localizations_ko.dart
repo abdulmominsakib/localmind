@@ -3017,17 +3017,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '위치 권한이 거부되었습니다. 기기 설정에서 위치 액세스 권한을 부여하세요.';
 
   @override
-  String get sms_access => 'SMS Access';
-
-  @override
-  String get sms_access_desc =>
-      'Allow AI to read recent SMS messages (e.g. codes, sender lookup)';
-
-  @override
-  String get sms_permission_denied =>
-      'SMS permission denied. Please grant SMS access in your device settings.';
-
-  @override
   String get builtin_ai_not_supported => '내장 AI는 이 장치에서 지원되지 않습니다.';
 
   @override

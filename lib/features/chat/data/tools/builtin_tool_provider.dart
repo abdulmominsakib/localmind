@@ -4,17 +4,14 @@ import 'tool_definition.dart';
 import 'tool_registry.dart';
 import 'calendar_service.dart';
 import 'location_service.dart';
-import 'sms_service.dart';
 
 class BuiltInToolProvider implements ToolProvider {
   final bool calendarToolsEnabled;
   final bool locationToolsEnabled;
-  final bool smsToolsEnabled;
 
   BuiltInToolProvider({
     this.calendarToolsEnabled = false,
     this.locationToolsEnabled = false,
-    this.smsToolsEnabled = false,
   });
 
   @override
@@ -142,44 +139,6 @@ class BuiltInToolProvider implements ToolProvider {
       ]);
     }
 
-    if (smsToolsEnabled) {
-      tools.addAll(const [
-        ToolDefinition(
-          name: 'sms.query_messages',
-          description:
-              'Query recent SMS messages from the device inbox and sent box. '
-              'Returns sender address, date, kind, and body. '
-              'Use this when the user asks to look up a code, '
-              'find a message from a sender, or review recent texts. '
-              'Android-only; keep counts small and prefer address filters.',
-          inputSchema: {
-            'type': 'object',
-            'properties': {
-              'address': {
-                'type': 'string',
-                'description':
-                    'Optional sender/recipient filter (phone number or name).',
-              },
-              'count': {
-                'type': 'integer',
-                'description': 'Max messages to return (1-50). Defaults to 20.',
-              },
-              'query': {
-                'type': 'string',
-                'description':
-                    'Optional case-insensitive substring filter over address and body.',
-              },
-              'include_body': {
-                'type': 'boolean',
-                'description': 'Set false for metadata only. Defaults to true.',
-              },
-            },
-          },
-          providerType: ToolProviderType.builtIn,
-        ),
-      ]);
-    }
-
     return tools;
   }
 
@@ -207,10 +166,6 @@ class BuiltInToolProvider implements ToolProvider {
       // -- Location tools --
       case 'location.get_current_location':
         return _getCurrentLocation();
-
-      // -- SMS tools --
-      case 'sms.query_messages':
-        return _querySmsMessages(args);
 
       default:
         return const ToolExecutionResult.failure('Unknown built-in tool');
@@ -342,57 +297,6 @@ class BuiltInToolProvider implements ToolProvider {
       return ToolExecutionResult.failure(e.message);
     } catch (e) {
       return ToolExecutionResult.failure('Failed to get location: $e');
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // SMS tool implementations
-  // ---------------------------------------------------------------------------
-
-  Future<ToolExecutionResult> _querySmsMessages(
-    Map<String, dynamic> args,
-  ) async {
-    try {
-      final sms = SmsService.instance;
-      if (!await sms.hasAccess()) {
-        return const ToolExecutionResult.failure(
-          'SMS permission not granted. '
-          'Please enable SMS Access in Settings.',
-        );
-      }
-
-      final address = args['address'] as String?;
-      final query = args['query'] as String?;
-      final count = switch (args['count']) {
-        final int v => v,
-        final num v => v.toInt(),
-        _ => 20,
-      };
-      final includeBody = switch (args['include_body']) {
-        final bool v => v,
-        _ => true,
-      };
-
-      final result = await sms.queryMessages(
-        address: address,
-        count: count,
-        query: query,
-        includeBody: includeBody,
-      );
-      if (result.isEmpty) {
-        return ToolExecutionResult.success(
-          'No SMS messages found matching the query.',
-        );
-      }
-      return ToolExecutionResult.success(
-        const JsonEncoder.withIndent('  ').convert(result),
-      );
-    } on UnsupportedError catch (e) {
-      return ToolExecutionResult.failure(e.message ?? e.toString());
-    } on StateError catch (e) {
-      return ToolExecutionResult.failure(e.message);
-    } catch (e) {
-      return ToolExecutionResult.failure('Failed to query SMS: $e');
     }
   }
 }

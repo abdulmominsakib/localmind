@@ -5745,24 +5745,6 @@ abstract class AppLocalizations {
   /// **'Location permission denied. Please grant location access in your device settings.'**
   String get location_permission_denied;
 
-  /// Toggle for SMS tools feature
-  ///
-  /// In en, this message translates to:
-  /// **'SMS Access'**
-  String get sms_access;
-
-  /// Description for SMS tools toggle
-  ///
-  /// In en, this message translates to:
-  /// **'Allow AI to read recent SMS messages (e.g. codes, sender lookup)'**
-  String get sms_access_desc;
-
-  /// Snackbar message when SMS permission is denied
-  ///
-  /// In en, this message translates to:
-  /// **'SMS permission denied. Please grant SMS access in your device settings.'**
-  String get sms_permission_denied;
-
   /// Error shown when built-in AI (Gemini Nano / Apple Intelligence) is not supported on the user's hardware or OS
   ///
   /// In en, this message translates to:

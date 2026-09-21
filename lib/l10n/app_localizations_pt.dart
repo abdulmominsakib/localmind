@@ -3123,17 +3123,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Permissão de localização negada. Conceda acesso à localização nas configurações do seu dispositivo.';
 
   @override
-  String get sms_access => 'SMS Access';
-
-  @override
-  String get sms_access_desc =>
-      'Allow AI to read recent SMS messages (e.g. codes, sender lookup)';
-
-  @override
-  String get sms_permission_denied =>
-      'SMS permission denied. Please grant SMS access in your device settings.';
-
-  @override
   String get builtin_ai_not_supported =>
       'A IA integrada não é compatível com este dispositivo.';
 

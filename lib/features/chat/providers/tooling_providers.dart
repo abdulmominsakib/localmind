@@ -16,7 +16,6 @@ final builtInToolProviderProvider = Provider<BuiltInToolProvider>((ref) {
   return BuiltInToolProvider(
     calendarToolsEnabled: settings.calendarToolsEnabled,
     locationToolsEnabled: settings.locationToolsEnabled,
-    smsToolsEnabled: settings.smsToolsEnabled,
   );
 });
 

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -9,7 +7,6 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../chat/data/mcp_server_manager.dart';
 import '../../chat/data/tools/calendar_service.dart';
 import '../../chat/data/tools/location_service.dart';
-import '../../chat/data/tools/sms_service.dart';
 import '../../chat/data/tools/tool_definition.dart';
 import '../../chat/providers/chat_mcp_providers.dart';
 import '../../chat/providers/tooling_providers.dart';
@@ -168,37 +165,6 @@ class McpToolsScreen extends ConsumerWidget {
                         }
                       },
                     ),
-                    if (!Platform.isIOS)
-                      _McpToggleSetting(
-                        label: l10n.sms_access,
-                        description: l10n.sms_access_desc,
-                        value: settings.smsToolsEnabled,
-                        onChanged: (value) async {
-                          if (value) {
-                            final sms = SmsService.instance;
-                            final granted = await sms.requestAccess();
-                            if (granted) {
-                              ref
-                                  .read(settingsProvider.notifier)
-                                  .setSmsToolsEnabled(true);
-                            } else {
-                              if (context.mounted) {
-                                ScaffoldMessenger.maybeOf(
-                                  context,
-                                )?.showSnackBar(
-                                  SnackBar(
-                                    content: Text(l10n.sms_permission_denied),
-                                  ),
-                                );
-                              }
-                            }
-                          } else {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .setSmsToolsEnabled(false);
-                          }
-                        },
-                      ),
                     _McpToggleSetting(
                       label: l10n.enable_example_server,
                       description: l10n.example_mcp_server_desc,
