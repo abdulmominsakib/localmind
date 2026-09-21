@@ -35,8 +35,10 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
   void deactivate() {
     // Reset search when the sheet closes so the next open starts from a
     // clean, matching state instead of an empty box that's still filtering.
-    final searchNotifier = ref.read(modelSearchQueryProvider.notifier);
-    Future.microtask(() => searchNotifier.clear());
+    try {
+      final searchNotifier = ref.read(modelSearchQueryProvider.notifier);
+      Future.microtask(() => searchNotifier.clear());
+    } catch (_) {}
     super.deactivate();
   }
 

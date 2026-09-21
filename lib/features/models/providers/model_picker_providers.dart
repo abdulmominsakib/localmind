@@ -8,8 +8,15 @@ class ModelSearchNotifier extends Notifier<String> {
   @override
   String build() => '';
 
-  void setQuery(String q) => state = q;
-  void clear() => state = '';
+  void setQuery(String q) {
+    if (!ref.mounted) return;
+    state = q;
+  }
+
+  void clear() {
+    if (!ref.mounted) return;
+    state = '';
+  }
 }
 
 enum ModelSortOption { favorites, nameAsc, sizeAsc, sizeDesc, contextDesc }
@@ -21,5 +28,8 @@ class ModelSortNotifier extends Notifier<ModelSortOption> {
   @override
   ModelSortOption build() => ModelSortOption.favorites;
 
-  void setOption(ModelSortOption option) => state = option;
+  void setOption(ModelSortOption option) {
+    if (!ref.mounted) return;
+    state = option;
+  }
 }
