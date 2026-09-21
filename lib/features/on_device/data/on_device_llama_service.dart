@@ -5,6 +5,7 @@ import 'package:llamadart/llamadart.dart' as llama;
 
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
+import '../../chat/data/chat_api_error.dart';
 import '../../chat/data/chat_service.dart';
 import '../../chat/data/models/chat_parameters.dart';
 import '../../chat/data/models/mcp_integration.dart';
@@ -25,6 +26,7 @@ class OnDeviceLlamaService {
   llama.LlamaEngine? _engine;
   llama.ChatSession? _session;
   String? _currentModelId;
+  String? _currentProjectorPath;
   int? _currentContextLength;
   String? _currentSystemPrompt;
   bool _isDisposed = false;
@@ -63,8 +65,9 @@ class OnDeviceLlamaService {
     final gpuLayers = useGpu ? llama.ModelParams.maxGpuLayers : 0;
     final alreadyLoaded = _engine != null && _currentModelId == model.id;
     final contextChanged = _currentContextLength != contextLength;
+    final projectorChanged = _currentProjectorPath != model.projectorPath;
 
-    if (alreadyLoaded && !contextChanged) {
+    if (alreadyLoaded && !contextChanged && !projectorChanged) {
       return;
     }
 
@@ -76,34 +79,48 @@ class OnDeviceLlamaService {
     );
     final engine =
         engineFactory?.call() ?? llama.LlamaEngine(llama.LlamaBackend());
-    await engine.loadModel(
-      model.localPath!,
-      modelParams: llama.ModelParams(
-        contextSize: contextLength,
-        gpuLayers: gpuLayers,
-      ),
-    );
+    try {
+      await engine.loadModel(
+        model.localPath!,
+        modelParams: llama.ModelParams(
+          contextSize: contextLength,
+          gpuLayers: gpuLayers,
+        ),
+      );
 
-    if (model.projectorPath != null && model.projectorPath!.isNotEmpty) {
-      final projFile = File(model.projectorPath!);
-      if (await projFile.exists()) {
+      if (model.projectorPath != null && model.projectorPath!.isNotEmpty) {
+        final projFile = File(model.projectorPath!);
+        if (!await projFile.exists()) {
+          throw FileSystemException(
+            'Configured multimodal projector file was not found',
+            model.projectorPath,
+          );
+        }
         Log.info('Loading multimodal projector from ${model.projectorPath}');
         try {
           await engine.loadMultimodalProjector(model.projectorPath!);
           final hasVision = await engine.supportsVision;
+          if (!hasVision) {
+            throw StateError(
+              'The selected projector did not enable vision support.',
+            );
+          }
           Log.info('Multimodal projector loaded (supportsVision=$hasVision)');
         } catch (e) {
           Log.error('Failed to load multimodal projector: $e');
+          throw StateError('Failed to load multimodal projector: $e');
         }
-      } else {
-        Log.warning(
-          'Configured projector file not found at ${model.projectorPath}',
-        );
       }
+    } catch (_) {
+      try {
+        await engine.dispose();
+      } catch (_) {}
+      rethrow;
     }
 
     _engine = engine;
     _currentModelId = model.id;
+    _currentProjectorPath = model.projectorPath;
     _currentContextLength = contextLength;
     _session = null;
     _currentSystemPrompt = null;
@@ -222,11 +239,14 @@ class OnDeviceLlamaService {
       if (imagePaths.isNotEmpty) {
         final supportsVision = await engine.supportsVision;
         if (!supportsVision) {
-          yield const ChatResponse(
+          yield ChatResponse(
             type: ChatResponseType.error,
-            content:
-                'The active model does not support image attachments. '
-                'Please attach a vision projector (mmproj) to this model or select a vision-supported model.',
+            content: ChatApiError(
+              message:
+                  'The active model does not support image attachments. '
+                  'Please attach a vision projector (mmproj) to this model or select a vision-supported model.',
+              code: ChatApiError.onDeviceVisionNotSupportedCode,
+            ).encode(),
           );
           yield const ChatResponse(type: ChatResponseType.done);
           return;
@@ -326,6 +346,7 @@ class OnDeviceLlamaService {
     _engine = null;
     _session = null;
     _currentModelId = null;
+    _currentProjectorPath = null;
     _currentContextLength = null;
     _currentSystemPrompt = null;
     _lastUserMessageId = null;

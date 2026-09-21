@@ -4,6 +4,9 @@ import 'dart:convert';
 class ChatApiError {
   const ChatApiError({required this.message, this.type, this.code, this.param});
 
+  static const onDeviceVisionNotSupportedCode =
+      'on_device_vision_not_supported';
+
   final String message;
   final String? type;
   final String? code;

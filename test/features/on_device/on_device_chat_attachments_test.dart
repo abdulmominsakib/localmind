@@ -154,14 +154,14 @@ void main() {
     );
 
     test(
-      'silently drops image attachment when model is text-only and text is present',
+      'returns an error when text and an image target a text-only model',
       () async {
         inferenceService.currentModelSupportsVision = false;
         final imgFile = File('${tempDir.path}/screenshot.png');
         await imgFile.writeAsBytes(Uint8List.fromList([1, 2, 3]));
 
         final responses = <ChatResponse>[];
-        final done = chatService
+        await chatService
             .sendMessage(
               server: _server(),
               modelId: 'qwen3-0.6b',
@@ -173,17 +173,54 @@ void main() {
             .listen(responses.add)
             .asFuture<void>();
 
-        await _waitFor(() => inferenceService.sessions.isNotEmpty);
-        expect(inferenceService.supportImages.single, isFalse);
+        final error = responses.firstWhere(
+          (response) => response.type == ChatResponseType.error,
+        );
+        expect(error.content, contains('does not support image attachments'));
+        expect(inferenceService.sessions, isEmpty);
+      },
+    );
 
+    test(
+      'does not attach historical images to a later text-only turn',
+      () async {
+        inferenceService.currentModelSupportsVision = true;
+        final imgFile = File('${tempDir.path}/historical.png');
+        await imgFile.writeAsBytes(Uint8List.fromList([4, 5, 6]));
+
+        final done = chatService
+            .sendMessage(
+              server: _server(),
+              modelId: 'gemma4-e2b-instruct',
+              messages: [
+                _message(
+                  'What is shown?',
+                  id: 'user-1',
+                  attachmentPaths: [imgFile.path],
+                ),
+                _message(
+                  'A diagram.',
+                  id: 'assistant-1',
+                  role: MessageRole.assistant,
+                ),
+                _message('Explain the answer', id: 'user-2'),
+              ],
+              params: ChatParameters.defaults(),
+            )
+            .listen((_) {})
+            .asFuture<void>();
+
+        await _waitFor(
+          () =>
+              inferenceService.sessions.isNotEmpty &&
+              inferenceService.sessions.single.messages.isNotEmpty,
+        );
         final session = inferenceService.sessions.single;
-        await _waitFor(() => session.messages.isNotEmpty);
+        expect(session.messages.single.hasImage, isFalse);
+        expect(session.messages.single.text, contains('User: What is shown?'));
+        expect(session.messages.single.text, contains('Explain the answer'));
 
-        final message = session.messages.single;
-        expect(message.hasImage, isFalse);
-        expect(message.text, equals('Explain this code'));
-
-        session.responses.add(const gemma.TextResponse('Code explanation.'));
+        session.responses.add(const gemma.TextResponse('Explanation'));
         await session.responses.close();
         await done;
       },
@@ -275,6 +312,125 @@ void main() {
 
         final secondSession = inferenceService.sessions[1];
         secondSession.responses.add(const gemma.TextResponse('Seen.'));
+        await secondSession.responses.close();
+        await secondDone;
+      },
+    );
+
+    test(
+      'reuses a vision-capable session when a later turn adds an image',
+      () async {
+        inferenceService.currentModelSupportsVision = true;
+        final firstDone = chatService
+            .sendMessage(
+              server: _server(),
+              modelId: 'gemma4-e2b-instruct',
+              messages: [
+                _message('Hello', id: 'user-1'),
+                _message('', id: 'assistant-1', role: MessageRole.assistant),
+              ],
+              params: ChatParameters.defaults(),
+            )
+            .listen((_) {})
+            .asFuture<void>();
+
+        await _waitFor(() => inferenceService.sessions.isNotEmpty);
+        final session = inferenceService.sessions.single;
+        expect(inferenceService.supportImages.single, isTrue);
+        session.responses.add(const gemma.TextResponse('Hi there!'));
+        await session.responses.close();
+        await firstDone;
+
+        final imgFile = File('${tempDir.path}/follow-up.png');
+        final bytes = Uint8List.fromList([7, 8, 9]);
+        await imgFile.writeAsBytes(bytes);
+        final secondDone = chatService
+            .sendMessage(
+              server: _server(),
+              modelId: 'gemma4-e2b-instruct',
+              messages: [
+                _message('Hello', id: 'user-1'),
+                _message(
+                  'Hi there!',
+                  id: 'assistant-1',
+                  role: MessageRole.assistant,
+                ),
+                _message(
+                  'Now inspect this',
+                  id: 'user-2',
+                  attachmentPaths: [imgFile.path],
+                ),
+              ],
+              params: ChatParameters.defaults(),
+            )
+            .listen((_) {})
+            .asFuture<void>();
+
+        await _waitFor(() => session.messages.length == 2);
+        expect(inferenceService.createCount, 1);
+        expect(session.messages.last.hasImage, isTrue);
+        expect(session.messages.last.imageBytes, equals(bytes));
+        session.responses.add(const gemma.TextResponse('Seen.'));
+        await session.responses.close();
+        await secondDone;
+      },
+    );
+
+    test(
+      'rebuilds a retained session when an attachment changes in place',
+      () async {
+        inferenceService.currentModelSupportsVision = true;
+        final imgFile = File('${tempDir.path}/mutable.png');
+        await imgFile.writeAsBytes(Uint8List.fromList([1, 2, 3]));
+
+        final firstDone = chatService
+            .sendMessage(
+              server: _server(),
+              modelId: 'gemma4-e2b-instruct',
+              messages: [
+                _message(
+                  'Inspect this',
+                  id: 'user-1',
+                  attachmentPaths: [imgFile.path],
+                ),
+              ],
+              params: ChatParameters.defaults(),
+            )
+            .listen((_) {})
+            .asFuture<void>();
+        await _waitFor(() => inferenceService.sessions.isNotEmpty);
+        final firstSession = inferenceService.sessions.single;
+        firstSession.responses.add(const gemma.TextResponse('Original'));
+        await firstSession.responses.close();
+        await firstDone;
+
+        await imgFile.writeAsBytes(Uint8List.fromList([9, 8, 7, 6, 5]));
+        final secondDone = chatService
+            .sendMessage(
+              server: _server(),
+              modelId: 'gemma4-e2b-instruct',
+              messages: [
+                _message(
+                  'Inspect this',
+                  id: 'user-1',
+                  attachmentPaths: [imgFile.path],
+                ),
+                _message(
+                  'Original',
+                  id: 'assistant-1',
+                  role: MessageRole.assistant,
+                ),
+                _message('Continue', id: 'user-2'),
+              ],
+              params: ChatParameters.defaults(),
+            )
+            .listen((_) {})
+            .asFuture<void>();
+
+        await _waitFor(() => inferenceService.sessions.length == 2);
+        expect(firstSession.closeCount, 1);
+        final secondSession = inferenceService.sessions.last;
+        secondSession.responses.add(const gemma.TextResponse('Updated'));
         await secondSession.responses.close();
         await secondDone;
       },

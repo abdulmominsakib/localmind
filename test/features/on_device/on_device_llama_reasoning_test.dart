@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:llamadart/llamadart.dart' as llama;
 import 'package:localmind/core/models/enums.dart';
@@ -111,15 +113,20 @@ void main() {
   );
 
   test('loads multimodal projector when model has projectorPath', () async {
-    final engine = RecordingEngine();
-    final service = OnDeviceLlamaService(
-      engineFactory: () => engine,
+    final tempDir = await Directory.systemTemp.createTemp(
+      'localmind_llama_projector_',
     );
+    addTearDown(() => tempDir.delete(recursive: true));
+    final projector = await File(
+      '${tempDir.path}/model-mmproj.gguf',
+    ).writeAsBytes([0x47, 0x47, 0x55, 0x46]);
+    final engine = RecordingEngine()..visionSupported = true;
+    final service = OnDeviceLlamaService(engineFactory: () => engine);
     final model = ImportedGgufModelMetadata(
       id: 'vision-model',
       name: 'Vision Model',
       filePath: '/tmp/model.gguf',
-      projectorPath: '/tmp/model-mmproj.gguf',
+      projectorPath: projector.path,
       fileSizeBytes: 4,
       importedAt: DateTime.utc(2026),
       source: OnDeviceImportedSource.localFile,
@@ -127,19 +134,51 @@ void main() {
 
     await service.loadModel(model);
 
-    expect(engine.loadedProjectors, ['/tmp/model-mmproj.gguf']);
+    expect(engine.loadedProjectors, [projector.path]);
     expect(model.supportsVision, isTrue);
     expect(model.hasProjector, isTrue);
     expect(model.projectorFileName, 'model-mmproj.gguf');
+  });
+
+  test('reloads the same model when its projector changes', () async {
+    final tempDir = await Directory.systemTemp.createTemp(
+      'localmind_llama_projector_reload_',
+    );
+    addTearDown(() => tempDir.delete(recursive: true));
+    final projector = await File(
+      '${tempDir.path}/replacement-mmproj.gguf',
+    ).writeAsBytes([0x47, 0x47, 0x55, 0x46]);
+    final engines = <RecordingEngine>[];
+    final service = OnDeviceLlamaService(
+      engineFactory: () {
+        final engine = RecordingEngine()..visionSupported = true;
+        engines.add(engine);
+        return engine;
+      },
+    );
+    final baseMetadata = ImportedGgufModelMetadata(
+      id: 'vision-model',
+      name: 'Vision Model',
+      filePath: '/tmp/model.gguf',
+      fileSizeBytes: 4,
+      importedAt: DateTime.utc(2026),
+      source: OnDeviceImportedSource.localFile,
+    );
+
+    await service.loadModel(baseMetadata.toOnDeviceModel());
+    await service.loadModel(
+      baseMetadata.copyWith(projectorPath: projector.path).toOnDeviceModel(),
+    );
+
+    expect(engines, hasLength(2));
+    expect(engines.last.loadedProjectors, [projector.path]);
   });
 
   test(
     'returns error when message has image attachments but model does not support vision',
     () async {
       final engine = RecordingEngine()..visionSupported = false;
-      final service = OnDeviceLlamaService(
-        engineFactory: () => engine,
-      );
+      final service = OnDeviceLlamaService(engineFactory: () => engine);
       final model = ImportedGgufModelMetadata(
         id: 'text-model',
         name: 'Text Model',
@@ -170,8 +209,9 @@ void main() {
           )
           .toList();
 
-      final errors =
-          responses.where((r) => r.type == ChatResponseType.error).toList();
+      final errors = responses
+          .where((r) => r.type == ChatResponseType.error)
+          .toList();
       expect(errors, isNotEmpty);
       expect(
         errors.first.content,

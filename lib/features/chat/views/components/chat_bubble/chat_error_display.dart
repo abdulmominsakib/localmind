@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:localmind/features/chat/data/chat_api_error.dart';
+import 'package:localmind/l10n/app_localizations.dart';
 
 class ChatErrorDisplay extends StatelessWidget {
   const ChatErrorDisplay({super.key, required this.errorMessage});
@@ -20,6 +21,11 @@ class ChatErrorDisplay extends StatelessWidget {
       );
     }
 
+    final displayMessage =
+        parsed.code == ChatApiError.onDeviceVisionNotSupportedCode
+        ? AppLocalizations.of(context)!.gguf_vision_not_supported_error
+        : parsed.message;
+
     final metaParts = <String>[];
     if (parsed.type != null && parsed.type!.isNotEmpty) {
       metaParts.add('type: ${parsed.type}');
@@ -35,7 +41,7 @@ class ChatErrorDisplay extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          parsed.message,
+          displayMessage,
           style: TextStyle(
             color: Colors.red[400],
             fontSize: 12,

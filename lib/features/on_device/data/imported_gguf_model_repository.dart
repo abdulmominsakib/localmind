@@ -37,8 +37,8 @@ class ImportedGgufModelMetadata {
   String get fileName => p.basename(filePath);
   String? get projectorFileName =>
       projectorPath != null && projectorPath!.isNotEmpty
-          ? p.basename(projectorPath!)
-          : null;
+      ? p.basename(projectorPath!)
+      : null;
 
   String get sourceLabel {
     switch (source) {
@@ -157,9 +157,14 @@ class ImportedGgufModelRepository {
   final SharedPreferences _prefs;
   final Dio _dio;
   final Random _random;
+  final Future<Directory> Function()? modelsDirectoryProvider;
 
-  ImportedGgufModelRepository(this._prefs, this._dio, {Random? random})
-    : _random = random ?? Random.secure();
+  ImportedGgufModelRepository(
+    this._prefs,
+    this._dio, {
+    Random? random,
+    this.modelsDirectoryProvider,
+  }) : _random = random ?? Random.secure();
 
   List<ImportedGgufModelMetadata> load() {
     final encoded = _prefs.getString(_storageKey);
@@ -256,26 +261,18 @@ class ImportedGgufModelRepository {
           final candidates = parentDir
               .listSync()
               .whereType<File>()
-              .where((f) =>
-                  f.path.toLowerCase().endsWith('.gguf') &&
-                  isProjectorFileName(p.basename(f.path)))
+              .where(
+                (f) =>
+                    f.path.toLowerCase().endsWith('.gguf') &&
+                    isProjectorFileName(p.basename(f.path)),
+              )
+              .map((file) => file.path)
               .toList();
-          if (candidates.isNotEmpty) {
-            final modelBase =
-                p.basenameWithoutExtension(sourcePath).toLowerCase();
-            final match = candidates.firstWhere(
-              (c) {
-                final cName =
-                    p.basenameWithoutExtension(c.path).toLowerCase();
-                final sharedTokens = modelBase
-                    .split(RegExp(r'[-_.]'))
-                    .where((t) => t.length > 2);
-                return sharedTokens.any((t) => cName.contains(t));
-              },
-              orElse: () => candidates.first,
-            );
-            resolvedProjectorPath = match.path;
-          }
+          resolvedProjectorPath = _uniqueProjectorForModel(
+            sourcePath,
+            candidates,
+            allowSingleFallback: true,
+          );
         }
       } catch (_) {}
     }
@@ -349,31 +346,41 @@ class ImportedGgufModelRepository {
       );
     }
 
-    final results = <ImportedGgufModelMetadata>[];
-    if (models.length == 1 && projectors.isNotEmpty) {
-      results.add(
-        await importFromPath(models.single, projectorPath: projectors.first),
-      );
-      return results;
+    final projectorByModel = <String, String>{};
+    for (final projector in projectors) {
+      final matchingModels = models
+          .where((model) => _pathsShareProjectorTokens(model, projector))
+          .toList(growable: false);
+      final String matchedModel;
+      if (matchingModels.length == 1) {
+        matchedModel = matchingModels.single;
+      } else if (models.length == 1 && projectors.length == 1) {
+        matchedModel = models.single;
+      } else {
+        throw FormatException(
+          matchingModels.isEmpty
+              ? 'Could not match ${p.basename(projector)} to a selected model. '
+                    'Import the model first, then attach the projector manually.'
+              : '${p.basename(projector)} matches more than one selected model. '
+                    'Import the models separately and attach the projector manually.',
+        );
+      }
+      if (projectorByModel.containsKey(matchedModel)) {
+        throw FormatException(
+          'More than one projector was selected for ${p.basename(matchedModel)}. '
+          'Choose one projector and attach any replacement later.',
+        );
+      }
+      projectorByModel[matchedModel] = projector;
     }
 
+    final results = <ImportedGgufModelMetadata>[];
     for (final modelPath in models) {
-      final modelBase = p.basenameWithoutExtension(modelPath).toLowerCase();
-      final matchingProjector = projectors.cast<String?>().firstWhere(
-        (projPath) {
-          if (projPath == null) return false;
-          final projBase =
-              p.basenameWithoutExtension(projPath).toLowerCase();
-          final sharedTokens = modelBase
-              .split(RegExp(r'[-_.]'))
-              .where((t) => t.length > 2);
-          return sharedTokens.any((t) => projBase.contains(t));
-        },
-        orElse: () => null,
-      );
-
       results.add(
-        await importFromPath(modelPath, projectorPath: matchingProjector),
+        await importFromPath(
+          modelPath,
+          projectorPath: projectorByModel[modelPath],
+        ),
       );
     }
 
@@ -386,9 +393,7 @@ class ImportedGgufModelRepository {
   ) async {
     final projSource = File(projectorSourcePath);
     if (!projectorSourcePath.toLowerCase().endsWith('.gguf')) {
-      throw const FormatException(
-        'Only GGUF projector files are supported.',
-      );
+      throw const FormatException('Only GGUF projector files are supported.');
     }
     if (!await projSource.exists()) {
       throw FileSystemException(
@@ -406,32 +411,46 @@ class ImportedGgufModelRepository {
     final dir = await _modelsDirectory();
     final projOriginalName = p.basename(projectorSourcePath);
     final projFileName =
-        '$modelId-mmproj-${_sanitizeFileName(projOriginalName)}';
+        '$modelId-mmproj-${_createId(projOriginalName)}-'
+        '${_sanitizeFileName(projOriginalName)}';
     final targetProjector = File(p.join(dir.path, projFileName));
+    final stagedProjector = File('${targetProjector.path}.part');
+    var metadataSaved = false;
 
     try {
-      await projSource.copy(targetProjector.path);
-      await _validateGgufFile(targetProjector);
+      await projSource.copy(stagedProjector.path);
+      await _validateGgufFile(stagedProjector);
+      await stagedProjector.rename(targetProjector.path);
 
       final oldProjPath = models[index].projectorPath;
-      if (oldProjPath != null && oldProjPath != targetProjector.path) {
-        final oldProj = File(oldProjPath);
-        if (await oldProj.exists() && p.isWithin(dir.path, oldProj.path)) {
-          await oldProj.delete();
-        }
-      }
-
       final updated = models[index].copyWith(
         projectorPath: targetProjector.path,
       );
       models[index] = updated;
       await saveAll(models);
+      metadataSaved = true;
+
+      if (oldProjPath != null && oldProjPath != targetProjector.path) {
+        final oldProj = File(oldProjPath);
+        if (await oldProj.exists() && p.isWithin(dir.path, oldProj.path)) {
+          try {
+            await oldProj.delete();
+          } catch (_) {
+            // Metadata already points at the validated replacement. A stale
+            // file is safer than rolling back to a missing projector.
+          }
+        }
+      }
       return updated;
     } catch (_) {
-      if (await targetProjector.exists()) {
+      if (!metadataSaved && await targetProjector.exists()) {
         await targetProjector.delete();
       }
       rethrow;
+    } finally {
+      if (await stagedProjector.exists()) {
+        await stagedProjector.delete();
+      }
     }
   }
 
@@ -442,18 +461,23 @@ class ImportedGgufModelRepository {
       throw StateError('Imported model no longer exists');
     }
 
-    final dir = await _modelsDirectory();
     final oldProjPath = models[index].projectorPath;
-    if (oldProjPath != null) {
-      final oldProj = File(oldProjPath);
-      if (await oldProj.exists() && p.isWithin(dir.path, oldProj.path)) {
-        await oldProj.delete();
-      }
-    }
-
     final updated = models[index].copyWith(projectorPath: null);
     models[index] = updated;
     await saveAll(models);
+
+    if (oldProjPath != null) {
+      try {
+        final dir = await _modelsDirectory();
+        final oldProj = File(oldProjPath);
+        if (await oldProj.exists() && p.isWithin(dir.path, oldProj.path)) {
+          await oldProj.delete();
+        }
+      } catch (_) {
+        // The model is already safely detached in metadata. A stale file can
+        // be cleaned up later without breaking the model entry.
+      }
+    }
     return updated;
   }
 
@@ -479,6 +503,7 @@ class ImportedGgufModelRepository {
     }
 
     File? targetProjectorFile;
+    var metadataSaved = false;
 
     try {
       await _dio.download(
@@ -509,8 +534,9 @@ class ImportedGgufModelRepository {
       await tempFile.rename(targetPath);
 
       if (projectorUrl != null && projectorUrl.trim().isNotEmpty) {
-        final normalizedProjUrl =
-            _normalizeHuggingFaceGgufUrl(projectorUrl.trim());
+        final normalizedProjUrl = _normalizeHuggingFaceGgufUrl(
+          projectorUrl.trim(),
+        );
         final projOriginalName = _fileNameFromUri(normalizedProjUrl);
         final projFileName =
             '$id-mmproj-${_sanitizeFileName(projOriginalName)}';
@@ -570,6 +596,7 @@ class ImportedGgufModelRepository {
 
       final current = load();
       await saveAll([...current, metadata]);
+      metadataSaved = true;
       return metadata;
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
@@ -579,6 +606,14 @@ class ImportedGgufModelRepository {
     } finally {
       if (await tempFile.exists()) {
         await tempFile.delete();
+      }
+      if (!metadataSaved) {
+        if (await targetFile.exists()) {
+          await targetFile.delete();
+        }
+        if (targetProjectorFile != null && await targetProjectorFile.exists()) {
+          await targetProjectorFile.delete();
+        }
       }
     }
   }
@@ -615,12 +650,54 @@ class ImportedGgufModelRepository {
   }
 
   Future<Directory> _modelsDirectory() async {
+    final provided = modelsDirectoryProvider;
+    if (provided != null) {
+      final dir = await provided();
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      return dir;
+    }
     final supportDir = await getApplicationSupportDirectory();
     final dir = Directory(p.join(supportDir.path, _storageDirName));
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
     return dir;
+  }
+
+  String? _uniqueProjectorForModel(
+    String modelPath,
+    List<String> projectorPaths, {
+    required bool allowSingleFallback,
+  }) {
+    if (projectorPaths.isEmpty) return null;
+    final matches = projectorPaths
+        .where((path) => _pathsShareProjectorTokens(modelPath, path))
+        .toList(growable: false);
+    if (matches.length == 1) return matches.single;
+    if (matches.isEmpty && allowSingleFallback && projectorPaths.length == 1) {
+      return projectorPaths.single;
+    }
+    return null;
+  }
+
+  bool _pathsShareProjectorTokens(String modelPath, String projectorPath) {
+    final modelBase = p.basenameWithoutExtension(modelPath).toLowerCase();
+    final projectorBase = p
+        .basenameWithoutExtension(projectorPath)
+        .toLowerCase();
+    final sharedTokens = modelBase
+        .split(RegExp(r'[-_.]'))
+        .where((token) => token.length > 2)
+        .where(
+          (token) =>
+              token != 'model' &&
+              token != 'instruct' &&
+              token != 'chat' &&
+              token != 'gguf',
+        );
+    return sharedTokens.any(projectorBase.contains);
   }
 
   Uri _normalizeHuggingFaceGgufUrl(String input) {

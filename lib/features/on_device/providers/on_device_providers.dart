@@ -259,6 +259,9 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     );
     if (ref.mounted) {
       state = _repository.load().map((m) => m.toOnDeviceModel()).toList();
+      await ref
+          .read(onDeviceEngineProvider.notifier)
+          .reloadModelIfLoaded(modelId);
     }
     return metadata.toOnDeviceModel();
   }
@@ -267,6 +270,9 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     final metadata = await _repository.removeProjector(modelId);
     if (ref.mounted) {
       state = _repository.load().map((m) => m.toOnDeviceModel()).toList();
+      await ref
+          .read(onDeviceEngineProvider.notifier)
+          .reloadModelIfLoaded(modelId);
     }
     return metadata.toOnDeviceModel();
   }
@@ -378,6 +384,17 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
   OnDeviceLlamaService get _llamaService =>
       ref.read(onDeviceLlamaServiceProvider);
   OnDeviceMlxService get _mlxService => ref.read(onDeviceMlxServiceProvider);
+
+  Future<void> reloadModelIfLoaded(String modelId) async {
+    if (!ref.mounted) return;
+    final current = state;
+    if (current.status != OnDeviceEngineStatus.loaded ||
+        current.loadedModelId != modelId ||
+        current.loadedRuntime != OnDeviceModelRuntime.llamaCpp) {
+      return;
+    }
+    await loadModel(modelId, current.backend ?? PreferredBackend.cpu);
+  }
 
   Future<void> loadModel(String modelId, PreferredBackend backend) async {
     if (!ref.mounted) return;

@@ -7,6 +7,7 @@ import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/utils/bpe_decoder.dart';
+import '../../chat/data/chat_api_error.dart';
 import '../../chat/data/chat_service.dart';
 import '../../chat/data/models/chat_parameters.dart';
 import '../../chat/data/models/mcp_integration.dart';
@@ -106,20 +107,26 @@ class OnDeviceChatService implements ChatService {
         await _closeSession(run, stopGeneration: false);
         return;
       }
+      final hasCurrentImageAttachment =
+          input?.currentMessage.attachmentPaths.any(
+            AttachmentHelpers.isImagePath,
+          ) ??
+          false;
+      if (hasCurrentImageAttachment &&
+          !_gemmaService.currentModelSupportsVision) {
+        await _finishWithError(
+          run,
+          const ChatApiError(
+            message:
+                'The active model does not support image attachments. '
+                'Please select a vision-supported model like Gemma 4 or FastVLM.',
+            code: ChatApiError.onDeviceVisionNotSupportedCode,
+          ).encode(),
+        );
+        return;
+      }
       if (input == null ||
           (input.currentMessage.content.trim().isEmpty && !input.hasImages)) {
-        final lastMsg = messages.isNotEmpty ? messages.last : null;
-        final hasImageAttachment =
-            lastMsg?.attachmentPaths?.any(AttachmentHelpers.isImagePath) ??
-            false;
-        if (hasImageAttachment && !_gemmaService.currentModelSupportsVision) {
-          await _finishWithError(
-            run,
-            'The active model does not support image attachments. '
-            'Please select a vision-supported model like Gemma 4 or FastVLM.',
-          );
-          return;
-        }
         await _finishWithError(run, 'On-device chat requires a user message.');
         return;
       }
@@ -133,6 +140,7 @@ class OnDeviceChatService implements ChatService {
         _retainedConversation = null;
         _cancelRetainedExpiration();
         session = retained.session;
+        run.sessionSupportsImages = retained.supportsImages;
         reusedSession = true;
       } else {
         if (retained != null && !input.isAuxiliary) {
@@ -144,8 +152,9 @@ class OnDeviceChatService implements ChatService {
         session = await _gemmaService.createChat(
           systemInstruction: input.baseSystemInstruction,
           tools: const [],
-          supportImage: modelSupportsVision && input.hasImages,
+          supportImage: modelSupportsVision,
         );
+        run.sessionSupportsImages = modelSupportsVision;
         reusedSession = false;
       }
       run.session = session;
@@ -393,8 +402,7 @@ class OnDeviceChatService implements ChatService {
       modelId: input.modelId,
       baseSystemInstruction: input.baseSystemInstruction,
       timeline: input.completedTimeline(run.generatedContent.toString()),
-      supportsImages:
-          input.hasImages || _gemmaService.currentModelSupportsVision,
+      supportsImages: run.sessionSupportsImages,
     );
     _armRetainedExpiration();
     if (previous != null && !identical(previous.session, session)) {
@@ -487,10 +495,12 @@ class OnDeviceChatService implements ChatService {
 
     final modelSupportsVision = _gemmaService.currentModelSupportsVision;
     final timeline = <_MessageSnapshot>[];
-    for (final message in timelineMessages) {
+    for (var index = 0; index < timelineMessages.length; index++) {
+      final message = timelineMessages[index];
       final snapshot = await _MessageSnapshot.fromMessage(
         message,
         supportsVision: modelSupportsVision,
+        loadImages: index == timelineMessages.length - 1,
         imageCompressionEnabled: imageCompressionEnabled,
         imageCompressionLevel: imageCompressionLevel,
       );
@@ -563,6 +573,7 @@ class _InferenceRun {
   _PreparedInput? input;
   final StringBuffer generatedContent = StringBuffer();
   bool generationStarted = false;
+  bool sessionSupportsImages = false;
   bool isCancelled = false;
   bool _isFinishing = false;
 
@@ -592,9 +603,7 @@ class _PreparedInput {
   final String? pendingAssistantId;
   final bool isAuxiliary;
 
-  bool get hasImages =>
-      currentMessage.images.isNotEmpty ||
-      history.any((message) => message.images.isNotEmpty);
+  bool get hasImages => currentMessage.images.isNotEmpty;
 
   gemma.Message toGemmaMessage({required bool includeHistory}) {
     if (!includeHistory || history.isEmpty) {
@@ -614,22 +623,14 @@ class _PreparedInput {
         'Earlier conversation transcript (context only):\n\n$transcript\n\n'
         '$currentLabel:\n${currentMessage.content}';
 
-    final images = currentMessage.images.isNotEmpty
-        ? currentMessage.images
-        : history.reversed
-              .expand((message) => message.images)
-              .toList(growable: false)
-              .reversed
-              .toList(growable: false);
-
-    if (images.isNotEmpty) {
+    if (currentMessage.images.isNotEmpty) {
       var text = fullText;
       if (text.trim().isEmpty) {
         text = 'Describe the image.';
       }
       return gemma.Message.withImages(
         text: text,
-        imageBytes: images,
+        imageBytes: currentMessage.images,
         isUser: currentMessage.role == MessageRole.user,
       );
     }
@@ -708,20 +709,24 @@ class _MessageSnapshot {
     required this.content,
     this.images = const [],
     this.attachmentPaths = const [],
+    this.attachmentSignatures = const [],
   });
 
   static Future<_MessageSnapshot> fromMessage(
     Message message, {
     bool supportsVision = false,
+    bool loadImages = true,
     bool imageCompressionEnabled = true,
     ImageCompressionLevel imageCompressionLevel = ImageCompressionLevel.medium,
   }) async {
     var content = message.content;
     final images = <Uint8List>[];
+    final attachmentSignatures = <String>[];
 
     final paths = message.attachmentPaths ?? const <String>[];
 
     for (final path in paths) {
+      attachmentSignatures.add(await _attachmentSignature(path));
       if (AttachmentHelpers.isDocumentPath(path)) {
         final text = await AttachmentHelpers.readDocumentFile(path);
         if (text != null && text.trim().isNotEmpty) {
@@ -731,7 +736,9 @@ class _MessageSnapshot {
             text,
           );
         }
-      } else if (supportsVision && AttachmentHelpers.isImagePath(path)) {
+      } else if (loadImages &&
+          supportsVision &&
+          AttachmentHelpers.isImagePath(path)) {
         final file = File(path);
         try {
           if (await file.exists()) {
@@ -760,7 +767,18 @@ class _MessageSnapshot {
       content: content,
       images: List.unmodifiable(images),
       attachmentPaths: List.unmodifiable(paths),
+      attachmentSignatures: List.unmodifiable(attachmentSignatures),
     );
+  }
+
+  static Future<String> _attachmentSignature(String path) async {
+    try {
+      final stat = await File(path).stat();
+      return '$path|${stat.type}|${stat.size}|'
+          '${stat.modified.microsecondsSinceEpoch}';
+    } catch (_) {
+      return '$path|unavailable';
+    }
   }
 
   final String id;
@@ -769,6 +787,7 @@ class _MessageSnapshot {
   final String content;
   final List<Uint8List> images;
   final List<String> attachmentPaths;
+  final List<String> attachmentSignatures;
 
   gemma.Message toGemmaMessage({String? promptOverride}) {
     var text = promptOverride ?? content;
@@ -790,6 +809,7 @@ class _MessageSnapshot {
     String? content,
     List<Uint8List>? images,
     List<String>? attachmentPaths,
+    List<String>? attachmentSignatures,
   }) => _MessageSnapshot(
     id: id,
     conversationId: conversationId,
@@ -797,6 +817,7 @@ class _MessageSnapshot {
     content: content ?? this.content,
     images: images ?? this.images,
     attachmentPaths: attachmentPaths ?? this.attachmentPaths,
+    attachmentSignatures: attachmentSignatures ?? this.attachmentSignatures,
   );
 
   @override
@@ -807,7 +828,7 @@ class _MessageSnapshot {
         role == other.role &&
         content == other.content &&
         _listEquals(attachmentPaths, other.attachmentPaths) &&
-        images.length == other.images.length;
+        _listEquals(attachmentSignatures, other.attachmentSignatures);
   }
 
   @override
@@ -817,7 +838,7 @@ class _MessageSnapshot {
     role,
     content,
     Object.hashAll(attachmentPaths),
-    images.length,
+    Object.hashAll(attachmentSignatures),
   );
 
   static bool _listEquals(List<String> first, List<String> second) {
