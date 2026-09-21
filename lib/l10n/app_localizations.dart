@@ -4083,6 +4083,72 @@ abstract class AppLocalizations {
   /// **'Curated on-device models'**
   String get gguf_curated_models_short;
 
+  /// No description provided for @gguf_vision_projector.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision Projector'**
+  String get gguf_vision_projector;
+
+  /// No description provided for @gguf_attach_projector.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach Vision Projector'**
+  String get gguf_attach_projector;
+
+  /// No description provided for @gguf_change_projector.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Vision Projector'**
+  String get gguf_change_projector;
+
+  /// No description provided for @gguf_remove_projector.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Projector'**
+  String get gguf_remove_projector;
+
+  /// No description provided for @gguf_projector_attached.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision projector attached successfully'**
+  String get gguf_projector_attached;
+
+  /// No description provided for @gguf_projector_removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision projector removed'**
+  String get gguf_projector_removed;
+
+  /// No description provided for @gguf_projector_auto_detected.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-detected and linked vision projector: {name}'**
+  String gguf_projector_auto_detected(String name);
+
+  /// No description provided for @gguf_is_projector_file.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected file is a vision projector (mmproj), not a standalone model.'**
+  String get gguf_is_projector_file;
+
+  /// No description provided for @gguf_projector_url_label.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision Projector URL (optional mmproj)'**
+  String get gguf_projector_url_label;
+
+  /// No description provided for @gguf_projector_url_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://huggingface.co/.../mmproj-...gguf'**
+  String get gguf_projector_url_hint;
+
+  /// No description provided for @gguf_vision_not_supported_error.
+  ///
+  /// In en, this message translates to:
+  /// **'The active model does not support image attachments. Please attach a vision projector (mmproj) or select a vision-supported model.'**
+  String get gguf_vision_not_supported_error;
+
   /// No description provided for @execute_tool_title.
   ///
   /// In en, this message translates to:

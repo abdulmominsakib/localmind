@@ -10,6 +10,11 @@ import 'package:localmind/features/on_device/data/on_device_llama_service.dart';
 
 class RecordingEngine implements llama.LlamaEngine {
   final thinking = <bool>[];
+  final loadedProjectors = <String>[];
+  bool visionSupported = false;
+
+  @override
+  Future<bool> get supportsVision => Future.value(visionSupported);
 
   @override
   dynamic noSuchMethod(Invocation invocation) {
@@ -17,6 +22,11 @@ class RecordingEngine implements llama.LlamaEngine {
       case #loadModel:
       case #dispose:
         return Future<void>.value();
+      case #loadMultimodalProjector:
+        loadedProjectors.add(invocation.positionalArguments[0] as String);
+        return Future<void>.value();
+      case #supportsVision:
+        return Future.value(visionSupported);
       case #chatTemplate:
         return Future.value(
           const llama.LlamaChatTemplateResult(prompt: 'test'),
@@ -97,6 +107,76 @@ void main() {
       await generate(enabled: false);
       await generate();
       expect(engine.thinking, [false, true, false, true]);
+    },
+  );
+
+  test('loads multimodal projector when model has projectorPath', () async {
+    final engine = RecordingEngine();
+    final service = OnDeviceLlamaService(
+      engineFactory: () => engine,
+    );
+    final model = ImportedGgufModelMetadata(
+      id: 'vision-model',
+      name: 'Vision Model',
+      filePath: '/tmp/model.gguf',
+      projectorPath: '/tmp/model-mmproj.gguf',
+      fileSizeBytes: 4,
+      importedAt: DateTime.utc(2026),
+      source: OnDeviceImportedSource.localFile,
+    ).toOnDeviceModel();
+
+    await service.loadModel(model);
+
+    expect(engine.loadedProjectors, ['/tmp/model-mmproj.gguf']);
+    expect(model.supportsVision, isTrue);
+    expect(model.hasProjector, isTrue);
+    expect(model.projectorFileName, 'model-mmproj.gguf');
+  });
+
+  test(
+    'returns error when message has image attachments but model does not support vision',
+    () async {
+      final engine = RecordingEngine()..visionSupported = false;
+      final service = OnDeviceLlamaService(
+        engineFactory: () => engine,
+      );
+      final model = ImportedGgufModelMetadata(
+        id: 'text-model',
+        name: 'Text Model',
+        filePath: '/tmp/model.gguf',
+        fileSizeBytes: 4,
+        importedAt: DateTime.utc(2026),
+        source: OnDeviceImportedSource.localFile,
+      ).toOnDeviceModel();
+
+      await service.loadModel(model);
+
+      final messages = [
+        Message(
+          id: 'u',
+          conversationId: 'c',
+          role: MessageRole.user,
+          content: 'What is in this image?',
+          attachmentPaths: ['/tmp/image.png'],
+          createdAt: DateTime.utc(2026),
+        ),
+      ];
+
+      final responses = await service
+          .sendMessage(
+            modelId: 'text-model',
+            messages: messages,
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+
+      final errors =
+          responses.where((r) => r.type == ChatResponseType.error).toList();
+      expect(errors, isNotEmpty);
+      expect(
+        errors.first.content,
+        contains('does not support image attachments'),
+      );
     },
   );
 }

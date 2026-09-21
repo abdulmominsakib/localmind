@@ -29,6 +29,7 @@ class OnDeviceModel {
   final OnDeviceModelRuntime runtime;
   final OnDeviceModelFormat format;
   final String? localPath;
+  final String? projectorPath;
   final DateTime? importedAt;
   final bool isImported;
   final OnDeviceImportedSource? importedSource;
@@ -55,6 +56,7 @@ class OnDeviceModel {
     this.runtime = OnDeviceModelRuntime.gemma,
     this.format = OnDeviceModelFormat.litertlm,
     this.localPath,
+    this.projectorPath,
     this.importedAt,
     this.isImported = false,
     this.importedSource,
@@ -86,6 +88,11 @@ class OnDeviceModel {
   bool get isBuiltIn => format == OnDeviceModelFormat.builtIn;
   bool get isLlamaCpp => runtime == OnDeviceModelRuntime.llamaCpp;
   bool get isMlx => runtime == OnDeviceModelRuntime.mlx;
+
+  bool get hasProjector =>
+      projectorPath != null && projectorPath!.trim().isNotEmpty;
+  String? get projectorFileName =>
+      hasProjector ? projectorPath!.split('/').last : null;
 
   bool get isImportedFromLocalFile =>
       importedSource == OnDeviceImportedSource.localFile;

@@ -10,9 +10,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'models/on_device_model.dart';
 
 class ImportedGgufModelMetadata {
+  static const _unset = Object();
+
   final String id;
   final String name;
   final String filePath;
+  final String? projectorPath;
   final int fileSizeBytes;
   final DateTime importedAt;
   final OnDeviceImportedSource source;
@@ -23,6 +26,7 @@ class ImportedGgufModelMetadata {
     required this.id,
     required this.name,
     required this.filePath,
+    this.projectorPath,
     required this.fileSizeBytes,
     required this.importedAt,
     required this.source,
@@ -31,6 +35,10 @@ class ImportedGgufModelMetadata {
   });
 
   String get fileName => p.basename(filePath);
+  String? get projectorFileName =>
+      projectorPath != null && projectorPath!.isNotEmpty
+          ? p.basename(projectorPath!)
+          : null;
 
   String get sourceLabel {
     switch (source) {
@@ -46,8 +54,36 @@ class ImportedGgufModelMetadata {
     return max(2048, (fileSizeMb * 1.3).ceil());
   }
 
+  ImportedGgufModelMetadata copyWith({
+    String? id,
+    String? name,
+    String? filePath,
+    Object? projectorPath = _unset,
+    int? fileSizeBytes,
+    DateTime? importedAt,
+    OnDeviceImportedSource? source,
+    String? sourceUrl,
+    bool? reasoningEnabled,
+  }) {
+    return ImportedGgufModelMetadata(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      filePath: filePath ?? this.filePath,
+      projectorPath: identical(projectorPath, _unset)
+          ? this.projectorPath
+          : projectorPath as String?,
+      fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+      importedAt: importedAt ?? this.importedAt,
+      source: source ?? this.source,
+      sourceUrl: sourceUrl ?? this.sourceUrl,
+      reasoningEnabled: reasoningEnabled ?? this.reasoningEnabled,
+    );
+  }
+
   OnDeviceModel toOnDeviceModel() {
     final isHuggingFace = source == OnDeviceImportedSource.huggingFace;
+    final hasProjector =
+        projectorPath != null && projectorPath!.trim().isNotEmpty;
     return OnDeviceModel(
       id: id,
       name: name,
@@ -66,6 +102,8 @@ class ImportedGgufModelMetadata {
       runtime: OnDeviceModelRuntime.llamaCpp,
       format: OnDeviceModelFormat.gguf,
       localPath: filePath,
+      projectorPath: projectorPath,
+      supportsVision: hasProjector,
       importedAt: importedAt,
       isImported: true,
       importedSource: source,
@@ -78,6 +116,7 @@ class ImportedGgufModelMetadata {
       'id': id,
       'name': name,
       'filePath': filePath,
+      'projectorPath': projectorPath,
       'fileSizeBytes': fileSizeBytes,
       'importedAt': importedAt.toIso8601String(),
       'source': source.name,
@@ -91,6 +130,7 @@ class ImportedGgufModelMetadata {
       id: json['id'] as String,
       name: json['name'] as String,
       filePath: json['filePath'] as String,
+      projectorPath: json['projectorPath'] as String?,
       fileSizeBytes: (json['fileSizeBytes'] as num).toInt(),
       importedAt: DateTime.parse(json['importedAt'] as String),
       source: _sourceFromJson(json['source']),
@@ -145,24 +185,47 @@ class ImportedGgufModelRepository {
     await saveAll(models);
   }
 
+  static bool isProjectorFileName(String name) {
+    final lower = name.toLowerCase();
+    return lower.contains('mmproj') || lower.contains('projector');
+  }
+
   Future<List<ImportedGgufModelMetadata>> loadExisting() async {
     final models = load();
     final existing = <ImportedGgufModelMetadata>[];
+    var hasChanges = false;
 
     for (final model in models) {
       if (await File(model.filePath).exists()) {
-        existing.add(model);
+        if (model.projectorPath != null &&
+            !await File(model.projectorPath!).exists()) {
+          existing.add(model.copyWith(projectorPath: null));
+          hasChanges = true;
+        } else {
+          existing.add(model);
+        }
+      } else {
+        hasChanges = true;
+        if (model.projectorPath != null) {
+          final proj = File(model.projectorPath!);
+          if (await proj.exists()) {
+            await proj.delete();
+          }
+        }
       }
     }
 
-    if (existing.length != models.length) {
+    if (hasChanges || existing.length != models.length) {
       await saveAll(existing);
     }
 
     return existing;
   }
 
-  Future<ImportedGgufModelMetadata> importFromPath(String sourcePath) async {
+  Future<ImportedGgufModelMetadata> importFromPath(
+    String sourcePath, {
+    String? projectorPath,
+  }) async {
     final source = File(sourcePath);
     if (!sourcePath.toLowerCase().endsWith('.gguf')) {
       throw const FormatException(
@@ -176,20 +239,75 @@ class ImportedGgufModelRepository {
       );
     }
 
-    final dir = await _modelsDirectory();
     final originalName = p.basename(sourcePath);
+    if (isProjectorFileName(originalName) && projectorPath == null) {
+      throw const FormatException(
+        'The selected file appears to be a multimodal vision projector (mmproj), '
+        'not a standalone model. Please select the main model file or attach this '
+        'projector to an existing model.',
+      );
+    }
+
+    String? resolvedProjectorPath = projectorPath;
+    if (resolvedProjectorPath == null) {
+      try {
+        final parentDir = source.parent;
+        if (parentDir.existsSync()) {
+          final candidates = parentDir
+              .listSync()
+              .whereType<File>()
+              .where((f) =>
+                  f.path.toLowerCase().endsWith('.gguf') &&
+                  isProjectorFileName(p.basename(f.path)))
+              .toList();
+          if (candidates.isNotEmpty) {
+            final modelBase =
+                p.basenameWithoutExtension(sourcePath).toLowerCase();
+            final match = candidates.firstWhere(
+              (c) {
+                final cName =
+                    p.basenameWithoutExtension(c.path).toLowerCase();
+                final sharedTokens = modelBase
+                    .split(RegExp(r'[-_.]'))
+                    .where((t) => t.length > 2);
+                return sharedTokens.any((t) => cName.contains(t));
+              },
+              orElse: () => candidates.first,
+            );
+            resolvedProjectorPath = match.path;
+          }
+        }
+      } catch (_) {}
+    }
+
+    final dir = await _modelsDirectory();
     final id = _createId(originalName);
     final fileName = '$id-${_sanitizeFileName(originalName)}';
     final target = File(p.join(dir.path, fileName));
+    File? targetProjector;
 
     try {
       await source.copy(target.path);
       await _validateGgufFile(target);
 
+      if (resolvedProjectorPath != null) {
+        final projSource = File(resolvedProjectorPath);
+        if (await projSource.exists() &&
+            projSource.path.toLowerCase().endsWith('.gguf')) {
+          final projOriginalName = p.basename(resolvedProjectorPath);
+          final projFileName =
+              '$id-mmproj-${_sanitizeFileName(projOriginalName)}';
+          targetProjector = File(p.join(dir.path, projFileName));
+          await projSource.copy(targetProjector.path);
+          await _validateGgufFile(targetProjector);
+        }
+      }
+
       final metadata = ImportedGgufModelMetadata(
         id: id,
         name: _displayNameFromFileName(originalName),
         filePath: target.path,
+        projectorPath: targetProjector?.path,
         fileSizeBytes: await target.length(),
         importedAt: DateTime.now(),
         source: OnDeviceImportedSource.localFile,
@@ -202,12 +320,146 @@ class ImportedGgufModelRepository {
       if (await target.exists()) {
         await target.delete();
       }
+      if (targetProjector != null && await targetProjector.exists()) {
+        await targetProjector.delete();
+      }
       rethrow;
     }
   }
 
+  Future<List<ImportedGgufModelMetadata>> importFromPaths(
+    List<String> paths,
+  ) async {
+    if (paths.isEmpty) return [];
+    if (paths.length == 1) {
+      return [await importFromPath(paths.single)];
+    }
+
+    final projectors = paths
+        .where((filePath) => isProjectorFileName(p.basename(filePath)))
+        .toList();
+    final models = paths
+        .where((filePath) => !isProjectorFileName(p.basename(filePath)))
+        .toList();
+
+    if (models.isEmpty && projectors.isNotEmpty) {
+      throw const FormatException(
+        'All selected files appear to be vision projectors (mmproj). '
+        'Please select a main model file or attach these projectors to existing models.',
+      );
+    }
+
+    final results = <ImportedGgufModelMetadata>[];
+    if (models.length == 1 && projectors.isNotEmpty) {
+      results.add(
+        await importFromPath(models.single, projectorPath: projectors.first),
+      );
+      return results;
+    }
+
+    for (final modelPath in models) {
+      final modelBase = p.basenameWithoutExtension(modelPath).toLowerCase();
+      final matchingProjector = projectors.cast<String?>().firstWhere(
+        (projPath) {
+          if (projPath == null) return false;
+          final projBase =
+              p.basenameWithoutExtension(projPath).toLowerCase();
+          final sharedTokens = modelBase
+              .split(RegExp(r'[-_.]'))
+              .where((t) => t.length > 2);
+          return sharedTokens.any((t) => projBase.contains(t));
+        },
+        orElse: () => null,
+      );
+
+      results.add(
+        await importFromPath(modelPath, projectorPath: matchingProjector),
+      );
+    }
+
+    return results;
+  }
+
+  Future<ImportedGgufModelMetadata> attachProjector(
+    String modelId,
+    String projectorSourcePath,
+  ) async {
+    final projSource = File(projectorSourcePath);
+    if (!projectorSourcePath.toLowerCase().endsWith('.gguf')) {
+      throw const FormatException(
+        'Only GGUF projector files are supported.',
+      );
+    }
+    if (!await projSource.exists()) {
+      throw FileSystemException(
+        'Selected projector file does not exist',
+        projectorSourcePath,
+      );
+    }
+
+    final models = load();
+    final index = models.indexWhere((m) => m.id == modelId);
+    if (index < 0) {
+      throw StateError('Imported model no longer exists');
+    }
+
+    final dir = await _modelsDirectory();
+    final projOriginalName = p.basename(projectorSourcePath);
+    final projFileName =
+        '$modelId-mmproj-${_sanitizeFileName(projOriginalName)}';
+    final targetProjector = File(p.join(dir.path, projFileName));
+
+    try {
+      await projSource.copy(targetProjector.path);
+      await _validateGgufFile(targetProjector);
+
+      final oldProjPath = models[index].projectorPath;
+      if (oldProjPath != null && oldProjPath != targetProjector.path) {
+        final oldProj = File(oldProjPath);
+        if (await oldProj.exists() && p.isWithin(dir.path, oldProj.path)) {
+          await oldProj.delete();
+        }
+      }
+
+      final updated = models[index].copyWith(
+        projectorPath: targetProjector.path,
+      );
+      models[index] = updated;
+      await saveAll(models);
+      return updated;
+    } catch (_) {
+      if (await targetProjector.exists()) {
+        await targetProjector.delete();
+      }
+      rethrow;
+    }
+  }
+
+  Future<ImportedGgufModelMetadata> removeProjector(String modelId) async {
+    final models = load();
+    final index = models.indexWhere((m) => m.id == modelId);
+    if (index < 0) {
+      throw StateError('Imported model no longer exists');
+    }
+
+    final dir = await _modelsDirectory();
+    final oldProjPath = models[index].projectorPath;
+    if (oldProjPath != null) {
+      final oldProj = File(oldProjPath);
+      if (await oldProj.exists() && p.isWithin(dir.path, oldProj.path)) {
+        await oldProj.delete();
+      }
+    }
+
+    final updated = models[index].copyWith(projectorPath: null);
+    models[index] = updated;
+    await saveAll(models);
+    return updated;
+  }
+
   Future<ImportedGgufModelMetadata> importFromHuggingFaceUrl(
     String sourceUrl, {
+    String? projectorUrl,
     String? token,
     void Function(int receivedBytes, int totalBytes)? onProgress,
     CancelToken? cancelToken,
@@ -225,6 +477,8 @@ class ImportedGgufModelRepository {
     if (await tempFile.exists()) {
       await tempFile.delete();
     }
+
+    File? targetProjectorFile;
 
     try {
       await _dio.download(
@@ -254,10 +508,60 @@ class ImportedGgufModelRepository {
       await _validateGgufFile(tempFile);
       await tempFile.rename(targetPath);
 
+      if (projectorUrl != null && projectorUrl.trim().isNotEmpty) {
+        final normalizedProjUrl =
+            _normalizeHuggingFaceGgufUrl(projectorUrl.trim());
+        final projOriginalName = _fileNameFromUri(normalizedProjUrl);
+        final projFileName =
+            '$id-mmproj-${_sanitizeFileName(projOriginalName)}';
+        final projTargetPath = p.join(dir.path, projFileName);
+        final projTempPath = '$projTargetPath.part';
+        final projTempFile = File(projTempPath);
+        targetProjectorFile = File(projTargetPath);
+
+        if (await projTempFile.exists()) {
+          await projTempFile.delete();
+        }
+
+        try {
+          await _dio.download(
+            normalizedProjUrl.toString(),
+            projTempPath,
+            cancelToken: cancelToken,
+            options: Options(
+              headers: {
+                if (token != null && token.isNotEmpty)
+                  HttpHeaders.authorizationHeader: 'Bearer $token',
+              },
+              followRedirects: true,
+              receiveTimeout: const Duration(hours: 12),
+              sendTimeout: const Duration(minutes: 5),
+              validateStatus: (status) =>
+                  status != null && status >= 200 && status < 400,
+            ),
+          );
+
+          if (!await projTempFile.exists() ||
+              await projTempFile.length() <= 0) {
+            throw const FileSystemException(
+              'The downloaded projector GGUF file was empty or missing.',
+            );
+          }
+
+          await _validateGgufFile(projTempFile);
+          await projTempFile.rename(projTargetPath);
+        } finally {
+          if (await projTempFile.exists()) {
+            await projTempFile.delete();
+          }
+        }
+      }
+
       final metadata = ImportedGgufModelMetadata(
         id: id,
         name: _displayNameFromFileName(originalName),
         filePath: targetFile.path,
+        projectorPath: targetProjectorFile?.path,
         fileSizeBytes: await targetFile.length(),
         importedAt: DateTime.now(),
         source: OnDeviceImportedSource.huggingFace,
@@ -288,6 +592,12 @@ class ImportedGgufModelRepository {
         final file = File(model.filePath);
         if (await file.exists()) {
           await file.delete();
+        }
+        if (model.projectorPath != null) {
+          final projFile = File(model.projectorPath!);
+          if (await projFile.exists()) {
+            await projFile.delete();
+          }
         }
       } else {
         kept.add(model);

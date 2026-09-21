@@ -2822,6 +2822,24 @@
   "gguf_imported_section_label": "Imported GGUF",
   "gguf_already_available": "Already available on this device",
   "gguf_curated_models_short": "Curated on-device models",
+  "gguf_vision_projector": "Vision Projector",
+  "gguf_attach_projector": "Attach Vision Projector",
+  "gguf_change_projector": "Change Vision Projector",
+  "gguf_remove_projector": "Remove Projector",
+  "gguf_projector_attached": "Vision projector attached successfully",
+  "gguf_projector_removed": "Vision projector removed",
+  "gguf_projector_auto_detected": "Auto-detected and linked vision projector: {name}",
+  "@gguf_projector_auto_detected": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gguf_is_projector_file": "The selected file is a vision projector (mmproj), not a standalone model.",
+  "gguf_projector_url_label": "Vision Projector URL (optional mmproj)",
+  "gguf_projector_url_hint": "https://huggingface.co/.../mmproj-...gguf",
+  "gguf_vision_not_supported_error": "The active model does not support image attachments. Please attach a vision projector (mmproj) or select a vision-supported model.",
   "execute_tool_title": "Execute Tool",
   "execute_tool_request_desc": "The model is requesting to execute the following tool:",
   "reject": "Reject",

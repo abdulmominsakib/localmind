@@ -225,8 +225,14 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     return _repository.load().map((model) => model.toOnDeviceModel()).toList();
   }
 
-  Future<OnDeviceModel> importModel(String sourcePath) async {
-    final metadata = await _repository.importFromPath(sourcePath);
+  Future<OnDeviceModel> importModel(
+    String sourcePath, {
+    String? projectorPath,
+  }) async {
+    final metadata = await _repository.importFromPath(
+      sourcePath,
+      projectorPath: projectorPath,
+    );
     final model = metadata.toOnDeviceModel();
     if (ref.mounted) {
       state = [...state, model];
@@ -234,14 +240,47 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     return model;
   }
 
+  Future<List<OnDeviceModel>> importModels(List<String> paths) async {
+    final metadatas = await _repository.importFromPaths(paths);
+    final models = metadatas.map((m) => m.toOnDeviceModel()).toList();
+    if (ref.mounted) {
+      state = [...state, ...models];
+    }
+    return models;
+  }
+
+  Future<OnDeviceModel> attachProjector(
+    String modelId,
+    String projectorSourcePath,
+  ) async {
+    final metadata = await _repository.attachProjector(
+      modelId,
+      projectorSourcePath,
+    );
+    if (ref.mounted) {
+      state = _repository.load().map((m) => m.toOnDeviceModel()).toList();
+    }
+    return metadata.toOnDeviceModel();
+  }
+
+  Future<OnDeviceModel> removeProjector(String modelId) async {
+    final metadata = await _repository.removeProjector(modelId);
+    if (ref.mounted) {
+      state = _repository.load().map((m) => m.toOnDeviceModel()).toList();
+    }
+    return metadata.toOnDeviceModel();
+  }
+
   Future<OnDeviceModel> importModelFromHuggingFaceUrl(
     String sourceUrl, {
+    String? projectorUrl,
     String? huggingFaceToken,
     void Function(int receivedBytes, int totalBytes)? onProgress,
     CancelToken? cancelToken,
   }) async {
     final metadata = await _repository.importFromHuggingFaceUrl(
       sourceUrl,
+      projectorUrl: projectorUrl,
       token: huggingFaceToken,
       onProgress: onProgress,
       cancelToken: cancelToken,
