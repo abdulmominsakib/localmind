@@ -52,6 +52,36 @@ final activeChatTargetProvider = Provider<ActiveChatTarget>((ref) {
 
   final selected = ref.watch(selectedModelProvider);
   final selectedForServer = selected?.serverId == server.id ? selected : null;
+  if (server.type == ServerType.onDevice) {
+    final engine = ref.watch(onDeviceEngineProvider);
+    if (selectedForServer != null &&
+        engine.status == OnDeviceEngineStatus.loaded &&
+        engine.loadedModelId == selectedForServer.id) {
+      return ActiveChatTarget(
+        server: server,
+        selectedModel: selectedForServer,
+        effectiveModelId: selectedForServer.id,
+        modelLabel: selectedForServer.displayName,
+      );
+    }
+
+    final modelId = engine.status == OnDeviceEngineStatus.loaded
+        ? engine.loadedModelId
+        : null;
+    final model = modelId == null
+        ? null
+        : OnDeviceModel.allCuratedModels
+              .where((candidate) => candidate.id == modelId)
+              .firstOrNull;
+
+    return ActiveChatTarget(
+      server: server,
+      selectedModel: null,
+      effectiveModelId: modelId,
+      modelLabel: model?.name ?? modelId ?? 'No model',
+    );
+  }
+
   if (selectedForServer != null) {
     return ActiveChatTarget(
       server: server,
@@ -61,30 +91,11 @@ final activeChatTargetProvider = Provider<ActiveChatTarget>((ref) {
     );
   }
 
-  if (server.type != ServerType.onDevice) {
-    return ActiveChatTarget(
-      server: server,
-      selectedModel: null,
-      effectiveModelId: 'default',
-      modelLabel: 'Default model',
-    );
-  }
-
-  final engine = ref.watch(onDeviceEngineProvider);
-  final modelId = engine.status == OnDeviceEngineStatus.loaded
-      ? engine.loadedModelId
-      : null;
-  final model = modelId == null
-      ? null
-      : OnDeviceModel.allCuratedModels
-            .where((candidate) => candidate.id == modelId)
-            .firstOrNull;
-
   return ActiveChatTarget(
     server: server,
     selectedModel: null,
-    effectiveModelId: modelId,
-    modelLabel: model?.name ?? modelId ?? 'No model',
+    effectiveModelId: 'default',
+    modelLabel: 'Default model',
   );
 });
 

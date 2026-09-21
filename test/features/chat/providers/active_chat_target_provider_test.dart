@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/features/chat/providers/model_selection_providers.dart';
+import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
@@ -31,6 +32,31 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+
+    final target = container.read(activeChatTargetProvider);
+
+    expect(target.isReady, isFalse);
+    expect(target.effectiveModelId, isNull);
+    expect(target.modelLabel, 'No model');
+  });
+
+  test('does not treat a selected on-device model as ready until loaded', () {
+    final container = ProviderContainer(
+      overrides: [
+        activeServerProvider.overrideWith(_OnDeviceServerNotifier.new),
+        onDeviceEngineProvider.overrideWith(_EmptyEngineNotifier.new),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    container.read(selectedModelProvider.notifier).setModel(
+      ModelInfo(
+        id: 'apple-foundation-models',
+        name: 'Apple Foundation Models',
+        serverType: ServerType.onDevice,
+        serverId: 'on-device',
+      ),
+    );
 
     final target = container.read(activeChatTargetProvider);
 
