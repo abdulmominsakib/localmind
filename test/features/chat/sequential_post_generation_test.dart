@@ -16,6 +16,7 @@ import 'package:localmind/features/chat/providers/smart_reply_providers.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart';
 import 'package:localmind/features/models/data/models/model_info.dart';
+import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/settings/data/models/app_settings.dart';
@@ -83,6 +84,7 @@ void main() {
           chatServiceProvider.overrideWithValue(fakeChatService),
           activeServerProvider.overrideWith(_TestServerNotifier.new),
           selectedModelProvider.overrideWith(_TestModelNotifier.new),
+          onDeviceEngineProvider.overrideWith(_TestOnDeviceEngineNotifier.new),
           voiceModeProvider.overrideWith(_TestVoiceModeNotifier.new),
           settingsProvider.overrideWith(_TestSettingsNotifier.new),
         ],
@@ -170,6 +172,7 @@ void main() {
           chatServiceProvider.overrideWithValue(fakeChatService),
           activeServerProvider.overrideWith(_TestServerNotifier.new),
           selectedModelProvider.overrideWith(_TestModelNotifier.new),
+          onDeviceEngineProvider.overrideWith(_TestOnDeviceEngineNotifier.new),
           voiceModeProvider.overrideWith(_TestVoiceModeNotifier.new),
           settingsProvider.overrideWith(_TestSettingsNotifier.new),
         ],
@@ -284,6 +287,14 @@ class _TestModelNotifier extends SelectedModelNotifier {
     name: 'SmolLM2 135M',
     serverType: ServerType.onDevice,
     serverId: 'server-1',
+  );
+}
+
+class _TestOnDeviceEngineNotifier extends OnDeviceEngineNotifier {
+  @override
+  OnDeviceEngineState build() => const OnDeviceEngineState(
+    status: OnDeviceEngineStatus.loaded,
+    loadedModelId: 'smollm2-135m-instruct',
   );
 }
 
