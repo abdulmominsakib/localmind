@@ -1129,6 +1129,34 @@ void main() {
         expect(notifier.player.audioSource, isNull);
       },
     );
+
+    test('stopping playback can clear a previously loaded playlist', () async {
+      final tempFile = File(
+        '${Directory.systemTemp.path}/tts_chunk_test_86_clear.wav',
+      );
+      await tempFile.writeAsBytes(Uint8List(100));
+      final player = AudioPlayer();
+      addTearDown(() async {
+        await player.dispose();
+        if (await tempFile.exists()) await tempFile.delete();
+      });
+      await player.setAudioSources([
+        AudioSource.file(
+          tempFile.path,
+          tag: const MediaItem(
+            id: 'tts_chunk_clear',
+            album: 'LocalMind TTS',
+            title: 'Clear playlist',
+          ),
+        ),
+      ], preload: false);
+      expect(player.audioSources, hasLength(1));
+
+      await player.stop();
+      await player.clearAudioSources();
+
+      expect(player.audioSources, isEmpty);
+    });
   });
 }
 

@@ -41,6 +41,23 @@ void main() {
       );
     },
   );
+
+  test(
+    'startNewConversation stops safely when disposed during stream cleanup',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          activeServerProvider.overrideWith(_ConnectedServerNotifier.new),
+          onDeviceEngineProvider.overrideWith(_EmptyEngineNotifier.new),
+          chatProvider.overrideWith(_DisposedChatNotifier.new),
+        ],
+      );
+      final notifier = container.read(chatProvider.notifier);
+      container.dispose();
+
+      await expectLater(notifier.startNewConversation(), completes);
+    },
+  );
 }
 
 Message _dummyMessage() => Message(

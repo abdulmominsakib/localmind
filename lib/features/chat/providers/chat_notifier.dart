@@ -501,6 +501,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
   Future<void> startNewConversation() async {
     await _abortStreamImmediately();
+    if (!ref.mounted) return;
 
     _currentConversationId = null;
     _ephemeralConversationId = null;
@@ -778,6 +779,7 @@ class ChatNotifier extends Notifier<ChatState> {
     final chatService = ref.read(chatServiceProvider);
 
     await _abortStreamImmediately();
+    if (!ref.mounted) return;
 
     // Stop the STT listener so the mic doesn't stay red while the model
     // thinks. The chat input bar's `ref.listen` will re-start it once TTS
@@ -2033,6 +2035,7 @@ class ChatNotifier extends Notifier<ChatState> {
     if (server == null || _activeConversationId == null) return;
 
     await _abortStreamImmediately();
+    if (!ref.mounted) return;
 
     final assistantMessage = Message(
       id: generateUuid(),
@@ -2474,6 +2477,7 @@ class ChatNotifier extends Notifier<ChatState> {
             },
           );
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(
         isStreaming: false,
         errorMessage: e.toString(),

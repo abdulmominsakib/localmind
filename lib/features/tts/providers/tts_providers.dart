@@ -830,6 +830,7 @@ class TtsNotifier extends Notifier<TtsState> {
     _playlistBuffer.clear();
     _nextPlaylistIndexToAdd = 0;
     await _player.stop();
+    await _player.clearAudioSources();
 
     try {
       AudioSession.instance.then((session) {
@@ -1094,6 +1095,7 @@ class TtsNotifier extends Notifier<TtsState> {
     }
     try {
       await _player.stop();
+      await _player.clearAudioSources();
     } catch (_) {}
     await _flutterTts?.stop();
     _cleanupSessionFiles(_currentSessionId, _chunks.length);
