@@ -704,8 +704,8 @@ class ChatNotifier extends Notifier<ChatState> {
       return;
     }
 
-    final server = ref.read(activeServerProvider);
-    final selectedModel = ref.read(selectedModelProvider);
+    final target = ref.read(activeChatTargetProvider);
+    final server = target.server;
     final settings = ref.read(settingsProvider);
     if (server == null) return;
 
@@ -730,7 +730,7 @@ class ChatNotifier extends Notifier<ChatState> {
         .createConversation(
           title: initialTitle,
           serverId: server.id,
-          modelId: selectedModel?.id,
+          modelId: target.effectiveModelId,
           personaId: preselected.isEmpty
               ? null
               : PersonaPromptUtils.joinPersonaIds(
@@ -1927,6 +1927,10 @@ class ChatNotifier extends Notifier<ChatState> {
     if (assistant.role != MessageRole.assistant) return;
     if (state.isStreaming) return;
 
+    final target = ref.read(activeChatTargetProvider);
+    final effectiveModelId = target.effectiveModelId;
+    if (target.server == null || effectiveModelId == null) return;
+
     final streamingAssistant = assistant.copyWith(
       status: MessageStatus.streaming,
       isProcessing: true,
@@ -1949,7 +1953,8 @@ class ChatNotifier extends Notifier<ChatState> {
 
     await _runAssistantStream(
       streamingAssistant,
-      ref.read(selectedModelProvider),
+      target.selectedModel,
+      effectiveModelId: effectiveModelId,
       continueGeneration: true,
     );
   }
@@ -2042,9 +2047,15 @@ class ChatNotifier extends Notifier<ChatState> {
     required int threadOrder,
     required int variantIndex,
   }) async {
-    final selectedModel = ref.read(selectedModelProvider);
-    final server = ref.read(activeServerProvider);
-    if (server == null || _activeConversationId == null) return;
+    final target = ref.read(activeChatTargetProvider);
+    final selectedModel = target.selectedModel;
+    final server = target.server;
+    final effectiveModelId = target.effectiveModelId;
+    if (server == null ||
+        effectiveModelId == null ||
+        _activeConversationId == null) {
+      return;
+    }
 
     await _abortStreamImmediately();
     if (!ref.mounted) return;
@@ -2056,7 +2067,7 @@ class ChatNotifier extends Notifier<ChatState> {
       content: '',
       createdAt: DateTime.now(),
       status: MessageStatus.streaming,
-      modelId: selectedModel?.id,
+      modelId: effectiveModelId,
       variantGroupId: variantGroupId,
       variantIndex: variantIndex,
       threadOrder: threadOrder,
@@ -2079,7 +2090,11 @@ class ChatNotifier extends Notifier<ChatState> {
     _resetCheckpointMetrics();
     _updateSavedMetrics(assistantMessage);
 
-    await _runAssistantStream(assistantMessage, selectedModel);
+    await _runAssistantStream(
+      assistantMessage,
+      selectedModel,
+      effectiveModelId: effectiveModelId,
+    );
   }
 
   /// After successful tool execution (issue #77), build `tool` role messages
@@ -2216,12 +2231,17 @@ class ChatNotifier extends Notifier<ChatState> {
     // call, the same onDone flow will execute it again until the model
     // yields a final answer or `maxIterations` (enforced inside
     // `ToolExecutionLoop`) is reached.
-    await _runAssistantStream(continuationMessage, selectedModel);
+    await _runAssistantStream(
+      continuationMessage,
+      selectedModel,
+      effectiveModelId: effectiveModelId,
+    );
   }
 
   Future<void> _runAssistantStream(
     Message assistantMessage,
     ModelInfo? selectedModel, {
+    required String effectiveModelId,
     bool continueGeneration = false,
   }) async {
     final server = ref.read(activeServerProvider);
@@ -2287,7 +2307,7 @@ class ChatNotifier extends Notifier<ChatState> {
       _streamSubscription = chatService
           .sendMessage(
             server: server,
-            modelId: selectedModel?.id ?? 'default',
+            modelId: effectiveModelId,
             messages: messagesForApi,
             params: chatParams,
             integrations: integrations,
