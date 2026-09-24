@@ -337,7 +337,7 @@
   "name_length_validation": "Имя должно содержать не более 50 символов.",
   "host_valid": "Введите действительное имя хоста или IP-адрес.",
   "api_key_hint_openrouter": "ск-...",
-  "api_key_hint_requesty": "ск-...",
+  "api_key_hint_requesty": "rqsty-...",
   "api_key_hint_generic": "Для аутентифицированных серверов",
   "update_server": "Обновление сервера",
   "save_server": "Сохранить сервер",

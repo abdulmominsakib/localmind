@@ -1107,7 +1107,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get server_type_openrouter => '오픈라우터';
 
   @override
-  String get server_type_requesty => '오픈라우터';
+  String get server_type_requesty => 'Requesty';
 
   @override
   String get server_type_openrouter_sub => '통합 클라우드';
@@ -1339,7 +1339,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get server_type_openrouter_display => '오픈라우터';
 
   @override
-  String get server_type_requesty_display => '오픈라우터';
+  String get server_type_requesty_display => 'Requesty';
 
   @override
   String get server_type_on_device_display => '기기 내';

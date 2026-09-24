@@ -894,7 +894,7 @@ class ServerApiService {
       models.add(
         ModelInfo(
           id: id,
-          name: id,
+          name: item['name']?.toString() ?? id,
           description: item['description'] as String?,
           contextLength: _toInt(item['context_window']),
           serverType: server.type,

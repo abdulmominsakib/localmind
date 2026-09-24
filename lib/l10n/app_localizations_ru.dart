@@ -1212,7 +1212,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get api_key_hint_openrouter => 'ск-...';
 
   @override
-  String get api_key_hint_requesty => 'ск-...';
+  String get api_key_hint_requesty => 'rqsty-...';
 
   @override
   String get api_key_hint_generic => 'Для аутентифицированных серверов';

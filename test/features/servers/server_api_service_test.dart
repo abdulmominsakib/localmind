@@ -1186,6 +1186,7 @@ void main() {
                   'data': [
                     {
                       'id': 'claude-sonnet-4-5',
+                      'name': 'Claude Sonnet 4.5',
                       'api': 'chat',
                       'context_window': 1000000,
                       'input_price': 3e-06,
@@ -1206,6 +1207,7 @@ void main() {
         ]);
 
         final managed = models.first;
+        expect(managed.name, 'Claude Sonnet 4.5');
         expect(managed.contextLength, 1000000);
         expect(managed.supportsReasoning, isTrue);
         expect(managed.supportsToolUse, isTrue);
@@ -1213,6 +1215,7 @@ void main() {
         expect(managed.outputPricePerMillion, closeTo(15.0, 0.0001));
 
         final mini = models.last;
+        expect(mini.name, 'openai/gpt-4o-mini');
         expect(mini.serverType, ServerType.requesty);
         expect(mini.contextLength, 128000);
         expect(mini.supportsVision, isTrue);
