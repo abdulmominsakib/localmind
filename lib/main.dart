@@ -1,18 +1,32 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:marionette_flutter/marionette_flutter.dart';
+import 'package:marionette_logger/marionette_logger.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import 'bootstrap/bootstrap_host.dart';
+import 'core/logger/app_logger.dart';
 import 'core/services/crash_report_service.dart';
 import 'core/widgets/crash_error_widget.dart';
 
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(
     () async {
-      WidgetsFlutterBinding.ensureInitialized();
+      final isFlutterTest =
+          !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
+      if (!kReleaseMode && !isFlutterTest) {
+        final logCollector = LoggerLogCollector();
+        Log.attachOutput(logCollector);
+        MarionetteBinding.ensureInitialized(
+          MarionetteConfiguration(logCollector: logCollector),
+        );
+      } else {
+        WidgetsFlutterBinding.ensureInitialized();
+      }
       await pdfrxFlutterInitialize();
       final crashReports = CrashReportService.instance;
       await crashReports.initialize();

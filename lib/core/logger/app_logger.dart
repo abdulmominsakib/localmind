@@ -4,10 +4,18 @@ import 'package:logger/logger.dart';
 class Log {
   late Logger _logger;
   static const lineLength = 80;
+  static LogOutput? _additionalOutput;
 
   Log._internal() {
+    _initLogger();
+  }
+
+  void _initLogger() {
     if (kDebugMode) {
       _logger = Logger(
+        output: _additionalOutput != null
+            ? MultiOutput([ConsoleOutput(), _additionalOutput!])
+            : null,
         printer: PrettyPrinter(
           methodCount: 2,
           errorMethodCount: 8,
@@ -30,6 +38,11 @@ class Log {
         level: Level.off,
       );
     }
+  }
+
+  static void attachOutput(LogOutput output) {
+    _additionalOutput = output;
+    _singleton._initLogger();
   }
 
   static final Log _singleton = Log._internal();
