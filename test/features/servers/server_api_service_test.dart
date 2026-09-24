@@ -1124,6 +1124,123 @@ void main() {
     });
   });
 
+  group('ServerApiService - Requesty model parsing', () {
+    late Server requestyServer;
+
+    setUp(() {
+      requestyServer = Server(
+        id: 'test-requesty',
+        name: 'Test Requesty',
+        type: ServerType.requesty,
+        host: '',
+        port: 443,
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        lastConnectedAt: DateTime.now(),
+      );
+    });
+
+    test('uses the Requesty router endpoints', () {
+      expect(requestyServer.baseUrl, 'https://router.requesty.ai/v1');
+      expect(
+        requestyServer.chatEndpoint,
+        'https://router.requesty.ai/v1/chat/completions',
+      );
+      expect(
+        requestyServer.modelsEndpoint,
+        'https://router.requesty.ai/v1/models',
+      );
+      expect(requestyServer.displayAddress, 'router.requesty.ai');
+    });
+
+    test(
+      'lists managed policies first, then the catalog without duplicates',
+      () async {
+        final service = ServerApiService(
+          Dio()
+            ..interceptors.add(
+              RoutingInterceptor({
+                'GET https://router.requesty.ai/v1/models': {
+                  'object': 'list',
+                  'data': [
+                    {
+                      'id': 'openai/gpt-4o-mini',
+                      'api': 'chat',
+                      'context_window': 128000,
+                      'input_price': 1.5e-07,
+                      'output_price': 6e-07,
+                      'supports_vision': true,
+                      'supports_tool_calling': true,
+                      'supports_reasoning': false,
+                    },
+                    {
+                      'id': 'claude-sonnet-4-5',
+                      'api': 'chat',
+                      'context_window': 200000,
+                    },
+                    {'id': 'openai/text-embedding-3-small', 'api': 'embedding'},
+                  ],
+                },
+                'GET https://router.requesty.ai/v1/models/managed': {
+                  'object': 'list',
+                  'data': [
+                    {
+                      'id': 'claude-sonnet-4-5',
+                      'api': 'chat',
+                      'context_window': 1000000,
+                      'input_price': 3e-06,
+                      'output_price': 1.5e-05,
+                      'supports_reasoning': true,
+                      'supports_tool_calling': true,
+                    },
+                  ],
+                },
+              }),
+            ),
+        );
+        final models = await service.fetchModels(requestyServer);
+
+        expect(models.map((m) => m.id), [
+          'claude-sonnet-4-5',
+          'openai/gpt-4o-mini',
+        ]);
+
+        final managed = models.first;
+        expect(managed.contextLength, 1000000);
+        expect(managed.supportsReasoning, isTrue);
+        expect(managed.supportsToolUse, isTrue);
+        expect(managed.inputPricePerMillion, closeTo(3.0, 0.0001));
+        expect(managed.outputPricePerMillion, closeTo(15.0, 0.0001));
+
+        final mini = models.last;
+        expect(mini.serverType, ServerType.requesty);
+        expect(mini.contextLength, 128000);
+        expect(mini.supportsVision, isTrue);
+        expect(mini.supportsReasoning, isFalse);
+        expect(mini.pricingLabel, '\$0.15/\$0.60');
+      },
+    );
+
+    test('falls back to the catalog when managed models fail', () async {
+      final service = ServerApiService(
+        Dio()
+          ..interceptors.add(
+            RoutingInterceptor({
+              'GET https://router.requesty.ai/v1/models': {
+                'object': 'list',
+                'data': [
+                  {'id': 'openai/gpt-4o-mini', 'api': 'chat'},
+                ],
+              },
+            }),
+          ),
+      );
+      final models = await service.fetchModels(requestyServer);
+
+      expect(models.map((m) => m.id), ['openai/gpt-4o-mini']);
+    });
+  });
+
   group('ServerApiService - LM Studio load model behavior', () {
     late Server lmStudioServer;
 
