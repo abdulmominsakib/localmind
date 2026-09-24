@@ -66,7 +66,9 @@ class MessageArea extends ConsumerWidget {
 
     if (messages.isEmpty) {
       final activeServer = ref.watch(activeServerProvider);
-      final isCloudProvider = activeServer?.type == ServerType.openRouter;
+      final isCloudProvider =
+          activeServer?.type == ServerType.openRouter ||
+          activeServer?.type == ServerType.requesty;
 
       return EmptyState(
         isCloudProvider: isCloudProvider,

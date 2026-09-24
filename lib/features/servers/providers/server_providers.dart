@@ -122,7 +122,8 @@ final loadedModelsProvider = FutureProvider.family<Set<String>, Server>((
   }
 
   if (server.type == ServerType.openAICompatible ||
-      server.type == ServerType.openRouter) {
+      server.type == ServerType.openRouter ||
+      server.type == ServerType.requesty) {
     return <String>{};
   }
 

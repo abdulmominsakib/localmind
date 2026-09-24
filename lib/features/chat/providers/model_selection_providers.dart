@@ -201,6 +201,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
   // list fetch for users who never set one).
   if (!hasDefaultForServer &&
       (activeServer.type == ServerType.openRouter ||
+          activeServer.type == ServerType.requesty ||
           activeServer.type == ServerType.openAICompatible)) {
     return;
   }
@@ -260,6 +261,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
     // Cloud providers fall back to no selection when the configured default
     // isn't among the available models.
     if (activeServer.type == ServerType.openRouter ||
+        activeServer.type == ServerType.requesty ||
         activeServer.type == ServerType.openAICompatible) {
       return;
     }

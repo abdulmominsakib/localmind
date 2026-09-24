@@ -20,14 +20,14 @@ LocalMind is a premium Flutter mobile application designed to provide a beautifu
 
 ## Vision
 
-Built for those who value privacy and performance, LocalMind connects directly to your local inference servers like **LM Studio** or **Ollama**, as well as cloud providers like **OpenRouter**. No middleware, no tracking, and no hidden subscriptions. Just you and your models.
+Built for those who value privacy and performance, LocalMind connects directly to your local inference servers like **LM Studio** or **Ollama**, as well as cloud providers like **OpenRouter** or **Requesty**. No middleware, no tracking, and no hidden subscriptions. Just you and your models.
 
 ## Key Features
 
 - **On-Device AI Support (iOS & Android)**: Private, fast, and offline. Run powerful GGUF and LiteRT models (Gemma, Qwen, DeepSeek R1) directly on your device via `llamadart` and `flutter_gemma`. No internet connection required.
 - **Model Context Protocol (MCP)**: Seamlessly connect to local or remote MCP servers. Grant models access to custom tools and integrations (e.g., file access, web APIs, shell actions) with fine-grained global and chat-level toggles.
 - **Model Manager**: Download curated models or download GGUF models directly from HuggingFace. Manage model files directly within the app.
-- **Multi-Server Connection**: Connect to Ollama, LM Studio, OpenRouter, or any OpenAI-compatible API with real-time server health and speed monitoring.
+- **Multi-Server Connection**: Connect to Ollama, LM Studio, OpenRouter, Requesty, or any OpenAI-compatible API with real-time server health and speed monitoring.
 - **Premium Chat Experience**: A polished, Claude/ChatGPT-inspired user interface featuring:
   - **Streaming Responses**: Real-time SSE support for instant generation.
   - **Markdown Rendering**: Beautiful rendering of text and code with rich syntax highlighting.

@@ -49,6 +49,9 @@ String displayServerAddress(
   if (type == ServerType.openRouter) {
     return 'openrouter.ai';
   }
+  if (type == ServerType.requesty) {
+    return 'router.requesty.ai';
+  }
   if (type == ServerType.ollamaCloud) {
     return 'ollama.com';
   }
@@ -86,6 +89,9 @@ String displayServerAddress(
 String buildServerBaseUrl(String host, int port, ServerType type) {
   if (type == ServerType.openRouter) {
     return 'https://openrouter.ai/api/v1';
+  }
+  if (type == ServerType.requesty) {
+    return AppConstants.requestyBaseUrl;
   }
   if (type == ServerType.ollamaCloud) {
     return AppConstants.ollamaCloudBaseUrl;
@@ -210,6 +216,7 @@ class Server {
       case ServerType.ollamaCloud:
         return '$baseUrl${_apiPath('/api/chat')}';
       case ServerType.openRouter:
+      case ServerType.requesty:
         return '$baseUrl/chat/completions';
       case ServerType.onDevice:
         return '';
@@ -226,6 +233,7 @@ class Server {
       case ServerType.ollamaCloud:
         return '$baseUrl${_apiPath('/api/tags')}';
       case ServerType.openRouter:
+      case ServerType.requesty:
         return '$baseUrl/models';
       case ServerType.onDevice:
         return '';
@@ -243,6 +251,7 @@ class Server {
       case ServerType.ollamaCloud:
       case ServerType.openRouter:
       case ServerType.onDevice:
+      case ServerType.requesty:
         return '';
     }
   }
@@ -256,6 +265,7 @@ class Server {
       case ServerType.openAICompatible:
       case ServerType.openRouter:
       case ServerType.onDevice:
+      case ServerType.requesty:
         return '';
     }
   }
@@ -271,6 +281,7 @@ class Server {
       case ServerType.ollamaCloud:
       case ServerType.openRouter:
       case ServerType.onDevice:
+      case ServerType.requesty:
         return '';
     }
   }
@@ -286,6 +297,7 @@ class Server {
       case ServerType.ollamaCloud:
       case ServerType.openRouter:
       case ServerType.onDevice:
+      case ServerType.requesty:
         return '';
     }
   }

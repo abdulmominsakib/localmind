@@ -71,6 +71,10 @@ class _OnboardingServerSetupScreenState
         defaultName = 'OpenRouter';
         defaultPort = '443';
         break;
+      case ServerType.requesty:
+        defaultName = 'Requesty';
+        defaultPort = '443';
+        break;
       case ServerType.onDevice:
         defaultName = 'On-Device';
         defaultPort = '0';
@@ -94,6 +98,7 @@ class _OnboardingServerSetupScreenState
       ServerType.ollama => AppConstants.ollamaDefaultPort,
       ServerType.ollamaCloud => AppConstants.ollamaCloudDefaultPort,
       ServerType.openRouter => 443,
+      ServerType.requesty => 443,
       ServerType.onDevice => 0,
     };
   }
@@ -182,6 +187,7 @@ class _OnboardingServerSetupScreenState
 
   bool get _isCloudProvider =>
       widget.selectedType == ServerType.openRouter ||
+      widget.selectedType == ServerType.requesty ||
       widget.selectedType == ServerType.ollamaCloud;
 
   String? _validateHost(String? value) {
@@ -306,6 +312,7 @@ class _OnboardingServerSetupScreenState
     final theme = Theme.of(context);
     final isCloud = _isCloudProvider;
     final isOllamaCloud = widget.selectedType == ServerType.ollamaCloud;
+    final isRequesty = widget.selectedType == ServerType.requesty;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.setup_connection)),
@@ -382,6 +389,8 @@ class _OnboardingServerSetupScreenState
                           hintText: isCloud
                               ? (isOllamaCloud
                                     ? l10n.api_key_hint_ollama_cloud
+                                    : isRequesty
+                                    ? l10n.api_key_hint_requesty
                                     : l10n.api_key_hint_openrouter)
                               : null,
                         ),
@@ -389,6 +398,8 @@ class _OnboardingServerSetupScreenState
                           if (isCloud && (val == null || val.trim().isEmpty)) {
                             return isOllamaCloud
                                 ? l10n.api_key_required_ollama_cloud
+                                : isRequesty
+                                ? l10n.api_key_required_requesty
                                 : l10n.api_key_required_openrouter;
                           }
                           if (isCloud &&
@@ -429,6 +440,8 @@ class _OnboardingServerSetupScreenState
                                 child: Text(
                                   isOllamaCloud
                                       ? l10n.ollama_cloud_disclosure
+                                      : isRequesty
+                                      ? l10n.requesty_disclosure
                                       : l10n.openrouter_disclosure,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurface

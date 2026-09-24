@@ -207,6 +207,7 @@ enum ServerType {
   ollamaCloud,
   openRouter,
   onDevice,
+  requesty,
 }
 
 enum ConnectionStatus { connected, disconnected, checking, error }

@@ -206,6 +206,11 @@ void main() {
       expect(adapter, isA<OpenRouterToolAdapter>());
     });
 
+    test('uses OpenAI adapter for Requesty servers', () {
+      final adapter = createAdapterForServerType(ServerType.requesty);
+      expect(adapter, isA<OpenAiToolAdapter>());
+    });
+
     test('uses Ollama adapter for Ollama servers', () {
       final adapter = createAdapterForServerType(ServerType.ollama);
       expect(adapter, isA<OllamaToolAdapter>());
