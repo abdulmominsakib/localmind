@@ -1115,6 +1115,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'اتصل عبر OpenRouter باستخدام مفتاح API صالح واحتفظ بهذا الملف الشخصي جاهزًا لتوجيه النماذج.';
 
   @override
+  String get add_server_requesty_subtitle =>
+      'اتصل عبر Requesty باستخدام مفتاح API صالح واحتفظ بهذا الملف الشخصي جاهزًا لتوجيه النماذج.';
+
+  @override
   String get add_server_endpoint_subtitle =>
       'قم بتكوين نقطة نهاية محلية أو مستضافة ذاتيًا، ثم تحقق من الاتصال قبل الحفظ.';
 
@@ -1122,7 +1126,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get server_type_openrouter => 'OpenRouter';
 
   @override
+  String get server_type_requesty => 'Requesty';
+
+  @override
   String get server_type_openrouter_sub => 'سحابة موحدة';
+
+  @override
+  String get server_type_requesty_sub => 'سحابة موحدة';
 
   @override
   String get ready_continue => 'جاهز للمتابعة';
@@ -1175,6 +1185,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get api_key_required_openrouter => 'مفتاح API مطلوب لـ OpenRouter';
 
   @override
+  String get api_key_required_requesty => 'مفتاح API مطلوب لـ Requesty';
+
+  @override
   String get api_key_format => 'مفاتيح OpenRouter API تبدأ بـ sk-';
 
   @override
@@ -1188,6 +1201,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get api_key_hint_openrouter => 'sk-...';
+
+  @override
+  String get api_key_hint_requesty => 'rqsty-...';
 
   @override
   String get api_key_hint_generic => 'للخوادم الموثقة';
@@ -1347,10 +1363,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get server_type_openrouter_display => 'OpenRouter';
 
   @override
+  String get server_type_requesty_display => 'Requesty';
+
+  @override
   String get server_type_on_device_display => 'محلي';
 
   @override
   String get server_address_openrouter => 'openrouter.ai';
+
+  @override
+  String get server_address_requesty => 'router.requesty.ai';
 
   @override
   String get server_address_on_device => 'استدلال محلي';
@@ -2246,6 +2268,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'OpenRouter requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_requesty =>
+      'Requesty requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -2891,6 +2917,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get openrouter_disclosure =>
+      'من خلال الاتصال بهذا المزود، سيتم إرسال رسائل الدردشة والمدخلات الخاصة بك إلى خوادمهم. لا يتتبع LocalMind محادثاتك أو يخزنها.';
+
+  @override
+  String get requesty_disclosure =>
       'من خلال الاتصال بهذا المزود، سيتم إرسال رسائل الدردشة والمدخلات الخاصة بك إلى خوادمهم. لا يتتبع LocalMind محادثاتك أو يخزنها.';
 
   @override

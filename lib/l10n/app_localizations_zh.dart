@@ -1084,13 +1084,23 @@ class AppLocalizationsZh extends AppLocalizations {
       '使用有效的 API 密钥通过 OpenRouter 连接，并为此配置文件做好模型路由准备。';
 
   @override
+  String get add_server_requesty_subtitle =>
+      '使用有效的 API 密钥通过 Requesty 连接，并为此配置文件做好模型路由准备。';
+
+  @override
   String get add_server_endpoint_subtitle => '配置本地或自托管端点，然后在保存前验证连接。';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
 
   @override
+  String get server_type_requesty => 'Requesty';
+
+  @override
   String get server_type_openrouter_sub => '统一云';
+
+  @override
+  String get server_type_requesty_sub => '统一云';
 
   @override
   String get ready_continue => '准备好继续';
@@ -1143,6 +1153,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get api_key_required_openrouter => 'OpenRouter 需要 API 密钥';
 
   @override
+  String get api_key_required_requesty => 'Requesty 需要 API 密钥';
+
+  @override
   String get api_key_format => 'OpenRouter API 密钥以 sk- 开头';
 
   @override
@@ -1156,6 +1169,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get api_key_hint_openrouter => 'sk-...';
+
+  @override
+  String get api_key_hint_requesty => 'rqsty-...';
 
   @override
   String get api_key_hint_generic => '适用于已验证的服务器';
@@ -1310,10 +1326,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get server_type_openrouter_display => 'OpenRouter';
 
   @override
+  String get server_type_requesty_display => 'Requesty';
+
+  @override
   String get server_type_on_device_display => '设备端';
 
   @override
   String get server_address_openrouter => 'openrouter.ai';
+
+  @override
+  String get server_address_requesty => 'router.requesty.ai';
 
   @override
   String get server_address_on_device => '本地推理';
@@ -2200,6 +2222,10 @@ class AppLocalizationsZh extends AppLocalizations {
       'OpenRouter requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_requesty =>
+      'Requesty requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -2825,6 +2851,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get openrouter_disclosure =>
+      '连接此提供商后，您的聊天消息和输入将被发送到他们的服务器。LocalMind 不会跟踪或存储您的对话。';
+
+  @override
+  String get requesty_disclosure =>
       '连接此提供商后，您的聊天消息和输入将被发送到他们的服务器。LocalMind 不会跟踪或存储您的对话。';
 
   @override
@@ -4115,13 +4145,23 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '使用有效的 API 金鑰透過 OpenRouter 連線，並為此設定檔做好模型路由準備。';
 
   @override
+  String get add_server_requesty_subtitle =>
+      '使用有效的 API 金鑰透過 Requesty 連線，並為此設定檔做好模型路由準備。';
+
+  @override
   String get add_server_endpoint_subtitle => '設定本地或自託管端點，並在儲存前驗證連線。';
 
   @override
   String get server_type_openrouter => 'OpenRouter';
 
   @override
+  String get server_type_requesty => 'Requesty';
+
+  @override
   String get server_type_openrouter_sub => '統一雲端';
+
+  @override
+  String get server_type_requesty_sub => '統一雲端';
 
   @override
   String get ready_continue => '準備好繼續';
@@ -4174,6 +4214,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get api_key_required_openrouter => 'OpenRouter 需要 API 金鑰';
 
   @override
+  String get api_key_required_requesty => 'Requesty 需要 API 金鑰';
+
+  @override
   String get api_key_format => 'OpenRouter API 金鑰以 sk- 開頭';
 
   @override
@@ -4187,6 +4230,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get api_key_hint_openrouter => 'sk-...';
+
+  @override
+  String get api_key_hint_requesty => 'rqsty-...';
 
   @override
   String get api_key_hint_generic => '適用於已驗證的伺服器';
@@ -4341,10 +4387,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get server_type_openrouter_display => 'OpenRouter';
 
   @override
+  String get server_type_requesty_display => 'Requesty';
+
+  @override
   String get server_type_on_device_display => '裝置端';
 
   @override
   String get server_address_openrouter => 'openrouter.ai';
+
+  @override
+  String get server_address_requesty => 'router.requesty.ai';
 
   @override
   String get server_address_on_device => '本機推論';
@@ -5192,6 +5244,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       'OpenRouter requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_requesty =>
+      'Requesty requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -5817,6 +5873,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get openrouter_disclosure =>
+      '連接此提供者後，您的聊天訊息和輸入將被發送到他們的伺服器。LocalMind 不會追蹤或儲存您的對話。';
+
+  @override
+  String get requesty_disclosure =>
       '連接此提供者後，您的聊天訊息和輸入將被發送到他們的伺服器。LocalMind 不會追蹤或儲存您的對話。';
 
   @override

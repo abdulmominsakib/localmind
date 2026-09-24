@@ -53,6 +53,7 @@ abstract class ChatService {
           imageCompressionLevel: imageCompressionLevel,
         );
       case ServerType.openAICompatible:
+      case ServerType.requesty:
         return OpenAICompatibleChatService(
           dio,
           imageCompressionEnabled: imageCompressionEnabled,
@@ -1681,6 +1682,7 @@ ToolTransportAdapter createAdapterForServerType(ServerType type) =>
     switch (type) {
       ServerType.openAICompatible => OpenAiToolAdapter(),
       ServerType.openRouter => OpenRouterToolAdapter(),
+      ServerType.requesty => OpenAiToolAdapter(),
       ServerType.lmStudio => OpenAiToolAdapter(),
       ServerType.onDevice => OpenAiToolAdapter(),
       ServerType.ollama => OllamaToolAdapter(),

@@ -226,6 +226,19 @@ class _OnboardingServerTypeScreenState
                                     ),
                                     theme: theme,
                                   ),
+                                  _buildServerCard(
+                                    type: ServerType.requesty,
+                                    title: l10n.server_type_requesty,
+                                    subtitle: l10n.server_type_requesty_sub,
+                                    iconWidget: HugeIcon(
+                                      icon: HugeIcons.strokeRoundedAiNetwork,
+                                      color:
+                                          _selectedType == ServerType.requesty
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                    ),
+                                    theme: theme,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 12),

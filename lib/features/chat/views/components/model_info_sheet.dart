@@ -61,7 +61,8 @@ Future<void> showModelInfoSheet(
             label: l10n.context_length,
             value: contextLength.toString(),
           ),
-          if (model?.serverType == ServerType.openRouter &&
+          if ((model?.serverType == ServerType.openRouter ||
+                  model?.serverType == ServerType.requesty) &&
               model?.pricingLabel != null)
             _ModelInfoRow(
               label: l10n.model_api_pricing,

@@ -1117,6 +1117,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Connect through OpenRouter with a valid API key and keep this profile ready for model routing.';
 
   @override
+  String get add_server_requesty_subtitle =>
+      'Connect through Requesty with a valid API key and keep this profile ready for model routing.';
+
+  @override
   String get add_server_endpoint_subtitle =>
       'Configure a local or self-hosted endpoint, then verify the connection before saving.';
 
@@ -1124,7 +1128,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get server_type_openrouter => 'OpenRouter';
 
   @override
+  String get server_type_requesty => 'Requesty';
+
+  @override
   String get server_type_openrouter_sub => 'UNIFIED CLOUD';
+
+  @override
+  String get server_type_requesty_sub => 'UNIFIED CLOUD';
 
   @override
   String get ready_continue => 'READY TO CONTINUE';
@@ -1177,6 +1187,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get api_key_required_openrouter => 'API Key required for OpenRouter';
 
   @override
+  String get api_key_required_requesty => 'API Key required for Requesty';
+
+  @override
   String get api_key_format => 'OpenRouter API keys start with sk-';
 
   @override
@@ -1190,6 +1203,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get api_key_hint_openrouter => 'sk-...';
+
+  @override
+  String get api_key_hint_requesty => 'rqsty-...';
 
   @override
   String get api_key_hint_generic => 'For authenticated servers';
@@ -1349,10 +1365,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get server_type_openrouter_display => 'OpenRouter';
 
   @override
+  String get server_type_requesty_display => 'Requesty';
+
+  @override
   String get server_type_on_device_display => 'On-Device';
 
   @override
   String get server_address_openrouter => 'openrouter.ai';
+
+  @override
+  String get server_address_requesty => 'router.requesty.ai';
 
   @override
   String get server_address_on_device => 'Local inference';
@@ -2256,6 +2278,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'OpenRouter requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_requesty =>
+      'Requesty requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -2908,6 +2934,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get openrouter_disclosure =>
+      'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.';
+
+  @override
+  String get requesty_disclosure =>
       'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.';
 
   @override

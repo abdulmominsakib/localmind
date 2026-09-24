@@ -1502,6 +1502,10 @@
   "@add_server_openrouter_subtitle": {
     "description": "Add server screen subtitle for OpenRouter"
   },
+  "add_server_requesty_subtitle": "Connect through Requesty with a valid API key and keep this profile ready for model routing.",
+  "@add_server_requesty_subtitle": {
+    "description": "Add server screen subtitle for Requesty"
+  },
   "add_server_endpoint_subtitle": "Configure a local or self-hosted endpoint, then verify the connection before saving.",
   "@add_server_endpoint_subtitle": {
     "description": "Add server screen subtitle for endpoint-based servers"
@@ -1510,9 +1514,17 @@
   "@server_type_openrouter": {
     "description": "OpenRouter server type card title"
   },
+  "server_type_requesty": "Requesty",
+  "@server_type_requesty": {
+    "description": "Requesty server type card title"
+  },
   "server_type_openrouter_sub": "UNIFIED CLOUD",
   "@server_type_openrouter_sub": {
     "description": "OpenRouter server type card subtitle"
+  },
+  "server_type_requesty_sub": "UNIFIED CLOUD",
+  "@server_type_requesty_sub": {
+    "description": "Requesty server type card subtitle"
   },
   "ready_continue": "READY TO CONTINUE",
   "@ready_continue": {
@@ -1584,6 +1596,10 @@
   "@api_key_required_openrouter": {
     "description": "Validation: API key for OpenRouter"
   },
+  "api_key_required_requesty": "API Key required for Requesty",
+  "@api_key_required_requesty": {
+    "description": "Validation: API key for Requesty"
+  },
   "api_key_format": "OpenRouter API keys start with sk-",
   "@api_key_format": {
     "description": "Validation: API key format"
@@ -1603,6 +1619,10 @@
   "api_key_hint_openrouter": "sk-...",
   "@api_key_hint_openrouter": {
     "description": "OpenRouter API key hint"
+  },
+  "api_key_hint_requesty": "rqsty-...",
+  "@api_key_hint_requesty": {
+    "description": "Requesty API key hint"
   },
   "api_key_hint_generic": "For authenticated servers",
   "@api_key_hint_generic": {
@@ -1842,6 +1862,10 @@
   "@server_type_openrouter_display": {
     "description": "OpenRouter server type display"
   },
+  "server_type_requesty_display": "Requesty",
+  "@server_type_requesty_display": {
+    "description": "Requesty server type display"
+  },
   "server_type_on_device_display": "On-Device",
   "@server_type_on_device_display": {
     "description": "On-device server type display"
@@ -1849,6 +1873,10 @@
   "server_address_openrouter": "openrouter.ai",
   "@server_address_openrouter": {
     "description": "OpenRouter default address"
+  },
+  "server_address_requesty": "router.requesty.ai",
+  "@server_address_requesty": {
+    "description": "Requesty default address"
   },
   "server_address_on_device": "Local inference",
   "@server_address_on_device": {
@@ -2851,6 +2879,7 @@
   "server_connection_desc": "Use the address and port exposed by your server.",
   "server_authentication_title": "Authentication",
   "server_authentication_required_desc": "OpenRouter requires an API key before testing.",
+  "server_authentication_required_desc_requesty": "Requesty requires an API key before testing.",
   "server_authentication_optional_desc": "Leave the API key empty if this server does not require one.",
   "mcp_tools_title": "MCP Tools",
   "available_tools": "Available tools",
@@ -3215,6 +3244,10 @@
   "openrouter_disclosure": "By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.",
   "@openrouter_disclosure": {
     "description": "Disclosure shown when connecting to OpenRouter about data being sent to their servers"
+  },
+  "requesty_disclosure": "By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.",
+  "@requesty_disclosure": {
+    "description": "Disclosure shown when connecting to Requesty about data being sent to their servers"
   },
   "welcome_message_cloud": "Your messages are sent to your connected provider.",
   "@welcome_message_cloud": {

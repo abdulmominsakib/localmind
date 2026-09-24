@@ -99,6 +99,9 @@ class ServerApiService {
         case ServerType.openRouter:
           models = _parseOpenRouterModels(response.data, server);
           break;
+        case ServerType.requesty:
+          models = await _fetchRequestyModels(response.data, server);
+          break;
         case ServerType.onDevice:
           models = [];
           break;
@@ -117,6 +120,7 @@ class ServerApiService {
 
   Future<Set<String>> fetchRunningModels(Server server) async {
     if (server.type == ServerType.openRouter ||
+        server.type == ServerType.requesty ||
         server.type == ServerType.openAICompatible ||
         server.type == ServerType.onDevice) {
       return {};
@@ -139,6 +143,7 @@ class ServerApiService {
 
   Future<void> loadModel(Server server, String modelId) async {
     if (server.type == ServerType.openRouter ||
+        server.type == ServerType.requesty ||
         server.type == ServerType.onDevice) {
       return;
     }
@@ -164,6 +169,7 @@ class ServerApiService {
         // user wants.
         return;
       case ServerType.openRouter:
+      case ServerType.requesty:
       case ServerType.onDevice:
         break;
     }
@@ -175,6 +181,7 @@ class ServerApiService {
     int? contextLength,
   }) async {
     if (server.type == ServerType.openRouter ||
+        server.type == ServerType.requesty ||
         server.type == ServerType.onDevice) {
       return null;
     }
@@ -223,6 +230,7 @@ class ServerApiService {
         // user wants.
         return null;
       case ServerType.openRouter:
+      case ServerType.requesty:
       case ServerType.onDevice:
         return null;
     }
@@ -256,6 +264,7 @@ class ServerApiService {
     String? instanceId,
   }) async {
     if (server.type == ServerType.openRouter ||
+        server.type == ServerType.requesty ||
         server.type == ServerType.onDevice) {
       return;
     }
@@ -285,6 +294,7 @@ class ServerApiService {
         // unload action is supported.
         return;
       case ServerType.openRouter:
+      case ServerType.requesty:
       case ServerType.onDevice:
         break;
     }
@@ -844,6 +854,62 @@ class ServerApiService {
     final parsed = double.tryParse(value.toString());
     if (parsed == null || !parsed.isFinite || parsed < 0) return null;
     return parsed * 1000000;
+  }
+
+  /// Requesty's `/models` endpoint returns the full catalog (only the
+  /// org-approved models when a key is sent). Managed policies from
+  /// `/models/managed` are listed first, since they are the curated,
+  /// multi-provider ids most users should pick. If that call fails the
+  /// catalog alone is returned.
+  Future<List<ModelInfo>> _fetchRequestyModels(
+    dynamic catalogData,
+    Server server,
+  ) async {
+    final catalog = _parseRequestyModels(catalogData, server);
+    List<ModelInfo> managed = const [];
+    try {
+      final response = await _dio.get(
+        '${server.baseUrl}/models/managed',
+        options: Options(headers: buildServerAuthHeaders(server)),
+      );
+      managed = _parseRequestyModels(response.data, server);
+    } catch (e) {
+      Log.warning('Failed to fetch Requesty managed models: $e');
+    }
+    final managedIds = managed.map((m) => m.id).toSet();
+    return [...managed, ...catalog.where((m) => !managedIds.contains(m.id))];
+  }
+
+  List<ModelInfo> _parseRequestyModels(dynamic data, Server server) {
+    final List<ModelInfo> models = [];
+    if (data is! Map) return models;
+    final items = data['data'];
+    if (items is! List) return models;
+    for (final item in items) {
+      if (item is! Map) continue;
+      final id = item['id']?.toString() ?? '';
+      if (id.isEmpty) continue;
+      final api = item['api']?.toString();
+      if (api != null && api != 'chat') continue;
+      models.add(
+        ModelInfo(
+          id: id,
+          name: id,
+          description: item['description'] as String?,
+          contextLength: _toInt(item['context_window']),
+          serverType: server.type,
+          serverId: server.id,
+          supportsVision: item['supports_vision'] == true,
+          supportsReasoning: item['supports_reasoning'] == true,
+          supportsToolUse: item['supports_tool_calling'] == true,
+          inputPricePerMillion: _openRouterPricePerMillion(item['input_price']),
+          outputPricePerMillion: _openRouterPricePerMillion(
+            item['output_price'],
+          ),
+        ),
+      );
+    }
+    return models;
   }
 
   String _formatModelName(String id) {

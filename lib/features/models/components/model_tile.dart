@@ -166,7 +166,8 @@ class ModelTile extends StatelessWidget {
                               ),
                               isDark: isDark,
                             ),
-                          if (model.serverType == ServerType.openRouter &&
+                          if ((model.serverType == ServerType.openRouter ||
+                                  model.serverType == ServerType.requesty) &&
                               model.pricingLabel != null)
                             Tooltip(
                               message: model.isPricingFree

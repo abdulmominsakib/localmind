@@ -42,9 +42,11 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   bool get _isEditing => widget.editServer != null;
   bool get _requiresEndpoint =>
       _selectedType != ServerType.openRouter &&
+      _selectedType != ServerType.requesty &&
       _selectedType != ServerType.ollamaCloud;
   bool get _requiresMandatoryApiKey =>
       _selectedType == ServerType.openRouter ||
+      _selectedType == ServerType.requesty ||
       _selectedType == ServerType.ollamaCloud;
 
   String _lastHostScheme = '';
@@ -56,6 +58,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       ServerType.ollama => AppConstants.ollamaDefaultPort,
       ServerType.ollamaCloud => AppConstants.ollamaCloudDefaultPort,
       ServerType.openRouter => 443,
+      ServerType.requesty => 443,
       ServerType.onDevice => 0,
     };
   }
@@ -129,7 +132,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       _testResult = null;
 
       final isHttps = isHttpsAddressInput(_hostController.text);
-      if (type == ServerType.openRouter) {
+      if (type == ServerType.openRouter || type == ServerType.requesty) {
         _portController.text = '443';
       } else if (type == ServerType.ollamaCloud) {
         _portController.text = AppConstants.ollamaCloudDefaultPort.toString();
@@ -383,6 +386,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       if (value == null || value.trim().isEmpty) {
         return _selectedType == ServerType.ollamaCloud
             ? l10n.api_key_required_ollama_cloud
+            : _selectedType == ServerType.requesty
+            ? l10n.api_key_required_requesty
             : l10n.api_key_required_openrouter;
       }
       if (_selectedType == ServerType.openRouter &&
@@ -608,7 +613,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
               context,
               title: l10n.server_authentication_title,
               subtitle: _requiresMandatoryApiKey
-                  ? l10n.server_authentication_required_desc
+                  ? (_selectedType == ServerType.requesty
+                        ? l10n.server_authentication_required_desc_requesty
+                        : l10n.server_authentication_required_desc)
                   : l10n.server_authentication_optional_desc,
               child: Column(
                 children: [
@@ -621,6 +628,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                       hintText: _requiresMandatoryApiKey
                           ? (_selectedType == ServerType.ollamaCloud
                                 ? l10n.api_key_hint_ollama_cloud
+                                : _selectedType == ServerType.requesty
+                                ? l10n.api_key_hint_requesty
                                 : l10n.api_key_hint_openrouter)
                           : l10n.api_key_hint_generic,
                     ),
@@ -656,6 +665,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                             child: Text(
                               _selectedType == ServerType.ollamaCloud
                                   ? l10n.ollama_cloud_disclosure
+                                  : _selectedType == ServerType.requesty
+                                  ? l10n.requesty_disclosure
                                   : l10n.openrouter_disclosure,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurface.withValues(
@@ -948,6 +959,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       ServerType.ollama => l10n.server_type_ollama,
       ServerType.ollamaCloud => l10n.server_type_ollama_cloud,
       ServerType.openRouter => l10n.server_type_openrouter,
+      ServerType.requesty => l10n.server_type_requesty,
       ServerType.onDevice => l10n.server_type_on_device_display,
     };
   }
@@ -963,6 +975,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
         return l10n.add_server_ollama_cloud_subtitle;
       case ServerType.openRouter:
         return l10n.add_server_openrouter_subtitle;
+      case ServerType.requesty:
+        return l10n.add_server_requesty_subtitle;
     }
   }
 }
