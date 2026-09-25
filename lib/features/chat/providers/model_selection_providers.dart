@@ -52,7 +52,7 @@ final activeChatTargetProvider = Provider<ActiveChatTarget>((ref) {
 
   final selected = ref.watch(selectedModelProvider);
   final selectedForServer = selected?.serverId == server.id ? selected : null;
-  if (server.type == ServerType.onDevice) {
+  if (server.isOnDevice) {
     final engine = ref.watch(onDeviceEngineProvider);
     if (selectedForServer != null &&
         engine.status == OnDeviceEngineStatus.loaded &&
@@ -200,6 +200,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
   // default there's nothing to auto-select for them (avoids an extra model
   // list fetch for users who never set one).
   if (!hasDefaultForServer &&
+      !activeServer.isOnDevice &&
       (activeServer.type == ServerType.openRouter ||
           activeServer.type == ServerType.requesty ||
           activeServer.type == ServerType.openAICompatible)) {
@@ -208,7 +209,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
 
   try {
     final Set<String> loadedModels;
-    if (activeServer.type == ServerType.onDevice) {
+    if (activeServer.isOnDevice) {
       final engine = ref.watch(onDeviceEngineProvider);
       loadedModels = engine.loadedModelId != null
           ? {engine.loadedModelId!}
@@ -232,7 +233,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
           .where((m) => m.id == defaultModelId)
           .firstOrNull;
       if (defaultModel != null) {
-        if (activeServer.type == ServerType.onDevice) {
+        if (activeServer.isOnDevice) {
           // On-device inference runs one engine instance at a time, so only
           // auto-select the default when it's the model the engine already
           // has loaded; otherwise fall through to the loaded-model logic.
@@ -260,14 +261,15 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
 
     // Cloud providers fall back to no selection when the configured default
     // isn't among the available models.
-    if (activeServer.type == ServerType.openRouter ||
-        activeServer.type == ServerType.requesty ||
-        activeServer.type == ServerType.openAICompatible) {
+    if (!activeServer.isOnDevice &&
+        (activeServer.type == ServerType.openRouter ||
+            activeServer.type == ServerType.requesty ||
+            activeServer.type == ServerType.openAICompatible)) {
       return;
     }
 
     if (loadedModels.isEmpty) {
-      if (activeServer.type == ServerType.onDevice) {
+      if (activeServer.isOnDevice) {
         final downloadedAsync = await ref.read(downloadedModelsProvider.future);
         if (!ref.mounted) return;
         if (hasDefaultForServer) {

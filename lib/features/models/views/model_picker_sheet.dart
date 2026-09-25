@@ -82,7 +82,14 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
         .where((s) => s.id == activeServer?.id)
         .firstOrNull;
     final isOnDevice =
-        currentServer != null && currentServer.type == ServerType.onDevice;
+        (activeServer != null &&
+            (activeServer.type == ServerType.onDevice ||
+                activeServer.id == 'on-device' ||
+                activeServer.name.trim().toLowerCase() == 'on-device')) ||
+        (currentServer != null &&
+            (currentServer.type == ServerType.onDevice ||
+                currentServer.id == 'on-device' ||
+                currentServer.name.trim().toLowerCase() == 'on-device'));
     final isLmStudio =
         currentServer != null && currentServer.type == ServerType.lmStudio;
 
@@ -192,7 +199,8 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
     final l10n = AppLocalizations.of(context)!;
 
     try {
-      if (activeServer.type == ServerType.onDevice) {
+      if (activeServer.type == ServerType.onDevice ||
+          activeServer.id == 'on-device') {
         await ref.read(onDeviceEngineProvider.notifier).unloadModel();
       } else {
         final loadedInstances = await ref.read(

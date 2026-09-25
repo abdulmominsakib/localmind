@@ -92,7 +92,9 @@ class _BootstrapHostState extends State<BootstrapHost> {
 
       _updateStage(BootstrapStage.configuringServer, 'Configuring server...');
       final servers = await container.read(serversProvider.future);
-      final hasOnDevice = servers.any((s) => s.type == ServerType.onDevice);
+      final hasOnDevice = servers.any(
+        (s) => s.type == ServerType.onDevice || s.id == 'on-device',
+      );
       if (!hasOnDevice) {
         final server = Server(
           id: 'on-device',

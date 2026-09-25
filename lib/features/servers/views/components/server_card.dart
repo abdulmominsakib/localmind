@@ -65,7 +65,7 @@ class ServerCard extends StatelessWidget {
     if (server.type == ServerType.ollamaCloud) {
       return l10n.server_address_ollama_cloud;
     }
-    if (server.type == ServerType.onDevice) {
+    if (server.isOnDevice) {
       return l10n.server_address_on_device;
     }
     return server.displayAddress;

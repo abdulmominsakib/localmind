@@ -302,7 +302,7 @@ class Server {
     }
   }
 
-  bool get isOnDevice => type == ServerType.onDevice;
+  bool get isOnDevice => type == ServerType.onDevice || id == 'on-device';
   bool get isOllamaCloud => type == ServerType.ollamaCloud;
   bool get isOllamaFamily =>
       type == ServerType.ollama || type == ServerType.ollamaCloud;

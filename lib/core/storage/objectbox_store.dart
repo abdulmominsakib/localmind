@@ -17,7 +17,7 @@ class ObjectBoxStore {
   late final Box<SavedMessageEntity> savedMessageBox;
   late final Box<SavedMessageFolderEntity> savedMessageFolderBox;
 
-  ObjectBoxStore._create(this.store) {
+  ObjectBoxStore.fromStore(this.store) {
     serverBox = Box<ServerEntity>(store);
     personaBox = Box<PersonaEntity>(store);
     conversationBox = Box<ConversationEntity>(store);
@@ -37,6 +37,6 @@ class ObjectBoxStore {
     }
 
     final store = await openStore(directory: storeDir.path);
-    return ObjectBoxStore._create(store);
+    return ObjectBoxStore.fromStore(store);
   }
 }

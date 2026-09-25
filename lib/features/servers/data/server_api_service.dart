@@ -12,7 +12,7 @@ class ServerApiService {
   ServerApiService(this._dio);
 
   Future<bool> testConnection(Server server) async {
-    if (server.type == ServerType.onDevice) {
+    if (server.isOnDevice) {
       return true;
     }
 
@@ -67,6 +67,9 @@ class ServerApiService {
   }
 
   Future<List<ModelInfo>> fetchModels(Server server) async {
+    if (server.isOnDevice) {
+      return [];
+    }
     try {
       Response response;
       try {
@@ -122,7 +125,7 @@ class ServerApiService {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
         server.type == ServerType.openAICompatible ||
-        server.type == ServerType.onDevice) {
+        server.isOnDevice) {
       return {};
     }
 
@@ -144,7 +147,7 @@ class ServerApiService {
   Future<void> loadModel(Server server, String modelId) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
-        server.type == ServerType.onDevice) {
+        server.isOnDevice) {
       return;
     }
 
@@ -182,7 +185,7 @@ class ServerApiService {
   }) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
-        server.type == ServerType.onDevice) {
+        server.isOnDevice) {
       return null;
     }
 
@@ -265,7 +268,7 @@ class ServerApiService {
   }) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
-        server.type == ServerType.onDevice) {
+        server.isOnDevice) {
       return;
     }
 

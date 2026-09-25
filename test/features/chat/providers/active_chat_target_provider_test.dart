@@ -49,14 +49,16 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    container.read(selectedModelProvider.notifier).setModel(
-      ModelInfo(
-        id: 'apple-foundation-models',
-        name: 'Apple Foundation Models',
-        serverType: ServerType.onDevice,
-        serverId: 'on-device',
-      ),
-    );
+    container
+        .read(selectedModelProvider.notifier)
+        .setModel(
+          ModelInfo(
+            id: 'apple-foundation-models',
+            name: 'Apple Foundation Models',
+            serverType: ServerType.onDevice,
+            serverId: 'on-device',
+          ),
+        );
 
     final target = container.read(activeChatTargetProvider);
 

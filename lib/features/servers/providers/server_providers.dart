@@ -114,7 +114,7 @@ final loadedModelsProvider = FutureProvider.family<Set<String>, Server>((
 ) async {
   ref.watch(loadedModelsRefreshProvider);
 
-  if (server.type == ServerType.onDevice) {
+  if (server.type == ServerType.onDevice || server.id == 'on-device') {
     final engineState = ref.watch(onDeviceEngineProvider);
     return engineState.loadedModelId != null
         ? {engineState.loadedModelId!}
@@ -147,7 +147,7 @@ final availableModelsProvider = FutureProvider.family<List<dynamic>, String>((
   );
   final apiService = ref.watch(serverApiServiceProvider);
 
-  if (server.type == ServerType.onDevice) {
+  if (server.type == ServerType.onDevice || server.id == 'on-device') {
     final models = ref
         .watch(onDeviceModelsProvider)
         .map(
@@ -207,13 +207,67 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
     if (!ref.mounted) return [];
     final db = ref.read(databaseProvider);
     final entities = db.serverBox.getAll();
-    return entities.map((e) => e.toDomain()).toList();
+
+    // Group entities by id to detect and remove duplicate records.
+    final entitiesById = <String, List<ServerEntity>>{};
+    for (final entity in entities) {
+      entitiesById.putIfAbsent(entity.id, () => []).add(entity);
+    }
+
+    final sanitizedEntities = <ServerEntity>[];
+    for (final entry in entitiesById.entries) {
+      final list = entry.value;
+      if (list.length == 1) {
+        sanitizedEntities.add(list.first);
+      } else {
+        // Prefer isDefault, then entity whose typeIndex matches the resolved domain type,
+        // then lowest internalId.
+        list.sort((a, b) {
+          if (a.isDefault != b.isDefault) {
+            return a.isDefault ? -1 : 1;
+          }
+          final aResolved = a.toDomain().type.index == a.typeIndex;
+          final bResolved = b.toDomain().type.index == b.typeIndex;
+          if (aResolved != bResolved) {
+            return aResolved ? -1 : 1;
+          }
+          return a.internalId.compareTo(b.internalId);
+        });
+
+        final keep = list.first;
+        sanitizedEntities.add(keep);
+
+        for (var i = 1; i < list.length; i++) {
+          db.serverBox.remove(list[i].internalId);
+        }
+      }
+    }
+
+    // Persist any healed typeIndex back to ObjectBox.
+    for (final entity in sanitizedEntities) {
+      final domain = entity.toDomain();
+      if (entity.typeIndex != domain.type.index) {
+        entity.typeIndex = domain.type.index;
+        db.serverBox.put(entity);
+      }
+    }
+
+    return sanitizedEntities.map((e) => e.toDomain()).toList();
   }
 
   Future<void> addServer(Server server) async {
     if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
-    db.serverBox.put(ServerEntity.fromDomain(server));
+    final existing = db.serverBox
+        .getAll()
+        .where((e) => e.id == server.id)
+        .firstOrNull;
+
+    final entity = ServerEntity.fromDomain(server);
+    if (existing != null) {
+      entity.internalId = existing.internalId;
+    }
+    db.serverBox.put(entity);
     invalidateAvailableModelsCache(server.id);
     final data = await _loadAll();
     if (ref.mounted) {
@@ -327,7 +381,7 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
     if (index == -1) return ConnectionStatus.disconnected;
     final server = servers[index];
 
-    if (server.type == ServerType.onDevice) {
+    if (server.type == ServerType.onDevice || server.id == 'on-device') {
       await updateServerStatus(serverId, ConnectionStatus.connected);
       return ConnectionStatus.connected;
     }
@@ -367,7 +421,8 @@ class ConnectionStatusNotifier extends Notifier<ConnectionStatus> {
       return ConnectionStatus.disconnected;
     }
 
-    if (activeServer.type == ServerType.onDevice) {
+    if (activeServer.type == ServerType.onDevice ||
+        activeServer.id == 'on-device') {
       return ConnectionStatus.connected;
     }
 

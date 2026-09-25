@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localmind/l10n/app_localizations.dart';
-import '../../../core/models/enums.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/utils/system_insets.dart';
@@ -101,8 +100,7 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
                           itemCount: serverList.length,
                           itemBuilder: (context, index) {
                             final server = serverList[index];
-                            final isOnDevice =
-                                server.type == ServerType.onDevice;
+                            final isOnDevice = server.isOnDevice;
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: ServerCard(

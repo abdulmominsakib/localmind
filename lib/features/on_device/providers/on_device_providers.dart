@@ -497,12 +497,10 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       );
 
       final activeServer = ref.read(activeServerProvider);
-      if (activeServer?.type != ServerType.onDevice) {
+      if (activeServer?.isOnDevice != true) {
         final servers = await ref.read(serversProvider.future);
         if (!ref.mounted) return;
-        final onDeviceServer = servers
-            .where((s) => s.type == ServerType.onDevice)
-            .firstOrNull;
+        final onDeviceServer = servers.where((s) => s.isOnDevice).firstOrNull;
         if (onDeviceServer != null && ref.mounted) {
           Future.microtask(() {
             if (ref.mounted) {

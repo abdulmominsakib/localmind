@@ -60,7 +60,7 @@ ChatService createChatServiceForServer({
   bool imageCompressionEnabled = true,
   ImageCompressionLevel imageCompressionLevel = ImageCompressionLevel.medium,
 }) {
-  if (server.type == ServerType.onDevice) {
+  if (server.isOnDevice) {
     if (loadedOnDeviceRuntime == OnDeviceModelRuntime.llamaCpp) {
       return OnDeviceLlamaChatService(onDeviceLlamaService);
     }
@@ -70,7 +70,7 @@ ChatService createChatServiceForServer({
     }
 
     return ChatService.forServer(
-      server.type,
+      ServerType.onDevice,
       dio,
       onDeviceGemma: onDeviceGemmaService,
       imageCompressionEnabled: imageCompressionEnabled,

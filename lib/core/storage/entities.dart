@@ -75,13 +75,72 @@ class ServerEntity {
     );
   }
 
+  static ServerType resolveServerType({
+    required int typeIndex,
+    required String id,
+    required String name,
+    required String host,
+    required int port,
+    String? apiKey,
+  }) {
+    final trimmedHost = host.trim();
+    final lowerId = id.trim().toLowerCase();
+    final lowerName = name.trim().toLowerCase();
+
+    // 1. On-Device server detection:
+    // On-device servers always have id == 'on-device' or name == 'On-Device',
+    // or host is empty with port 0 without API key.
+    // Prior to Ollama Cloud being added (commit 51996bb), onDevice had typeIndex 4.
+    // In the updated enum, index 4 is openRouter and index 5 is onDevice.
+    if (lowerId == 'on-device' ||
+        (lowerName == 'on-device' && trimmedHost.isEmpty && port <= 0) ||
+        (trimmedHost.isEmpty &&
+            port <= 0 &&
+            (apiKey == null || apiKey.trim().isEmpty))) {
+      return ServerType.onDevice;
+    }
+
+    // 2. OpenRouter server detection / drift resolution:
+    // Prior to Ollama Cloud being added, openRouter had typeIndex 3.
+    // In the updated enum, index 3 is ollamaCloud and index 4 is openRouter.
+    final isProbablyOpenRouter =
+        trimmedHost.contains('openrouter.ai') ||
+        lowerName.contains('openrouter') ||
+        (apiKey != null && apiKey.trim().startsWith('sk-or'));
+    if (isProbablyOpenRouter) {
+      return ServerType.openRouter;
+    }
+
+    // 3. Ollama Cloud detection:
+    final isProbablyOllamaCloud =
+        trimmedHost.contains('ollama.com') ||
+        lowerName.contains('ollama cloud');
+    if (isProbablyOllamaCloud) {
+      return ServerType.ollamaCloud;
+    }
+
+    // 4. Default bounds-checked enum resolution:
+    if (typeIndex >= 0 && typeIndex < ServerType.values.length) {
+      return ServerType.values[typeIndex];
+    }
+
+    return ServerType.values.first;
+  }
+
   Server toDomain() {
+    final resolvedType = resolveServerType(
+      typeIndex: typeIndex,
+      id: id,
+      name: name,
+      host: host,
+      port: port,
+      apiKey: apiKey,
+    );
+
     return Server(
       id: id,
       name: name,
-      type: typeIndex >= 0 && typeIndex < ServerType.values.length
-          ? ServerType.values[typeIndex]
-          : ServerType.values.first,
+      type: resolvedType,
       host: host,
       port: port,
       apiKey: apiKey,
