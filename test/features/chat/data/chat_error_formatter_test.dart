@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/features/chat/data/chat_api_error.dart';
 import 'package:localmind/features/chat/data/chat_error_formatter.dart';
@@ -52,5 +53,22 @@ void main() {
       final parsed = ChatApiError.tryParse(formatted)!;
       expect(parsed.message.toLowerCase(), contains('ollama'));
     });
+
+    test(
+      'formatDioException reads status from DioException response (#102)',
+      () async {
+        final error = DioException(
+          requestOptions: RequestOptions(path: '/api/chat'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/api/chat'),
+            statusCode: 429,
+          ),
+          type: DioExceptionType.badResponse,
+        );
+        final formatted = await ChatErrorFormatter.formatDioException(error);
+        final parsed = ChatApiError.tryParse(formatted)!;
+        expect(parsed.type, 'rate_limited');
+      },
+    );
   });
 }

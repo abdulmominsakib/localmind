@@ -34,7 +34,8 @@ class ChatErrorFormatter {
     final errorType = _readErrorType(error);
 
     if (errorType != null) {
-      statusCode = errorType.statusCode;
+      // DioException exposes the status only via `response.statusCode`.
+      statusCode = _readStatusCode(errorType);
       final data = errorType.response?.data;
       if (data != null) {
         if (readBody != null) {
@@ -274,6 +275,15 @@ class ChatErrorFormatter {
       // Not a Dio-shaped object.
     }
     return null;
+  }
+
+  static int? _readStatusCode(dynamic error) {
+    try {
+      final code = (error as dynamic).response?.statusCode;
+      return code is int ? code : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   static String? _dioTypeLabel(dynamic error) {
