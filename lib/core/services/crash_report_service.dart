@@ -260,14 +260,23 @@ class CrashReportService {
   /// - flutter/flutter#192081: Concurrent modification during iteration in
   ///   `MultiSelectableSelectionContainerDelegate.handleClearSelection` when
   ///   clearing selection across scrollable elements (e.g. Markdown code blocks).
+  /// - A stale-index `RangeError` in
+  ///   `MultiSelectableSelectionContainerDelegate.getSelectionGeometry` when
+  ///   selectables change while a selection edge is being updated.
   static bool isBenignFrameworkError(Object error, [StackTrace? stack]) {
     final errorStr = error.toString();
     final stackStr = stack?.toString() ?? '';
+    final isSelectionStack =
+        stackStr.contains('MultiSelectableSelectionContainerDelegate') ||
+        stackStr.contains('selectable_region.dart') ||
+        stackStr.contains('_ScrollableSelectionContainerDelegate');
 
     if (errorStr.contains('Concurrent modification during iteration') &&
-        (stackStr.contains('MultiSelectableSelectionContainerDelegate') ||
-            stackStr.contains('selectable_region.dart') ||
-            stackStr.contains('_ScrollableSelectionContainerDelegate'))) {
+        isSelectionStack) {
+      return true;
+    }
+
+    if (error is RangeError && isSelectionStack) {
       return true;
     }
 

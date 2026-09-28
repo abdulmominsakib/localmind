@@ -179,4 +179,39 @@ void main() {
       expect(service.currentCrash.value, isNull);
     });
   });
+
+  group('CrashReportService.isBenignFrameworkError', () {
+    final selectionStack = StackTrace.fromString(
+      '#0      List.[] (dart:core-patch/growable_array.dart)\n'
+      '#1      MultiSelectableSelectionContainerDelegate.getSelectionGeometry '
+      '(package:flutter/src/widgets/selectable_region.dart:2643)\n',
+    );
+
+    test('ignores selection RangeError (#101)', () {
+      final error = RangeError.index(3, [1, 2, 3], 'length');
+      expect(
+        CrashReportService.isBenignFrameworkError(error, selectionStack),
+        isTrue,
+      );
+    });
+
+    test('ignores selection concurrent modification (#99)', () {
+      final error = ConcurrentModificationError(<int>[]);
+      expect(
+        CrashReportService.isBenignFrameworkError(error, selectionStack),
+        isTrue,
+      );
+    });
+
+    test('reports RangeError outside selection code', () {
+      final error = RangeError.index(3, [1, 2, 3], 'length');
+      expect(
+        CrashReportService.isBenignFrameworkError(
+          error,
+          StackTrace.fromString('#0      main (package:localmind/main.dart)'),
+        ),
+        isFalse,
+      );
+    });
+  });
 }
