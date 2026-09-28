@@ -948,5 +948,7 @@
   "send_sampling_params_desc": "Desactívalo para proveedores o modelos que rechazan este parámetro (por ejemplo, algunos modelos de razonamiento). Se aplica a todos los chats con servidores remotos.",
   "default_system_prompt": "Prompt de sistema predeterminado",
   "default_system_prompt_desc": "Se usa en chats sin persona ni prompt de sistema propio.",
-  "default_system_prompt_hint": "Eres un asistente útil…"
+  "default_system_prompt_hint": "Eres un asistente útil…",
+  "background_generation_notice": "Aún respondiendo en \"{title}\". Podrás enviar aquí cuando termine. Toca para abrir.",
+  "background_generation_notice_untitled": "Otro chat aún está respondiendo. Podrás enviar aquí cuando termine. Toca para abrir."
 }

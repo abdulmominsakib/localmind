@@ -3128,4 +3128,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get default_system_prompt_hint => '당신은 도움이 되는 어시스턴트입니다…';
+
+  @override
+  String background_generation_notice(String title) {
+    return '\"$title\"에서 아직 답변을 생성 중입니다. 완료되면 여기서 보낼 수 있습니다. 탭하여 열기.';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      '다른 채팅에서 아직 답변을 생성 중입니다. 완료되면 여기서 보낼 수 있습니다. 탭하여 열기.';
 }

@@ -3244,4 +3244,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get default_system_prompt_hint => 'Você é um assistente prestativo…';
+
+  @override
+  String background_generation_notice(String title) {
+    return 'Ainda respondendo em \"$title\". Você poderá enviar aqui quando terminar. Toque para abrir.';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      'Outro chat ainda está respondendo. Você poderá enviar aqui quando terminar. Toque para abrir.';
 }

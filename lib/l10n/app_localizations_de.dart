@@ -3213,4 +3213,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get default_system_prompt_hint => 'Du bist ein hilfreicher Assistent…';
+
+  @override
+  String background_generation_notice(String title) {
+    return 'Antwort in „$title“ läuft noch. Du kannst hier senden, sobald sie fertig ist. Tippen zum Öffnen.';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      'Ein anderer Chat antwortet noch. Du kannst hier senden, sobald er fertig ist. Tippen zum Öffnen.';
 }

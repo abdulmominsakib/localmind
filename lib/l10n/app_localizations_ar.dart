@@ -3198,4 +3198,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get default_system_prompt_hint => 'أنت مساعد مفيد…';
+
+  @override
+  String background_generation_notice(String title) {
+    return 'لا يزال الرد جاريًا في \"$title\". يمكنك الإرسال هنا بعد انتهائه. اضغط للفتح.';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      'لا تزال محادثة أخرى تُنشئ ردًا. يمكنك الإرسال هنا بعد انتهائها. اضغط للفتح.';
 }

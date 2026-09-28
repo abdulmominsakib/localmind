@@ -3213,4 +3213,13 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get default_system_prompt_hint => 'आप एक सहायक असिस्टेंट हैं…';
+
+  @override
+  String background_generation_notice(String title) {
+    return '\"$title\" में अभी जवाब बन रहा है। पूरा होने पर आप यहाँ भेज सकेंगे। खोलने के लिए टैप करें।';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      'कोई दूसरी चैट अभी जवाब बना रही है। पूरा होने पर आप यहाँ भेज सकेंगे। खोलने के लिए टैप करें।';
 }

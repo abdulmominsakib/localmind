@@ -3229,4 +3229,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get default_system_prompt_hint => 'Sei un assistente disponibile…';
+
+  @override
+  String background_generation_notice(String title) {
+    return 'Risposta ancora in corso in \"$title\". Potrai inviare qui quando termina. Tocca per aprire.';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      'Un\'altra chat sta ancora rispondendo. Potrai inviare qui quando termina. Tocca per aprire.';
 }

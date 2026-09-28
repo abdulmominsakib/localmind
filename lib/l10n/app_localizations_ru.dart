@@ -3226,4 +3226,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get default_system_prompt_hint => 'Ты полезный ассистент…';
+
+  @override
+  String background_generation_notice(String title) {
+    return 'Ответ в «$title» ещё генерируется. Отправить здесь можно будет после завершения. Нажмите, чтобы открыть.';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      'Другой чат ещё генерирует ответ. Отправить здесь можно будет после завершения. Нажмите, чтобы открыть.';
 }

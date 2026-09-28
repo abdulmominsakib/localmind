@@ -3146,4 +3146,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get default_system_prompt_hint => 'あなたは親切なアシスタントです…';
+
+  @override
+  String background_generation_notice(String title) {
+    return '「$title」でまだ返信を生成中です。完了するとここで送信できます。タップして開く。';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      '別のチャットでまだ返信を生成中です。完了するとここで送信できます。タップして開く。';
 }

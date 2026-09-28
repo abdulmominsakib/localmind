@@ -948,5 +948,7 @@
   "send_sampling_params_desc": "對於拒絕此參數的服務商或模型（例如部分推理模型）請關閉。適用於所有遠端伺服器的對話。",
   "default_system_prompt": "預設系統提示詞",
   "default_system_prompt_desc": "用於沒有角色且沒有專屬系統提示詞的對話。",
-  "default_system_prompt_hint": "你是一個樂於助人的助理……"
+  "default_system_prompt_hint": "你是一個樂於助人的助理……",
+  "background_generation_notice": "「{title}」仍在產生回覆。完成後即可在此傳送。點按開啟。",
+  "background_generation_notice_untitled": "另一個對話仍在產生回覆。完成後即可在此傳送。點按開啟。"
 }

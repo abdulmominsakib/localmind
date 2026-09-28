@@ -153,6 +153,76 @@ class ChatNotifier extends Notifier<ChatState> {
 
   bool get _isInMemoryChat => state.isTemporary;
 
+  /// Conversation the in-flight reply belongs to; null when idle. May differ
+  /// from the open chat while a reply finishes in the background (#94).
+  String? _streamConversationId;
+
+  /// Persisted conversation of the most recent stream. Its messages still
+  /// save while a temporary chat is open (the reply may finish in the
+  /// background). Not cleared on completion so late final saves still land.
+  String? _persistedStreamConversationId;
+
+  /// Service that owns the in-flight stream. Cancelling must target it even
+  /// if the active server changed since the stream started.
+  ChatService? _streamChatService;
+
+  /// True while a reply for another conversation is still generating.
+  bool get isGeneratingElsewhere =>
+      _streamConversationId != null &&
+      _streamConversationId != _activeConversationId;
+
+  void _setGlobalStreaming(bool streaming) {
+    if (streaming) {
+      _streamConversationId = _activeConversationId;
+    } else {
+      _streamConversationId = null;
+      _streamChatService = null;
+    }
+    ref.read(isStreamingProvider.notifier).setStreaming(streaming);
+    ref
+        .read(streamingConversationIdProvider.notifier)
+        .set(_streamConversationId);
+  }
+
+  /// Whether the open chat's reply may keep streaming after the user leaves
+  /// it. Temporary chats aren't persisted, tool approvals need the chat on
+  /// screen, and voice mode drives its own turn-taking.
+  bool _canContinueInBackground() {
+    if (!state.isStreaming || _isInMemoryChat) return false;
+    if (_streamConversationId == null ||
+        _streamConversationId != _activeConversationId) {
+      return false;
+    }
+    if (_pendingToolApproval != null) return false;
+    if (ref.read(chatMcpConfigProvider).enabled) return false;
+    return ref.read(voiceModeProvider).phase == VoiceModePhase.idle;
+  }
+
+  /// Only one reply generates at a time. Returns true (and explains why)
+  /// when another chat's reply is still running in the background.
+  bool _blockIfGeneratingElsewhere() {
+    if (!isGeneratingElsewhere) return false;
+    state = state.copyWith(errorMessage: generatingElsewhereMessage);
+    return true;
+  }
+
+  /// Cancels the reply generating for [conversationId], if any. Used before
+  /// deleting a conversation that may be streaming in the background.
+  Future<void> cancelGenerationFor(String conversationId) async {
+    if (_streamConversationId != conversationId) return;
+    await _detachStreamSubscription();
+    _uiUpdateTimer?.cancel();
+    _uiUpdateTimer = null;
+    if (!ref.mounted) return;
+    (_streamChatService ?? ref.read(chatServiceProvider))?.cancelStream();
+    ref.read(chatBackgroundServiceProvider).stop();
+    _latestStreamingMessage = null;
+    _setGlobalStreaming(false);
+    if (_activeConversationId == conversationId) {
+      state = state.copyWith(isStreaming: false, clearStreaming: true);
+    }
+  }
+
   void _resetStreamMetrics() {
     _streamStats = null;
     _streamStartTime = DateTime.now();
@@ -249,14 +319,7 @@ class ChatNotifier extends Notifier<ChatState> {
     final timeline = isCurrentContext
         ? state.messages
         : MessageVariants.resolveActiveTimeline(
-            await ref
-                .read(databaseProvider)
-                .store
-                .runInTransactionAsync(
-                  TxMode.read,
-                  _loadMessagesInBackground,
-                  conversationId,
-                ),
+            await loadConversationMessages(conversationId),
           );
 
     if (!ref.mounted) return;
@@ -279,13 +342,15 @@ class ChatNotifier extends Notifier<ChatState> {
     if (!ref.mounted) return;
     _recomputeConversationTotal(conversationId, messages: timeline);
 
-    if (isCurrentContext) {
-      final lastUserMessage = timeline
-          .where((m) => m.role == MessageRole.user)
-          .firstOrNull;
-      if (lastUserMessage != null) {
-        _maybeAutoGenerateTitleAfterFirstReply();
-      }
+    final lastUserMessage = timeline
+        .where((m) => m.role == MessageRole.user)
+        .firstOrNull;
+    if (lastUserMessage != null) {
+      // Also covers a first reply that finished in the background (#94).
+      _maybeAutoGenerateTitleAfterFirstReply(
+        conversationId: conversationId,
+        timeline: timeline,
+      );
     }
   }
 
@@ -370,7 +435,15 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> loadConversation(Conversation conversation) async {
-    await cancelStream();
+    if (!ref.mounted) return;
+    // Leave an eligible reply streaming in the background (#94). Only the
+    // open chat's own stream may be cancelled here; a reply already running
+    // in the background for another chat must survive further switches.
+    if (state.isStreaming && !_canContinueInBackground()) {
+      await cancelStream();
+    } else if (!state.isStreaming) {
+      _clearPendingApproval();
+    }
     if (!ref.mounted) return;
     _currentConversationId = conversation.id;
     ref.read(smartReplyServiceProvider).reset();
@@ -381,21 +454,21 @@ class ChatNotifier extends Notifier<ChatState> {
     );
 
     try {
-      final db = ref.read(databaseProvider);
-
-      final messages = await db.store.runInTransactionAsync(
-        TxMode.read,
-        _loadMessagesInBackground,
-        conversation.id,
-      );
+      final messages = await loadConversationMessages(conversation.id);
 
       if (!ref.mounted) return;
 
+      // Reattach to a reply that kept generating while this chat was closed.
+      final liveMessage = _streamConversationId == conversation.id
+          ? _latestStreamingMessage
+          : null;
       state = ChatState(
         allMessages: messages,
         messages: MessageVariants.resolveActiveTimeline(messages),
         isLoading: false,
         isTemporary: conversation.isTemporary,
+        isStreaming: liveMessage != null,
+        streamingMessage: liveMessage,
       );
       ref
           .read(conv.activeConversationIdProvider.notifier)
@@ -509,7 +582,12 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> startNewConversation() async {
-    await _abortStreamImmediately();
+    if (!ref.mounted) return;
+    if (state.isStreaming && !_canContinueInBackground()) {
+      await _abortStreamImmediately();
+    } else {
+      _clearPendingApproval();
+    }
     if (!ref.mounted) return;
 
     _currentConversationId = null;
@@ -550,9 +628,9 @@ class ChatNotifier extends Notifier<ChatState> {
 
     if (!ref.mounted) return;
 
-    ref.read(chatServiceProvider)?.cancelStream();
+    (_streamChatService ?? ref.read(chatServiceProvider))?.cancelStream();
     ref.read(chatBackgroundServiceProvider).stop();
-    ref.read(isStreamingProvider.notifier).setStreaming(false);
+    _setGlobalStreaming(false);
 
     _chunkCount = 0;
     _lastCheckpointTime = null;
@@ -765,6 +843,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> sendMessage(String content, {List<File>? attachments}) async {
+    if (_blockIfGeneratingElsewhere()) return;
     final target = ref.read(activeChatTargetProvider);
     final server = target.server;
     final selectedModel = target.selectedModel;
@@ -882,7 +961,7 @@ class ChatNotifier extends Notifier<ChatState> {
       streamingMessage: assistantMessage,
       clearError: true,
     );
-    ref.read(isStreamingProvider.notifier).setStreaming(true);
+    _setGlobalStreaming(true);
 
     await _saveMessage(userMessage);
     await _saveMessage(assistantMessage);
@@ -960,6 +1039,11 @@ class ChatNotifier extends Notifier<ChatState> {
         });
 
         final streamGeneration = _streamGeneration;
+        final streamInMemory = _isInMemoryChat;
+        _persistedStreamConversationId = streamInMemory
+            ? null
+            : assistantMessage.conversationId;
+        _streamChatService = chatService;
         _streamSubscription = chatService
             .sendMessage(
               server: server,
@@ -993,7 +1077,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
                     _chunkCount++;
 
-                    if (!_isInMemoryChat &&
+                    if (!streamInMemory &&
                         _shouldCheckpointSave(streamingAssistantMessage)) {
                       _saveService?.enqueue(streamingAssistantMessage);
                       _updateSavedMetrics(streamingAssistantMessage);
@@ -1016,7 +1100,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
                     _chunkCount++;
 
-                    if (!_isInMemoryChat &&
+                    if (!streamInMemory &&
                         _shouldCheckpointSave(streamingAssistantMessage)) {
                       _saveService?.enqueue(streamingAssistantMessage);
                       _updateSavedMetrics(streamingAssistantMessage);
@@ -1062,7 +1146,7 @@ class ChatNotifier extends Notifier<ChatState> {
                         errorMessage: streamingAssistantMessage.errorMessage,
                       );
                     }
-                    ref.read(isStreamingProvider.notifier).setStreaming(false);
+                    _setGlobalStreaming(false);
                     _latestStreamingMessage = null;
                     await _saveService?.flush();
                     await _saveMessage(streamingAssistantMessage);
@@ -1089,7 +1173,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   // The error branch already finalised the message and
                   // stopped streaming — do not overwrite the error state
                   // with success/default text.
-                  if (!_isInMemoryChat) {
+                  if (!streamInMemory) {
                     await _saveService?.flush();
                   }
                   if (ref.mounted) {
@@ -1098,7 +1182,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   return;
                 }
 
-                if (!_isInMemoryChat) {
+                if (!streamInMemory) {
                   await _saveService?.flush();
                 }
                 if (ref.mounted) {
@@ -1128,7 +1212,7 @@ class ChatNotifier extends Notifier<ChatState> {
                     );
                   }
                   if (ref.mounted) {
-                    ref.read(isStreamingProvider.notifier).setStreaming(false);
+                    _setGlobalStreaming(false);
                   }
                   _latestStreamingMessage = null;
                 } else {
@@ -1296,7 +1380,7 @@ class ChatNotifier extends Notifier<ChatState> {
                     _maybeAutoGenerateTitleAfterFirstReply();
                   }
                   if (ref.mounted) {
-                    ref.read(isStreamingProvider.notifier).setStreaming(false);
+                    _setGlobalStreaming(false);
                   }
                   _latestStreamingMessage = null;
 
@@ -1328,8 +1412,11 @@ class ChatNotifier extends Notifier<ChatState> {
                     final voiceActive =
                         ref.read(voiceModeProvider).phase !=
                         VoiceModePhase.idle;
+                    // Don't read a background reply aloud over another
+                    // chat (#94).
                     if (autoSpeak &&
                         !voiceActive &&
+                        _activeConversationId == finalMessage.conversationId &&
                         finalMessage.content.trim().isNotEmpty) {
                       ref
                           .read(ttsProvider.notifier)
@@ -1373,7 +1460,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   }
                 }
                 if (ref.mounted) {
-                  ref.read(isStreamingProvider.notifier).setStreaming(false);
+                  _setGlobalStreaming(false);
                 }
                 _latestStreamingMessage = null;
               },
@@ -1396,7 +1483,7 @@ class ChatNotifier extends Notifier<ChatState> {
         errorMessage: e.toString(),
         clearStreaming: true,
       );
-      ref.read(isStreamingProvider.notifier).setStreaming(false);
+      _setGlobalStreaming(false);
       _latestStreamingMessage = null;
       ref.read(chatBackgroundServiceProvider).stop();
     }
@@ -1660,21 +1747,40 @@ class ChatNotifier extends Notifier<ChatState> {
         _titleGenerationFutures.containsKey(conversationId);
   }
 
-  Future<void>? _maybeAutoGenerateTitleAfterFirstReply() {
-    if (_currentConversationId == null || _isInMemoryChat) return null;
+  /// Titles a chat after its first reply. Defaults to the open chat; pass
+  /// [conversationId] and its [timeline] for a reply that finished in the
+  /// background.
+  Future<void>? _maybeAutoGenerateTitleAfterFirstReply({
+    String? conversationId,
+    List<Message>? timeline,
+  }) {
+    final convId = conversationId ?? _currentConversationId;
+    if (convId == null) return null;
+    final isOpenChat = convId == _currentConversationId;
+    if (isOpenChat && _isInMemoryChat) return null;
 
     final settings = ref.read(settingsProvider);
     if (!settings.autoGenerateTitle) return null;
 
-    final activeConv = ref.read(conv.activeConversationProvider);
-    if (activeConv == null || activeConv.title != 'New Chat') return null;
+    final conversation = isOpenChat
+        ? ref.read(conv.activeConversationProvider)
+        : ref
+              .read(conv.conversationsProvider)
+              .value
+              ?.where((c) => c.id == convId)
+              .firstOrNull;
+    if (conversation == null ||
+        conversation.isTemporary ||
+        conversation.title != 'New Chat') {
+      return null;
+    }
 
-    final assistantCount = state.messages
+    final messages = timeline ?? state.messages;
+    final assistantCount = messages
         .where((m) => m.role == MessageRole.assistant)
         .length;
     if (assistantCount != 1) return null;
 
-    final convId = _currentConversationId!;
     return _generateAndApplyTitle(convId);
   }
 
@@ -1850,7 +1956,7 @@ class ChatNotifier extends Notifier<ChatState> {
     _clearPendingApproval();
     if (!ref.mounted) return;
 
-    ref.read(chatServiceProvider)?.cancelStream();
+    (_streamChatService ?? ref.read(chatServiceProvider))?.cancelStream();
     ref.read(chatBackgroundServiceProvider).stop();
 
     _chunkCount = 0;
@@ -1877,11 +1983,12 @@ class ChatNotifier extends Notifier<ChatState> {
 
     if (!ref.mounted) return;
     state = state.copyWith(isStreaming: false, clearStreaming: true);
-    ref.read(isStreamingProvider.notifier).setStreaming(false);
+    _setGlobalStreaming(false);
     _latestStreamingMessage = null;
   }
 
   Future<void> retryLastMessage() async {
+    if (_blockIfGeneratingElsewhere()) return;
     final messages = state.messages;
     if (messages.isEmpty) return;
 
@@ -1930,6 +2037,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> continueFromMessage(String messageId) async {
+    if (_blockIfGeneratingElsewhere()) return;
     final messages = state.messages;
     if (messages.isEmpty || messages.last.id != messageId) return;
     final assistant = messages.last;
@@ -1954,7 +2062,7 @@ class ChatNotifier extends Notifier<ChatState> {
       streamingMessage: streamingAssistant,
       clearError: true,
     );
-    ref.read(isStreamingProvider.notifier).setStreaming(true);
+    _setGlobalStreaming(true);
     ref.read(chatBackgroundServiceProvider).start();
     _resetCheckpointMetrics();
     _updateSavedMetrics(streamingAssistant);
@@ -2013,6 +2121,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> retryMessage(String messageId) async {
+    if (_blockIfGeneratingElsewhere()) return;
     if (state.isStreaming || _isRegenerating) return;
     _isRegenerating = true;
     try {
@@ -2056,6 +2165,7 @@ class ChatNotifier extends Notifier<ChatState> {
     required int threadOrder,
     required int variantIndex,
   }) async {
+    if (_blockIfGeneratingElsewhere()) return;
     final target = ref.read(activeChatTargetProvider);
     final selectedModel = target.selectedModel;
     final server = target.server;
@@ -2092,7 +2202,7 @@ class ChatNotifier extends Notifier<ChatState> {
       streamingMessage: assistantMessage,
       clearError: true,
     );
-    ref.read(isStreamingProvider.notifier).setStreaming(true);
+    _setGlobalStreaming(true);
     await _saveMessage(assistantMessage);
 
     ref.read(chatBackgroundServiceProvider).start();
@@ -2229,7 +2339,7 @@ class ChatNotifier extends Notifier<ChatState> {
       streamingMessage: continuationMessage,
       clearStreaming: false,
     );
-    ref.read(isStreamingProvider.notifier).setStreaming(true);
+    _setGlobalStreaming(true);
     ref.read(chatBackgroundServiceProvider).start();
     await _saveMessage(continuationMessage);
     if (!ref.mounted) return;
@@ -2265,7 +2375,7 @@ class ChatNotifier extends Notifier<ChatState> {
       await _saveMessage(errorMessage);
       _replaceMessageInAll(errorMessage, clearStreaming: true);
       state = state.copyWith(isStreaming: false, clearStreaming: true);
-      ref.read(isStreamingProvider.notifier).setStreaming(false);
+      _setGlobalStreaming(false);
       ref.read(chatBackgroundServiceProvider).stop();
       return;
     }
@@ -2313,6 +2423,11 @@ class ChatNotifier extends Notifier<ChatState> {
       });
 
       final streamGeneration = _streamGeneration;
+      final streamInMemory = _isInMemoryChat;
+      _persistedStreamConversationId = streamInMemory
+          ? null
+          : assistantMessage.conversationId;
+      _streamChatService = chatService;
       _streamSubscription = chatService
           .sendMessage(
             server: server,
@@ -2354,7 +2469,7 @@ class ChatNotifier extends Notifier<ChatState> {
                       );
                   _latestStreamingMessage = streamingAssistantMessage;
                   _chunkCount++;
-                  if (!_isInMemoryChat &&
+                  if (!streamInMemory &&
                       _shouldCheckpointSave(streamingAssistantMessage)) {
                     _saveService?.enqueue(streamingAssistantMessage);
                     _updateSavedMetrics(streamingAssistantMessage);
@@ -2374,7 +2489,7 @@ class ChatNotifier extends Notifier<ChatState> {
                       );
                   _latestStreamingMessage = streamingAssistantMessage;
                   _chunkCount++;
-                  if (!_isInMemoryChat &&
+                  if (!streamInMemory &&
                       _shouldCheckpointSave(streamingAssistantMessage)) {
                     _saveService?.enqueue(streamingAssistantMessage);
                     _updateSavedMetrics(streamingAssistantMessage);
@@ -2413,7 +2528,7 @@ class ChatNotifier extends Notifier<ChatState> {
                         clearStreaming: true,
                       );
                     }
-                    ref.read(isStreamingProvider.notifier).setStreaming(false);
+                    _setGlobalStreaming(false);
                     ref.read(chatBackgroundServiceProvider).stop();
                   }
                   break;
@@ -2456,7 +2571,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 _maybeAutoGenerateTitleAfterFirstReply();
               }
               if (ref.mounted) {
-                ref.read(isStreamingProvider.notifier).setStreaming(false);
+                _setGlobalStreaming(false);
                 ref.read(chatBackgroundServiceProvider).stop();
               }
               await _syncConversationStatsAfterGeneration(
@@ -2477,8 +2592,10 @@ class ChatNotifier extends Notifier<ChatState> {
                 final autoSpeak = ref.read(settingsProvider).autoSpeakEnabled;
                 final voiceActive =
                     ref.read(voiceModeProvider).phase != VoiceModePhase.idle;
+                // Don't read a background reply aloud over another chat.
                 if (autoSpeak &&
                     !voiceActive &&
+                    _activeConversationId == finalMessage.conversationId &&
                     finalMessage.content.trim().isNotEmpty) {
                   ref
                       .read(ttsProvider.notifier)
@@ -2512,7 +2629,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 );
               }
               if (ref.mounted) {
-                ref.read(isStreamingProvider.notifier).setStreaming(false);
+                _setGlobalStreaming(false);
                 ref.read(chatBackgroundServiceProvider).stop();
               }
             },
@@ -2524,7 +2641,7 @@ class ChatNotifier extends Notifier<ChatState> {
         errorMessage: e.toString(),
         clearStreaming: true,
       );
-      ref.read(isStreamingProvider.notifier).setStreaming(false);
+      _setGlobalStreaming(false);
     }
   }
 
@@ -2669,6 +2786,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> generateResponseForLastUser() async {
+    if (_blockIfGeneratingElsewhere()) return;
     if (state.isStreaming || _isRegenerating) return;
     _isRegenerating = true;
     try {
@@ -2688,6 +2806,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> generateAiUserMessage() async {
+    if (_blockIfGeneratingElsewhere()) return;
     if (state.isStreaming) return;
     if (state.messages.isEmpty) return;
 
@@ -2768,6 +2887,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> editMessage(String messageId, String newContent) async {
+    if (_blockIfGeneratingElsewhere()) return;
     final messageIndex = state.messages.indexWhere((m) => m.id == messageId);
     if (messageIndex == -1) return;
 
@@ -2812,7 +2932,32 @@ class ChatNotifier extends Notifier<ChatState> {
     // Check `ref.mounted` before touching `state` (via `_isInMemoryChat`).
     // On a disposed notifier, accessing `state` throws "Cannot use the Ref of
     // NotifierProvider ... after it has been disposed" — see issue #73.
-    if (!ref.mounted || _isInMemoryChat) return;
+    if (!ref.mounted) return;
+    // A background reply belongs to a persisted chat even while a temporary
+    // chat is open, so only skip messages that aren't from that reply.
+    if (_isInMemoryChat &&
+        message.conversationId != _persistedStreamConversationId) {
+      return;
+    }
+    await persistMessage(message);
+  }
+
+  /// Reads a conversation's messages from ObjectBox. Overridden in tests.
+  @protected
+  @visibleForTesting
+  Future<List<Message>> loadConversationMessages(String conversationId) {
+    final db = ref.read(databaseProvider);
+    return db.store.runInTransactionAsync(
+      TxMode.read,
+      _loadMessagesInBackground,
+      conversationId,
+    );
+  }
+
+  /// Writes a message to ObjectBox. Overridden in tests.
+  @protected
+  @visibleForTesting
+  Future<void> persistMessage(Message message) async {
     final db = ref.read(databaseProvider);
     await db.store.runInTransactionAsync(
       TxMode.write,

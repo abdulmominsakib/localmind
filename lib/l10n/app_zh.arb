@@ -948,5 +948,7 @@
   "send_sampling_params_desc": "对于拒绝此参数的服务商或模型（例如部分推理模型）请关闭。适用于所有远程服务器的对话。",
   "default_system_prompt": "默认系统提示词",
   "default_system_prompt_desc": "用于没有角色且没有专属系统提示词的对话。",
-  "default_system_prompt_hint": "你是一个乐于助人的助手……"
+  "default_system_prompt_hint": "你是一个乐于助人的助手……",
+  "background_generation_notice": "“{title}”仍在生成回复。完成后即可在此发送。点按打开。",
+  "background_generation_notice_untitled": "另一个对话仍在生成回复。完成后即可在此发送。点按打开。"
 }

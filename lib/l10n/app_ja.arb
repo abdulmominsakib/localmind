@@ -948,5 +948,7 @@
   "send_sampling_params_desc": "このパラメーターを受け付けないプロバイダーやモデル（一部の推論モデルなど）ではオフにしてください。リモートサーバーとのすべてのチャットに適用されます。",
   "default_system_prompt": "デフォルトのシステムプロンプト",
   "default_system_prompt_desc": "ペルソナもチャット固有のシステムプロンプトもないチャットで使用されます。",
-  "default_system_prompt_hint": "あなたは親切なアシスタントです…"
+  "default_system_prompt_hint": "あなたは親切なアシスタントです…",
+  "background_generation_notice": "「{title}」でまだ返信を生成中です。完了するとここで送信できます。タップして開く。",
+  "background_generation_notice_untitled": "別のチャットでまだ返信を生成中です。完了するとここで送信できます。タップして開く。"
 }

@@ -3469,5 +3469,8 @@
   "send_sampling_params_desc": "Turn off for providers or models that reject this parameter (for example some reasoning models). Applies to all chats with remote servers.",
   "default_system_prompt": "Default system prompt",
   "default_system_prompt_desc": "Used for chats that have no persona and no chat-specific system prompt.",
-  "default_system_prompt_hint": "You are a helpful assistant…"
+  "default_system_prompt_hint": "You are a helpful assistant…",
+  "background_generation_notice": "Still replying in \"{title}\". You can send here once it finishes. Tap to open.",
+  "@background_generation_notice": {"description": "Notice above the input while another chat's reply generates in the background", "placeholders": {"title": {"type": "String"}}},
+  "background_generation_notice_untitled": "Another chat is still replying. You can send here once it finishes. Tap to open."
 }

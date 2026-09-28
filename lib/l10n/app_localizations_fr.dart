@@ -3216,4 +3216,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get default_system_prompt_hint => 'Tu es un assistant serviable…';
+
+  @override
+  String background_generation_notice(String title) {
+    return 'Réponse en cours dans « $title ». Vous pourrez envoyer ici une fois terminée. Touchez pour ouvrir.';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      'Une autre discussion est encore en train de répondre. Vous pourrez envoyer ici une fois terminée. Touchez pour ouvrir.';
 }

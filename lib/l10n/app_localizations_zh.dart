@@ -3119,6 +3119,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get default_system_prompt_hint => '你是一个乐于助人的助手……';
+
+  @override
+  String background_generation_notice(String title) {
+    return '“$title”仍在生成回复。完成后即可在此发送。点按打开。';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      '另一个对话仍在生成回复。完成后即可在此发送。点按打开。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6142,4 +6151,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get default_system_prompt_hint => '你是一個樂於助人的助理……';
+
+  @override
+  String background_generation_notice(String title) {
+    return '「$title」仍在產生回覆。完成後即可在此傳送。點按開啟。';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      '另一個對話仍在產生回覆。完成後即可在此傳送。點按開啟。';
 }

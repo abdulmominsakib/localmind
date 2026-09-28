@@ -41,6 +41,8 @@ class ChatInputBar extends ConsumerStatefulWidget {
 
     this.enabled = true,
 
+    this.sendBlocked = false,
+
     this.isStreaming = false,
 
     this.focusNode,
@@ -57,6 +59,10 @@ class ChatInputBar extends ConsumerStatefulWidget {
   final void Function(List<File> attachments)? onAttach;
 
   final bool enabled;
+
+  /// Typing stays possible, but a reply can't be requested yet (another
+  /// chat's reply is still generating in the background, #94).
+  final bool sendBlocked;
 
   final bool isStreaming;
 
@@ -485,6 +491,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     final text = _controller.text.trim();
 
     if (text.isEmpty && _attachedFiles.isEmpty) return;
+    // Keep the draft instead of clearing it for a send that can't start.
+    if (widget.sendBlocked && !_sendAsAssistant) return;
 
     if (!_ensureChatTarget()) return;
 
@@ -556,7 +564,12 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
   }
 
   Future<void> _handleGenerateAiUser() async {
-    if (_isGeneratingAiUser || widget.isStreaming || !widget.enabled) return;
+    if (_isGeneratingAiUser ||
+        widget.isStreaming ||
+        widget.sendBlocked ||
+        !widget.enabled) {
+      return;
+    }
     setState(() => _isGeneratingAiUser = true);
     try {
       await ref.read(chatProvider.notifier).generateAiUserMessage();
@@ -865,7 +878,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         widget.enabled &&
         isConnected &&
         (_controller.text.trim().isNotEmpty || _attachedFiles.isNotEmpty) &&
-        !widget.isStreaming;
+        !widget.isStreaming &&
+        (!widget.sendBlocked || _sendAsAssistant);
 
     return SafeArea(
       top: false,

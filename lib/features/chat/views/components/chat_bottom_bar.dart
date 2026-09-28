@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
+import 'package:localmind/features/chat/views/components/background_generation_notice.dart';
 import 'package:localmind/features/chat/views/components/chat_input_bar.dart';
 import 'package:localmind/features/chat/views/components/top_bar/smart_reply_chips.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
@@ -36,6 +37,12 @@ class ChatBottomBar extends ConsumerWidget {
     final streamingId = ref.watch(
       chatProvider.select((s) => s.streamingMessage?.id),
     );
+    // Another chat's reply is still generating in the background (#94).
+    final generatingConversationId = ref.watch(streamingConversationIdProvider);
+    final activeConversationId = ref.watch(conv.activeConversationIdProvider);
+    final generatingElsewhere =
+        generatingConversationId != null &&
+        generatingConversationId != activeConversationId;
 
     int totalTokenCount = 0;
     if (hasActiveConv && dbTokenCount != null && dbTokenCount > 0) {
@@ -84,9 +91,14 @@ class ChatBottomBar extends ConsumerWidget {
               const SizedBox(height: 4),
               const SmartReplyChipsWrapper(),
             ],
+            if (generatingElsewhere)
+              BackgroundGenerationNotice(
+                conversationId: generatingConversationId,
+              ),
             ChatInputBar(
               focusNode: inputFocusNode,
               isStreaming: isStreaming,
+              sendBlocked: generatingElsewhere,
               keyboardIncognito: keyboardIncognito,
               onSend: (message, {attachments}) {
                 ref

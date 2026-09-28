@@ -17,6 +17,7 @@ import '../../../core/services/app_haptics.dart';
 import '../../../core/services/crash_report_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/system_insets.dart';
+import '../../chat/providers/chat_providers.dart';
 import '../../chat/utils/image_upload_utils.dart';
 import '../../conversations/providers/conversation_providers.dart';
 import '../../models/data/models/model_info.dart';
@@ -508,8 +509,19 @@ class SettingsViews extends ConsumerWidget {
                   _DangerousAction(
                     label: l10n.delete_all_conversations,
                     icon: HugeIcons.strokeRoundedDelete01,
-                    onConfirm: () =>
-                        ref.read(conversationsProvider.notifier).deleteAll(),
+                    onConfirm: () async {
+                      final generatingId = ref.read(
+                        streamingConversationIdProvider,
+                      );
+                      if (generatingId != null) {
+                        await ref
+                            .read(chatProvider.notifier)
+                            .cancelGenerationFor(generatingId);
+                      }
+                      await ref
+                          .read(conversationsProvider.notifier)
+                          .deleteAll();
+                    },
                   ),
                   _DangerousAction(
                     label: l10n.reset_settings_defaults,

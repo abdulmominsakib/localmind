@@ -959,5 +959,7 @@
   "send_sampling_params_desc": "이 매개변수를 거부하는 제공업체나 모델(예: 일부 추론 모델)에서는 끄세요. 원격 서버와의 모든 채팅에 적용됩니다.",
   "default_system_prompt": "기본 시스템 프롬프트",
   "default_system_prompt_desc": "페르소나와 채팅별 시스템 프롬프트가 없는 채팅에 사용됩니다.",
-  "default_system_prompt_hint": "당신은 도움이 되는 어시스턴트입니다…"
+  "default_system_prompt_hint": "당신은 도움이 되는 어시스턴트입니다…",
+  "background_generation_notice": "\"{title}\"에서 아직 답변을 생성 중입니다. 완료되면 여기서 보낼 수 있습니다. 탭하여 열기.",
+  "background_generation_notice_untitled": "다른 채팅에서 아직 답변을 생성 중입니다. 완료되면 여기서 보낼 수 있습니다. 탭하여 열기."
 }

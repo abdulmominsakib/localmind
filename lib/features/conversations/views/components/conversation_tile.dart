@@ -20,7 +20,11 @@ class ConversationTile extends StatelessWidget {
     this.selectionMode = false,
     this.isSelected = false,
     this.onEnterSelectionMode,
+    this.isGenerating = false,
   });
+
+  /// A reply for this chat is still generating (possibly in the background).
+  final bool isGenerating;
 
   final Conversation conversation;
   final bool isActive;
@@ -111,6 +115,20 @@ class ConversationTile extends StatelessWidget {
               children: [
                 if (selectionMode)
                   Checkbox(value: isSelected, onChanged: (_) => onTap())
+                else if (isGenerating)
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: isDark
+                            ? AppColors.darkAccent
+                            : AppColors.lightAccent,
+                      ),
+                    ),
+                  )
                 else
                   HugeIcon(
                     icon: conversation.isPinned

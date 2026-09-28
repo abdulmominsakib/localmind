@@ -948,5 +948,7 @@
   "send_sampling_params_desc": "Disattivalo per provider o modelli che rifiutano questo parametro (ad esempio alcuni modelli di ragionamento). Vale per tutte le chat con server remoti.",
   "default_system_prompt": "Prompt di sistema predefinito",
   "default_system_prompt_desc": "Usato per le chat senza persona e senza un prompt di sistema proprio.",
-  "default_system_prompt_hint": "Sei un assistente disponibile…"
+  "default_system_prompt_hint": "Sei un assistente disponibile…",
+  "background_generation_notice": "Risposta ancora in corso in \"{title}\". Potrai inviare qui quando termina. Tocca per aprire.",
+  "background_generation_notice_untitled": "Un'altra chat sta ancora rispondendo. Potrai inviare qui quando termina. Tocca per aprire."
 }

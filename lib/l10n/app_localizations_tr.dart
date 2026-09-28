@@ -3233,4 +3233,13 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get default_system_prompt_hint => 'Yardımsever bir asistansın…';
+
+  @override
+  String background_generation_notice(String title) {
+    return '\"$title\" sohbetinde yanıt hâlâ oluşturuluyor. Bitince buradan gönderebilirsiniz. Açmak için dokunun.';
+  }
+
+  @override
+  String get background_generation_notice_untitled =>
+      'Başka bir sohbet hâlâ yanıt oluşturuyor. Bitince buradan gönderebilirsiniz. Açmak için dokunun.';
 }

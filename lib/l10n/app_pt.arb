@@ -959,5 +959,7 @@
   "send_sampling_params_desc": "Desative para provedores ou modelos que rejeitam este parâmetro (por exemplo, alguns modelos de raciocínio). Aplica-se a todos os chats com servidores remotos.",
   "default_system_prompt": "Prompt de sistema padrão",
   "default_system_prompt_desc": "Usado em chats sem persona e sem prompt de sistema próprio.",
-  "default_system_prompt_hint": "Você é um assistente prestativo…"
+  "default_system_prompt_hint": "Você é um assistente prestativo…",
+  "background_generation_notice": "Ainda respondendo em \"{title}\". Você poderá enviar aqui quando terminar. Toque para abrir.",
+  "background_generation_notice_untitled": "Outro chat ainda está respondendo. Você poderá enviar aqui quando terminar. Toque para abrir."
 }

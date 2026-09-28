@@ -5948,6 +5948,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You are a helpful assistant…'**
   String get default_system_prompt_hint;
+
+  /// Notice above the input while another chat's reply generates in the background
+  ///
+  /// In en, this message translates to:
+  /// **'Still replying in \"{title}\". You can send here once it finishes. Tap to open.'**
+  String background_generation_notice(String title);
+
+  /// No description provided for @background_generation_notice_untitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Another chat is still replying. You can send here once it finishes. Tap to open.'**
+  String get background_generation_notice_untitled;
 }
 
 class _AppLocalizationsDelegate

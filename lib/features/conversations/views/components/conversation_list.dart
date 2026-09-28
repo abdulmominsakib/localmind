@@ -28,6 +28,7 @@ class ConversationList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final generatingConversationId = ref.watch(streamingConversationIdProvider);
     final selectionMode = ref.watch(historySelectionModeProvider);
     final selectedIds = ref.watch(historySelectedIdsProvider);
     final sectionOrder = [
@@ -73,6 +74,7 @@ class ConversationList extends ConsumerWidget {
                   isActive: activeConversation?.id == conversation.id,
                   selectionMode: selectionMode,
                   isSelected: selectedIds.contains(conversation.id),
+                  isGenerating: generatingConversationId == conversation.id,
                   onEnterSelectionMode: () {
                     ref.read(historySelectionModeProvider.notifier).enable();
                     ref
@@ -163,11 +165,16 @@ class ConversationList extends ConsumerWidget {
               child: Text(l10n.cancel),
             ),
             TextButton(
-              onPressed: () {
-                ref
+              onPressed: () async {
+                Navigator.pop(context);
+                // Stop a reply still generating for this chat first so it
+                // doesn't write messages into a deleted conversation.
+                await ref
+                    .read(chatProvider.notifier)
+                    .cancelGenerationFor(conversation.id);
+                await ref
                     .read(conversationsProvider.notifier)
                     .deleteConversation(conversation.id);
-                Navigator.pop(context);
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: Text(l10n.delete),

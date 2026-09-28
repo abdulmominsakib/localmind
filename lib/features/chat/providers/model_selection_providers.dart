@@ -15,6 +15,9 @@ import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 
 const modelSelectionRequiredMessage = 'You need to select a model first';
+const generatingElsewhereMessage =
+    'Another chat is still generating a reply. Wait for it to finish or stop '
+    'it before sending here.';
 
 class ActiveChatTarget {
   final Server? server;
@@ -366,5 +369,22 @@ class IsStreamingNotifier extends Notifier<bool> {
 
   void setStreaming(bool streaming) {
     state = streaming;
+  }
+}
+
+/// Id of the conversation whose reply is currently generating, or null.
+/// Stays set while the user views another chat, so a reply can keep
+/// streaming in the background (#94).
+final streamingConversationIdProvider =
+    NotifierProvider<StreamingConversationIdNotifier, String?>(
+      StreamingConversationIdNotifier.new,
+    );
+
+class StreamingConversationIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String? conversationId) {
+    state = conversationId;
   }
 }
