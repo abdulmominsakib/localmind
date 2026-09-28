@@ -123,6 +123,8 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
                     maxTokens,
                     activeConv?.id,
                     isDark,
+                    sendTemperature: settings.sendTemperature,
+                    sendTopP: settings.sendTopP,
                   ),
                   child: Row(
                     children: [
@@ -170,8 +172,11 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
     double topP,
     int maxTokens,
     String? conversationId,
-    bool isDark,
-  ) {
+    bool isDark, {
+    required bool sendTemperature,
+    required bool sendTopP,
+  }) {
+    final settingsNotifier = ref.read(settingsProvider.notifier);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
@@ -185,6 +190,9 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
             description: l10n.temperature_desc,
             onChanged: (v) => _updateParam(ref, conversationId, temperature: v),
             isDark: isDark,
+            sendToApi: sendTemperature,
+            sendToApiLabel: l10n.send_temperature_to_api,
+            onSendToApiChanged: settingsNotifier.setSendTemperature,
           ),
           const SizedBox(height: 24),
           _ParamSlider(
@@ -196,6 +204,9 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
             description: l10n.top_p_desc,
             onChanged: (v) => _updateParam(ref, conversationId, topP: v),
             isDark: isDark,
+            sendToApi: sendTopP,
+            sendToApiLabel: l10n.send_top_p_to_api,
+            onSendToApiChanged: settingsNotifier.setSendTopP,
           ),
           const SizedBox(height: 24),
           _ParamInput(
@@ -613,6 +624,9 @@ class _ParamSlider extends StatelessWidget {
     required this.description,
     required this.onChanged,
     required this.isDark,
+    required this.sendToApi,
+    required this.sendToApiLabel,
+    required this.onSendToApiChanged,
   });
 
   final String label;
@@ -623,6 +637,11 @@ class _ParamSlider extends StatelessWidget {
   final String description;
   final ValueChanged<double> onChanged;
   final bool isDark;
+
+  /// Global switch: when off the value isn't sent to remote APIs (#81).
+  final bool sendToApi;
+  final String sendToApiLabel;
+  final ValueChanged<bool> onSendToApiChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -650,6 +669,7 @@ class _ParamSlider extends StatelessWidget {
           initialValue: value,
           min: min,
           max: max,
+          enabled: sendToApi,
           onChanged: onChanged,
         ),
         const SizedBox(height: 4),
@@ -659,6 +679,20 @@ class _ParamSlider extends StatelessWidget {
             fontSize: 12,
             color: isDark ? Colors.white54 : Colors.black54,
           ),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                sendToApiLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+            ),
+            Switch.adaptive(value: sendToApi, onChanged: onSendToApiChanged),
+          ],
         ),
       ],
     );

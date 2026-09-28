@@ -3206,4 +3206,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String stt_error_generic(String code) {
     return 'Ошибка распознавания речи: $code';
   }
+
+  @override
+  String get send_temperature_to_api => 'Отправлять температуру';
+
+  @override
+  String get send_top_p_to_api => 'Отправлять Top P';
+
+  @override
+  String get send_sampling_params_desc =>
+      'Отключите для провайдеров или моделей, которые не принимают этот параметр (например, некоторых моделей рассуждения). Действует для всех чатов с удалёнными серверами.';
+
+  @override
+  String get default_system_prompt => 'Системный промпт по умолчанию';
+
+  @override
+  String get default_system_prompt_desc =>
+      'Используется в чатах без персоны и без собственного системного промпта.';
+
+  @override
+  String get default_system_prompt_hint => 'Ты полезный ассистент…';
 }

@@ -939,5 +939,11 @@
   "stt_error_client": "Konuşma tanıma hizmeti başlatılamadı. Bir sesli giriş uygulamasının yüklü ve varsayılan konuşma tanıyıcı olarak ayarlı olduğundan emin olup tekrar deneyin.",
   "stt_error_language": "Bu cihazdaki konuşma tanıyıcı dilinizi desteklemiyor.",
   "stt_error_unavailable": "Bu cihazda konuşma tanıma hizmeti bulunamadı. Bir sesli giriş uygulaması (örneğin FUTO Voice Input) yükleyip varsayılan konuşma tanıyıcı olarak ayarlayın.",
-  "stt_error_generic": "Konuşma tanıma hatası: {code}"
+  "stt_error_generic": "Konuşma tanıma hatası: {code}",
+  "send_temperature_to_api": "Sıcaklığı gönder",
+  "send_top_p_to_api": "Top P gönder",
+  "send_sampling_params_desc": "Bu parametreyi reddeden sağlayıcılar veya modeller için kapatın (örneğin bazı akıl yürütme modelleri). Uzak sunuculardaki tüm sohbetler için geçerlidir.",
+  "default_system_prompt": "Varsayılan sistem istemi",
+  "default_system_prompt_desc": "Personası ve sohbete özel sistem istemi olmayan sohbetlerde kullanılır.",
+  "default_system_prompt_hint": "Yardımsever bir asistansın…"
 }

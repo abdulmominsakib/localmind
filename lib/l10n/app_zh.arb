@@ -942,5 +942,11 @@
   "stt_error_client": "语音识别服务无法启动。请确认已安装语音输入应用并将其设为默认语音识别器，然后重试。",
   "stt_error_language": "此设备上的语音识别器不支持你的语言。",
   "stt_error_unavailable": "此设备上未找到语音识别服务。请安装语音输入应用（例如 FUTO Voice Input）并将其设为默认语音识别器。",
-  "stt_error_generic": "语音识别错误：{code}"
+  "stt_error_generic": "语音识别错误：{code}",
+  "send_temperature_to_api": "发送 Temperature",
+  "send_top_p_to_api": "发送 Top P",
+  "send_sampling_params_desc": "对于拒绝此参数的服务商或模型（例如部分推理模型）请关闭。适用于所有远程服务器的对话。",
+  "default_system_prompt": "默认系统提示词",
+  "default_system_prompt_desc": "用于没有角色且没有专属系统提示词的对话。",
+  "default_system_prompt_hint": "你是一个乐于助人的助手……"
 }

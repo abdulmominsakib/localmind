@@ -60,6 +60,15 @@ class AppSettings {
   final bool calendarToolsEnabled;
   final bool locationToolsEnabled;
   final bool autoCollapseThinking;
+
+  /// Whether `temperature` / `top_p` are sent to remote APIs. Some providers
+  /// (e.g. reasoning models) reject them (#81).
+  final bool sendTemperature;
+  final bool sendTopP;
+
+  /// Fallback system prompt used when a chat has neither its own prompt nor
+  /// a persona.
+  final String defaultSystemPrompt;
   final List<McpIntegration> savedMcpIntegrations;
 
   AppSettings({
@@ -110,6 +119,9 @@ class AppSettings {
     this.calendarToolsEnabled = false,
     this.locationToolsEnabled = false,
     this.autoCollapseThinking = false,
+    this.sendTemperature = true,
+    this.sendTopP = true,
+    this.defaultSystemPrompt = '',
     this.savedMcpIntegrations = const [],
   });
 
@@ -161,6 +173,9 @@ class AppSettings {
     bool? calendarToolsEnabled,
     bool? locationToolsEnabled,
     bool? autoCollapseThinking,
+    bool? sendTemperature,
+    bool? sendTopP,
+    String? defaultSystemPrompt,
     List<McpIntegration>? savedMcpIntegrations,
   }) {
     return AppSettings(
@@ -234,6 +249,9 @@ class AppSettings {
       calendarToolsEnabled: calendarToolsEnabled ?? this.calendarToolsEnabled,
       locationToolsEnabled: locationToolsEnabled ?? this.locationToolsEnabled,
       autoCollapseThinking: autoCollapseThinking ?? this.autoCollapseThinking,
+      sendTemperature: sendTemperature ?? this.sendTemperature,
+      sendTopP: sendTopP ?? this.sendTopP,
+      defaultSystemPrompt: defaultSystemPrompt ?? this.defaultSystemPrompt,
       savedMcpIntegrations: savedMcpIntegrations ?? this.savedMcpIntegrations,
     );
   }
@@ -287,6 +305,9 @@ class AppSettings {
       'calendarToolsEnabled': calendarToolsEnabled,
       'locationToolsEnabled': locationToolsEnabled,
       'autoCollapseThinking': autoCollapseThinking,
+      'sendTemperature': sendTemperature,
+      'sendTopP': sendTopP,
+      'defaultSystemPrompt': defaultSystemPrompt,
       'savedMcpIntegrations': savedMcpIntegrations
           .map((i) => i.toJson())
           .toList(),
@@ -344,6 +365,9 @@ class AppSettings {
       calendarToolsEnabled: map['calendarToolsEnabled'] ?? false,
       locationToolsEnabled: map['locationToolsEnabled'] ?? false,
       autoCollapseThinking: map['autoCollapseThinking'] ?? false,
+      sendTemperature: map['sendTemperature'] ?? true,
+      sendTopP: map['sendTopP'] ?? true,
+      defaultSystemPrompt: map['defaultSystemPrompt'] as String? ?? '',
       savedMcpIntegrations: _parseSavedMcpIntegrations(
         map['savedMcpIntegrations'],
       ),

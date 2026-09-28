@@ -942,5 +942,11 @@
   "stt_error_client": "No se pudo iniciar el servicio de reconocimiento de voz. Asegúrate de tener instalada una app de entrada de voz configurada como reconocedor predeterminado e inténtalo de nuevo.",
   "stt_error_language": "El reconocedor de voz de este dispositivo no admite tu idioma.",
   "stt_error_unavailable": "No se encontró ningún servicio de reconocimiento de voz en este dispositivo. Instala una app de entrada de voz (por ejemplo FUTO Voice Input) y configúrala como reconocedor predeterminado.",
-  "stt_error_generic": "Error de reconocimiento de voz: {code}"
+  "stt_error_generic": "Error de reconocimiento de voz: {code}",
+  "send_temperature_to_api": "Enviar temperatura",
+  "send_top_p_to_api": "Enviar Top P",
+  "send_sampling_params_desc": "Desactívalo para proveedores o modelos que rechazan este parámetro (por ejemplo, algunos modelos de razonamiento). Se aplica a todos los chats con servidores remotos.",
+  "default_system_prompt": "Prompt de sistema predeterminado",
+  "default_system_prompt_desc": "Se usa en chats sin persona ni prompt de sistema propio.",
+  "default_system_prompt_hint": "Eres un asistente útil…"
 }

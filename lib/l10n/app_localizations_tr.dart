@@ -3213,4 +3213,24 @@ class AppLocalizationsTr extends AppLocalizations {
   String stt_error_generic(String code) {
     return 'Konuşma tanıma hatası: $code';
   }
+
+  @override
+  String get send_temperature_to_api => 'Sıcaklığı gönder';
+
+  @override
+  String get send_top_p_to_api => 'Top P gönder';
+
+  @override
+  String get send_sampling_params_desc =>
+      'Bu parametreyi reddeden sağlayıcılar veya modeller için kapatın (örneğin bazı akıl yürütme modelleri). Uzak sunuculardaki tüm sohbetler için geçerlidir.';
+
+  @override
+  String get default_system_prompt => 'Varsayılan sistem istemi';
+
+  @override
+  String get default_system_prompt_desc =>
+      'Personası ve sohbete özel sistem istemi olmayan sohbetlerde kullanılır.';
+
+  @override
+  String get default_system_prompt_hint => 'Yardımsever bir asistansın…';
 }

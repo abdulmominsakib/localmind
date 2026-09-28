@@ -3193,4 +3193,24 @@ class AppLocalizationsHi extends AppLocalizations {
   String stt_error_generic(String code) {
     return 'वॉइस पहचान त्रुटि: $code';
   }
+
+  @override
+  String get send_temperature_to_api => 'टेम्परेचर भेजें';
+
+  @override
+  String get send_top_p_to_api => 'Top P भेजें';
+
+  @override
+  String get send_sampling_params_desc =>
+      'जो प्रोवाइडर या मॉडल इस पैरामीटर को अस्वीकार करते हैं (जैसे कुछ रीज़निंग मॉडल), उनके लिए बंद करें। रिमोट सर्वर वाली सभी चैट पर लागू।';
+
+  @override
+  String get default_system_prompt => 'डिफ़ॉल्ट सिस्टम प्रॉम्प्ट';
+
+  @override
+  String get default_system_prompt_desc =>
+      'उन चैट के लिए उपयोग होता है जिनमें न कोई पर्सोना है और न ही अपना सिस्टम प्रॉम्प्ट।';
+
+  @override
+  String get default_system_prompt_hint => 'आप एक सहायक असिस्टेंट हैं…';
 }

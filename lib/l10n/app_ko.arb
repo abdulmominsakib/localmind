@@ -953,5 +953,11 @@
   "stt_error_client": "음성 인식 서비스를 시작하지 못했습니다. 음성 입력 앱이 설치되어 있고 기본 음성 인식기로 설정되어 있는지 확인한 후 다시 시도하세요.",
   "stt_error_language": "이 기기의 음성 인식기가 사용자의 언어를 지원하지 않습니다.",
   "stt_error_unavailable": "이 기기에서 음성 인식 서비스를 찾을 수 없습니다. 음성 입력 앱(예: FUTO Voice Input)을 설치하고 기본 음성 인식기로 설정하세요.",
-  "stt_error_generic": "음성 인식 오류: {code}"
+  "stt_error_generic": "음성 인식 오류: {code}",
+  "send_temperature_to_api": "Temperature 전송",
+  "send_top_p_to_api": "Top P 전송",
+  "send_sampling_params_desc": "이 매개변수를 거부하는 제공업체나 모델(예: 일부 추론 모델)에서는 끄세요. 원격 서버와의 모든 채팅에 적용됩니다.",
+  "default_system_prompt": "기본 시스템 프롬프트",
+  "default_system_prompt_desc": "페르소나와 채팅별 시스템 프롬프트가 없는 채팅에 사용됩니다.",
+  "default_system_prompt_hint": "당신은 도움이 되는 어시스턴트입니다…"
 }

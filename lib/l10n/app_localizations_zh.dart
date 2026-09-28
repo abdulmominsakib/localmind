@@ -3100,6 +3100,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String stt_error_generic(String code) {
     return '语音识别错误：$code';
   }
+
+  @override
+  String get send_temperature_to_api => '发送 Temperature';
+
+  @override
+  String get send_top_p_to_api => '发送 Top P';
+
+  @override
+  String get send_sampling_params_desc =>
+      '对于拒绝此参数的服务商或模型（例如部分推理模型）请关闭。适用于所有远程服务器的对话。';
+
+  @override
+  String get default_system_prompt => '默认系统提示词';
+
+  @override
+  String get default_system_prompt_desc => '用于没有角色且没有专属系统提示词的对话。';
+
+  @override
+  String get default_system_prompt_hint => '你是一个乐于助人的助手……';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6104,4 +6123,23 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String stt_error_generic(String code) {
     return '語音辨識錯誤：$code';
   }
+
+  @override
+  String get send_temperature_to_api => '傳送 Temperature';
+
+  @override
+  String get send_top_p_to_api => '傳送 Top P';
+
+  @override
+  String get send_sampling_params_desc =>
+      '對於拒絕此參數的服務商或模型（例如部分推理模型）請關閉。適用於所有遠端伺服器的對話。';
+
+  @override
+  String get default_system_prompt => '預設系統提示詞';
+
+  @override
+  String get default_system_prompt_desc => '用於沒有角色且沒有專屬系統提示詞的對話。';
+
+  @override
+  String get default_system_prompt_hint => '你是一個樂於助人的助理……';
 }

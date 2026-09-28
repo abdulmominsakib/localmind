@@ -1596,16 +1596,25 @@ class ChatNotifier extends Notifier<ChatState> {
     }
 
     final personaIds = conversation?.personaId;
-    if (personaIds == null || personaIds.isEmpty) return null;
+    if (personaIds == null || personaIds.isEmpty) {
+      return _defaultSystemPrompt();
+    }
 
     try {
       final personas = ref.read(personasNotifierProvider).value ?? [];
       final selected = PersonaPromptUtils.resolvePersonas(personaIds, personas);
-      if (selected.isEmpty) return null;
+      if (selected.isEmpty) return _defaultSystemPrompt();
       return PersonaPromptUtils.combineSystemPrompts(selected);
     } catch (_) {}
 
-    return null;
+    return _defaultSystemPrompt();
+  }
+
+  /// Settings fallback, used only when the chat has no prompt of its own and
+  /// no persona (#81).
+  String? _defaultSystemPrompt() {
+    final prompt = ref.read(settingsProvider).defaultSystemPrompt.trim();
+    return prompt.isEmpty ? null : prompt;
   }
 
   List<Message> _truncateToContextWindow(

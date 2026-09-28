@@ -942,5 +942,11 @@
   "stt_error_client": "語音辨識服務無法啟動。請確認已安裝語音輸入 App 並設為預設語音辨識器，然後重試。",
   "stt_error_language": "此裝置上的語音辨識器不支援你的語言。",
   "stt_error_unavailable": "此裝置上找不到語音辨識服務。請安裝語音輸入 App（例如 FUTO Voice Input）並設為預設語音辨識器。",
-  "stt_error_generic": "語音辨識錯誤：{code}"
+  "stt_error_generic": "語音辨識錯誤：{code}",
+  "send_temperature_to_api": "傳送 Temperature",
+  "send_top_p_to_api": "傳送 Top P",
+  "send_sampling_params_desc": "對於拒絕此參數的服務商或模型（例如部分推理模型）請關閉。適用於所有遠端伺服器的對話。",
+  "default_system_prompt": "預設系統提示詞",
+  "default_system_prompt_desc": "用於沒有角色且沒有專屬系統提示詞的對話。",
+  "default_system_prompt_hint": "你是一個樂於助人的助理……"
 }

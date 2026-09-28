@@ -3193,4 +3193,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String stt_error_generic(String code) {
     return 'Fehler bei der Spracherkennung: $code';
   }
+
+  @override
+  String get send_temperature_to_api => 'Temperatur senden';
+
+  @override
+  String get send_top_p_to_api => 'Top P senden';
+
+  @override
+  String get send_sampling_params_desc =>
+      'Für Anbieter oder Modelle deaktivieren, die diesen Parameter ablehnen (z. B. einige Reasoning-Modelle). Gilt für alle Chats mit Remote-Servern.';
+
+  @override
+  String get default_system_prompt => 'Standard-Systemprompt';
+
+  @override
+  String get default_system_prompt_desc =>
+      'Wird für Chats ohne Persona und ohne eigenen Systemprompt verwendet.';
+
+  @override
+  String get default_system_prompt_hint => 'Du bist ein hilfreicher Assistent…';
 }

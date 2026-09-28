@@ -3463,5 +3463,11 @@
   "stt_error_language": "The speech recognizer on this device doesn't support your language.",
   "stt_error_unavailable": "No speech recognition service found on this device. Install a voice input app (for example FUTO Voice Input) and set it as the default speech recognizer.",
   "stt_error_generic": "Speech recognition error: {code}",
-  "@stt_error_generic": {"description": "Fallback speech recognition error with the platform error name", "placeholders": {"code": {"type": "String"}}}
+  "@stt_error_generic": {"description": "Fallback speech recognition error with the platform error name", "placeholders": {"code": {"type": "String"}}},
+  "send_temperature_to_api": "Send temperature",
+  "send_top_p_to_api": "Send Top P",
+  "send_sampling_params_desc": "Turn off for providers or models that reject this parameter (for example some reasoning models). Applies to all chats with remote servers.",
+  "default_system_prompt": "Default system prompt",
+  "default_system_prompt_desc": "Used for chats that have no persona and no chat-specific system prompt.",
+  "default_system_prompt_hint": "You are a helpful assistant…"
 }

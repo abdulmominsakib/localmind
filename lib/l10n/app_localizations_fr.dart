@@ -3196,4 +3196,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String stt_error_generic(String code) {
     return 'Erreur de reconnaissance vocale : $code';
   }
+
+  @override
+  String get send_temperature_to_api => 'Envoyer la température';
+
+  @override
+  String get send_top_p_to_api => 'Envoyer Top P';
+
+  @override
+  String get send_sampling_params_desc =>
+      'Désactivez-le pour les fournisseurs ou modèles qui refusent ce paramètre (par exemple certains modèles de raisonnement). S\'applique à toutes les discussions avec des serveurs distants.';
+
+  @override
+  String get default_system_prompt => 'Prompt système par défaut';
+
+  @override
+  String get default_system_prompt_desc =>
+      'Utilisé pour les discussions sans persona ni prompt système spécifique.';
+
+  @override
+  String get default_system_prompt_hint => 'Tu es un assistant serviable…';
 }

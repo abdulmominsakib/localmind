@@ -3181,4 +3181,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String stt_error_generic(String code) {
     return 'Speech recognition error: $code';
   }
+
+  @override
+  String get send_temperature_to_api => 'Send temperature';
+
+  @override
+  String get send_top_p_to_api => 'Send Top P';
+
+  @override
+  String get send_sampling_params_desc =>
+      'Turn off for providers or models that reject this parameter (for example some reasoning models). Applies to all chats with remote servers.';
+
+  @override
+  String get default_system_prompt => 'Default system prompt';
+
+  @override
+  String get default_system_prompt_desc =>
+      'Used for chats that have no persona and no chat-specific system prompt.';
+
+  @override
+  String get default_system_prompt_hint => 'You are a helpful assistant…';
 }

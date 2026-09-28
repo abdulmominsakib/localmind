@@ -217,8 +217,8 @@ class LMStudioChatService implements ChatService {
       'model': modelId,
       'input': input,
       if (systemPrompt.isNotEmpty) 'system_prompt': systemPrompt,
-      'temperature': params.temperature,
-      'top_p': params.topP,
+      if (params.sendTemperature) 'temperature': params.temperature,
+      if (params.sendTopP) 'top_p': params.topP,
       'max_output_tokens': params.maxTokens,
       'stream': true,
     };
@@ -670,8 +670,8 @@ class OpenAICompatibleChatService implements ChatService {
     final body = <String, dynamic>{
       'model': modelId,
       'messages': apiMessages,
-      'temperature': params.temperature,
-      'top_p': params.topP,
+      if (params.sendTemperature) 'temperature': params.temperature,
+      if (params.sendTopP) 'top_p': params.topP,
       'max_tokens': params.maxTokens,
       'stream': true,
     };
@@ -940,8 +940,8 @@ class OllamaChatService implements ChatService {
       'messages': apiMessages,
       'stream': true,
       'options': {
-        'temperature': params.temperature,
-        'top_p': params.topP,
+        if (params.sendTemperature) 'temperature': params.temperature,
+        if (params.sendTopP) 'top_p': params.topP,
         'num_predict': params.maxTokens,
       },
     };
@@ -1215,8 +1215,8 @@ class OpenRouterChatService implements ChatService {
     final body = <String, dynamic>{
       'model': modelId,
       'messages': apiMessages,
-      'temperature': params.temperature,
-      'top_p': params.topP,
+      if (params.sendTemperature) 'temperature': params.temperature,
+      if (params.sendTopP) 'top_p': params.topP,
       'max_tokens': params.maxTokens,
       'stream': true,
     };

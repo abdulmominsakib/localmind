@@ -273,6 +273,27 @@ class SettingsViews extends ConsumerWidget {
                         .setAutoCollapseThinking(value),
                   ),
                   _ToggleSetting(
+                    label: l10n.send_temperature_to_api,
+                    description: l10n.send_sampling_params_desc,
+                    value: settings.sendTemperature,
+                    onChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setSendTemperature(value),
+                  ),
+                  _ToggleSetting(
+                    label: l10n.send_top_p_to_api,
+                    description: l10n.send_sampling_params_desc,
+                    value: settings.sendTopP,
+                    onChanged: (value) =>
+                        ref.read(settingsProvider.notifier).setSendTopP(value),
+                  ),
+                  _DefaultSystemPromptSetting(
+                    currentPrompt: settings.defaultSystemPrompt,
+                    onSave: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setDefaultSystemPrompt(value),
+                  ),
+                  _ToggleSetting(
                     label: l10n.haptic_feedback,
                     value: settings.hapticFeedbackEnabled,
                     onChanged: (value) {
@@ -2514,6 +2535,114 @@ class _HuggingFaceTokenSetting extends StatelessWidget {
                 ShadButton.outline(
                   onPressed: () => onSave(null),
                   child: Text(l10n.clear_huggingface_token),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DefaultSystemPromptSetting extends StatelessWidget {
+  const _DefaultSystemPromptSetting({
+    required this.currentPrompt,
+    required this.onSave,
+  });
+
+  final String currentPrompt;
+  final ValueChanged<String> onSave;
+
+  Future<void> _editPrompt(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController(text: currentPrompt);
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(l10n.default_system_prompt),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            minLines: 4,
+            maxLines: 10,
+            decoration: InputDecoration(
+              hintText: l10n.default_system_prompt_hint,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(l10n.cancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(controller.text),
+              child: Text(l10n.save),
+            ),
+          ],
+        );
+      },
+    );
+
+    controller.dispose();
+    if (result == null) return;
+    onSave(result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final hasPrompt = currentPrompt.trim().isNotEmpty;
+
+    return _SettingPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SettingHeader(label: l10n.default_system_prompt),
+          const SizedBox(height: 6),
+          Text(
+            l10n.default_system_prompt_desc,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: _mutedColor(context),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _InputShell(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    child: Text(
+                      hasPrompt ? currentPrompt : '—',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: hasPrompt
+                            ? theme.colorScheme.onSurface
+                            : _mutedColor(context),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              ShadButton.outline(
+                onPressed: () => _editPrompt(context),
+                child: Text(l10n.edit),
+              ),
+              if (hasPrompt) ...[
+                const SizedBox(width: 6),
+                ShadButton.outline(
+                  onPressed: () => onSave(''),
+                  child: Text(l10n.clear),
                 ),
               ],
             ],

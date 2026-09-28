@@ -939,5 +939,11 @@
   "stt_error_client": "Der Spracherkennungsdienst konnte nicht gestartet werden. Stelle sicher, dass eine Spracheingabe-App installiert und als Standard-Spracherkennung festgelegt ist, und versuche es erneut.",
   "stt_error_language": "Die Spracherkennung auf diesem Gerät unterstützt deine Sprache nicht.",
   "stt_error_unavailable": "Auf diesem Gerät wurde kein Spracherkennungsdienst gefunden. Installiere eine Spracheingabe-App (zum Beispiel FUTO Voice Input) und lege sie als Standard-Spracherkennung fest.",
-  "stt_error_generic": "Fehler bei der Spracherkennung: {code}"
+  "stt_error_generic": "Fehler bei der Spracherkennung: {code}",
+  "send_temperature_to_api": "Temperatur senden",
+  "send_top_p_to_api": "Top P senden",
+  "send_sampling_params_desc": "Für Anbieter oder Modelle deaktivieren, die diesen Parameter ablehnen (z. B. einige Reasoning-Modelle). Gilt für alle Chats mit Remote-Servern.",
+  "default_system_prompt": "Standard-Systemprompt",
+  "default_system_prompt_desc": "Wird für Chats ohne Persona und ohne eigenen Systemprompt verwendet.",
+  "default_system_prompt_hint": "Du bist ein hilfreicher Assistent…"
 }

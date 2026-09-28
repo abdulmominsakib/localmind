@@ -11,6 +11,11 @@ class ChatParameters {
   final double? minP;
   final double? repeatPenalty;
 
+  /// When false, remote chat services omit the field from the request body.
+  /// Local runtimes always use the value.
+  final bool sendTemperature;
+  final bool sendTopP;
+
   /// Null when the active model doesn't support reasoning (no reasoning
   /// control fields should be sent); otherwise reflects the Think toggle.
   final bool? reasoningEnabled;
@@ -37,6 +42,8 @@ class ChatParameters {
     this.topK,
     this.minP,
     this.repeatPenalty,
+    this.sendTemperature = true,
+    this.sendTopP = true,
     this.reasoningEnabled,
     this.reasoningEffort = ReasoningEffort.low,
     this.reasoningAllowedOptions,
@@ -59,6 +66,8 @@ class ChatParameters {
     int? topK,
     double? minP,
     double? repeatPenalty,
+    bool? sendTemperature,
+    bool? sendTopP,
     bool? reasoningEnabled,
     ReasoningEffort? reasoningEffort,
     List<String>? reasoningAllowedOptions,
@@ -73,6 +82,8 @@ class ChatParameters {
       topK: topK ?? this.topK,
       minP: minP ?? this.minP,
       repeatPenalty: repeatPenalty ?? this.repeatPenalty,
+      sendTemperature: sendTemperature ?? this.sendTemperature,
+      sendTopP: sendTopP ?? this.sendTopP,
       reasoningEnabled: reasoningEnabled ?? this.reasoningEnabled,
       reasoningEffort: reasoningEffort ?? this.reasoningEffort,
       reasoningAllowedOptions:

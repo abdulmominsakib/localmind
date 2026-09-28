@@ -939,5 +939,11 @@
   "stt_error_client": "Le service de reconnaissance vocale n'a pas pu démarrer. Vérifiez qu'une application de saisie vocale est installée et définie comme reconnaissance vocale par défaut, puis réessayez.",
   "stt_error_language": "La reconnaissance vocale de cet appareil ne prend pas en charge votre langue.",
   "stt_error_unavailable": "Aucun service de reconnaissance vocale trouvé sur cet appareil. Installez une application de saisie vocale (par exemple FUTO Voice Input) et définissez-la comme reconnaissance vocale par défaut.",
-  "stt_error_generic": "Erreur de reconnaissance vocale : {code}"
+  "stt_error_generic": "Erreur de reconnaissance vocale : {code}",
+  "send_temperature_to_api": "Envoyer la température",
+  "send_top_p_to_api": "Envoyer Top P",
+  "send_sampling_params_desc": "Désactivez-le pour les fournisseurs ou modèles qui refusent ce paramètre (par exemple certains modèles de raisonnement). S'applique à toutes les discussions avec des serveurs distants.",
+  "default_system_prompt": "Prompt système par défaut",
+  "default_system_prompt_desc": "Utilisé pour les discussions sans persona ni prompt système spécifique.",
+  "default_system_prompt_hint": "Tu es un assistant serviable…"
 }

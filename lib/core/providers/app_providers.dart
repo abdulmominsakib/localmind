@@ -143,6 +143,11 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(locationToolsEnabled: value));
   void setAutoCollapseThinking(bool value) =>
       _update(state.copyWith(autoCollapseThinking: value));
+  void setSendTemperature(bool value) =>
+      _update(state.copyWith(sendTemperature: value));
+  void setSendTopP(bool value) => _update(state.copyWith(sendTopP: value));
+  void setDefaultSystemPrompt(String value) =>
+      _update(state.copyWith(defaultSystemPrompt: value.trim()));
 
   void addSavedMcpIntegration(McpIntegration integration) {
     final current = List<McpIntegration>.from(state.savedMcpIntegrations);

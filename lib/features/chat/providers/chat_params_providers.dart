@@ -65,9 +65,17 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
     }
   }
 
+  // Fallback-only: never stacks with a chat prompt or persona (#81).
+  final defaultSystemPrompt = settings.defaultSystemPrompt.trim();
+  if (systemPrompt == null && defaultSystemPrompt.isNotEmpty) {
+    systemPrompt = defaultSystemPrompt;
+  }
+
   return ChatParameters(
     temperature: temperature,
     topP: topP,
+    sendTemperature: settings.sendTemperature,
+    sendTopP: settings.sendTopP,
     maxTokens: maxTokens,
     contextLength: contextLength,
     systemPrompt: systemPrompt,

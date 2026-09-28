@@ -3203,4 +3203,24 @@ class AppLocalizationsBn extends AppLocalizations {
   String stt_error_generic(String code) {
     return 'স্পিচ রিকগনিশন ত্রুটি: $code';
   }
+
+  @override
+  String get send_temperature_to_api => 'টেম্পারেচার পাঠান';
+
+  @override
+  String get send_top_p_to_api => 'Top P পাঠান';
+
+  @override
+  String get send_sampling_params_desc =>
+      'যে প্রোভাইডার বা মডেল এই প্যারামিটার গ্রহণ করে না (যেমন কিছু রিজনিং মডেল) তাদের জন্য বন্ধ করুন। রিমোট সার্ভারের সব চ্যাটে প্রযোজ্য।';
+
+  @override
+  String get default_system_prompt => 'ডিফল্ট সিস্টেম প্রম্পট';
+
+  @override
+  String get default_system_prompt_desc =>
+      'যে চ্যাটে কোনো পারসোনা বা নিজস্ব সিস্টেম প্রম্পট নেই সেখানে ব্যবহৃত হয়।';
+
+  @override
+  String get default_system_prompt_hint => 'তুমি একজন সহায়ক অ্যাসিস্ট্যান্ট…';
 }

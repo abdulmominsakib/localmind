@@ -942,5 +942,11 @@
   "stt_error_client": "音声認識サービスを開始できませんでした。音声入力アプリがインストールされ、既定の音声認識に設定されていることを確認して、もう一度お試しください。",
   "stt_error_language": "このデバイスの音声認識はお使いの言語に対応していません。",
   "stt_error_unavailable": "このデバイスに音声認識サービスが見つかりません。音声入力アプリ（例: FUTO Voice Input）をインストールし、既定の音声認識に設定してください。",
-  "stt_error_generic": "音声認識エラー: {code}"
+  "stt_error_generic": "音声認識エラー: {code}",
+  "send_temperature_to_api": "Temperature を送信",
+  "send_top_p_to_api": "Top P を送信",
+  "send_sampling_params_desc": "このパラメーターを受け付けないプロバイダーやモデル（一部の推論モデルなど）ではオフにしてください。リモートサーバーとのすべてのチャットに適用されます。",
+  "default_system_prompt": "デフォルトのシステムプロンプト",
+  "default_system_prompt_desc": "ペルソナもチャット固有のシステムプロンプトもないチャットで使用されます。",
+  "default_system_prompt_hint": "あなたは親切なアシスタントです…"
 }

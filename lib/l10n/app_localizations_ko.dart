@@ -3109,4 +3109,23 @@ class AppLocalizationsKo extends AppLocalizations {
   String stt_error_generic(String code) {
     return '음성 인식 오류: $code';
   }
+
+  @override
+  String get send_temperature_to_api => 'Temperature 전송';
+
+  @override
+  String get send_top_p_to_api => 'Top P 전송';
+
+  @override
+  String get send_sampling_params_desc =>
+      '이 매개변수를 거부하는 제공업체나 모델(예: 일부 추론 모델)에서는 끄세요. 원격 서버와의 모든 채팅에 적용됩니다.';
+
+  @override
+  String get default_system_prompt => '기본 시스템 프롬프트';
+
+  @override
+  String get default_system_prompt_desc => '페르소나와 채팅별 시스템 프롬프트가 없는 채팅에 사용됩니다.';
+
+  @override
+  String get default_system_prompt_hint => '당신은 도움이 되는 어시스턴트입니다…';
 }

@@ -942,5 +942,11 @@
   "stt_error_client": "Impossibile avviare il servizio di riconoscimento vocale. Assicurati che un'app di input vocale sia installata e impostata come riconoscimento vocale predefinito, poi riprova.",
   "stt_error_language": "Il riconoscimento vocale di questo dispositivo non supporta la tua lingua.",
   "stt_error_unavailable": "Nessun servizio di riconoscimento vocale trovato su questo dispositivo. Installa un'app di input vocale (ad esempio FUTO Voice Input) e impostala come riconoscimento vocale predefinito.",
-  "stt_error_generic": "Errore di riconoscimento vocale: {code}"
+  "stt_error_generic": "Errore di riconoscimento vocale: {code}",
+  "send_temperature_to_api": "Invia temperatura",
+  "send_top_p_to_api": "Invia Top P",
+  "send_sampling_params_desc": "Disattivalo per provider o modelli che rifiutano questo parametro (ad esempio alcuni modelli di ragionamento). Vale per tutte le chat con server remoti.",
+  "default_system_prompt": "Prompt di sistema predefinito",
+  "default_system_prompt_desc": "Usato per le chat senza persona e senza un prompt di sistema proprio.",
+  "default_system_prompt_hint": "Sei un assistente disponibile…"
 }

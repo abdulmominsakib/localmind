@@ -3126,4 +3126,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String stt_error_generic(String code) {
     return '音声認識エラー: $code';
   }
+
+  @override
+  String get send_temperature_to_api => 'Temperature を送信';
+
+  @override
+  String get send_top_p_to_api => 'Top P を送信';
+
+  @override
+  String get send_sampling_params_desc =>
+      'このパラメーターを受け付けないプロバイダーやモデル（一部の推論モデルなど）ではオフにしてください。リモートサーバーとのすべてのチャットに適用されます。';
+
+  @override
+  String get default_system_prompt => 'デフォルトのシステムプロンプト';
+
+  @override
+  String get default_system_prompt_desc =>
+      'ペルソナもチャット固有のシステムプロンプトもないチャットで使用されます。';
+
+  @override
+  String get default_system_prompt_hint => 'あなたは親切なアシスタントです…';
 }

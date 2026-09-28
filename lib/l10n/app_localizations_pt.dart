@@ -3224,4 +3224,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String stt_error_generic(String code) {
     return 'Erro de reconhecimento de voz: $code';
   }
+
+  @override
+  String get send_temperature_to_api => 'Enviar temperatura';
+
+  @override
+  String get send_top_p_to_api => 'Enviar Top P';
+
+  @override
+  String get send_sampling_params_desc =>
+      'Desative para provedores ou modelos que rejeitam este parâmetro (por exemplo, alguns modelos de raciocínio). Aplica-se a todos os chats com servidores remotos.';
+
+  @override
+  String get default_system_prompt => 'Prompt de sistema padrão';
+
+  @override
+  String get default_system_prompt_desc =>
+      'Usado em chats sem persona e sem prompt de sistema próprio.';
+
+  @override
+  String get default_system_prompt_hint => 'Você é um assistente prestativo…';
 }

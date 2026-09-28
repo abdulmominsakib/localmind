@@ -5912,6 +5912,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speech recognition error: {code}'**
   String stt_error_generic(String code);
+
+  /// No description provided for @send_temperature_to_api.
+  ///
+  /// In en, this message translates to:
+  /// **'Send temperature'**
+  String get send_temperature_to_api;
+
+  /// No description provided for @send_top_p_to_api.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Top P'**
+  String get send_top_p_to_api;
+
+  /// No description provided for @send_sampling_params_desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off for providers or models that reject this parameter (for example some reasoning models). Applies to all chats with remote servers.'**
+  String get send_sampling_params_desc;
+
+  /// No description provided for @default_system_prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Default system prompt'**
+  String get default_system_prompt;
+
+  /// No description provided for @default_system_prompt_desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Used for chats that have no persona and no chat-specific system prompt.'**
+  String get default_system_prompt_desc;
+
+  /// No description provided for @default_system_prompt_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'You are a helpful assistant…'**
+  String get default_system_prompt_hint;
 }
 
 class _AppLocalizationsDelegate

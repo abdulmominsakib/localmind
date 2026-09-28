@@ -3178,4 +3178,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String stt_error_generic(String code) {
     return 'خطأ في التعرف على الكلام: $code';
   }
+
+  @override
+  String get send_temperature_to_api => 'إرسال درجة الحرارة';
+
+  @override
+  String get send_top_p_to_api => 'إرسال Top P';
+
+  @override
+  String get send_sampling_params_desc =>
+      'أوقفه لمزوّدي الخدمة أو النماذج التي ترفض هذه المعلمة (مثل بعض نماذج الاستدلال). ينطبق على كل المحادثات مع الخوادم البعيدة.';
+
+  @override
+  String get default_system_prompt => 'موجّه النظام الافتراضي';
+
+  @override
+  String get default_system_prompt_desc =>
+      'يُستخدم في المحادثات التي لا تحتوي على شخصية ولا موجّه نظام خاص بها.';
+
+  @override
+  String get default_system_prompt_hint => 'أنت مساعد مفيد…';
 }
