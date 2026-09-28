@@ -3088,4 +3088,8 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get model_reasoning_save_error => '思考モードを保存できませんでした。もう一度お試しください。';
+
+  @override
+  String get on_device_engine_failed_error =>
+      'オンデバイスモデルが応答しなくなりました。通常、会話がコンテキストウィンドウを超えたことが原因です。モデルを再読み込みしています。もう一度試すか、新しいチャットを開始するか、設定でコンテキスト長を増やしてください。';
 }

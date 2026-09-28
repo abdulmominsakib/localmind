@@ -3152,4 +3152,8 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get model_reasoning_save_error =>
       'Impossible d’enregistrer le mode de réflexion. Veuillez réessayer.';
+
+  @override
+  String get on_device_engine_failed_error =>
+      'Le modèle sur l\'appareil ne répond plus, généralement parce que la conversation a dépassé sa fenêtre de contexte. Le modèle est en cours de rechargement. Réessayez, démarrez une nouvelle discussion ou augmentez la longueur du contexte dans les paramètres.';
 }

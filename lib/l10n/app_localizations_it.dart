@@ -3166,4 +3166,8 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get model_reasoning_save_error =>
       'Impossibile salvare la modalità di ragionamento. Riprova.';
+
+  @override
+  String get on_device_engine_failed_error =>
+      'Il modello sul dispositivo ha smesso di rispondere, di solito perché la conversazione ha superato la finestra di contesto. Il modello viene ricaricato. Riprova, avvia una nuova chat o aumenta la lunghezza del contesto nelle impostazioni.';
 }

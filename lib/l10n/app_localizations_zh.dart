@@ -3063,6 +3063,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get model_reasoning_save_error => '无法保存思考模式。请重试。';
+
+  @override
+  String get on_device_engine_failed_error =>
+      '设备端模型已停止响应，通常是因为对话超出了上下文窗口。正在重新加载模型。请重试、开始新对话，或在设置中增加上下文长度。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6030,4 +6034,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get model_reasoning_save_error => '無法儲存思考模式。請再試一次。';
+
+  @override
+  String get on_device_engine_failed_error =>
+      '裝置端模型已停止回應，通常是因為對話超出了上下文視窗。正在重新載入模型。請重試、開始新對話，或在設定中增加上下文長度。';
 }

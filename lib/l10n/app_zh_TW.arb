@@ -931,5 +931,6 @@
   "model_reasoning_default": "模型預設",
   "model_reasoning_on": "開啟",
   "model_reasoning_help": "套用至下一則回覆。如果模型的聊天範本支援，關閉後將停用思考。",
-  "model_reasoning_save_error": "無法儲存思考模式。請再試一次。"
+  "model_reasoning_save_error": "無法儲存思考模式。請再試一次。",
+  "on_device_engine_failed_error": "裝置端模型已停止回應，通常是因為對話超出了上下文視窗。正在重新載入模型。請重試、開始新對話，或在設定中增加上下文長度。"
 }

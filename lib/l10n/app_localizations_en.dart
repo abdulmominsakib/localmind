@@ -3139,4 +3139,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get model_reasoning_save_error =>
       'Could not save thinking mode. Please try again.';
+
+  @override
+  String get on_device_engine_failed_error =>
+      'The on-device model stopped responding, usually because the conversation grew past its context window. The model is being reloaded. Try again, start a new chat, or increase the context length in settings.';
 }

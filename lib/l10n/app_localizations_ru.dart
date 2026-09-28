@@ -3164,4 +3164,8 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get model_reasoning_save_error =>
       'Не удалось сохранить режим рассуждений. Попробуйте ещё раз.';
+
+  @override
+  String get on_device_engine_failed_error =>
+      'Локальная модель перестала отвечать — обычно потому, что диалог превысил окно контекста. Модель перезагружается. Попробуйте снова, начните новый чат или увеличьте длину контекста в настройках.';
 }

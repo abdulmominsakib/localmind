@@ -28,6 +28,20 @@ abstract interface class OnDeviceInferenceService {
     List<Tool> tools,
     bool? supportImage,
   });
+
+  /// Rebuilds the native engine after a failed inference left it unusable.
+  Future<void> recoverAfterInferenceFailure();
+}
+
+/// Whether [error] indicates the native LiteRT engine is left in a broken
+/// state (e.g. after the KV cache overflowed), so later chats on the same
+/// model instance would keep failing until it is reloaded.
+bool isCorruptedOnDeviceEngineError(Object error) {
+  final message = error.toString().toLowerCase();
+  return message.contains('failed to invoke the compiled model') ||
+      message.contains('per_layer_embedding_lookup') ||
+      message.contains('failed_precondition') ||
+      message.contains('internal: error');
 }
 
 class _GemmaInferenceSession implements OnDeviceInferenceSession {
@@ -50,9 +64,14 @@ class _GemmaInferenceSession implements OnDeviceInferenceSession {
 }
 
 class OnDeviceGemmaService implements OnDeviceInferenceService {
+  /// Total token budget (prompt + history + output) used when the caller
+  /// doesn't pass one.
+  static const defaultMaxTokens = 4096;
+
   InferenceModel? _model;
   String? _currentModelId;
   PreferredBackend? _currentBackend;
+  int _currentMaxTokens = defaultMaxTokens;
   bool _isDisposed = false;
   Future<void>? _recoveryFuture;
 
@@ -85,7 +104,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   /// spec so that [createChat] can lazy-load the model on first use after a
   /// restart. Sets both [_currentModelId] and [_currentBackend] so the
   /// lazy-load path in [createChat] can actually trigger.
-  void syncFromRestoredSpec(PreferredBackend backend) {
+  void syncFromRestoredSpec(PreferredBackend backend, {int? maxTokens}) {
     final specName = restoredActiveModelName;
     if (specName == null) return;
 
@@ -96,6 +115,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
 
     _currentModelId = model.id;
     _currentBackend = backend;
+    if (maxTokens != null) _currentMaxTokens = maxTokens;
   }
 
   static Future<void> initialize({String? huggingFaceToken}) async {
@@ -196,15 +216,17 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   Future<void> loadModel(
     String modelId,
     PreferredBackend backend, {
-    int maxTokens = 2048,
+    int? maxTokens,
   }) async {
+    final effectiveMaxTokens = maxTokens ?? _currentMaxTokens;
     if (_isDisposed) {
       throw StateError('OnDeviceGemmaService has been disposed');
     }
 
     if (_model != null &&
         _currentModelId == modelId &&
-        _currentBackend == backend) {
+        _currentBackend == backend &&
+        _currentMaxTokens == effectiveMaxTokens) {
       return;
     }
 
@@ -213,7 +235,8 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     }
 
     Log.info(
-      'Loading model $modelId with backend=$backend, maxTokens=$maxTokens',
+      'Loading model $modelId with backend=$backend, '
+      'maxTokens=$effectiveMaxTokens',
     );
 
     final model = OnDeviceModel.allCuratedModels.firstWhere(
@@ -249,13 +272,14 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     FlutterGemmaPlugin.instance.modelManager.setActiveModel(spec);
 
     _model = await FlutterGemma.getActiveModel(
-      maxTokens: maxTokens,
+      maxTokens: effectiveMaxTokens,
       preferredBackend: backend,
       supportImage: model.supportsVision,
       maxNumImages: model.supportsVision ? 5 : null,
     );
     _currentModelId = modelId;
     _currentBackend = backend;
+    _currentMaxTokens = effectiveMaxTokens;
 
     Log.info('Model $modelId loaded successfully');
   }
@@ -275,10 +299,12 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
         supportImage: supportImage,
       );
     } catch (e) {
-      if (!_isClosedClientError(e)) rethrow;
+      if (!_isClosedClientError(e) && !isCorruptedOnDeviceEngineError(e)) {
+        rethrow;
+      }
 
       Log.warning(
-        'Gemma FFI model closed while opening an independent chat ($e). '
+        'Gemma model unusable while opening a chat ($e). '
         'Reloading the model once.',
       );
       await _recoverClosedModel();
@@ -340,6 +366,15 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
         message.contains('model was closed');
   }
 
+  @override
+  Future<void> recoverAfterInferenceFailure() {
+    if (_isDisposed || _currentModelId == null || _currentBackend == null) {
+      return Future.value();
+    }
+    Log.warning('Reloading on-device model after a native inference failure');
+    return _recoverClosedModel();
+  }
+
   Future<void> _recoverClosedModel() {
     final existing = _recoveryFuture;
     if (existing != null) return existing;
@@ -362,7 +397,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
         }
       }
       _model = null;
-      await loadModel(modelId, backend);
+      await loadModel(modelId, backend, maxTokens: _currentMaxTokens);
     }();
 
     _recoveryFuture = recovery;

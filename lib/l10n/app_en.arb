@@ -3451,5 +3451,6 @@
   "model_reasoning_default": "Model default",
   "model_reasoning_on": "On",
   "model_reasoning_help": "Applies to the next response. Off disables thinking when supported by the model’s chat template.",
-  "model_reasoning_save_error": "Could not save thinking mode. Please try again."
+  "model_reasoning_save_error": "Could not save thinking mode. Please try again.",
+  "on_device_engine_failed_error": "The on-device model stopped responding, usually because the conversation grew past its context window. The model is being reloaded. Try again, start a new chat, or increase the context length in settings."
 }

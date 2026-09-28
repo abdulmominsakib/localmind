@@ -193,7 +193,7 @@ class OnDeviceChatService implements ChatService {
         onError: (Object error, StackTrace stackTrace) async {
           run.subscription = null;
           Log.error('OnDevice stream error: $error');
-          await _finishWithError(run, 'Inference error: $error');
+          await _finishWithInferenceError(run, error);
         },
         cancelOnError: true,
       );
@@ -204,8 +204,46 @@ class OnDeviceChatService implements ChatService {
         return;
       }
       Log.error('OnDevice inference error: $error\n$stackTrace');
-      await _finishWithError(run, 'Inference error: $error');
+      await _finishWithInferenceError(run, error);
     }
+  }
+
+  /// Reports a failed run. When the native engine is left unusable, the
+  /// retained session is dropped and the model is reloaded in the background
+  /// so the next message (or a new chat) doesn't hit the same broken engine.
+  Future<void> _finishWithInferenceError(
+    _InferenceRun run,
+    Object error,
+  ) async {
+    if (!isCorruptedOnDeviceEngineError(error)) {
+      await _finishWithError(run, 'Inference error: $error');
+      return;
+    }
+
+    final retained = _retainedConversation;
+    _retainedConversation = null;
+    _cancelRetainedExpiration();
+    await _finishWithError(
+      run,
+      ChatApiError(
+        message: 'Inference error: $error',
+        code: ChatApiError.onDeviceEngineFailedCode,
+      ).encode(),
+    );
+    if (retained != null) {
+      try {
+        await retained.session.close();
+      } catch (closeError) {
+        Log.warning('Error closing retained on-device session: $closeError');
+      }
+    }
+    unawaited(
+      _gemmaService.recoverAfterInferenceFailure().catchError((
+        Object recoveryError,
+      ) {
+        Log.error('On-device model recovery failed: $recoveryError');
+      }),
+    );
   }
 
   void _handleResponse(_InferenceRun run, gemma.ModelResponse response) {

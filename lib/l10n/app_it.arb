@@ -931,5 +931,6 @@
   "model_reasoning_default": "Predefinito del modello",
   "model_reasoning_on": "Attivo",
   "model_reasoning_help": "Si applica alla prossima risposta. Disattivato impedisce il ragionamento se il template di chat del modello lo supporta.",
-  "model_reasoning_save_error": "Impossibile salvare la modalità di ragionamento. Riprova."
+  "model_reasoning_save_error": "Impossibile salvare la modalità di ragionamento. Riprova.",
+  "on_device_engine_failed_error": "Il modello sul dispositivo ha smesso di rispondere, di solito perché la conversazione ha superato la finestra di contesto. Il modello viene ricaricato. Riprova, avvia una nuova chat o aumenta la lunghezza del contesto nelle impostazioni."
 }

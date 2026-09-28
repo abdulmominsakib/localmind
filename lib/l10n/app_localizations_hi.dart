@@ -3150,4 +3150,8 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get model_reasoning_save_error =>
       'चिंतन मोड सहेजा नहीं जा सका। फिर से कोशिश करें।';
+
+  @override
+  String get on_device_engine_failed_error =>
+      'ऑन-डिवाइस मॉडल ने जवाब देना बंद कर दिया, आमतौर पर इसलिए कि बातचीत उसकी कॉन्टेक्स्ट विंडो से बड़ी हो गई। मॉडल फिर से लोड हो रहा है। फिर से कोशिश करें, नई चैट शुरू करें, या सेटिंग्स में कॉन्टेक्स्ट लंबाई बढ़ाएँ।';
 }

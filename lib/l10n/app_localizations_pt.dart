@@ -3180,4 +3180,8 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get model_reasoning_save_error =>
       'Não foi possível salvar o modo de raciocínio. Tente novamente.';
+
+  @override
+  String get on_device_engine_failed_error =>
+      'O modelo no dispositivo parou de responder, geralmente porque a conversa ultrapassou a janela de contexto. O modelo está sendo recarregado. Tente novamente, inicie um novo chat ou aumente o comprimento do contexto nas configurações.';
 }

@@ -4,6 +4,7 @@ import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/services/crash_report_service.dart';
+import 'package:localmind/features/chat/data/chat_api_error.dart';
 import 'package:localmind/features/chat/data/chat_service.dart';
 import 'package:localmind/features/chat/data/models/chat_parameters.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
@@ -715,6 +716,106 @@ void main() {
     expect(CrashReportService.instance.currentCrash.value, isNull);
   });
 
+  test(
+    'native engine failure drops the retained session and reloads (#84)',
+    () async {
+      // First turn succeeds and is retained for reuse.
+      final firstDone = chatService
+          .sendMessage(
+            server: _server(),
+            modelId: 'gemma4-e4b-instruct',
+            messages: [
+              _message('first', id: 'user-1'),
+              _message('', id: 'assistant-1', role: MessageRole.assistant),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .drain<void>();
+      await _waitFor(
+        () =>
+            inferenceService.sessions.isNotEmpty &&
+            inferenceService.sessions.single.didGenerate,
+      );
+      final retained = inferenceService.sessions.single;
+      retained.responses.add(const gemma.TextResponse('hello'));
+      await retained.responses.close();
+      await firstDone;
+      expect(retained.closeCount, 0);
+
+      // Second turn reuses the session and the native invoke fails.
+      final responses = <ChatResponse>[];
+      final secondDone = chatService
+          .sendMessage(
+            server: _server(),
+            modelId: 'gemma4-e4b-instruct',
+            messages: [
+              _message('first', id: 'user-1'),
+              _message('hello', id: 'assistant-1', role: MessageRole.assistant),
+              _message('second', id: 'user-2'),
+              _message('', id: 'assistant-2', role: MessageRole.assistant),
+            ],
+            params: ChatParameters.defaults(),
+          )
+          .listen(responses.add)
+          .asFuture<void>();
+      await _waitFor(() => retained.generationCount == 2);
+      retained.responses.addError(
+        Exception(
+          'Stream error: INTERNAL: ERROR: [runtime/executor/'
+          'llm_litert_compiled_model_executor.cc:726] '
+          'Failed to invoke the compiled model',
+        ),
+      );
+      await secondDone;
+
+      final error = responses.firstWhere(
+        (response) => response.type == ChatResponseType.error,
+      );
+      expect(
+        ChatApiError.tryParse(error.content!)?.code,
+        ChatApiError.onDeviceEngineFailedCode,
+      );
+      expect(retained.closeCount, 1);
+      await _waitFor(() => inferenceService.recoverCount == 1);
+
+      // The next message opens a fresh session instead of the broken one.
+      final thirdDone = chatService
+          .sendMessage(
+            server: _server(),
+            modelId: 'gemma4-e4b-instruct',
+            messages: [_message('new chat')],
+            params: ChatParameters.defaults(),
+          )
+          .drain<void>();
+      await _waitFor(() => inferenceService.sessions.length == 2);
+      final fresh = inferenceService.sessions.last;
+      await _waitFor(() => fresh.didGenerate);
+      await fresh.responses.close();
+      await thirdDone;
+      expect(inferenceService.createCount, 2);
+    },
+  );
+
+  test('generic inference errors do not reload the model', () async {
+    final done = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'qwen3-0.6b',
+          messages: [_message('fail')],
+          params: ChatParameters.defaults(),
+        )
+        .drain<void>();
+    await _waitFor(
+      () =>
+          inferenceService.sessions.isNotEmpty &&
+          inferenceService.sessions.single.didGenerate,
+    );
+    inferenceService.sessions.single.responses.addError(StateError('boom'));
+    await done;
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    expect(inferenceService.recoverCount, 0);
+  });
+
   test('cancelStream stops and closes every active request once', () async {
     final subscriptions = List.generate(
       2,
@@ -754,6 +855,7 @@ class _FakeInferenceService implements OnDeviceInferenceService {
   final List<String?> systemInstructions = [];
   final List<bool?> supportImages = [];
   int createCount = 0;
+  int recoverCount = 0;
   bool canReuseChatSession = true;
 
   @override
@@ -777,6 +879,11 @@ class _FakeInferenceService implements OnDeviceInferenceService {
     final session = _FakeInferenceSession();
     sessions.add(session);
     return session;
+  }
+
+  @override
+  Future<void> recoverAfterInferenceFailure() async {
+    recoverCount++;
   }
 }
 

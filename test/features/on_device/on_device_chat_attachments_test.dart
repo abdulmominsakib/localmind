@@ -541,6 +541,9 @@ class _FakeInferenceService implements OnDeviceInferenceService {
     sessions.add(session);
     return session;
   }
+
+  @override
+  Future<void> recoverAfterInferenceFailure() async {}
 }
 
 class _FakeInferenceSession implements OnDeviceInferenceSession {

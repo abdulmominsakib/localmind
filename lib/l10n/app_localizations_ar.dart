@@ -3134,4 +3134,8 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get model_reasoning_save_error =>
       'تعذّر حفظ وضع التفكير. يُرجى المحاولة مرة أخرى.';
+
+  @override
+  String get on_device_engine_failed_error =>
+      'توقف النموذج على الجهاز عن الاستجابة، غالبًا لأن المحادثة تجاوزت نافذة السياق. تتم إعادة تحميل النموذج. حاول مرة أخرى، أو ابدأ محادثة جديدة، أو زد طول السياق من الإعدادات.';
 }

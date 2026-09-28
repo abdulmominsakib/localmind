@@ -372,7 +372,10 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
         : settings.preferredBackend;
 
     // Sync the service so createChat can lazy-load on first use.
-    _gemmaService.syncFromRestoredSpec(backend);
+    _gemmaService.syncFromRestoredSpec(
+      backend,
+      maxTokens: settings.contextLength,
+    );
 
     Log.info(
       'Restored active inference model spec: ${model.id} (${model.fileName})',
@@ -482,10 +485,17 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
           return;
         }
 
+        final settings = ref.read(settingsProvider);
         await _llamaService.unloadModel();
         await _mlxService.unloadModel();
         if (!ref.mounted) return;
-        await _gemmaService.loadModel(modelId, effectiveBackend);
+        // Size the LiteRT KV cache from the user's context setting; the
+        // package default (2048) overflows after a few turns (#84).
+        await _gemmaService.loadModel(
+          modelId,
+          effectiveBackend,
+          maxTokens: settings.contextLength,
+        );
         if (!ref.mounted) return;
       }
 

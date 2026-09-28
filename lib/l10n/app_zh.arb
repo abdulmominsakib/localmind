@@ -931,5 +931,6 @@
   "model_reasoning_default": "模型默认",
   "model_reasoning_on": "开启",
   "model_reasoning_help": "应用于下一条回复。如果模型的聊天模板支持，关闭后将禁用思考。",
-  "model_reasoning_save_error": "无法保存思考模式。请重试。"
+  "model_reasoning_save_error": "无法保存思考模式。请重试。",
+  "on_device_engine_failed_error": "设备端模型已停止响应，通常是因为对话超出了上下文窗口。正在重新加载模型。请重试、开始新对话，或在设置中增加上下文长度。"
 }

@@ -928,5 +928,6 @@
   "model_reasoning_default": "Model varsayılanı",
   "model_reasoning_on": "Açık",
   "model_reasoning_help": "Sonraki yanıta uygulanır. Modelin sohbet şablonu destekliyorsa Kapalı seçeneği düşünmeyi devre dışı bırakır.",
-  "model_reasoning_save_error": "Düşünme modu kaydedilemedi. Lütfen tekrar deneyin."
+  "model_reasoning_save_error": "Düşünme modu kaydedilemedi. Lütfen tekrar deneyin.",
+  "on_device_engine_failed_error": "Cihaz üzerindeki model yanıt vermeyi durdurdu; genellikle sohbet bağlam penceresini aştığı için. Model yeniden yükleniyor. Tekrar deneyin, yeni bir sohbet başlatın veya ayarlardan bağlam uzunluğunu artırın."
 }

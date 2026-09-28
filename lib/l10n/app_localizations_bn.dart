@@ -3160,4 +3160,8 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get model_reasoning_save_error =>
       'চিন্তন মোড সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।';
+
+  @override
+  String get on_device_engine_failed_error =>
+      'অন-ডিভাইস মডেলটি সাড়া দেওয়া বন্ধ করেছে, সাধারণত কথোপকথন কনটেক্সট উইন্ডোর চেয়ে বড় হয়ে যাওয়ায়। মডেলটি আবার লোড হচ্ছে। আবার চেষ্টা করুন, নতুন চ্যাট শুরু করুন, অথবা সেটিংসে কনটেক্সট দৈর্ঘ্য বাড়ান।';
 }

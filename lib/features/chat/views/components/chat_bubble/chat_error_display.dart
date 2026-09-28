@@ -21,10 +21,14 @@ class ChatErrorDisplay extends StatelessWidget {
       );
     }
 
-    final displayMessage =
-        parsed.code == ChatApiError.onDeviceVisionNotSupportedCode
-        ? AppLocalizations.of(context)!.gguf_vision_not_supported_error
-        : parsed.message;
+    final l10n = AppLocalizations.of(context)!;
+    final displayMessage = switch (parsed.code) {
+      ChatApiError.onDeviceVisionNotSupportedCode =>
+        l10n.gguf_vision_not_supported_error,
+      ChatApiError.onDeviceEngineFailedCode =>
+        l10n.on_device_engine_failed_error,
+      _ => parsed.message,
+    };
 
     final metaParts = <String>[];
     if (parsed.type != null && parsed.type!.isNotEmpty) {

@@ -3071,4 +3071,8 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get model_reasoning_save_error => '사고 모드를 저장하지 못했습니다. 다시 시도해 주세요.';
+
+  @override
+  String get on_device_engine_failed_error =>
+      '온디바이스 모델이 응답을 멈췄습니다. 대개 대화가 컨텍스트 창을 초과했기 때문입니다. 모델을 다시 불러오는 중입니다. 다시 시도하거나 새 채팅을 시작하거나 설정에서 컨텍스트 길이를 늘리세요.';
 }

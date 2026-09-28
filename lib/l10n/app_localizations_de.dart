@@ -3149,4 +3149,8 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get model_reasoning_save_error =>
       'Denkmodus konnte nicht gespeichert werden. Bitte erneut versuchen.';
+
+  @override
+  String get on_device_engine_failed_error =>
+      'Das On-Device-Modell reagiert nicht mehr, meist weil die Unterhaltung das Kontextfenster überschritten hat. Das Modell wird neu geladen. Versuche es erneut, starte einen neuen Chat oder erhöhe die Kontextlänge in den Einstellungen.';
 }

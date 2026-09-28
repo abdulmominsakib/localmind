@@ -7,6 +7,8 @@ class ChatApiError {
   static const onDeviceVisionNotSupportedCode =
       'on_device_vision_not_supported';
 
+  static const onDeviceEngineFailedCode = 'on_device_engine_failed';
+
   final String message;
   final String? type;
   final String? code;

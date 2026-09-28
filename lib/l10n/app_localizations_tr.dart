@@ -3170,4 +3170,8 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get model_reasoning_save_error =>
       'Düşünme modu kaydedilemedi. Lütfen tekrar deneyin.';
+
+  @override
+  String get on_device_engine_failed_error =>
+      'Cihaz üzerindeki model yanıt vermeyi durdurdu; genellikle sohbet bağlam penceresini aştığı için. Model yeniden yükleniyor. Tekrar deneyin, yeni bir sohbet başlatın veya ayarlardan bağlam uzunluğunu artırın.';
 }

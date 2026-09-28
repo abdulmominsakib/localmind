@@ -5846,6 +5846,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save thinking mode. Please try again.'**
   String get model_reasoning_save_error;
+
+  /// No description provided for @on_device_engine_failed_error.
+  ///
+  /// In en, this message translates to:
+  /// **'The on-device model stopped responding, usually because the conversation grew past its context window. The model is being reloaded. Try again, start a new chat, or increase the context length in settings.'**
+  String get on_device_engine_failed_error;
 }
 
 class _AppLocalizationsDelegate
