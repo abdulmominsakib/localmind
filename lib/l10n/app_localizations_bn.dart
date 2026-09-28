@@ -3164,4 +3164,43 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       'অন-ডিভাইস মডেলটি সাড়া দেওয়া বন্ধ করেছে, সাধারণত কথোপকথন কনটেক্সট উইন্ডোর চেয়ে বড় হয়ে যাওয়ায়। মডেলটি আবার লোড হচ্ছে। আবার চেষ্টা করুন, নতুন চ্যাট শুরু করুন, অথবা সেটিংসে কনটেক্সট দৈর্ঘ্য বাড়ান।';
+
+  @override
+  String get stt_error_no_match =>
+      'কোনো কথা শনাক্ত হয়নি। আবার চেষ্টা করতে ট্যাপ করুন।';
+
+  @override
+  String get stt_error_speech_timeout =>
+      'কোনো কথা পাওয়া যায়নি। আবার চেষ্টা করতে ট্যাপ করুন।';
+
+  @override
+  String get stt_error_permission => 'মাইক্রোফোনের অনুমতি প্রত্যাখ্যাত হয়েছে।';
+
+  @override
+  String get stt_error_busy => 'স্পিচ রিকগনিশন ব্যস্ত। আবার চেষ্টা করুন।';
+
+  @override
+  String get stt_error_network =>
+      'নেটওয়ার্ক ত্রুটি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।';
+
+  @override
+  String get stt_error_audio =>
+      'অডিও রেকর্ডিং ত্রুটি। মাইক্রোফোন পরীক্ষা করুন।';
+
+  @override
+  String get stt_error_client =>
+      'স্পিচ রিকগনিশন সার্ভিস চালু হয়নি। একটি ভয়েস ইনপুট অ্যাপ ইনস্টল করে ডিফল্ট স্পিচ রিকগনাইজার হিসেবে সেট করুন, তারপর আবার চেষ্টা করুন।';
+
+  @override
+  String get stt_error_language =>
+      'এই ডিভাইসের স্পিচ রিকগনাইজার আপনার ভাষা সমর্থন করে না।';
+
+  @override
+  String get stt_error_unavailable =>
+      'এই ডিভাইসে কোনো স্পিচ রিকগনিশন সার্ভিস পাওয়া যায়নি। একটি ভয়েস ইনপুট অ্যাপ (যেমন FUTO Voice Input) ইনস্টল করে ডিফল্ট স্পিচ রিকগনাইজার হিসেবে সেট করুন।';
+
+  @override
+  String stt_error_generic(String code) {
+    return 'স্পিচ রিকগনিশন ত্রুটি: $code';
+  }
 }

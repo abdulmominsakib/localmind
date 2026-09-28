@@ -102,6 +102,7 @@ dev_dependencies:
     sdk: flutter
   plugin_platform_interface: ^2.1.8
   url_launcher_platform_interface: ^2.3.2
+  speech_to_text_platform_interface: ^2.4.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

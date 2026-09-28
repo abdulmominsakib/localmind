@@ -3184,4 +3184,44 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       'O modelo no dispositivo parou de responder, geralmente porque a conversa ultrapassou a janela de contexto. O modelo está sendo recarregado. Tente novamente, inicie um novo chat ou aumente o comprimento do contexto nas configurações.';
+
+  @override
+  String get stt_error_no_match =>
+      'Nenhuma fala reconhecida. Toque para tentar novamente.';
+
+  @override
+  String get stt_error_speech_timeout =>
+      'Nenhuma fala detectada. Toque para tentar novamente.';
+
+  @override
+  String get stt_error_permission => 'Permissão do microfone negada.';
+
+  @override
+  String get stt_error_busy =>
+      'O reconhecimento de voz está ocupado. Tente novamente.';
+
+  @override
+  String get stt_error_network =>
+      'Erro de rede. Verifique sua conexão e tente novamente.';
+
+  @override
+  String get stt_error_audio =>
+      'Erro na gravação de áudio. Verifique seu microfone.';
+
+  @override
+  String get stt_error_client =>
+      'Não foi possível iniciar o serviço de reconhecimento de voz. Verifique se um app de entrada por voz está instalado e definido como reconhecedor de fala padrão e tente novamente.';
+
+  @override
+  String get stt_error_language =>
+      'O reconhecedor de fala deste dispositivo não suporta seu idioma.';
+
+  @override
+  String get stt_error_unavailable =>
+      'Nenhum serviço de reconhecimento de voz encontrado neste dispositivo. Instale um app de entrada por voz (por exemplo FUTO Voice Input) e defina-o como reconhecedor de fala padrão.';
+
+  @override
+  String stt_error_generic(String code) {
+    return 'Erro de reconhecimento de voz: $code';
+  }
 }

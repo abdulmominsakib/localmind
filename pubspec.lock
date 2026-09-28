@@ -1970,7 +1970,7 @@ packages:
     source: hosted
     version: "7.4.0"
   speech_to_text_platform_interface:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: speech_to_text_platform_interface
       sha256: a7e16e02853853ed7534ac2bde9a1c4f39c8879970a7974ac6ff832d4bdaa4b0

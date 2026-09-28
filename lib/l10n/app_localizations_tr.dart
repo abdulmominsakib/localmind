@@ -3174,4 +3174,43 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       'Cihaz üzerindeki model yanıt vermeyi durdurdu; genellikle sohbet bağlam penceresini aştığı için. Model yeniden yükleniyor. Tekrar deneyin, yeni bir sohbet başlatın veya ayarlardan bağlam uzunluğunu artırın.';
+
+  @override
+  String get stt_error_no_match =>
+      'Konuşma tanınmadı. Tekrar denemek için dokunun.';
+
+  @override
+  String get stt_error_speech_timeout =>
+      'Konuşma algılanmadı. Tekrar denemek için dokunun.';
+
+  @override
+  String get stt_error_permission => 'Mikrofon izni reddedildi.';
+
+  @override
+  String get stt_error_busy => 'Konuşma tanıma meşgul. Lütfen tekrar deneyin.';
+
+  @override
+  String get stt_error_network =>
+      'Ağ hatası. Bağlantınızı kontrol edip tekrar deneyin.';
+
+  @override
+  String get stt_error_audio =>
+      'Ses kaydı hatası. Lütfen mikrofonunuzu kontrol edin.';
+
+  @override
+  String get stt_error_client =>
+      'Konuşma tanıma hizmeti başlatılamadı. Bir sesli giriş uygulamasının yüklü ve varsayılan konuşma tanıyıcı olarak ayarlı olduğundan emin olup tekrar deneyin.';
+
+  @override
+  String get stt_error_language =>
+      'Bu cihazdaki konuşma tanıyıcı dilinizi desteklemiyor.';
+
+  @override
+  String get stt_error_unavailable =>
+      'Bu cihazda konuşma tanıma hizmeti bulunamadı. Bir sesli giriş uygulaması (örneğin FUTO Voice Input) yükleyip varsayılan konuşma tanıyıcı olarak ayarlayın.';
+
+  @override
+  String stt_error_generic(String code) {
+    return 'Konuşma tanıma hatası: $code';
+  }
 }

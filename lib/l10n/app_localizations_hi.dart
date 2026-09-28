@@ -3154,4 +3154,43 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       'ऑन-डिवाइस मॉडल ने जवाब देना बंद कर दिया, आमतौर पर इसलिए कि बातचीत उसकी कॉन्टेक्स्ट विंडो से बड़ी हो गई। मॉडल फिर से लोड हो रहा है। फिर से कोशिश करें, नई चैट शुरू करें, या सेटिंग्स में कॉन्टेक्स्ट लंबाई बढ़ाएँ।';
+
+  @override
+  String get stt_error_no_match =>
+      'कोई आवाज़ पहचानी नहीं गई। फिर से कोशिश करने के लिए टैप करें।';
+
+  @override
+  String get stt_error_speech_timeout =>
+      'कोई आवाज़ नहीं मिली। फिर से कोशिश करने के लिए टैप करें।';
+
+  @override
+  String get stt_error_permission => 'माइक्रोफ़ोन की अनुमति अस्वीकार की गई।';
+
+  @override
+  String get stt_error_busy => 'वॉइस पहचान व्यस्त है। कृपया फिर से कोशिश करें।';
+
+  @override
+  String get stt_error_network =>
+      'नेटवर्क त्रुटि। कृपया अपना कनेक्शन जाँचें और फिर से कोशिश करें।';
+
+  @override
+  String get stt_error_audio =>
+      'ऑडियो रिकॉर्डिंग त्रुटि। कृपया अपना माइक्रोफ़ोन जाँचें।';
+
+  @override
+  String get stt_error_client =>
+      'वॉइस पहचान सेवा शुरू नहीं हो सकी। सुनिश्चित करें कि कोई वॉइस इनपुट ऐप इंस्टॉल है और डिफ़ॉल्ट स्पीच रिकग्नाइज़र के रूप में सेट है, फिर कोशिश करें।';
+
+  @override
+  String get stt_error_language =>
+      'इस डिवाइस का स्पीच रिकग्नाइज़र आपकी भाषा का समर्थन नहीं करता।';
+
+  @override
+  String get stt_error_unavailable =>
+      'इस डिवाइस पर कोई वॉइस पहचान सेवा नहीं मिली। कोई वॉइस इनपुट ऐप (जैसे FUTO Voice Input) इंस्टॉल करें और उसे डिफ़ॉल्ट स्पीच रिकग्नाइज़र के रूप में सेट करें।';
+
+  @override
+  String stt_error_generic(String code) {
+    return 'वॉइस पहचान त्रुटि: $code';
+  }
 }

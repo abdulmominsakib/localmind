@@ -7,6 +7,7 @@ import '../../../core/providers/chat_background_service_provider.dart';
 import '../../../services/voice_feedback_service.dart';
 import '../../chat/providers/chat_providers.dart';
 import '../../stt/providers/stt_providers.dart';
+import '../../stt/utils/stt_error_messages.dart';
 import '../../tts/providers/tts_providers.dart';
 
 /// The phase of the voice-to-voice conversation loop.
@@ -121,13 +122,11 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
       }
     });
 
-    // Listen to STT errors and show them directly on the voice screen.
+    // Listen to STT errors and show them directly on the voice screen. The
+    // raw code is kept in state and localized by the view.
     ref.listen<String?>(sttProvider.select((s) => s.error), (previous, next) {
       if (!_active || next == null) return;
-      state = state.copyWith(
-        phase: VoiceModePhase.error,
-        error: _mapSttError(next),
-      );
+      state = state.copyWith(phase: VoiceModePhase.error, error: next);
       ref.read(voiceFeedbackProvider).playDisconnected();
     });
 
@@ -171,9 +170,13 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     final available = await stt.initSpeech();
     if (!_isCurrentListenAttempt(attempt)) return;
     if (!available) {
+      // A missing recognizer isn't a permission problem (#100).
+      final noRecognizer = ref.read(sttProvider).error == sttUnavailableCode;
       state = state.copyWith(
         phase: VoiceModePhase.error,
-        error: 'Microphone permission is required for voice mode.',
+        error: noRecognizer
+            ? sttUnavailableCode
+            : 'Microphone permission is required for voice mode.',
         micLevel: 0,
       );
       ref.read(voiceFeedbackProvider).playDisconnected();
@@ -452,29 +455,5 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
 
   bool _isCurrentListenAttempt(int attempt) {
     return _active && ref.mounted && attempt == _listenAttempt;
-  }
-}
-
-String _mapSttError(String error) {
-  switch (error) {
-    case 'error_no_match':
-      return 'No speech recognized. Tap to try again.';
-    case 'error_speech_timeout':
-      return 'No speech detected. Tap to try again.';
-    case 'error_permission':
-      return 'Microphone permission denied.';
-    case 'error_busy':
-      return 'Speech recognition is busy. Please try again.';
-    case 'error_network':
-    case 'error_network_timeout':
-      return 'Network error. Please check your connection.';
-    case 'error_audio':
-      return 'Audio recording error. Please check your microphone.';
-    default:
-      if (error.startsWith('error_')) {
-        final cleanName = error.replaceFirst('error_', '').replaceAll('_', ' ');
-        return 'Speech recognition error: $cleanName';
-      }
-      return error;
   }
 }

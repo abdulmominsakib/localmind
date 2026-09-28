@@ -929,5 +929,15 @@
   "model_reasoning_on": "Ein",
   "model_reasoning_help": "Gilt für die nächste Antwort. Aus deaktiviert das Denken, sofern die Chatvorlage des Modells dies unterstützt.",
   "model_reasoning_save_error": "Denkmodus konnte nicht gespeichert werden. Bitte erneut versuchen.",
-  "on_device_engine_failed_error": "Das On-Device-Modell reagiert nicht mehr, meist weil die Unterhaltung das Kontextfenster überschritten hat. Das Modell wird neu geladen. Versuche es erneut, starte einen neuen Chat oder erhöhe die Kontextlänge in den Einstellungen."
+  "on_device_engine_failed_error": "Das On-Device-Modell reagiert nicht mehr, meist weil die Unterhaltung das Kontextfenster überschritten hat. Das Modell wird neu geladen. Versuche es erneut, starte einen neuen Chat oder erhöhe die Kontextlänge in den Einstellungen.",
+  "stt_error_no_match": "Keine Sprache erkannt. Tippe, um es erneut zu versuchen.",
+  "stt_error_speech_timeout": "Keine Sprache erkannt. Tippe, um es erneut zu versuchen.",
+  "stt_error_permission": "Mikrofonberechtigung verweigert.",
+  "stt_error_busy": "Die Spracherkennung ist beschäftigt. Bitte versuche es erneut.",
+  "stt_error_network": "Netzwerkfehler. Bitte prüfe deine Verbindung und versuche es erneut.",
+  "stt_error_audio": "Fehler bei der Audioaufnahme. Bitte prüfe dein Mikrofon.",
+  "stt_error_client": "Der Spracherkennungsdienst konnte nicht gestartet werden. Stelle sicher, dass eine Spracheingabe-App installiert und als Standard-Spracherkennung festgelegt ist, und versuche es erneut.",
+  "stt_error_language": "Die Spracherkennung auf diesem Gerät unterstützt deine Sprache nicht.",
+  "stt_error_unavailable": "Auf diesem Gerät wurde kein Spracherkennungsdienst gefunden. Installiere eine Spracheingabe-App (zum Beispiel FUTO Voice Input) und lege sie als Standard-Spracherkennung fest.",
+  "stt_error_generic": "Fehler bei der Spracherkennung: {code}"
 }

@@ -1,7 +1,12 @@
 import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+
 import '../../../core/logger/app_logger.dart';
+import '../utils/stt_error_messages.dart';
 
 /// Double in dB-ish units (iOS) or 0..1-ish (Android) reported by the
 /// speech_to_text plugin via `onSoundLevelChange`. Higher = louder.
@@ -37,6 +42,14 @@ class SttState {
 }
 
 class SttNotifier extends Notifier<SttState> {
+  SttNotifier({SpeechToText Function()? speechFactory})
+    : _speechFactory = speechFactory ?? SpeechToText.new;
+
+  /// Delay before re-listening after an `error_client`, giving the platform
+  /// recognizer time to release the previous session.
+  static const clientErrorRetryDelay = Duration(milliseconds: 300);
+
+  final SpeechToText Function() _speechFactory;
   late SpeechToText _speech;
   bool _isInit = false;
   Future<bool>? _initialization;
@@ -46,10 +59,19 @@ class SttNotifier extends Notifier<SttState> {
   // Snapshot of the most recently issued session id. Set to -1 when no
   // listen() is in flight.
   int _activeSession = -1;
+  // Re-issues the current listen() with the same callbacks. Null when no
+  // listen is in flight.
+  Future<void> Function()? _relisten;
+  bool _retriedClientError = false;
+  // Android: use the on-device recognizer instead of the default service.
+  // Flipped after an `error_client`, which is what devices without Google
+  // speech services (e.g. GrapheneOS) report for the default one (#100).
+  bool _useOnDeviceRecognizer = false;
+  bool _switchedRecognizerForRetry = false;
 
   @override
   SttState build() {
-    _speech = SpeechToText();
+    _speech = _speechFactory();
     ref.onDispose(() {
       try {
         _speech.cancel();
@@ -71,6 +93,15 @@ class SttNotifier extends Notifier<SttState> {
         onError: (val) {
           if (!ref.mounted) return;
           Log.error('STT error: ${val.errorMsg} - permanent: ${val.permanent}');
+          if (val.errorMsg == 'error_client' && _retryAfterClientError()) {
+            return;
+          }
+          if (_switchedRecognizerForRetry) {
+            // The other recognizer didn't help either; go back to the
+            // original one for the next attempt.
+            _useOnDeviceRecognizer = !_useOnDeviceRecognizer;
+            _switchedRecognizerForRetry = false;
+          }
           state = state.copyWith(error: val.errorMsg, isListening: false);
         },
         onStatus: (val) {
@@ -97,7 +128,12 @@ class SttNotifier extends Notifier<SttState> {
     } catch (e) {
       if (!ref.mounted) return false;
       Log.error('STT initialization failed: $e');
-      state = state.copyWith(isAvailable: false, error: e.toString());
+      final noRecognizer =
+          e is PlatformException && e.code == 'recognizerNotAvailable';
+      state = state.copyWith(
+        isAvailable: false,
+        error: noRecognizer ? sttUnavailableCode : e.toString(),
+      );
       return false;
     } finally {
       _initialization = null;
@@ -123,6 +159,21 @@ class SttNotifier extends Notifier<SttState> {
       recognizedWords: '',
       clearError: true,
     );
+    _retriedClientError = false;
+    _switchedRecognizerForRetry = false;
+    _relisten = () => _listen(
+      onResult: onResult,
+      onFinal: onFinal,
+      onSoundLevelChange: onSoundLevelChange,
+    );
+    await _relisten!();
+  }
+
+  Future<void> _listen({
+    required void Function(String) onResult,
+    void Function(String)? onFinal,
+    SoundLevelChange? onSoundLevelChange,
+  }) async {
     _session++;
     _activeSession = _session;
 
@@ -148,6 +199,7 @@ class SttNotifier extends Notifier<SttState> {
           pauseFor: const Duration(seconds: 5),
           partialResults: true,
           cancelOnError: true,
+          onDevice: _useOnDeviceRecognizer,
         ),
       );
     } catch (e) {
@@ -157,9 +209,42 @@ class SttNotifier extends Notifier<SttState> {
     }
   }
 
+  /// Retries the current listen once after an `error_client`. On Android the
+  /// retry switches between the default and the on-device recognizer.
+  /// Returns false when the error should be surfaced instead.
+  bool _retryAfterClientError() {
+    final relisten = _relisten;
+    if (relisten == null || _retriedClientError) return false;
+    _retriedClientError = true;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      _useOnDeviceRecognizer = !_useOnDeviceRecognizer;
+      _switchedRecognizerForRetry = true;
+    }
+    Log.warning(
+      'STT error_client, retrying once '
+      '(onDevice: $_useOnDeviceRecognizer)',
+    );
+    final session = _session;
+    unawaited(() async {
+      try {
+        await _speech.cancel();
+      } catch (e) {
+        Log.error('STT cancel before retry failed: $e');
+      }
+      await Future<void>.delayed(clientErrorRetryDelay);
+      // Bail if the caller stopped or restarted listening meanwhile.
+      if (!ref.mounted || _session != session || _relisten != relisten) {
+        return;
+      }
+      await relisten();
+    }());
+    return true;
+  }
+
   Future<void> stopListening() async {
     // Invalidate the current session so any in-flight status callbacks
     // are ignored.
+    _relisten = null;
     _session++;
     _activeSession = -1;
     try {
@@ -172,6 +257,7 @@ class SttNotifier extends Notifier<SttState> {
   }
 
   Future<void> cancelListening() async {
+    _relisten = null;
     _session++;
     _activeSession = -1;
     try {

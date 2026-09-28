@@ -932,5 +932,15 @@
   "model_reasoning_on": "开启",
   "model_reasoning_help": "应用于下一条回复。如果模型的聊天模板支持，关闭后将禁用思考。",
   "model_reasoning_save_error": "无法保存思考模式。请重试。",
-  "on_device_engine_failed_error": "设备端模型已停止响应，通常是因为对话超出了上下文窗口。正在重新加载模型。请重试、开始新对话，或在设置中增加上下文长度。"
+  "on_device_engine_failed_error": "设备端模型已停止响应，通常是因为对话超出了上下文窗口。正在重新加载模型。请重试、开始新对话，或在设置中增加上下文长度。",
+  "stt_error_no_match": "未识别到语音。点按重试。",
+  "stt_error_speech_timeout": "未检测到语音。点按重试。",
+  "stt_error_permission": "麦克风权限被拒绝。",
+  "stt_error_busy": "语音识别正忙，请重试。",
+  "stt_error_network": "网络错误。请检查网络连接后重试。",
+  "stt_error_audio": "录音出错，请检查麦克风。",
+  "stt_error_client": "语音识别服务无法启动。请确认已安装语音输入应用并将其设为默认语音识别器，然后重试。",
+  "stt_error_language": "此设备上的语音识别器不支持你的语言。",
+  "stt_error_unavailable": "此设备上未找到语音识别服务。请安装语音输入应用（例如 FUTO Voice Input）并将其设为默认语音识别器。",
+  "stt_error_generic": "语音识别错误：{code}"
 }

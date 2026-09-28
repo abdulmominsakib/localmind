@@ -9,6 +9,7 @@ import 'package:localmind/features/on_device/providers/on_device_providers.dart'
 import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/stt/providers/stt_providers.dart';
+import 'package:localmind/features/stt/utils/stt_error_messages.dart';
 import 'package:localmind/features/tts/providers/tts_providers.dart';
 import 'package:localmind/features/voice_mode/providers/voice_mode_provider.dart';
 import 'package:localmind/services/voice_feedback_service.dart';
@@ -76,6 +77,27 @@ void main() {
         container.read(voiceModeProvider).error,
         'Microphone permission is required for voice mode.',
       );
+    },
+  );
+
+  test(
+    'voice mode reports a missing recognizer instead of permission (#100)',
+    () async {
+      final events = <String>[];
+      final stt = _RecordingSttNotifier(
+        events: events,
+        initAvailable: false,
+        initError: sttUnavailableCode,
+      );
+      final background = _RecordingChatBackgroundService(events: events);
+      final container = _readyVoiceContainer(stt, background);
+      addTearDown(container.dispose);
+
+      container.read(voiceModeProvider.notifier).startSession();
+      await _flushAsyncWork();
+
+      expect(events, ['initSpeech']);
+      expect(container.read(voiceModeProvider).error, sttUnavailableCode);
     },
   );
 
@@ -174,14 +196,19 @@ class _EmptyEngineNotifier extends OnDeviceEngineNotifier {
 }
 
 class _RecordingSttNotifier extends SttNotifier {
-  _RecordingSttNotifier({this.events = const [], this.initAvailable = true});
+  _RecordingSttNotifier({
+    this.events = const [],
+    this.initAvailable = true,
+    this.initError,
+  });
 
   final List<String> events;
   final bool initAvailable;
+  final String? initError;
   int startCount = 0;
 
   @override
-  SttState build() => SttState(isAvailable: initAvailable);
+  SttState build() => SttState(isAvailable: initAvailable, error: initError);
 
   @override
   Future<bool> initSpeech() async {

@@ -3170,4 +3170,43 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       'Il modello sul dispositivo ha smesso di rispondere, di solito perché la conversazione ha superato la finestra di contesto. Il modello viene ricaricato. Riprova, avvia una nuova chat o aumenta la lunghezza del contesto nelle impostazioni.';
+
+  @override
+  String get stt_error_no_match =>
+      'Nessun parlato riconosciuto. Tocca per riprovare.';
+
+  @override
+  String get stt_error_speech_timeout =>
+      'Nessun parlato rilevato. Tocca per riprovare.';
+
+  @override
+  String get stt_error_permission => 'Autorizzazione al microfono negata.';
+
+  @override
+  String get stt_error_busy => 'Il riconoscimento vocale è occupato. Riprova.';
+
+  @override
+  String get stt_error_network =>
+      'Errore di rete. Controlla la connessione e riprova.';
+
+  @override
+  String get stt_error_audio =>
+      'Errore di registrazione audio. Controlla il microfono.';
+
+  @override
+  String get stt_error_client =>
+      'Impossibile avviare il servizio di riconoscimento vocale. Assicurati che un\'app di input vocale sia installata e impostata come riconoscimento vocale predefinito, poi riprova.';
+
+  @override
+  String get stt_error_language =>
+      'Il riconoscimento vocale di questo dispositivo non supporta la tua lingua.';
+
+  @override
+  String get stt_error_unavailable =>
+      'Nessun servizio di riconoscimento vocale trovato su questo dispositivo. Installa un\'app di input vocale (ad esempio FUTO Voice Input) e impostala come riconoscimento vocale predefinito.';
+
+  @override
+  String stt_error_generic(String code) {
+    return 'Errore di riconoscimento vocale: $code';
+  }
 }

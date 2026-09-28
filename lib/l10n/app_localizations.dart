@@ -5852,6 +5852,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The on-device model stopped responding, usually because the conversation grew past its context window. The model is being reloaded. Try again, start a new chat, or increase the context length in settings.'**
   String get on_device_engine_failed_error;
+
+  /// No description provided for @stt_error_no_match.
+  ///
+  /// In en, this message translates to:
+  /// **'No speech recognized. Tap to try again.'**
+  String get stt_error_no_match;
+
+  /// No description provided for @stt_error_speech_timeout.
+  ///
+  /// In en, this message translates to:
+  /// **'No speech detected. Tap to try again.'**
+  String get stt_error_speech_timeout;
+
+  /// No description provided for @stt_error_permission.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission denied.'**
+  String get stt_error_permission;
+
+  /// No description provided for @stt_error_busy.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech recognition is busy. Please try again.'**
+  String get stt_error_busy;
+
+  /// No description provided for @stt_error_network.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error. Please check your connection and try again.'**
+  String get stt_error_network;
+
+  /// No description provided for @stt_error_audio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio recording error. Please check your microphone.'**
+  String get stt_error_audio;
+
+  /// No description provided for @stt_error_client.
+  ///
+  /// In en, this message translates to:
+  /// **'The speech recognition service failed to start. Make sure a voice input app is installed and set as the default speech recognizer, then try again.'**
+  String get stt_error_client;
+
+  /// No description provided for @stt_error_language.
+  ///
+  /// In en, this message translates to:
+  /// **'The speech recognizer on this device doesn\'t support your language.'**
+  String get stt_error_language;
+
+  /// No description provided for @stt_error_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No speech recognition service found on this device. Install a voice input app (for example FUTO Voice Input) and set it as the default speech recognizer.'**
+  String get stt_error_unavailable;
+
+  /// Fallback speech recognition error with the platform error name
+  ///
+  /// In en, this message translates to:
+  /// **'Speech recognition error: {code}'**
+  String stt_error_generic(String code);
 }
 
 class _AppLocalizationsDelegate

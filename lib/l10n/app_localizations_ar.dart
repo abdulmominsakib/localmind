@@ -3138,4 +3138,44 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       'توقف النموذج على الجهاز عن الاستجابة، غالبًا لأن المحادثة تجاوزت نافذة السياق. تتم إعادة تحميل النموذج. حاول مرة أخرى، أو ابدأ محادثة جديدة، أو زد طول السياق من الإعدادات.';
+
+  @override
+  String get stt_error_no_match =>
+      'لم يتم التعرف على أي كلام. اضغط للمحاولة مرة أخرى.';
+
+  @override
+  String get stt_error_speech_timeout =>
+      'لم يتم اكتشاف أي كلام. اضغط للمحاولة مرة أخرى.';
+
+  @override
+  String get stt_error_permission => 'تم رفض إذن الميكروفون.';
+
+  @override
+  String get stt_error_busy =>
+      'التعرف على الكلام مشغول. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get stt_error_network =>
+      'خطأ في الشبكة. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get stt_error_audio =>
+      'خطأ في تسجيل الصوت. يرجى التحقق من الميكروفون.';
+
+  @override
+  String get stt_error_client =>
+      'تعذر بدء خدمة التعرف على الكلام. تأكد من تثبيت تطبيق إدخال صوتي وتعيينه كأداة التعرف على الكلام الافتراضية، ثم حاول مرة أخرى.';
+
+  @override
+  String get stt_error_language =>
+      'أداة التعرف على الكلام على هذا الجهاز لا تدعم لغتك.';
+
+  @override
+  String get stt_error_unavailable =>
+      'لم يتم العثور على خدمة للتعرف على الكلام على هذا الجهاز. ثبّت تطبيق إدخال صوتي (مثل FUTO Voice Input) وعيّنه كأداة التعرف على الكلام الافتراضية.';
+
+  @override
+  String stt_error_generic(String code) {
+    return 'خطأ في التعرف على الكلام: $code';
+  }
 }

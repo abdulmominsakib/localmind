@@ -932,5 +932,15 @@
   "model_reasoning_on": "Attivo",
   "model_reasoning_help": "Si applica alla prossima risposta. Disattivato impedisce il ragionamento se il template di chat del modello lo supporta.",
   "model_reasoning_save_error": "Impossibile salvare la modalità di ragionamento. Riprova.",
-  "on_device_engine_failed_error": "Il modello sul dispositivo ha smesso di rispondere, di solito perché la conversazione ha superato la finestra di contesto. Il modello viene ricaricato. Riprova, avvia una nuova chat o aumenta la lunghezza del contesto nelle impostazioni."
+  "on_device_engine_failed_error": "Il modello sul dispositivo ha smesso di rispondere, di solito perché la conversazione ha superato la finestra di contesto. Il modello viene ricaricato. Riprova, avvia una nuova chat o aumenta la lunghezza del contesto nelle impostazioni.",
+  "stt_error_no_match": "Nessun parlato riconosciuto. Tocca per riprovare.",
+  "stt_error_speech_timeout": "Nessun parlato rilevato. Tocca per riprovare.",
+  "stt_error_permission": "Autorizzazione al microfono negata.",
+  "stt_error_busy": "Il riconoscimento vocale è occupato. Riprova.",
+  "stt_error_network": "Errore di rete. Controlla la connessione e riprova.",
+  "stt_error_audio": "Errore di registrazione audio. Controlla il microfono.",
+  "stt_error_client": "Impossibile avviare il servizio di riconoscimento vocale. Assicurati che un'app di input vocale sia installata e impostata come riconoscimento vocale predefinito, poi riprova.",
+  "stt_error_language": "Il riconoscimento vocale di questo dispositivo non supporta la tua lingua.",
+  "stt_error_unavailable": "Nessun servizio di riconoscimento vocale trovato su questo dispositivo. Installa un'app di input vocale (ad esempio FUTO Voice Input) e impostala come riconoscimento vocale predefinito.",
+  "stt_error_generic": "Errore di riconoscimento vocale: {code}"
 }

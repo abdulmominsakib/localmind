@@ -3153,4 +3153,44 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       'Das On-Device-Modell reagiert nicht mehr, meist weil die Unterhaltung das Kontextfenster überschritten hat. Das Modell wird neu geladen. Versuche es erneut, starte einen neuen Chat oder erhöhe die Kontextlänge in den Einstellungen.';
+
+  @override
+  String get stt_error_no_match =>
+      'Keine Sprache erkannt. Tippe, um es erneut zu versuchen.';
+
+  @override
+  String get stt_error_speech_timeout =>
+      'Keine Sprache erkannt. Tippe, um es erneut zu versuchen.';
+
+  @override
+  String get stt_error_permission => 'Mikrofonberechtigung verweigert.';
+
+  @override
+  String get stt_error_busy =>
+      'Die Spracherkennung ist beschäftigt. Bitte versuche es erneut.';
+
+  @override
+  String get stt_error_network =>
+      'Netzwerkfehler. Bitte prüfe deine Verbindung und versuche es erneut.';
+
+  @override
+  String get stt_error_audio =>
+      'Fehler bei der Audioaufnahme. Bitte prüfe dein Mikrofon.';
+
+  @override
+  String get stt_error_client =>
+      'Der Spracherkennungsdienst konnte nicht gestartet werden. Stelle sicher, dass eine Spracheingabe-App installiert und als Standard-Spracherkennung festgelegt ist, und versuche es erneut.';
+
+  @override
+  String get stt_error_language =>
+      'Die Spracherkennung auf diesem Gerät unterstützt deine Sprache nicht.';
+
+  @override
+  String get stt_error_unavailable =>
+      'Auf diesem Gerät wurde kein Spracherkennungsdienst gefunden. Installiere eine Spracheingabe-App (zum Beispiel FUTO Voice Input) und lege sie als Standard-Spracherkennung fest.';
+
+  @override
+  String stt_error_generic(String code) {
+    return 'Fehler bei der Spracherkennung: $code';
+  }
 }

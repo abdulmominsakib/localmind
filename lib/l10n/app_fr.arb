@@ -929,5 +929,15 @@
   "model_reasoning_on": "Activé",
   "model_reasoning_help": "S’applique à la prochaine réponse. Désactivé coupe le raisonnement si le modèle de conversation le permet.",
   "model_reasoning_save_error": "Impossible d’enregistrer le mode de réflexion. Veuillez réessayer.",
-  "on_device_engine_failed_error": "Le modèle sur l'appareil ne répond plus, généralement parce que la conversation a dépassé sa fenêtre de contexte. Le modèle est en cours de rechargement. Réessayez, démarrez une nouvelle discussion ou augmentez la longueur du contexte dans les paramètres."
+  "on_device_engine_failed_error": "Le modèle sur l'appareil ne répond plus, généralement parce que la conversation a dépassé sa fenêtre de contexte. Le modèle est en cours de rechargement. Réessayez, démarrez une nouvelle discussion ou augmentez la longueur du contexte dans les paramètres.",
+  "stt_error_no_match": "Aucune parole reconnue. Touchez pour réessayer.",
+  "stt_error_speech_timeout": "Aucune parole détectée. Touchez pour réessayer.",
+  "stt_error_permission": "Autorisation du micro refusée.",
+  "stt_error_busy": "La reconnaissance vocale est occupée. Veuillez réessayer.",
+  "stt_error_network": "Erreur réseau. Vérifiez votre connexion et réessayez.",
+  "stt_error_audio": "Erreur d'enregistrement audio. Vérifiez votre micro.",
+  "stt_error_client": "Le service de reconnaissance vocale n'a pas pu démarrer. Vérifiez qu'une application de saisie vocale est installée et définie comme reconnaissance vocale par défaut, puis réessayez.",
+  "stt_error_language": "La reconnaissance vocale de cet appareil ne prend pas en charge votre langue.",
+  "stt_error_unavailable": "Aucun service de reconnaissance vocale trouvé sur cet appareil. Installez une application de saisie vocale (par exemple FUTO Voice Input) et définissez-la comme reconnaissance vocale par défaut.",
+  "stt_error_generic": "Erreur de reconnaissance vocale : {code}"
 }

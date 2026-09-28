@@ -3168,4 +3168,42 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       'Локальная модель перестала отвечать — обычно потому, что диалог превысил окно контекста. Модель перезагружается. Попробуйте снова, начните новый чат или увеличьте длину контекста в настройках.';
+
+  @override
+  String get stt_error_no_match =>
+      'Речь не распознана. Нажмите, чтобы попробовать снова.';
+
+  @override
+  String get stt_error_speech_timeout =>
+      'Речь не обнаружена. Нажмите, чтобы попробовать снова.';
+
+  @override
+  String get stt_error_permission => 'Доступ к микрофону запрещён.';
+
+  @override
+  String get stt_error_busy => 'Распознавание речи занято. Попробуйте снова.';
+
+  @override
+  String get stt_error_network =>
+      'Ошибка сети. Проверьте подключение и попробуйте снова.';
+
+  @override
+  String get stt_error_audio => 'Ошибка записи звука. Проверьте микрофон.';
+
+  @override
+  String get stt_error_client =>
+      'Не удалось запустить службу распознавания речи. Убедитесь, что установлено приложение голосового ввода и оно выбрано распознавателем речи по умолчанию, затем попробуйте снова.';
+
+  @override
+  String get stt_error_language =>
+      'Распознаватель речи на этом устройстве не поддерживает ваш язык.';
+
+  @override
+  String get stt_error_unavailable =>
+      'На устройстве не найдена служба распознавания речи. Установите приложение голосового ввода (например, FUTO Voice Input) и выберите его распознавателем речи по умолчанию.';
+
+  @override
+  String stt_error_generic(String code) {
+    return 'Ошибка распознавания речи: $code';
+  }
 }

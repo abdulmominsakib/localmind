@@ -943,5 +943,15 @@
   "model_reasoning_on": "켜짐",
   "model_reasoning_help": "다음 응답에 적용됩니다. 모델의 채팅 템플릿이 지원하는 경우 끄면 사고가 비활성화됩니다.",
   "model_reasoning_save_error": "사고 모드를 저장하지 못했습니다. 다시 시도해 주세요.",
-  "on_device_engine_failed_error": "온디바이스 모델이 응답을 멈췄습니다. 대개 대화가 컨텍스트 창을 초과했기 때문입니다. 모델을 다시 불러오는 중입니다. 다시 시도하거나 새 채팅을 시작하거나 설정에서 컨텍스트 길이를 늘리세요."
+  "on_device_engine_failed_error": "온디바이스 모델이 응답을 멈췄습니다. 대개 대화가 컨텍스트 창을 초과했기 때문입니다. 모델을 다시 불러오는 중입니다. 다시 시도하거나 새 채팅을 시작하거나 설정에서 컨텍스트 길이를 늘리세요.",
+  "stt_error_no_match": "음성을 인식하지 못했습니다. 다시 시도하려면 탭하세요.",
+  "stt_error_speech_timeout": "음성이 감지되지 않았습니다. 다시 시도하려면 탭하세요.",
+  "stt_error_permission": "마이크 권한이 거부되었습니다.",
+  "stt_error_busy": "음성 인식이 사용 중입니다. 다시 시도하세요.",
+  "stt_error_network": "네트워크 오류입니다. 연결을 확인하고 다시 시도하세요.",
+  "stt_error_audio": "오디오 녹음 오류입니다. 마이크를 확인하세요.",
+  "stt_error_client": "음성 인식 서비스를 시작하지 못했습니다. 음성 입력 앱이 설치되어 있고 기본 음성 인식기로 설정되어 있는지 확인한 후 다시 시도하세요.",
+  "stt_error_language": "이 기기의 음성 인식기가 사용자의 언어를 지원하지 않습니다.",
+  "stt_error_unavailable": "이 기기에서 음성 인식 서비스를 찾을 수 없습니다. 음성 입력 앱(예: FUTO Voice Input)을 설치하고 기본 음성 인식기로 설정하세요.",
+  "stt_error_generic": "음성 인식 오류: {code}"
 }

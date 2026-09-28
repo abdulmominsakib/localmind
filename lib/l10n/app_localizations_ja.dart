@@ -3092,4 +3092,38 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       'オンデバイスモデルが応答しなくなりました。通常、会話がコンテキストウィンドウを超えたことが原因です。モデルを再読み込みしています。もう一度試すか、新しいチャットを開始するか、設定でコンテキスト長を増やしてください。';
+
+  @override
+  String get stt_error_no_match => '音声を認識できませんでした。タップしてもう一度お試しください。';
+
+  @override
+  String get stt_error_speech_timeout => '音声が検出されませんでした。タップしてもう一度お試しください。';
+
+  @override
+  String get stt_error_permission => 'マイクへのアクセスが拒否されました。';
+
+  @override
+  String get stt_error_busy => '音声認識が使用中です。もう一度お試しください。';
+
+  @override
+  String get stt_error_network => 'ネットワークエラーです。接続を確認してもう一度お試しください。';
+
+  @override
+  String get stt_error_audio => '録音エラーです。マイクを確認してください。';
+
+  @override
+  String get stt_error_client =>
+      '音声認識サービスを開始できませんでした。音声入力アプリがインストールされ、既定の音声認識に設定されていることを確認して、もう一度お試しください。';
+
+  @override
+  String get stt_error_language => 'このデバイスの音声認識はお使いの言語に対応していません。';
+
+  @override
+  String get stt_error_unavailable =>
+      'このデバイスに音声認識サービスが見つかりません。音声入力アプリ（例: FUTO Voice Input）をインストールし、既定の音声認識に設定してください。';
+
+  @override
+  String stt_error_generic(String code) {
+    return '音声認識エラー: $code';
+  }
 }

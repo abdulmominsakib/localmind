@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
+import '../../../stt/utils/stt_error_messages.dart';
 import '../../../tts/providers/tts_providers.dart';
 import '../../providers/voice_mode_provider.dart';
 import '../../voice_mode_palette.dart';
@@ -172,10 +174,8 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
           false,
         );
       case VoiceModePhase.error:
-        final errorText = widget.error ?? '';
-        final isSpeechError = errorText.toLowerCase().contains('speech');
         return (
-          isSpeechError ? 'NO SPEECH DETECTED' : 'ERROR',
+          isNoSpeechSttError(widget.error) ? 'NO SPEECH DETECTED' : 'ERROR',
           VoiceModePalette.accentFor(VoiceModePhase.error, isDark: isDark),
           false,
         );
@@ -283,7 +283,7 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
 
       case VoiceModePhase.error:
         final errorText = (widget.error != null && widget.error!.isNotEmpty)
-            ? widget.error!
+            ? sttErrorMessage(AppLocalizations.of(context), widget.error!)
             : 'No speech recognized. Tap to try again.';
         return Text(
           errorText,

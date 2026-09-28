@@ -929,5 +929,15 @@
   "model_reasoning_on": "Açık",
   "model_reasoning_help": "Sonraki yanıta uygulanır. Modelin sohbet şablonu destekliyorsa Kapalı seçeneği düşünmeyi devre dışı bırakır.",
   "model_reasoning_save_error": "Düşünme modu kaydedilemedi. Lütfen tekrar deneyin.",
-  "on_device_engine_failed_error": "Cihaz üzerindeki model yanıt vermeyi durdurdu; genellikle sohbet bağlam penceresini aştığı için. Model yeniden yükleniyor. Tekrar deneyin, yeni bir sohbet başlatın veya ayarlardan bağlam uzunluğunu artırın."
+  "on_device_engine_failed_error": "Cihaz üzerindeki model yanıt vermeyi durdurdu; genellikle sohbet bağlam penceresini aştığı için. Model yeniden yükleniyor. Tekrar deneyin, yeni bir sohbet başlatın veya ayarlardan bağlam uzunluğunu artırın.",
+  "stt_error_no_match": "Konuşma tanınmadı. Tekrar denemek için dokunun.",
+  "stt_error_speech_timeout": "Konuşma algılanmadı. Tekrar denemek için dokunun.",
+  "stt_error_permission": "Mikrofon izni reddedildi.",
+  "stt_error_busy": "Konuşma tanıma meşgul. Lütfen tekrar deneyin.",
+  "stt_error_network": "Ağ hatası. Bağlantınızı kontrol edip tekrar deneyin.",
+  "stt_error_audio": "Ses kaydı hatası. Lütfen mikrofonunuzu kontrol edin.",
+  "stt_error_client": "Konuşma tanıma hizmeti başlatılamadı. Bir sesli giriş uygulamasının yüklü ve varsayılan konuşma tanıyıcı olarak ayarlı olduğundan emin olup tekrar deneyin.",
+  "stt_error_language": "Bu cihazdaki konuşma tanıyıcı dilinizi desteklemiyor.",
+  "stt_error_unavailable": "Bu cihazda konuşma tanıma hizmeti bulunamadı. Bir sesli giriş uygulaması (örneğin FUTO Voice Input) yükleyip varsayılan konuşma tanıyıcı olarak ayarlayın.",
+  "stt_error_generic": "Konuşma tanıma hatası: {code}"
 }

@@ -943,5 +943,15 @@
   "model_reasoning_on": "Ativado",
   "model_reasoning_help": "Aplica-se à próxima resposta. Desativado impede o raciocínio se o modelo de chat permitir.",
   "model_reasoning_save_error": "Não foi possível salvar o modo de raciocínio. Tente novamente.",
-  "on_device_engine_failed_error": "O modelo no dispositivo parou de responder, geralmente porque a conversa ultrapassou a janela de contexto. O modelo está sendo recarregado. Tente novamente, inicie um novo chat ou aumente o comprimento do contexto nas configurações."
+  "on_device_engine_failed_error": "O modelo no dispositivo parou de responder, geralmente porque a conversa ultrapassou a janela de contexto. O modelo está sendo recarregado. Tente novamente, inicie um novo chat ou aumente o comprimento do contexto nas configurações.",
+  "stt_error_no_match": "Nenhuma fala reconhecida. Toque para tentar novamente.",
+  "stt_error_speech_timeout": "Nenhuma fala detectada. Toque para tentar novamente.",
+  "stt_error_permission": "Permissão do microfone negada.",
+  "stt_error_busy": "O reconhecimento de voz está ocupado. Tente novamente.",
+  "stt_error_network": "Erro de rede. Verifique sua conexão e tente novamente.",
+  "stt_error_audio": "Erro na gravação de áudio. Verifique seu microfone.",
+  "stt_error_client": "Não foi possível iniciar o serviço de reconhecimento de voz. Verifique se um app de entrada por voz está instalado e definido como reconhecedor de fala padrão e tente novamente.",
+  "stt_error_language": "O reconhecedor de fala deste dispositivo não suporta seu idioma.",
+  "stt_error_unavailable": "Nenhum serviço de reconhecimento de voz encontrado neste dispositivo. Instale um app de entrada por voz (por exemplo FUTO Voice Input) e defina-o como reconhecedor de fala padrão.",
+  "stt_error_generic": "Erro de reconhecimento de voz: {code}"
 }

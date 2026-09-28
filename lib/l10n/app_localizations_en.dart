@@ -3143,4 +3143,42 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       'The on-device model stopped responding, usually because the conversation grew past its context window. The model is being reloaded. Try again, start a new chat, or increase the context length in settings.';
+
+  @override
+  String get stt_error_no_match => 'No speech recognized. Tap to try again.';
+
+  @override
+  String get stt_error_speech_timeout =>
+      'No speech detected. Tap to try again.';
+
+  @override
+  String get stt_error_permission => 'Microphone permission denied.';
+
+  @override
+  String get stt_error_busy => 'Speech recognition is busy. Please try again.';
+
+  @override
+  String get stt_error_network =>
+      'Network error. Please check your connection and try again.';
+
+  @override
+  String get stt_error_audio =>
+      'Audio recording error. Please check your microphone.';
+
+  @override
+  String get stt_error_client =>
+      'The speech recognition service failed to start. Make sure a voice input app is installed and set as the default speech recognizer, then try again.';
+
+  @override
+  String get stt_error_language =>
+      'The speech recognizer on this device doesn\'t support your language.';
+
+  @override
+  String get stt_error_unavailable =>
+      'No speech recognition service found on this device. Install a voice input app (for example FUTO Voice Input) and set it as the default speech recognizer.';
+
+  @override
+  String stt_error_generic(String code) {
+    return 'Speech recognition error: $code';
+  }
 }

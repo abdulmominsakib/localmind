@@ -3156,4 +3156,44 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       'Le modèle sur l\'appareil ne répond plus, généralement parce que la conversation a dépassé sa fenêtre de contexte. Le modèle est en cours de rechargement. Réessayez, démarrez une nouvelle discussion ou augmentez la longueur du contexte dans les paramètres.';
+
+  @override
+  String get stt_error_no_match =>
+      'Aucune parole reconnue. Touchez pour réessayer.';
+
+  @override
+  String get stt_error_speech_timeout =>
+      'Aucune parole détectée. Touchez pour réessayer.';
+
+  @override
+  String get stt_error_permission => 'Autorisation du micro refusée.';
+
+  @override
+  String get stt_error_busy =>
+      'La reconnaissance vocale est occupée. Veuillez réessayer.';
+
+  @override
+  String get stt_error_network =>
+      'Erreur réseau. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get stt_error_audio =>
+      'Erreur d\'enregistrement audio. Vérifiez votre micro.';
+
+  @override
+  String get stt_error_client =>
+      'Le service de reconnaissance vocale n\'a pas pu démarrer. Vérifiez qu\'une application de saisie vocale est installée et définie comme reconnaissance vocale par défaut, puis réessayez.';
+
+  @override
+  String get stt_error_language =>
+      'La reconnaissance vocale de cet appareil ne prend pas en charge votre langue.';
+
+  @override
+  String get stt_error_unavailable =>
+      'Aucun service de reconnaissance vocale trouvé sur cet appareil. Installez une application de saisie vocale (par exemple FUTO Voice Input) et définissez-la comme reconnaissance vocale par défaut.';
+
+  @override
+  String stt_error_generic(String code) {
+    return 'Erreur de reconnaissance vocale : $code';
+  }
 }

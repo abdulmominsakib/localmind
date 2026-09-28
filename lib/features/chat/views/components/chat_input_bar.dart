@@ -15,6 +15,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../saved_messages/views/components/saved_message_picker_sheet.dart';
 import '../../../servers/providers/server_providers.dart';
 import '../../../stt/providers/stt_providers.dart';
+import '../../../stt/utils/stt_error_messages.dart';
 import '../../../tts/providers/tts_providers.dart';
 import '../../../voice_mode/providers/voice_mode_provider.dart';
 import '../../providers/chat_providers.dart';
@@ -756,40 +757,6 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     );
   }
 
-  String? _mapSttError(String error) {
-    switch (error) {
-      case 'error_no_match':
-        return 'No speech recognized. Please try speaking again and check your microphone.';
-
-      case 'error_speech_timeout':
-        return 'No speech detected. Timed out.';
-
-      case 'error_permission':
-        return 'Microphone permission denied.';
-
-      case 'error_busy':
-        return 'Speech recognition is busy. Please try again.';
-
-      case 'error_network':
-      case 'error_network_timeout':
-        return 'Network error. Please check your connection and try again.';
-
-      case 'error_audio':
-        return 'Audio recording error. Please check your microphone.';
-
-      default:
-        if (error.startsWith('error_')) {
-          final cleanName = error
-              .replaceFirst('error_', '')
-              .replaceAll('_', ' ');
-
-          return 'Speech recognition error: $cleanName';
-        }
-
-        return error;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -844,16 +811,13 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
             voiceState.isActive || voiceState.phase != VoiceModePhase.idle;
         if (voiceActive) return;
 
-        final message = _mapSttError(next);
-
-        if (message != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            ScaffoldMessenger.maybeOf(
-              context,
-            )?.showSnackBar(SnackBar(content: Text(message)));
-          });
-        }
+        final message = sttErrorMessage(AppLocalizations.of(context), next);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.maybeOf(
+            context,
+          )?.showSnackBar(SnackBar(content: Text(message)));
+        });
       }
     });
 

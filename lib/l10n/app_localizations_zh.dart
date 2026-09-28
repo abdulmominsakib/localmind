@@ -3067,6 +3067,39 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get on_device_engine_failed_error =>
       '设备端模型已停止响应，通常是因为对话超出了上下文窗口。正在重新加载模型。请重试、开始新对话，或在设置中增加上下文长度。';
+
+  @override
+  String get stt_error_no_match => '未识别到语音。点按重试。';
+
+  @override
+  String get stt_error_speech_timeout => '未检测到语音。点按重试。';
+
+  @override
+  String get stt_error_permission => '麦克风权限被拒绝。';
+
+  @override
+  String get stt_error_busy => '语音识别正忙，请重试。';
+
+  @override
+  String get stt_error_network => '网络错误。请检查网络连接后重试。';
+
+  @override
+  String get stt_error_audio => '录音出错，请检查麦克风。';
+
+  @override
+  String get stt_error_client => '语音识别服务无法启动。请确认已安装语音输入应用并将其设为默认语音识别器，然后重试。';
+
+  @override
+  String get stt_error_language => '此设备上的语音识别器不支持你的语言。';
+
+  @override
+  String get stt_error_unavailable =>
+      '此设备上未找到语音识别服务。请安装语音输入应用（例如 FUTO Voice Input）并将其设为默认语音识别器。';
+
+  @override
+  String stt_error_generic(String code) {
+    return '语音识别错误：$code';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6038,4 +6071,37 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get on_device_engine_failed_error =>
       '裝置端模型已停止回應，通常是因為對話超出了上下文視窗。正在重新載入模型。請重試、開始新對話，或在設定中增加上下文長度。';
+
+  @override
+  String get stt_error_no_match => '未辨識到語音。點按重試。';
+
+  @override
+  String get stt_error_speech_timeout => '未偵測到語音。點按重試。';
+
+  @override
+  String get stt_error_permission => '麥克風權限遭拒。';
+
+  @override
+  String get stt_error_busy => '語音辨識忙碌中，請重試。';
+
+  @override
+  String get stt_error_network => '網路錯誤。請檢查連線後重試。';
+
+  @override
+  String get stt_error_audio => '錄音發生錯誤，請檢查麥克風。';
+
+  @override
+  String get stt_error_client => '語音辨識服務無法啟動。請確認已安裝語音輸入 App 並設為預設語音辨識器，然後重試。';
+
+  @override
+  String get stt_error_language => '此裝置上的語音辨識器不支援你的語言。';
+
+  @override
+  String get stt_error_unavailable =>
+      '此裝置上找不到語音辨識服務。請安裝語音輸入 App（例如 FUTO Voice Input）並設為預設語音辨識器。';
+
+  @override
+  String stt_error_generic(String code) {
+    return '語音辨識錯誤：$code';
+  }
 }
