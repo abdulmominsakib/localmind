@@ -3242,4 +3242,21 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get background_generation_notice_untitled =>
       'Başka bir sohbet hâlâ yanıt oluşturuyor. Bitince buradan gönderebilirsiniz. Açmak için dokunun.';
+
+  @override
+  String background_generation_notice_info(String title) {
+    return 'Arka planda \"$title\" sohbetinde yanıt oluşturuluyor. Açmak için dokunun.';
+  }
+
+  @override
+  String get background_generation_notice_info_untitled =>
+      'Arka planda başka bir sohbet yanıt oluşturuyor. Açmak için dokunun.';
+
+  @override
+  String background_generation_notice_multiple(int count) {
+    return '$count sohbet arka planda yanıt oluşturuyor.';
+  }
+
+  @override
+  String get background_generation_chat_untitled => 'Başlıksız sohbet';
 }

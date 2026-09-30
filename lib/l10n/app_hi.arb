@@ -950,5 +950,9 @@
   "default_system_prompt_desc": "उन चैट के लिए उपयोग होता है जिनमें न कोई पर्सोना है और न ही अपना सिस्टम प्रॉम्प्ट।",
   "default_system_prompt_hint": "आप एक सहायक असिस्टेंट हैं…",
   "background_generation_notice": "\"{title}\" में अभी जवाब बन रहा है। पूरा होने पर आप यहाँ भेज सकेंगे। खोलने के लिए टैप करें।",
-  "background_generation_notice_untitled": "कोई दूसरी चैट अभी जवाब बना रही है। पूरा होने पर आप यहाँ भेज सकेंगे। खोलने के लिए टैप करें।"
+  "background_generation_notice_untitled": "कोई दूसरी चैट अभी जवाब बना रही है। पूरा होने पर आप यहाँ भेज सकेंगे। खोलने के लिए टैप करें।",
+  "background_generation_notice_info": "बैकग्राउंड में \"{title}\" में जवाब बन रहा है। खोलने के लिए टैप करें।",
+  "background_generation_notice_info_untitled": "बैकग्राउंड में कोई दूसरी चैट जवाब बना रही है। खोलने के लिए टैप करें।",
+  "background_generation_notice_multiple": "{count} चैट बैकग्राउंड में जवाब बना रही हैं।",
+  "background_generation_chat_untitled": "बिना शीर्षक की चैट"
 }

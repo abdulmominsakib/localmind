@@ -510,14 +510,9 @@ class SettingsViews extends ConsumerWidget {
                     label: l10n.delete_all_conversations,
                     icon: HugeIcons.strokeRoundedDelete01,
                     onConfirm: () async {
-                      final generatingId = ref.read(
-                        streamingConversationIdProvider,
-                      );
-                      if (generatingId != null) {
-                        await ref
-                            .read(chatProvider.notifier)
-                            .cancelGenerationFor(generatingId);
-                      }
+                      await ref
+                          .read(chatProvider.notifier)
+                          .cancelAllGenerations();
                       await ref
                           .read(conversationsProvider.notifier)
                           .deleteAll();

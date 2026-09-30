@@ -950,5 +950,9 @@
   "default_system_prompt_desc": "用于没有角色且没有专属系统提示词的对话。",
   "default_system_prompt_hint": "你是一个乐于助人的助手……",
   "background_generation_notice": "“{title}”仍在生成回复。完成后即可在此发送。点按打开。",
-  "background_generation_notice_untitled": "另一个对话仍在生成回复。完成后即可在此发送。点按打开。"
+  "background_generation_notice_untitled": "另一个对话仍在生成回复。完成后即可在此发送。点按打开。",
+  "background_generation_notice_info": "正在后台回复“{title}”。点按打开。",
+  "background_generation_notice_info_untitled": "另一个对话正在后台回复。点按打开。",
+  "background_generation_notice_multiple": "{count} 个对话正在后台回复。",
+  "background_generation_chat_untitled": "未命名对话"
 }

@@ -950,5 +950,9 @@
   "default_system_prompt_desc": "用於沒有角色且沒有專屬系統提示詞的對話。",
   "default_system_prompt_hint": "你是一個樂於助人的助理……",
   "background_generation_notice": "「{title}」仍在產生回覆。完成後即可在此傳送。點按開啟。",
-  "background_generation_notice_untitled": "另一個對話仍在產生回覆。完成後即可在此傳送。點按開啟。"
+  "background_generation_notice_untitled": "另一個對話仍在產生回覆。完成後即可在此傳送。點按開啟。",
+  "background_generation_notice_info": "正在背景回覆「{title}」。點按開啟。",
+  "background_generation_notice_info_untitled": "另一個對話正在背景回覆。點按開啟。",
+  "background_generation_notice_multiple": "{count} 個對話正在背景回覆。",
+  "background_generation_chat_untitled": "未命名對話"
 }

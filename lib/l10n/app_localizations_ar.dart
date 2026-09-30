@@ -3207,4 +3207,21 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get background_generation_notice_untitled =>
       'لا تزال محادثة أخرى تُنشئ ردًا. يمكنك الإرسال هنا بعد انتهائها. اضغط للفتح.';
+
+  @override
+  String background_generation_notice_info(String title) {
+    return 'يتم الرد في \"$title\" في الخلفية. اضغط للفتح.';
+  }
+
+  @override
+  String get background_generation_notice_info_untitled =>
+      'محادثة أخرى تُنشئ ردًا في الخلفية. اضغط للفتح.';
+
+  @override
+  String background_generation_notice_multiple(int count) {
+    return '$count محادثات تُنشئ ردودًا في الخلفية.';
+  }
+
+  @override
+  String get background_generation_chat_untitled => 'محادثة بلا عنوان';
 }

@@ -59,6 +59,12 @@ Future<void> main() async {
       };
 
       ErrorWidget.builder = (details) {
+        if (CrashReportService.isBenignFrameworkError(
+          details.exception,
+          details.stack,
+        )) {
+          return const SizedBox.shrink();
+        }
         final captured = crashReports.capture(
           details.exception,
           details.stack ?? StackTrace.current,

@@ -947,5 +947,9 @@
   "default_system_prompt_desc": "Personası ve sohbete özel sistem istemi olmayan sohbetlerde kullanılır.",
   "default_system_prompt_hint": "Yardımsever bir asistansın…",
   "background_generation_notice": "\"{title}\" sohbetinde yanıt hâlâ oluşturuluyor. Bitince buradan gönderebilirsiniz. Açmak için dokunun.",
-  "background_generation_notice_untitled": "Başka bir sohbet hâlâ yanıt oluşturuyor. Bitince buradan gönderebilirsiniz. Açmak için dokunun."
+  "background_generation_notice_untitled": "Başka bir sohbet hâlâ yanıt oluşturuyor. Bitince buradan gönderebilirsiniz. Açmak için dokunun.",
+  "background_generation_notice_info": "Arka planda \"{title}\" sohbetinde yanıt oluşturuluyor. Açmak için dokunun.",
+  "background_generation_notice_info_untitled": "Arka planda başka bir sohbet yanıt oluşturuyor. Açmak için dokunun.",
+  "background_generation_notice_multiple": "{count} sohbet arka planda yanıt oluşturuyor.",
+  "background_generation_chat_untitled": "Başlıksız sohbet"
 }

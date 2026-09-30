@@ -947,5 +947,9 @@
   "default_system_prompt_desc": "Используется в чатах без персоны и без собственного системного промпта.",
   "default_system_prompt_hint": "Ты полезный ассистент…",
   "background_generation_notice": "Ответ в «{title}» ещё генерируется. Отправить здесь можно будет после завершения. Нажмите, чтобы открыть.",
-  "background_generation_notice_untitled": "Другой чат ещё генерирует ответ. Отправить здесь можно будет после завершения. Нажмите, чтобы открыть."
+  "background_generation_notice_untitled": "Другой чат ещё генерирует ответ. Отправить здесь можно будет после завершения. Нажмите, чтобы открыть.",
+  "background_generation_notice_info": "Ответ в «{title}» генерируется в фоне. Нажмите, чтобы открыть.",
+  "background_generation_notice_info_untitled": "Другой чат отвечает в фоне. Нажмите, чтобы открыть.",
+  "background_generation_notice_multiple": "{count} чатов отвечают в фоне.",
+  "background_generation_chat_untitled": "Чат без названия"
 }

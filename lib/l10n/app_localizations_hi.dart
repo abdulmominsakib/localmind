@@ -3222,4 +3222,21 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get background_generation_notice_untitled =>
       'कोई दूसरी चैट अभी जवाब बना रही है। पूरा होने पर आप यहाँ भेज सकेंगे। खोलने के लिए टैप करें।';
+
+  @override
+  String background_generation_notice_info(String title) {
+    return 'बैकग्राउंड में \"$title\" में जवाब बन रहा है। खोलने के लिए टैप करें।';
+  }
+
+  @override
+  String get background_generation_notice_info_untitled =>
+      'बैकग्राउंड में कोई दूसरी चैट जवाब बना रही है। खोलने के लिए टैप करें।';
+
+  @override
+  String background_generation_notice_multiple(int count) {
+    return '$count चैट बैकग्राउंड में जवाब बना रही हैं।';
+  }
+
+  @override
+  String get background_generation_chat_untitled => 'बिना शीर्षक की चैट';
 }

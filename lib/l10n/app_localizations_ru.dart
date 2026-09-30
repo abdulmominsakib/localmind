@@ -3235,4 +3235,21 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get background_generation_notice_untitled =>
       'Другой чат ещё генерирует ответ. Отправить здесь можно будет после завершения. Нажмите, чтобы открыть.';
+
+  @override
+  String background_generation_notice_info(String title) {
+    return 'Ответ в «$title» генерируется в фоне. Нажмите, чтобы открыть.';
+  }
+
+  @override
+  String get background_generation_notice_info_untitled =>
+      'Другой чат отвечает в фоне. Нажмите, чтобы открыть.';
+
+  @override
+  String background_generation_notice_multiple(int count) {
+    return '$count чатов отвечают в фоне.';
+  }
+
+  @override
+  String get background_generation_chat_untitled => 'Чат без названия';
 }

@@ -31,12 +31,12 @@ void main() {
   });
 
   group('ServerLogo widget', () {
-    testWidgets('renders Image for server types with brand logos', (tester) async {
+    testWidgets('renders Image for server types with brand logos', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: ServerLogo(type: ServerType.lmStudio, size: 24),
-          ),
+          home: Scaffold(body: ServerLogo(type: ServerType.lmStudio, size: 24)),
         ),
       );
 
@@ -44,7 +44,9 @@ void main() {
       expect(find.byType(HugeIcon), findsNothing);
     });
 
-    testWidgets('renders HugeIcon for server types without brand logos', (tester) async {
+    testWidgets('renders HugeIcon for server types without brand logos', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -57,21 +59,24 @@ void main() {
       expect(find.byType(Image), findsNothing);
     });
 
-    testWidgets('renders custom HugeIcon when customIcon is explicitly provided', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ServerLogo(
-              type: ServerType.lmStudio,
-              customIcon: HugeIcons.strokeRoundedStar,
-              size: 24,
+    testWidgets(
+      'renders custom HugeIcon when customIcon is explicitly provided',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: ServerLogo(
+                type: ServerType.lmStudio,
+                customIcon: HugeIcons.strokeRoundedStar,
+                size: 24,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(HugeIcon), findsOneWidget);
-      expect(find.byType(Image), findsNothing);
-    });
+        expect(find.byType(HugeIcon), findsOneWidget);
+        expect(find.byType(Image), findsNothing);
+      },
+    );
   });
 }

@@ -17,6 +17,7 @@ import 'package:localmind/features/chat/providers/chat_notifier.dart';
 import 'package:localmind/features/chat/providers/chat_params_providers.dart';
 import 'package:localmind/features/chat/providers/chat_service_providers.dart';
 import 'package:localmind/features/chat/providers/model_selection_providers.dart';
+
 import 'package:localmind/features/chat/providers/tooling_providers.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
@@ -31,6 +32,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _ControllableChatService chatService;
+  late _TestChatBackgroundService bgService;
   late ProviderContainer container;
   late _BackgroundTestChatNotifier notifier;
 
@@ -38,13 +40,14 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     chatService = _ControllableChatService();
+    bgService = _TestChatBackgroundService();
     container = ProviderContainer(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         activeServerProvider.overrideWith(_RemoteServerNotifier.new),
         activeChatTargetProvider.overrideWithValue(
           ActiveChatTarget(
-            server: _server,
+            server: _remoteServer,
             selectedModel: null,
             effectiveModelId: 'model',
             modelLabel: 'Model',
@@ -52,14 +55,13 @@ void main() {
         ),
         chatProvider.overrideWith(_BackgroundTestChatNotifier.new),
         chatServiceProvider.overrideWithValue(chatService),
+        chatServiceFactoryProvider.overrideWithValue((_) => chatService),
         chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
         chatMcpConfigProvider.overrideWith(_DisabledMcpNotifier.new),
         toolRegistryProvider.overrideWithValue(
           ToolRegistry(providers: const []),
         ),
-        chatBackgroundServiceProvider.overrideWithValue(
-          _TestChatBackgroundService(),
-        ),
+        chatBackgroundServiceProvider.overrideWithValue(bgService),
         settingsProvider.overrideWith(_TestSettingsNotifier.new),
         voiceModeProvider.overrideWith(_IdleVoiceModeNotifier.new),
         conv.conversationsProvider.overrideWith(_FakeConversationsNotifier.new),
@@ -90,8 +92,11 @@ void main() {
     expect(chatService.cancelCount, 0);
     expect(container.read(chatProvider).isStreaming, isFalse);
     expect(container.read(chatProvider).messages.first.id, 'b-user');
-    expect(container.read(streamingConversationIdProvider), 'conversation-a');
-    expect(container.read(isStreamingProvider), isTrue);
+    // The generation for conversation-a should still be tracked.
+    final generations = container.read(activeGenerationsProvider);
+    expect(generations, contains('conversation-a'));
+    // isStreamingProvider is about the *open* chat (B), which is not streaming.
+    expect(container.read(isStreamingProvider), isFalse);
 
     chatService.emit(' world');
     await chatService.finish();
@@ -103,7 +108,7 @@ void main() {
     expect(saved.status, MessageStatus.complete);
     // Chat B's view is untouched by the background completion.
     expect(container.read(chatProvider).messages.first.id, 'b-user');
-    expect(container.read(streamingConversationIdProvider), isNull);
+    expect(container.read(activeGenerationsProvider), isEmpty);
     expect(container.read(isStreamingProvider), isFalse);
   });
 
@@ -133,18 +138,20 @@ void main() {
     },
   );
 
-  test('sending in another chat is blocked while a reply runs', () async {
+  test('remote: sending in another chat is allowed (not blocked)', () async {
     await startReplyInA();
     await notifier.loadConversation(_conversationB);
 
+    // With a remote server, sending in chat B should NOT be blocked.
     await notifier.sendMessage('new question');
 
+    // Should not set the on-device busy error.
     expect(
       container.read(chatProvider).errorMessage,
-      generatingElsewhereMessage,
+      isNot(onDeviceBusyMessage),
     );
-    expect(chatService.controllers, hasLength(1));
-    expect(chatService.cancelCount, 0);
+    // Both streams run concurrently.
+    expect(chatService.controllers, hasLength(2));
   });
 
   test('a second switch does not cancel the background reply', () async {
@@ -154,7 +161,8 @@ void main() {
     await _pump();
 
     expect(chatService.cancelCount, 0);
-    expect(container.read(streamingConversationIdProvider), 'conversation-a');
+    final generations = container.read(activeGenerationsProvider);
+    expect(generations, contains('conversation-a'));
   });
 
   test('cancelGenerationFor stops a background reply', () async {
@@ -164,9 +172,222 @@ void main() {
     await notifier.cancelGenerationFor('conversation-a');
 
     expect(chatService.cancelCount, 1);
-    expect(container.read(streamingConversationIdProvider), isNull);
+    expect(container.read(activeGenerationsProvider), isEmpty);
     expect(container.read(isStreamingProvider), isFalse);
   });
+
+  test('stopping one reply cancels only that service, not the other', () async {
+    // Create two controllable services for two concurrent streams.
+    final serviceA = _ControllableChatService();
+    final serviceB = _ControllableChatService();
+    var factoryCallCount = 0;
+    container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(
+          await SharedPreferences.getInstance(),
+        ),
+        activeServerProvider.overrideWith(_RemoteServerNotifier.new),
+        activeChatTargetProvider.overrideWithValue(
+          ActiveChatTarget(
+            server: _remoteServer,
+            selectedModel: null,
+            effectiveModelId: 'model',
+            modelLabel: 'Model',
+          ),
+        ),
+        chatProvider.overrideWith(_BackgroundTestChatNotifier.new),
+        chatServiceProvider.overrideWithValue(serviceA),
+        chatServiceFactoryProvider.overrideWithValue((_) {
+          factoryCallCount++;
+          return factoryCallCount == 1 ? serviceA : serviceB;
+        }),
+        chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+        chatMcpConfigProvider.overrideWith(_DisabledMcpNotifier.new),
+        toolRegistryProvider.overrideWithValue(
+          ToolRegistry(providers: const []),
+        ),
+        chatBackgroundServiceProvider.overrideWithValue(bgService),
+        settingsProvider.overrideWith(_TestSettingsNotifier.new),
+        voiceModeProvider.overrideWith(_IdleVoiceModeNotifier.new),
+        conv.conversationsProvider.overrideWith(_FakeConversationsNotifier.new),
+      ],
+    );
+    await container.read(conv.conversationsProvider.future);
+    final n =
+        container.read(chatProvider.notifier) as _BackgroundTestChatNotifier;
+
+    // Start reply in A, switch to B, send.
+    await n.loadConversation(_conversationA);
+    await n.continueFromMessage('a-assistant');
+    await _pump();
+    serviceA.emit('Hello from A');
+    await _pump();
+
+    await n.loadConversation(_conversationB);
+    await n.continueFromMessage('b-assistant');
+    await _pump();
+    serviceB.emit('Hello from B');
+    await _pump();
+
+    expect(container.read(activeGenerationsProvider).length, 2);
+
+    // Cancel only B (the open chat).
+    await n.cancelStream();
+    await _pump();
+
+    expect(serviceB.cancelCount, 1, reason: 'B should be cancelled');
+    expect(serviceA.cancelCount, 0, reason: 'A should still run');
+    expect(container.read(activeGenerationsProvider).length, 1);
+    expect(
+      container.read(activeGenerationsProvider),
+      contains('conversation-a'),
+    );
+  });
+
+  ProviderContainer buildContainer({
+    required Server server,
+    required ChatService Function(Server) factory,
+  }) {
+    final c = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(
+          container.read(sharedPreferencesProvider),
+        ),
+        activeServerProvider.overrideWith(_RemoteServerNotifier.new),
+        activeChatTargetProvider.overrideWithValue(
+          ActiveChatTarget(
+            server: server,
+            selectedModel: null,
+            effectiveModelId: 'model',
+            modelLabel: 'Model',
+          ),
+        ),
+        chatProvider.overrideWith(_BackgroundTestChatNotifier.new),
+        chatServiceProvider.overrideWithValue(chatService),
+        chatServiceFactoryProvider.overrideWithValue(factory),
+        chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
+        chatMcpConfigProvider.overrideWith(_DisabledMcpNotifier.new),
+        toolRegistryProvider.overrideWithValue(
+          ToolRegistry(providers: const []),
+        ),
+        chatBackgroundServiceProvider.overrideWithValue(bgService),
+        settingsProvider.overrideWith(_TestSettingsNotifier.new),
+        voiceModeProvider.overrideWith(_IdleVoiceModeNotifier.new),
+        conv.conversationsProvider.overrideWith(_FakeConversationsNotifier.new),
+      ],
+    );
+    addTearDown(c.dispose);
+    return c;
+  }
+
+  test('concurrent remote replies stream into their own chats', () async {
+    final serviceA = _ControllableChatService();
+    final serviceB = _ControllableChatService();
+    var built = 0;
+    final c = buildContainer(
+      server: _remoteServer,
+      factory: (_) => ++built == 1 ? serviceA : serviceB,
+    );
+    await c.read(conv.conversationsProvider.future);
+    final n = c.read(chatProvider.notifier) as _BackgroundTestChatNotifier;
+
+    await n.loadConversation(_conversationA);
+    await n.continueFromMessage('a-assistant');
+    await _pump();
+    serviceA.emit(' one');
+
+    await n.loadConversation(_conversationB);
+    await n.continueFromMessage('b-assistant');
+    await _pump();
+    serviceB.emit(' two');
+    await _pump();
+
+    expect(c.read(activeGenerationsProvider).keys, [
+      'conversation-a',
+      'conversation-b',
+    ]);
+    expect(bgService.startCount, 1);
+
+    // A finishes while B is the open chat; B keeps streaming.
+    await serviceA.finish();
+    await _pump();
+    expect(c.read(activeGenerationsProvider).keys, ['conversation-b']);
+    expect(c.read(chatProvider).isStreaming, isTrue);
+    expect(bgService.stopCount, 0);
+
+    await serviceB.finish();
+    await _pump();
+
+    final a = n.saved.lastWhere((m) => m.id == 'a-assistant');
+    final b = n.saved.lastWhere((m) => m.id == 'b-assistant');
+    expect(a.conversationId, 'conversation-a');
+    expect(a.content, contains('one'));
+    expect(a.content, isNot(contains('two')));
+    expect(b.conversationId, 'conversation-b');
+    expect(b.content, contains('two'));
+    expect(b.content, isNot(contains('one')));
+    expect(c.read(activeGenerationsProvider), isEmpty);
+    expect(bgService.stopCount, 1);
+  });
+
+  test('on-device: a second chat cannot send while one is replying', () async {
+    final onDeviceService = _ControllableChatService();
+    final c = buildContainer(
+      server: _onDeviceServer,
+      factory: (_) => onDeviceService,
+    );
+    await c.read(conv.conversationsProvider.future);
+    final n = c.read(chatProvider.notifier) as _BackgroundTestChatNotifier;
+
+    await n.loadConversation(_conversationA);
+    await n.continueFromMessage('a-assistant');
+    await _pump();
+    onDeviceService.emit(' hi');
+    await n.loadConversation(_conversationB);
+    await _pump();
+
+    await n.sendMessage('blocked question');
+
+    expect(c.read(chatProvider).errorMessage, onDeviceBusyMessage);
+    expect(onDeviceService.controllers, hasLength(1));
+    expect(
+      c.read(activeGenerationsProvider).keys,
+      ['conversation-a'],
+      reason: 'the on-device reply in A keeps running',
+    );
+    expect(onDeviceService.cancelCount, 0);
+
+    // Once it finishes, the other chat may send.
+    await onDeviceService.finish();
+    await _pump();
+    await n.sendMessage('now allowed');
+    expect(c.read(chatProvider).errorMessage, isNot(onDeviceBusyMessage));
+    expect(onDeviceService.controllers, hasLength(2));
+  });
+
+  test('cancelAllGenerations clears every session', () async {
+    await startReplyInA();
+
+    await notifier.cancelAllGenerations();
+
+    expect(chatService.cancelCount, 1);
+    expect(container.read(activeGenerationsProvider), isEmpty);
+  });
+
+  test(
+    'background service starts once and stops after the last session ends',
+    () async {
+      await startReplyInA();
+      expect(bgService.startCount, 1);
+      expect(bgService.stopCount, 0);
+
+      await chatService.finish();
+      await _pump();
+
+      expect(bgService.startCount, 1);
+      expect(bgService.stopCount, 1);
+    },
+  );
 }
 
 Future<void> _pump() async {
@@ -175,12 +396,23 @@ Future<void> _pump() async {
   }
 }
 
-final _server = Server(
+final _remoteServer = Server(
   id: 'remote',
   name: 'Remote',
   type: ServerType.ollama,
   host: '127.0.0.1',
   port: 11434,
+  createdAt: DateTime.utc(2026, 9, 28),
+  lastConnectedAt: DateTime.utc(2026, 9, 28),
+  status: ConnectionStatus.connected,
+);
+
+final _onDeviceServer = Server(
+  id: 'on-device',
+  name: 'On-device',
+  type: ServerType.onDevice,
+  host: 'localhost',
+  port: 0,
   createdAt: DateTime.utc(2026, 9, 28),
   lastConnectedAt: DateTime.utc(2026, 9, 28),
   status: ConnectionStatus.connected,
@@ -319,7 +551,7 @@ class _FakeConversationsNotifier extends conv.ConversationsNotifier {
 
 class _RemoteServerNotifier extends ActiveServerNotifier {
   @override
-  Server? build() => _server;
+  Server? build() => _remoteServer;
 }
 
 class _DisabledMcpNotifier extends ChatMcpConfigNotifier {
@@ -328,11 +560,18 @@ class _DisabledMcpNotifier extends ChatMcpConfigNotifier {
 }
 
 class _TestChatBackgroundService extends ChatBackgroundService {
-  @override
-  Future<void> start() async {}
+  int startCount = 0;
+  int stopCount = 0;
 
   @override
-  Future<void> stop() async {}
+  Future<void> start() async {
+    startCount++;
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCount++;
+  }
 }
 
 class _TestSettingsNotifier extends SettingsNotifier {

@@ -3472,5 +3472,11 @@
   "default_system_prompt_hint": "You are a helpful assistant…",
   "background_generation_notice": "Still replying in \"{title}\". You can send here once it finishes. Tap to open.",
   "@background_generation_notice": {"description": "Notice above the input while another chat's reply generates in the background", "placeholders": {"title": {"type": "String"}}},
-  "background_generation_notice_untitled": "Another chat is still replying. You can send here once it finishes. Tap to open."
+  "background_generation_notice_untitled": "Another chat is still replying. You can send here once it finishes. Tap to open.",
+  "background_generation_notice_info": "Replying in \"{title}\" in the background. Tap to open.",
+  "@background_generation_notice_info": {"description": "Non-blocking notice when a remote chat is replying in the background", "placeholders": {"title": {"type": "String"}}},
+  "background_generation_notice_info_untitled": "Another chat is replying in the background. Tap to open.",
+  "background_generation_notice_multiple": "{count} chats are replying in the background.",
+  "@background_generation_notice_multiple": {"description": "Notice when multiple chats are replying in the background", "placeholders": {"count": {"type": "int"}}},
+  "background_generation_chat_untitled": "Untitled chat"
 }

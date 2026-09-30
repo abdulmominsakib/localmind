@@ -3232,4 +3232,21 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get background_generation_notice_untitled =>
       'অন্য একটি চ্যাটে এখনও উত্তর তৈরি হচ্ছে। শেষ হলে এখানে পাঠাতে পারবেন। খুলতে ট্যাপ করুন।';
+
+  @override
+  String background_generation_notice_info(String title) {
+    return 'ব্যাকগ্রাউন্ডে \"$title\"-এ উত্তর তৈরি হচ্ছে। খুলতে ট্যাপ করুন।';
+  }
+
+  @override
+  String get background_generation_notice_info_untitled =>
+      'ব্যাকগ্রাউন্ডে অন্য একটি চ্যাটে উত্তর তৈরি হচ্ছে। খুলতে ট্যাপ করুন।';
+
+  @override
+  String background_generation_notice_multiple(int count) {
+    return '$countটি চ্যাটে ব্যাকগ্রাউন্ডে উত্তর তৈরি হচ্ছে।';
+  }
+
+  @override
+  String get background_generation_chat_untitled => 'শিরোনামহীন চ্যাট';
 }

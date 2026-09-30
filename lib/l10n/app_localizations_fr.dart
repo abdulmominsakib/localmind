@@ -3225,4 +3225,21 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get background_generation_notice_untitled =>
       'Une autre discussion est encore en train de répondre. Vous pourrez envoyer ici une fois terminée. Touchez pour ouvrir.';
+
+  @override
+  String background_generation_notice_info(String title) {
+    return 'Réponse en cours dans « $title » en arrière-plan. Touchez pour ouvrir.';
+  }
+
+  @override
+  String get background_generation_notice_info_untitled =>
+      'Une autre discussion répond en arrière-plan. Touchez pour ouvrir.';
+
+  @override
+  String background_generation_notice_multiple(int count) {
+    return '$count discussions répondent en arrière-plan.';
+  }
+
+  @override
+  String get background_generation_chat_untitled => 'Discussion sans titre';
 }

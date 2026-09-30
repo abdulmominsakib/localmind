@@ -9,6 +9,7 @@ import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
     as conv;
 import 'package:localmind/features/models/views/model_picker_sheet.dart';
+import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
 class ChatBottomBar extends ConsumerWidget {
@@ -37,12 +38,20 @@ class ChatBottomBar extends ConsumerWidget {
     final streamingId = ref.watch(
       chatProvider.select((s) => s.streamingMessage?.id),
     );
-    // Another chat's reply is still generating in the background (#94).
-    final generatingConversationId = ref.watch(streamingConversationIdProvider);
+    // Replies generating for other chats keep streaming in the background
+    // (#94). Remote servers can run several at once; the on-device engine
+    // serves one reply at a time, so it blocks sending here.
+    final generations = ref.watch(activeGenerationsProvider);
     final activeConversationId = ref.watch(conv.activeConversationIdProvider);
-    final generatingElsewhere =
-        generatingConversationId != null &&
-        generatingConversationId != activeConversationId;
+    final activeServerIsOnDevice = ref.watch(
+      activeServerProvider.select((server) => server?.isOnDevice ?? false),
+    );
+    final generatingElsewhere = [
+      for (final generation in generations.values)
+        if (generation.conversationId != activeConversationId) generation,
+    ];
+    final onDeviceBusy =
+        activeServerIsOnDevice && generatingElsewhere.any((g) => g.isOnDevice);
 
     int totalTokenCount = 0;
     if (hasActiveConv && dbTokenCount != null && dbTokenCount > 0) {
@@ -91,14 +100,16 @@ class ChatBottomBar extends ConsumerWidget {
               const SizedBox(height: 4),
               const SmartReplyChipsWrapper(),
             ],
-            if (generatingElsewhere)
+            if (generatingElsewhere.isNotEmpty)
               BackgroundGenerationNotice(
-                conversationId: generatingConversationId,
+                generations: generatingElsewhere,
+                blocksSending: onDeviceBusy,
               ),
             ChatInputBar(
               focusNode: inputFocusNode,
               isStreaming: isStreaming,
-              sendBlocked: generatingElsewhere,
+              sendBlocked: onDeviceBusy,
+              hasNoticeAbove: generatingElsewhere.isNotEmpty,
               keyboardIncognito: keyboardIncognito,
               onSend: (message, {attachments}) {
                 ref

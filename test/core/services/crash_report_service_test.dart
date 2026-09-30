@@ -1,4 +1,5 @@
 import 'package:characters/characters.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/core/services/crash_report_service.dart';
 
@@ -211,6 +212,26 @@ void main() {
           StackTrace.fromString('#0      main (package:localmind/main.dart)'),
         ),
         isFalse,
+      );
+    });
+
+    test('ignores RenderFlex overflow errors', () {
+      final flexOverflowError = FlutterError(
+        'A RenderFlex overflowed by 0.148 pixels on the bottom.',
+      );
+      expect(
+        CrashReportService.isBenignFrameworkError(flexOverflowError),
+        isTrue,
+      );
+    });
+
+    test('ignores general pixel overflow errors', () {
+      final generalOverflow = FlutterError(
+        'The relevant error-causing widget was: Column\noverflowed by 12.5 pixels',
+      );
+      expect(
+        CrashReportService.isBenignFrameworkError(generalOverflow),
+        isTrue,
       );
     });
   });

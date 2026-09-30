@@ -3,6 +3,7 @@ export 'chat_origin_provider.dart';
 export 'chat_params_providers.dart';
 export 'chat_reasoning_providers.dart';
 export 'chat_service_providers.dart';
+export 'generation_session.dart' show ActiveGeneration;
 export 'message_selection_provider.dart';
 export 'model_loading_providers.dart';
 export 'model_selection_providers.dart';

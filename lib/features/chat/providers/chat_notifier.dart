@@ -39,6 +39,7 @@ import 'chat_origin_provider.dart';
 import 'chat_params_providers.dart';
 import 'chat_reasoning_providers.dart';
 import 'chat_service_providers.dart';
+import 'generation_session.dart';
 import 'message_selection_provider.dart';
 import 'model_selection_providers.dart';
 import 'tooling_providers.dart';
@@ -119,69 +120,95 @@ final chatProvider = NotifierProvider<ChatNotifier, ChatState>(() {
 });
 
 class ChatNotifier extends Notifier<ChatState> {
-  static const _checkpointChunkThreshold = 20;
-  static const _checkpointTimeThreshold = Duration(seconds: 2);
-
-  StreamSubscription<ChatResponse>? _streamSubscription;
-  int _streamGeneration = 0;
-  Timer? _uiUpdateTimer;
-  Message? _latestStreamingMessage;
-  String? _currentConversationId;
-  int _chunkCount = 0;
-  DateTime? _lastCheckpointTime;
-  int _lastSavedContentLength = 0;
-  int _lastSavedReasoningLength = 0;
-
   MessageSaveService? _saveService;
   PendingToolApproval? _pendingToolApproval;
   final Set<String> _titleGenerationsInFlight = <String>{};
   final Map<String, Future<void>> _titleGenerationFutures =
       <String, Future<void>>{};
   bool _pendingTemporaryChat = false;
+  String? _currentConversationId;
   String? _ephemeralConversationId;
   bool _attemptedResume = false;
   static const _lastActiveConversationKey = 'lastActiveConversationId';
-  ChatStats? _streamStats;
-  DateTime? _streamStartTime;
-  DateTime? _firstTokenTime;
   bool _useFreshConversationSystemPrompt = false;
   bool _isRegenerating = false;
   String? _freshConversationSystemPrompt;
+
+  /// In-flight replies keyed by conversation id (insertion order = start
+  /// order). Remote replies run concurrently, one per conversation; at most
+  /// one on-device reply exists at a time.
+  final Map<String, GenerationSession> _sessions = {};
+  bool _backgroundServiceRunning = false;
 
   String? get _activeConversationId =>
       _currentConversationId ?? _ephemeralConversationId;
 
   bool get _isInMemoryChat => state.isTemporary;
 
-  /// Conversation the in-flight reply belongs to; null when idle. May differ
-  /// from the open chat while a reply finishes in the background (#94).
-  String? _streamConversationId;
+  /// Reply generating for the open chat, if any.
+  GenerationSession? get _activeSession {
+    final id = _activeConversationId;
+    return id == null ? null : _sessions[id];
+  }
 
-  /// Persisted conversation of the most recent stream. Its messages still
-  /// save while a temporary chat is open (the reply may finish in the
-  /// background). Not cleared on completion so late final saves still land.
-  String? _persistedStreamConversationId;
+  /// Conversations other than the open chat whose reply is still generating.
+  Set<String> get generatingElsewhereIds => {
+    for (final id in _sessions.keys)
+      if (id != _activeConversationId) id,
+  };
 
-  /// Service that owns the in-flight stream. Cancelling must target it even
-  /// if the active server changed since the stream started.
-  ChatService? _streamChatService;
+  /// Registers the reply that is about to stream into [conversationId]. A
+  /// previous session for the same chat (a tool-call follow-up) is replaced.
+  GenerationSession _beginSession(
+    String conversationId,
+    Server server,
+    ChatService chatService,
+  ) {
+    final previous = _sessions[conversationId];
+    final session = GenerationSession(
+      conversationId: conversationId,
+      server: server,
+      chatService: chatService,
+      persisted: previous?.persisted ?? !_isInMemoryChat,
+    );
+    _sessions[conversationId] = session;
+    if (previous != null) unawaited(previous.detach());
+    _publishGenerations();
+    return session;
+  }
 
-  /// True while a reply for another conversation is still generating.
-  bool get isGeneratingElsewhere =>
-      _streamConversationId != null &&
-      _streamConversationId != _activeConversationId;
-
-  void _setGlobalStreaming(bool streaming) {
-    if (streaming) {
-      _streamConversationId = _activeConversationId;
-    } else {
-      _streamConversationId = null;
-      _streamChatService = null;
+  /// Marks [session] finished. A session that was already replaced by a newer
+  /// one for the same chat is left alone.
+  void _endSession(GenerationSession session) {
+    session.cancelUiTimer();
+    if (identical(_sessions[session.conversationId], session)) {
+      _sessions.remove(session.conversationId);
     }
-    ref.read(isStreamingProvider.notifier).setStreaming(streaming);
+    _publishGenerations();
+  }
+
+  /// Pushes the running replies to the UI providers and keeps the Android
+  /// foreground service / wakelock alive until the last reply finishes.
+  void _publishGenerations() {
+    if (!ref.mounted) return;
+    ref.read(activeGenerationsProvider.notifier).set({
+      for (final s in _sessions.values)
+        s.conversationId: ActiveGeneration(
+          conversationId: s.conversationId,
+          isOnDevice: s.isOnDevice,
+        ),
+    });
+    final activeId = _activeConversationId;
     ref
-        .read(streamingConversationIdProvider.notifier)
-        .set(_streamConversationId);
+        .read(isStreamingProvider.notifier)
+        .setStreaming(activeId != null && _sessions.containsKey(activeId));
+
+    final shouldRun = _sessions.isNotEmpty;
+    if (shouldRun != _backgroundServiceRunning) {
+      _backgroundServiceRunning = shouldRun;
+      final service = ref.read(chatBackgroundServiceProvider);
+      unawaited(shouldRun ? service.start() : service.stop());
+    }
   }
 
   /// Whether the open chat's reply may keep streaming after the user leaves
@@ -189,60 +216,56 @@ class ChatNotifier extends Notifier<ChatState> {
   /// screen, and voice mode drives its own turn-taking.
   bool _canContinueInBackground() {
     if (!state.isStreaming || _isInMemoryChat) return false;
-    if (_streamConversationId == null ||
-        _streamConversationId != _activeConversationId) {
-      return false;
-    }
+    if (_activeSession == null) return false;
     if (_pendingToolApproval != null) return false;
     if (ref.read(chatMcpConfigProvider).enabled) return false;
     return ref.read(voiceModeProvider).phase == VoiceModePhase.idle;
   }
 
-  /// Only one reply generates at a time. Returns true (and explains why)
-  /// when another chat's reply is still running in the background.
-  bool _blockIfGeneratingElsewhere() {
-    if (!isGeneratingElsewhere) return false;
-    state = state.copyWith(errorMessage: generatingElsewhereMessage);
+  /// The on-device engine serves one reply at a time. Returns true (and
+  /// explains why) when the active server is on-device and another chat's
+  /// on-device reply is still running. Remote servers are never blocked.
+  bool _blockIfOnDeviceBusy() {
+    final server = ref.read(activeChatTargetProvider).server;
+    if (server == null || !server.isOnDevice) return false;
+    final busy = _sessions.values.any(
+      (s) => s.isOnDevice && s.conversationId != _activeConversationId,
+    );
+    if (!busy) return false;
+    state = state.copyWith(errorMessage: onDeviceBusyMessage);
     return true;
   }
 
   /// Cancels the reply generating for [conversationId], if any. Used before
   /// deleting a conversation that may be streaming in the background.
   Future<void> cancelGenerationFor(String conversationId) async {
-    if (_streamConversationId != conversationId) return;
-    await _detachStreamSubscription();
-    _uiUpdateTimer?.cancel();
-    _uiUpdateTimer = null;
+    final session = _sessions[conversationId];
+    if (session == null) return;
+    await session.detach();
     if (!ref.mounted) return;
-    (_streamChatService ?? ref.read(chatServiceProvider))?.cancelStream();
-    ref.read(chatBackgroundServiceProvider).stop();
-    _latestStreamingMessage = null;
-    _setGlobalStreaming(false);
+    session.chatService.cancelStream();
+    session.latestMessage = null;
+    _endSession(session);
     if (_activeConversationId == conversationId) {
       state = state.copyWith(isStreaming: false, clearStreaming: true);
     }
   }
 
-  void _resetStreamMetrics() {
-    _streamStats = null;
-    _streamStartTime = DateTime.now();
-    _firstTokenTime = null;
-  }
-
-  void _noteFirstToken() {
-    _firstTokenTime ??= DateTime.now();
+  /// Cancels every running reply (for example before wiping all chats).
+  Future<void> cancelAllGenerations() async {
+    for (final id in _sessions.keys.toList()) {
+      await cancelGenerationFor(id);
+    }
   }
 
   Message _finalizeStreamMessage(
     Message msg, {
     String? stopReason,
-    ChatStats? stats,
-    DateTime? startTime,
-    DateTime? firstTokenTime,
+    GenerationSession? session,
   }) {
-    final effectiveStats = stats ?? _streamStats;
-    final effectiveStart = startTime ?? _streamStartTime;
-    final effectiveFirstToken = firstTokenTime ?? _firstTokenTime;
+    final effectiveStats = session?.stats;
+    final effectiveStart = session?.startTime;
+    final effectiveFirstToken = session?.firstTokenTime;
     final now = DateTime.now();
 
     int? ttftMs;
@@ -379,11 +402,13 @@ class ChatNotifier extends Notifier<ChatState> {
     final db = ref.read(databaseProvider);
     _saveService = MessageSaveService(db);
     ref.onDispose(() {
-      _uiUpdateTimer?.cancel();
-      _invalidateStreamCallbacks();
-      final subscription = _streamSubscription;
-      _streamSubscription = null;
-      subscription?.cancel();
+      for (final session in _sessions.values) {
+        session.cancelled = true;
+        session.cancelUiTimer();
+        session.subscription?.cancel();
+        session.subscription = null;
+      }
+      _sessions.clear();
       _saveService?.dispose();
       final pending = _pendingToolApproval;
       _pendingToolApproval = null;
@@ -459,9 +484,7 @@ class ChatNotifier extends Notifier<ChatState> {
       if (!ref.mounted) return;
 
       // Reattach to a reply that kept generating while this chat was closed.
-      final liveMessage = _streamConversationId == conversation.id
-          ? _latestStreamingMessage
-          : null;
+      final liveMessage = _sessions[conversation.id]?.latestMessage;
       state = ChatState(
         allMessages: messages,
         messages: MessageVariants.resolveActiveTimeline(messages),
@@ -473,6 +496,7 @@ class ChatNotifier extends Notifier<ChatState> {
       ref
           .read(conv.activeConversationIdProvider.notifier)
           .setActiveConversation(conversation);
+      _publishGenerations();
 
       if (!conversation.isTemporary) {
         _persistLastActiveConversation(conversation.id);
@@ -598,6 +622,7 @@ class ChatNotifier extends Notifier<ChatState> {
     ref
         .read(conv.activeConversationIdProvider.notifier)
         .setActiveConversation(null);
+    _publishGenerations();
     ref.read(chatOriginProvider.notifier).clear();
     ref.read(messageSelectionModeProvider.notifier).disable();
 
@@ -607,47 +632,24 @@ class ChatNotifier extends Notifier<ChatState> {
         .setEnabled(settings.mcpEnabled && settings.newChatMcpEnabled);
   }
 
-  void _invalidateStreamCallbacks() {
-    _streamGeneration++;
-  }
-
-  Future<void> _detachStreamSubscription() async {
-    _invalidateStreamCallbacks();
-    final subscription = _streamSubscription;
-    _streamSubscription = null;
-    if (subscription != null) {
-      await subscription.cancel();
-    }
-  }
-
+  /// Cancels the open chat's reply right away (before another one starts or
+  /// the chat is left) and marks its in-memory message cancelled. Replies
+  /// running for other chats are never touched.
   Future<void> _abortStreamImmediately() async {
-    await _detachStreamSubscription();
-    _uiUpdateTimer?.cancel();
-    _uiUpdateTimer = null;
+    final session = _activeSession;
     _clearPendingApproval();
-
+    if (session == null && state.streamingMessage == null) return;
+    await session?.detach();
     if (!ref.mounted) return;
 
-    (_streamChatService ?? ref.read(chatServiceProvider))?.cancelStream();
-    ref.read(chatBackgroundServiceProvider).stop();
-    _setGlobalStreaming(false);
-
-    _chunkCount = 0;
-    _lastCheckpointTime = null;
-    _lastSavedContentLength = 0;
-    _lastSavedReasoningLength = 0;
+    session?.chatService.cancelStream();
+    if (session != null) _endSession(session);
 
     final convId = _currentConversationId;
-    final streamingMessage = _latestStreamingMessage ?? state.streamingMessage;
-    _latestStreamingMessage = null;
+    final streamingMessage = session?.latestMessage ?? state.streamingMessage;
+    session?.latestMessage = null;
 
     if (streamingMessage != null && convId != null) {
-      // Capture the old stream's metrics before anything resets them for the
-      // next generation.
-      final stats = _streamStats;
-      final startTime = _streamStartTime;
-      final firstTokenTime = _firstTokenTime;
-
       // Mark the in-memory copy as cancelled and inactive so it does not stay
       // visible in the active timeline while the next stream starts.
       final cancelled = streamingMessage.copyWith(
@@ -668,9 +670,7 @@ class ChatNotifier extends Notifier<ChatState> {
         _persistCancelledMessageInBackground(
           streamingMessage,
           convId,
-          stats: stats,
-          startTime: startTime,
-          firstTokenTime: firstTokenTime,
+          session: session,
         ),
       );
     }
@@ -679,9 +679,7 @@ class ChatNotifier extends Notifier<ChatState> {
   Future<void> _persistCancelledMessageInBackground(
     Message streamingMessage,
     String conversationId, {
-    ChatStats? stats,
-    DateTime? startTime,
-    DateTime? firstTokenTime,
+    GenerationSession? session,
   }) async {
     try {
       final finalMessage = _finalizeStreamMessage(
@@ -691,12 +689,10 @@ class ChatNotifier extends Notifier<ChatState> {
           isProcessing: false,
         ),
         stopReason: 'cancelled',
-        stats: stats,
-        startTime: startTime,
-        firstTokenTime: firstTokenTime,
+        session: session,
       );
       await _saveService?.flush();
-      await _saveMessage(finalMessage);
+      await _saveMessage(finalMessage, persist: session?.persisted);
     } catch (e) {
       Log.error('Failed to persist cancelled stream message: $e');
     }
@@ -724,44 +720,16 @@ class ChatNotifier extends Notifier<ChatState> {
         .join('-');
   }
 
-  bool _shouldCheckpointSave(Message message) {
-    final now = DateTime.now();
-    final contentLength = message.content.length;
-    final reasoningLength = message.reasoningContent?.length ?? 0;
-
-    final hasNewContent =
-        contentLength > _lastSavedContentLength ||
-        reasoningLength > _lastSavedReasoningLength;
-
-    if (!hasNewContent) return false;
-
-    final meetsChunkThreshold = _chunkCount >= _checkpointChunkThreshold;
-
-    final meetsTimeThreshold =
-        _lastCheckpointTime != null &&
-        now.difference(_lastCheckpointTime!) >= _checkpointTimeThreshold;
-
-    return meetsChunkThreshold || meetsTimeThreshold;
-  }
-
-  void _resetCheckpointMetrics() {
-    _chunkCount = 0;
-    _lastCheckpointTime = DateTime.now();
-  }
-
-  void _updateSavedMetrics(Message message) {
-    _lastSavedContentLength = message.content.length;
-    _lastSavedReasoningLength = message.reasoningContent?.length ?? 0;
-  }
-
+  /// Writes the latest snapshot of every persisted running reply to disk, so
+  /// nothing is lost if the app is killed while it is in the background.
   Future<void> checkpointStreamingMessage({bool flush = false}) async {
-    if (_isInMemoryChat) return;
-    final latest = _latestStreamingMessage ?? state.streamingMessage;
-    if (latest == null) return;
-
-    _saveService?.enqueue(latest);
-    _updateSavedMetrics(latest);
-    _resetCheckpointMetrics();
+    for (final session in _sessions.values) {
+      final latest = session.latestMessage;
+      if (!session.persisted || latest == null) continue;
+      _saveService?.enqueue(latest);
+      session.updateSavedMetrics(latest);
+      session.resetCheckpointMetrics();
+    }
 
     if (flush) {
       await _saveService?.flush();
@@ -843,7 +811,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> sendMessage(String content, {List<File>? attachments}) async {
-    if (_blockIfGeneratingElsewhere()) return;
+    if (_blockIfOnDeviceBusy()) return;
     final target = ref.read(activeChatTargetProvider);
     final server = target.server;
     final selectedModel = target.selectedModel;
@@ -864,7 +832,11 @@ class ChatNotifier extends Notifier<ChatState> {
       return;
     }
 
-    final chatService = ref.read(chatServiceProvider);
+    final chatService = ref.read(chatServiceFactoryProvider)(server);
+    if (chatService == null) {
+      state = state.copyWith(errorMessage: 'No chat service available');
+      return;
+    }
 
     await _abortStreamImmediately();
     if (!ref.mounted) return;
@@ -961,10 +933,10 @@ class ChatNotifier extends Notifier<ChatState> {
       streamingMessage: assistantMessage,
       clearError: true,
     );
-    _setGlobalStreaming(true);
+    final session = _beginSession(convId, server, chatService);
 
-    await _saveMessage(userMessage);
-    await _saveMessage(assistantMessage);
+    await _saveMessage(userMessage, persist: session.persisted);
+    await _saveMessage(assistantMessage, persist: session.persisted);
 
     if (!ref.mounted) return;
 
@@ -988,22 +960,18 @@ class ChatNotifier extends Notifier<ChatState> {
           );
     }
 
-    ref.read(chatBackgroundServiceProvider).start();
-
-    _resetStreamMetrics();
-    _resetCheckpointMetrics();
-    _updateSavedMetrics(assistantMessage);
+    session.resetStreamMetrics();
+    session.resetCheckpointMetrics();
+    session.updateSavedMetrics(assistantMessage);
 
     final messagesForApi = _buildMessagesForApi(selectedModel);
 
     try {
-      _uiUpdateTimer?.cancel();
-
       String reasoningContent = '';
       var streamingAssistantMessage = assistantMessage;
-      _latestStreamingMessage = streamingAssistantMessage;
+      session.latestMessage = streamingAssistantMessage;
 
-      if (chatService != null) {
+      if (!session.cancelled) {
         final mcpConfig = ref.read(chatMcpConfigProvider);
         final activeIntegrations = mcpConfig.integrations
             .where((i) => i.enabled)
@@ -1034,17 +1002,14 @@ class ChatNotifier extends Notifier<ChatState> {
           }
         }
 
-        _uiUpdateTimer = Timer.periodic(const Duration(milliseconds: 80), (_) {
-          updateUiState();
-        });
+        session.uiUpdateTimer = Timer.periodic(
+          const Duration(milliseconds: 80),
+          (_) {
+            updateUiState();
+          },
+        );
 
-        final streamGeneration = _streamGeneration;
-        final streamInMemory = _isInMemoryChat;
-        _persistedStreamConversationId = streamInMemory
-            ? null
-            : assistantMessage.conversationId;
-        _streamChatService = chatService;
-        _streamSubscription = chatService
+        session.subscription = chatService
             .sendMessage(
               server: server,
               modelId: effectiveModelId,
@@ -1055,7 +1020,7 @@ class ChatNotifier extends Notifier<ChatState> {
             )
             .listen(
               (response) async {
-                if (streamGeneration != _streamGeneration || !ref.mounted) {
+                if (session.cancelled || !ref.mounted) {
                   return;
                 }
                 final streamConvId = assistantMessage.conversationId;
@@ -1064,7 +1029,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 switch (response.type) {
                   case ChatResponseType.message:
                     if (response.content?.isNotEmpty ?? false) {
-                      _noteFirstToken();
+                      session.noteFirstToken();
                     }
                     streamingAssistantMessage = streamingAssistantMessage
                         .copyWith(
@@ -1073,22 +1038,24 @@ class ChatNotifier extends Notifier<ChatState> {
                               (response.content ?? ''),
                           isProcessing: false,
                         );
-                    _latestStreamingMessage = streamingAssistantMessage;
+                    session.latestMessage = streamingAssistantMessage;
 
-                    _chunkCount++;
+                    session.chunkCount++;
 
-                    if (!streamInMemory &&
-                        _shouldCheckpointSave(streamingAssistantMessage)) {
+                    if (session.persisted &&
+                        session.shouldCheckpointSave(
+                          streamingAssistantMessage,
+                        )) {
                       _saveService?.enqueue(streamingAssistantMessage);
-                      _updateSavedMetrics(streamingAssistantMessage);
-                      _resetCheckpointMetrics();
+                      session.updateSavedMetrics(streamingAssistantMessage);
+                      session.resetCheckpointMetrics();
                     }
 
                     stateNeedsUpdate = true;
                     break;
                   case ChatResponseType.reasoning:
                     if (response.reasoningContent?.isNotEmpty ?? false) {
-                      _noteFirstToken();
+                      session.noteFirstToken();
                     }
                     reasoningContent += response.reasoningContent ?? '';
                     streamingAssistantMessage = streamingAssistantMessage
@@ -1096,15 +1063,17 @@ class ChatNotifier extends Notifier<ChatState> {
                           reasoningContent: reasoningContent,
                           isProcessing: false,
                         );
-                    _latestStreamingMessage = streamingAssistantMessage;
+                    session.latestMessage = streamingAssistantMessage;
 
-                    _chunkCount++;
+                    session.chunkCount++;
 
-                    if (!streamInMemory &&
-                        _shouldCheckpointSave(streamingAssistantMessage)) {
+                    if (session.persisted &&
+                        session.shouldCheckpointSave(
+                          streamingAssistantMessage,
+                        )) {
                       _saveService?.enqueue(streamingAssistantMessage);
-                      _updateSavedMetrics(streamingAssistantMessage);
-                      _resetCheckpointMetrics();
+                      session.updateSavedMetrics(streamingAssistantMessage);
+                      session.resetCheckpointMetrics();
                     }
 
                     stateNeedsUpdate = true;
@@ -1114,7 +1083,7 @@ class ChatNotifier extends Notifier<ChatState> {
                         streamingAssistantMessage.isProcessing;
                     streamingAssistantMessage = streamingAssistantMessage
                         .copyWith(isProcessing: true);
-                    _latestStreamingMessage = streamingAssistantMessage;
+                    session.latestMessage = streamingAssistantMessage;
                     stateNeedsUpdate = true;
                     if (!wasProcessing) {
                       ref.read(appHapticsProvider).light();
@@ -1123,8 +1092,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   case ChatResponseType.timeoutError:
                   case ChatResponseType.error:
                     streamHadError = true;
-                    _uiUpdateTimer?.cancel();
-                    _uiUpdateTimer = null;
+                    session.cancelUiTimer();
                     streamingAssistantMessage = streamingAssistantMessage.copyWith(
                       status: MessageStatus.error,
                       errorMessage:
@@ -1134,7 +1102,7 @@ class ChatNotifier extends Notifier<ChatState> {
                               : 'An unknown error occurred.'),
                       isProcessing: false,
                     );
-                    _latestStreamingMessage = streamingAssistantMessage;
+                    session.latestMessage = streamingAssistantMessage;
 
                     if (isCurrentContext) {
                       _replaceMessageInState(
@@ -1146,10 +1114,13 @@ class ChatNotifier extends Notifier<ChatState> {
                         errorMessage: streamingAssistantMessage.errorMessage,
                       );
                     }
-                    _setGlobalStreaming(false);
-                    _latestStreamingMessage = null;
+                    _endSession(session);
+                    session.latestMessage = null;
                     await _saveService?.flush();
-                    await _saveMessage(streamingAssistantMessage);
+                    await _saveMessage(
+                      streamingAssistantMessage,
+                      persist: session.persisted,
+                    );
                     break;
                   case ChatResponseType.toolCall:
                     if (response.toolCall != null) {
@@ -1159,34 +1130,27 @@ class ChatNotifier extends Notifier<ChatState> {
                   case ChatResponseType.invalidToolCall:
                   case ChatResponseType.done:
                     if (response.stats != null) {
-                      _streamStats = response.stats;
+                      session.stats = response.stats;
                     }
                     break;
                 }
               },
               onDone: () async {
-                _uiUpdateTimer?.cancel();
-                _uiUpdateTimer = null;
+                session.cancelUiTimer();
                 updateUiState();
 
                 if (streamHadError) {
                   // The error branch already finalised the message and
                   // stopped streaming — do not overwrite the error state
                   // with success/default text.
-                  if (!streamInMemory) {
+                  if (session.persisted) {
                     await _saveService?.flush();
-                  }
-                  if (ref.mounted) {
-                    ref.read(chatBackgroundServiceProvider).stop();
                   }
                   return;
                 }
 
-                if (!streamInMemory) {
+                if (session.persisted) {
                   await _saveService?.flush();
-                }
-                if (ref.mounted) {
-                  ref.read(chatBackgroundServiceProvider).stop();
                 }
                 final streamConvId = assistantMessage.conversationId;
                 final isCurrentContext = _activeConversationId == streamConvId;
@@ -1203,7 +1167,7 @@ class ChatNotifier extends Notifier<ChatState> {
                         'Model failed to respond. This may happen with free tier models that refuse certain prompts or when the service is busy.',
                     isProcessing: false,
                   );
-                  await _saveMessage(errorMessage);
+                  await _saveMessage(errorMessage, persist: session.persisted);
                   if (ref.mounted && isCurrentContext) {
                     _replaceMessageInState(errorMessage, clearStreaming: true);
                     state = state.copyWith(
@@ -1212,9 +1176,9 @@ class ChatNotifier extends Notifier<ChatState> {
                     );
                   }
                   if (ref.mounted) {
-                    _setGlobalStreaming(false);
+                    _endSession(session);
                   }
-                  _latestStreamingMessage = null;
+                  session.latestMessage = null;
                 } else {
                   var finalMessage = _finalizeStreamMessage(
                     streamingMessage.copyWith(
@@ -1222,6 +1186,7 @@ class ChatNotifier extends Notifier<ChatState> {
                       isProcessing: false,
                     ),
                     stopReason: 'complete',
+                    session: session,
                   );
 
                   if (mcpConfig.enabled && collectedToolCalls.isNotEmpty) {
@@ -1358,7 +1323,10 @@ class ChatNotifier extends Notifier<ChatState> {
                         // post-stream bookkeeping that was meant for the
                         // first turn only.
                         if (ref.mounted) {
-                          await _saveMessage(finalMessage);
+                          await _saveMessage(
+                            finalMessage,
+                            persist: session.persisted,
+                          );
                           if (isCurrentContext) {
                             _replaceMessageInState(
                               finalMessage,
@@ -1370,19 +1338,26 @@ class ChatNotifier extends Notifier<ChatState> {
                       }
                     } catch (e) {
                       Log.error('Tool execution loop failed: $e');
+                      // A follow-up that failed after registering its own
+                      // session must not leave it running forever.
+                      final followUp = _sessions[session.conversationId];
+                      if (followUp != null && !identical(followUp, session)) {
+                        await followUp.detach();
+                        _endSession(followUp);
+                      }
                     }
                   }
 
-                  await _saveMessage(finalMessage);
+                  await _saveMessage(finalMessage, persist: session.persisted);
                   if (ref.mounted && isCurrentContext) {
                     _replaceMessageInState(finalMessage, clearStreaming: true);
                     state = state.copyWith(isStreaming: false);
                     _maybeAutoGenerateTitleAfterFirstReply();
                   }
                   if (ref.mounted) {
-                    _setGlobalStreaming(false);
+                    _endSession(session);
                   }
-                  _latestStreamingMessage = null;
+                  session.latestMessage = null;
 
                   await _syncConversationStatsAfterGeneration(
                     streamConvId,
@@ -1397,11 +1372,6 @@ class ChatNotifier extends Notifier<ChatState> {
                       selectedModel: selectedModel,
                     );
                   }
-
-                  _chunkCount = 0;
-                  _lastCheckpointTime = null;
-                  _lastSavedContentLength = 0;
-                  _lastSavedReasoningLength = 0;
 
                   // Auto-speak: read the response aloud if the setting
                   // is enabled and voice mode is not already handling TTS.
@@ -1430,51 +1400,37 @@ class ChatNotifier extends Notifier<ChatState> {
                 }
               },
               onError: (error) async {
-                _uiUpdateTimer?.cancel();
-                _uiUpdateTimer = null;
-                _chunkCount = 0;
-                _lastCheckpointTime = null;
-                _lastSavedContentLength = 0;
-                _lastSavedReasoningLength = 0;
+                session.cancelUiTimer();
                 await _saveService?.flush();
-                final errorMessage =
-                    (_latestStreamingMessage ?? state.streamingMessage)
-                        ?.copyWith(
-                          status: MessageStatus.error,
-                          errorMessage: error.toString(),
-                        );
-                if (errorMessage != null) {
-                  await _saveMessage(errorMessage);
+                final errorMessage = streamingAssistantMessage.copyWith(
+                  status: MessageStatus.error,
+                  errorMessage: error.toString(),
+                );
+                await _saveMessage(errorMessage, persist: session.persisted);
 
-                  if (ref.mounted) {
-                    ref.read(chatBackgroundServiceProvider).stop();
-                  }
-
-                  final streamConvId = assistantMessage.conversationId;
-                  if (ref.mounted && _currentConversationId == streamConvId) {
-                    _replaceMessageInState(errorMessage, clearStreaming: true);
-                    state = state.copyWith(
-                      isStreaming: false,
-                      errorMessage: error.toString(),
-                    );
-                  }
+                final streamConvId = assistantMessage.conversationId;
+                if (ref.mounted && _currentConversationId == streamConvId) {
+                  _replaceMessageInState(errorMessage, clearStreaming: true);
+                  state = state.copyWith(
+                    isStreaming: false,
+                    errorMessage: error.toString(),
+                  );
                 }
                 if (ref.mounted) {
-                  _setGlobalStreaming(false);
+                  _endSession(session);
                 }
-                _latestStreamingMessage = null;
+                session.latestMessage = null;
               },
             );
       }
     } catch (e) {
-      _uiUpdateTimer?.cancel();
-      _uiUpdateTimer = null;
+      session.cancelUiTimer();
       final errorMsg = assistantMessage.copyWith(
         status: MessageStatus.error,
         errorMessage: e.toString(),
         isProcessing: false,
       );
-      await _saveMessage(errorMsg);
+      await _saveMessage(errorMsg, persist: session.persisted);
 
       if (!ref.mounted) return;
 
@@ -1483,9 +1439,8 @@ class ChatNotifier extends Notifier<ChatState> {
         errorMessage: e.toString(),
         clearStreaming: true,
       );
-      _setGlobalStreaming(false);
-      _latestStreamingMessage = null;
-      ref.read(chatBackgroundServiceProvider).stop();
+      _endSession(session);
+      session.latestMessage = null;
     }
   }
 
@@ -1950,24 +1905,17 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> cancelStream() async {
-    await _detachStreamSubscription();
-    _uiUpdateTimer?.cancel();
-    _uiUpdateTimer = null;
+    final session = _activeSession;
     _clearPendingApproval();
+    await session?.detach();
     if (!ref.mounted) return;
 
-    (_streamChatService ?? ref.read(chatServiceProvider))?.cancelStream();
-    ref.read(chatBackgroundServiceProvider).stop();
-
-    _chunkCount = 0;
-    _lastCheckpointTime = null;
-    _lastSavedContentLength = 0;
-    _lastSavedReasoningLength = 0;
+    session?.chatService.cancelStream();
 
     await _saveService?.flush();
     if (!ref.mounted) return;
 
-    final streamingMessage = _latestStreamingMessage ?? state.streamingMessage;
+    final streamingMessage = session?.latestMessage ?? state.streamingMessage;
     if (streamingMessage != null) {
       final finalMessage = _finalizeStreamMessage(
         streamingMessage.copyWith(
@@ -1975,20 +1923,21 @@ class ChatNotifier extends Notifier<ChatState> {
           isProcessing: false,
         ),
         stopReason: 'cancelled',
+        session: session,
       );
-      await _saveMessage(finalMessage);
+      await _saveMessage(finalMessage, persist: session?.persisted);
       if (!ref.mounted) return;
       _replaceMessageInState(finalMessage, clearStreaming: true);
     }
 
     if (!ref.mounted) return;
     state = state.copyWith(isStreaming: false, clearStreaming: true);
-    _setGlobalStreaming(false);
-    _latestStreamingMessage = null;
+    session?.latestMessage = null;
+    if (session != null) _endSession(session);
   }
 
   Future<void> retryLastMessage() async {
-    if (_blockIfGeneratingElsewhere()) return;
+    if (_blockIfOnDeviceBusy()) return;
     final messages = state.messages;
     if (messages.isEmpty) return;
 
@@ -2037,7 +1986,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> continueFromMessage(String messageId) async {
-    if (_blockIfGeneratingElsewhere()) return;
+    if (_blockIfOnDeviceBusy()) return;
     final messages = state.messages;
     if (messages.isEmpty || messages.last.id != messageId) return;
     final assistant = messages.last;
@@ -2045,8 +1994,11 @@ class ChatNotifier extends Notifier<ChatState> {
     if (state.isStreaming) return;
 
     final target = ref.read(activeChatTargetProvider);
+    final server = target.server;
     final effectiveModelId = target.effectiveModelId;
-    if (target.server == null || effectiveModelId == null) return;
+    if (server == null || effectiveModelId == null) return;
+    final chatService = ref.read(chatServiceFactoryProvider)(server);
+    if (chatService == null) return;
 
     final streamingAssistant = assistant.copyWith(
       status: MessageStatus.streaming,
@@ -2062,13 +2014,17 @@ class ChatNotifier extends Notifier<ChatState> {
       streamingMessage: streamingAssistant,
       clearError: true,
     );
-    _setGlobalStreaming(true);
-    ref.read(chatBackgroundServiceProvider).start();
-    _resetCheckpointMetrics();
-    _updateSavedMetrics(streamingAssistant);
-    _latestStreamingMessage = streamingAssistant;
+    final session = _beginSession(
+      streamingAssistant.conversationId,
+      server,
+      chatService,
+    );
+    session.resetCheckpointMetrics();
+    session.updateSavedMetrics(streamingAssistant);
+    session.latestMessage = streamingAssistant;
 
     await _runAssistantStream(
+      session,
       streamingAssistant,
       target.selectedModel,
       effectiveModelId: effectiveModelId,
@@ -2121,7 +2077,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> retryMessage(String messageId) async {
-    if (_blockIfGeneratingElsewhere()) return;
+    if (_blockIfOnDeviceBusy()) return;
     if (state.isStreaming || _isRegenerating) return;
     _isRegenerating = true;
     try {
@@ -2165,7 +2121,7 @@ class ChatNotifier extends Notifier<ChatState> {
     required int threadOrder,
     required int variantIndex,
   }) async {
-    if (_blockIfGeneratingElsewhere()) return;
+    if (_blockIfOnDeviceBusy()) return;
     final target = ref.read(activeChatTargetProvider);
     final selectedModel = target.selectedModel;
     final server = target.server;
@@ -2202,14 +2158,27 @@ class ChatNotifier extends Notifier<ChatState> {
       streamingMessage: assistantMessage,
       clearError: true,
     );
-    _setGlobalStreaming(true);
-    await _saveMessage(assistantMessage);
+    final chatService = ref.read(chatServiceFactoryProvider)(server);
+    if (chatService == null) {
+      state = state.copyWith(
+        isStreaming: false,
+        errorMessage: 'No chat service available',
+        clearStreaming: true,
+      );
+      return;
+    }
+    final session = _beginSession(
+      assistantMessage.conversationId,
+      server,
+      chatService,
+    );
+    await _saveMessage(assistantMessage, persist: session.persisted);
 
-    ref.read(chatBackgroundServiceProvider).start();
-    _resetCheckpointMetrics();
-    _updateSavedMetrics(assistantMessage);
+    session.resetCheckpointMetrics();
+    session.updateSavedMetrics(assistantMessage);
 
     await _runAssistantStream(
+      session,
       assistantMessage,
       selectedModel,
       effectiveModelId: effectiveModelId,
@@ -2339,9 +2308,12 @@ class ChatNotifier extends Notifier<ChatState> {
       streamingMessage: continuationMessage,
       clearStreaming: false,
     );
-    _setGlobalStreaming(true);
-    ref.read(chatBackgroundServiceProvider).start();
-    await _saveMessage(continuationMessage);
+    final session = _beginSession(
+      continuationMessage.conversationId,
+      server,
+      chatService,
+    );
+    await _saveMessage(continuationMessage, persist: session.persisted);
     if (!ref.mounted) return;
 
     // Reuse the streaming logic — `_runAssistantStream` builds the API
@@ -2351,6 +2323,7 @@ class ChatNotifier extends Notifier<ChatState> {
     // yields a final answer or `maxIterations` (enforced inside
     // `ToolExecutionLoop`) is reached.
     await _runAssistantStream(
+      session,
       continuationMessage,
       selectedModel,
       effectiveModelId: effectiveModelId,
@@ -2358,40 +2331,26 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> _runAssistantStream(
+    GenerationSession session,
     Message assistantMessage,
     ModelInfo? selectedModel, {
     required String effectiveModelId,
     bool continueGeneration = false,
   }) async {
-    final server = ref.read(activeServerProvider);
+    final server = session.server;
+    final chatService = session.chatService;
     final chatParams = ref.read(chatParamsProvider);
-    final chatService = ref.read(chatServiceProvider);
-    if (server == null || chatService == null) {
-      final errorMessage = assistantMessage.copyWith(
-        status: MessageStatus.error,
-        errorMessage: 'No chat service available',
-        isProcessing: false,
-      );
-      await _saveMessage(errorMessage);
-      _replaceMessageInAll(errorMessage, clearStreaming: true);
-      state = state.copyWith(isStreaming: false, clearStreaming: true);
-      _setGlobalStreaming(false);
-      ref.read(chatBackgroundServiceProvider).stop();
-      return;
-    }
 
     final messagesForApi = continueGeneration
         ? _buildMessagesForContinue(selectedModel, assistantMessage)
         : _buildMessagesForApi(selectedModel);
 
     try {
-      await _detachStreamSubscription();
-      _uiUpdateTimer?.cancel();
-      _resetStreamMetrics();
+      session.resetStreamMetrics();
 
       String reasoningContent = '';
       var streamingAssistantMessage = assistantMessage;
-      _latestStreamingMessage = streamingAssistantMessage;
+      session.latestMessage = streamingAssistantMessage;
       var isFirstContinueChunk = continueGeneration;
 
       final mcpConfig = ref.read(chatMcpConfigProvider);
@@ -2418,17 +2377,15 @@ class ChatNotifier extends Notifier<ChatState> {
         }
       }
 
-      _uiUpdateTimer = Timer.periodic(const Duration(milliseconds: 80), (_) {
+      if (session.cancelled) return;
+
+      session.uiUpdateTimer = Timer.periodic(const Duration(milliseconds: 80), (
+        _,
+      ) {
         updateUiState();
       });
 
-      final streamGeneration = _streamGeneration;
-      final streamInMemory = _isInMemoryChat;
-      _persistedStreamConversationId = streamInMemory
-          ? null
-          : assistantMessage.conversationId;
-      _streamChatService = chatService;
-      _streamSubscription = chatService
+      session.subscription = chatService
           .sendMessage(
             server: server,
             modelId: effectiveModelId,
@@ -2440,14 +2397,14 @@ class ChatNotifier extends Notifier<ChatState> {
           )
           .listen(
             (response) async {
-              if (streamGeneration != _streamGeneration) return;
+              if (session.cancelled || !ref.mounted) return;
               final streamConvId = assistantMessage.conversationId;
               final isCurrentContext = _activeConversationId == streamConvId;
 
               switch (response.type) {
                 case ChatResponseType.message:
                   if (response.content?.isNotEmpty ?? false) {
-                    _noteFirstToken();
+                    session.noteFirstToken();
                   }
                   var delta = response.content ?? '';
                   if (isFirstContinueChunk && delta.isNotEmpty) {
@@ -2467,19 +2424,19 @@ class ChatNotifier extends Notifier<ChatState> {
                         content: streamingAssistantMessage.content + delta,
                         isProcessing: false,
                       );
-                  _latestStreamingMessage = streamingAssistantMessage;
-                  _chunkCount++;
-                  if (!streamInMemory &&
-                      _shouldCheckpointSave(streamingAssistantMessage)) {
+                  session.latestMessage = streamingAssistantMessage;
+                  session.chunkCount++;
+                  if (session.persisted &&
+                      session.shouldCheckpointSave(streamingAssistantMessage)) {
                     _saveService?.enqueue(streamingAssistantMessage);
-                    _updateSavedMetrics(streamingAssistantMessage);
-                    _resetCheckpointMetrics();
+                    session.updateSavedMetrics(streamingAssistantMessage);
+                    session.resetCheckpointMetrics();
                   }
                   stateNeedsUpdate = true;
                   break;
                 case ChatResponseType.reasoning:
                   if (response.reasoningContent?.isNotEmpty ?? false) {
-                    _noteFirstToken();
+                    session.noteFirstToken();
                   }
                   reasoningContent += response.reasoningContent ?? '';
                   streamingAssistantMessage = streamingAssistantMessage
@@ -2487,27 +2444,26 @@ class ChatNotifier extends Notifier<ChatState> {
                         reasoningContent: reasoningContent,
                         isProcessing: false,
                       );
-                  _latestStreamingMessage = streamingAssistantMessage;
-                  _chunkCount++;
-                  if (!streamInMemory &&
-                      _shouldCheckpointSave(streamingAssistantMessage)) {
+                  session.latestMessage = streamingAssistantMessage;
+                  session.chunkCount++;
+                  if (session.persisted &&
+                      session.shouldCheckpointSave(streamingAssistantMessage)) {
                     _saveService?.enqueue(streamingAssistantMessage);
-                    _updateSavedMetrics(streamingAssistantMessage);
-                    _resetCheckpointMetrics();
+                    session.updateSavedMetrics(streamingAssistantMessage);
+                    session.resetCheckpointMetrics();
                   }
                   stateNeedsUpdate = true;
                   break;
                 case ChatResponseType.processing:
                   streamingAssistantMessage = streamingAssistantMessage
                       .copyWith(isProcessing: true);
-                  _latestStreamingMessage = streamingAssistantMessage;
+                  session.latestMessage = streamingAssistantMessage;
                   stateNeedsUpdate = true;
                   break;
                 case ChatResponseType.timeoutError:
                 case ChatResponseType.error:
                   streamHadError = true;
-                  _uiUpdateTimer?.cancel();
-                  _uiUpdateTimer = null;
+                  session.cancelUiTimer();
                   streamingAssistantMessage = _finalizeStreamMessage(
                     streamingAssistantMessage.copyWith(
                       status: MessageStatus.error,
@@ -2515,8 +2471,12 @@ class ChatNotifier extends Notifier<ChatState> {
                       isProcessing: false,
                     ),
                     stopReason: 'error',
+                    session: session,
                   );
-                  await _saveMessage(streamingAssistantMessage);
+                  await _saveMessage(
+                    streamingAssistantMessage,
+                    persist: session.persisted,
+                  );
                   if (ref.mounted) {
                     if (isCurrentContext) {
                       _replaceMessageInAll(
@@ -2528,13 +2488,12 @@ class ChatNotifier extends Notifier<ChatState> {
                         clearStreaming: true,
                       );
                     }
-                    _setGlobalStreaming(false);
-                    ref.read(chatBackgroundServiceProvider).stop();
+                    _endSession(session);
                   }
                   break;
                 case ChatResponseType.done:
                   if (response.stats != null) {
-                    _streamStats = response.stats;
+                    session.stats = response.stats;
                   }
                   break;
                 default:
@@ -2542,8 +2501,7 @@ class ChatNotifier extends Notifier<ChatState> {
               }
             },
             onDone: () async {
-              _uiUpdateTimer?.cancel();
-              _uiUpdateTimer = null;
+              session.cancelUiTimer();
               if (streamHadError) {
                 // The error branch already finalised the message and
                 // stopped streaming — do not overwrite the error state
@@ -2559,8 +2517,9 @@ class ChatNotifier extends Notifier<ChatState> {
                   isProcessing: false,
                 ),
                 stopReason: 'complete',
+                session: session,
               );
-              await _saveMessage(finalMessage);
+              await _saveMessage(finalMessage, persist: session.persisted);
               if (!ref.mounted) return;
               if (isCurrentContext) {
                 _replaceMessageInAll(finalMessage, clearStreaming: true);
@@ -2571,8 +2530,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 _maybeAutoGenerateTitleAfterFirstReply();
               }
               if (ref.mounted) {
-                _setGlobalStreaming(false);
-                ref.read(chatBackgroundServiceProvider).stop();
+                _endSession(session);
               }
               await _syncConversationStatsAfterGeneration(
                 streamConvId,
@@ -2609,8 +2567,7 @@ class ChatNotifier extends Notifier<ChatState> {
             },
             onError: (Object error, StackTrace stackTrace) async {
               Log.error('Stream error: $error');
-              _uiUpdateTimer?.cancel();
-              _uiUpdateTimer = null;
+              session.cancelUiTimer();
               final isCurrentContext =
                   _activeConversationId == assistantMessage.conversationId;
               final errorMessage = streamingAssistantMessage.copyWith(
@@ -2618,7 +2575,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 errorMessage: error.toString(),
                 isProcessing: false,
               );
-              await _saveMessage(errorMessage);
+              await _saveMessage(errorMessage, persist: session.persisted);
               if (!ref.mounted) return;
               if (isCurrentContext) {
                 _replaceMessageInAll(errorMessage, clearStreaming: true);
@@ -2629,8 +2586,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 );
               }
               if (ref.mounted) {
-                _setGlobalStreaming(false);
-                ref.read(chatBackgroundServiceProvider).stop();
+                _endSession(session);
               }
             },
           );
@@ -2641,7 +2597,7 @@ class ChatNotifier extends Notifier<ChatState> {
         errorMessage: e.toString(),
         clearStreaming: true,
       );
-      _setGlobalStreaming(false);
+      _endSession(session);
     }
   }
 
@@ -2786,7 +2742,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> generateResponseForLastUser() async {
-    if (_blockIfGeneratingElsewhere()) return;
+    if (_blockIfOnDeviceBusy()) return;
     if (state.isStreaming || _isRegenerating) return;
     _isRegenerating = true;
     try {
@@ -2806,7 +2762,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> generateAiUserMessage() async {
-    if (_blockIfGeneratingElsewhere()) return;
+    if (_blockIfOnDeviceBusy()) return;
     if (state.isStreaming) return;
     if (state.messages.isEmpty) return;
 
@@ -2887,7 +2843,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> editMessage(String messageId, String newContent) async {
-    if (_blockIfGeneratingElsewhere()) return;
+    if (_blockIfOnDeviceBusy()) return;
     final messageIndex = state.messages.indexWhere((m) => m.id == messageId);
     if (messageIndex == -1) return;
 
@@ -2928,17 +2884,16 @@ class ChatNotifier extends Notifier<ChatState> {
     );
   }
 
-  Future<void> _saveMessage(Message message) async {
+  /// Saves [message] unless it belongs to an in-memory (temporary) chat.
+  /// A reply's own saves pass [persist] from its [GenerationSession], because
+  /// the open chat may no longer be the chat the reply belongs to.
+  Future<void> _saveMessage(Message message, {bool? persist}) async {
     // Check `ref.mounted` before touching `state` (via `_isInMemoryChat`).
     // On a disposed notifier, accessing `state` throws "Cannot use the Ref of
     // NotifierProvider ... after it has been disposed" — see issue #73.
     if (!ref.mounted) return;
-    // A background reply belongs to a persisted chat even while a temporary
-    // chat is open, so only skip messages that aren't from that reply.
-    if (_isInMemoryChat &&
-        message.conversationId != _persistedStreamConversationId) {
-      return;
-    }
+    if (persist == false) return;
+    if (persist == null && _isInMemoryChat) return;
     await persistMessage(message);
   }
 

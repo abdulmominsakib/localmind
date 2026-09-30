@@ -3155,4 +3155,21 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get background_generation_notice_untitled =>
       '別のチャットでまだ返信を生成中です。完了するとここで送信できます。タップして開く。';
+
+  @override
+  String background_generation_notice_info(String title) {
+    return 'バックグラウンドで「$title」に返信中です。タップして開く。';
+  }
+
+  @override
+  String get background_generation_notice_info_untitled =>
+      'バックグラウンドで別のチャットが返信中です。タップして開く。';
+
+  @override
+  String background_generation_notice_multiple(int count) {
+    return '$count件のチャットがバックグラウンドで返信中です。';
+  }
+
+  @override
+  String get background_generation_chat_untitled => '無題のチャット';
 }

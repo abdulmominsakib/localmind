@@ -50,6 +50,27 @@ final chatServiceProvider = Provider<ChatService?>((ref) {
   return service;
 });
 
+/// Builds the service that owns one reply. Remote services keep a single
+/// cancel token, so every concurrent reply gets its own instance; on-device
+/// replies share the one engine-backed [chatServiceProvider] service.
+final chatServiceFactoryProvider = Provider<ChatService? Function(Server)>((
+  ref,
+) {
+  return (server) {
+    if (server.isOnDevice) return ref.read(chatServiceProvider);
+    final settings = ref.read(settingsProvider);
+    return createChatServiceForServer(
+      server: server,
+      dio: ref.read(dioProvider),
+      onDeviceGemmaService: ref.read(onDeviceGemmaServiceProvider),
+      onDeviceLlamaService: ref.read(onDeviceLlamaServiceProvider),
+      onDeviceMlxService: ref.read(onDeviceMlxServiceProvider),
+      imageCompressionEnabled: settings.imageCompressionEnabled,
+      imageCompressionLevel: settings.imageCompressionLevel,
+    );
+  };
+});
+
 ChatService createChatServiceForServer({
   required Server server,
   required Dio dio,

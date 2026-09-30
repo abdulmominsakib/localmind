@@ -28,7 +28,11 @@ class ConversationList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final generatingConversationId = ref.watch(streamingConversationIdProvider);
+    final generatingConversationIds = ref.watch(
+      activeGenerationsProvider.select(
+        (generations) => generations.keys.toSet(),
+      ),
+    );
     final selectionMode = ref.watch(historySelectionModeProvider);
     final selectedIds = ref.watch(historySelectedIdsProvider);
     final sectionOrder = [
@@ -74,7 +78,9 @@ class ConversationList extends ConsumerWidget {
                   isActive: activeConversation?.id == conversation.id,
                   selectionMode: selectionMode,
                   isSelected: selectedIds.contains(conversation.id),
-                  isGenerating: generatingConversationId == conversation.id,
+                  isGenerating: generatingConversationIds.contains(
+                    conversation.id,
+                  ),
                   onEnterSelectionMode: () {
                     ref.read(historySelectionModeProvider.notifier).enable();
                     ref

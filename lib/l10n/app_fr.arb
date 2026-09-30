@@ -947,5 +947,9 @@
   "default_system_prompt_desc": "Utilisé pour les discussions sans persona ni prompt système spécifique.",
   "default_system_prompt_hint": "Tu es un assistant serviable…",
   "background_generation_notice": "Réponse en cours dans « {title} ». Vous pourrez envoyer ici une fois terminée. Touchez pour ouvrir.",
-  "background_generation_notice_untitled": "Une autre discussion est encore en train de répondre. Vous pourrez envoyer ici une fois terminée. Touchez pour ouvrir."
+  "background_generation_notice_untitled": "Une autre discussion est encore en train de répondre. Vous pourrez envoyer ici une fois terminée. Touchez pour ouvrir.",
+  "background_generation_notice_info": "Réponse en cours dans « {title} » en arrière-plan. Touchez pour ouvrir.",
+  "background_generation_notice_info_untitled": "Une autre discussion répond en arrière-plan. Touchez pour ouvrir.",
+  "background_generation_notice_multiple": "{count} discussions répondent en arrière-plan.",
+  "background_generation_chat_untitled": "Discussion sans titre"
 }

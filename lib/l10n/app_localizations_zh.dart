@@ -3128,6 +3128,22 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get background_generation_notice_untitled =>
       '另一个对话仍在生成回复。完成后即可在此发送。点按打开。';
+
+  @override
+  String background_generation_notice_info(String title) {
+    return '正在后台回复“$title”。点按打开。';
+  }
+
+  @override
+  String get background_generation_notice_info_untitled => '另一个对话正在后台回复。点按打开。';
+
+  @override
+  String background_generation_notice_multiple(int count) {
+    return '$count 个对话正在后台回复。';
+  }
+
+  @override
+  String get background_generation_chat_untitled => '未命名对话';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6160,4 +6176,20 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get background_generation_notice_untitled =>
       '另一個對話仍在產生回覆。完成後即可在此傳送。點按開啟。';
+
+  @override
+  String background_generation_notice_info(String title) {
+    return '正在背景回覆「$title」。點按開啟。';
+  }
+
+  @override
+  String get background_generation_notice_info_untitled => '另一個對話正在背景回覆。點按開啟。';
+
+  @override
+  String background_generation_notice_multiple(int count) {
+    return '$count 個對話正在背景回覆。';
+  }
+
+  @override
+  String get background_generation_chat_untitled => '未命名對話';
 }

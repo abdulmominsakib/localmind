@@ -961,5 +961,9 @@
   "default_system_prompt_desc": "페르소나와 채팅별 시스템 프롬프트가 없는 채팅에 사용됩니다.",
   "default_system_prompt_hint": "당신은 도움이 되는 어시스턴트입니다…",
   "background_generation_notice": "\"{title}\"에서 아직 답변을 생성 중입니다. 완료되면 여기서 보낼 수 있습니다. 탭하여 열기.",
-  "background_generation_notice_untitled": "다른 채팅에서 아직 답변을 생성 중입니다. 완료되면 여기서 보낼 수 있습니다. 탭하여 열기."
+  "background_generation_notice_untitled": "다른 채팅에서 아직 답변을 생성 중입니다. 완료되면 여기서 보낼 수 있습니다. 탭하여 열기.",
+  "background_generation_notice_info": "백그라운드에서 \"{title}\"에 답변 생성 중. 탭하여 열기.",
+  "background_generation_notice_info_untitled": "백그라운드에서 다른 채팅이 답변 생성 중. 탭하여 열기.",
+  "background_generation_notice_multiple": "{count}개의 채팅이 백그라운드에서 답변 생성 중.",
+  "background_generation_chat_untitled": "제목 없는 채팅"
 }

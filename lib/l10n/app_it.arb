@@ -950,5 +950,9 @@
   "default_system_prompt_desc": "Usato per le chat senza persona e senza un prompt di sistema proprio.",
   "default_system_prompt_hint": "Sei un assistente disponibile…",
   "background_generation_notice": "Risposta ancora in corso in \"{title}\". Potrai inviare qui quando termina. Tocca per aprire.",
-  "background_generation_notice_untitled": "Un'altra chat sta ancora rispondendo. Potrai inviare qui quando termina. Tocca per aprire."
+  "background_generation_notice_untitled": "Un'altra chat sta ancora rispondendo. Potrai inviare qui quando termina. Tocca per aprire.",
+  "background_generation_notice_info": "Risposta in corso in \"{title}\" in background. Tocca per aprire.",
+  "background_generation_notice_info_untitled": "Un'altra chat sta rispondendo in background. Tocca per aprire.",
+  "background_generation_notice_multiple": "{count} chat stanno rispondendo in background.",
+  "background_generation_chat_untitled": "Chat senza titolo"
 }

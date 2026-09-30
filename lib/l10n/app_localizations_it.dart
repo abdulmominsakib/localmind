@@ -3238,4 +3238,21 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get background_generation_notice_untitled =>
       'Un\'altra chat sta ancora rispondendo. Potrai inviare qui quando termina. Tocca per aprire.';
+
+  @override
+  String background_generation_notice_info(String title) {
+    return 'Risposta in corso in \"$title\" in background. Tocca per aprire.';
+  }
+
+  @override
+  String get background_generation_notice_info_untitled =>
+      'Un\'altra chat sta rispondendo in background. Tocca per aprire.';
+
+  @override
+  String background_generation_notice_multiple(int count) {
+    return '$count chat stanno rispondendo in background.';
+  }
+
+  @override
+  String get background_generation_chat_untitled => 'Chat senza titolo';
 }

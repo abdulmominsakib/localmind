@@ -13,11 +13,12 @@ import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
+import 'generation_session.dart' show ActiveGeneration;
 
 const modelSelectionRequiredMessage = 'You need to select a model first';
-const generatingElsewhereMessage =
-    'Another chat is still generating a reply. Wait for it to finish or stop '
-    'it before sending here.';
+const onDeviceBusyMessage =
+    'The on-device model is still replying in another chat. Wait for it to '
+    'finish or stop it before sending here.';
 
 class ActiveChatTarget {
   final Server? server;
@@ -372,19 +373,21 @@ class IsStreamingNotifier extends Notifier<bool> {
   }
 }
 
-/// Id of the conversation whose reply is currently generating, or null.
-/// Stays set while the user views another chat, so a reply can keep
-/// streaming in the background (#94).
-final streamingConversationIdProvider =
-    NotifierProvider<StreamingConversationIdNotifier, String?>(
-      StreamingConversationIdNotifier.new,
+/// Replies that are generating right now, keyed by conversation id in the
+/// order they started. Remote replies run concurrently and keep streaming in
+/// the background while another chat is open (#94); on-device replies share a
+/// single engine, so at most one of them appears here.
+final activeGenerationsProvider =
+    NotifierProvider<ActiveGenerationsNotifier, Map<String, ActiveGeneration>>(
+      ActiveGenerationsNotifier.new,
     );
 
-class StreamingConversationIdNotifier extends Notifier<String?> {
+class ActiveGenerationsNotifier
+    extends Notifier<Map<String, ActiveGeneration>> {
   @override
-  String? build() => null;
+  Map<String, ActiveGeneration> build() => const {};
 
-  void set(String? conversationId) {
-    state = conversationId;
+  void set(Map<String, ActiveGeneration> generations) {
+    state = generations;
   }
 }

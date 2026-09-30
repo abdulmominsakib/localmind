@@ -263,6 +263,8 @@ class CrashReportService {
   /// - A stale-index `RangeError` in
   ///   `MultiSelectableSelectionContainerDelegate.getSelectionGeometry` when
   ///   selectables change while a selection edge is being updated.
+  /// - Purely UI-related layout overflows (e.g. `RenderFlex overflowed by ... pixels`)
+  ///   which are visual rendering defects rather than fatal crashes.
   static bool isBenignFrameworkError(Object error, [StackTrace? stack]) {
     final errorStr = error.toString();
     final stackStr = stack?.toString() ?? '';
@@ -277,6 +279,15 @@ class CrashReportService {
     }
 
     if (error is RangeError && isSelectionStack) {
+      return true;
+    }
+
+    // Purely UI-related layout overflows (RenderFlex, RenderParagraph, etc.).
+    // These are visual clipping issues and must not replace the app with the
+    // full-screen crash report overlay.
+    if (errorStr.contains('A RenderFlex overflowed by') ||
+        errorStr.contains('RenderFlex overflowed') ||
+        (errorStr.contains('overflowed by') && errorStr.contains('pixels'))) {
       return true;
     }
 

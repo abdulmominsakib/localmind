@@ -954,5 +954,9 @@
   "default_system_prompt_desc": "يُستخدم في المحادثات التي لا تحتوي على شخصية ولا موجّه نظام خاص بها.",
   "default_system_prompt_hint": "أنت مساعد مفيد…",
   "background_generation_notice": "لا يزال الرد جاريًا في \"{title}\". يمكنك الإرسال هنا بعد انتهائه. اضغط للفتح.",
-  "background_generation_notice_untitled": "لا تزال محادثة أخرى تُنشئ ردًا. يمكنك الإرسال هنا بعد انتهائها. اضغط للفتح."
+  "background_generation_notice_untitled": "لا تزال محادثة أخرى تُنشئ ردًا. يمكنك الإرسال هنا بعد انتهائها. اضغط للفتح.",
+  "background_generation_notice_info": "يتم الرد في \"{title}\" في الخلفية. اضغط للفتح.",
+  "background_generation_notice_info_untitled": "محادثة أخرى تُنشئ ردًا في الخلفية. اضغط للفتح.",
+  "background_generation_notice_multiple": "{count} محادثات تُنشئ ردودًا في الخلفية.",
+  "background_generation_chat_untitled": "محادثة بلا عنوان"
 }

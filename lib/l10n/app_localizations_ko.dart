@@ -3137,4 +3137,21 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get background_generation_notice_untitled =>
       '다른 채팅에서 아직 답변을 생성 중입니다. 완료되면 여기서 보낼 수 있습니다. 탭하여 열기.';
+
+  @override
+  String background_generation_notice_info(String title) {
+    return '백그라운드에서 \"$title\"에 답변 생성 중. 탭하여 열기.';
+  }
+
+  @override
+  String get background_generation_notice_info_untitled =>
+      '백그라운드에서 다른 채팅이 답변 생성 중. 탭하여 열기.';
+
+  @override
+  String background_generation_notice_multiple(int count) {
+    return '$count개의 채팅이 백그라운드에서 답변 생성 중.';
+  }
+
+  @override
+  String get background_generation_chat_untitled => '제목 없는 채팅';
 }

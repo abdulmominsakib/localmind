@@ -947,5 +947,9 @@
   "default_system_prompt_desc": "Wird für Chats ohne Persona und ohne eigenen Systemprompt verwendet.",
   "default_system_prompt_hint": "Du bist ein hilfreicher Assistent…",
   "background_generation_notice": "Antwort in „{title}“ läuft noch. Du kannst hier senden, sobald sie fertig ist. Tippen zum Öffnen.",
-  "background_generation_notice_untitled": "Ein anderer Chat antwortet noch. Du kannst hier senden, sobald er fertig ist. Tippen zum Öffnen."
+  "background_generation_notice_untitled": "Ein anderer Chat antwortet noch. Du kannst hier senden, sobald er fertig ist. Tippen zum Öffnen.",
+  "background_generation_notice_info": "Antwort in „{title}“ im Hintergrund. Tippen zum Öffnen.",
+  "background_generation_notice_info_untitled": "Ein anderer Chat antwortet im Hintergrund. Tippen zum Öffnen.",
+  "background_generation_notice_multiple": "{count} Chats antworten im Hintergrund.",
+  "background_generation_chat_untitled": "Chat ohne Titel"
 }

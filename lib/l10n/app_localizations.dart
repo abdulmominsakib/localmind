@@ -5960,6 +5960,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Another chat is still replying. You can send here once it finishes. Tap to open.'**
   String get background_generation_notice_untitled;
+
+  /// Non-blocking notice when a remote chat is replying in the background
+  ///
+  /// In en, this message translates to:
+  /// **'Replying in \"{title}\" in the background. Tap to open.'**
+  String background_generation_notice_info(String title);
+
+  /// No description provided for @background_generation_notice_info_untitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Another chat is replying in the background. Tap to open.'**
+  String get background_generation_notice_info_untitled;
+
+  /// Notice when multiple chats are replying in the background
+  ///
+  /// In en, this message translates to:
+  /// **'{count} chats are replying in the background.'**
+  String background_generation_notice_multiple(int count);
+
+  /// No description provided for @background_generation_chat_untitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled chat'**
+  String get background_generation_chat_untitled;
 }
 
 class _AppLocalizationsDelegate

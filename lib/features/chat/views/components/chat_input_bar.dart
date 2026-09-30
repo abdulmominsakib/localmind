@@ -12,6 +12,7 @@ import '../../../../core/services/app_haptics.dart';
 import '../../../../core/utils/safe_file_picker.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../conversations/providers/conversation_providers.dart' as conv;
 import '../../../saved_messages/views/components/saved_message_picker_sheet.dart';
 import '../../../servers/providers/server_providers.dart';
 import '../../../stt/providers/stt_providers.dart';
@@ -42,7 +43,7 @@ class ChatInputBar extends ConsumerStatefulWidget {
     this.enabled = true,
 
     this.sendBlocked = false,
-
+    this.hasNoticeAbove = false,
     this.isStreaming = false,
 
     this.focusNode,
@@ -63,7 +64,7 @@ class ChatInputBar extends ConsumerStatefulWidget {
   /// Typing stays possible, but a reply can't be requested yet (another
   /// chat's reply is still generating in the background, #94).
   final bool sendBlocked;
-
+  final bool hasNoticeAbove;
   final bool isStreaming;
 
   final FocusNode? focusNode;
@@ -107,10 +108,17 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
   late AnimationController _holdProgressController;
 
   String _preSpeechText = '';
+  String? _lastStreamingConversationId;
 
   @override
   void initState() {
     super.initState();
+
+    if (ref.read(isStreamingProvider)) {
+      _lastStreamingConversationId = ref.read(
+        conv.activeConversationIdProvider,
+      );
+    }
 
     _focusNode = widget.focusNode ?? FocusNode();
     _incognitoFocus = FocusNode();
@@ -846,7 +854,24 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     // if the State deactivates between the await and the next ref read.
     // Schedule the actual restart on the microtask queue instead.
     ref.listen<bool>(isStreamingProvider, (previous, next) {
+      if (next == true) {
+        _lastStreamingConversationId = ref.read(
+          conv.activeConversationIdProvider,
+        );
+        return;
+      }
       if (previous != true || next != false || !mounted) return;
+      // When the user switches from a streaming chat to a non-streaming one,
+      // isStreamingProvider flips true → false because the *open* chat changed,
+      // not because a reply finished. Ignore that flip so auto-speak doesn't
+      // restart the mic on a chat switch (#94 concurrent generation).
+      final priorConvId = _lastStreamingConversationId;
+      _lastStreamingConversationId = null;
+      if (priorConvId != null &&
+          ref.read(activeGenerationsProvider).containsKey(priorConvId)) {
+        return;
+      }
+
       final shouldAutoSpeak = ref.read(settingsProvider).autoSpeakEnabled;
       final voiceState = ref.read(voiceModeProvider);
       final voiceActive =
@@ -884,7 +909,12 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     return SafeArea(
       top: false,
       child: Container(
-        margin: EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
+        margin: EdgeInsets.only(
+          left: 12,
+          right: 12,
+          top: (widget.sendBlocked || widget.hasNoticeAbove) ? 0 : 8,
+          bottom: 8,
+        ),
 
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
 
