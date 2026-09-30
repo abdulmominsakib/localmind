@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:localmind/l10n/app_localizations.dart';
+import '../../../core/components/server_logo.dart';
 import '../../../core/constants/app_constants.dart';
 import '../data/models/server.dart';
 import '../../../core/models/enums.dart';
@@ -475,25 +476,36 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                           Container(
                             width: 48,
                             height: 48,
+                            padding:
+                                _selectedIconName == null &&
+                                    _selectedType.hasLogo
+                                ? const EdgeInsets.all(6)
+                                : EdgeInsets.zero,
                             decoration: BoxDecoration(
                               color: colorScheme.primary.withValues(
                                 alpha: 0.12,
                               ),
                               borderRadius: BorderRadius.circular(14),
                             ),
-                            child: HugeIcon(
-                              icon: _selectedIconName != null
-                                  ? (getHugeIconByName(
-                                          _selectedIconName,
-                                        )?.icon ??
-                                        getDefaultServerIcon(
-                                          _selectedType.name,
-                                        )!.icon)
-                                  : getDefaultServerIcon(
-                                      _selectedType.name,
-                                    )!.icon,
-                              size: 24,
-                              color: colorScheme.primary,
+                            child: Center(
+                              child: _selectedIconName != null
+                                  ? HugeIcon(
+                                      icon:
+                                          (getHugeIconByName(
+                                            _selectedIconName,
+                                          )?.icon ??
+                                          getDefaultServerIcon(
+                                            _selectedType.name,
+                                          )!.icon),
+                                      size: 24,
+                                      color: colorScheme.primary,
+                                    )
+                                  : ServerLogo(
+                                      type: _selectedType,
+                                      size: _selectedType.hasLogo ? 32 : 24,
+                                      borderRadius: 7,
+                                      iconColor: colorScheme.primary,
+                                    ),
                             ),
                           ),
                           const SizedBox(width: 14),
@@ -711,14 +723,20 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
           Container(
             width: 52,
             height: 52,
+            padding: _selectedType.hasLogo
+                ? const EdgeInsets.all(7)
+                : EdgeInsets.zero,
             decoration: BoxDecoration(
               color: colorScheme.primary.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: HugeIcon(
-              icon: getDefaultServerIcon(_selectedType.name)!.icon,
-              size: 28,
-              color: colorScheme.primary,
+            child: Center(
+              child: ServerLogo(
+                type: _selectedType,
+                size: _selectedType.hasLogo ? 34 : 28,
+                borderRadius: 8,
+                iconColor: colorScheme.primary,
+              ),
             ),
           ),
           const SizedBox(height: 12),

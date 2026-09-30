@@ -6,6 +6,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:cue/cue.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/components/server_logo.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/routes/app_routes.dart';
@@ -150,9 +151,10 @@ class _OnboardingServerTypeScreenState
                                     type: ServerType.onDevice,
                                     title: l10n.server_type_on_device,
                                     subtitle: l10n.server_type_on_device_desc,
-                                    iconWidget: HugeIcon(
-                                      icon: HugeIcons.strokeRoundedSmartPhone01,
-                                      color:
+                                    iconWidget: ServerLogo(
+                                      type: ServerType.onDevice,
+                                      size: 20,
+                                      iconColor:
                                           _selectedType == ServerType.onDevice
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurface,
@@ -163,10 +165,10 @@ class _OnboardingServerTypeScreenState
                                     type: ServerType.lmStudio,
                                     title: l10n.server_type_lm_studio,
                                     subtitle: l10n.server_type_lm_studio_desc,
-                                    iconWidget: HugeIcon(
-                                      icon: HugeIcons
-                                          .strokeRoundedComputerTerminal01,
-                                      color:
+                                    iconWidget: ServerLogo(
+                                      type: ServerType.lmStudio,
+                                      size: 20,
+                                      iconColor:
                                           _selectedType == ServerType.lmStudio
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurface,
@@ -177,9 +179,10 @@ class _OnboardingServerTypeScreenState
                                     type: ServerType.openAICompatible,
                                     title: l10n.server_type_openai_display,
                                     subtitle: l10n.openai_compatible_api,
-                                    iconWidget: HugeIcon(
-                                      icon: HugeIcons.strokeRoundedApi,
-                                      color:
+                                    iconWidget: ServerLogo(
+                                      type: ServerType.openAICompatible,
+                                      size: 20,
+                                      iconColor:
                                           _selectedType ==
                                               ServerType.openAICompatible
                                           ? theme.colorScheme.primary
@@ -191,9 +194,11 @@ class _OnboardingServerTypeScreenState
                                     type: ServerType.ollama,
                                     title: l10n.server_type_ollama,
                                     subtitle: l10n.server_type_ollama_desc,
-                                    iconWidget: HugeIcon(
-                                      icon: HugeIcons.strokeRoundedRobot01,
-                                      color: _selectedType == ServerType.ollama
+                                    iconWidget: ServerLogo(
+                                      type: ServerType.ollama,
+                                      size: 20,
+                                      iconColor:
+                                          _selectedType == ServerType.ollama
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurface,
                                     ),
@@ -203,9 +208,10 @@ class _OnboardingServerTypeScreenState
                                     type: ServerType.ollamaCloud,
                                     title: l10n.server_type_ollama_cloud,
                                     subtitle: l10n.server_type_ollama_cloud_sub,
-                                    iconWidget: HugeIcon(
-                                      icon: HugeIcons.strokeRoundedAiCloud,
-                                      color:
+                                    iconWidget: ServerLogo(
+                                      type: ServerType.ollamaCloud,
+                                      size: 20,
+                                      iconColor:
                                           _selectedType ==
                                               ServerType.ollamaCloud
                                           ? theme.colorScheme.primary
@@ -217,9 +223,10 @@ class _OnboardingServerTypeScreenState
                                     type: ServerType.openRouter,
                                     title: l10n.server_type_openrouter,
                                     subtitle: l10n.server_type_openrouter_sub,
-                                    iconWidget: HugeIcon(
-                                      icon: HugeIcons.strokeRoundedCloudServer,
-                                      color:
+                                    iconWidget: ServerLogo(
+                                      type: ServerType.openRouter,
+                                      size: 20,
+                                      iconColor:
                                           _selectedType == ServerType.openRouter
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurface,
@@ -230,9 +237,10 @@ class _OnboardingServerTypeScreenState
                                     type: ServerType.requesty,
                                     title: l10n.server_type_requesty,
                                     subtitle: l10n.server_type_requesty_sub,
-                                    iconWidget: HugeIcon(
-                                      icon: HugeIcons.strokeRoundedAiNetwork,
-                                      color:
+                                    iconWidget: ServerLogo(
+                                      type: ServerType.requesty,
+                                      size: 20,
+                                      iconColor:
                                           _selectedType == ServerType.requesty
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurface,

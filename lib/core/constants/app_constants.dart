@@ -26,4 +26,9 @@ class AppConstants {
   static const String requestyBaseUrl = 'https://router.requesty.ai/v1';
   static const String ollamaCloudBaseUrl = 'https://ollama.com';
   static const int ollamaCloudDefaultPort = 443;
+
+  static const String lmStudioLogoAsset = 'assets/images/lmstudio.webp';
+  static const String ollamaLogoAsset = 'assets/images/ollama.webp';
+  static const String openRouterLogoAsset = 'assets/images/openrouter.webp';
+  static const String requestyLogoAsset = 'assets/images/requesty.webp';
 }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:localmind/core/theme/colors.dart';
 
+import '../../../core/components/server_logo.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../l10n/app_localizations.dart';
@@ -244,16 +245,26 @@ class ActiveServerIndicator extends ConsumerWidget {
                                     ),
                                     child: Row(
                                       children: [
-                                        HugeIcon(
-                                          icon:
-                                              currentServerIcon ??
-                                              HugeIcons
-                                                  .strokeRoundedServerStack01,
-                                          size: 20,
-                                          color: isCurrentlyActive
-                                              ? colorScheme.primary
-                                              : colorScheme.onSurface,
-                                        ),
+                                        if (serverIconName != null)
+                                          HugeIcon(
+                                            icon:
+                                                currentServerIcon ??
+                                                HugeIcons
+                                                    .strokeRoundedServerStack01,
+                                            size: 20,
+                                            color: isCurrentlyActive
+                                                ? colorScheme.primary
+                                                : colorScheme.onSurface,
+                                          )
+                                        else
+                                          ServerLogo(
+                                            type: server.type,
+                                            size: 20,
+                                            borderRadius: 4,
+                                            iconColor: isCurrentlyActive
+                                                ? colorScheme.primary
+                                                : colorScheme.onSurface,
+                                          ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
@@ -352,13 +363,23 @@ class ActiveServerIndicator extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              HugeIcon(
-                icon: serverIcon ?? HugeIcons.strokeRoundedServerStack01,
-                size: 18,
-                color: isDark
-                    ? AppColors.darkPrimaryText
-                    : AppColors.lightPrimaryText,
-              ),
+              if (iconName != null)
+                HugeIcon(
+                  icon: serverIcon ?? HugeIcons.strokeRoundedServerStack01,
+                  size: 18,
+                  color: isDark
+                      ? AppColors.darkPrimaryText
+                      : AppColors.lightPrimaryText,
+                )
+              else
+                ServerLogo(
+                  type: activeServer.type,
+                  size: 18,
+                  borderRadius: 3.5,
+                  iconColor: isDark
+                      ? AppColors.darkPrimaryText
+                      : AppColors.lightPrimaryText,
+                ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(

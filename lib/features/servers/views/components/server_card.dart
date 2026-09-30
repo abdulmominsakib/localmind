@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:localmind/l10n/app_localizations.dart';
+import '../../../../core/components/server_logo.dart';
 import '../../../../core/models/enums.dart';
 import '../../data/models/server.dart';
 import 'connection_status_indicator.dart';
@@ -28,13 +29,6 @@ class ServerCard extends StatelessWidget {
   static const _warning = Color(0xFFF59E0B);
   static const _error = Color(0xFFEF4444);
   static const _neutral = Color(0xFF71717A);
-
-  HugeIconData? get _serverIconData {
-    if (server.iconName != null) {
-      return getHugeIconByName(server.iconName);
-    }
-    return getDefaultServerIcon(server.type.name);
-  }
 
   String _serverTypeName(AppLocalizations l10n) {
     switch (server.type) {
@@ -221,16 +215,21 @@ class ServerCard extends StatelessWidget {
         ),
       ),
       child: Center(
-        child: _serverIconData != null
+        child: server.iconName != null
             ? HugeIcon(
-                icon: _serverIconData!.icon,
+                icon:
+                    (getHugeIconByName(server.iconName)?.icon ??
+                    getDefaultServerIcon(server.type.name)!.icon),
                 size: 22,
                 color: isActive ? _accent : theme.colorScheme.onSurfaceVariant,
               )
-            : HugeIcon(
-                icon: HugeIcons.strokeRoundedDatabase,
-                size: 22,
-                color: isActive ? _accent : theme.colorScheme.onSurfaceVariant,
+            : ServerLogo(
+                type: server.type,
+                size: server.type.hasLogo ? 26 : 22,
+                borderRadius: 6,
+                iconColor: isActive
+                    ? _accent
+                    : theme.colorScheme.onSurfaceVariant,
               ),
       ),
     );
@@ -284,12 +283,17 @@ class ServerCard extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            HugeIcon(
-              icon: _typeIcon(),
-              size: 12,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 5),
+            if (server.type.hasLogo) ...[
+              ServerLogo(type: server.type, size: 13, borderRadius: 2.5),
+              const SizedBox(width: 5),
+            ] else ...[
+              HugeIcon(
+                icon: _typeIcon(),
+                size: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 5),
+            ],
             Text(
               _serverTypeName(l10n),
               style: theme.textTheme.labelSmall?.copyWith(

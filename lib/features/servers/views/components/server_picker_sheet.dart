@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import '../../../../core/components/server_logo.dart';
 import '../../../../core/routes/app_routes.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../providers/server_providers.dart';
@@ -100,10 +101,9 @@ void showServerPickerSheet(BuildContext context, WidgetRef ref) {
                   ...servers.map((server) {
                     final isCurrentlyActive = server.id == activeServer?.id;
                     final serverIconName = server.iconName;
-                    final currentServerIcon = serverIconName != null
-                        ? (getHugeIconByName(serverIconName)?.icon ??
-                              getDefaultServerIcon(server.type.name)?.icon)
-                        : getDefaultServerIcon(server.type.name)?.icon;
+                    final customHugeIcon = serverIconName != null
+                        ? getHugeIconByName(serverIconName)
+                        : null;
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -136,15 +136,23 @@ void showServerPickerSheet(BuildContext context, WidgetRef ref) {
                           ),
                           child: Row(
                             children: [
-                              HugeIcon(
-                                icon:
-                                    currentServerIcon ??
-                                    HugeIcons.strokeRoundedServerStack01,
-                                size: 20,
-                                color: isCurrentlyActive
-                                    ? colorScheme.primary
-                                    : colorScheme.onSurface,
-                              ),
+                              if (customHugeIcon != null)
+                                HugeIcon(
+                                  icon: customHugeIcon.icon,
+                                  size: 20,
+                                  color: isCurrentlyActive
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurface,
+                                )
+                              else
+                                ServerLogo(
+                                  type: server.type,
+                                  size: 20,
+                                  borderRadius: 4,
+                                  iconColor: isCurrentlyActive
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurface,
+                                ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(

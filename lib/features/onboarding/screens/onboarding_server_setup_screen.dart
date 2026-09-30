@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:cue/cue.dart';
 
+import '../../../core/components/server_logo.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/service_providers.dart';
@@ -306,6 +307,25 @@ class _OnboardingServerSetupScreenState
     }
   }
 
+  String _serverTypeName(ServerType type, AppLocalizations l10n) {
+    switch (type) {
+      case ServerType.lmStudio:
+        return l10n.server_type_lm_studio;
+      case ServerType.openAICompatible:
+        return l10n.server_type_openai_display;
+      case ServerType.ollama:
+        return l10n.server_type_ollama;
+      case ServerType.ollamaCloud:
+        return l10n.server_type_ollama_cloud;
+      case ServerType.openRouter:
+        return l10n.server_type_openrouter;
+      case ServerType.requesty:
+        return l10n.server_type_requesty;
+      case ServerType.onDevice:
+        return l10n.server_type_on_device;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -329,10 +349,65 @@ class _OnboardingServerSetupScreenState
               children: [
                 Actor(
                   acts: [.fadeIn(), .slideY(from: 0.08)],
-                  child: Text(
-                    l10n.setup_connection_desc(widget.selectedType.name),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          padding: widget.selectedType.hasLogo
+                              ? const EdgeInsets.all(5)
+                              : const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: theme.colorScheme.outline.withValues(
+                                alpha: 0.15,
+                              ),
+                            ),
+                          ),
+                          child: Center(
+                            child: ServerLogo(
+                              type: widget.selectedType,
+                              size: widget.selectedType.hasLogo ? 30 : 22,
+                              iconColor: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _serverTypeName(widget.selectedType, l10n),
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                l10n.setup_connection_desc(
+                                  widget.selectedType.name,
+                                ),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

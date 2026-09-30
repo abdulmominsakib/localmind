@@ -1,3 +1,5 @@
+import '../constants/app_constants.dart';
+
 enum EngineId { system, kitten, piper }
 
 class EngineMeta {
@@ -208,6 +210,27 @@ enum ServerType {
   openRouter,
   onDevice,
   requesty,
+}
+
+extension ServerTypeLogoExtension on ServerType {
+  String? get logoAsset {
+    switch (this) {
+      case ServerType.lmStudio:
+        return AppConstants.lmStudioLogoAsset;
+      case ServerType.ollama:
+      case ServerType.ollamaCloud:
+        return AppConstants.ollamaLogoAsset;
+      case ServerType.openRouter:
+        return AppConstants.openRouterLogoAsset;
+      case ServerType.requesty:
+        return AppConstants.requestyLogoAsset;
+      case ServerType.openAICompatible:
+      case ServerType.onDevice:
+        return null;
+    }
+  }
+
+  bool get hasLogo => logoAsset != null;
 }
 
 enum ConnectionStatus { connected, disconnected, checking, error }

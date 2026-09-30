@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:localmind/l10n/app_localizations.dart';
+import '../../../../core/components/server_logo.dart';
 import '../../../../core/models/enums.dart';
 
 class ServerTypeSelector extends StatelessWidget {
@@ -113,18 +114,24 @@ class ServerTypeSelector extends StatelessWidget {
                             Container(
                               width: 32,
                               height: 32,
+                              padding: type.hasLogo
+                                  ? const EdgeInsets.all(4)
+                                  : EdgeInsets.zero,
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? accentColor.withValues(alpha: 0.20)
                                     : colorScheme.surface,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: HugeIcon(
-                                icon: icon,
-                                size: 18,
-                                color: isSelected
-                                    ? accentColor
-                                    : colorScheme.onSurface,
+                              child: Center(
+                                child: ServerLogo(
+                                  type: type,
+                                  customIcon: type.hasLogo ? null : icon,
+                                  size: type.hasLogo ? 22 : 18,
+                                  iconColor: isSelected
+                                      ? accentColor
+                                      : colorScheme.onSurface,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 6),
