@@ -25,6 +25,48 @@ void main() {
       expect(calls.single.arguments['a'], 1);
     });
 
+    // Native Ollama /api/chat returns `arguments` as an object (#107).
+    test('parses arguments returned as a JSON object', () {
+      final adapter = OllamaToolAdapter();
+      adapter.consumeDynamicChunk({
+        'message': {
+          'role': 'assistant',
+          'content': '',
+          'tool_calls': [
+            {
+              'function': {
+                'name': 'calc.multiply',
+                'arguments': {'a': 3847, 'b': 729},
+              },
+            },
+          ],
+        },
+      });
+
+      final calls = adapter.takeCompletedCalls();
+      expect(calls.single.name, 'calc.multiply');
+      expect(calls.single.arguments, {'a': 3847, 'b': 729});
+    });
+
+    test('treats missing or empty arguments as an empty map', () {
+      final adapter = OllamaToolAdapter();
+      adapter.consumeDynamicChunk({
+        'message': {
+          'tool_calls': [
+            {
+              'function': {'name': 'clock.now'},
+            },
+            {
+              'function': {'name': 'clock.utc', 'arguments': ''},
+            },
+          ],
+        },
+      });
+
+      final calls = adapter.takeCompletedCalls();
+      expect(calls.map((c) => c.arguments), everyElement(isEmpty));
+    });
+
     test('builds tool result message', () {
       final adapter = OllamaToolAdapter();
       final msg = adapter.buildToolResultMessage(

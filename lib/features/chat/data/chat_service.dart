@@ -1161,7 +1161,9 @@ class OllamaChatService implements ChatService {
           'type': 'function',
           'function': {
             'name': tc.toolName,
-            'arguments': jsonEncode(tc.arguments),
+            // Native Ollama decodes `arguments` into an object and answers
+            // HTTP 400 for the JSON-encoded string OpenAI-style APIs use.
+            'arguments': tc.arguments,
           },
         };
       }).toList();
