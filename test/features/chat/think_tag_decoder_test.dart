@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:localmind/features/chat/data/ollama_reasoning_decoder.dart';
+import 'package:localmind/features/chat/data/think_tag_decoder.dart';
 
 void main() {
   test('every split point preserves reasoning and answer', () {
     const raw = ' \n<think>Reason 🧠</think>Answer';
     for (var split = 0; split <= raw.length; split++) {
-      final decoder = OllamaReasoningDecoder();
+      final decoder = ThinkTagDecoder();
       final parts = [
         ...decoder.add(raw.substring(0, split), nativeThinking: false),
         ...decoder.add(raw.substring(split), nativeThinking: false),
@@ -23,7 +23,7 @@ void main() {
   });
 
   test('leaves tags inside an ordinary answer intact', () {
-    final decoder = OllamaReasoningDecoder();
+    final decoder = ThinkTagDecoder();
     const answer = 'Use <think>reason</think> as an example.';
     expect(decoder.add(answer, nativeThinking: false), [
       (text: answer, isReasoning: false),
@@ -33,7 +33,7 @@ void main() {
   test(
     'unclosed reasoning remains reasoning and partial closing text is retained',
     () {
-      final decoder = OllamaReasoningDecoder();
+      final decoder = ThinkTagDecoder();
       final parts = [
         ...decoder.add('<think>Reason</thi', nativeThinking: false),
         ...decoder.flush(),

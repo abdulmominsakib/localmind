@@ -1,14 +1,18 @@
-typedef OllamaTextPart = ({String text, bool isReasoning});
+typedef ThinkTagPart = ({String text, bool isReasoning});
 
-/// Legacy Ollama models may return a leading `<think>` block in content.
-/// Native `message.thinking` takes precedence. Only a leading block is parsed,
-/// so tags quoted later in an ordinary answer remain ordinary answer text.
-class OllamaReasoningDecoder {
+/// Splits a leading `<think>…</think>` block out of streamed answer text.
+///
+/// Servers without a reasoning parser — legacy Ollama models, LM Studio or
+/// llama.cpp with reasoning extraction off, some OpenAI-compatible hosts —
+/// leave the model's reasoning inline in the content. A native reasoning
+/// field takes precedence. Only a leading block is parsed, so tags quoted
+/// later in an ordinary answer remain ordinary answer text.
+class ThinkTagDecoder {
   String _pending = '';
   bool _checkedPrefix = false;
   bool _inReasoning = false;
 
-  List<OllamaTextPart> add(String text, {required bool nativeThinking}) {
+  List<ThinkTagPart> add(String text, {required bool nativeThinking}) {
     _pending += text;
     if (nativeThinking) {
       _checkedPrefix = true;
@@ -49,7 +53,7 @@ class OllamaReasoningDecoder {
     return [if (ready.isNotEmpty) (text: ready, isReasoning: true)];
   }
 
-  List<OllamaTextPart> flush() {
+  List<ThinkTagPart> flush() {
     final text = _pending;
     _pending = '';
     return [if (text.isNotEmpty) (text: text, isReasoning: _inReasoning)];
