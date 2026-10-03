@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:localmind/core/components/action_sheet.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/theme/colors.dart';
 import '../../data/models/conversation.dart';
@@ -210,140 +211,169 @@ class ConversationTile extends StatelessWidget {
     AppLocalizations l10n,
     bool isDark,
   ) {
-    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      conversation.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        l10n.conversation_message_count(
-                          conversation.messageCount,
-                        ),
-                        l10n.conversation_character_count(
-                          conversation.characterCount,
-                        ),
-                        if (conversation.totalTokenCount != null)
-                          l10n.total_tokens_count(
-                            conversation.totalTokenCount!,
-                          ),
-                      ].join(' · '),
-                      style: TextStyle(fontSize: 12.5, color: muted),
-                    ),
-                  ],
-                ),
-              ),
-              if (onEnterSelectionMode != null)
-                ListTile(
-                  leading: const HugeIcon(
-                    icon: HugeIcons.strokeRoundedCheckList,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => ConversationActionsSheet(
+        conversation: conversation,
+        onEnterSelectionMode: onEnterSelectionMode,
+        onTogglePin: onTogglePin,
+        onRename: onRename,
+        onDuplicate: onDuplicate,
+        onMoveToFolder: onMoveToFolder,
+        onExport: onExport,
+        onArchive: onArchive,
+        onDelete: onDelete,
+      ),
+    );
+  }
+}
+
+/// Everything you can do with one chat: what it is up top, then grouped
+/// actions — organise, share, and (last, in red) archive or delete.
+class ConversationActionsSheet extends StatelessWidget {
+  const ConversationActionsSheet({
+    super.key,
+    required this.conversation,
+    required this.onTogglePin,
+    required this.onRename,
+    required this.onDuplicate,
+    required this.onMoveToFolder,
+    required this.onExport,
+    required this.onArchive,
+    required this.onDelete,
+    this.onEnterSelectionMode,
+  });
+
+  final Conversation conversation;
+  final VoidCallback onTogglePin;
+  final VoidCallback onRename;
+  final VoidCallback onDuplicate;
+  final VoidCallback onMoveToFolder;
+  final VoidCallback onExport;
+  final VoidCallback onArchive;
+  final VoidCallback onDelete;
+  final VoidCallback? onEnterSelectionMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+
+    void run(VoidCallback action) {
+      Navigator.of(context).pop();
+      action();
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  conversation.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AppColors.darkPrimaryText
+                        : AppColors.lightPrimaryText,
                   ),
-                  title: Text(l10n.select),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    onEnterSelectionMode!();
-                  },
                 ),
-              ListTile(
-                leading: HugeIcon(
-                  icon: conversation.isPinned
-                      ? HugeIcons.strokeRoundedPin
-                      : HugeIcons.strokeRoundedPin,
+                const SizedBox(height: 3),
+                Text(
+                  [
+                    l10n.conversation_message_count(conversation.messageCount),
+                    l10n.conversation_character_count(
+                      conversation.characterCount,
+                    ),
+                    if (conversation.totalTokenCount != null)
+                      l10n.total_tokens_count(conversation.totalTokenCount!),
+                  ].join(' · '),
+                  style: TextStyle(fontSize: 13, color: muted),
                 ),
-                title: Text(conversation.isPinned ? l10n.unpin : l10n.pin),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onTogglePin();
-                },
+              ],
+            ),
+          ),
+          ActionSheetGroup(
+            children: [
+              ActionSheetTile(
+                key: const ValueKey('conversation_action_pin'),
+                icon: HugeIcons.strokeRoundedPin,
+                label: conversation.isPinned ? l10n.unpin : l10n.pin,
+                onTap: () => run(onTogglePin),
               ),
-              ListTile(
-                leading: const HugeIcon(
-                  icon: HugeIcons.strokeRoundedPencilEdit02,
-                ),
-                title: Text(l10n.rename),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onRename();
-                },
+              ActionSheetTile(
+                key: const ValueKey('conversation_action_rename'),
+                icon: HugeIcons.strokeRoundedPencilEdit02,
+                label: l10n.rename,
+                onTap: () => run(onRename),
               ),
-              ListTile(
-                leading: const HugeIcon(icon: HugeIcons.strokeRoundedCopy),
-                title: Text(l10n.duplicate_chat),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onDuplicate();
-                },
+              ActionSheetTile(
+                key: const ValueKey('conversation_action_move'),
+                icon: HugeIcons.strokeRoundedFolder01,
+                label: l10n.move_to_folder,
+                onTap: () => run(onMoveToFolder),
               ),
-              ListTile(
-                leading: const HugeIcon(icon: HugeIcons.strokeRoundedFolder01),
-                title: Text(l10n.move_to_folder),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onMoveToFolder();
-                },
+              ActionSheetTile(
+                key: const ValueKey('conversation_action_duplicate'),
+                icon: HugeIcons.strokeRoundedCopy01,
+                label: l10n.duplicate_chat,
+                onTap: () => run(onDuplicate),
               ),
-              ListTile(
-                leading: const HugeIcon(icon: HugeIcons.strokeRoundedUpload01),
-                title: Text(l10n.export_conversation),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onExport();
-                },
-              ),
-              ListTile(
-                leading: HugeIcon(
-                  icon: conversation.isArchived
-                      ? HugeIcons.strokeRoundedArchive
-                      : HugeIcons.strokeRoundedArchive,
-                ),
-                title: Text(
-                  conversation.isArchived
-                      ? l10n.unarchive_chat
-                      : l10n.archive_chat,
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onArchive();
-                },
-              ),
-              ListTile(
-                leading: const HugeIcon(
-                  icon: HugeIcons.strokeRoundedDelete01,
-                  color: Colors.red,
-                ),
-                title: Text(
-                  l10n.delete,
-                  style: const TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onDelete();
-                },
-              ),
-              const SizedBox(height: 8),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 10),
+          ActionSheetGroup(
+            children: [
+              ActionSheetTile(
+                key: const ValueKey('conversation_action_export'),
+                icon: HugeIcons.strokeRoundedUpload01,
+                label: l10n.export_conversation,
+                onTap: () => run(onExport),
+              ),
+              if (onEnterSelectionMode != null)
+                ActionSheetTile(
+                  key: const ValueKey('conversation_action_select'),
+                  icon: HugeIcons.strokeRoundedCheckList,
+                  label: l10n.select,
+                  onTap: () => run(onEnterSelectionMode!),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ActionSheetGroup(
+            children: [
+              ActionSheetTile(
+                key: const ValueKey('conversation_action_archive'),
+                icon: HugeIcons.strokeRoundedArchive,
+                label: conversation.isArchived
+                    ? l10n.unarchive_chat
+                    : l10n.archive_chat,
+                onTap: () => run(onArchive),
+              ),
+              ActionSheetTile(
+                key: const ValueKey('conversation_action_delete'),
+                icon: HugeIcons.strokeRoundedDelete01,
+                label: l10n.delete,
+                isDestructive: true,
+                onTap: () => run(onDelete),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

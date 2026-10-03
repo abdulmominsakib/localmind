@@ -5,7 +5,7 @@ import 'package:localmind/core/components/folder_filter_bar.dart';
 import 'package:localmind/core/components/folder_management_dialogs.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import '../../providers/conversation_providers.dart';
-import 'active_filter_chip.dart';
+import 'package:localmind/core/components/active_filter_chip.dart';
 
 class ConversationFolderBar extends ConsumerWidget {
   const ConversationFolderBar({super.key});

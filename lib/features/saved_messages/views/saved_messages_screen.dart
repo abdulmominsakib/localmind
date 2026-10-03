@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/routes/app_routes.dart';
-import 'package:localmind/core/components/list_filter_button.dart';
+import 'package:localmind/core/components/active_filter_chip.dart';
+import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import '../../chat/providers/chat_providers.dart';
 import '../../conversations/data/models/conversation.dart';
@@ -14,6 +15,9 @@ import '../providers/saved_message_providers.dart';
 import 'components/saved_message_folder_bar.dart';
 import 'components/saved_message_folder_sheet.dart';
 import 'components/saved_message_tile.dart';
+import 'components/saved_messages_empty_state.dart';
+import 'components/saved_messages_filters.dart';
+import 'components/saved_messages_menu_button.dart';
 
 class SavedMessagesScreen extends ConsumerWidget {
   const SavedMessagesScreen({super.key});
@@ -27,25 +31,17 @@ class SavedMessagesScreen extends ConsumerWidget {
     final topPadding = MediaQuery.of(context).padding.top;
     final selectionMode = ref.watch(savedMessageSelectionModeProvider);
     final selectedIds = ref.watch(savedMessageSelectedIdsProvider);
+    final listFilter = ref.watch(savedMessageListFilterProvider);
+    final folderFilter = ref.watch(savedMessageFolderFilterProvider);
 
     return Column(
       children: [
-        Container(
+        Padding(
           padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: topPadding + 8,
-            bottom: 16,
-          ),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
-            border: Border(
-              bottom: BorderSide(
-                color: isDark
-                    ? const Color(0xFF2A2A2A)
-                    : const Color(0xFFE5E5E5),
-              ),
-            ),
+            left: 8,
+            right: 8,
+            top: topPadding + 4,
+            bottom: 4,
           ),
           child: selectionMode
               ? Row(
@@ -99,80 +95,42 @@ class SavedMessagesScreen extends ConsumerWidget {
                       l10n.saved_messages_title,
                       style: TextStyle(
                         fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.darkPrimaryText
+                            : AppColors.lightPrimaryText,
                       ),
                     ),
                     const Spacer(),
-                    IconButton(
-                      icon: const HugeIcon(
-                        icon: HugeIcons.strokeRoundedCheckList,
-                      ),
-                      tooltip: l10n.select,
-                      onPressed: () => ref
-                          .read(savedMessageSelectionModeProvider.notifier)
-                          .enable(),
-                    ),
-                    ListFilterButton<SavedMessageListFilter>(
-                      tooltip: l10n.filter_title,
-                      selected: ref.watch(savedMessageListFilterProvider),
-                      onChanged: (filter) => ref
-                          .read(savedMessageListFilterProvider.notifier)
-                          .setFilter(filter),
-                      options: [
-                        ListFilterOption(
-                          value: SavedMessageListFilter.all,
-                          label: l10n.all_chats,
-                          icon: HugeIcons.strokeRoundedView,
-                        ),
-                        ListFilterOption(
-                          value: SavedMessageListFilter.tempChats,
-                          label: l10n.filter_temp_chats,
-                          icon: HugeIcons.strokeRoundedZap,
-                        ),
-                        ListFilterOption(
-                          value: SavedMessageListFilter.user,
-                          label: l10n.filter_user_messages,
-                          icon: HugeIcons.strokeRoundedUser,
-                        ),
-                        ListFilterOption(
-                          value: SavedMessageListFilter.assistant,
-                          label: l10n.filter_assistant_messages,
-                          icon: HugeIcons.strokeRoundedSparkles,
-                        ),
-                        ListFilterOption(
-                          value: SavedMessageListFilter.archived,
-                          label: l10n.filter_archived,
-                          icon: HugeIcons.strokeRoundedArchive,
-                        ),
-                      ],
-                    ),
+                    const SavedMessagesMenuButton(),
                   ],
                 ),
         ),
-        const SavedMessageFolderBar(),
+        SavedMessageFolderBar(
+          leading: listFilter == SavedMessageListFilter.all
+              ? null
+              : ActiveFilterChip(
+                  icon: listFilter.icon,
+                  label: listFilter.label(l10n),
+                  clearTooltip: l10n.all_chats,
+                  onClear: () => ref
+                      .read(savedMessageListFilterProvider.notifier)
+                      .setFilter(SavedMessageListFilter.all),
+                ),
+        ),
         Expanded(
           child: messagesAsync.when(
             data: (messages) {
               if (messages.isEmpty) {
-                return Center(
-                  child: Text(
-                    l10n.saved_messages_empty,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+                return SavedMessagesEmptyState(
+                  isFiltered:
+                      listFilter != SavedMessageListFilter.all ||
+                      folderFilter != null,
                 );
               }
-              return ListView.separated(
-                padding: const EdgeInsets.only(bottom: 8),
+              return ListView.builder(
+                padding: const EdgeInsets.only(top: 4, bottom: 24),
                 itemCount: messages.length,
-                separatorBuilder: (_, _) => Divider(
-                  height: 1,
-                  color: isDark
-                      ? const Color(0xFF2A2A2A)
-                      : const Color(0xFFE5E5E5),
-                ),
                 itemBuilder: (context, index) {
                   final saved = messages[index];
                   final role = MessageRole.values[saved.roleIndex];

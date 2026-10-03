@@ -7,7 +7,14 @@ import 'package:localmind/l10n/app_localizations.dart';
 import '../../providers/saved_message_providers.dart';
 
 class SavedMessageFolderBar extends ConsumerWidget {
-  const SavedMessageFolderBar({super.key, this.showCreateFolder = true});
+  const SavedMessageFolderBar({
+    super.key,
+    this.leading,
+    this.showCreateFolder = true,
+  });
+
+  /// Shown before the folder chips, e.g. an active list filter.
+  final Widget? leading;
 
   final bool showCreateFolder;
 
@@ -123,6 +130,7 @@ class SavedMessageFolderBar extends ConsumerWidget {
 
     return foldersAsync.when(
       data: (folders) => FolderFilterBar(
+        leading: leading,
         folders: folders
             .map((f) => FolderFilterItem(id: f.id, name: f.name))
             .toList(),

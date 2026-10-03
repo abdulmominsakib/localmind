@@ -28,77 +28,82 @@ Future<void> showSaveMessageSheet(
       builder: (context, setState) {
         return ShadSheet(
           title: Text(l10n.save_message_folders),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (existing != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    l10n.message_already_saved,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
+          // ShadSheet paints its own background above the route's Material;
+          // ListTile needs a Material of its own for its ink to show.
+          child: Material(
+            type: MaterialType.transparency,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (existing != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      l10n.message_already_saved,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-              ListTile(
-                leading: HugeIcon(
-                  icon: selectedFolderId == null
-                      ? HugeIcons.strokeRoundedCheckmarkCircle01
-                      : HugeIcons.strokeRoundedCircle,
-                ),
-                title: Text(l10n.unfiled_chats),
-                onTap: () => setState(() => selectedFolderId = null),
-              ),
-              ...folders.map(
-                (folder) => ListTile(
+                ListTile(
                   leading: HugeIcon(
-                    icon: selectedFolderId == folder.id
+                    icon: selectedFolderId == null
                         ? HugeIcons.strokeRoundedCheckmarkCircle01
                         : HugeIcons.strokeRoundedCircle,
                   ),
-                  title: Text(folder.name),
-                  onTap: () => setState(() => selectedFolderId = folder.id),
+                  title: Text(l10n.unfiled_chats),
+                  onTap: () => setState(() => selectedFolderId = null),
                 ),
-              ),
-              const SizedBox(height: 8),
-              if (existing != null)
-                OutlinedButton.icon(
+                ...folders.map(
+                  (folder) => ListTile(
+                    leading: HugeIcon(
+                      icon: selectedFolderId == folder.id
+                          ? HugeIcons.strokeRoundedCheckmarkCircle01
+                          : HugeIcons.strokeRoundedCircle,
+                    ),
+                    title: Text(folder.name),
+                    onTap: () => setState(() => selectedFolderId = folder.id),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (existing != null)
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await ref
+                          .read(savedMessagesProvider.notifier)
+                          .removeBySourceMessageId(message.id);
+                      // Guard every ref-touching statement post-await — the
+                      // sheet can be dismissed while the provider mutation runs.
+                      if (!context.mounted) return;
+                      ref.invalidate(isMessageSavedProvider(message.id));
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                    icon: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedBookmarkRemove01,
+                    ),
+                    label: Text(l10n.remove_from_saved),
+                  ),
+                const SizedBox(height: 8),
+                ShadButton(
+                  width: double.infinity,
                   onPressed: () async {
                     await ref
                         .read(savedMessagesProvider.notifier)
-                        .removeBySourceMessageId(message.id);
-                    // Guard every ref-touching statement post-await — the
-                    // sheet can be dismissed while the provider mutation runs.
+                        .saveMessage(
+                          message,
+                          folderId: selectedFolderId,
+                          isTemporaryChat: isTemporaryChat,
+                        );
                     if (!context.mounted) return;
                     ref.invalidate(isMessageSavedProvider(message.id));
                     if (context.mounted) Navigator.pop(context);
                   },
-                  icon: const HugeIcon(
-                    icon: HugeIcons.strokeRoundedBookmarkRemove01,
-                  ),
-                  label: Text(l10n.remove_from_saved),
+                  child: Text(l10n.save),
                 ),
-              const SizedBox(height: 8),
-              ShadButton(
-                width: double.infinity,
-                onPressed: () async {
-                  await ref
-                      .read(savedMessagesProvider.notifier)
-                      .saveMessage(
-                        message,
-                        folderId: selectedFolderId,
-                        isTemporaryChat: isTemporaryChat,
-                      );
-                  if (!context.mounted) return;
-                  ref.invalidate(isMessageSavedProvider(message.id));
-                  if (context.mounted) Navigator.pop(context);
-                },
-                child: Text(l10n.save),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

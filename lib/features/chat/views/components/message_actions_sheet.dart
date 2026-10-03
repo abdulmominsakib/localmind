@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:localmind/core/components/action_sheet.dart';
 import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import '../../../saved_messages/providers/saved_message_providers.dart';
@@ -193,22 +194,22 @@ class MessageActionsSheet extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          MessageActionGroup(
+          ActionSheetGroup(
             children: [
               if (actions.onEdit != null)
-                MessageActionTile(
+                ActionSheetTile(
                   icon: HugeIcons.strokeRoundedPencilEdit02,
                   label: l10n.edit,
                   onTap: () => run(actions.onEdit!),
                 ),
               if (actions.onContinue != null)
-                MessageActionTile(
+                ActionSheetTile(
                   icon: HugeIcons.strokeRoundedArrowRight01,
                   label: l10n.continue_action,
                   onTap: () => run(actions.onContinue!),
                 ),
               if (actions.onSave != null)
-                MessageActionTile(
+                ActionSheetTile(
                   icon: HugeIcons.strokeRoundedBookmark01,
                   label: isSaved
                       ? l10n.message_already_saved
@@ -216,12 +217,12 @@ class MessageActionsSheet extends ConsumerWidget {
                   onTap: () => run(actions.onSave!),
                 ),
               if (actions.onBranch != null)
-                MessageActionTile(
+                ActionSheetTile(
                   icon: HugeIcons.strokeRoundedGitBranch,
                   label: l10n.branch_chat,
                   onTap: () => run(actions.onBranch!),
                 ),
-              MessageActionTile(
+              ActionSheetTile(
                 icon: HugeIcons.strokeRoundedCode,
                 label: l10n.copy_markdown,
                 onTap: () {
@@ -234,7 +235,7 @@ class MessageActionsSheet extends ConsumerWidget {
                 },
               ),
               if (actions.messageId != null)
-                MessageActionTile(
+                ActionSheetTile(
                   icon: HugeIcons.strokeRoundedCheckList,
                   label: l10n.select,
                   onTap: () {
@@ -246,13 +247,13 @@ class MessageActionsSheet extends ConsumerWidget {
                   },
                 ),
               if (actions.onModelInfo != null && actions.modelId != null)
-                MessageActionTile(
+                ActionSheetTile(
                   icon: HugeIcons.strokeRoundedInformationCircle,
                   label: actions.modelId!,
                   onTap: () => run(actions.onModelInfo!),
                 ),
               if (actions.onDelete != null)
-                MessageActionTile(
+                ActionSheetTile(
                   icon: HugeIcons.strokeRoundedDelete01,
                   label: l10n.delete,
                   isDestructive: true,
@@ -331,78 +332,6 @@ class MessageQuickAction extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 12.5, color: foreground),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A rounded group of [MessageActionTile]s with hairline separators.
-class MessageActionGroup extends StatelessWidget {
-  const MessageActionGroup({super.key, required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final divider = isDark ? AppColors.darkBorder : const Color(0xFFE9E9EC);
-    return Material(
-      color: isDark ? AppColors.darkSurfaceCard : const Color(0xFFF4F4F5),
-      borderRadius: BorderRadius.circular(14),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          for (var i = 0; i < children.length; i++) ...[
-            if (i > 0) Divider(height: 1, thickness: 1, color: divider),
-            children[i],
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class MessageActionTile extends StatelessWidget {
-  const MessageActionTile({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.isDestructive = false,
-  });
-
-  final List<List<dynamic>> icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool isDestructive;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDestructive
-        ? (isDark ? Colors.red[300]! : const Color(0xFFB91C1C))
-        : (isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText);
-    return InkWell(
-      onTap: onTap,
-      child: SizedBox(
-        height: 50,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              HugeIcon(icon: icon, size: 19, color: color),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 15, color: color),
-                ),
               ),
             ],
           ),

@@ -47,31 +47,36 @@ Future<void> showModelInfoSheet(
     context: context,
     builder: (ctx) => ShadSheet(
       title: Text(l10n.model_info),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _ModelInfoRow(label: l10n.model_name, value: displayName),
-          _ModelInfoRow(label: l10n.model_identifier, value: identifier),
-          if (capabilities.isNotEmpty)
+      // ShadSheet paints over the route's Material; the rows' ListTiles
+      // need one of their own.
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ModelInfoRow(label: l10n.model_name, value: displayName),
+            _ModelInfoRow(label: l10n.model_identifier, value: identifier),
+            if (capabilities.isNotEmpty)
+              _ModelInfoRow(
+                label: l10n.model_capabilities,
+                value: capabilities.join(', '),
+              ),
             _ModelInfoRow(
-              label: l10n.model_capabilities,
-              value: capabilities.join(', '),
+              label: l10n.context_length,
+              value: contextLength.toString(),
             ),
-          _ModelInfoRow(
-            label: l10n.context_length,
-            value: contextLength.toString(),
-          ),
-          if ((model?.serverType == ServerType.openRouter ||
-                  model?.serverType == ServerType.requesty) &&
-              model?.pricingLabel != null)
-            _ModelInfoRow(
-              label: l10n.model_api_pricing,
-              value: model!.isPricingFree
-                  ? l10n.openrouter_pricing_free
-                  : '${model.formattedInputPrice ?? '—'} / '
-                        '${model.formattedOutputPrice ?? '—'}',
-            ),
-        ],
+            if ((model?.serverType == ServerType.openRouter ||
+                    model?.serverType == ServerType.requesty) &&
+                model?.pricingLabel != null)
+              _ModelInfoRow(
+                label: l10n.model_api_pricing,
+                value: model!.isPricingFree
+                    ? l10n.openrouter_pricing_free
+                    : '${model.formattedInputPrice ?? '—'} / '
+                          '${model.formattedOutputPrice ?? '—'}',
+              ),
+          ],
+        ),
       ),
     ),
   );

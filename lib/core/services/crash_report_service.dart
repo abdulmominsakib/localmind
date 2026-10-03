@@ -213,10 +213,15 @@ class CrashReportService {
   /// `ValueNotifier` schedules a rebuild via `markNeedsBuild` rather than
   /// building synchronously, so it will not trigger a "dirty during build"
   /// assertion.
+  ///
+  /// With [showCrashScreen] false the report is only recorded (for the crash
+  /// report sheet and logs) — used for UI errors the framework already
+  /// contained to one widget, which shouldn't replace the whole app.
   CrashReport capture(
     Object error,
     StackTrace stack, {
     String? errorWidgetPayload,
+    bool showCrashScreen = true,
   }) {
     final report = CrashReport(
       error: error,
@@ -247,7 +252,7 @@ class CrashReportService {
       _recentCrashes.removeAt(0);
     }
 
-    if (!isDuplicate) {
+    if (showCrashScreen && !isDuplicate) {
       _setCurrentCrash(report);
     }
     return report;

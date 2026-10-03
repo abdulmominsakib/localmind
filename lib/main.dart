@@ -12,6 +12,7 @@ import 'bootstrap/bootstrap_host.dart';
 import 'core/logger/app_logger.dart';
 import 'core/services/crash_report_service.dart';
 import 'core/widgets/crash_error_widget.dart';
+import 'core/widgets/inline_build_error.dart';
 
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(
@@ -31,10 +32,10 @@ Future<void> main() async {
       final crashReports = CrashReportService.instance;
       await crashReports.initialize();
 
-      // Framework errors are reported both here and via ErrorWidget.builder
-      // (because FlutterError.presentError eventually builds an ErrorWidget).
-      // CrashReportService deduplicates identical errors within a 2-second
-      // window, so the user sees only one crash screen per incident.
+      // Errors the framework reports from building, layout, painting or
+      // gestures are contained to the widget that threw, so they're logged
+      // and recorded without replacing the app with the crash screen. That
+      // screen is kept for errors nothing else caught (below).
       FlutterError.onError = (details) {
         FlutterError.presentError(details);
         if (CrashReportService.isBenignFrameworkError(
@@ -47,6 +48,7 @@ Future<void> main() async {
           details.exception,
           details.stack ?? StackTrace.current,
           errorWidgetPayload: details.toString(),
+          showCrashScreen: false,
         );
       };
 
@@ -58,19 +60,23 @@ Future<void> main() async {
         return true;
       };
 
+      // A widget that failed to build leaves a gap instead of taking over
+      // the screen; debug builds mark the spot so the bug isn't missed.
       ErrorWidget.builder = (details) {
-        if (CrashReportService.isBenignFrameworkError(
+        if (!CrashReportService.isBenignFrameworkError(
           details.exception,
           details.stack,
         )) {
-          return const SizedBox.shrink();
+          crashReports.capture(
+            details.exception,
+            details.stack ?? StackTrace.current,
+            errorWidgetPayload: details.toString(),
+            showCrashScreen: false,
+          );
         }
-        final captured = crashReports.capture(
-          details.exception,
-          details.stack ?? StackTrace.current,
-          errorWidgetPayload: details.toString(),
-        );
-        return CrashErrorWidget(crash: captured);
+        return kDebugMode
+            ? InlineBuildError(message: details.exceptionAsString())
+            : const SizedBox.shrink();
       };
 
       await JustAudioBackground.init(

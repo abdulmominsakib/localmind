@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:localmind/core/components/action_sheet.dart';
 import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import '../../data/models/saved_message.dart';
@@ -71,82 +72,77 @@ class SavedMessageTile extends StatelessWidget {
         }
         return false;
       },
+      // Where it came from on top, the message underneath. Actions live
+      // behind long-press / right-click and the swipe gestures above.
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          key: ValueKey('saved_${saved.id}'),
           onTap: onTap,
-          onLongPress: () => _showContextMenu(context, l10n, isDark),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          onLongPress: () => _showActions(context),
+          onSecondaryTap: () => _showActions(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (selectionMode)
-                  Checkbox(value: isSelected, onChanged: (_) => onTap())
-                else
-                  HugeIcon(
-                    icon: isUser
-                        ? HugeIcons.strokeRoundedUser
-                        : HugeIcons.strokeRoundedSparkles,
-                    size: 20,
-                    color: mutedColor,
-                  ),
-                const SizedBox(width: 12),
+                if (selectionMode) ...[
+                  Checkbox(value: isSelected, onChanged: (_) => onTap()),
+                  const SizedBox(width: 4),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (isFromTempChat)
-                        Text(
-                          l10n.temporary_chat,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            fontStyle: FontStyle.italic,
+                      Row(
+                        children: [
+                          HugeIcon(
+                            icon: isUser
+                                ? HugeIcons.strokeRoundedUser
+                                : HugeIcons.strokeRoundedSparkles,
+                            size: 14,
                             color: mutedColor,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      else if (saved.conversationTitle.isNotEmpty)
-                        Text(
-                          saved.conversationTitle,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? AppColors.darkPrimaryText
-                                : AppColors.lightPrimaryText,
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              isFromTempChat
+                                  ? l10n.temporary_chat
+                                  : saved.conversationTitle,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: mutedColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      if (isFromTempChat || saved.conversationTitle.isNotEmpty)
-                        const SizedBox(height: 2),
+                          if (saved.isArchived) ...[
+                            const SizedBox(width: 6),
+                            HugeIcon(
+                              icon: HugeIcons.strokeRoundedArchive,
+                              size: 14,
+                              color: mutedColor,
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 4),
                       Text(
-                        saved.content,
-                        style: TextStyle(fontSize: 13, color: mutedColor),
+                        saved.content.trim(),
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          height: 1.4,
+                          color: isDark
+                              ? AppColors.darkPrimaryText
+                              : AppColors.lightPrimaryText,
+                        ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 4),
-                IconButton(
-                  onPressed: () => _showContextMenu(context, l10n, isDark),
-                  icon: HugeIcon(
-                    icon: HugeIcons.strokeRoundedMoreVertical,
-                    size: 18,
-                    color: mutedColor,
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                  tooltip: l10n.options_tooltip,
                 ),
               ],
             ),
@@ -156,78 +152,118 @@ class SavedMessageTile extends StatelessWidget {
     );
   }
 
-  void _showContextMenu(
-    BuildContext context,
-    AppLocalizations l10n,
-    bool isDark,
-  ) {
-    showModalBottomSheet(
+  void _showActions(BuildContext context) {
+    showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      showDragHandle: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => SavedMessageActionsSheet(
+        saved: saved,
+        onCopy: onCopy,
+        onMoveToFolder: onMoveToFolder,
+        onArchive: onArchive,
+        onDelete: onDelete,
+        onEnterSelectionMode: onEnterSelectionMode,
+      ),
+    );
+  }
+}
+
+class SavedMessageActionsSheet extends StatelessWidget {
+  const SavedMessageActionsSheet({
+    super.key,
+    required this.saved,
+    required this.onCopy,
+    required this.onMoveToFolder,
+    required this.onArchive,
+    required this.onDelete,
+    this.onEnterSelectionMode,
+  });
+
+  final SavedMessage saved;
+  final VoidCallback onCopy;
+  final VoidCallback onMoveToFolder;
+  final VoidCallback onArchive;
+  final VoidCallback onDelete;
+  final VoidCallback? onEnterSelectionMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    void run(VoidCallback action) {
+      Navigator.of(context).pop();
+      action();
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
+            child: Text(
+              saved.content.trim(),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14.5,
+                height: 1.4,
+                color: isDark
+                    ? AppColors.darkPrimaryText
+                    : AppColors.lightPrimaryText,
+              ),
+            ),
+          ),
+          ActionSheetGroup(
             children: [
+              ActionSheetTile(
+                key: const ValueKey('saved_action_copy'),
+                icon: HugeIcons.strokeRoundedCopy01,
+                label: l10n.copy,
+                onTap: () => run(onCopy),
+              ),
+              ActionSheetTile(
+                key: const ValueKey('saved_action_move'),
+                icon: HugeIcons.strokeRoundedFolder01,
+                label: l10n.move_to_folder,
+                onTap: () => run(onMoveToFolder),
+              ),
               if (onEnterSelectionMode != null)
-                ListTile(
-                  leading: const HugeIcon(
-                    icon: HugeIcons.strokeRoundedCheckList,
-                  ),
-                  title: Text(l10n.select),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    onEnterSelectionMode!();
-                  },
+                ActionSheetTile(
+                  key: const ValueKey('saved_action_select'),
+                  icon: HugeIcons.strokeRoundedCheckList,
+                  label: l10n.select,
+                  onTap: () => run(onEnterSelectionMode!),
                 ),
-              ListTile(
-                leading: const HugeIcon(icon: HugeIcons.strokeRoundedCopy),
-                title: Text(l10n.copy),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onCopy();
-                },
-              ),
-              ListTile(
-                leading: const HugeIcon(icon: HugeIcons.strokeRoundedFolder01),
-                title: Text(l10n.move_to_folder),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onMoveToFolder();
-                },
-              ),
-              ListTile(
-                leading: HugeIcon(
-                  icon: saved.isArchived
-                      ? HugeIcons.strokeRoundedArchive
-                      : HugeIcons.strokeRoundedArchive,
-                ),
-                title: Text(
-                  saved.isArchived ? l10n.unarchive_chat : l10n.archive_chat,
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onArchive();
-                },
-              ),
-              ListTile(
-                leading: const HugeIcon(
-                  icon: HugeIcons.strokeRoundedDelete01,
-                  color: Colors.red,
-                ),
-                title: Text(
-                  l10n.delete,
-                  style: const TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onDelete();
-                },
-              ),
-              const SizedBox(height: 8),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 10),
+          ActionSheetGroup(
+            children: [
+              ActionSheetTile(
+                key: const ValueKey('saved_action_archive'),
+                icon: HugeIcons.strokeRoundedArchive,
+                label: saved.isArchived
+                    ? l10n.unarchive_chat
+                    : l10n.archive_chat,
+                onTap: () => run(onArchive),
+              ),
+              ActionSheetTile(
+                key: const ValueKey('saved_action_delete'),
+                icon: HugeIcons.strokeRoundedDelete01,
+                label: l10n.delete,
+                isDestructive: true,
+                onTap: () => run(onDelete),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

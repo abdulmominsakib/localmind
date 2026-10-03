@@ -164,6 +164,18 @@ void main() {
       expect(service.currentCrash.value, isNull);
     });
 
+    test('UI errors are recorded without showing the crash screen', () {
+      final service = CrashReportService.instance;
+      final report = service.capture(
+        Exception('ListTile ink may be invisible'),
+        StackTrace.current,
+        showCrashScreen: false,
+      );
+
+      expect(report.error.toString(), contains('ListTile'));
+      expect(service.currentCrash.value, isNull);
+    });
+
     test('capture does not deduplicate different errors', () {
       final service = CrashReportService.instance;
       service.capture(Exception('First'), StackTrace.current);
