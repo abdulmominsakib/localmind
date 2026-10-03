@@ -1,6 +1,7 @@
 import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import '../../providers/conversation_providers.dart';
 
@@ -47,20 +48,16 @@ class _ConversationSearchBarState extends ConsumerState<ConversationSearchBar> {
     }
 
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
     final searchContents = ref.watch(searchMessageContentsProvider);
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E5E5),
-        ),
-      ),
+    // "Search inside messages" lives in the screen's menu; the hint says
+    // which mode is on instead of an unexplained icon in the field.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: TextField(
+        key: const ValueKey('history_search'),
         controller: _controller,
         focusNode: _focusNode,
         onChanged: (value) {
@@ -68,64 +65,61 @@ class _ConversationSearchBarState extends ConsumerState<ConversationSearchBar> {
           setState(() {});
         },
         style: TextStyle(
-          fontSize: 14,
-          color: isDark ? Colors.white : Colors.black,
+          fontSize: 15,
+          color: isDark
+              ? AppColors.darkPrimaryText
+              : AppColors.lightPrimaryText,
         ),
         decoration: InputDecoration(
-          hintText: l10n.search_hint,
-          hintStyle: TextStyle(
-            fontSize: 14,
-            color: isDark ? const Color(0xFF666666) : const Color(0xFF999999),
-          ),
-          prefixIcon: Center(
-            widthFactor: 1.0,
-            heightFactor: 1.0,
+          isDense: true,
+          filled: true,
+          fillColor: isDark
+              ? AppColors.darkSurfaceInput
+              : AppColors.lightSurface,
+          hintText: searchContents
+              ? l10n.search_message_contents
+              : l10n.search_hint,
+          hintStyle: TextStyle(fontSize: 15, color: muted),
+          prefixIcon: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 14, end: 10),
             child: HugeIcon(
               icon: HugeIcons.strokeRoundedSearch01,
-              size: 20,
-              color: isDark ? const Color(0xFF666666) : const Color(0xFF999999),
+              size: 18,
+              color: muted,
             ),
           ),
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: HugeIcon(
-                  icon: searchContents
-                      ? HugeIcons.strokeRoundedDocumentCode
-                      : HugeIcons.strokeRoundedDocumentCode,
-                  size: 20,
-                  color: searchContents
-                      ? theme.colorScheme.primary
-                      : (isDark
-                            ? const Color(0xFF666666)
-                            : const Color(0xFF999999)),
-                ),
-                tooltip: l10n.search_message_contents,
-                onPressed: () =>
-                    ref.read(searchMessageContentsProvider.notifier).toggle(),
-              ),
-              if (_controller.text.isNotEmpty)
-                IconButton(
+          prefixIconConstraints: const BoxConstraints(),
+          suffixIcon: _controller.text.isEmpty
+              ? null
+              : IconButton(
                   icon: HugeIcon(
-                    icon: HugeIcons.strokeRoundedCancel01,
+                    icon: HugeIcons.strokeRoundedCancelCircle,
                     size: 18,
-                    color: isDark
-                        ? const Color(0xFF666666)
-                        : const Color(0xFF999999),
+                    color: muted,
                   ),
+                  tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
                   onPressed: () {
                     _controller.clear();
                     ref.read(conversationSearchProvider.notifier).clearSearch();
                     setState(() {});
                   },
                 ),
-            ],
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            ),
           ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: muted),
           ),
         ),
       ),

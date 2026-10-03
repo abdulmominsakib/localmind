@@ -2,7 +2,8 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:localmind/core/components/list_filter_button.dart';
+import 'package:localmind/core/components/anchored_menu.dart';
+import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/core/routes/app_routes.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/l10n/app_localizations.dart';
@@ -30,29 +31,18 @@ class ChatHistoryScreen extends ConsumerWidget {
     final selectionMode = ref.watch(historySelectionModeProvider);
     final selectedIds = ref.watch(historySelectedIdsProvider);
     final currentFolder = ref.watch(historyFolderFilterProvider);
+    final listFilter = ref.watch(historyListFilterProvider);
 
     return Stack(
       children: [
         Column(
           children: [
-            Container(
+            Padding(
               padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: topPadding + 8,
-                bottom: 16,
-              ),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF0A0A0A)
-                    : const Color(0xFFFAFAFA),
-                border: Border(
-                  bottom: BorderSide(
-                    color: isDark
-                        ? const Color(0xFF2A2A2A)
-                        : const Color(0xFFE5E5E5),
-                  ),
-                ),
+                left: 8,
+                right: 8,
+                top: topPadding + 4,
+                bottom: 4,
               ),
               child: selectionMode
                   ? Row(
@@ -136,65 +126,14 @@ class ChatHistoryScreen extends ConsumerWidget {
                           l10n.chat_history_title,
                           style: TextStyle(
                             fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.black,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.darkPrimaryText
+                                : AppColors.lightPrimaryText,
                           ),
                         ),
                         const Spacer(),
-                        IconButton(
-                          icon: const HugeIcon(
-                            icon: HugeIcons.strokeRoundedCheckList,
-                          ),
-                          tooltip: l10n.select,
-                          onPressed: () => ref
-                              .read(historySelectionModeProvider.notifier)
-                              .enable(),
-                        ),
-                        ListFilterButton<HistorySortOption>(
-                          tooltip: l10n.sort_title,
-                          icon: HugeIcons.strokeRoundedSlidersHorizontal,
-                          showBadgeWhenNotDefault: false,
-                          selected: ref.watch(historySortOptionProvider),
-                          onChanged: (option) => ref
-                              .read(historySortOptionProvider.notifier)
-                              .setOption(option),
-                          options: [
-                            ListFilterOption(
-                              value: HistorySortOption.modified,
-                              label: l10n.sort_by_modified_date,
-                              icon: HugeIcons.strokeRoundedCalendar01,
-                            ),
-                            ListFilterOption(
-                              value: HistorySortOption.created,
-                              label: l10n.sort_by_created_date,
-                              icon: HugeIcons.strokeRoundedCalendar01,
-                            ),
-                          ],
-                        ),
-                        ListFilterButton<HistoryListFilter>(
-                          tooltip: l10n.filter_title,
-                          selected: ref.watch(historyListFilterProvider),
-                          onChanged: (filter) => ref
-                              .read(historyListFilterProvider.notifier)
-                              .setFilter(filter),
-                          options: [
-                            ListFilterOption(
-                              value: HistoryListFilter.all,
-                              label: l10n.all_chats,
-                              icon: HugeIcons.strokeRoundedView,
-                            ),
-                            ListFilterOption(
-                              value: HistoryListFilter.pinned,
-                              label: l10n.filter_pinned,
-                              icon: HugeIcons.strokeRoundedPin,
-                            ),
-                            ListFilterOption(
-                              value: HistoryListFilter.archived,
-                              label: l10n.filter_archived,
-                              icon: HugeIcons.strokeRoundedArchive,
-                            ),
-                          ],
-                        ),
+                        const ChatHistoryMenuButton(),
                       ],
                     ),
             ),
@@ -218,7 +157,9 @@ class ChatHistoryScreen extends ConsumerWidget {
               child: groupedConversations.when(
                 data: (grouped) => grouped.isEmpty
                     ? ConversationEmptyState(
-                        isSearching: searchQuery.isNotEmpty,
+                        isSearching:
+                            searchQuery.isNotEmpty ||
+                            listFilter != HistoryListFilter.all,
                       )
                     : ConversationList(
                         groupedConversations: grouped,
@@ -241,8 +182,11 @@ class ChatHistoryScreen extends ConsumerWidget {
           PositionedDirectional(
             bottom: 24,
             end: 24,
-            child: FloatingActionButton(
+            child: FloatingActionButton.extended(
+              key: const ValueKey('history_new_chat'),
               tooltip: l10n.new_chat_in_folder_tooltip,
+              elevation: 2,
+              shape: const StadiumBorder(),
               onPressed: () {
                 final folderId =
                     (currentFolder != null && currentFolder.isNotEmpty)
@@ -252,10 +196,118 @@ class ChatHistoryScreen extends ConsumerWidget {
                 ref.read(chatProvider.notifier).startNewConversation();
                 context.go(AppRoutes.home);
               },
-              child: const HugeIcon(icon: HugeIcons.strokeRoundedAdd01),
+              icon: const HugeIcon(
+                icon: HugeIcons.strokeRoundedAdd01,
+                size: 20,
+              ),
+              label: Text(l10n.nav_new_chat),
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Select, sort, filter and search-in-messages, in one menu — three
+/// unlabelled icons used to share the header, one of them identical to the
+/// chat-parameters icon. A dot marks a filter other than "All".
+class ChatHistoryMenuButton extends ConsumerWidget {
+  const ChatHistoryMenuButton({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final sort = ref.watch(historySortOptionProvider);
+    final filter = ref.watch(historyListFilterProvider);
+    final searchContents = ref.watch(searchMessageContentsProvider);
+
+    Future<void> open(BuildContext buttonContext) async {
+      final action = await showAnchoredMenu(buttonContext, [
+        AnchoredMenuEntry(
+          value: 'select',
+          icon: HugeIcons.strokeRoundedCheckList,
+          label: l10n.select,
+        ),
+        AnchoredMenuEntry(
+          value: 'search_contents',
+          icon: HugeIcons.strokeRoundedSearchList01,
+          label: l10n.search_message_contents,
+          isChecked: searchContents,
+        ),
+        const AnchoredMenuEntry.divider(),
+        AnchoredMenuEntry.header(l10n.sort_title),
+        AnchoredMenuEntry(
+          value: 'sort_modified',
+          icon: HugeIcons.strokeRoundedClock01,
+          label: l10n.sort_by_modified_date,
+          isChecked: sort == HistorySortOption.modified,
+        ),
+        AnchoredMenuEntry(
+          value: 'sort_created',
+          icon: HugeIcons.strokeRoundedCalendar01,
+          label: l10n.sort_by_created_date,
+          isChecked: sort == HistorySortOption.created,
+        ),
+        const AnchoredMenuEntry.divider(),
+        AnchoredMenuEntry.header(l10n.filter_title),
+        AnchoredMenuEntry(
+          value: 'filter_all',
+          icon: HugeIcons.strokeRoundedChatting01,
+          label: l10n.all_chats,
+          isChecked: filter == HistoryListFilter.all,
+        ),
+        AnchoredMenuEntry(
+          value: 'filter_pinned',
+          icon: HugeIcons.strokeRoundedPin,
+          label: l10n.filter_pinned,
+          isChecked: filter == HistoryListFilter.pinned,
+        ),
+        AnchoredMenuEntry(
+          value: 'filter_archived',
+          icon: HugeIcons.strokeRoundedArchive,
+          label: l10n.filter_archived,
+          isChecked: filter == HistoryListFilter.archived,
+        ),
+      ]);
+      switch (action) {
+        case 'select':
+          ref.read(historySelectionModeProvider.notifier).enable();
+        case 'search_contents':
+          ref.read(searchMessageContentsProvider.notifier).toggle();
+        case 'sort_modified':
+          ref
+              .read(historySortOptionProvider.notifier)
+              .setOption(HistorySortOption.modified);
+        case 'sort_created':
+          ref
+              .read(historySortOptionProvider.notifier)
+              .setOption(HistorySortOption.created);
+        case 'filter_all':
+          ref
+              .read(historyListFilterProvider.notifier)
+              .setFilter(HistoryListFilter.all);
+        case 'filter_pinned':
+          ref
+              .read(historyListFilterProvider.notifier)
+              .setFilter(HistoryListFilter.pinned);
+        case 'filter_archived':
+          ref
+              .read(historyListFilterProvider.notifier)
+              .setFilter(HistoryListFilter.archived);
+      }
+    }
+
+    return Builder(
+      builder: (buttonContext) => IconButton(
+        key: const ValueKey('history_menu'),
+        tooltip: l10n.options_tooltip,
+        onPressed: () => open(buttonContext),
+        icon: Badge(
+          isLabelVisible: filter != HistoryListFilter.all,
+          smallSize: 7,
+          child: const HugeIcon(icon: HugeIcons.strokeRoundedMoreVertical),
+        ),
+      ),
     );
   }
 }

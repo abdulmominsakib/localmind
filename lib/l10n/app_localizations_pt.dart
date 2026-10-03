@@ -751,7 +751,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get remove_persona => 'Remover personalidade';
 
   @override
-  String get clear_conversation => 'Conversa clara';
+  String get clear_conversation => 'Limpar conversa';
 
   @override
   String get connection_error => 'Erro de conexão. Verifique seu servidor.';
@@ -1865,7 +1865,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get all_models_unloaded => 'Todos os modelos descarregados';
 
   @override
-  String get branch_chat => 'Bate-papo da filial';
+  String get branch_chat => 'Ramificar conversa';
 
   @override
   String get branch_chat_desc =>

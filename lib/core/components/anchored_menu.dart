@@ -3,35 +3,52 @@ import 'package:flutter/services.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:localmind/core/theme/colors.dart';
 
-/// One row in [ChatOverflowMenu]. A null [value] makes it a divider.
-class ChatMenuEntry {
-  const ChatMenuEntry({
-    required this.value,
+enum _EntryKind { item, divider, header }
+
+/// One row in an [AnchoredMenu]: an action, a divider, or a small section
+/// header.
+class AnchoredMenuEntry {
+  const AnchoredMenuEntry({
+    required String this.value,
     required this.icon,
     required this.label,
     this.isDestructive = false,
-  });
+    this.isChecked,
+  }) : _kind = _EntryKind.item;
 
-  const ChatMenuEntry.divider()
+  const AnchoredMenuEntry.divider()
     : value = null,
       icon = const [],
       label = '',
-      isDestructive = false;
+      isDestructive = false,
+      isChecked = null,
+      _kind = _EntryKind.divider;
+
+  const AnchoredMenuEntry.header(this.label)
+    : value = null,
+      icon = const [],
+      isDestructive = false,
+      isChecked = null,
+      _kind = _EntryKind.header;
 
   final String? value;
   final List<List<dynamic>> icon;
   final String label;
   final bool isDestructive;
+
+  /// Non-null for an option in a choice group; true shows a check mark.
+  final bool? isChecked;
+  final _EntryKind _kind;
 }
 
 const _menuWidth = 248.0;
 
-/// Opens the chat overflow menu anchored under the widget at [context], and
-/// returns the chosen entry's value. It's a route, so Back closes it like
-/// any other popup; it grows out of the button's corner.
-Future<String?> showChatOverflowMenu(
+/// Opens a menu anchored under the widget at [context] and returns the
+/// chosen entry's value. It's a route, so Back closes it like any other
+/// popup; it grows out of the anchor's top-right corner.
+Future<String?> showAnchoredMenu(
   BuildContext context,
-  List<ChatMenuEntry> entries,
+  List<AnchoredMenuEntry> entries,
 ) {
   final box = context.findRenderObject()! as RenderBox;
   final anchor = box.localToGlobal(Offset.zero) & box.size;
@@ -50,7 +67,7 @@ Future<String?> showChatOverflowMenu(
           Positioned(
             top: anchor.bottom + 2,
             right: (screen.width - anchor.right + 4).clamp(8.0, screen.width),
-            child: ChatOverflowMenu(entries: entries),
+            child: AnchoredMenu(entries: entries),
           ),
         ],
       );
@@ -73,15 +90,16 @@ Future<String?> showChatOverflowMenu(
   );
 }
 
-class ChatOverflowMenu extends StatelessWidget {
-  const ChatOverflowMenu({super.key, required this.entries});
+class AnchoredMenu extends StatelessWidget {
+  const AnchoredMenu({super.key, required this.entries});
 
-  final List<ChatMenuEntry> entries;
+  final List<AnchoredMenuEntry> entries;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final border = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
 
     // The shadow sits on a box outside the clipped card; inside the clip it
     // would tint the menu itself.
@@ -103,23 +121,39 @@ class ChatOverflowMenu extends StatelessWidget {
           side: BorderSide(color: border),
         ),
         clipBehavior: Clip.antiAlias,
-        child: SizedBox(
-          width: _menuWidth,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final entry in entries)
-                  if (entry.value == null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Divider(height: 1, thickness: 1, color: border),
-                    )
-                  else
-                    ChatMenuItem(entry: entry),
-              ],
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+          ),
+          child: SizedBox(
+            width: _menuWidth,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final entry in entries)
+                    switch (entry._kind) {
+                      _EntryKind.divider => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Divider(height: 1, thickness: 1, color: border),
+                      ),
+                      _EntryKind.header => Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+                        child: Text(
+                          entry.label,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: muted,
+                          ),
+                        ),
+                      ),
+                      _EntryKind.item => AnchoredMenuItem(entry: entry),
+                    },
+                ],
+              ),
             ),
           ),
         ),
@@ -128,18 +162,19 @@ class ChatOverflowMenu extends StatelessWidget {
   }
 }
 
-class ChatMenuItem extends StatelessWidget {
-  const ChatMenuItem({super.key, required this.entry});
+class AnchoredMenuItem extends StatelessWidget {
+  const AnchoredMenuItem({super.key, required this.entry});
 
-  final ChatMenuEntry entry;
+  final AnchoredMenuEntry entry;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final destructive = isDark ? Colors.red[300]! : const Color(0xFFB91C1C);
-    final textColor = entry.isDestructive
-        ? destructive
-        : (isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText);
+    final primaryText = isDark
+        ? AppColors.darkPrimaryText
+        : AppColors.lightPrimaryText;
+    final textColor = entry.isDestructive ? destructive : primaryText;
     final iconColor = entry.isDestructive
         ? destructive
         : (isDark ? AppColors.darkMutedText : AppColors.lightMutedText);
@@ -147,7 +182,7 @@ class ChatMenuItem extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: InkWell(
-        key: ValueKey('chat_menu_${entry.value}'),
+        key: ValueKey('menu_${entry.value}'),
         borderRadius: BorderRadius.circular(9),
         onTap: () => Navigator.of(context).pop(entry.value),
         child: SizedBox(
@@ -166,6 +201,12 @@ class ChatMenuItem extends StatelessWidget {
                     style: TextStyle(fontSize: 15, color: textColor),
                   ),
                 ),
+                if (entry.isChecked ?? false)
+                  HugeIcon(
+                    icon: HugeIcons.strokeRoundedTick02,
+                    size: 18,
+                    color: primaryText,
+                  ),
               ],
             ),
           ),

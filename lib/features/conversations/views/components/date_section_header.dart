@@ -11,7 +11,7 @@ class DateSectionHeader extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
       child: Text(
         title,
         style: TextStyle(

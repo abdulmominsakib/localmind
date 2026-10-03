@@ -5,6 +5,7 @@ import 'package:localmind/core/components/folder_filter_bar.dart';
 import 'package:localmind/core/components/folder_management_dialogs.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import '../../providers/conversation_providers.dart';
+import 'active_filter_chip.dart';
 
 class ConversationFolderBar extends ConsumerWidget {
   const ConversationFolderBar({super.key});
@@ -123,9 +124,25 @@ class ConversationFolderBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final foldersAsync = ref.watch(conversationFoldersProvider);
     final selected = ref.watch(historyFolderFilterProvider);
+    final listFilter = ref.watch(historyListFilterProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return foldersAsync.when(
       data: (folders) => FolderFilterBar(
+        leading: listFilter == HistoryListFilter.all
+            ? null
+            : ActiveFilterChip(
+                icon: listFilter == HistoryListFilter.pinned
+                    ? HugeIcons.strokeRoundedPin
+                    : HugeIcons.strokeRoundedArchive,
+                label: listFilter == HistoryListFilter.pinned
+                    ? l10n.filter_pinned
+                    : l10n.filter_archived,
+                clearTooltip: l10n.all_chats,
+                onClear: () => ref
+                    .read(historyListFilterProvider.notifier)
+                    .setFilter(HistoryListFilter.all),
+              ),
         folders: folders
             .map((f) => FolderFilterItem(id: f.id, name: f.name))
             .toList(),

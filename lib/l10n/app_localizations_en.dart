@@ -731,19 +731,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chat_title => 'LocalMind';
 
   @override
-  String get chat_parameters_tooltip => 'Chat Parameters';
+  String get chat_parameters_tooltip => 'Chat parameters';
 
   @override
-  String get change_persona => 'Change Persona';
+  String get change_persona => 'Change persona';
 
   @override
-  String get set_persona => 'Set Persona';
+  String get set_persona => 'Set persona';
 
   @override
   String get remove_persona => 'Remove Persona';
 
   @override
-  String get clear_conversation => 'Clear Conversation';
+  String get clear_conversation => 'Clear conversation';
 
   @override
   String get connection_error => 'Connection error. Check your server.';
@@ -853,7 +853,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copied_markdown => 'Copied as Markdown';
 
   @override
-  String get read_aloud => 'Read Aloud';
+  String get read_aloud => 'Read aloud';
 
   @override
   String get stop_reading => 'Stop Reading';
@@ -1776,7 +1776,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Vendor NPU (Qualcomm/MediaTek). Fastest inference.';
 
   @override
-  String get select_model_title => 'Select Model';
+  String get select_model_title => 'Select model';
 
   @override
   String get refresh_models => 'Refresh models';

@@ -1464,19 +1464,19 @@ abstract class AppLocalizations {
   /// Tooltip for chat parameters button
   ///
   /// In en, this message translates to:
-  /// **'Chat Parameters'**
+  /// **'Chat parameters'**
   String get chat_parameters_tooltip;
 
   /// Menu item to change persona
   ///
   /// In en, this message translates to:
-  /// **'Change Persona'**
+  /// **'Change persona'**
   String get change_persona;
 
   /// Menu item to set persona
   ///
   /// In en, this message translates to:
-  /// **'Set Persona'**
+  /// **'Set persona'**
   String get set_persona;
 
   /// Menu item to remove persona
@@ -1488,7 +1488,7 @@ abstract class AppLocalizations {
   /// Menu item to clear conversation
   ///
   /// In en, this message translates to:
-  /// **'Clear Conversation'**
+  /// **'Clear conversation'**
   String get clear_conversation;
 
   /// Connection error banner text
@@ -1698,7 +1698,7 @@ abstract class AppLocalizations {
   /// Read aloud action
   ///
   /// In en, this message translates to:
-  /// **'Read Aloud'**
+  /// **'Read aloud'**
   String get read_aloud;
 
   /// Stop reading action
@@ -3408,7 +3408,7 @@ abstract class AppLocalizations {
   /// Model picker sheet title
   ///
   /// In en, this message translates to:
-  /// **'Select Model'**
+  /// **'Select model'**
   String get select_model_title;
 
   /// Refresh models tooltip

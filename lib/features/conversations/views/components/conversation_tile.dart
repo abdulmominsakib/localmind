@@ -68,6 +68,12 @@ class ConversationTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+    // Previews can start with blank lines or carry line breaks; show one
+    // tidy line.
+    final preview = (conversation.lastMessagePreview ?? '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
 
     return Dismissible(
       key: Key(conversation.id),
@@ -100,130 +106,96 @@ class ConversationTile extends StatelessWidget {
         }
         return false;
       },
+      // Title and time on one line, the last message underneath. Actions
+      // live behind long-press / right-click and the swipe gestures above,
+      // rather than an icon, a stats line and a menu button on every row.
       child: Material(
-        color: isActive
-            ? (isDark
-                  ? AppColors.darkAccent.withValues(alpha: 0.2)
-                  : AppColors.lightAccent.withValues(alpha: 0.1))
-            : Colors.transparent,
+        color: Colors.transparent,
         child: InkWell(
+          key: ValueKey('conversation_${conversation.id}'),
           onTap: onTap,
           onLongPress: () => _showContextMenu(context, l10n, isDark),
+          onSecondaryTap: () => _showContextMenu(context, l10n, isDark),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? (isDark
+                        ? AppColors.darkSurfaceCard
+                        : AppColors.lightBorder.withValues(alpha: 0.6))
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Row(
               children: [
-                if (selectionMode)
-                  Checkbox(value: isSelected, onChanged: (_) => onTap())
-                else if (isGenerating)
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: isDark
-                            ? AppColors.darkAccent
-                            : AppColors.lightAccent,
-                      ),
-                    ),
-                  )
-                else
-                  HugeIcon(
-                    icon: conversation.isPinned
-                        ? HugeIcons.strokeRoundedPin
-                        : HugeIcons.strokeRoundedChatting01,
-                    size: 20,
-                    color: isActive
-                        ? (isDark
-                              ? AppColors.darkAccent
-                              : AppColors.lightAccent)
-                        : (isDark
-                              ? AppColors.darkMutedText
-                              : AppColors.lightMutedText),
-                  ),
-                const SizedBox(width: 12),
+                if (selectionMode) ...[
+                  Checkbox(value: isSelected, onChanged: (_) => onTap()),
+                  const SizedBox(width: 4),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        conversation.title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: isActive
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: isDark
-                              ? AppColors.darkPrimaryText
-                              : AppColors.lightPrimaryText,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          if (isGenerating) ...[
+                            SizedBox.square(
+                              dimension: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.6,
+                                color: isDark
+                                    ? AppColors.darkAccent
+                                    : AppColors.lightAccent,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ] else if (conversation.isPinned) ...[
+                            HugeIcon(
+                              icon: HugeIcons.strokeRoundedPin,
+                              size: 14,
+                              color: muted,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          Expanded(
+                            child: Text(
+                              conversation.title,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: isActive
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color: isDark
+                                    ? AppColors.darkPrimaryText
+                                    : AppColors.lightPrimaryText,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            _formatTimestamp(l10n, conversation.updatedAt),
+                            style: TextStyle(fontSize: 12, color: muted),
+                          ),
+                        ],
                       ),
-                      if (conversation.lastMessagePreview != null) ...[
-                        const SizedBox(height: 2),
+                      if (preview.isNotEmpty) ...[
+                        const SizedBox(height: 3),
                         Text(
-                          conversation.lastMessagePreview!,
+                          preview,
                           style: TextStyle(
-                            fontSize: 12,
-                            color: isDark
-                                ? AppColors.darkMutedText
-                                : AppColors.lightMutedText,
+                            fontSize: 13.5,
+                            height: 1.35,
+                            color: muted,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                      const SizedBox(height: 2),
-                      Text(
-                        [
-                          l10n.conversation_message_count(
-                            conversation.messageCount,
-                          ),
-                          l10n.conversation_character_count(
-                            conversation.characterCount,
-                          ),
-                          if (conversation.totalTokenCount != null)
-                            l10n.total_tokens_count(
-                              conversation.totalTokenCount!,
-                            ),
-                        ].join(' · '),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark
-                              ? AppColors.darkMutedText
-                              : AppColors.lightMutedText,
-                        ),
-                      ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _formatTimestamp(l10n, conversation.updatedAt),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark
-                        ? AppColors.darkMutedText
-                        : AppColors.lightMutedText,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () => _showContextMenu(context, l10n, isDark),
-                  icon: HugeIcon(
-                    icon: HugeIcons.strokeRoundedMoreVertical,
-                    size: 18,
-                    color: isDark
-                        ? AppColors.darkMutedText
-                        : AppColors.lightMutedText,
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  visualDensity: VisualDensity.compact,
-                  tooltip: l10n.options_tooltip,
                 ),
               ],
             ),
@@ -238,13 +210,48 @@ class ConversationTile extends StatelessWidget {
     AppLocalizations l10n,
     bool isDark,
   ) {
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
     showModalBottomSheet(
       context: context,
+      showDragHandle: true,
       builder: (ctx) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      conversation.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        l10n.conversation_message_count(
+                          conversation.messageCount,
+                        ),
+                        l10n.conversation_character_count(
+                          conversation.characterCount,
+                        ),
+                        if (conversation.totalTokenCount != null)
+                          l10n.total_tokens_count(
+                            conversation.totalTokenCount!,
+                          ),
+                      ].join(' · '),
+                      style: TextStyle(fontSize: 12.5, color: muted),
+                    ),
+                  ],
+                ),
+              ),
               if (onEnterSelectionMode != null)
                 ListTile(
                   leading: const HugeIcon(

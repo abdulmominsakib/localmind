@@ -743,19 +743,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get chat_title => 'LocalMind';
 
   @override
-  String get chat_parameters_tooltip => 'Sohbet Parametreleri';
+  String get chat_parameters_tooltip => 'Sohbet parametreleri';
 
   @override
-  String get change_persona => 'Personayı Değiştir';
+  String get change_persona => 'Personayı değiştir';
 
   @override
-  String get set_persona => 'Personayı Ayarla';
+  String get set_persona => 'Personayı ayarla';
 
   @override
   String get remove_persona => 'Kaldır Persona';
 
   @override
-  String get clear_conversation => 'Sohbeti Temizle';
+  String get clear_conversation => 'Sohbeti temizle';
 
   @override
   String get connection_error => 'Bağlantı hatası. Sunucunuzu kontrol edin.';
@@ -859,13 +859,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get message_options => 'Mesaj seçenekleri';
 
   @override
-  String get copy_markdown => 'Markdown olarak Kopyala';
+  String get copy_markdown => 'Markdown olarak kopyala';
 
   @override
   String get copied_markdown => 'Markdown olarak kopyalandı';
 
   @override
-  String get read_aloud => 'Sesli Oku';
+  String get read_aloud => 'Sesli oku';
 
   @override
   String get stop_reading => 'Okumayı Durdur';

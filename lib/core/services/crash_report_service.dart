@@ -282,6 +282,12 @@ class CrashReportService {
       return true;
     }
 
+    // A UI-automation command that failed (e.g. "element not found") is the
+    // driver's error, not the app's. Marionette only runs in debug/profile.
+    if (stackStr.contains('package:marionette_flutter/')) {
+      return true;
+    }
+
     // Purely UI-related layout overflows (RenderFlex, RenderParagraph, etc.).
     // These are visual clipping issues and must not replace the app with the
     // full-screen crash report overlay.

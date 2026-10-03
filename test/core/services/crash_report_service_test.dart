@@ -182,6 +182,27 @@ void main() {
   });
 
   group('CrashReportService.isBenignFrameworkError', () {
+    test('ignores failed UI-automation commands', () {
+      final stack = StackTrace.fromString(
+        '#0 MarionetteBinding._tap '
+        '(package:marionette_flutter/src/binding/marionette_binding.dart:1:1)',
+      );
+      expect(
+        CrashReportService.isBenignFrameworkError(
+          Exception('Element matching {key: x} not found'),
+          stack,
+        ),
+        isTrue,
+      );
+      expect(
+        CrashReportService.isBenignFrameworkError(
+          Exception('Element matching {key: x} not found'),
+          StackTrace.fromString('#0 main (package:localmind/main.dart:1:1)'),
+        ),
+        isFalse,
+      );
+    });
+
     final selectionStack = StackTrace.fromString(
       '#0      List.[] (dart:core-patch/growable_array.dart)\n'
       '#1      MultiSelectableSelectionContainerDelegate.getSelectionGeometry '

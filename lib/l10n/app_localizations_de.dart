@@ -737,19 +737,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get chat_title => 'LocalMind';
 
   @override
-  String get chat_parameters_tooltip => 'Chat Parameters';
+  String get chat_parameters_tooltip => 'Chat-Parameter';
 
   @override
-  String get change_persona => 'Change Persona';
+  String get change_persona => 'Persona ändern';
 
   @override
-  String get set_persona => 'Set Persona';
+  String get set_persona => 'Persona festlegen';
 
   @override
   String get remove_persona => 'Entfernen Persona';
 
   @override
-  String get clear_conversation => 'Clear Conversation';
+  String get clear_conversation => 'Unterhaltung leeren';
 
   @override
   String get connection_error => 'Connection error. Check your server.';
@@ -853,13 +853,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get message_options => 'Message options';
 
   @override
-  String get copy_markdown => 'Copy as Markdown';
+  String get copy_markdown => 'Als Markdown kopieren';
 
   @override
   String get copied_markdown => 'Copied as Markdown';
 
   @override
-  String get read_aloud => 'Read Aloud';
+  String get read_aloud => 'Vorlesen';
 
   @override
   String get stop_reading => 'Stop Reading';
@@ -1783,7 +1783,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Vendor NPU (Qualcomm/MediaTek). Fastest inference.';
 
   @override
-  String get select_model_title => 'Select Modell';
+  String get select_model_title => 'Modell auswählen';
 
   @override
   String get refresh_models => 'Refresh models';
@@ -1849,7 +1849,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get all_models_unloaded => 'All models unloaded';
 
   @override
-  String get branch_chat => 'Branch chat';
+  String get branch_chat => 'Chat verzweigen';
 
   @override
   String get branch_chat_desc => 'Start a new conversation from this message';
@@ -2437,7 +2437,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get duplicate_chat_success => 'Chat duplicated';
 
   @override
-  String get move_to_folder => 'Move to folder';
+  String get move_to_folder => 'In Ordner verschieben';
 
   @override
   String get remove_from_folder => 'Entfernen from folder';
@@ -2532,7 +2532,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settings_label => 'Einstellungen';
 
   @override
-  String get export_conversation => 'Export conversation';
+  String get export_conversation => 'Unterhaltung exportieren';
 
   @override
   String get tts_process_markdown => 'Process markdown for speech';
@@ -2590,7 +2590,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get save_to_history => 'Speichern to history';
 
   @override
-  String get share_conversation => 'Share conversation';
+  String get share_conversation => 'Unterhaltung teilen';
 
   @override
   String get download_tts_audio => 'Download audio';

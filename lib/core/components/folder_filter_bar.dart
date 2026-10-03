@@ -1,5 +1,6 @@
 import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
+import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
 class FolderFilterItem {
@@ -19,7 +20,11 @@ class FolderFilterBar extends StatelessWidget {
     this.onFolderAction,
     this.isLoading = false,
     this.showCreateFolder = true,
+    this.leading,
   });
+
+  /// Shown before the folder chips, e.g. an active list filter.
+  final Widget? leading;
 
   /// `null` = all, `''` = unfiled, otherwise folder id.
   final List<FolderFilterItem> folders;
@@ -38,131 +43,122 @@ class FolderFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     if (isLoading) {
-      return const SizedBox(height: 44);
+      return const SizedBox(height: 50);
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      child: Row(
-        children: [
-          SystemFolderFilterChip(
-            label: l10n.all_chats,
-            icon: HugeIcons.strokeRoundedView,
-            selected: selectedFolderId == null,
-            isDark: isDark,
-            onSelected: (_) => onFilterChanged(null),
-          ),
-          const SizedBox(width: 6),
-          SystemFolderFilterChip(
-            label: l10n.unfiled_chats,
-            icon: HugeIcons.strokeRoundedInbox,
-            selected: selectedFolderId != null && selectedFolderId!.isEmpty,
-            isDark: isDark,
-            outlined: true,
-            onSelected: (_) => onFilterChanged(''),
-          ),
-          ...folders.map(
-            (folder) => Padding(
-              padding: const EdgeInsets.only(left: 6),
-              child: _FolderActionWrapper(
+    // Full width so the row starts at the leading edge rather than being
+    // centred by a parent Column.
+    return SizedBox(
+      width: double.infinity,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        child: Row(
+          spacing: 8,
+          children: [
+            ?leading,
+            FolderPill(
+              key: const ValueKey('folder_all'),
+              label: l10n.all_chats,
+              selected: selectedFolderId == null,
+              onTap: () => onFilterChanged(null),
+            ),
+            FolderPill(
+              key: const ValueKey('folder_unfiled'),
+              label: l10n.unfiled_chats,
+              selected: selectedFolderId != null && selectedFolderId!.isEmpty,
+              onTap: () => onFilterChanged(''),
+            ),
+            for (final folder in folders)
+              _FolderActionWrapper(
                 onAction: onFolderAction == null
                     ? null
                     : (globalPos) => onFolderAction!(folder, globalPos),
-                child: FilterChip(
-                  avatar: HugeIcon(
-                    icon: HugeIcons.strokeRoundedFolder01,
-                    size: 16,
-                    color: selectedFolderId == folder.id
-                        ? theme.colorScheme.onSecondaryContainer
-                        : theme.colorScheme.primary,
-                  ),
-                  label: Text(folder.name),
+                child: FolderPill(
+                  key: ValueKey('folder_${folder.id}'),
+                  label: folder.name,
+                  icon: HugeIcons.strokeRoundedFolder01,
                   selected: selectedFolderId == folder.id,
-                  showCheckmark: false,
-                  onSelected: (_) => onFilterChanged(folder.id),
+                  onTap: () => onFilterChanged(folder.id),
                 ),
               ),
-            ),
-          ),
-          if (showCreateFolder) ...[
-            const SizedBox(width: 6),
-            ActionChip(
-              avatar: HugeIcon(
-                icon: HugeIcons.strokeRoundedFolderAdd,
-                size: 16,
-                color: theme.colorScheme.primary,
+            if (showCreateFolder)
+              FolderPill(
+                key: const ValueKey('folder_create'),
+                label: l10n.new_folder,
+                icon: HugeIcons.strokeRoundedAdd01,
+                selected: false,
+                isAction: true,
+                onTap: onCreateFolder,
               ),
-              label: Text(l10n.new_folder),
-              side: BorderSide(
-                color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                style: BorderStyle.solid,
-              ),
-              onPressed: onCreateFolder,
-            ),
           ],
-        ],
+        ),
       ),
     );
   }
 }
 
-class SystemFolderFilterChip extends StatelessWidget {
-  const SystemFolderFilterChip({
+/// A folder filter: filled when selected, outlined otherwise.
+class FolderPill extends StatelessWidget {
+  const FolderPill({
     super.key,
     required this.label,
-    required this.icon,
     required this.selected,
-    required this.isDark,
-    required this.onSelected,
-    this.outlined = false,
+    required this.onTap,
+    this.icon,
+    this.isAction = false,
   });
 
   final String label;
-  final List<List<dynamic>> icon;
   final bool selected;
-  final bool isDark;
-  final bool outlined;
-  final ValueChanged<bool> onSelected;
+  final VoidCallback onTap;
+  final List<List<dynamic>>? icon;
+
+  /// A quieter style for the "new folder" action at the end of the row.
+  final bool isAction;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final bgColor = selected
-        ? (outlined
-              ? theme.colorScheme.surfaceContainerHighest
-              : theme.colorScheme.secondaryContainer)
-        : Colors.transparent;
-    final borderColor = outlined
-        ? (isDark ? const Color(0xFF444444) : const Color(0xFFCCCCCC))
-        : (selected
-              ? theme.colorScheme.secondaryContainer
-              : (isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0)));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final strong = isDark
+        ? AppColors.darkPrimaryText
+        : AppColors.lightPrimaryText;
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+    final border = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final background = isDark
+        ? AppColors.darkBackground
+        : AppColors.lightBackground;
+    final foreground = selected ? background : (isAction ? muted : strong);
 
-    return FilterChip(
-      avatar: HugeIcon(
-        icon: icon,
-        size: 16,
-        color: selected
-            ? theme.colorScheme.onSecondaryContainer
-            : theme.colorScheme.onSurfaceVariant,
-      ),
-      label: Text(
-        label,
-        style: TextStyle(
-          fontWeight: outlined ? FontWeight.normal : FontWeight.w600,
-          fontStyle: outlined ? FontStyle.italic : FontStyle.normal,
+    return Material(
+      color: selected ? strong : Colors.transparent,
+      shape: StadiumBorder(side: BorderSide(color: selected ? strong : border)),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(icon == null ? 14 : 10, 7, 14, 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                HugeIcon(icon: icon!, size: 15, color: foreground),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: foreground,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      selected: selected,
-      showCheckmark: false,
-      backgroundColor: bgColor,
-      side: BorderSide(color: borderColor),
-      onSelected: onSelected,
     );
   }
 }

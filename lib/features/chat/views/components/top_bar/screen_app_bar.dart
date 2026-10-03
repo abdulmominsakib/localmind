@@ -9,7 +9,7 @@ import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/services/export_choice_dialog.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/chat/views/components/chat_settings_sheet.dart';
-import 'package:localmind/features/chat/views/components/top_bar/chat_overflow_menu.dart';
+import 'package:localmind/core/components/anchored_menu.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/chat/data/export_service.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
@@ -150,13 +150,13 @@ class ScreenAppBar extends ConsumerWidget {
   /// apart — clearing it. "New chat" lives in the app bar itself.
   Future<void> _openMenu(BuildContext context, AppLocalizations l10n) async {
     final isSavedChat = activeConversation != null && !isTemporary;
-    final action = await showChatOverflowMenu(context, [
-      ChatMenuEntry(
+    final action = await showAnchoredMenu(context, [
+      AnchoredMenuEntry(
         value: 'chat_settings',
         icon: HugeIcons.strokeRoundedFilterHorizontal,
         label: l10n.chat_parameters_tooltip,
       ),
-      ChatMenuEntry(
+      AnchoredMenuEntry(
         value: 'persona',
         icon: hasPersonas
             ? HugeIcons.strokeRoundedExchange01
@@ -164,32 +164,32 @@ class ScreenAppBar extends ConsumerWidget {
         label: hasPersonas ? l10n.change_persona : l10n.set_persona,
       ),
       if (isSavedChat) ...[
-        const ChatMenuEntry.divider(),
-        ChatMenuEntry(
+        const AnchoredMenuEntry.divider(),
+        AnchoredMenuEntry(
           value: 'rename',
           icon: HugeIcons.strokeRoundedPencilEdit02,
           label: l10n.rename_conversation,
         ),
-        ChatMenuEntry(
+        AnchoredMenuEntry(
           value: 'move_to_folder',
           icon: HugeIcons.strokeRoundedFolder01,
           label: l10n.move_to_folder,
         ),
       ],
       if (hasMessages) ...[
-        const ChatMenuEntry.divider(),
-        ChatMenuEntry(
+        const AnchoredMenuEntry.divider(),
+        AnchoredMenuEntry(
           value: 'share_chat',
           icon: HugeIcons.strokeRoundedShare01,
           label: l10n.share_conversation,
         ),
-        ChatMenuEntry(
+        AnchoredMenuEntry(
           value: 'export_chat',
           icon: HugeIcons.strokeRoundedUpload01,
           label: l10n.export_conversation,
         ),
-        const ChatMenuEntry.divider(),
-        ChatMenuEntry(
+        const AnchoredMenuEntry.divider(),
+        AnchoredMenuEntry(
           value: 'clear',
           icon: HugeIcons.strokeRoundedDelete01,
           label: l10n.clear_conversation,

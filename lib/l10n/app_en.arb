@@ -992,15 +992,15 @@
   "@chat_title": {
     "description": "Fallback chat screen title"
   },
-  "chat_parameters_tooltip": "Chat Parameters",
+  "chat_parameters_tooltip": "Chat parameters",
   "@chat_parameters_tooltip": {
     "description": "Tooltip for chat parameters button"
   },
-  "change_persona": "Change Persona",
+  "change_persona": "Change persona",
   "@change_persona": {
     "description": "Menu item to change persona"
   },
-  "set_persona": "Set Persona",
+  "set_persona": "Set persona",
   "@set_persona": {
     "description": "Menu item to set persona"
   },
@@ -1008,7 +1008,7 @@
   "@remove_persona": {
     "description": "Menu item to remove persona"
   },
-  "clear_conversation": "Clear Conversation",
+  "clear_conversation": "Clear conversation",
   "@clear_conversation": {
     "description": "Menu item to clear conversation"
   },
@@ -1151,7 +1151,7 @@
   "@copied_markdown": {
     "description": "Copied as markdown snackbar"
   },
-  "read_aloud": "Read Aloud",
+  "read_aloud": "Read aloud",
   "@read_aloud": {
     "description": "Read aloud action"
   },
@@ -2442,7 +2442,7 @@
   "@backend_npu_desc": {
     "description": "NPU backend description"
   },
-  "select_model_title": "Select Model",
+  "select_model_title": "Select model",
   "@select_model_title": {
     "description": "Model picker sheet title"
   },

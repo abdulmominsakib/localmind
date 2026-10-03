@@ -861,7 +861,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get message_options => 'Opzioni messaggio';
 
   @override
-  String get copy_markdown => 'Copia come sconto';
+  String get copy_markdown => 'Copia come Markdown';
 
   @override
   String get copied_markdown => 'Copiato come Markdown';

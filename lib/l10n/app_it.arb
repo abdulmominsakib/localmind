@@ -247,7 +247,7 @@
   "tool_label": "Strumento: {toolCallId}",
   "tool_unknown": "Strumento: sconosciuto",
   "message_options": "Opzioni messaggio",
-  "copy_markdown": "Copia come sconto",
+  "copy_markdown": "Copia come Markdown",
   "copied_markdown": "Copiato come Markdown",
   "read_aloud": "Leggi ad alta voce",
   "stop_reading": "Smetti di leggere",

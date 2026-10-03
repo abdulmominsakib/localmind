@@ -738,19 +738,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get chat_title => 'LocalMind';
 
   @override
-  String get chat_parameters_tooltip => 'Chat Parameters';
+  String get chat_parameters_tooltip => 'Paramètres du chat';
 
   @override
-  String get change_persona => 'Change Persona';
+  String get change_persona => 'Changer de persona';
 
   @override
-  String get set_persona => 'Set Persona';
+  String get set_persona => 'Définir un persona';
 
   @override
   String get remove_persona => 'Retirer Persona';
 
   @override
-  String get clear_conversation => 'Clear Conversation';
+  String get clear_conversation => 'Effacer la conversation';
 
   @override
   String get connection_error => 'Connection error. Check your server.';
@@ -854,13 +854,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get message_options => 'Message options';
 
   @override
-  String get copy_markdown => 'Copy as Markdown';
+  String get copy_markdown => 'Copier en Markdown';
 
   @override
   String get copied_markdown => 'Copied as Markdown';
 
   @override
-  String get read_aloud => 'Read Aloud';
+  String get read_aloud => 'Lire à voix haute';
 
   @override
   String get stop_reading => 'Stop Reading';
@@ -1024,7 +1024,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get start_new_conversation => 'Start a new conversation';
 
   @override
-  String get rename_conversation => 'Rename conversation';
+  String get rename_conversation => 'Renommer la conversation';
 
   @override
   String get enter_new_title => 'Enter new title';
@@ -1786,7 +1786,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Vendor NPU (Qualcomm/MediaTek). Fastest inference.';
 
   @override
-  String get select_model_title => 'Sélectionner Model';
+  String get select_model_title => 'Sélectionner un modèle';
 
   @override
   String get refresh_models => 'Refresh models';
@@ -1852,7 +1852,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get all_models_unloaded => 'All models unloaded';
 
   @override
-  String get branch_chat => 'Branch chat';
+  String get branch_chat => 'Créer une branche';
 
   @override
   String get branch_chat_desc => 'Start a new conversation from this message';
@@ -2440,7 +2440,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get duplicate_chat_success => 'Chat duplicated';
 
   @override
-  String get move_to_folder => 'Move to folder';
+  String get move_to_folder => 'Déplacer vers un dossier';
 
   @override
   String get remove_from_folder => 'Retirer from folder';
@@ -2486,7 +2486,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun saved messages yet. Bookmark a message from its options menu.';
 
   @override
-  String get save_message => 'Enregistrer message';
+  String get save_message => 'Enregistrer le message';
 
   @override
   String get message_saved => 'Message saved';
@@ -2535,7 +2535,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settings_label => 'Paramètres';
 
   @override
-  String get export_conversation => 'Export conversation';
+  String get export_conversation => 'Exporter la conversation';
 
   @override
   String get tts_process_markdown => 'Process markdown for speech';
@@ -2593,7 +2593,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get save_to_history => 'Enregistrer to history';
 
   @override
-  String get share_conversation => 'Share conversation';
+  String get share_conversation => 'Partager la conversation';
 
   @override
   String get download_tts_audio => 'Télécharger audio';
