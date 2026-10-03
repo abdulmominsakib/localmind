@@ -2,9 +2,11 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:localmind/features/chat/utils/markdown_latex.dart';
+import 'package:localmind/features/chat/utils/markdown_tables.dart';
 import 'package:localmind/features/chat/views/components/audio_player_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'markdown_code_block.dart';
+import 'markdown_table.dart';
 
 class ThemedGptMarkdown extends StatelessWidget {
   const ThemedGptMarkdown({
@@ -64,7 +66,7 @@ class ThemedGptMarkdown extends StatelessWidget {
     return GptMarkdownTheme(
       gptThemeData: gptTheme,
       child: GptMarkdown(
-        normalizeDollarLatex(content),
+        normalizeDollarLatex(normalizeMarkdownTables(content)),
         style: style,
         followLinkColor: true,
         imageBuilder: _buildImageOrAudio,
@@ -72,6 +74,16 @@ class ThemedGptMarkdown extends StatelessWidget {
             MarkdownCodeBlock(language: name, code: code, isDark: isDark),
         highlightBuilder: (context, text, style) =>
             MarkdownInlineCode(text: text, style: style, isDark: isDark),
+        tableBuilder: (context, rows, textStyle, config) => MarkdownTable(
+          rows: rows,
+          style: textStyle,
+          config: config,
+          isDark: isDark,
+        ),
+        // gpt_markdown turns any `[digits]` into a citation chip, which
+        // mangles code like `arr[0]`; local models don't cite sources.
+        sourceTagBuilder: (context, content, _) =>
+            Text('[$content]', style: style),
         onLinkTap: (url, title) {
           if (_isAudioUrl(url) && context.mounted) {
             showDialog(
