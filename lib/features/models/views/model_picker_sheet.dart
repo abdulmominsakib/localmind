@@ -257,164 +257,168 @@ class _ModelPickerHeader extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final activeConv = ref.watch(conv.activeConversationProvider);
     final contextLength = activeConv?.contextLength ?? settings.contextLength;
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
 
-    final hasSubtitle = serverName != null || loadedCount > 0;
+    final status = [
+      ?serverName,
+      if (loadedCount > 0) l10n.loaded_models_count(loadedCount),
+    ];
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    // Title and refresh on top, status underneath, then the sheet-wide
+    // actions as labelled pills — one row of seven unlabelled controls
+    // squeezed the title down to "Select …".
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      l10n.select_model_title,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
-                  if (isThinking) ...[
-                    const SizedBox(width: 8),
-                    ThinkingIndicator(isDark: isDark),
-                  ],
-                ],
-              ),
-              if (hasSubtitle) ...[
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    if (serverName != null)
-                      Text(
-                        serverName!,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark
-                              ? AppColors.darkMutedText
-                              : AppColors.lightMutedText,
-                        ),
-                      ),
-                    if (serverName != null && loadedCount > 0)
-                      const SizedBox(width: 8),
-                    if (loadedCount > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              (isDark
-                                      ? AppColors.darkAccent
-                                      : AppColors.lightAccent)
-                                  .withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          l10n.loaded_models_count(loadedCount),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? AppColors.darkAccent
-                                : AppColors.lightAccent,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
         Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _showContextLengthDialog(
-                  context,
-                  ref,
-                  contextLength,
-                  activeConv?.id,
+            Expanded(
+              child: Text(
+                l10n.select_model_title,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.darkPrimaryText
+                      : AppColors.lightPrimaryText,
                 ),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    color: isDark ? Colors.grey[900] : Colors.grey[50],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      HugeIcon(
-                        icon: HugeIcons.strokeRoundedLayers01,
-                        size: 14,
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$contextLength',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 4),
-            if (onUnloadAll != null)
-              IconButton(
-                onPressed: onUnloadAll,
-                tooltip: l10n.unload_all_models,
-                icon: HugeIcon(
-                  icon: HugeIcons.strokeRoundedPower,
-                  size: 20,
-                  color: Colors.red[400],
-                ),
-              ),
-            if (showBrowseButton && onBrowseModels != null)
-              IconButton(
-                onPressed: onBrowseModels,
-                tooltip: l10n.lm_studio_browse_models,
-                icon: const HugeIcon(
-                  icon: HugeIcons.strokeRoundedCompass01,
-                  size: 20,
-                ),
-              ),
             const LmDownloadIndicatorButton(compact: true),
             if (onRefresh != null)
               IconButton(
-                icon: const HugeIcon(
+                key: const ValueKey('model_picker_refresh'),
+                visualDensity: VisualDensity.compact,
+                icon: HugeIcon(
                   icon: HugeIcons.strokeRoundedRefresh,
                   size: 20,
+                  color: muted,
                 ),
                 onPressed: onRefresh,
                 tooltip: l10n.refresh_models,
               ),
           ],
         ),
+        if (status.isNotEmpty || isThinking)
+          Row(
+            children: [
+              if (status.isNotEmpty)
+                Flexible(
+                  child: Text(
+                    status.join(' · '),
+                    style: TextStyle(fontSize: 13, color: muted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              if (isThinking) ...[
+                const SizedBox(width: 8),
+                ThinkingIndicator(isDark: isDark),
+              ],
+            ],
+          ),
+        const SizedBox(height: 10),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          clipBehavior: Clip.none,
+          child: Row(
+            spacing: 8,
+            children: [
+              ModelPickerPill(
+                key: const ValueKey('model_picker_context'),
+                icon: HugeIcons.strokeRoundedLayers01,
+                label: '$contextLength ctx',
+                tooltip: l10n.context_length,
+                isDark: isDark,
+                onTap: () => _showContextLengthDialog(
+                  context,
+                  ref,
+                  contextLength,
+                  activeConv?.id,
+                ),
+              ),
+              if (showBrowseButton && onBrowseModels != null)
+                ModelPickerPill(
+                  key: const ValueKey('model_picker_browse'),
+                  icon: HugeIcons.strokeRoundedCompass01,
+                  label: l10n.lm_studio_browse_models,
+                  isDark: isDark,
+                  onTap: onBrowseModels!,
+                ),
+              if (onUnloadAll != null)
+                ModelPickerPill(
+                  key: const ValueKey('model_picker_unload_all'),
+                  icon: HugeIcons.strokeRoundedPower,
+                  label: l10n.unload_all_models,
+                  isDark: isDark,
+                  isDestructive: true,
+                  onTap: onUnloadAll!,
+                ),
+            ],
+          ),
+        ),
       ],
     );
+  }
+}
+
+/// A compact labelled action in the model picker header.
+class ModelPickerPill extends StatelessWidget {
+  const ModelPickerPill({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.isDark,
+    required this.onTap,
+    this.tooltip,
+    this.isDestructive = false,
+  });
+
+  final List<List<dynamic>> icon;
+  final String label;
+  final String? tooltip;
+  final bool isDark;
+  final bool isDestructive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = isDestructive
+        ? (isDark ? Colors.red[300]! : const Color(0xFFB91C1C))
+        : (isDark ? AppColors.darkPrimaryText : AppColors.lightPrimaryText);
+    final border = isDestructive
+        ? foreground.withValues(alpha: 0.35)
+        : (isDark ? AppColors.darkBorder : AppColors.lightBorder);
+
+    final pill = Material(
+      color: Colors.transparent,
+      shape: StadiumBorder(side: BorderSide(color: border)),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HugeIcon(icon: icon, size: 14, color: foreground),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: foreground,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    return tooltip == null ? pill : Tooltip(message: tooltip!, child: pill);
   }
 }
 
