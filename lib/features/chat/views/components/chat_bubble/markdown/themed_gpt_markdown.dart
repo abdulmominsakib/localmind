@@ -1,38 +1,12 @@
 import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
-import 'package:localmind/core/theme/colors.dart';
+import 'package:localmind/features/chat/utils/markdown_latex.dart';
+import 'package:localmind/features/chat/utils/markdown_tables.dart';
 import 'package:localmind/features/chat/views/components/audio_player_widget.dart';
-import 'deferred_markdown.dart';
-
-final _blockDollarLatex = RegExp(r'\$\$([\s\S]+?)\$\$');
-final _inlineDollarLatex = RegExp(r'\$([^\$\n]+?)\$');
-final _currencyLike = RegExp(r'^\s*\d[\d,]*(\.\d+)?\s*$');
-
-/// gpt_markdown only recognizes `\(...\)` / `\[...\]` for LaTeX, not the
-/// `$...$` / `$$...$$` delimiters models most commonly output. Convert the
-/// dollar forms to the ones gpt_markdown understands, skipping anything
-/// that looks like plain currency (e.g. "$5" or "$10.99") so ordinary
-/// prices aren't mistaken for math.
-String normalizeDollarLatex(String input) {
-  if (!input.contains(r'$')) return input;
-
-  var result = input.replaceAllMapped(_blockDollarLatex, (m) {
-    final inner = m[1]!.trim();
-    if (inner.isEmpty || _currencyLike.hasMatch(inner)) return m[0]!;
-    return '\\[$inner\\]';
-  });
-
-  result = result.replaceAllMapped(_inlineDollarLatex, (m) {
-    final inner = m[1]!;
-    if (inner.trim().isEmpty || _currencyLike.hasMatch(inner)) {
-      return m[0]!;
-    }
-    return '\\(${inner.trim()}\\)';
-  });
-
-  return result;
-}
+import 'package:url_launcher/url_launcher.dart';
+import 'markdown_code_block.dart';
+import 'markdown_table.dart';
 
 class ThemedGptMarkdown extends StatelessWidget {
   const ThemedGptMarkdown({
@@ -45,6 +19,18 @@ class ThemedGptMarkdown extends StatelessWidget {
   final String content;
   final bool isDark;
   final TextStyle style;
+
+  static const _lightLinkColor = Color(0xFF1D4ED8);
+  static const _darkLinkColor = Color(0xFF7AB4FF);
+
+  static Future<void> _openLink(String url) async {
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null ||
+        !const {'http', 'https', 'mailto'}.contains(uri.scheme)) {
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 
   static bool _isAudioUrl(String url) {
     final lower = url.toLowerCase();
@@ -65,8 +51,8 @@ class ThemedGptMarkdown extends StatelessWidget {
       highlightColor: isDark
           ? const Color(0xFF334155)
           : const Color(0xFFDBEAFE),
-      linkColor: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-      linkHoverColor: isDark ? AppColors.darkAccent : AppColors.lightAccent,
+      linkColor: isDark ? _darkLinkColor : _lightLinkColor,
+      linkHoverColor: isDark ? _darkLinkColor : _lightLinkColor,
       hrLineColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
       hrLineThickness: 1.0,
       h1: style.copyWith(fontSize: 24, fontWeight: FontWeight.w700),
@@ -80,10 +66,24 @@ class ThemedGptMarkdown extends StatelessWidget {
     return GptMarkdownTheme(
       gptThemeData: gptTheme,
       child: GptMarkdown(
-        normalizeDollarLatex(content),
+        normalizeDollarLatex(normalizeMarkdownTables(content)),
         style: style,
         followLinkColor: true,
         imageBuilder: _buildImageOrAudio,
+        codeBuilder: (context, name, code, closed) =>
+            MarkdownCodeBlock(language: name, code: code, isDark: isDark),
+        highlightBuilder: (context, text, style) =>
+            MarkdownInlineCode(text: text, style: style, isDark: isDark),
+        tableBuilder: (context, rows, textStyle, config) => MarkdownTable(
+          rows: rows,
+          style: textStyle,
+          config: config,
+          isDark: isDark,
+        ),
+        // gpt_markdown turns any `[digits]` into a citation chip, which
+        // mangles code like `arr[0]`; local models don't cite sources.
+        sourceTagBuilder: (context, content, _) =>
+            Text('[$content]', style: style),
         onLinkTap: (url, title) {
           if (_isAudioUrl(url) && context.mounted) {
             showDialog(
@@ -93,7 +93,9 @@ class ThemedGptMarkdown extends StatelessWidget {
                 content: AudioPlayerWidget(source: url),
               ),
             );
+            return;
           }
+          _openLink(url);
         },
       ),
     );
@@ -150,9 +152,6 @@ class MarkdownContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (content.length > 2000) {
-      return DeferredMarkdownContent(content: content, isDark: isDark);
-    }
     return MarkdownBodyContent(content: content, isDark: isDark);
   }
 }
@@ -191,5 +190,45 @@ class MarkdownBodyContent extends StatelessWidget {
     }
 
     return SelectionArea(child: markdown);
+  }
+}
+
+/// Inline `code`: monospace on a subtle chip, instead of gpt_markdown's
+/// default bold text on a highlight colour.
+class MarkdownInlineCode extends StatelessWidget {
+  const MarkdownInlineCode({
+    super.key,
+    required this.text,
+    required this.style,
+    required this.isDark,
+  });
+
+  final String text;
+  final TextStyle style;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final fontSize = (style.fontSize ?? 15) * 0.88;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2E2E2E) : const Color(0xFFF0F0F2),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3F3F3F) : const Color(0xFFE2E2E5),
+        ),
+      ),
+      child: Text(
+        text,
+        style: style.copyWith(
+          fontFamily: 'monospace',
+          fontFamilyFallback: const ['Menlo', 'Roboto Mono', 'Courier'],
+          fontSize: fontSize,
+          height: 1.3,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+    );
   }
 }

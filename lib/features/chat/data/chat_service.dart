@@ -1,4 +1,4 @@
-import 'ollama_reasoning_decoder.dart';
+import 'think_tag_decoder.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -116,6 +116,20 @@ enum ChatResponseType {
   error,
 }
 
+/// Turns [ThinkTagDecoder] output into chat responses.
+Stream<ChatResponse> _thinkPartResponses(List<ThinkTagPart> parts) =>
+    Stream.fromIterable(
+      parts.map(
+        (part) => ChatResponse(
+          type: part.isReasoning
+              ? ChatResponseType.reasoning
+              : ChatResponseType.message,
+          content: part.isReasoning ? null : part.text,
+          reasoningContent: part.isReasoning ? part.text : null,
+        ),
+      ),
+    );
+
 class ToolCallData {
   final String tool;
   final Map<String, dynamic> arguments;
@@ -195,6 +209,8 @@ class LMStudioChatService implements ChatService {
     bool continueGeneration = false,
   }) async* {
     _cancelToken = CancelToken();
+    final contentDecoder = ThinkTagDecoder();
+    var hasNativeReasoning = false;
 
     // LM Studio's native /api/v1/chat is stateless from the client's
     // perspective: it does not accept an OpenAI-style `messages` array. We
@@ -321,9 +337,11 @@ class LMStudioChatService implements ChatService {
             case 'message.delta':
               final content = json['content'] as String?;
               if (content != null && content.isNotEmpty) {
-                yield ChatResponse(
-                  type: ChatResponseType.message,
-                  content: content,
+                yield* _thinkPartResponses(
+                  contentDecoder.add(
+                    content,
+                    nativeThinking: hasNativeReasoning,
+                  ),
                 );
               }
               break;
@@ -334,6 +352,7 @@ class LMStudioChatService implements ChatService {
               // Boundaries only — content arrives in `*.delta`.
               break;
             case 'reasoning.delta':
+              hasNativeReasoning = true;
               final content = json['content'] as String?;
               if (content != null && content.isNotEmpty) {
                 yield ChatResponse(
@@ -391,6 +410,7 @@ class LMStudioChatService implements ChatService {
               );
               return;
             case 'chat.end':
+              yield* _thinkPartResponses(contentDecoder.flush());
               final result = json['result'] as Map<String, dynamic>?;
               if (result != null) {
                 yield ChatResponse(
@@ -460,6 +480,7 @@ class LMStudioChatService implements ChatService {
 
       // Stream ended without an explicit chat.end — treat as a normal
       // completion so the UI doesn't stay stuck in "processing".
+      yield* _thinkPartResponses(contentDecoder.flush());
       yield const ChatResponse(type: ChatResponseType.done);
     } catch (e) {
       Log.error('LMStudio connection error: $e');
@@ -652,6 +673,8 @@ class OpenAICompatibleChatService implements ChatService {
   }) async* {
     _cancelToken = CancelToken();
     final toolAdapter = OpenAiToolAdapter();
+    final contentDecoder = ThinkTagDecoder();
+    var hasNativeReasoning = false;
 
     final apiMessages = await Future.wait(
       messages.map(
@@ -748,6 +771,7 @@ class OpenAICompatibleChatService implements ChatService {
               final data = line.substring(6);
               if (data == '[DONE]') {
                 _timeoutTimer?.cancel();
+                yield* _thinkPartResponses(contentDecoder.flush());
                 Log.debug('OpenAICompatible: Received [DONE]');
                 for (final call in toolAdapter.takeCompletedCalls()) {
                   yield ChatResponse(
@@ -815,10 +839,13 @@ class OpenAICompatibleChatService implements ChatService {
                     );
                     return;
                   }
+                  hasNativeReasoning = hasNativeReasoning || hasReasoning;
                   if (hasContent) {
-                    yield ChatResponse(
-                      type: ChatResponseType.message,
-                      content: content,
+                    yield* _thinkPartResponses(
+                      contentDecoder.add(
+                        content,
+                        nativeThinking: hasNativeReasoning,
+                      ),
                     );
                   }
                   if (hasReasoning) {
@@ -837,6 +864,8 @@ class OpenAICompatibleChatService implements ChatService {
       } finally {
         _timeoutTimer?.cancel();
       }
+
+      yield* _thinkPartResponses(contentDecoder.flush());
 
       // Flush any tool calls accumulated without a [DONE] marker (e.g.
       // connection drop or server crash before sending [DONE]).
@@ -922,7 +951,7 @@ class OllamaChatService implements ChatService {
   }) async* {
     _cancelToken = CancelToken();
     final toolAdapter = OllamaToolAdapter();
-    final contentDecoder = OllamaReasoningDecoder();
+    final contentDecoder = ThinkTagDecoder();
     var hasNativeThinking = false;
 
     final apiMessages = <Map<String, dynamic>>[];
@@ -1039,30 +1068,16 @@ class OllamaChatService implements ChatService {
                 );
               }
               if (content != null && content.isNotEmpty) {
-                for (final part in contentDecoder.add(
-                  content,
-                  nativeThinking: hasNativeThinking,
-                )) {
-                  yield ChatResponse(
-                    type: part.isReasoning
-                        ? ChatResponseType.reasoning
-                        : ChatResponseType.message,
-                    content: part.isReasoning ? null : part.text,
-                    reasoningContent: part.isReasoning ? part.text : null,
-                  );
-                }
+                yield* _thinkPartResponses(
+                  contentDecoder.add(
+                    content,
+                    nativeThinking: hasNativeThinking,
+                  ),
+                );
               }
             }
             if (json['done'] == true) {
-              for (final part in contentDecoder.flush()) {
-                yield ChatResponse(
-                  type: part.isReasoning
-                      ? ChatResponseType.reasoning
-                      : ChatResponseType.message,
-                  content: part.isReasoning ? null : part.text,
-                  reasoningContent: part.isReasoning ? part.text : null,
-                );
-              }
+              yield* _thinkPartResponses(contentDecoder.flush());
 
               for (final call in toolAdapter.takeCompletedCalls()) {
                 yield ChatResponse(
@@ -1089,15 +1104,7 @@ class OllamaChatService implements ChatService {
       yield ChatResponse(type: ChatResponseType.error, content: content);
       return;
     }
-    for (final part in contentDecoder.flush()) {
-      yield ChatResponse(
-        type: part.isReasoning
-            ? ChatResponseType.reasoning
-            : ChatResponseType.message,
-        content: part.isReasoning ? null : part.text,
-        reasoningContent: part.isReasoning ? part.text : null,
-      );
-    }
+    yield* _thinkPartResponses(contentDecoder.flush());
     yield const ChatResponse(type: ChatResponseType.done);
   }
 
@@ -1202,6 +1209,8 @@ class OpenRouterChatService implements ChatService {
   }) async* {
     _cancelToken = CancelToken();
     final toolAdapter = OpenRouterToolAdapter();
+    final contentDecoder = ThinkTagDecoder();
+    var hasNativeReasoning = false;
 
     final apiMessages = await Future.wait(
       messages.map(
@@ -1293,6 +1302,7 @@ class OpenRouterChatService implements ChatService {
               final data = line.substring(6);
               if (data == '[DONE]') {
                 _timeoutTimer?.cancel();
+                yield* _thinkPartResponses(contentDecoder.flush());
                 Log.debug('OpenRouter: Received [DONE]');
                 for (final call in toolAdapter.takeCompletedCalls()) {
                   yield ChatResponse(
@@ -1360,10 +1370,13 @@ class OpenRouterChatService implements ChatService {
                     );
                     return;
                   }
+                  hasNativeReasoning = hasNativeReasoning || hasReasoning;
                   if (hasContent) {
-                    yield ChatResponse(
-                      type: ChatResponseType.message,
-                      content: content,
+                    yield* _thinkPartResponses(
+                      contentDecoder.add(
+                        content,
+                        nativeThinking: hasNativeReasoning,
+                      ),
                     );
                   }
                   if (hasReasoning) {
@@ -1387,6 +1400,8 @@ class OpenRouterChatService implements ChatService {
       } finally {
         _timeoutTimer?.cancel();
       }
+
+      yield* _thinkPartResponses(contentDecoder.flush());
 
       // Flush any tool calls accumulated without a [DONE] marker (e.g.
       // connection drop or server crash before sending [DONE]).

@@ -195,6 +195,80 @@ void main() {
     );
   });
 
+  group('inline <think> blocks', () {
+    Future<List<ChatResponse>> streamOpenAi(List<String> lines) {
+      return OpenAICompatibleChatService(
+            Dio()..interceptors.add(StreamInterceptor(lines)),
+          )
+          .sendMessage(
+            server: _openAiTestServer(),
+            modelId: 'qwen3',
+            messages: [],
+            params: ChatParameters.defaults(),
+          )
+          .toList();
+    }
+
+    String delta(String field, String text) =>
+        'data: ${jsonEncode({
+          'choices': [
+            {
+              'delta': {field: text},
+            },
+          ],
+        })}';
+
+    String joined(List<ChatResponse> responses, ChatResponseType type) =>
+        responses
+            .where((r) => r.type == type)
+            .map(
+              (r) => type == ChatResponseType.reasoning
+                  ? r.reasoningContent
+                  : r.content,
+            )
+            .join();
+
+    test('splits a leading <think> block in content into reasoning', () async {
+      final responses = await streamOpenAi([
+        delta('content', '<thi'),
+        delta('content', 'nk>Weigh the options'),
+        delta('content', '.</think>\n\nPick B.'),
+        'data: [DONE]',
+      ]);
+
+      expect(
+        joined(responses, ChatResponseType.reasoning),
+        'Weigh the options.',
+      );
+      expect(joined(responses, ChatResponseType.message), '\n\nPick B.');
+    });
+
+    test('native reasoning_content wins over tags in content', () async {
+      final responses = await streamOpenAi([
+        delta('reasoning_content', 'Native reasoning'),
+        delta('content', '<think>quoted</think> answer'),
+        'data: [DONE]',
+      ]);
+
+      expect(joined(responses, ChatResponseType.reasoning), 'Native reasoning');
+      expect(
+        joined(responses, ChatResponseType.message),
+        '<think>quoted</think> answer',
+      );
+    });
+
+    test(
+      'flushes held-back text when the stream ends without [DONE]',
+      () async {
+        final responses = await streamOpenAi([
+          delta('content', '<think>Unfinished'),
+        ]);
+
+        expect(joined(responses, ChatResponseType.reasoning), 'Unfinished');
+      },
+    );
+  });
+
   group('createAdapterForServerType', () {
     test('uses OpenAI adapter for OpenAI-compatible servers', () {
       final adapter = createAdapterForServerType(ServerType.openAICompatible);
