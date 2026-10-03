@@ -1,23 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:localmind/core/routes/app_routes.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/services/share_service.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
-import 'package:localmind/features/conversations/providers/conversation_providers.dart'
-    as conv;
 import 'package:localmind/features/models/views/model_picker_sheet.dart';
-import 'package:localmind/features/personas/providers/personas_providers.dart';
 import 'package:localmind/features/chat/views/components/model_info_sheet.dart';
 import 'package:localmind/features/chat/views/components/edit_message_dialog.dart';
 import 'package:localmind/features/chat/views/components/message_list/message_list.dart';
 import 'package:localmind/features/chat/views/components/message_list/empty_state.dart';
 import 'package:localmind/features/chat/views/components/message_list/corrupted_state.dart';
 import 'package:localmind/features/saved_messages/views/components/save_message_sheet.dart';
-import 'package:localmind/features/personas/views/components/persona_picker_sheet.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 
@@ -89,20 +84,24 @@ class MessageArea extends ConsumerWidget {
           ref.read(chatProvider.notifier).sendMessage(prompt);
         },
         quickPrompts: [
-          l10n.quick_write,
-          l10n.quick_explain,
-          l10n.quick_debug,
-          l10n.quick_async,
+          QuickPrompt(
+            icon: HugeIcons.strokeRoundedSourceCode,
+            text: l10n.quick_write,
+          ),
+          QuickPrompt(
+            icon: HugeIcons.strokeRoundedCode,
+            text: l10n.quick_explain,
+          ),
+          QuickPrompt(
+            icon: HugeIcons.strokeRoundedBug01,
+            text: l10n.quick_debug,
+          ),
+          QuickPrompt(
+            icon: HugeIcons.strokeRoundedIdea01,
+            text: l10n.quick_async,
+          ),
         ],
-        recentConversations: ref.watch(conv.recentConversationsProvider),
-        onSeeAll: () => context.push(AppRoutes.chatHistory),
-        selectedModel: selectedModel,
-        onModelTap: onModelPicker,
-        selectedPersonas: ref.watch(selectedPersonasProvider),
-        onPersonaTap: () => showPersonaPickerSheet(
-          context,
-          mode: PersonaPickerMode.preselection,
-        ),
+        bottomInset: effectiveBottomInset,
       );
     }
 

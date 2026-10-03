@@ -4,6 +4,9 @@ import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
+/// Context usage at which the indicator starts showing.
+const _visibleFromRatio = 0.5;
+
 class TokenUsageIndicator extends ConsumerWidget {
   const TokenUsageIndicator({super.key, required this.totalTokenCount});
 
@@ -35,6 +38,8 @@ class TokenUsageIndicator extends ConsumerWidget {
     final ratio = contextLength > 0
         ? (estimatedTokenCount / contextLength).clamp(0.0, 1.0)
         : 0.0;
+    // Only worth the space in the composer once the context is filling up.
+    if (ratio < _visibleFromRatio) return const SizedBox.shrink();
     final ringColor = ratio >= 0.9 ? Colors.red : theme.colorScheme.primary;
 
     return GestureDetector(

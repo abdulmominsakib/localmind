@@ -325,6 +325,7 @@ class _ChatBody extends ConsumerWidget {
           hasMessages: messages.isNotEmpty,
           onMenuAction: onMenuAction,
           onPersonaPicker: () => showPersonaPickerSheet(context),
+          onModelPicker: onModelPicker,
           onChatModeAction: () => _handleChatModeAction(
             context,
             ref,

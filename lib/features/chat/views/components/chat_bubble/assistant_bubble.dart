@@ -1,4 +1,3 @@
-import 'package:hugeicons/hugeicons.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:localmind/l10n/app_localizations.dart';
@@ -9,6 +8,7 @@ import 'package:localmind/features/chat/views/components/processing_indicator.da
 import 'package:localmind/features/chat/views/components/typing_indicator.dart';
 import 'package:localmind/features/chat/views/components/reasoning_widget.dart';
 import 'package:localmind/features/chat/views/components/message_action_bar.dart';
+import 'package:localmind/features/chat/views/components/message_actions_sheet.dart';
 import 'package:localmind/features/chat/views/components/message_variant_navigator.dart';
 import 'markdown/themed_gpt_markdown.dart';
 import 'tool_bubble/tool_timeline.dart';
@@ -60,23 +60,6 @@ class AssistantBubble extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (message.modelId != null &&
-              message.modelId!.isNotEmpty &&
-              !isStreaming)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: GestureDetector(
-                onLongPress: onModelLongPress,
-                child: Text(
-                  message.modelId!,
-                  style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                    color: muted,
-                  ),
-                ),
-              ),
-            ),
           if (message.reasoningContent != null &&
               message.reasoningContent!.isNotEmpty)
             ReasoningWidget(
@@ -127,52 +110,52 @@ class AssistantBubble extends StatelessWidget {
               padding: EdgeInsets.only(top: 8),
               child: _StreamingIndicator(),
             ),
-          if (!isStreaming && onCycleVariant != null)
-            MessageVariantNavigator(
-              message: message,
-              allMessages: allMessages,
-              onCycle: onCycleVariant!,
-            ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                _formatTime(message.createdAt),
-                style: TextStyle(fontSize: 11, color: muted),
+          // The model name, time and generation stats live in the
+          // actions sheet ("more") rather than under every reply.
+          if (!isStreaming)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                children: [
+                  Transform.translate(
+                    offset: const Offset(-10, 0),
+                    child: MessageActionBar(
+                      actions: MessageActions(
+                        content: message.content.isEmpty
+                            ? AppLocalizations.of(context)!.no_response
+                            : message.content,
+                        messageId: message.id,
+                        conversationId: message.conversationId,
+                        modelId: message.modelId,
+                        createdAt: message.createdAt,
+                        tokenCount: message.tokenCount,
+                        inputTokenCount: message.inputTokenCount,
+                        generationTimeMs: message.generationTimeMs,
+                        ttftMs: message.ttftMs,
+                        tokensPerSecond: message.tokensPerSecond,
+                        stopReason: message.stopReason,
+                        onCopy: onCopy,
+                        onRetry: onRetry,
+                        onDelete: onDelete,
+                        onEdit: onEdit,
+                        onBranch: onBranch,
+                        onContinue: onContinue,
+                        onSave: onSave == null ? null : () => onSave!(message),
+                        onShare: onShare,
+                        onModelInfo: onModelLongPress,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (onCycleVariant != null)
+                    MessageVariantNavigator(
+                      message: message,
+                      allMessages: allMessages,
+                      onCycle: onCycleVariant!,
+                    ),
+                ],
               ),
-              if (message.status == MessageStatus.error) ...[
-                const SizedBox(width: 4),
-                HugeIcon(
-                  icon: HugeIcons.strokeRoundedInformationCircle,
-                  size: 14,
-                  color: Colors.red[400],
-                ),
-              ],
-              const Spacer(),
-              if (!isStreaming)
-                MessageActionBar(
-                  content: message.content.isEmpty
-                      ? AppLocalizations.of(context)!.no_response
-                      : message.content,
-                  messageId: message.id,
-                  conversationId: message.conversationId,
-                  tokenCount: message.tokenCount,
-                  inputTokenCount: message.inputTokenCount,
-                  generationTimeMs: message.generationTimeMs,
-                  ttftMs: message.ttftMs,
-                  tokensPerSecond: message.tokensPerSecond,
-                  stopReason: message.stopReason,
-                  onCopy: onCopy,
-                  onRetry: onRetry,
-                  onDelete: onDelete,
-                  onEdit: onEdit,
-                  onBranch: onBranch,
-                  onContinue: onContinue,
-                  onSave: () => onSave?.call(message),
-                  onShare: onShare,
-                ),
-            ],
-          ),
+            ),
         ],
       ),
     );
@@ -313,10 +296,4 @@ class _StreamingIndicatorState extends State<_StreamingIndicator>
       }),
     );
   }
-}
-
-String _formatTime(DateTime dateTime) {
-  final hour = dateTime.hour.toString().padLeft(2, '0');
-  final minute = dateTime.minute.toString().padLeft(2, '0');
-  return '$hour:$minute';
 }

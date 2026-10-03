@@ -4,13 +4,11 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:auto_size_text_plus/auto_size_text_plus.dart';
 import 'package:localmind/core/models/enums.dart';
-import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/services/export_choice_dialog.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/chat/views/components/chat_settings_sheet.dart';
-import 'package:localmind/features/chat/providers/chat_mcp_providers.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/chat/data/export_service.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
@@ -26,6 +24,7 @@ class ScreenAppBar extends ConsumerWidget {
     required this.onMenuAction,
     required this.onPersonaPicker,
     required this.onChatModeAction,
+    required this.onModelPicker,
   });
 
   final Conversation? activeConversation;
@@ -36,13 +35,11 @@ class ScreenAppBar extends ConsumerWidget {
   final void Function(String) onMenuAction;
   final VoidCallback onPersonaPicker;
   final VoidCallback onChatModeAction;
+  final VoidCallback onModelPicker;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final settings = ref.watch(settingsProvider);
-    final mcpConfig = ref.watch(chatMcpConfigProvider);
-    final isMcpEnabled = settings.mcpEnabled && mcpConfig.enabled;
     final messageSelectionMode = ref.watch(messageSelectionModeProvider);
     final selectedMessageIds = ref.watch(selectedMessageIdsProvider);
 
@@ -114,55 +111,47 @@ class ScreenAppBar extends ConsumerWidget {
                     breakpoint >= ShadTheme.of(context).breakpoints.md;
                 if (isDesktop) return const SizedBox.shrink();
                 return IconButton(
+                  key: const ValueKey('chat_drawer_button'),
                   icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
                   onPressed: () => Scaffold.maybeOf(context)?.openDrawer(),
                 );
               },
             ),
-            const SizedBox(width: 8),
             Expanded(
-              child: _TitleBlock(title: _appBarTitle(l10n), isDark: isDark),
-            ),
-            Stack(
-              children: [
-                IconButton(
-                  icon: HugeIcon(
-                    icon: HugeIcons.strokeRoundedFilterHorizontal,
-                    size: 24,
-                    color: isDark ? Colors.white70 : Colors.black87,
-                  ),
-                  onPressed: () =>
-                      showChatSettingsSheet(context, initialTab: 'parameters'),
-                  tooltip: l10n.chat_parameters_tooltip,
-                ),
-                PositionedDirectional(
-                  top: 4,
-                  end: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: isMcpEnabled ? Colors.green : Colors.grey,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const HugeIcon(
-                      icon: HugeIcons.strokeRoundedTools,
-                      size: 10,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
+              child: ChatTitleBlock(
+                title: _appBarTitle(l10n),
+                isDark: isDark,
+                onModelTap: onModelPicker,
+              ),
             ),
             ChatModeIconButton(
+              key: const ValueKey('chat_mode_button'),
               hasMessages: hasMessages,
               isTemporary: isTemporary,
               isDark: isDark,
               onPressed: onChatModeAction,
             ),
             PopupMenuButton<String>(
+              key: const ValueKey('chat_more_menu'),
               icon: const HugeIcon(icon: HugeIcons.strokeRoundedMoreVertical),
-              onSelected: onMenuAction,
+              onSelected: (action) {
+                if (action == 'chat_settings') {
+                  showChatSettingsSheet(context, initialTab: 'parameters');
+                  return;
+                }
+                onMenuAction(action);
+              },
               itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'chat_settings',
+                  child: ListTile(
+                    leading: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedFilterHorizontal,
+                    ),
+                    title: Text(l10n.chat_parameters_tooltip),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
                 PopupMenuItem(
                   value: 'new_chat',
                   child: ListTile(
@@ -378,38 +367,53 @@ class ChatModeIconButton extends StatelessWidget {
   }
 }
 
-/// Title block shown in the chat app bar — conversation title on top and the
-/// active server name below. Model selection is already visible and editable
-/// from the model picker near the composer.
-class _TitleBlock extends ConsumerWidget {
-  const _TitleBlock({required this.title, required this.isDark});
+/// Title block shown in the chat app bar: the conversation title, and below
+/// it the active model and server. Tapping the model line opens the model
+/// picker, so the composer doesn't need its own model chip.
+class ChatTitleBlock extends ConsumerWidget {
+  const ChatTitleBlock({
+    super.key,
+    required this.title,
+    required this.isDark,
+    required this.onModelTap,
+  });
 
   final String title;
   final bool isDark;
+  final VoidCallback onModelTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final activeServer = ref.watch(activeServerProvider);
+    final selectedModel = ref.watch(selectedModelProvider);
     final connectionStatus = ref.watch(connectionStatusProvider);
     final mutedColor = isDark
         ? AppColors.darkMutedText
         : AppColors.lightMutedText;
     final isConnected = connectionStatus == ConnectionStatus.connected;
-    final statusColor = isConnected ? Colors.green : Colors.grey;
+    // Once a model is chosen its name is enough; the server stays visible
+    // in the drawer. Before that, name the server the picker will list.
+    final modelLabel =
+        selectedModel?.displayName ??
+        [l10n.select_model_prompt, ?activeServer?.name].join(' · ');
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AutoSizeText(
-            title,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (activeServer != null)
+    return InkWell(
+      key: const ValueKey('chat_model_selector'),
+      onTap: onModelTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AutoSizeText(
+              title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -417,24 +421,28 @@ class _TitleBlock extends ConsumerWidget {
                   width: 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: statusColor,
+                    color: isConnected ? Colors.green : Colors.grey,
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 5),
                 Flexible(
                   child: Text(
-                    activeServer.name,
-                    style: TextStyle(fontSize: 11, color: mutedColor),
+                    modelLabel,
+                    style: TextStyle(fontSize: 12.5, color: mutedColor),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedArrowDown01,
+                  size: 14,
+                  color: mutedColor,
+                ),
               ],
-            )
-          else
-            Text('', style: TextStyle(fontSize: 11, color: mutedColor)),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

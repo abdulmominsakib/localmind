@@ -275,6 +275,7 @@ class _MessageList extends ConsumerWidget {
 
     return ListView.builder(
       controller: scrollController,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.only(
         top: 16,
         bottom: 120 + (hasSmartReplies ? 64 : 0) + bottomInset,

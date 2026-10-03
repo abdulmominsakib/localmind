@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
-import 'package:localmind/features/chat/views/components/message_action_bar.dart';
+import 'package:localmind/features/chat/views/components/message_actions_sheet.dart';
 import 'package:localmind/features/chat/views/components/message_variant_navigator.dart';
 import 'markdown/themed_gpt_markdown.dart';
 import 'attachment_list.dart';
@@ -39,49 +39,68 @@ class UserBubble extends StatelessWidget {
 
     final double maxBubbleWidth = 768;
     final double availableWidth = MediaQuery.of(context).size.width * 0.75;
+    final actions = MessageActions(
+      content: message.content,
+      messageId: message.id,
+      conversationId: message.conversationId,
+      createdAt: message.createdAt,
+      tokenCount: message.tokenCount,
+      onCopy: onCopy,
+      onDelete: onDelete,
+      onEdit: onEdit,
+      onBranch: onBranch,
+      onSave: onSave == null ? null : () => onSave!(message),
+      onShare: onShare,
+    );
     return Align(
       alignment: AlignmentDirectional.centerEnd,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: maxBubbleWidth < availableWidth
-                  ? maxBubbleWidth
-                  : availableWidth,
-            ),
-            margin: const EdgeInsetsDirectional.only(
-              start: 48,
-              end: 8,
-              top: 4,
-              bottom: 2,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.darkSurfaceCard
-                  : AppColors.lightSurface,
-              borderRadius: BorderRadiusDirectional.only(
-                topStart: Radius.circular(18),
-                topEnd: Radius.circular(18),
-                bottomStart: Radius.circular(18),
-                bottomEnd: const Radius.circular(4),
+          // Long-press opens every action for this message; the bubble has
+          // no inline action row, so it isn't wrapped in a SelectionArea
+          // (whose long-press would select text instead). Copy is in the
+          // sheet.
+          GestureDetector(
+            key: ValueKey('user_bubble_${message.id}'),
+            onLongPress: () => showMessageActionsSheet(context, actions),
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: maxBubbleWidth < availableWidth
+                    ? maxBubbleWidth
+                    : availableWidth,
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (message.attachmentPaths != null &&
-                    message.attachmentPaths!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: AttachmentList(
-                      paths: message.attachmentPaths!,
-                      isUser: true,
+              margin: const EdgeInsetsDirectional.only(
+                start: 48,
+                end: 8,
+                top: 4,
+                bottom: 2,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkSurfaceCard
+                    : AppColors.lightSurface,
+                borderRadius: BorderRadiusDirectional.only(
+                  topStart: Radius.circular(18),
+                  topEnd: Radius.circular(18),
+                  bottomStart: Radius.circular(18),
+                  bottomEnd: const Radius.circular(4),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (message.attachmentPaths != null &&
+                      message.attachmentPaths!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: AttachmentList(
+                        paths: message.attachmentPaths!,
+                        isUser: true,
+                      ),
                     ),
-                  ),
-                SelectionArea(
-                  child: ThemedGptMarkdown(
+                  ThemedGptMarkdown(
                     content: message.content,
                     isDark: isDark,
                     style: TextStyle(
@@ -92,8 +111,8 @@ class UserBubble extends StatelessWidget {
                       height: 1.6,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           if (onCycleVariant != null)
@@ -105,52 +124,17 @@ class UserBubble extends StatelessWidget {
                 onCycle: onCycleVariant!,
               ),
             ),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 12, bottom: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _formatTime(message.createdAt),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark
-                        ? AppColors.darkMutedText
-                        : AppColors.lightMutedText,
-                  ),
-                ),
-                if (message.status == MessageStatus.error) ...[
-                  const SizedBox(width: 4),
-                  HugeIcon(
-                    icon: HugeIcons.strokeRoundedInformationCircle,
-                    size: 14,
-                    color: Colors.red[200],
-                  ),
-                ],
-                const SizedBox(width: 8),
-                MessageActionBar(
-                  content: message.content,
-                  tokenCount: message.tokenCount,
-                  messageId: message.id,
-                  conversationId: message.conversationId,
-                  onCopy: onCopy,
-                  onDelete: onDelete,
-                  onEdit: onEdit,
-                  onBranch: onBranch,
-                  onSave: onSave == null ? null : () => onSave!(message),
-                  onShare: onShare,
-                ),
-              ],
+          if (message.status == MessageStatus.error)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 12, bottom: 4),
+              child: HugeIcon(
+                icon: HugeIcons.strokeRoundedInformationCircle,
+                size: 14,
+                color: Colors.red[300],
+              ),
             ),
-          ),
         ],
       ),
     );
   }
-}
-
-String _formatTime(DateTime dateTime) {
-  final hour = dateTime.hour.toString().padLeft(2, '0');
-  final minute = dateTime.minute.toString().padLeft(2, '0');
-  return '$hour:$minute';
 }

@@ -723,12 +723,6 @@ final filteredConversationsProvider = Provider<AsyncValue<List<Conversation>>>((
   });
 });
 
-final recentConversationsProvider = Provider<List<Conversation>>((ref) {
-  final allAsync = ref.watch(conversationsProvider);
-  final all = allAsync.value ?? [];
-  return all.where((c) => !c.isTemporary).take(3).toList();
-});
-
 final groupedConversationsProvider =
     Provider<AsyncValue<Map<String, List<Conversation>>>>((ref) {
       final filteredAsync = ref.watch(filteredConversationsProvider);

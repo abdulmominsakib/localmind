@@ -27,7 +27,6 @@ import '../../../models/components/thinking_mode_chip.dart';
 import '../../../os_widget/providers/os_widget_providers.dart';
 import 'attach_sheet.dart';
 import 'image_preview_dialog.dart';
-import 'model_chip.dart';
 import '../../../voice_mode/views/voice_mode_overlay.dart';
 
 class ChatInputBar extends ConsumerStatefulWidget {
@@ -686,6 +685,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     // silently swallowing onTapUp and breaking the hold-timing logic below.
     // Listener always fires regardless of who else claims the gesture.
     return Listener(
+      key: const ValueKey('chat_send_button'),
       onPointerDown: (_) => handleTapDown(),
 
       onPointerUp: (_) => handleTapUp(),
@@ -899,6 +899,16 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
       });
     });
 
+    final aiUserHoldEnabled = ref.watch(
+      settingsProvider.select((s) => s.aiUserResponseEnabled),
+    );
+    final showVoiceModeInSendSlot =
+        !widget.isStreaming &&
+        !_isGeneratingAiUser &&
+        !aiUserHoldEnabled &&
+        _controller.text.trim().isEmpty &&
+        _attachedFiles.isEmpty;
+
     final canSend =
         widget.enabled &&
         isConnected &&
@@ -1063,6 +1073,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                     child: Opacity(
                       opacity: widget.keyboardIncognito ? 0 : 1,
                       child: TextField(
+                        key: const ValueKey('chat_input'),
                         controller: _normalController,
                         focusNode: _focusNode,
                         enabled: widget.enabled,
@@ -1110,6 +1121,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                     child: Opacity(
                       opacity: widget.keyboardIncognito ? 1 : 0,
                       child: TextField(
+                        key: const ValueKey('chat_input_incognito'),
                         controller: _incognitoController,
                         focusNode: _incognitoFocus,
                         enabled: widget.enabled,
@@ -1185,36 +1197,16 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                     children: [
                       _buildAddButton(isConnected, theme),
                       const SizedBox(width: 4),
-                      Flexible(
-                        child: Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            ModelChip(
-                              model: selectedModel,
-                              enabled: isConnected && widget.enabled,
-                              isCompactFont:
-                                  selectedModel?.supportsReasoning == true,
-                              onTap: () {
-                                ref.read(appHapticsProvider).light();
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  useSafeArea: true,
-                                  builder: (_) => const ModelPickerSheet(),
-                                );
-                              },
-                            ),
-                            if (selectedModel?.supportsReasoning == true)
-                              ThinkingModeChip(
-                                model: selectedModel,
-                                isDark: isDark,
-                                compact: true,
-                              ),
-                          ],
+                      // The model is picked from the app bar title; only the
+                      // per-model thinking toggle stays here.
+                      if (selectedModel?.supportsReasoning == true)
+                        Flexible(
+                          child: ThinkingModeChip(
+                            model: selectedModel,
+                            isDark: isDark,
+                            compact: true,
+                          ),
                         ),
-                      ),
                       if (showRoleSwapButton) ...[
                         const SizedBox(width: 4),
                         _buildRoleSwapButton(theme),
@@ -1230,9 +1222,17 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
                     const SizedBox(width: 6),
 
-                    _buildVoiceModeButton(theme),
-
-                    _buildActionButton(canSend, theme),
+                    // An empty composer offers voice mode where send would
+                    // be, unless holding send is set to draft the user's
+                    // reply with AI — that gesture needs the send button.
+                    if (showVoiceModeInSendSlot)
+                      SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Center(child: _buildVoiceModeButton(theme)),
+                      )
+                    else
+                      _buildActionButton(canSend, theme),
                   ],
                 ),
               ],
