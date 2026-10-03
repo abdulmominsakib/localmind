@@ -37,12 +37,21 @@ class OllamaToolAdapter implements ToolTransportAdapter {
         ParsedToolCall(
           id: tc['id'] ?? '',
           name: func['name'] as String? ?? '',
-          arguments: Map<String, dynamic>.from(
-            jsonDecode(func['arguments'] as String? ?? '{}') as Map,
-          ),
+          arguments: _parseArguments(func['arguments']),
         ),
       );
     }
+  }
+
+  /// Ollama returns `arguments` as a JSON object; OpenAI-style servers
+  /// return a JSON-encoded string. Accept both.
+  static Map<String, dynamic> _parseArguments(Object? raw) {
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String && raw.trim().isNotEmpty) {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    }
+    return <String, dynamic>{};
   }
 
   @override
