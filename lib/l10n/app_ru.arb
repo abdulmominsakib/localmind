@@ -951,5 +951,6 @@
   "background_generation_notice_info": "Ответ в «{title}» генерируется в фоне. Нажмите, чтобы открыть.",
   "background_generation_notice_info_untitled": "Другой чат отвечает в фоне. Нажмите, чтобы открыть.",
   "background_generation_notice_multiple": "{count} чатов отвечают в фоне.",
-  "background_generation_chat_untitled": "Чат без названия"
+  "background_generation_chat_untitled": "Чат без названия",
+  "model_loaded_status": "Загружена"
 }

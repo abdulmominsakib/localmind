@@ -3249,4 +3249,7 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get background_generation_chat_untitled => 'শিরোনামহীন চ্যাট';
+
+  @override
+  String get model_loaded_status => 'লোড হয়েছে';
 }

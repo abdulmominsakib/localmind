@@ -954,5 +954,6 @@
   "background_generation_notice_info": "正在后台回复“{title}”。点按打开。",
   "background_generation_notice_info_untitled": "另一个对话正在后台回复。点按打开。",
   "background_generation_notice_multiple": "{count} 个对话正在后台回复。",
-  "background_generation_chat_untitled": "未命名对话"
+  "background_generation_chat_untitled": "未命名对话",
+  "model_loaded_status": "已加载"
 }

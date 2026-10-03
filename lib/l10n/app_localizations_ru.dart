@@ -3252,4 +3252,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get background_generation_chat_untitled => 'Чат без названия';
+
+  @override
+  String get model_loaded_status => 'Загружена';
 }

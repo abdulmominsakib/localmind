@@ -5984,6 +5984,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Untitled chat'**
   String get background_generation_chat_untitled;
+
+  /// Status label on a model card when the model is loaded into the server's memory
+  ///
+  /// In en, this message translates to:
+  /// **'Loaded'**
+  String get model_loaded_status;
 }
 
 class _AppLocalizationsDelegate

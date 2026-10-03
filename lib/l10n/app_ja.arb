@@ -954,5 +954,6 @@
   "background_generation_notice_info": "バックグラウンドで「{title}」に返信中です。タップして開く。",
   "background_generation_notice_info_untitled": "バックグラウンドで別のチャットが返信中です。タップして開く。",
   "background_generation_notice_multiple": "{count}件のチャットがバックグラウンドで返信中です。",
-  "background_generation_chat_untitled": "無題のチャット"
+  "background_generation_chat_untitled": "無題のチャット",
+  "model_loaded_status": "読み込み済み"
 }

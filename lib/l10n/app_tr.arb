@@ -951,5 +951,6 @@
   "background_generation_notice_info": "Arka planda \"{title}\" sohbetinde yanıt oluşturuluyor. Açmak için dokunun.",
   "background_generation_notice_info_untitled": "Arka planda başka bir sohbet yanıt oluşturuyor. Açmak için dokunun.",
   "background_generation_notice_multiple": "{count} sohbet arka planda yanıt oluşturuyor.",
-  "background_generation_chat_untitled": "Başlıksız sohbet"
+  "background_generation_chat_untitled": "Başlıksız sohbet",
+  "model_loaded_status": "Yüklendi"
 }

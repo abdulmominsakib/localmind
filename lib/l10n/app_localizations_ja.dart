@@ -3172,4 +3172,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get background_generation_chat_untitled => '無題のチャット';
+
+  @override
+  String get model_loaded_status => '読み込み済み';
 }

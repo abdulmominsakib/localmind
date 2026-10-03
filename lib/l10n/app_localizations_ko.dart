@@ -3154,4 +3154,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get background_generation_chat_untitled => '제목 없는 채팅';
+
+  @override
+  String get model_loaded_status => '로드됨';
 }

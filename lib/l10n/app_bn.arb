@@ -954,5 +954,6 @@
   "background_generation_notice_info": "ব্যাকগ্রাউন্ডে \"{title}\"-এ উত্তর তৈরি হচ্ছে। খুলতে ট্যাপ করুন।",
   "background_generation_notice_info_untitled": "ব্যাকগ্রাউন্ডে অন্য একটি চ্যাটে উত্তর তৈরি হচ্ছে। খুলতে ট্যাপ করুন।",
   "background_generation_notice_multiple": "{count}টি চ্যাটে ব্যাকগ্রাউন্ডে উত্তর তৈরি হচ্ছে।",
-  "background_generation_chat_untitled": "শিরোনামহীন চ্যাট"
+  "background_generation_chat_untitled": "শিরোনামহীন চ্যাট",
+  "model_loaded_status": "লোড হয়েছে"
 }

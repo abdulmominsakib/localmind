@@ -954,5 +954,6 @@
   "background_generation_notice_info": "बैकग्राउंड में \"{title}\" में जवाब बन रहा है। खोलने के लिए टैप करें।",
   "background_generation_notice_info_untitled": "बैकग्राउंड में कोई दूसरी चैट जवाब बना रही है। खोलने के लिए टैप करें।",
   "background_generation_notice_multiple": "{count} चैट बैकग्राउंड में जवाब बना रही हैं।",
-  "background_generation_chat_untitled": "बिना शीर्षक की चैट"
+  "background_generation_chat_untitled": "बिना शीर्षक की चैट",
+  "model_loaded_status": "लोड किया गया"
 }

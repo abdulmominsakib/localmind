@@ -951,5 +951,6 @@
   "background_generation_notice_info": "Réponse en cours dans « {title} » en arrière-plan. Touchez pour ouvrir.",
   "background_generation_notice_info_untitled": "Une autre discussion répond en arrière-plan. Touchez pour ouvrir.",
   "background_generation_notice_multiple": "{count} discussions répondent en arrière-plan.",
-  "background_generation_chat_untitled": "Discussion sans titre"
+  "background_generation_chat_untitled": "Discussion sans titre",
+  "model_loaded_status": "Chargé"
 }

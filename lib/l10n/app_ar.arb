@@ -958,5 +958,6 @@
   "background_generation_notice_info": "يتم الرد في \"{title}\" في الخلفية. اضغط للفتح.",
   "background_generation_notice_info_untitled": "محادثة أخرى تُنشئ ردًا في الخلفية. اضغط للفتح.",
   "background_generation_notice_multiple": "{count} محادثات تُنشئ ردودًا في الخلفية.",
-  "background_generation_chat_untitled": "محادثة بلا عنوان"
+  "background_generation_chat_untitled": "محادثة بلا عنوان",
+  "model_loaded_status": "مُحمَّل"
 }

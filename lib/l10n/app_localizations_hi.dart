@@ -3239,4 +3239,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get background_generation_chat_untitled => 'बिना शीर्षक की चैट';
+
+  @override
+  String get model_loaded_status => 'लोड किया गया';
 }

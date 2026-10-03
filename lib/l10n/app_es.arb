@@ -954,5 +954,6 @@
   "background_generation_notice_info": "Respondiendo en \"{title}\" en segundo plano. Toca para abrir.",
   "background_generation_notice_info_untitled": "Otro chat está respondiendo en segundo plano. Toca para abrir.",
   "background_generation_notice_multiple": "{count} chats están respondiendo en segundo plano.",
-  "background_generation_chat_untitled": "Chat sin título"
+  "background_generation_chat_untitled": "Chat sin título",
+  "model_loaded_status": "Cargado"
 }

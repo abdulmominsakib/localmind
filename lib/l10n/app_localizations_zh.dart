@@ -3144,6 +3144,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get background_generation_chat_untitled => '未命名对话';
+
+  @override
+  String get model_loaded_status => '已加载';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6192,4 +6195,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get background_generation_chat_untitled => '未命名對話';
+
+  @override
+  String get model_loaded_status => '已載入';
 }

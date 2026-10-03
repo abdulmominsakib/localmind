@@ -3259,4 +3259,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get background_generation_chat_untitled => 'Başlıksız sohbet';
+
+  @override
+  String get model_loaded_status => 'Yüklendi';
 }

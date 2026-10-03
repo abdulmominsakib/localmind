@@ -3270,4 +3270,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get background_generation_chat_untitled => 'Chat sem título';
+
+  @override
+  String get model_loaded_status => 'Carregado';
 }

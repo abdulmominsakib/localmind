@@ -3227,4 +3227,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get background_generation_chat_untitled => 'Untitled chat';
+
+  @override
+  String get model_loaded_status => 'Loaded';
 }

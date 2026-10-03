@@ -3478,5 +3478,9 @@
   "background_generation_notice_info_untitled": "Another chat is replying in the background. Tap to open.",
   "background_generation_notice_multiple": "{count} chats are replying in the background.",
   "@background_generation_notice_multiple": {"description": "Notice when multiple chats are replying in the background", "placeholders": {"count": {"type": "int"}}},
-  "background_generation_chat_untitled": "Untitled chat"
+  "background_generation_chat_untitled": "Untitled chat",
+  "model_loaded_status": "Loaded",
+  "@model_loaded_status": {
+    "description": "Status label on a model card when the model is loaded into the server's memory"
+  }
 }

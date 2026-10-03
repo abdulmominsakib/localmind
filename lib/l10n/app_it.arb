@@ -954,5 +954,6 @@
   "background_generation_notice_info": "Risposta in corso in \"{title}\" in background. Tocca per aprire.",
   "background_generation_notice_info_untitled": "Un'altra chat sta rispondendo in background. Tocca per aprire.",
   "background_generation_notice_multiple": "{count} chat stanno rispondendo in background.",
-  "background_generation_chat_untitled": "Chat senza titolo"
+  "background_generation_chat_untitled": "Chat senza titolo",
+  "model_loaded_status": "Caricato"
 }

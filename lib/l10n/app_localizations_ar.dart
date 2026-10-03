@@ -3224,4 +3224,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get background_generation_chat_untitled => 'محادثة بلا عنوان';
+
+  @override
+  String get model_loaded_status => 'مُحمَّل';
 }

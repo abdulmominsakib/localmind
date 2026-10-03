@@ -965,5 +965,6 @@
   "background_generation_notice_info": "백그라운드에서 \"{title}\"에 답변 생성 중. 탭하여 열기.",
   "background_generation_notice_info_untitled": "백그라운드에서 다른 채팅이 답변 생성 중. 탭하여 열기.",
   "background_generation_notice_multiple": "{count}개의 채팅이 백그라운드에서 답변 생성 중.",
-  "background_generation_chat_untitled": "제목 없는 채팅"
+  "background_generation_chat_untitled": "제목 없는 채팅",
+  "model_loaded_status": "로드됨"
 }

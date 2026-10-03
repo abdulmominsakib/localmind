@@ -3242,4 +3242,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get background_generation_chat_untitled => 'Discussion sans titre';
+
+  @override
+  String get model_loaded_status => 'Chargé';
 }

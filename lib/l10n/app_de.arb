@@ -951,5 +951,6 @@
   "background_generation_notice_info": "Antwort in „{title}“ im Hintergrund. Tippen zum Öffnen.",
   "background_generation_notice_info_untitled": "Ein anderer Chat antwortet im Hintergrund. Tippen zum Öffnen.",
   "background_generation_notice_multiple": "{count} Chats antworten im Hintergrund.",
-  "background_generation_chat_untitled": "Chat ohne Titel"
+  "background_generation_chat_untitled": "Chat ohne Titel",
+  "model_loaded_status": "Geladen"
 }

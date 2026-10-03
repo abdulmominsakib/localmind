@@ -954,5 +954,6 @@
   "background_generation_notice_info": "正在背景回覆「{title}」。點按開啟。",
   "background_generation_notice_info_untitled": "另一個對話正在背景回覆。點按開啟。",
   "background_generation_notice_multiple": "{count} 個對話正在背景回覆。",
-  "background_generation_chat_untitled": "未命名對話"
+  "background_generation_chat_untitled": "未命名對話",
+  "model_loaded_status": "已載入"
 }
