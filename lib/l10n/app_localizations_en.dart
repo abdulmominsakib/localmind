@@ -758,7 +758,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get select_model => 'Select Model';
 
   @override
-  String get select_persona => 'Select Persona';
+  String get select_persona => 'Select persona';
 
   @override
   String get manage_personas => 'Manage personas';

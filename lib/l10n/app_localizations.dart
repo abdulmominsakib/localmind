@@ -1518,7 +1518,7 @@ abstract class AppLocalizations {
   /// Persona selection sheet title
   ///
   /// In en, this message translates to:
-  /// **'Select Persona'**
+  /// **'Select persona'**
   String get select_persona;
 
   /// No description provided for @manage_personas.

@@ -1028,7 +1028,7 @@
   "@select_model": {
     "description": "Model selection placeholder"
   },
-  "select_persona": "Select Persona",
+  "select_persona": "Select persona",
   "manage_personas": "Manage personas",
   "personas_combine_hint": "Select multiple personas in chat to stack their system prompts.",
   "@personas_combine_hint": {
