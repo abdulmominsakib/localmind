@@ -71,6 +71,9 @@ class MessageSearchResultsList extends ConsumerWidget {
                 await ref
                     .read(chatProvider.notifier)
                     .loadConversation(conversation);
+                if (!context.mounted) return;
+                // Back from the opened chat returns to history.
+                ref.read(chatOriginProvider.notifier).set(ChatOrigin.history);
                 if (context.mounted) {
                   if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
                     Navigator.pop(context);

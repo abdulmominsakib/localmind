@@ -8,6 +8,7 @@ import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/providers/service_providers.dart';
+import '../../../core/routes/shell_back_scope.dart';
 import '../../chat/providers/chat_providers.dart';
 import '../../conversations/providers/conversation_providers.dart' as conv;
 import '../../models/data/models/model_info.dart';
@@ -329,7 +330,12 @@ class _OsWidgetInvocationHostState
 
     return Stack(
       children: [
-        widget.child,
+        // The overlay is drawn over the app shell rather than pushed as a
+        // route, so Back would otherwise go to the page underneath.
+        ShellBackOverride(
+          onBack: _isLoadingModel ? _cancelLoading : null,
+          child: widget.child,
+        ),
         if (_isLoadingModel)
           Positioned.fill(
             child: ModelLoadingOverlay(
