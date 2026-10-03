@@ -9,6 +9,7 @@ import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/core/services/export_choice_dialog.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/chat/views/components/chat_settings_sheet.dart';
+import 'package:localmind/features/chat/views/components/top_bar/chat_overflow_menu.dart';
 import 'package:localmind/features/chat/providers/chat_providers.dart';
 import 'package:localmind/features/chat/data/export_service.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
@@ -131,109 +132,77 @@ class ScreenAppBar extends ConsumerWidget {
               isDark: isDark,
               onPressed: onChatModeAction,
             ),
-            PopupMenuButton<String>(
-              key: const ValueKey('chat_more_menu'),
-              icon: const HugeIcon(icon: HugeIcons.strokeRoundedMoreVertical),
-              onSelected: (action) {
-                if (action == 'chat_settings') {
-                  showChatSettingsSheet(context, initialTab: 'parameters');
-                  return;
-                }
-                onMenuAction(action);
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'chat_settings',
-                  child: ListTile(
-                    leading: const HugeIcon(
-                      icon: HugeIcons.strokeRoundedFilterHorizontal,
-                    ),
-                    title: Text(l10n.chat_parameters_tooltip),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'new_chat',
-                  child: ListTile(
-                    leading: const HugeIcon(icon: HugeIcons.strokeRoundedAdd01),
-                    title: Text(l10n.nav_new_chat),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                if (activeConversation != null && !isTemporary) ...[
-                  PopupMenuItem(
-                    value: 'rename',
-                    child: ListTile(
-                      leading: const HugeIcon(
-                        icon: HugeIcons.strokeRoundedPencilEdit02,
-                      ),
-                      title: Text(l10n.rename_conversation),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'move_to_folder',
-                    child: ListTile(
-                      leading: const HugeIcon(
-                        icon: HugeIcons.strokeRoundedFolder01,
-                      ),
-                      title: Text(l10n.move_to_folder),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
-                if (hasMessages) ...[
-                  PopupMenuItem(
-                    value: 'export_chat',
-                    child: ListTile(
-                      leading: const HugeIcon(
-                        icon: HugeIcons.strokeRoundedUpload01,
-                      ),
-                      title: Text(l10n.export_conversation),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'share_chat',
-                    child: ListTile(
-                      leading: const HugeIcon(
-                        icon: HugeIcons.strokeRoundedShare01,
-                      ),
-                      title: Text(l10n.share_conversation),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
-                PopupMenuItem(
-                  value: 'persona',
-                  child: ListTile(
-                    leading: HugeIcon(
-                      icon: hasPersonas
-                          ? HugeIcons.strokeRoundedExchange01
-                          : HugeIcons.strokeRoundedRobot01,
-                    ),
-                    title: Text(
-                      hasPersonas ? l10n.change_persona : l10n.set_persona,
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'clear',
-                  child: ListTile(
-                    leading: const HugeIcon(
-                      icon: HugeIcons.strokeRoundedDelete01,
-                    ),
-                    title: Text(l10n.clear_conversation),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
+            Builder(
+              builder: (buttonContext) => IconButton(
+                key: const ValueKey('chat_more_menu'),
+                tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedMoreVertical),
+                onPressed: () => _openMenu(buttonContext, l10n),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// Groups: this chat's settings, the saved chat, sharing it, and — set
+  /// apart — clearing it. "New chat" lives in the app bar itself.
+  Future<void> _openMenu(BuildContext context, AppLocalizations l10n) async {
+    final isSavedChat = activeConversation != null && !isTemporary;
+    final action = await showChatOverflowMenu(context, [
+      ChatMenuEntry(
+        value: 'chat_settings',
+        icon: HugeIcons.strokeRoundedFilterHorizontal,
+        label: l10n.chat_parameters_tooltip,
+      ),
+      ChatMenuEntry(
+        value: 'persona',
+        icon: hasPersonas
+            ? HugeIcons.strokeRoundedExchange01
+            : HugeIcons.strokeRoundedRobot01,
+        label: hasPersonas ? l10n.change_persona : l10n.set_persona,
+      ),
+      if (isSavedChat) ...[
+        const ChatMenuEntry.divider(),
+        ChatMenuEntry(
+          value: 'rename',
+          icon: HugeIcons.strokeRoundedPencilEdit02,
+          label: l10n.rename_conversation,
+        ),
+        ChatMenuEntry(
+          value: 'move_to_folder',
+          icon: HugeIcons.strokeRoundedFolder01,
+          label: l10n.move_to_folder,
+        ),
+      ],
+      if (hasMessages) ...[
+        const ChatMenuEntry.divider(),
+        ChatMenuEntry(
+          value: 'share_chat',
+          icon: HugeIcons.strokeRoundedShare01,
+          label: l10n.share_conversation,
+        ),
+        ChatMenuEntry(
+          value: 'export_chat',
+          icon: HugeIcons.strokeRoundedUpload01,
+          label: l10n.export_conversation,
+        ),
+        const ChatMenuEntry.divider(),
+        ChatMenuEntry(
+          value: 'clear',
+          icon: HugeIcons.strokeRoundedDelete01,
+          label: l10n.clear_conversation,
+          isDestructive: true,
+        ),
+      ],
+    ]);
+    if (action == null || !context.mounted) return;
+    if (action == 'chat_settings') {
+      showChatSettingsSheet(context, initialTab: 'parameters');
+      return;
+    }
+    onMenuAction(action);
   }
 
   String _appBarTitle(AppLocalizations l10n) {
