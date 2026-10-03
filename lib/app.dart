@@ -8,6 +8,7 @@ import 'l10n/app_localizations.dart';
 import 'core/models/enums.dart';
 import 'core/providers/app_providers.dart';
 import 'core/routes/app_routes.dart';
+import 'core/routes/shell_back_scope.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/locale_utils.dart';
 import 'core/widgets/android_assistant_invocation_host.dart';
@@ -111,69 +112,85 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: AppRoutes.home,
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: ChatScreen()),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ShellBackScope(child: ChatScreen()),
+            ),
           ),
           GoRoute(
             path: AppRoutes.servers,
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: ServerListScreen()),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ShellBackScope(child: ServerListScreen()),
+            ),
           ),
           GoRoute(
             path: AppRoutes.addServer,
             pageBuilder: (context, state) {
               final server = state.extra as Server?;
-              return MaterialPage(child: AddServerScreen(editServer: server));
+              return MaterialPage(
+                child: ShellBackScope(
+                  child: AddServerScreen(editServer: server),
+                ),
+              );
             },
           ),
           GoRoute(
             path: AppRoutes.personas,
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: PersonaListScreen()),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ShellBackScope(child: PersonaListScreen()),
+            ),
           ),
           GoRoute(
             path: AppRoutes.createPersona,
             pageBuilder: (context, state) {
               final persona = state.extra as dynamic;
               return MaterialPage(
-                child: CreatePersonaScreen(editPersona: persona),
+                child: ShellBackScope(
+                  child: CreatePersonaScreen(editPersona: persona),
+                ),
               );
             },
           ),
           GoRoute(
             path: AppRoutes.settings,
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: SettingsViews()),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ShellBackScope(child: SettingsViews()),
+            ),
           ),
           GoRoute(
             path: AppRoutes.cloudSync,
-            pageBuilder: (context, state) =>
-                const MaterialPage(child: CloudSyncScreen()),
+            pageBuilder: (context, state) => const MaterialPage(
+              child: ShellBackScope(child: CloudSyncScreen()),
+            ),
           ),
           GoRoute(
             path: AppRoutes.chatHistory,
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: ChatHistoryScreen()),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ShellBackScope(child: ChatHistoryScreen()),
+            ),
           ),
           GoRoute(
             path: AppRoutes.mcpTools,
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: McpToolsScreen()),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ShellBackScope(child: McpToolsScreen()),
+            ),
           ),
           GoRoute(
             path: AppRoutes.onDeviceModels,
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: OnDeviceModelManagerScreen()),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ShellBackScope(child: OnDeviceModelManagerScreen()),
+            ),
           ),
           GoRoute(
             path: AppRoutes.ttsModels,
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: TtsModelManagerScreen()),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ShellBackScope(child: TtsModelManagerScreen()),
+            ),
           ),
           GoRoute(
             path: AppRoutes.savedMessages,
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: SavedMessagesScreen()),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ShellBackScope(child: SavedMessagesScreen()),
+            ),
           ),
           GoRoute(
             path: AppRoutes.lmStudioModelBrowser,
@@ -183,7 +200,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 return const MaterialPage(child: SizedBox.shrink());
               }
               return MaterialPage(
-                child: LmStudioModelBrowserScreen(server: server),
+                child: ShellBackScope(
+                  child: LmStudioModelBrowserScreen(server: server),
+                ),
               );
             },
           ),
@@ -274,40 +293,68 @@ class App extends ConsumerWidget {
   }
 }
 
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   final Widget child;
 
   const AppShell({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _isDrawerOpen = false;
+  bool _isHome = true;
+  bool _hasActiveChat = false;
+
+  /// What Back does when a page of the shell intercepts it. Reads live
+  /// state so [ShellBackPolicy] can hand out this same tear-off every build.
+  void _handleBack() {
+    final override = ShellBackOverride.read(context);
+    if (override != null) {
+      override();
+      return;
+    }
+    final scaffold = _scaffoldKey.currentState;
+    if (scaffold?.isDrawerOpen ?? false) {
+      scaffold!.closeDrawer();
+      return;
+    }
+    if (!_isHome) {
+      context.go(AppRoutes.home);
+      return;
+    }
+    if (_hasActiveChat) {
+      final origin = ref.read(chatOriginProvider);
+      ref.read(chatOriginProvider.notifier).clear();
+      switch (origin) {
+        case ChatOrigin.history:
+          context.go(AppRoutes.chatHistory);
+        case ChatOrigin.savedMessages:
+          context.go(AppRoutes.savedMessages);
+        case ChatOrigin.none:
+          ref.read(chatProvider.notifier).startNewConversation();
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final location = GoRouterState.of(context).uri.path;
-    final isHome = location == AppRoutes.home;
-    final hasActiveChat = ref.watch(conv.activeConversationProvider) != null;
+    _isHome = GoRouterState.of(context).uri.path == AppRoutes.home;
+    _hasActiveChat = ref.watch(conv.activeConversationProvider) != null;
+    final hasOverride = ShellBackOverride.maybeOf(context) != null;
 
-    void handleBack() {
-      if (!isHome) {
-        context.go(AppRoutes.home);
-        return;
-      }
-      if (hasActiveChat) {
-        final origin = ref.read(chatOriginProvider);
-        ref.read(chatOriginProvider.notifier).clear();
-        switch (origin) {
-          case ChatOrigin.history:
-            context.go(AppRoutes.chatHistory);
-          case ChatOrigin.savedMessages:
-            context.go(AppRoutes.savedMessages);
-          case ChatOrigin.none:
-            ref.read(chatProvider.notifier).startNewConversation();
-        }
-      }
-      // On the empty home screen on mobile, the back press is handled
-      // by the inner PopScope below (which opens the drawer instead of
-      // exiting the app).
-    }
+    // On the empty home screen with the drawer closed, Back is left to the
+    // OS so it leaves the app (with the predictive-back animation).
+    final shellChild = ShellBackPolicy(
+      interceptsAll: hasOverride || _isDrawerOpen,
+      interceptsRoot: !_isHome || _hasActiveChat,
+      onBack: _handleBack,
+      child: widget.child,
+    );
 
     return ShadResponsiveBuilder(
       builder: (context, breakpoint) {
@@ -315,54 +362,28 @@ class AppShell extends ConsumerWidget {
 
         if (isDesktop) {
           return Scaffold(
-            body: PopScope(
-              // Always intercept back — never let it silently exit the
-              // app from inside the shell. The handler decides what back
-              // means for the current screen.
-              canPop: false,
-              onPopInvokedWithResult: (didPop, _) {
-                if (didPop) return;
-                handleBack();
-              },
-              child: Row(
-                children: [
-                  const SidebarWidget(),
-                  VerticalDivider(
-                    width: 1,
-                    thickness: 1,
-                    color: isDark
-                        ? const Color(0xFF1A1A1A)
-                        : const Color(0xFFE5E5E5),
-                  ),
-                  Expanded(child: child),
-                ],
-              ),
+            key: _scaffoldKey,
+            body: Row(
+              children: [
+                const SidebarWidget(),
+                VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: isDark
+                      ? const Color(0xFF1A1A1A)
+                      : const Color(0xFFE5E5E5),
+                ),
+                Expanded(child: shellChild),
+              ],
             ),
           );
         }
 
         return Scaffold(
-          body: Builder(
-            builder: (scaffoldContext) => PopScope(
-              canPop: false,
-              onPopInvokedWithResult: (didPop, _) {
-                if (didPop) return;
-                if (isHome && !hasActiveChat) {
-                  // On the empty home screen, open the side drawer instead
-                  // of exiting the app — matches the menu icon on the
-                  // top-left. This context must be below the Scaffold.
-                  // Use maybeOf so we never throw if no Scaffold ancestor
-                  // is present (e.g. when this widget is embedded in a
-                  // route or surface that doesn't provide one).
-                  Scaffold.maybeOf(scaffoldContext)?.openDrawer();
-                  return;
-                }
-                handleBack();
-              },
-              child: child,
-            ),
-          ),
+          key: _scaffoldKey,
+          body: shellChild,
           drawer: const ConversationDrawer(),
+          onDrawerChanged: (isOpen) => setState(() => _isDrawerOpen = isOpen),
         );
       },
     );

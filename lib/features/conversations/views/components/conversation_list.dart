@@ -353,31 +353,61 @@ Future<void> runBulkAiRename(
 
   final progress = ValueNotifier<int>(0);
 
+  // Back must not dismiss the progress dialog: the loop below closes it, and
+  // closing it early would make that close pop whatever is underneath.
+  ModalRoute<void>? dialogRoute;
   showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => AlertDialog(
-      content: ValueListenableBuilder<int>(
-        valueListenable: progress,
-        builder: (context, done, _) => Row(
-          children: [
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
+    builder: (ctx) {
+      dialogRoute = ModalRoute.of(ctx);
+      return PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: ValueListenableBuilder<int>(
+            valueListenable: progress,
+            builder: (context, done, _) => Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    l10n.bulk_ai_rename_progress(done, conversationIds.length),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                l10n.bulk_ai_rename_progress(done, conversationIds.length),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
-    ),
+      );
+    },
   );
 
+  try {
+    await _renameAllWithAi(context, ref, conversationIds, progress);
+  } finally {
+    // Close this dialog specifically, even if another route went on top.
+    final route = dialogRoute;
+    if (route != null && route.isActive) {
+      if (route.isCurrent) {
+        route.navigator?.pop();
+      } else {
+        route.navigator?.removeRoute(route);
+      }
+    }
+  }
+}
+
+Future<void> _renameAllWithAi(
+  BuildContext context,
+  WidgetRef ref,
+  List<String> conversationIds,
+  ValueNotifier<int> progress,
+) async {
   for (final id in conversationIds) {
     try {
       // Guard every ref-touching statement post-await — the user may pop
@@ -397,6 +427,4 @@ Future<void> runBulkAiRename(
     }
     progress.value += 1;
   }
-
-  if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
 }
