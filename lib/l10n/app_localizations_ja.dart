@@ -3224,4 +3224,52 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get new_chat_not_connected => '未接続';
+
+  @override
+  String get attach_send_as_assistant => 'アシスタントとして送信';
+
+  @override
+  String get attach_send_as_assistant_desc => 'メッセージを応答として追加します。生成は行いません。';
+
+  @override
+  String get chat_input_hint_assistant => 'アシスタントの返信を入力';
+
+  @override
+  String get settings_section_general => '一般';
+
+  @override
+  String get settings_section_chat => 'チャット';
+
+  @override
+  String get settings_section_voice => '音声';
+
+  @override
+  String get settings_section_models => 'モデル';
+
+  @override
+  String get settings_section_data => 'プライバシーとデータ';
+
+  @override
+  String get settings_search_hint => '設定を検索';
+
+  @override
+  String get settings_more_chat_options => 'その他のチャットオプション';
+
+  @override
+  String get settings_group_replies => '応答';
+
+  @override
+  String get settings_group_prompt => 'システムプロンプトとパラメータ';
+
+  @override
+  String get settings_group_composer => '入力欄';
+
+  @override
+  String get sidebar_section_chats => 'チャット';
+
+  @override
+  String get sidebar_section_models => 'モデル';
+
+  @override
+  String get sidebar_section_app => 'アプリ';
 }

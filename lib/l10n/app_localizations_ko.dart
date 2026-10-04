@@ -3206,4 +3206,52 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get new_chat_not_connected => '연결되지 않음';
+
+  @override
+  String get attach_send_as_assistant => '어시스턴트로 보내기';
+
+  @override
+  String get attach_send_as_assistant_desc => '메시지를 답변으로 추가하며, 새로 생성하지 않습니다.';
+
+  @override
+  String get chat_input_hint_assistant => '어시스턴트의 답변 작성';
+
+  @override
+  String get settings_section_general => '일반';
+
+  @override
+  String get settings_section_chat => '채팅';
+
+  @override
+  String get settings_section_voice => '음성';
+
+  @override
+  String get settings_section_models => '모델';
+
+  @override
+  String get settings_section_data => '개인정보 및 데이터';
+
+  @override
+  String get settings_search_hint => '설정 검색';
+
+  @override
+  String get settings_more_chat_options => '채팅 옵션 더보기';
+
+  @override
+  String get settings_group_replies => '답변';
+
+  @override
+  String get settings_group_prompt => '시스템 프롬프트 및 매개변수';
+
+  @override
+  String get settings_group_composer => '입력창';
+
+  @override
+  String get sidebar_section_chats => '채팅';
+
+  @override
+  String get sidebar_section_models => '모델';
+
+  @override
+  String get sidebar_section_app => '앱';
 }

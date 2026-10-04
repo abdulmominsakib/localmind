@@ -969,5 +969,21 @@
   "new_chat_no_server_detail": "Ejecuta uno en este teléfono o conecta un servidor.",
   "new_chat_works_offline": "Funciona sin conexión",
   "new_chat_no_model": "Ningún modelo seleccionado",
-  "new_chat_not_connected": "Sin conexión"
+  "new_chat_not_connected": "Sin conexión",
+  "attach_send_as_assistant": "Enviar como asistente",
+  "attach_send_as_assistant_desc": "Añade tu mensaje como respuesta; no se genera nada.",
+  "chat_input_hint_assistant": "Escribe la respuesta del asistente",
+  "settings_section_general": "General",
+  "settings_section_chat": "Chat",
+  "settings_section_voice": "Voz",
+  "settings_section_models": "Modelos",
+  "settings_section_data": "Privacidad y datos",
+  "settings_search_hint": "Buscar ajustes",
+  "settings_more_chat_options": "Más opciones de chat",
+  "settings_group_replies": "Respuestas",
+  "settings_group_prompt": "Prompt del sistema y parámetros",
+  "settings_group_composer": "Redacción",
+  "sidebar_section_chats": "Chats",
+  "sidebar_section_models": "Modelos",
+  "sidebar_section_app": "App"
 }

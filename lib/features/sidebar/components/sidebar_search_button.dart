@@ -14,7 +14,7 @@ class SidebarSearchButton extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: InkWell(
         onTap: () {
           if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {

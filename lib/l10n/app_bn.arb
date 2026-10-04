@@ -969,5 +969,21 @@
   "new_chat_no_server_detail": "এই ফোনে একটি চালান বা একটি সার্ভার যুক্ত করুন।",
   "new_chat_works_offline": "অফলাইনে কাজ করে",
   "new_chat_no_model": "কোনো মডেল বাছাই করা হয়নি",
-  "new_chat_not_connected": "সংযুক্ত নয়"
+  "new_chat_not_connected": "সংযুক্ত নয়",
+  "attach_send_as_assistant": "সহকারী হিসেবে পাঠান",
+  "attach_send_as_assistant_desc": "আপনার মেসেজটি উত্তর হিসেবে যোগ হয়; কিছু তৈরি হয় না।",
+  "chat_input_hint_assistant": "সহকারীর উত্তর লিখুন",
+  "settings_section_general": "সাধারণ",
+  "settings_section_chat": "চ্যাট",
+  "settings_section_voice": "ভয়েস",
+  "settings_section_models": "মডেল",
+  "settings_section_data": "গোপনীয়তা ও ডেটা",
+  "settings_search_hint": "সেটিংস খুঁজুন",
+  "settings_more_chat_options": "আরও চ্যাট অপশন",
+  "settings_group_replies": "উত্তর",
+  "settings_group_prompt": "সিস্টেম প্রম্পট ও প্যারামিটার",
+  "settings_group_composer": "লেখার বক্স",
+  "sidebar_section_chats": "চ্যাট",
+  "sidebar_section_models": "মডেল",
+  "sidebar_section_app": "অ্যাপ"
 }

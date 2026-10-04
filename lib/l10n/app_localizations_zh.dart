@@ -3195,6 +3195,54 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get new_chat_not_connected => '未连接';
+
+  @override
+  String get attach_send_as_assistant => '以助手身份发送';
+
+  @override
+  String get attach_send_as_assistant_desc => '将你的消息添加为回复，不会生成内容。';
+
+  @override
+  String get chat_input_hint_assistant => '写下助手的回复';
+
+  @override
+  String get settings_section_general => '通用';
+
+  @override
+  String get settings_section_chat => '聊天';
+
+  @override
+  String get settings_section_voice => '语音';
+
+  @override
+  String get settings_section_models => '模型';
+
+  @override
+  String get settings_section_data => '隐私与数据';
+
+  @override
+  String get settings_search_hint => '搜索设置';
+
+  @override
+  String get settings_more_chat_options => '更多聊天选项';
+
+  @override
+  String get settings_group_replies => '回复';
+
+  @override
+  String get settings_group_prompt => '系统提示词与参数';
+
+  @override
+  String get settings_group_composer => '输入框';
+
+  @override
+  String get sidebar_section_chats => '聊天';
+
+  @override
+  String get sidebar_section_models => '模型';
+
+  @override
+  String get sidebar_section_app => '应用';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6294,4 +6342,52 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get new_chat_not_connected => '未連線';
+
+  @override
+  String get attach_send_as_assistant => '以助理身分傳送';
+
+  @override
+  String get attach_send_as_assistant_desc => '將你的訊息加入為回覆，不會產生內容。';
+
+  @override
+  String get chat_input_hint_assistant => '寫下助理的回覆';
+
+  @override
+  String get settings_section_general => '一般';
+
+  @override
+  String get settings_section_chat => '聊天';
+
+  @override
+  String get settings_section_voice => '語音';
+
+  @override
+  String get settings_section_models => '模型';
+
+  @override
+  String get settings_section_data => '隱私與資料';
+
+  @override
+  String get settings_search_hint => '搜尋設定';
+
+  @override
+  String get settings_more_chat_options => '更多聊天選項';
+
+  @override
+  String get settings_group_replies => '回覆';
+
+  @override
+  String get settings_group_prompt => '系統提示詞與參數';
+
+  @override
+  String get settings_group_composer => '輸入框';
+
+  @override
+  String get sidebar_section_chats => '聊天';
+
+  @override
+  String get sidebar_section_models => '模型';
+
+  @override
+  String get sidebar_section_app => '應用程式';
 }

@@ -969,5 +969,21 @@
   "new_chat_no_server_detail": "在本機執行模型，或連接伺服器。",
   "new_chat_works_offline": "離線可用",
   "new_chat_no_model": "未選擇模型",
-  "new_chat_not_connected": "未連線"
+  "new_chat_not_connected": "未連線",
+  "attach_send_as_assistant": "以助理身分傳送",
+  "attach_send_as_assistant_desc": "將你的訊息加入為回覆，不會產生內容。",
+  "chat_input_hint_assistant": "寫下助理的回覆",
+  "settings_section_general": "一般",
+  "settings_section_chat": "聊天",
+  "settings_section_voice": "語音",
+  "settings_section_models": "模型",
+  "settings_section_data": "隱私與資料",
+  "settings_search_hint": "搜尋設定",
+  "settings_more_chat_options": "更多聊天選項",
+  "settings_group_replies": "回覆",
+  "settings_group_prompt": "系統提示詞與參數",
+  "settings_group_composer": "輸入框",
+  "sidebar_section_chats": "聊天",
+  "sidebar_section_models": "模型",
+  "sidebar_section_app": "應用程式"
 }

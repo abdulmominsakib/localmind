@@ -3499,5 +3499,21 @@
   "new_chat_no_server_detail": "Run one on this phone or connect a server.",
   "new_chat_works_offline": "Works offline",
   "new_chat_no_model": "No model selected",
-  "new_chat_not_connected": "Not connected"
+  "new_chat_not_connected": "Not connected",
+  "attach_send_as_assistant": "Send as assistant",
+  "attach_send_as_assistant_desc": "Adds your message as the reply; nothing is generated.",
+  "chat_input_hint_assistant": "Write the assistant's reply",
+  "settings_section_general": "General",
+  "settings_section_chat": "Chat",
+  "settings_section_voice": "Voice",
+  "settings_section_models": "Models",
+  "settings_section_data": "Privacy & data",
+  "settings_search_hint": "Search settings",
+  "settings_more_chat_options": "More chat options",
+  "settings_group_replies": "Replies",
+  "settings_group_prompt": "System prompt & parameters",
+  "settings_group_composer": "Composer",
+  "sidebar_section_chats": "Chats",
+  "sidebar_section_models": "Models",
+  "sidebar_section_app": "App"
 }

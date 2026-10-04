@@ -3294,4 +3294,53 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get new_chat_not_connected => 'कनेक्ट नहीं है';
+
+  @override
+  String get attach_send_as_assistant => 'सहायक के रूप में भेजें';
+
+  @override
+  String get attach_send_as_assistant_desc =>
+      'आपका संदेश जवाब के रूप में जुड़ता है; कुछ भी जनरेट नहीं होता।';
+
+  @override
+  String get chat_input_hint_assistant => 'सहायक का जवाब लिखें';
+
+  @override
+  String get settings_section_general => 'सामान्य';
+
+  @override
+  String get settings_section_chat => 'चैट';
+
+  @override
+  String get settings_section_voice => 'आवाज़';
+
+  @override
+  String get settings_section_models => 'मॉडल';
+
+  @override
+  String get settings_section_data => 'गोपनीयता और डेटा';
+
+  @override
+  String get settings_search_hint => 'सेटिंग्स खोजें';
+
+  @override
+  String get settings_more_chat_options => 'चैट के और विकल्प';
+
+  @override
+  String get settings_group_replies => 'जवाब';
+
+  @override
+  String get settings_group_prompt => 'सिस्टम प्रॉम्प्ट और पैरामीटर';
+
+  @override
+  String get settings_group_composer => 'लिखने का बॉक्स';
+
+  @override
+  String get sidebar_section_chats => 'चैट';
+
+  @override
+  String get sidebar_section_models => 'मॉडल';
+
+  @override
+  String get sidebar_section_app => 'ऐप';
 }

@@ -3294,4 +3294,53 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get new_chat_not_connected => 'Nicht verbunden';
+
+  @override
+  String get attach_send_as_assistant => 'Als Assistent senden';
+
+  @override
+  String get attach_send_as_assistant_desc =>
+      'Fügt deine Nachricht als Antwort hinzu; es wird nichts generiert.';
+
+  @override
+  String get chat_input_hint_assistant => 'Antwort des Assistenten schreiben';
+
+  @override
+  String get settings_section_general => 'Allgemein';
+
+  @override
+  String get settings_section_chat => 'Chat';
+
+  @override
+  String get settings_section_voice => 'Stimme';
+
+  @override
+  String get settings_section_models => 'Modelle';
+
+  @override
+  String get settings_section_data => 'Datenschutz & Daten';
+
+  @override
+  String get settings_search_hint => 'Einstellungen durchsuchen';
+
+  @override
+  String get settings_more_chat_options => 'Weitere Chat-Optionen';
+
+  @override
+  String get settings_group_replies => 'Antworten';
+
+  @override
+  String get settings_group_prompt => 'Systemprompt & Parameter';
+
+  @override
+  String get settings_group_composer => 'Eingabefeld';
+
+  @override
+  String get sidebar_section_chats => 'Chats';
+
+  @override
+  String get sidebar_section_models => 'Modelle';
+
+  @override
+  String get sidebar_section_app => 'App';
 }

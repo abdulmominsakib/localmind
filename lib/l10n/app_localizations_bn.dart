@@ -3304,4 +3304,53 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get new_chat_not_connected => 'সংযুক্ত নয়';
+
+  @override
+  String get attach_send_as_assistant => 'সহকারী হিসেবে পাঠান';
+
+  @override
+  String get attach_send_as_assistant_desc =>
+      'আপনার মেসেজটি উত্তর হিসেবে যোগ হয়; কিছু তৈরি হয় না।';
+
+  @override
+  String get chat_input_hint_assistant => 'সহকারীর উত্তর লিখুন';
+
+  @override
+  String get settings_section_general => 'সাধারণ';
+
+  @override
+  String get settings_section_chat => 'চ্যাট';
+
+  @override
+  String get settings_section_voice => 'ভয়েস';
+
+  @override
+  String get settings_section_models => 'মডেল';
+
+  @override
+  String get settings_section_data => 'গোপনীয়তা ও ডেটা';
+
+  @override
+  String get settings_search_hint => 'সেটিংস খুঁজুন';
+
+  @override
+  String get settings_more_chat_options => 'আরও চ্যাট অপশন';
+
+  @override
+  String get settings_group_replies => 'উত্তর';
+
+  @override
+  String get settings_group_prompt => 'সিস্টেম প্রম্পট ও প্যারামিটার';
+
+  @override
+  String get settings_group_composer => 'লেখার বক্স';
+
+  @override
+  String get sidebar_section_chats => 'চ্যাট';
+
+  @override
+  String get sidebar_section_models => 'মডেল';
+
+  @override
+  String get sidebar_section_app => 'অ্যাপ';
 }

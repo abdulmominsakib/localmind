@@ -969,5 +969,21 @@
   "new_chat_no_server_detail": "इस फ़ोन पर एक चलाएँ या कोई सर्वर जोड़ें।",
   "new_chat_works_offline": "ऑफ़लाइन चलता है",
   "new_chat_no_model": "कोई मॉडल नहीं चुना गया",
-  "new_chat_not_connected": "कनेक्ट नहीं है"
+  "new_chat_not_connected": "कनेक्ट नहीं है",
+  "attach_send_as_assistant": "सहायक के रूप में भेजें",
+  "attach_send_as_assistant_desc": "आपका संदेश जवाब के रूप में जुड़ता है; कुछ भी जनरेट नहीं होता।",
+  "chat_input_hint_assistant": "सहायक का जवाब लिखें",
+  "settings_section_general": "सामान्य",
+  "settings_section_chat": "चैट",
+  "settings_section_voice": "आवाज़",
+  "settings_section_models": "मॉडल",
+  "settings_section_data": "गोपनीयता और डेटा",
+  "settings_search_hint": "सेटिंग्स खोजें",
+  "settings_more_chat_options": "चैट के और विकल्प",
+  "settings_group_replies": "जवाब",
+  "settings_group_prompt": "सिस्टम प्रॉम्प्ट और पैरामीटर",
+  "settings_group_composer": "लिखने का बॉक्स",
+  "sidebar_section_chats": "चैट",
+  "sidebar_section_models": "मॉडल",
+  "sidebar_section_app": "ऐप"
 }

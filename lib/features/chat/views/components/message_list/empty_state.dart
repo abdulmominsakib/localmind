@@ -47,12 +47,12 @@ class EmptyState extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        // 104 clears the composer and leaves a 12pt gap above it, so the
+        // 52 clears the composer and leaves a 12pt gap above it, so the
         // prompt row reads as part of the input.
-        padding: .fromLTRB(0, 16, 0, 104 + bottomInset),
+        padding: .fromLTRB(0, 16, 0, 52 + bottomInset),
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            minHeight: (constraints.maxHeight - 120 - bottomInset).clamp(
+            minHeight: (constraints.maxHeight - 68 - bottomInset).clamp(
               0,
               double.infinity,
             ),

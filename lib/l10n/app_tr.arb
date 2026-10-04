@@ -966,5 +966,21 @@
   "new_chat_no_server_detail": "Bu telefonda birini çalıştır ya da bir sunucu bağla.",
   "new_chat_works_offline": "Çevrimdışı çalışır",
   "new_chat_no_model": "Model seçilmedi",
-  "new_chat_not_connected": "Bağlı değil"
+  "new_chat_not_connected": "Bağlı değil",
+  "attach_send_as_assistant": "Asistan olarak gönder",
+  "attach_send_as_assistant_desc": "Mesajın yanıt olarak eklenir; hiçbir şey üretilmez.",
+  "chat_input_hint_assistant": "Asistanın yanıtını yaz",
+  "settings_section_general": "Genel",
+  "settings_section_chat": "Sohbet",
+  "settings_section_voice": "Ses",
+  "settings_section_models": "Modeller",
+  "settings_section_data": "Gizlilik ve veriler",
+  "settings_search_hint": "Ayarlarda ara",
+  "settings_more_chat_options": "Diğer sohbet seçenekleri",
+  "settings_group_replies": "Yanıtlar",
+  "settings_group_prompt": "Sistem istemi ve parametreler",
+  "settings_group_composer": "Yazma alanı",
+  "sidebar_section_chats": "Sohbetler",
+  "sidebar_section_models": "Modeller",
+  "sidebar_section_app": "Uygulama"
 }

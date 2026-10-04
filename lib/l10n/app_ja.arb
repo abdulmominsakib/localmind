@@ -969,5 +969,21 @@
   "new_chat_no_server_detail": "このスマホで実行するか、サーバーに接続してください。",
   "new_chat_works_offline": "オフラインで動作",
   "new_chat_no_model": "モデルが選択されていません",
-  "new_chat_not_connected": "未接続"
+  "new_chat_not_connected": "未接続",
+  "attach_send_as_assistant": "アシスタントとして送信",
+  "attach_send_as_assistant_desc": "メッセージを応答として追加します。生成は行いません。",
+  "chat_input_hint_assistant": "アシスタントの返信を入力",
+  "settings_section_general": "一般",
+  "settings_section_chat": "チャット",
+  "settings_section_voice": "音声",
+  "settings_section_models": "モデル",
+  "settings_section_data": "プライバシーとデータ",
+  "settings_search_hint": "設定を検索",
+  "settings_more_chat_options": "その他のチャットオプション",
+  "settings_group_replies": "応答",
+  "settings_group_prompt": "システムプロンプトとパラメータ",
+  "settings_group_composer": "入力欄",
+  "sidebar_section_chats": "チャット",
+  "sidebar_section_models": "モデル",
+  "sidebar_section_app": "アプリ"
 }

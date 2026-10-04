@@ -3279,4 +3279,53 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get new_chat_not_connected => 'غير متصل';
+
+  @override
+  String get attach_send_as_assistant => 'إرسال كمساعد';
+
+  @override
+  String get attach_send_as_assistant_desc =>
+      'تُضاف رسالتك كردّ، دون إنشاء أي شيء.';
+
+  @override
+  String get chat_input_hint_assistant => 'اكتب ردّ المساعد';
+
+  @override
+  String get settings_section_general => 'عام';
+
+  @override
+  String get settings_section_chat => 'الدردشة';
+
+  @override
+  String get settings_section_voice => 'الصوت';
+
+  @override
+  String get settings_section_models => 'النماذج';
+
+  @override
+  String get settings_section_data => 'الخصوصية والبيانات';
+
+  @override
+  String get settings_search_hint => 'البحث في الإعدادات';
+
+  @override
+  String get settings_more_chat_options => 'مزيد من خيارات الدردشة';
+
+  @override
+  String get settings_group_replies => 'الردود';
+
+  @override
+  String get settings_group_prompt => 'موجّه النظام والمعاملات';
+
+  @override
+  String get settings_group_composer => 'مربع الكتابة';
+
+  @override
+  String get sidebar_section_chats => 'المحادثات';
+
+  @override
+  String get sidebar_section_models => 'النماذج';
+
+  @override
+  String get sidebar_section_app => 'التطبيق';
 }

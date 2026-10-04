@@ -7,6 +7,8 @@ import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:objectbox/objectbox.dart' show Store;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:localmind/l10n/app_localizations.dart';
@@ -283,8 +285,10 @@ class DataBackupActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final service = DataBackupService();
-    final db = ref.watch(databaseProvider);
-    final prefs = ref.watch(sharedPreferencesProvider);
+    // Read storage only when an export or import runs; the rows themselves
+    // don't depend on it.
+    Store store() => ref.read(databaseProvider).store;
+    SharedPreferences prefs() => ref.read(sharedPreferencesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -296,10 +300,10 @@ class DataBackupActions extends ConsumerWidget {
             context,
             l10n.export_conversations,
             'localmind_conversations_${DateTime.now().millisecondsSinceEpoch}.json',
-            service.exportConversationsAsJson(db.store),
+            service.exportConversationsAsJson(store()),
           ),
           onImport: () => _importJsonFile(context, ref, (json) async {
-            await service.importFromJson(db.store, json);
+            await service.importFromJson(store(), json);
             // Guard every ref-touching statement post-await — the
             // ConsumerWidget may have been deactivated during the import.
             if (!context.mounted) return;
@@ -314,10 +318,10 @@ class DataBackupActions extends ConsumerWidget {
             context,
             l10n.export_personas,
             'localmind_personas_${DateTime.now().millisecondsSinceEpoch}.json',
-            service.exportPersonasAsJson(db.store),
+            service.exportPersonasAsJson(store()),
           ),
           onImport: () => _importJsonFile(context, ref, (json) async {
-            await service.importFromJson(db.store, json);
+            await service.importFromJson(store(), json);
             if (!context.mounted) return;
             ref.invalidate(personasNotifierProvider);
           }, l10n.import_data_confirm),
@@ -331,13 +335,13 @@ class DataBackupActions extends ConsumerWidget {
             'localmind_settings_${DateTime.now().millisecondsSinceEpoch}.json',
             service.exportSettingsAsJson(
               ref.read(settingsProvider).toJson(),
-              store: db.store,
-              prefs: prefs,
+              store: store(),
+              prefs: prefs(),
             ),
           ),
           onImport: () => _importJsonFile(context, ref, (json) async {
             final decoded = jsonDecode(json) as Map<String, dynamic>;
-            await service.importFromJson(db.store, json);
+            await service.importFromJson(store(), json);
             if (!context.mounted) return;
             await _applySettingsPayload(ref, decoded, context: context);
           }, l10n.import_settings_confirm),

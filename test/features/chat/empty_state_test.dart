@@ -16,6 +16,7 @@ Future<void> _pump(
   String serverName = '',
   NewChatReadiness readiness = NewChatReadiness.ready,
   bool reduceMotion = false,
+  bool keyboardOpen = false,
   void Function(String)? onQuickPrompt,
 }) async {
   await tester.pumpWidget(
@@ -40,6 +41,7 @@ Future<void> _pump(
             serverName: serverName,
             readiness: readiness,
             onQuickPrompt: onQuickPrompt ?? (_) {},
+            keyboardOpen: keyboardOpen,
             quickPrompts: const [
               QuickPrompt(
                 icon: HugeIcons.strokeRoundedSourceCode,
@@ -138,5 +140,15 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('quick_prompt_0')));
     expect(sent, 'Help me write a function');
+  });
+
+  testWidgets('the logo holds still and ignores taps while typing', (
+    tester,
+  ) async {
+    await _pump(tester, type: ServerType.requesty, keyboardOpen: true);
+    final first = _allText(tester);
+    await tester.tap(find.byType(AsciiLogoView));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(_allText(tester), first);
   });
 }

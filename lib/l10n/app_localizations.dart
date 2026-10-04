@@ -6074,6 +6074,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not connected'**
   String get new_chat_not_connected;
+
+  /// No description provided for @attach_send_as_assistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Send as assistant'**
+  String get attach_send_as_assistant;
+
+  /// No description provided for @attach_send_as_assistant_desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds your message as the reply; nothing is generated.'**
+  String get attach_send_as_assistant_desc;
+
+  /// No description provided for @chat_input_hint_assistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the assistant\'s reply'**
+  String get chat_input_hint_assistant;
+
+  /// No description provided for @settings_section_general.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get settings_section_general;
+
+  /// No description provided for @settings_section_chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get settings_section_chat;
+
+  /// No description provided for @settings_section_voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get settings_section_voice;
+
+  /// No description provided for @settings_section_models.
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get settings_section_models;
+
+  /// No description provided for @settings_section_data.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & data'**
+  String get settings_section_data;
+
+  /// No description provided for @settings_search_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search settings'**
+  String get settings_search_hint;
+
+  /// No description provided for @settings_more_chat_options.
+  ///
+  /// In en, this message translates to:
+  /// **'More chat options'**
+  String get settings_more_chat_options;
+
+  /// No description provided for @settings_group_replies.
+  ///
+  /// In en, this message translates to:
+  /// **'Replies'**
+  String get settings_group_replies;
+
+  /// No description provided for @settings_group_prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'System prompt & parameters'**
+  String get settings_group_prompt;
+
+  /// No description provided for @settings_group_composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Composer'**
+  String get settings_group_composer;
+
+  /// No description provided for @sidebar_section_chats.
+  ///
+  /// In en, this message translates to:
+  /// **'Chats'**
+  String get sidebar_section_chats;
+
+  /// No description provided for @sidebar_section_models.
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get sidebar_section_models;
+
+  /// No description provided for @sidebar_section_app.
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get sidebar_section_app;
 }
 
 class _AppLocalizationsDelegate

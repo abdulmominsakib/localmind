@@ -1,6 +1,6 @@
-import 'package:cue/cue.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,14 +27,58 @@ import '../../servers/providers/server_providers.dart';
 import '../data/models/app_settings.dart';
 import 'data_backup_actions.dart';
 
-class SettingsViews extends ConsumerWidget {
+/// Settings on one page: search and section chips up top, then compact
+/// grouped lists. The chat options people change least live one level down
+/// in [_MoreChatOptionsPage], and search still finds them.
+class SettingsViews extends ConsumerStatefulWidget {
   const SettingsViews({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsViews> createState() => _SettingsViewsState();
+}
+
+enum _SettingsSection { general, chat, voice, models, data, about }
+
+class _SettingsViewsState extends ConsumerState<SettingsViews> {
+  final _search = TextEditingController();
+  final _scroll = ScrollController();
+  final _sectionKeys = {
+    for (final section in _SettingsSection.values) section: GlobalKey(),
+  };
+
+  @override
+  void dispose() {
+    _search.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _jumpTo(_SettingsSection section) {
+    if (_search.text.isNotEmpty) {
+      _search.clear();
+      setState(() {});
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = _sectionKeys[section]?.currentContext?.findRenderObject();
+      if (target == null || !_scroll.hasClients) return;
+      // Land the section's heading just below the status bar, not under it.
+      final reveal = RenderAbstractViewport.of(
+        target,
+      ).getOffsetToReveal(target, 0).offset;
+      final inset = MediaQuery.paddingOf(context).top + 8;
+      _scroll.animateTo(
+        (reveal - inset).clamp(0, _scroll.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
-    final currentTheme = ref.watch(themeModeProvider);
+    final notifier = ref.read(settingsProvider.notifier);
     final systemBottomInset = bottomSystemInset(context);
     final packageInfo = ref.watch(packageInfoProvider);
     final assistantService = ref.watch(androidAssistantServiceProvider);
@@ -60,595 +104,639 @@ class SettingsViews extends ConsumerWidget {
         settings.defaultModelServerId != null &&
         settings.defaultModelServerId == defaultServerId;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final topPadding = MediaQuery.of(context).padding.top;
+    final sectionLabels = {
+      _SettingsSection.general: l10n.settings_section_general,
+      _SettingsSection.chat: l10n.settings_section_chat,
+      _SettingsSection.voice: l10n.settings_section_voice,
+      _SettingsSection.models: l10n.settings_section_models,
+      _SettingsSection.data: l10n.settings_section_data,
+      _SettingsSection.about: l10n.settings_about,
+    };
 
-    return Column(
+    final general = _SettingsSectionCard(
+      key: _sectionKeys[_SettingsSection.general],
+      title: l10n.settings_section_general,
       children: [
-        Container(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: topPadding + 8,
-            bottom: 16,
-          ),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
-            border: Border(
-              bottom: BorderSide(
-                color: isDark
-                    ? const Color(0xFF2A2A2A)
-                    : const Color(0xFFE5E5E5),
-              ),
-            ),
-          ),
-          child: Row(
-            children: [
-              Builder(
-                builder: (context) => IconButton(
-                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
-                  onPressed: () => Scaffold.maybeOf(context)?.openDrawer(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                l10n.settings_title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              ),
-            ],
-          ),
+        _ThemeToggle(ref: ref),
+        _LanguageSetting(
+          current: settings.localeCode,
+          onChanged: notifier.setLocaleCode,
         ),
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final useTwoColumns = constraints.maxWidth >= 1080;
-              final contentMaxWidth = useTwoColumns ? 1120.0 : 720.0;
-              final horizontalPadding = constraints.maxWidth >= 720
-                  ? 20.0
-                  : 12.0;
+        _SliderSetting(
+          label: l10n.font_size,
+          value: settings.fontSize,
+          min: 12.0,
+          max: 24.0,
+          divisions: 12,
+          description: l10n.font_size_desc,
+          onChanged: notifier.setFontSize,
+          valueFormat: (value) => value.toStringAsFixed(0),
+          previewText: l10n.font_preview,
+        ),
+        _ToggleSetting(
+          label: l10n.haptic_feedback,
+          value: settings.hapticFeedbackEnabled,
+          onChanged: (value) {
+            notifier.setHapticFeedback(value);
+            if (value) ref.read(appHapticsProvider).medium();
+          },
+        ),
+        _CodeThemeDropdown(
+          label: l10n.code_theme_dark,
+          current: settings.codeThemeDark,
+          onChanged: notifier.setCodeThemeDark,
+        ),
+        _CodeThemeDropdown(
+          label: l10n.code_theme_light,
+          current: settings.codeThemeLight,
+          onChanged: notifier.setCodeThemeLight,
+        ),
+      ],
+    );
 
-              final appearanceCard = _SettingsSectionCard(
-                title: l10n.settings_appearance,
-                icon: HugeIcons.strokeRoundedPaintBrush02,
-                accent: const Color(0xFF8B5CF6),
-                children: [
-                  _ThemeToggle(ref: ref),
-                  _LanguageSetting(
-                    current: settings.localeCode,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setLocaleCode(value),
-                  ),
-                  _SliderSetting(
-                    label: l10n.font_size,
-                    value: settings.fontSize,
-                    min: 12.0,
-                    max: 24.0,
-                    divisions: 12,
-                    description: l10n.font_size_desc,
-                    onChanged: (value) =>
-                        ref.read(settingsProvider.notifier).setFontSize(value),
-                    valueFormat: (value) => value.toStringAsFixed(0),
-                    previewText: l10n.font_preview,
-                  ),
-                  _CodeThemeDropdown(
-                    label: l10n.code_theme_dark,
-                    current: settings.codeThemeDark,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setCodeThemeDark(value),
-                  ),
-                  _CodeThemeDropdown(
-                    label: l10n.code_theme_light,
-                    current: settings.codeThemeLight,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setCodeThemeLight(value),
-                  ),
-                ],
-              );
-
-              final ttsCard = _SettingsSectionCard(
-                title: l10n.settings_tts,
-                icon: HugeIcons.strokeRoundedVoice,
-                accent: const Color(0xFF0EA5E9),
-                children: [
-                  _EngineDropdown(
-                    current: settings.ttsEngine,
-                    onChanged: (value) =>
-                        ref.read(settingsProvider.notifier).setTtsEngine(value),
-                  ),
-                  _SectionActionButton(
-                    icon: HugeIcons.strokeRoundedVoice,
-                    label: l10n.manage_tts_models,
-                    onPressed: () => context.push(AppRoutes.ttsModels),
-                  ),
-                  if (settings.ttsEngine != EngineId.system) ...[
-                    _VoiceSelector(
-                      engine: settings.ttsEngine,
-                      currentVoiceId: settings.ttsVoiceId,
-                      onChanged: (voice) => ref
-                          .read(settingsProvider.notifier)
-                          .setTtsVoiceId(voice?.id),
-                    ),
-                    _SliderSetting(
-                      label: l10n.tts_speed,
-                      value: settings.ttsSpeed,
-                      min: 0.5,
-                      max: 2.0,
-                      divisions: 15,
-                      description: l10n.tts_speed_desc,
-                      onChanged: (value) => ref
-                          .read(settingsProvider.notifier)
-                          .setTtsSpeed(value),
-                      valueFormat: (value) => '${value.toStringAsFixed(2)}x',
-                    ),
-                  ],
-                  _ToggleSetting(
-                    label: l10n.tts_process_markdown,
-                    description: l10n.tts_process_markdown_desc,
-                    value: settings.ttsProcessMarkdown,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setTtsProcessMarkdown(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.settings_concise_voice_responses,
-                    description: l10n.settings_concise_voice_responses_desc,
-                    value: settings.conciseVoiceResponsesEnabled,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setConciseVoiceResponsesEnabled(value),
-                  ),
-                  _TtsSkipSecondsSetting(
-                    value: settings.ttsSkipSeconds,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setTtsSkipSeconds(value),
-                  ),
-                ],
-              );
-
-              final assistantCard = assistantService.isSupportedPlatform
-                  ? _SettingsSectionCard(
-                      title: l10n.settings_android_assistant,
-                      icon: HugeIcons.strokeRoundedVoice,
-                      accent: const Color(0xFF6366F1),
-                      badges: [_FeatureBadge(label: l10n.beta_label)],
-                      children: const [_AndroidAssistantSetting()],
-                    )
-                  : null;
-
-              final behaviorCard = _SettingsSectionCard(
-                title: l10n.settings_behavior,
-                icon: HugeIcons.strokeRoundedSlidersHorizontal,
-                accent: const Color(0xFF22C55E),
-                children: [
-                  _ToggleSetting(
-                    label: l10n.streaming_responses,
-                    value: settings.streamingEnabled,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setStreamingEnabled(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.auto_generate_titles,
-                    value: settings.autoGenerateTitle,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setAutoGenerateTitle(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.send_on_enter,
-                    value: settings.sendOnEnter,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setSendOnEnter(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.show_system_messages,
-                    description: l10n.show_system_messages_desc,
-                    value: settings.showSystemMessages,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setShowSystemMessages(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.show_system_messages_in_chat,
-                    description: l10n.show_system_messages_in_chat_desc,
-                    value: settings.showSystemMessagesInChat,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setShowSystemMessagesInChat(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.auto_collapse_thinking,
-                    description: l10n.auto_collapse_thinking_desc,
-                    value: settings.autoCollapseThinking,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setAutoCollapseThinking(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.send_temperature_to_api,
-                    description: l10n.send_sampling_params_desc,
-                    value: settings.sendTemperature,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setSendTemperature(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.send_top_p_to_api,
-                    description: l10n.send_sampling_params_desc,
-                    value: settings.sendTopP,
-                    onChanged: (value) =>
-                        ref.read(settingsProvider.notifier).setSendTopP(value),
-                  ),
-                  _DefaultSystemPromptSetting(
-                    currentPrompt: settings.defaultSystemPrompt,
-                    onSave: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setDefaultSystemPrompt(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.haptic_feedback,
-                    value: settings.hapticFeedbackEnabled,
-                    onChanged: (value) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setHapticFeedback(value);
-                      if (value) ref.read(appHapticsProvider).medium();
-                    },
-                  ),
-                  _ToggleSetting(
-                    label: l10n.temp_chat_keyboard_incognito,
-                    description: l10n.temp_chat_keyboard_incognito_desc,
-                    value: settings.tempChatKeyboardIncognito,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setTempChatKeyboardIncognito(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.resume_last_chat,
-                    description: l10n.resume_last_chat_desc,
-                    value: settings.resumeLastChat,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setResumeLastChat(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.keep_persona_on_new_chat,
-                    description: l10n.keep_persona_on_new_chat_desc,
-                    value: settings.keepPersonaOnNewChat,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setKeepPersonaOnNewChat(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.role_swap_button_enabled,
-                    description: l10n.role_swap_button_enabled_desc,
-                    value: settings.roleSwapButtonEnabled,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setRoleSwapButtonEnabled(value),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.enable_image_compression,
-                    description: l10n.enable_image_compression_desc,
-                    value: settings.imageCompressionEnabled,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setImageCompressionEnabled(value),
-                  ),
-                  if (settings.imageCompressionEnabled)
-                    _ImageCompressionLevelSetting(
-                      value: settings.imageCompressionLevel,
-                      onChanged: (value) => ref
-                          .read(settingsProvider.notifier)
-                          .setImageCompressionLevel(value),
-                    ),
-                ],
-              );
-
-              final onDeviceCard = _SettingsSectionCard(
-                title: l10n.settings_on_device,
-                icon: HugeIcons.strokeRoundedCpu,
-                accent: const Color(0xFFF97316),
-                children: [
-                  _ToggleSetting(
-                    label: l10n.enable_smart_reply,
-                    value: settings.smartReplyEnabled,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setSmartReplyEnabled(value),
-                  ),
-                  if (settings.smartReplyEnabled)
-                    _ToggleSetting(
-                      label: l10n.smart_replies_use_persona,
-                      description: l10n.smart_replies_use_persona_desc,
-                      value: settings.smartRepliesUsePersona,
-                      onChanged: (value) => ref
-                          .read(settingsProvider.notifier)
-                          .setSmartRepliesUsePersona(value),
-                    ),
-                  _ToggleSetting(
-                    label: l10n.ai_user_response_enabled,
-                    description: l10n.ai_user_response_enabled_desc,
-                    value: settings.aiUserResponseEnabled,
-                    badges: [_FeatureBadge(label: l10n.experimental_label)],
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setAiUserResponseEnabled(value),
-                  ),
-                  _HuggingFaceTokenSetting(
-                    currentToken: settings.huggingFaceToken,
-                    onSave: (value) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setHuggingFaceToken(value);
-                      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            value == null || value.isEmpty
-                                ? l10n.settings_huggingface_token_cleared
-                                : l10n.settings_huggingface_token_set,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  _SectionActionButton(
-                    icon: HugeIcons.strokeRoundedSmartPhone01,
-                    label: l10n.manage_on_device_models,
-                    onPressed: () => context.push(AppRoutes.onDeviceModels),
-                  ),
-                  _ToggleSetting(
-                    label: l10n.unload_models_before_load,
-                    value: settings.unloadModelsBeforeLoad,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setUnloadModelsBeforeLoad(value),
-                  ),
-                  const _OnDeviceEngineStatusCard(),
-                ],
-              );
-
-              final defaultsCard = _SettingsSectionCard(
-                title: l10n.settings_default_server,
-                icon: HugeIcons.strokeRoundedShare01,
-                accent: const Color(0xFF06B6D4),
-                children: [
-                  _DropdownSetting(
-                    label: l10n.settings_default_server,
-                    currentValue: settings.defaultServerId,
-                    items: servers,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setDefaultServer(value),
-                    icon: HugeIcons.strokeRoundedComputer,
-                  ),
-                  _DropdownSetting(
-                    label: l10n.settings_default_persona,
-                    currentValue: settings.defaultPersonaId,
-                    items: personas,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setDefaultPersona(value),
-                    icon: HugeIcons.strokeRoundedRobot01,
-                  ),
-                  _DropdownSetting(
-                    label: l10n.settings_default_model,
-                    description: l10n.settings_default_model_desc,
-                    currentValue: isDefaultModelForServer
-                        ? settings.defaultModelId
-                        : null,
-                    items: models,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setDefaultModel(
-                          serverId: defaultServerId,
-                          modelId: value,
-                        ),
-                    icon: HugeIcons.strokeRoundedSmartPhone01,
-                  ),
-                  const SizedBox(height: 8),
-                  _SectionActionButton(
-                    icon: HugeIcons.strokeRoundedRefresh,
-                    label: l10n.restore_builtin_personas,
-                    onPressed: () async {
-                      await ref
-                          .read(personasNotifierProvider.notifier)
-                          .restoreBuiltInPersonas();
-                      if (context.mounted) {
-                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              l10n.restore_builtin_personas_success,
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ],
-              );
-
-              final privacyCard = _SettingsSectionCard(
-                title: l10n.settings_privacy,
-                icon: HugeIcons.strokeRoundedLock,
-                accent: const Color(0xFF14B8A6),
-                children: [
-                  _ToggleSetting(
-                    label: l10n.show_data_indicator,
-                    value: settings.showDataIndicator,
-                    onChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setShowDataIndicator(value),
-                  ),
-                  _MutedCallout(message: l10n.privacy_info),
-                ],
-              );
-
-              final dataCard = _SettingsSectionCard(
-                title: l10n.settings_data_management,
-                icon: HugeIcons.strokeRoundedRefresh,
-                accent: const Color(0xFFEF4444),
-                children: [
-                  _SectionActionButton(
-                    icon: HugeIcons.strokeRoundedCloud,
-                    label: l10n.cloud_sync,
-                    onPressed: () => context.push(AppRoutes.cloudSync),
-                  ),
-                  const SizedBox(height: 8),
-                  const DataBackupActions(),
-                  const SizedBox(height: 8),
-                  _DangerousAction(
-                    label: l10n.delete_all_conversations,
-                    icon: HugeIcons.strokeRoundedDelete01,
-                    onConfirm: () async {
-                      await ref
-                          .read(chatProvider.notifier)
-                          .cancelAllGenerations();
-                      await ref
-                          .read(conversationsProvider.notifier)
-                          .deleteAll();
-                    },
-                  ),
-                  _DangerousAction(
-                    label: l10n.reset_settings_defaults,
-                    icon: HugeIcons.strokeRoundedRefresh,
-                    onConfirm: () =>
-                        ref.read(settingsProvider.notifier).resetToDefaults(),
-                  ),
-                ],
-              );
-
-              final aboutCard = _SettingsSectionCard(
-                title: l10n.settings_about,
-                icon: HugeIcons.strokeRoundedInformationCircle,
-                accent: const Color(0xFFF59E0B),
-                children: [
-                  _AboutPanel(
-                    title:
-                        '${l10n.app_name} v${packageInfo.value?.version ?? l10n.app_version} (${packageInfo.value?.buildNumber ?? ''})',
-                    subtitle: l10n.onboarding_connect_desc.replaceAll(
-                      '\n',
-                      ' ',
-                    ),
-                    providers: [
-                      l10n.server_type_lm_studio,
-                      l10n.server_type_ollama,
-                      l10n.server_type_ollama_cloud,
-                      l10n.server_type_openrouter,
-                      l10n.server_type_requesty,
-                    ],
-                    highlights: [
-                      l10n.settings_on_device,
-                      l10n.streaming_responses,
-                      l10n.nav_personas,
-                    ],
-                    stack: const ['Flutter', 'Riverpod', 'shadcn_ui'],
-                    openSource: l10n.open_source_desc,
-                  ),
-                  _SectionActionButton(
-                    icon: HugeIcons.strokeRoundedAlertCircle,
-                    label: l10n.report_a_problem,
-                    onPressed: () => _openFeedbackIssue(context),
-                  ),
-                ],
-              );
-
-              return ListView(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  12,
-                  horizontalPadding,
-                  24 + systemBottomInset,
-                ),
-                children: [
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _SettingsHero(
-                            settings: settings,
-                            themeType: currentTheme,
-                          ),
-                          const SizedBox(height: 16),
-                          if (useTwoColumns)
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: _SettingsSectionColumn(
-                                    children: [
-                                      appearanceCard,
-                                      behaviorCard,
-                                      defaultsCard,
-                                      privacyCard,
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 20),
-                                Expanded(
-                                  child: _SettingsSectionColumn(
-                                    children: [
-                                      ttsCard,
-                                      ?assistantCard,
-                                      onDeviceCard,
-                                      dataCard,
-                                      aboutCard,
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )
-                          else
-                            _SettingsSectionColumn(
-                              children: [
-                                appearanceCard,
-                                ttsCard,
-                                ?assistantCard,
-                                behaviorCard,
-                                onDeviceCard,
-                                defaultsCard,
-                                privacyCard,
-                                dataCard,
-                                aboutCard,
-                              ],
-                            ),
-                          const SizedBox(height: 24),
-                          _PrivacyPolicyLink(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
+    final chat = _SettingsSectionCard(
+      key: _sectionKeys[_SettingsSection.chat],
+      title: l10n.settings_section_chat,
+      children: [
+        _ToggleSetting(
+          label: l10n.streaming_responses,
+          value: settings.streamingEnabled,
+          onChanged: notifier.setStreamingEnabled,
+        ),
+        _ToggleSetting(
+          label: l10n.send_on_enter,
+          value: settings.sendOnEnter,
+          onChanged: notifier.setSendOnEnter,
+        ),
+        _ToggleSetting(
+          label: l10n.auto_generate_titles,
+          value: settings.autoGenerateTitle,
+          onChanged: notifier.setAutoGenerateTitle,
+        ),
+        _ToggleSetting(
+          label: l10n.resume_last_chat,
+          description: l10n.resume_last_chat_desc,
+          value: settings.resumeLastChat,
+          onChanged: notifier.setResumeLastChat,
+        ),
+        _ToggleSetting(
+          label: l10n.keep_persona_on_new_chat,
+          description: l10n.keep_persona_on_new_chat_desc,
+          value: settings.keepPersonaOnNewChat,
+          onChanged: notifier.setKeepPersonaOnNewChat,
+        ),
+        _SectionActionButton(
+          icon: HugeIcons.strokeRoundedSlidersHorizontal,
+          label: l10n.settings_more_chat_options,
+          // Search reaches the options one level down through this row.
+          keywords: _MoreChatOptionsPage.searchTerms(l10n),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const _MoreChatOptionsPage(),
+            ),
           ),
         ),
       ],
     );
+
+    final voice = _SettingsSectionCard(
+      key: _sectionKeys[_SettingsSection.voice],
+      title: l10n.settings_section_voice,
+      children: [
+        _EngineDropdown(
+          current: settings.ttsEngine,
+          onChanged: notifier.setTtsEngine,
+        ),
+        if (settings.ttsEngine != EngineId.system) ...[
+          _VoiceSelector(
+            engine: settings.ttsEngine,
+            currentVoiceId: settings.ttsVoiceId,
+            onChanged: (voice) => notifier.setTtsVoiceId(voice?.id),
+          ),
+          _SliderSetting(
+            label: l10n.tts_speed,
+            value: settings.ttsSpeed,
+            min: 0.5,
+            max: 2.0,
+            divisions: 15,
+            description: l10n.tts_speed_desc,
+            onChanged: notifier.setTtsSpeed,
+            valueFormat: (value) => '${value.toStringAsFixed(2)}x',
+          ),
+        ],
+        _ToggleSetting(
+          label: l10n.settings_concise_voice_responses,
+          description: l10n.settings_concise_voice_responses_desc,
+          value: settings.conciseVoiceResponsesEnabled,
+          onChanged: notifier.setConciseVoiceResponsesEnabled,
+        ),
+        _ToggleSetting(
+          label: l10n.tts_process_markdown,
+          description: l10n.tts_process_markdown_desc,
+          value: settings.ttsProcessMarkdown,
+          onChanged: notifier.setTtsProcessMarkdown,
+        ),
+        _TtsSkipSecondsSetting(
+          value: settings.ttsSkipSeconds,
+          onChanged: notifier.setTtsSkipSeconds,
+        ),
+        _SectionActionButton(
+          icon: HugeIcons.strokeRoundedVoice,
+          label: l10n.manage_tts_models,
+          onPressed: () => context.push(AppRoutes.ttsModels),
+        ),
+      ],
+    );
+
+    final assistant = assistantService.isSupportedPlatform
+        ? _SettingsSectionCard(
+            title: l10n.settings_android_assistant,
+            badges: [_FeatureBadge(label: l10n.beta_label)],
+            children: const [_SettingPanel(child: _AndroidAssistantSetting())],
+          )
+        : null;
+
+    final defaults = _SettingsSectionCard(
+      key: _sectionKeys[_SettingsSection.models],
+      title: l10n.settings_section_models,
+      children: [
+        _DropdownSetting(
+          label: l10n.settings_default_server,
+          currentValue: settings.defaultServerId,
+          items: servers,
+          onChanged: notifier.setDefaultServer,
+          icon: HugeIcons.strokeRoundedComputer,
+        ),
+        _DropdownSetting(
+          label: l10n.settings_default_model,
+          description: l10n.settings_default_model_desc,
+          currentValue: isDefaultModelForServer
+              ? settings.defaultModelId
+              : null,
+          items: models,
+          onChanged: (value) => notifier.setDefaultModel(
+            serverId: defaultServerId,
+            modelId: value,
+          ),
+          icon: HugeIcons.strokeRoundedSmartPhone01,
+        ),
+        _DropdownSetting(
+          label: l10n.settings_default_persona,
+          currentValue: settings.defaultPersonaId,
+          items: personas,
+          onChanged: notifier.setDefaultPersona,
+          icon: HugeIcons.strokeRoundedRobot01,
+        ),
+        _SectionActionButton(
+          icon: HugeIcons.strokeRoundedRefresh,
+          label: l10n.restore_builtin_personas,
+          onPressed: () async {
+            await ref
+                .read(personasNotifierProvider.notifier)
+                .restoreBuiltInPersonas();
+            if (context.mounted) {
+              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                SnackBar(content: Text(l10n.restore_builtin_personas_success)),
+              );
+            }
+          },
+        ),
+      ],
+    );
+
+    final onDevice = _SettingsSectionCard(
+      title: l10n.settings_on_device,
+      children: [
+        _SectionActionButton(
+          icon: HugeIcons.strokeRoundedSmartPhone01,
+          label: l10n.manage_on_device_models,
+          onPressed: () => context.push(AppRoutes.onDeviceModels),
+        ),
+        _ToggleSetting(
+          label: l10n.enable_smart_reply,
+          value: settings.smartReplyEnabled,
+          onChanged: notifier.setSmartReplyEnabled,
+        ),
+        if (settings.smartReplyEnabled)
+          _ToggleSetting(
+            label: l10n.smart_replies_use_persona,
+            description: l10n.smart_replies_use_persona_desc,
+            value: settings.smartRepliesUsePersona,
+            onChanged: notifier.setSmartRepliesUsePersona,
+          ),
+        _ToggleSetting(
+          label: l10n.ai_user_response_enabled,
+          description: l10n.ai_user_response_enabled_desc,
+          value: settings.aiUserResponseEnabled,
+          badges: [_FeatureBadge(label: l10n.experimental_label)],
+          onChanged: notifier.setAiUserResponseEnabled,
+        ),
+        _ToggleSetting(
+          label: l10n.unload_models_before_load,
+          value: settings.unloadModelsBeforeLoad,
+          onChanged: notifier.setUnloadModelsBeforeLoad,
+        ),
+        _HuggingFaceTokenSetting(
+          currentToken: settings.huggingFaceToken,
+          onSave: (value) {
+            notifier.setHuggingFaceToken(value);
+            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+              SnackBar(
+                content: Text(
+                  value == null || value.isEmpty
+                      ? l10n.settings_huggingface_token_cleared
+                      : l10n.settings_huggingface_token_set,
+                ),
+              ),
+            );
+          },
+        ),
+        const _SettingPanel(child: _OnDeviceEngineStatusCard()),
+      ],
+    );
+
+    final data = _SettingsSectionCard(
+      key: _sectionKeys[_SettingsSection.data],
+      title: l10n.settings_section_data,
+      footer: l10n.privacy_info,
+      children: [
+        _ToggleSetting(
+          label: l10n.show_data_indicator,
+          value: settings.showDataIndicator,
+          onChanged: notifier.setShowDataIndicator,
+        ),
+        _SectionActionButton(
+          icon: HugeIcons.strokeRoundedCloud,
+          label: l10n.cloud_sync,
+          onPressed: () => context.push(AppRoutes.cloudSync),
+        ),
+        const _SettingPanel(child: DataBackupActions()),
+        _DangerousAction(
+          label: l10n.delete_all_conversations,
+          icon: HugeIcons.strokeRoundedDelete01,
+          onConfirm: () async {
+            await ref.read(chatProvider.notifier).cancelAllGenerations();
+            await ref.read(conversationsProvider.notifier).deleteAll();
+          },
+        ),
+        _DangerousAction(
+          label: l10n.reset_settings_defaults,
+          icon: HugeIcons.strokeRoundedRefresh,
+          onConfirm: notifier.resetToDefaults,
+        ),
+      ],
+    );
+
+    final about = _SettingsSectionCard(
+      key: _sectionKeys[_SettingsSection.about],
+      title: l10n.settings_about,
+      children: [
+        _AboutPanel(
+          title:
+              '${l10n.app_name} ${packageInfo.value?.version ?? l10n.app_version} (${packageInfo.value?.buildNumber ?? ''})',
+          subtitle: l10n.open_source_desc,
+        ),
+        _SectionActionButton(
+          icon: HugeIcons.strokeRoundedGithub,
+          label: l10n.star_on_github,
+          external: true,
+          onPressed: () => _openRepository(context),
+        ),
+        _SectionActionButton(
+          icon: HugeIcons.strokeRoundedAlertCircle,
+          label: l10n.report_a_problem,
+          external: true,
+          onPressed: () => _openFeedbackIssue(context),
+        ),
+      ],
+    );
+
+    return _SettingsQuery(
+      query: _search.text,
+      child: CustomScrollView(
+        controller: _scroll,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        slivers: [
+          SliverToBoxAdapter(
+            child: _SettingsHeader(
+              controller: _search,
+              onQueryChanged: (_) => setState(() {}),
+              sections: [
+                for (final section in _SettingsSection.values)
+                  (sectionLabels[section]!, () => _jumpTo(section)),
+              ],
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 24 + systemBottomInset),
+            sliver: SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      general,
+                      chat,
+                      voice,
+                      ?assistant,
+                      defaults,
+                      onDevice,
+                      data,
+                      about,
+                      if (_search.text.isEmpty) _PrivacyPolicyLink(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class _SettingsSectionColumn extends StatelessWidget {
-  const _SettingsSectionColumn({required this.children});
+const _repositoryUrl = 'https://github.com/abdulmominsakib/localmind';
 
-  final List<Widget> children;
+/// Opens the GitHub repository; a failed or refused launch shows a message
+/// rather than throwing.
+Future<void> _openRepository(BuildContext context) async {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  final message = AppLocalizations.of(context)!.could_not_open_github;
+  var launched = false;
+  try {
+    launched = await launchUrl(
+      Uri.parse(_repositoryUrl),
+      mode: LaunchMode.externalApplication,
+    );
+  } catch (_) {
+    launched = false;
+  }
+  if (!launched) {
+    messenger?.showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+/// Menu button and large title, then search and the section chips.
+class _SettingsHeader extends StatelessWidget {
+  const _SettingsHeader({
+    required this.controller,
+    required this.onQueryChanged,
+    required this.sections,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onQueryChanged;
+  final List<(String label, VoidCallback onTap)> sections;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: _withVerticalSpacing(children, gap: 16),
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final muted = _mutedColor(context);
+    final topPadding = MediaQuery.paddingOf(context).top;
+
+    return Padding(
+      padding: EdgeInsets.only(top: topPadding + 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Builder(
+                builder: (context) => IconButton(
+                  tooltip: MaterialLocalizations.of(
+                    context,
+                  ).openAppDrawerTooltip,
+                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01),
+                  onPressed: () => Scaffold.maybeOf(context)?.openDrawer(),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Text(
+              l10n.settings_title,
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.8,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              key: const ValueKey('settings_search'),
+              controller: controller,
+              onChanged: onQueryChanged,
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(fontSize: 15.5),
+              decoration: InputDecoration(
+                isDense: true,
+                filled: true,
+                fillColor: _trackColor(context),
+                hintText: l10n.settings_search_hint,
+                hintStyle: TextStyle(color: muted),
+                prefixIcon: Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
+                  child: HugeIcon(
+                    icon: HugeIcons.strokeRoundedSearch01,
+                    size: 18,
+                    color: muted,
+                  ),
+                ),
+                prefixIconConstraints: const BoxConstraints(minWidth: 38),
+                suffixIcon: controller.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).deleteButtonTooltip,
+                        icon: HugeIcon(
+                          icon: HugeIcons.strokeRoundedCancelCircle,
+                          size: 18,
+                          color: muted,
+                        ),
+                        onPressed: () {
+                          controller.clear();
+                          onQueryChanged('');
+                        },
+                      ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                // Set every state so the app's input theme can't add a
+                // border to the search field.
+                border: _searchBorder,
+                enabledBorder: _searchBorder,
+                focusedBorder: _searchBorder,
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 52,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+              itemCount: sections.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, i) =>
+                  _SectionChip(label: sections[i].$1, onTap: sections[i].$2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+const _searchBorder = OutlineInputBorder(
+  borderRadius: BorderRadius.all(Radius.circular(12)),
+  borderSide: BorderSide.none,
+);
+
+class _SectionChip extends StatelessWidget {
+  const _SectionChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(999),
+      side: BorderSide(color: _outlineColor(context, alpha: 0.9)),
+    );
+    return Material(
+      color: _surfaceColor(context),
+      shape: shape,
+      child: InkWell(
+        customBorder: shape,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The chat options people change least, one level below Settings › Chat.
+class _MoreChatOptionsPage extends ConsumerWidget {
+  const _MoreChatOptionsPage();
+
+  /// Labels on this page, so the main search can lead here.
+  static List<String> searchTerms(AppLocalizations l10n) => [
+    l10n.auto_collapse_thinking,
+    l10n.show_system_messages_in_chat,
+    l10n.show_system_messages,
+    l10n.default_system_prompt,
+    l10n.send_temperature_to_api,
+    l10n.send_top_p_to_api,
+    l10n.temp_chat_keyboard_incognito,
+    l10n.role_swap_button_enabled,
+    l10n.enable_image_compression,
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final settings = ref.watch(settingsProvider);
+    final notifier = ref.read(settingsProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.settings_more_chat_options)),
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          12,
+          16,
+          24 + bottomSystemInset(context),
+        ),
+        children: [
+          _SettingsSectionCard(
+            title: l10n.settings_group_replies,
+            children: [
+              _ToggleSetting(
+                label: l10n.auto_collapse_thinking,
+                description: l10n.auto_collapse_thinking_desc,
+                value: settings.autoCollapseThinking,
+                onChanged: notifier.setAutoCollapseThinking,
+              ),
+              _ToggleSetting(
+                label: l10n.show_system_messages_in_chat,
+                description: l10n.show_system_messages_in_chat_desc,
+                value: settings.showSystemMessagesInChat,
+                onChanged: notifier.setShowSystemMessagesInChat,
+              ),
+            ],
+          ),
+          _SettingsSectionCard(
+            title: l10n.settings_group_prompt,
+            footer: l10n.send_sampling_params_desc,
+            children: [
+              _ToggleSetting(
+                label: l10n.show_system_messages,
+                description: l10n.show_system_messages_desc,
+                value: settings.showSystemMessages,
+                onChanged: notifier.setShowSystemMessages,
+              ),
+              _DefaultSystemPromptSetting(
+                currentPrompt: settings.defaultSystemPrompt,
+                onSave: notifier.setDefaultSystemPrompt,
+              ),
+              _ToggleSetting(
+                label: l10n.send_temperature_to_api,
+                value: settings.sendTemperature,
+                onChanged: notifier.setSendTemperature,
+              ),
+              _ToggleSetting(
+                label: l10n.send_top_p_to_api,
+                value: settings.sendTopP,
+                onChanged: notifier.setSendTopP,
+              ),
+            ],
+          ),
+          _SettingsSectionCard(
+            title: l10n.settings_group_composer,
+            children: [
+              _ToggleSetting(
+                label: l10n.role_swap_button_enabled,
+                description: l10n.role_swap_button_enabled_desc,
+                value: settings.roleSwapButtonEnabled,
+                onChanged: notifier.setRoleSwapButtonEnabled,
+              ),
+              _ToggleSetting(
+                label: l10n.temp_chat_keyboard_incognito,
+                description: l10n.temp_chat_keyboard_incognito_desc,
+                value: settings.tempChatKeyboardIncognito,
+                onChanged: notifier.setTempChatKeyboardIncognito,
+              ),
+              _ToggleSetting(
+                label: l10n.enable_image_compression,
+                description: l10n.enable_image_compression_desc,
+                value: settings.imageCompressionEnabled,
+                onChanged: notifier.setImageCompressionEnabled,
+              ),
+              if (settings.imageCompressionEnabled)
+                _ImageCompressionLevelSetting(
+                  value: settings.imageCompressionLevel,
+                  onChanged: notifier.setImageCompressionLevel,
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -798,229 +886,126 @@ class _AndroidAssistantSettingState
   }
 }
 
-class _SettingsHero extends StatelessWidget {
-  const _SettingsHero({required this.settings, required this.themeType});
+abstract interface class _Searchable {
+  List<String> searchTerms(AppLocalizations l10n);
+}
 
-  final AppSettings settings;
-  final AppThemeType themeType;
+/// The settings search query, read by every section.
+class _SettingsQuery extends InheritedWidget {
+  const _SettingsQuery({required this.query, required super.child});
+
+  final String query;
+
+  static String of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_SettingsQuery>()?.query ?? '';
+
+  @override
+  bool updateShouldNotify(_SettingsQuery oldWidget) => oldWidget.query != query;
+}
+
+bool _matches(String query, Iterable<String?> terms) {
+  final q = query.trim().toLowerCase();
+  if (q.isEmpty) return true;
+  return terms.any((t) => t != null && t.toLowerCase().contains(q));
+}
+
+/// A titled group of rows: a small heading over one rounded card, rows
+/// split by hairlines. While searching, it keeps only matching rows and
+/// hides itself when none match.
+class _SettingsSectionCard extends StatelessWidget {
+  const _SettingsSectionCard({
+    super.key,
+    required this.title,
+    required this.children,
+    this.badges = const [],
+    this.footer,
+  });
+
+  final String title;
+  final List<Widget> children;
+  final List<Widget> badges;
+  final String? footer;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final primary = _primaryColor(context);
+    final query = _SettingsQuery.of(context);
+    final titleMatches = _matches(query, [title]);
+    final visible = query.trim().isEmpty || titleMatches
+        ? children
+        : [
+            for (final child in children)
+              if (child is _Searchable &&
+                  _matches(query, (child as _Searchable).searchTerms(l10n)))
+                child,
+          ];
+    if (visible.isEmpty) return const SizedBox.shrink();
 
-    return Cue.onChange(
-      value: themeType,
-      motion: .smooth(),
-      child: Container(
-        decoration: BoxDecoration(
-          color: _surfaceColor(context),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _outlineColor(context, alpha: 0.9)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Actor(
-                acts: [.fadeIn(), .slideY(from: 0.05)],
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: primary.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: HugeIcon(
-                          icon: HugeIcons.strokeRoundedSettings01,
-                          size: 18,
-                          color: primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        l10n.settings_title,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 6),
-              Actor(
-                delay: 60.ms,
-                acts: [.fadeIn(), .slideY(from: 0.05)],
-                child: Text(
-                  l10n.app_tagline,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: _mutedColor(context),
-                    height: 1.35,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  Actor(
-                    delay: 120.ms,
-                    acts: [.fadeIn(), .slideY(from: 0.08), .scale(from: 0.96)],
-                    child: _HeroStat(
-                      label: l10n.theme,
-                      value: _themeLabel(themeType, l10n),
-                      icon: HugeIcons.strokeRoundedSparkles,
-                    ),
-                  ),
-                  Actor(
-                    delay: 180.ms,
-                    acts: [.fadeIn(), .slideY(from: 0.08), .scale(from: 0.96)],
-                    child: _HeroStat(
-                      label: l10n.settings_language,
-                      value: _languageLabel(settings.localeCode, l10n),
-                      icon: HugeIcons.strokeRoundedGlobe,
-                    ),
-                  ),
-                  Actor(
-                    delay: 240.ms,
-                    acts: [.fadeIn(), .slideY(from: 0.08), .scale(from: 0.96)],
-                    child: _HeroStat(
-                      label: l10n.tts_engine,
-                      value: _engineLabel(settings.ttsEngine, l10n),
-                      icon: HugeIcons.strokeRoundedVoice,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HeroStat extends StatelessWidget {
-  const _HeroStat({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  final String label;
-  final String value;
-  final List<List<dynamic>> icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primary = _primaryColor(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: _panelColor(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _outlineColor(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          HugeIcon(icon: icon, size: 14, color: primary),
-          const SizedBox(width: 8),
-          Text(
-            '$label: ',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: _mutedColor(context),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Flexible(
-            child: Text(
-              value,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SettingsSectionCard extends StatelessWidget {
-  const _SettingsSectionCard({
-    required this.title,
-    required this.icon,
-    required this.accent,
-    required this.children,
-    this.badges = const [],
-  });
-
-  final String title;
-  final List<List<dynamic>> icon;
-  final Color accent;
-  final List<Widget> children;
-  final List<Widget> badges;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _surfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _outlineColor(context, alpha: 0.9)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+            child: Row(
               children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: HugeIcon(icon: icon, color: accent, size: 16),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
+                Flexible(
                   child: Text(
                     title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: _mutedColor(context),
                     ),
                   ),
                 ),
                 if (badges.isNotEmpty) ...[const SizedBox(width: 8), ...badges],
               ],
             ),
-            const SizedBox(height: 12),
-            ..._withVerticalSpacing(children, gap: 10),
-          ],
-        ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: _surfaceColor(context),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _outlineColor(context, alpha: 0.9)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < visible.length; i++) ...[
+                  if (i > 0)
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 16,
+                      color: _outlineColor(context, alpha: 0.7),
+                    ),
+                  visible[i],
+                ],
+              ],
+            ),
+          ),
+          if (footer != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+              child: Text(
+                footer!,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.4,
+                  color: _mutedColor(context),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
+/// The padding every row in a section shares.
 class _SettingPanel extends StatelessWidget {
   const _SettingPanel({required this.child});
 
@@ -1028,213 +1013,96 @@ class _SettingPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: _panelColor(context),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _outlineColor(context)),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _MutedCallout extends StatelessWidget {
-  const _MutedCallout({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return _SettingPanel(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          HugeIcon(
-            icon: HugeIcons.strokeRoundedMoon02,
-            size: 18,
-            color: _mutedColor(context),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: _mutedColor(context),
-                height: 1.35,
-              ),
-            ),
-          ),
-        ],
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 52),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Align(alignment: AlignmentDirectional.centerStart, child: child),
       ),
     );
   }
 }
 
-class _AboutPanel extends StatelessWidget {
-  const _AboutPanel({
-    required this.title,
-    required this.subtitle,
-    required this.providers,
-    required this.highlights,
-    required this.stack,
-    required this.openSource,
+/// Title and optional description for a row, in list-row type.
+class _RowLabel extends StatelessWidget {
+  const _RowLabel({
+    required this.label,
+    this.description,
+    this.badges = const [],
+    this.color,
   });
 
-  final String title;
-  final String subtitle;
-  final List<String> providers;
-  final List<String> highlights;
-  final List<String> stack;
-  final String openSource;
+  final String label;
+  final String? description;
+  final List<Widget> badges;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-
-    return _SettingPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                color: color ?? theme.colorScheme.onSurface,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
+            ...badges,
+          ],
+        ),
+        if (description != null) ...[
+          const SizedBox(height: 2),
           Text(
-            subtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: _mutedColor(context),
+            description!,
+            style: TextStyle(
+              fontSize: 13,
               height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _AboutLabel(label: l10n.app_tagline),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: providers
-                .map(
-                  (provider) => _AboutChip(
-                    label: provider,
-                    icon: HugeIcons.strokeRoundedShare01,
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 12),
-          _AboutLabel(label: l10n.highlights_label),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: highlights
-                .map(
-                  (highlight) => _AboutChip(
-                    label: highlight,
-                    icon: HugeIcons.strokeRoundedCheckmarkCircle01,
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 12),
-          _AboutLabel(label: l10n.built_with_label),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: stack
-                .map(
-                  (item) => _AboutChip(
-                    label: item,
-                    icon: HugeIcons.strokeRoundedCode,
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: _surfaceColor(context),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _outlineColor(context, alpha: 0.8)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                HugeIcon(
-                  icon: HugeIcons.strokeRoundedShare01,
-                  size: 15,
-                  color: _mutedColor(context),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    openSource,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: _mutedColor(context),
-                      height: 1.35,
-                    ),
-                  ),
-                ),
-              ],
+              color: _mutedColor(context),
             ),
           ),
         ],
-      ),
+      ],
     );
   }
 }
 
-class _AboutLabel extends StatelessWidget {
-  const _AboutLabel({required this.label});
+/// The app's icon, name and version, with one line on what it is.
+class _AboutPanel extends StatelessWidget implements _Searchable {
+  const _AboutPanel({required this.title, required this.subtitle});
 
-  final String label;
+  final String title;
+  final String subtitle;
+
+  @override
+  List<String> searchTerms(AppLocalizations l10n) => [title];
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-        color: _mutedColor(context),
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-}
-
-class _AboutChip extends StatelessWidget {
-  const _AboutChip({required this.label, required this.icon});
-
-  final String label;
-  final List<List<dynamic>> icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: _surfaceColor(context),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _outlineColor(context, alpha: 0.75)),
-      ),
+    return _SettingPanel(
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          HugeIcon(icon: icon, size: 13, color: _mutedColor(context)),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+          Container(
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _outlineColor(context, alpha: 0.9)),
+            ),
+            child: Image.asset('assets/images/logo.webp'),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: _RowLabel(label: title, description: subtitle),
           ),
         ],
       ),
@@ -1242,7 +1110,7 @@ class _AboutChip extends StatelessWidget {
   }
 }
 
-class _LanguageSetting extends StatelessWidget {
+class _LanguageSetting extends StatelessWidget implements _Searchable {
   const _LanguageSetting({required this.current, required this.onChanged});
 
   static const localeItems = <(String, String, String, String)>[
@@ -1267,98 +1135,39 @@ class _LanguageSetting extends StatelessWidget {
   final ValueChanged<String?> onChanged;
 
   @override
+  List<String> searchTerms(AppLocalizations l10n) => [l10n.settings_language];
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    return _SettingPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SettingHeader(label: l10n.settings_language),
-          const SizedBox(height: 10),
-          _InputShell(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String?>(
-                value: current,
-                isExpanded: true,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                borderRadius: BorderRadius.circular(16),
-                dropdownColor: theme.colorScheme.surface,
-                items: [
-                  DropdownMenuItem<String?>(
-                    value: null,
-                    child: Row(
-                      children: [
-                        HugeIcon(
-                          icon: HugeIcons.strokeRoundedSettings01,
-                          size: 18,
-                          color: _mutedColor(context),
-                        ),
-                        const SizedBox(width: 10),
-                        Flexible(
-                          child: Text(
-                            l10n.language_system_default,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ...localeItems.map(
-                    (item) => DropdownMenuItem<String?>(
-                      value: item.$1,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 24,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: _outlineColor(context, alpha: 0.8),
-                                width: 0.6,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: Image.asset(
-                                item.$3,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Center(
-                                    child: Text(
-                                      item.$4,
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Flexible(
-                            child: Text(
-                              item.$2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-                onChanged: onChanged,
+    return _InlineDropdown<String?>(
+      label: l10n.settings_language,
+      value: current,
+      onChanged: onChanged,
+      items: [
+        (null, l10n.language_system_default, null),
+        for (final item in localeItems)
+          (
+            item.$1,
+            item.$2,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: Image.asset(
+                item.$3,
+                width: 22,
+                height: 15,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    Text(item.$4, style: const TextStyle(fontSize: 12)),
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
 
-class _SliderSetting extends StatelessWidget {
+class _SliderSetting extends StatelessWidget implements _Searchable {
   const _SliderSetting({
     required this.label,
     required this.value,
@@ -1382,53 +1191,38 @@ class _SliderSetting extends StatelessWidget {
   final String? previewText;
 
   @override
+  List<String> searchTerms(AppLocalizations l10n) => [label, description];
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
+    final onSurface = theme.colorScheme.onSurface;
     final displayValue = valueFormat != null
         ? valueFormat!(value)
         : value.toStringAsFixed(2);
 
     return _SettingPanel(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  displayValue,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              Expanded(child: _RowLabel(label: label)),
+              Text(
+                displayValue,
+                style: TextStyle(fontSize: 15, color: _mutedColor(context)),
               ),
             ],
           ),
-          const SizedBox(height: 8),
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
-              activeTrackColor: primary,
-              thumbColor: primary,
-              overlayColor: primary.withValues(alpha: 0.12),
-              inactiveTrackColor: _outlineColor(context, alpha: 0.6),
+              activeTrackColor: onSurface,
+              thumbColor: onSurface,
+              overlayColor: onSurface.withValues(alpha: 0.08),
+              inactiveTrackColor: _outlineColor(context, alpha: 0.9),
             ),
             child: Slider(
               value: value.clamp(min, max),
@@ -1438,39 +1232,27 @@ class _SliderSetting extends StatelessWidget {
               onChanged: onChanged,
             ),
           ),
-          Text(
-            description,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: _mutedColor(context),
-              height: 1.4,
-            ),
-          ),
-          if (previewText != null) ...[
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _outlineColor(context, alpha: 0.75)),
+          if (previewText != null)
+            Text(
+              previewText!,
+              style: TextStyle(
+                fontSize: value.clamp(12.0, 24.0),
+                height: 1.4,
+                color: _mutedColor(context),
               ),
-              child: Text(
-                previewText!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: value.clamp(12.0, 24.0),
-                  color: _mutedColor(context),
-                ),
-              ),
+            )
+          else
+            Text(
+              description,
+              style: TextStyle(fontSize: 13, color: _mutedColor(context)),
             ),
-          ],
         ],
       ),
     );
   }
 }
 
-class _ToggleSetting extends StatelessWidget {
+class _ToggleSetting extends StatelessWidget implements _Searchable {
   const _ToggleSetting({
     required this.label,
     required this.value,
@@ -1486,46 +1268,28 @@ class _ToggleSetting extends StatelessWidget {
   final List<Widget> badges;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  List<String> searchTerms(AppLocalizations l10n) => [label, ?description];
 
-    return _SettingPanel(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(
-                      label,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    ...badges,
-                  ],
+  @override
+  Widget build(BuildContext context) {
+    return MergeSemantics(
+      child: InkWell(
+        onTap: () => onChanged(!value),
+        child: _SettingPanel(
+          child: Row(
+            children: [
+              Expanded(
+                child: _RowLabel(
+                  label: label,
+                  description: description,
+                  badges: badges,
                 ),
-                if (description != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    description!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Switch.adaptive(value: value, onChanged: onChanged),
+            ],
           ),
-          const SizedBox(width: 8),
-          Switch.adaptive(value: value, onChanged: onChanged),
-        ],
+        ),
       ),
     );
   }
@@ -1543,7 +1307,6 @@ class _ImageCompressionLevelSetting extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
 
     String labelFor(ImageCompressionLevel level) {
       switch (level) {
@@ -1560,18 +1323,9 @@ class _ImageCompressionLevelSetting extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l10n.image_compression_level,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.image_compression_level_desc,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          _RowLabel(
+            label: l10n.image_compression_level,
+            description: l10n.image_compression_level_desc,
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -1604,24 +1358,14 @@ class _TtsSkipSecondsSetting extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
 
     return _SettingPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l10n.tts_skip_seconds,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.tts_skip_seconds_desc,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          _RowLabel(
+            label: l10n.tts_skip_seconds,
+            description: l10n.tts_skip_seconds_desc,
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -1669,84 +1413,57 @@ class _FeatureBadge extends StatelessWidget {
   }
 }
 
-class _ThemeToggle extends StatelessWidget {
+/// Theme as one segmented control: System, Light, Dark, Claude.
+class _ThemeToggle extends StatelessWidget implements _Searchable {
   const _ThemeToggle({required this.ref});
 
   final WidgetRef ref;
 
   @override
+  List<String> searchTerms(AppLocalizations l10n) => [
+    l10n.theme,
+    l10n.theme_light,
+    l10n.theme_dark,
+    l10n.theme_claude,
+  ];
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final currentTheme = ref.watch(themeModeProvider);
+    final current = ref.watch(themeModeProvider);
+    final options = [
+      (AppThemeType.system, l10n.theme_system),
+      (AppThemeType.light, l10n.theme_light),
+      (AppThemeType.dark, l10n.theme_dark),
+      (AppThemeType.claude, l10n.theme_claude),
+    ];
 
     return _SettingPanel(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _SettingHeader(label: l10n.theme),
-          const SizedBox(height: 8),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final spacing = 8.0;
-              final columns = constraints.maxWidth >= 700
-                  ? 4
-                  : constraints.maxWidth >= 420
-                  ? 2
-                  : 1;
-              final itemWidth =
-                  (constraints.maxWidth - (spacing * (columns - 1))) / columns;
-
-              return Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: [
-                  SizedBox(
-                    width: itemWidth,
+          _RowLabel(label: l10n.theme),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: _trackColor(context),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              children: [
+                for (final (type, label) in options)
+                  Expanded(
                     child: _ThemeOption(
-                      label: l10n.theme_system,
-                      icon: HugeIcons.strokeRoundedSun01,
-                      isSelected: currentTheme == AppThemeType.system,
+                      label: label,
+                      isSelected: current == type,
                       onTap: () => ref
                           .read(themeModeProvider.notifier)
-                          .setThemeMode(AppThemeType.system),
+                          .setThemeMode(type),
                     ),
                   ),
-                  SizedBox(
-                    width: itemWidth,
-                    child: _ThemeOption(
-                      label: l10n.theme_light,
-                      icon: HugeIcons.strokeRoundedSun01,
-                      isSelected: currentTheme == AppThemeType.light,
-                      onTap: () => ref
-                          .read(themeModeProvider.notifier)
-                          .setThemeMode(AppThemeType.light),
-                    ),
-                  ),
-                  SizedBox(
-                    width: itemWidth,
-                    child: _ThemeOption(
-                      label: l10n.theme_dark,
-                      icon: HugeIcons.strokeRoundedMoon02,
-                      isSelected: currentTheme == AppThemeType.dark,
-                      onTap: () => ref
-                          .read(themeModeProvider.notifier)
-                          .setThemeMode(AppThemeType.dark),
-                    ),
-                  ),
-                  SizedBox(
-                    width: itemWidth,
-                    child: _ThemeOption(
-                      label: l10n.theme_claude,
-                      icon: HugeIcons.strokeRoundedSparkles,
-                      isSelected: currentTheme == AppThemeType.claude,
-                      onTap: () => ref
-                          .read(themeModeProvider.notifier)
-                          .setThemeMode(AppThemeType.claude),
-                    ),
-                  ),
-                ],
-              );
-            },
+              ],
+            ),
           ),
         ],
       ),
@@ -1757,74 +1474,51 @@ class _ThemeToggle extends StatelessWidget {
 class _ThemeOption extends StatelessWidget {
   const _ThemeOption({
     required this.label,
-    required this.icon,
     required this.isSelected,
     required this.onTap,
   });
 
   final String label;
-  final List<List<dynamic>> icon;
   final bool isSelected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: GestureDetector(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          height: 36,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected
-                ? primary.withValues(alpha: 0.10)
-                : theme.scaffoldBackgroundColor.withValues(alpha: 0.55),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected ? primary : _outlineColor(context, alpha: 0.8),
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? primary.withValues(alpha: 0.14)
-                      : _panelColor(context),
-                  borderRadius: BorderRadius.circular(10),
+            color: isSelected ? _surfaceColor(context) : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1),
                 ),
-                child: Center(
-                  child: HugeIcon(
-                    icon: icon,
-                    size: 16,
-                    color: isSelected ? primary : _mutedColor(context),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    color: isSelected ? primary : null,
-                  ),
-                ),
-              ),
-              HugeIcon(
-                icon: isSelected
-                    ? HugeIcons.strokeRoundedCheckmarkCircle01
-                    : HugeIcons.strokeRoundedCircle,
-                size: 16,
-                color: isSelected ? primary : _mutedColor(context),
-              ),
             ],
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isSelected
+                  ? theme.colorScheme.onSurface
+                  : _mutedColor(context),
+            ),
           ),
         ),
       ),
@@ -1832,7 +1526,100 @@ class _ThemeOption extends StatelessWidget {
   }
 }
 
-class _DropdownSetting extends StatelessWidget {
+/// A label on the left and a compact dropdown showing the current value on
+/// the right, in place of a header over a full-width field.
+class _InlineDropdown<T> extends StatelessWidget {
+  const _InlineDropdown({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+    this.description,
+    this.hint,
+  });
+
+  final String label;
+  final String? description;
+  final T value;
+  final List<(T value, String text, Widget? leading)> items;
+  final ValueChanged<T?> onChanged;
+  final String? hint;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = _mutedColor(context);
+    return _SettingPanel(
+      child: Row(
+        children: [
+          Expanded(
+            flex: 5,
+            child: _RowLabel(label: label, description: description),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            flex: 4,
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<T>(
+                value: value,
+                isExpanded: true,
+                alignment: AlignmentDirectional.centerEnd,
+                borderRadius: BorderRadius.circular(14),
+                dropdownColor: theme.colorScheme.surface,
+                icon: HugeIcon(
+                  icon: HugeIcons.strokeRoundedArrowDown01,
+                  size: 16,
+                  color: muted,
+                ),
+                hint: hint == null
+                    ? null
+                    : Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: Text(hint!, style: TextStyle(color: muted)),
+                      ),
+                selectedItemBuilder: (context) => [
+                  for (final item in items)
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: Text(
+                        item.$2,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 15, color: muted),
+                      ),
+                    ),
+                ],
+                items: [
+                  for (final item in items)
+                    DropdownMenuItem<T>(
+                      value: item.$1,
+                      child: Row(
+                        children: [
+                          if (item.$3 != null) ...[
+                            item.$3!,
+                            const SizedBox(width: 10),
+                          ],
+                          Flexible(
+                            child: Text(
+                              item.$2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DropdownSetting extends StatelessWidget implements _Searchable {
   const _DropdownSetting({
     required this.label,
     required this.currentValue,
@@ -1850,77 +1637,28 @@ class _DropdownSetting extends StatelessWidget {
   final String? description;
 
   @override
+  List<String> searchTerms(AppLocalizations l10n) => [label, ?description];
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    return _SettingPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SettingHeader(label: label),
-          const SizedBox(height: 10),
-          _InputShell(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String?>(
-                value: currentValue,
-                isExpanded: true,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                borderRadius: BorderRadius.circular(16),
-                dropdownColor: theme.colorScheme.surface,
-                hint: Text(
-                  l10n.none_selected,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: _mutedColor(context),
-                  ),
-                ),
-                items: [
-                  DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text(l10n.none),
-                  ),
-                  ...items.map(
-                    (item) => DropdownMenuItem<String?>(
-                      value: item.$1,
-                      child: Row(
-                        children: [
-                          HugeIcon(
-                            icon: icon,
-                            size: 16,
-                            color: _mutedColor(context),
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              item.$2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-                onChanged: onChanged,
-              ),
-            ),
-          ),
-          if (description != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              description!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: _mutedColor(context),
-              ),
-            ),
-          ],
-        ],
-      ),
+    // A saved id that no longer exists (a deleted server, say) reads as none
+    // rather than tripping the dropdown's value check.
+    final known = items.any((item) => item.$1 == currentValue);
+    return _InlineDropdown<String?>(
+      label: label,
+      description: description,
+      value: known ? currentValue : null,
+      onChanged: onChanged,
+      items: [
+        (null, l10n.none, null),
+        for (final item in items) (item.$1, item.$2, null),
+      ],
     );
   }
 }
 
-class _CodeThemeDropdown extends StatelessWidget {
+class _CodeThemeDropdown extends StatelessWidget implements _Searchable {
   const _CodeThemeDropdown({
     required this.label,
     required this.current,
@@ -1932,57 +1670,33 @@ class _CodeThemeDropdown extends StatelessWidget {
   final ValueChanged<SyntaxThemeName> onChanged;
 
   @override
+  List<String> searchTerms(AppLocalizations l10n) => [label];
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    return _SettingPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SettingHeader(label: label),
-          const SizedBox(height: 10),
-          _InputShell(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<SyntaxThemeName>(
-                value: current,
-                isExpanded: true,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                borderRadius: BorderRadius.circular(16),
-                dropdownColor: theme.colorScheme.surface,
-                items: SyntaxThemeName.values.map((codeTheme) {
-                  final displayName = switch (codeTheme) {
-                    SyntaxThemeName.light => l10n.theme_light,
-                    SyntaxThemeName.dark => l10n.theme_dark,
-                  };
-
-                  return DropdownMenuItem<SyntaxThemeName>(
-                    value: codeTheme,
-                    child: Text(displayName),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    onChanged(value);
-                  }
-                },
-              ),
-            ),
+    return _InlineDropdown<SyntaxThemeName>(
+      label: label,
+      value: current,
+      onChanged: (value) {
+        if (value != null) onChanged(value);
+      },
+      items: [
+        for (final codeTheme in SyntaxThemeName.values)
+          (
+            codeTheme,
+            switch (codeTheme) {
+              SyntaxThemeName.light => l10n.theme_light,
+              SyntaxThemeName.dark => l10n.theme_dark,
+            },
+            null,
           ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.code_theme_desc,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: _mutedColor(context),
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
 
-class _DangerousAction extends StatelessWidget {
+class _DangerousAction extends StatelessWidget implements _Searchable {
   const _DangerousAction({
     required this.label,
     required this.icon,
@@ -1994,11 +1708,15 @@ class _DangerousAction extends StatelessWidget {
   final VoidCallback onConfirm;
 
   @override
+  List<String> searchTerms(AppLocalizations l10n) => [label];
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    const red = Color(0xFFDC2626);
 
-    return OutlinedButton.icon(
-      onPressed: () {
+    return InkWell(
+      onTap: () {
         showDialog<void>(
           context: context,
           builder: (dialogContext) {
@@ -2027,119 +1745,113 @@ class _DangerousAction extends StatelessWidget {
           },
         );
       },
-      icon: HugeIcon(icon: icon, color: Colors.red, size: 16),
-      label: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(label, style: const TextStyle(color: Colors.red)),
-      ),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.red,
-        side: BorderSide(color: Colors.red.withValues(alpha: 0.55)),
-        minimumSize: const Size(double.infinity, 44),
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: _SettingPanel(
+        child: Row(
+          children: [
+            HugeIcon(icon: icon, color: red, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _RowLabel(label: label, color: red),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _SectionActionButton extends StatelessWidget {
+/// A row that opens something: icon, label, optional value, chevron.
+class _SectionActionButton extends StatelessWidget implements _Searchable {
   const _SectionActionButton({
     required this.icon,
     required this.label,
     required this.onPressed,
+    this.keywords = const [],
+    this.external = false,
   });
 
   final List<List<dynamic>> icon;
   final String label;
   final VoidCallback onPressed;
 
+  /// Extra words this row answers to, such as the options it leads to.
+  final List<String> keywords;
+
+  /// Opens outside the app, so it shows an arrow out instead of a chevron.
+  final bool external;
+
+  @override
+  List<String> searchTerms(AppLocalizations l10n) => [label, ...keywords];
+
   @override
   Widget build(BuildContext context) {
-    return ShadButton.outline(
-      onPressed: onPressed,
-      width: double.infinity,
-      leading: HugeIcon(icon: icon, size: 16),
-      child: Align(alignment: Alignment.centerLeft, child: Text(label)),
+    final muted = _mutedColor(context);
+    return InkWell(
+      onTap: onPressed,
+      child: _SettingPanel(
+        child: Row(
+          children: [
+            HugeIcon(
+              icon: icon,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: _RowLabel(label: label)),
+            HugeIcon(
+              icon: external
+                  ? HugeIcons.strokeRoundedArrowUpRight01
+                  : HugeIcons.strokeRoundedArrowRight01,
+              size: 16,
+              color: muted,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _EngineDropdown extends StatelessWidget {
+class _EngineDropdown extends StatelessWidget implements _Searchable {
   const _EngineDropdown({required this.current, required this.onChanged});
 
   final EngineId current;
   final ValueChanged<EngineId> onChanged;
 
   @override
+  List<String> searchTerms(AppLocalizations l10n) => [l10n.tts_engine];
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    return _SettingPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SettingHeader(label: l10n.tts_engine),
-          const SizedBox(height: 10),
-          _InputShell(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<EngineId>(
-                value: current,
-                isExpanded: true,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                borderRadius: BorderRadius.circular(16),
-                dropdownColor: theme.colorScheme.surface,
-                items: [
-                  _engineItem(
-                    context,
-                    EngineId.system,
-                    l10n.tts_engine_system,
-                    HugeIcons.strokeRoundedVoice,
-                  ),
-                  _engineItem(
-                    context,
-                    EngineId.kitten,
-                    l10n.tts_engine_kitten,
-                    HugeIcons.strokeRoundedSparkles,
-                  ),
-                  _engineItem(
-                    context,
-                    EngineId.piper,
-                    EngineMeta.piper.name,
-                    HugeIcons.strokeRoundedCpu,
-                  ),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    onChanged(value);
-                  }
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
+    Widget dot(EngineId id, List<List<dynamic>> icon) => HugeIcon(
+      icon: icon,
+      size: 18,
+      color: Color(EngineMeta.forEngine(id).accentColor),
     );
-  }
-
-  DropdownMenuItem<EngineId> _engineItem(
-    BuildContext context,
-    EngineId id,
-    String label,
-    List<List<dynamic>> icon,
-  ) {
-    final meta = EngineMeta.forEngine(id);
-    return DropdownMenuItem<EngineId>(
-      value: id,
-      child: Row(
-        children: [
-          HugeIcon(icon: icon, size: 18, color: Color(meta.accentColor)),
-          const SizedBox(width: 10),
-          Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
-        ],
-      ),
+    return _InlineDropdown<EngineId>(
+      label: l10n.tts_engine,
+      value: current,
+      onChanged: (value) {
+        if (value != null) onChanged(value);
+      },
+      items: [
+        (
+          EngineId.system,
+          l10n.tts_engine_system,
+          dot(EngineId.system, HugeIcons.strokeRoundedVoice),
+        ),
+        (
+          EngineId.kitten,
+          l10n.tts_engine_kitten,
+          dot(EngineId.kitten, HugeIcons.strokeRoundedSparkles),
+        ),
+        (
+          EngineId.piper,
+          EngineMeta.piper.name,
+          dot(EngineId.piper, HugeIcons.strokeRoundedCpu),
+        ),
+      ],
     );
   }
 }
@@ -2373,30 +2085,22 @@ class _OnDeviceEngineStatusCard extends ConsumerWidget {
       ),
     };
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accent.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          HugeIcon(icon: icon, size: 18, color: accent),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: accent,
-                fontWeight: FontWeight.w600,
-                height: 1.3,
-              ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        HugeIcon(icon: icon, size: 18, color: accent),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: accent,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -2739,30 +2443,17 @@ class _PrivacyPolicyLink extends StatelessWidget {
   }
 }
 
-List<Widget> _withVerticalSpacing(List<Widget> children, {double gap = 12}) {
-  if (children.isEmpty) {
-    return const [];
-  }
-
-  return [
-    for (var index = 0; index < children.length; index++) ...[
-      children[index],
-      if (index != children.length - 1) SizedBox(height: gap),
-    ],
-  ];
-}
-
 Color _panelColor(BuildContext context) {
   final scheme = ShadTheme.of(context).colorScheme;
   return scheme.secondary;
 }
 
+/// A soft grey that shows against both the page and the section cards.
+Color _trackColor(BuildContext context) =>
+    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06);
+
 Color _surfaceColor(BuildContext context) {
   return ShadTheme.of(context).colorScheme.card;
-}
-
-Color _primaryColor(BuildContext context) {
-  return ShadTheme.of(context).colorScheme.primary;
 }
 
 Color _outlineColor(BuildContext context, {double alpha = 0.6}) {
@@ -2771,37 +2462,6 @@ Color _outlineColor(BuildContext context, {double alpha = 0.6}) {
 
 Color _mutedColor(BuildContext context) {
   return ShadTheme.of(context).colorScheme.mutedForeground;
-}
-
-String _themeLabel(AppThemeType themeType, AppLocalizations l10n) {
-  return switch (themeType) {
-    AppThemeType.system => l10n.theme_system,
-    AppThemeType.light => l10n.theme_light,
-    AppThemeType.dark => l10n.theme_dark,
-    AppThemeType.claude => l10n.theme_claude,
-  };
-}
-
-String _engineLabel(EngineId engine, AppLocalizations l10n) {
-  return switch (engine) {
-    EngineId.system => l10n.tts_engine_system,
-    EngineId.kitten => l10n.tts_engine_kitten,
-    EngineId.piper => EngineMeta.piper.name,
-  };
-}
-
-String _languageLabel(String? localeCode, AppLocalizations l10n) {
-  if (localeCode == null) {
-    return l10n.language_system_default;
-  }
-
-  for (final item in _LanguageSetting.localeItems) {
-    if (item.$1 == localeCode) {
-      return item.$2;
-    }
-  }
-
-  return localeCode.toUpperCase();
 }
 
 Future<void> _openFeedbackIssue(BuildContext context) async {

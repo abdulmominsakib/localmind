@@ -966,5 +966,21 @@
   "new_chat_no_server_detail": "Запустите её на этом телефоне или подключите сервер.",
   "new_chat_works_offline": "Работает офлайн",
   "new_chat_no_model": "Модель не выбрана",
-  "new_chat_not_connected": "Нет подключения"
+  "new_chat_not_connected": "Нет подключения",
+  "attach_send_as_assistant": "Отправить как ассистент",
+  "attach_send_as_assistant_desc": "Сообщение добавляется как ответ; ничего не генерируется.",
+  "chat_input_hint_assistant": "Напишите ответ ассистента",
+  "settings_section_general": "Основные",
+  "settings_section_chat": "Чат",
+  "settings_section_voice": "Голос",
+  "settings_section_models": "Модели",
+  "settings_section_data": "Конфиденциальность и данные",
+  "settings_search_hint": "Поиск по настройкам",
+  "settings_more_chat_options": "Другие настройки чата",
+  "settings_group_replies": "Ответы",
+  "settings_group_prompt": "Системный промпт и параметры",
+  "settings_group_composer": "Поле ввода",
+  "sidebar_section_chats": "Чаты",
+  "sidebar_section_models": "Модели",
+  "sidebar_section_app": "Приложение"
 }

@@ -973,5 +973,21 @@
   "new_chat_no_server_detail": "شغّل نموذجًا على هذا الهاتف أو اتصل بخادم.",
   "new_chat_works_offline": "يعمل دون اتصال",
   "new_chat_no_model": "لم يُحدَّد نموذج",
-  "new_chat_not_connected": "غير متصل"
+  "new_chat_not_connected": "غير متصل",
+  "attach_send_as_assistant": "إرسال كمساعد",
+  "attach_send_as_assistant_desc": "تُضاف رسالتك كردّ، دون إنشاء أي شيء.",
+  "chat_input_hint_assistant": "اكتب ردّ المساعد",
+  "settings_section_general": "عام",
+  "settings_section_chat": "الدردشة",
+  "settings_section_voice": "الصوت",
+  "settings_section_models": "النماذج",
+  "settings_section_data": "الخصوصية والبيانات",
+  "settings_search_hint": "البحث في الإعدادات",
+  "settings_more_chat_options": "مزيد من خيارات الدردشة",
+  "settings_group_replies": "الردود",
+  "settings_group_prompt": "موجّه النظام والمعاملات",
+  "settings_group_composer": "مربع الكتابة",
+  "sidebar_section_chats": "المحادثات",
+  "sidebar_section_models": "النماذج",
+  "sidebar_section_app": "التطبيق"
 }

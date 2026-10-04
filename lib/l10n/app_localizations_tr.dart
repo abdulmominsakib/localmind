@@ -3314,4 +3314,53 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get new_chat_not_connected => 'Bağlı değil';
+
+  @override
+  String get attach_send_as_assistant => 'Asistan olarak gönder';
+
+  @override
+  String get attach_send_as_assistant_desc =>
+      'Mesajın yanıt olarak eklenir; hiçbir şey üretilmez.';
+
+  @override
+  String get chat_input_hint_assistant => 'Asistanın yanıtını yaz';
+
+  @override
+  String get settings_section_general => 'Genel';
+
+  @override
+  String get settings_section_chat => 'Sohbet';
+
+  @override
+  String get settings_section_voice => 'Ses';
+
+  @override
+  String get settings_section_models => 'Modeller';
+
+  @override
+  String get settings_section_data => 'Gizlilik ve veriler';
+
+  @override
+  String get settings_search_hint => 'Ayarlarda ara';
+
+  @override
+  String get settings_more_chat_options => 'Diğer sohbet seçenekleri';
+
+  @override
+  String get settings_group_replies => 'Yanıtlar';
+
+  @override
+  String get settings_group_prompt => 'Sistem istemi ve parametreler';
+
+  @override
+  String get settings_group_composer => 'Yazma alanı';
+
+  @override
+  String get sidebar_section_chats => 'Sohbetler';
+
+  @override
+  String get sidebar_section_models => 'Modeller';
+
+  @override
+  String get sidebar_section_app => 'Uygulama';
 }

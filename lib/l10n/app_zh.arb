@@ -969,5 +969,21 @@
   "new_chat_no_server_detail": "在本机运行一个模型，或连接服务器。",
   "new_chat_works_offline": "离线可用",
   "new_chat_no_model": "未选择模型",
-  "new_chat_not_connected": "未连接"
+  "new_chat_not_connected": "未连接",
+  "attach_send_as_assistant": "以助手身份发送",
+  "attach_send_as_assistant_desc": "将你的消息添加为回复，不会生成内容。",
+  "chat_input_hint_assistant": "写下助手的回复",
+  "settings_section_general": "通用",
+  "settings_section_chat": "聊天",
+  "settings_section_voice": "语音",
+  "settings_section_models": "模型",
+  "settings_section_data": "隐私与数据",
+  "settings_search_hint": "搜索设置",
+  "settings_more_chat_options": "更多聊天选项",
+  "settings_group_replies": "回复",
+  "settings_group_prompt": "系统提示词与参数",
+  "settings_group_composer": "输入框",
+  "sidebar_section_chats": "聊天",
+  "sidebar_section_models": "模型",
+  "sidebar_section_app": "应用"
 }

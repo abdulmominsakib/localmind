@@ -3307,4 +3307,53 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get new_chat_not_connected => 'Нет подключения';
+
+  @override
+  String get attach_send_as_assistant => 'Отправить как ассистент';
+
+  @override
+  String get attach_send_as_assistant_desc =>
+      'Сообщение добавляется как ответ; ничего не генерируется.';
+
+  @override
+  String get chat_input_hint_assistant => 'Напишите ответ ассистента';
+
+  @override
+  String get settings_section_general => 'Основные';
+
+  @override
+  String get settings_section_chat => 'Чат';
+
+  @override
+  String get settings_section_voice => 'Голос';
+
+  @override
+  String get settings_section_models => 'Модели';
+
+  @override
+  String get settings_section_data => 'Конфиденциальность и данные';
+
+  @override
+  String get settings_search_hint => 'Поиск по настройкам';
+
+  @override
+  String get settings_more_chat_options => 'Другие настройки чата';
+
+  @override
+  String get settings_group_replies => 'Ответы';
+
+  @override
+  String get settings_group_prompt => 'Системный промпт и параметры';
+
+  @override
+  String get settings_group_composer => 'Поле ввода';
+
+  @override
+  String get sidebar_section_chats => 'Чаты';
+
+  @override
+  String get sidebar_section_models => 'Модели';
+
+  @override
+  String get sidebar_section_app => 'Приложение';
 }
