@@ -3252,4 +3252,56 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get model_loaded_status => 'লোড হয়েছে';
+
+  @override
+  String get new_chat_title => 'যেকোনো কিছু জিজ্ঞাসা করুন।';
+
+  @override
+  String get new_chat_on_device_headline => 'সবকিছু এই ফোনেই থাকে।';
+
+  @override
+  String get new_chat_on_device_detail =>
+      'উত্তর এখানেই তৈরি হয় — কোনো আপলোড নেই, অ্যাকাউন্ট নেই, অফলাইনে কাজ করে।';
+
+  @override
+  String new_chat_self_hosted_headline(String server) {
+    return 'উত্তর দিচ্ছে $server।';
+  }
+
+  @override
+  String get new_chat_self_hosted_detail =>
+      'মেসেজ আপনার নিজের সার্ভারে যায়, কোনো তৃতীয় পক্ষের কাছে নয়।';
+
+  @override
+  String new_chat_endpoint_detail(String server) {
+    return 'মেসেজ $server-এ পাঠানো হয়, যা একটি OpenAI-সামঞ্জস্যপূর্ণ এন্ডপয়েন্ট।';
+  }
+
+  @override
+  String get new_chat_cloud_headline => 'উত্তর আসছে ক্লাউড থেকে।';
+
+  @override
+  String new_chat_router_detail(String provider) {
+    return 'মেসেজ $provider এবং তার বেছে নেওয়া মডেল প্রোভাইডারের কাছে পাঠানো হয়।';
+  }
+
+  @override
+  String get new_chat_ollama_cloud_detail =>
+      'মেসেজ Ollama-র ক্লাউড সার্ভিসে পাঠানো হয়।';
+
+  @override
+  String get new_chat_no_server_headline => 'শুরু করতে একটি মডেল বেছে নিন।';
+
+  @override
+  String get new_chat_no_server_detail =>
+      'এই ফোনে একটি চালান বা একটি সার্ভার যুক্ত করুন।';
+
+  @override
+  String get new_chat_works_offline => 'অফলাইনে কাজ করে';
+
+  @override
+  String get new_chat_no_model => 'কোনো মডেল বাছাই করা হয়নি';
+
+  @override
+  String get new_chat_not_connected => 'সংযুক্ত নয়';
 }

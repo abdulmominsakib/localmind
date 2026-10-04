@@ -952,5 +952,19 @@
   "background_generation_notice_info_untitled": "Arka planda başka bir sohbet yanıt oluşturuyor. Açmak için dokunun.",
   "background_generation_notice_multiple": "{count} sohbet arka planda yanıt oluşturuyor.",
   "background_generation_chat_untitled": "Başlıksız sohbet",
-  "model_loaded_status": "Yüklendi"
+  "model_loaded_status": "Yüklendi",
+  "new_chat_title": "Ne istersen sor.",
+  "new_chat_on_device_headline": "Her şey bu telefonda kalır.",
+  "new_chat_on_device_detail": "Yanıtlar tam burada üretilir — yükleme yok, hesap yok, çevrimdışı çalışır.",
+  "new_chat_self_hosted_headline": "Yanıtlayan: {server}.",
+  "new_chat_self_hosted_detail": "Mesajlar üçüncü bir tarafa değil, kendi sunucuna gider.",
+  "new_chat_endpoint_detail": "Mesajlar OpenAI uyumlu bir uç nokta olan {server} adresine gönderilir.",
+  "new_chat_cloud_headline": "Bulutta yanıtlanır.",
+  "new_chat_router_detail": "Mesajlar {provider} hizmetine ve yönlendirdiği model sağlayıcısına gönderilir.",
+  "new_chat_ollama_cloud_detail": "Mesajlar Ollama'nın bulut hizmetine gönderilir.",
+  "new_chat_no_server_headline": "Başlamak için bir model seç.",
+  "new_chat_no_server_detail": "Bu telefonda birini çalıştır ya da bir sunucu bağla.",
+  "new_chat_works_offline": "Çevrimdışı çalışır",
+  "new_chat_no_model": "Model seçilmedi",
+  "new_chat_not_connected": "Bağlı değil"
 }

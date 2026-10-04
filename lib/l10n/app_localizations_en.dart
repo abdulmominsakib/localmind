@@ -3230,4 +3230,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get model_loaded_status => 'Loaded';
+
+  @override
+  String get new_chat_title => 'Ask anything.';
+
+  @override
+  String get new_chat_on_device_headline => 'It stays on this phone.';
+
+  @override
+  String get new_chat_on_device_detail =>
+      'Replies are generated right here — no upload, no account, works offline.';
+
+  @override
+  String new_chat_self_hosted_headline(String server) {
+    return 'Answered by $server.';
+  }
+
+  @override
+  String get new_chat_self_hosted_detail =>
+      'Messages go to your own server, not to a third party.';
+
+  @override
+  String new_chat_endpoint_detail(String server) {
+    return 'Messages are sent to $server, an OpenAI-compatible endpoint.';
+  }
+
+  @override
+  String get new_chat_cloud_headline => 'Answered in the cloud.';
+
+  @override
+  String new_chat_router_detail(String provider) {
+    return 'Messages are sent to $provider and the model provider it routes to.';
+  }
+
+  @override
+  String get new_chat_ollama_cloud_detail =>
+      'Messages are sent to Ollama\'s cloud service.';
+
+  @override
+  String get new_chat_no_server_headline => 'Pick a model to begin.';
+
+  @override
+  String get new_chat_no_server_detail =>
+      'Run one on this phone or connect a server.';
+
+  @override
+  String get new_chat_works_offline => 'Works offline';
+
+  @override
+  String get new_chat_no_model => 'No model selected';
+
+  @override
+  String get new_chat_not_connected => 'Not connected';
 }

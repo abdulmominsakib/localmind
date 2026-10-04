@@ -3175,4 +3175,53 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get model_loaded_status => '読み込み済み';
+
+  @override
+  String get new_chat_title => '何でも聞いてください。';
+
+  @override
+  String get new_chat_on_device_headline => 'すべてこのスマホの中で完結します。';
+
+  @override
+  String get new_chat_on_device_detail =>
+      '応答はこの端末上で生成されます。アップロードもアカウントも不要で、オフラインでも動きます。';
+
+  @override
+  String new_chat_self_hosted_headline(String server) {
+    return '$server が応答します。';
+  }
+
+  @override
+  String get new_chat_self_hosted_detail => 'メッセージは第三者ではなく、あなた自身のサーバーに送られます。';
+
+  @override
+  String new_chat_endpoint_detail(String server) {
+    return 'メッセージは OpenAI 互換エンドポイントの $server に送信されます。';
+  }
+
+  @override
+  String get new_chat_cloud_headline => 'クラウドで応答します。';
+
+  @override
+  String new_chat_router_detail(String provider) {
+    return 'メッセージは $provider と、そこから振り分けられるモデル提供元に送信されます。';
+  }
+
+  @override
+  String get new_chat_ollama_cloud_detail => 'メッセージは Ollama のクラウドサービスに送信されます。';
+
+  @override
+  String get new_chat_no_server_headline => 'モデルを選んで始めましょう。';
+
+  @override
+  String get new_chat_no_server_detail => 'このスマホで実行するか、サーバーに接続してください。';
+
+  @override
+  String get new_chat_works_offline => 'オフラインで動作';
+
+  @override
+  String get new_chat_no_model => 'モデルが選択されていません';
+
+  @override
+  String get new_chat_not_connected => '未接続';
 }

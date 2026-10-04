@@ -955,5 +955,19 @@
   "background_generation_notice_info_untitled": "另一個對話正在背景回覆。點按開啟。",
   "background_generation_notice_multiple": "{count} 個對話正在背景回覆。",
   "background_generation_chat_untitled": "未命名對話",
-  "model_loaded_status": "已載入"
+  "model_loaded_status": "已載入",
+  "new_chat_title": "儘管問吧。",
+  "new_chat_on_device_headline": "一切都留在這支手機上。",
+  "new_chat_on_device_detail": "回覆就在本機產生——不需上傳、不需帳號，離線也能用。",
+  "new_chat_self_hosted_headline": "由 {server} 回答。",
+  "new_chat_self_hosted_detail": "訊息會傳送到你自己的伺服器，而不是第三方。",
+  "new_chat_endpoint_detail": "訊息會傳送到 {server}，一個相容 OpenAI 的端點。",
+  "new_chat_cloud_headline": "由雲端回答。",
+  "new_chat_router_detail": "訊息會傳送到 {provider} 及其轉送的模型供應商。",
+  "new_chat_ollama_cloud_detail": "訊息會傳送到 Ollama 的雲端服務。",
+  "new_chat_no_server_headline": "選擇一個模型開始吧。",
+  "new_chat_no_server_detail": "在本機執行模型，或連接伺服器。",
+  "new_chat_works_offline": "離線可用",
+  "new_chat_no_model": "未選擇模型",
+  "new_chat_not_connected": "未連線"
 }

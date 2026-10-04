@@ -5990,6 +5990,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loaded'**
   String get model_loaded_status;
+
+  /// No description provided for @new_chat_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask anything.'**
+  String get new_chat_title;
+
+  /// No description provided for @new_chat_on_device_headline.
+  ///
+  /// In en, this message translates to:
+  /// **'It stays on this phone.'**
+  String get new_chat_on_device_headline;
+
+  /// No description provided for @new_chat_on_device_detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Replies are generated right here — no upload, no account, works offline.'**
+  String get new_chat_on_device_detail;
+
+  /// Second line of the new-chat heading for a self-hosted or OpenAI-compatible server
+  ///
+  /// In en, this message translates to:
+  /// **'Answered by {server}.'**
+  String new_chat_self_hosted_headline(String server);
+
+  /// No description provided for @new_chat_self_hosted_detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages go to your own server, not to a third party.'**
+  String get new_chat_self_hosted_detail;
+
+  /// New-chat note for an OpenAI-compatible server
+  ///
+  /// In en, this message translates to:
+  /// **'Messages are sent to {server}, an OpenAI-compatible endpoint.'**
+  String new_chat_endpoint_detail(String server);
+
+  /// No description provided for @new_chat_cloud_headline.
+  ///
+  /// In en, this message translates to:
+  /// **'Answered in the cloud.'**
+  String get new_chat_cloud_headline;
+
+  /// New-chat note for a routing cloud provider such as OpenRouter or Requesty
+  ///
+  /// In en, this message translates to:
+  /// **'Messages are sent to {provider} and the model provider it routes to.'**
+  String new_chat_router_detail(String provider);
+
+  /// No description provided for @new_chat_ollama_cloud_detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages are sent to Ollama\'s cloud service.'**
+  String get new_chat_ollama_cloud_detail;
+
+  /// No description provided for @new_chat_no_server_headline.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a model to begin.'**
+  String get new_chat_no_server_headline;
+
+  /// No description provided for @new_chat_no_server_detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Run one on this phone or connect a server.'**
+  String get new_chat_no_server_detail;
+
+  /// No description provided for @new_chat_works_offline.
+  ///
+  /// In en, this message translates to:
+  /// **'Works offline'**
+  String get new_chat_works_offline;
+
+  /// No description provided for @new_chat_no_model.
+  ///
+  /// In en, this message translates to:
+  /// **'No model selected'**
+  String get new_chat_no_model;
+
+  /// No description provided for @new_chat_not_connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get new_chat_not_connected;
 }
 
 class _AppLocalizationsDelegate

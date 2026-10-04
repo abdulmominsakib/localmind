@@ -3147,6 +3147,54 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get model_loaded_status => '已加载';
+
+  @override
+  String get new_chat_title => '尽管问吧。';
+
+  @override
+  String get new_chat_on_device_headline => '一切都留在这部手机上。';
+
+  @override
+  String get new_chat_on_device_detail => '回复就在本机生成——无需上传，无需账号，离线也能用。';
+
+  @override
+  String new_chat_self_hosted_headline(String server) {
+    return '由 $server 回答。';
+  }
+
+  @override
+  String get new_chat_self_hosted_detail => '消息发送到你自己的服务器，而不是第三方。';
+
+  @override
+  String new_chat_endpoint_detail(String server) {
+    return '消息将发送到 $server，一个兼容 OpenAI 的端点。';
+  }
+
+  @override
+  String get new_chat_cloud_headline => '由云端回答。';
+
+  @override
+  String new_chat_router_detail(String provider) {
+    return '消息将发送到 $provider 及其转发到的模型提供商。';
+  }
+
+  @override
+  String get new_chat_ollama_cloud_detail => '消息将发送到 Ollama 的云服务。';
+
+  @override
+  String get new_chat_no_server_headline => '选择一个模型开始吧。';
+
+  @override
+  String get new_chat_no_server_detail => '在本机运行一个模型，或连接服务器。';
+
+  @override
+  String get new_chat_works_offline => '离线可用';
+
+  @override
+  String get new_chat_no_model => '未选择模型';
+
+  @override
+  String get new_chat_not_connected => '未连接';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6198,4 +6246,52 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get model_loaded_status => '已載入';
+
+  @override
+  String get new_chat_title => '儘管問吧。';
+
+  @override
+  String get new_chat_on_device_headline => '一切都留在這支手機上。';
+
+  @override
+  String get new_chat_on_device_detail => '回覆就在本機產生——不需上傳、不需帳號，離線也能用。';
+
+  @override
+  String new_chat_self_hosted_headline(String server) {
+    return '由 $server 回答。';
+  }
+
+  @override
+  String get new_chat_self_hosted_detail => '訊息會傳送到你自己的伺服器，而不是第三方。';
+
+  @override
+  String new_chat_endpoint_detail(String server) {
+    return '訊息會傳送到 $server，一個相容 OpenAI 的端點。';
+  }
+
+  @override
+  String get new_chat_cloud_headline => '由雲端回答。';
+
+  @override
+  String new_chat_router_detail(String provider) {
+    return '訊息會傳送到 $provider 及其轉送的模型供應商。';
+  }
+
+  @override
+  String get new_chat_ollama_cloud_detail => '訊息會傳送到 Ollama 的雲端服務。';
+
+  @override
+  String get new_chat_no_server_headline => '選擇一個模型開始吧。';
+
+  @override
+  String get new_chat_no_server_detail => '在本機執行模型，或連接伺服器。';
+
+  @override
+  String get new_chat_works_offline => '離線可用';
+
+  @override
+  String get new_chat_no_model => '未選擇模型';
+
+  @override
+  String get new_chat_not_connected => '未連線';
 }

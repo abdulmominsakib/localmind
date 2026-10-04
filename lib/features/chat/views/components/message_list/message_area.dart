@@ -11,6 +11,8 @@ import 'package:localmind/features/chat/views/components/model_info_sheet.dart';
 import 'package:localmind/features/chat/views/components/edit_message_dialog.dart';
 import 'package:localmind/features/chat/views/components/message_list/message_list.dart';
 import 'package:localmind/features/chat/views/components/message_list/empty_state.dart';
+import 'package:localmind/features/chat/views/components/message_list/quick_prompt_chips.dart';
+import 'package:localmind/features/chat/utils/new_chat_presence.dart';
 import 'package:localmind/features/chat/views/components/message_list/corrupted_state.dart';
 import 'package:localmind/features/saved_messages/views/components/save_message_sheet.dart';
 import 'package:localmind/core/models/enums.dart';
@@ -42,6 +44,29 @@ class MessageArea extends ConsumerWidget {
   final double keyboardBottomInset;
   final VoidCallback onModelPicker;
 
+  /// Mirrors the app bar: a model counts once one is chosen (or loaded on
+  /// device) and its server is reachable, not when chats would fall back to
+  /// a remote server's default model.
+  static NewChatReadiness _readiness(WidgetRef ref, ServerType? serverType) {
+    final target = ref.watch(activeChatTargetProvider);
+    if (serverType == ServerType.onDevice) {
+      // Apple Foundation Models and other on-device picks count as soon as
+      // they're chosen; they load on first send.
+      final picked = ref.watch(selectedModelProvider) != null;
+      return picked || target.effectiveModelId != null
+          ? NewChatReadiness.ready
+          : NewChatReadiness.noModel;
+    }
+    final status = ref.watch(connectionStatusProvider);
+    if (status == ConnectionStatus.disconnected ||
+        status == ConnectionStatus.error) {
+      return NewChatReadiness.disconnected;
+    }
+    return target.selectedModel == null
+        ? NewChatReadiness.noModel
+        : NewChatReadiness.ready;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
@@ -61,12 +86,16 @@ class MessageArea extends ConsumerWidget {
 
     if (messages.isEmpty) {
       final activeServer = ref.watch(activeServerProvider);
-      final isCloudProvider =
-          activeServer?.type == ServerType.openRouter ||
-          activeServer?.type == ServerType.requesty;
+      final serverType = activeServer == null
+          ? null
+          : activeServer.isOnDevice
+          ? ServerType.onDevice
+          : activeServer.type;
 
       return EmptyState(
-        isCloudProvider: isCloudProvider,
+        presence: NewChatPresence.forServerType(serverType),
+        serverName: activeServer?.name ?? '',
+        readiness: _readiness(ref, serverType),
         onQuickPrompt: (prompt) {
           if (!ref.read(activeChatTargetProvider).isReady) {
             final toastL10n = AppLocalizations.of(context)!;
@@ -102,6 +131,7 @@ class MessageArea extends ConsumerWidget {
           ),
         ],
         bottomInset: effectiveBottomInset,
+        keyboardOpen: keyboardBottomInset > 0,
       );
     }
 

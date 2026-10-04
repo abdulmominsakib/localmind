@@ -3262,4 +3262,56 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get model_loaded_status => 'Yüklendi';
+
+  @override
+  String get new_chat_title => 'Ne istersen sor.';
+
+  @override
+  String get new_chat_on_device_headline => 'Her şey bu telefonda kalır.';
+
+  @override
+  String get new_chat_on_device_detail =>
+      'Yanıtlar tam burada üretilir — yükleme yok, hesap yok, çevrimdışı çalışır.';
+
+  @override
+  String new_chat_self_hosted_headline(String server) {
+    return 'Yanıtlayan: $server.';
+  }
+
+  @override
+  String get new_chat_self_hosted_detail =>
+      'Mesajlar üçüncü bir tarafa değil, kendi sunucuna gider.';
+
+  @override
+  String new_chat_endpoint_detail(String server) {
+    return 'Mesajlar OpenAI uyumlu bir uç nokta olan $server adresine gönderilir.';
+  }
+
+  @override
+  String get new_chat_cloud_headline => 'Bulutta yanıtlanır.';
+
+  @override
+  String new_chat_router_detail(String provider) {
+    return 'Mesajlar $provider hizmetine ve yönlendirdiği model sağlayıcısına gönderilir.';
+  }
+
+  @override
+  String get new_chat_ollama_cloud_detail =>
+      'Mesajlar Ollama\'nın bulut hizmetine gönderilir.';
+
+  @override
+  String get new_chat_no_server_headline => 'Başlamak için bir model seç.';
+
+  @override
+  String get new_chat_no_server_detail =>
+      'Bu telefonda birini çalıştır ya da bir sunucu bağla.';
+
+  @override
+  String get new_chat_works_offline => 'Çevrimdışı çalışır';
+
+  @override
+  String get new_chat_no_model => 'Model seçilmedi';
+
+  @override
+  String get new_chat_not_connected => 'Bağlı değil';
 }

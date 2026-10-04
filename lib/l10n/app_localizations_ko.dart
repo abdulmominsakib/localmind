@@ -3157,4 +3157,53 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get model_loaded_status => '로드됨';
+
+  @override
+  String get new_chat_title => '무엇이든 물어보세요.';
+
+  @override
+  String get new_chat_on_device_headline => '모든 것이 이 휴대폰에 머뭅니다.';
+
+  @override
+  String get new_chat_on_device_detail =>
+      '답변은 이 기기에서 바로 생성됩니다. 업로드도 계정도 필요 없고, 오프라인에서도 작동합니다.';
+
+  @override
+  String new_chat_self_hosted_headline(String server) {
+    return '$server이(가) 답변합니다.';
+  }
+
+  @override
+  String get new_chat_self_hosted_detail => '메시지는 제3자가 아닌 내 서버로 전송됩니다.';
+
+  @override
+  String new_chat_endpoint_detail(String server) {
+    return '메시지는 OpenAI 호환 엔드포인트인 $server(으)로 전송됩니다.';
+  }
+
+  @override
+  String get new_chat_cloud_headline => '클라우드에서 답변합니다.';
+
+  @override
+  String new_chat_router_detail(String provider) {
+    return '메시지는 $provider 및 그곳에서 연결하는 모델 제공업체로 전송됩니다.';
+  }
+
+  @override
+  String get new_chat_ollama_cloud_detail => '메시지는 Ollama 클라우드 서비스로 전송됩니다.';
+
+  @override
+  String get new_chat_no_server_headline => '시작하려면 모델을 선택하세요.';
+
+  @override
+  String get new_chat_no_server_detail => '이 휴대폰에서 실행하거나 서버를 연결하세요.';
+
+  @override
+  String get new_chat_works_offline => '오프라인 작동';
+
+  @override
+  String get new_chat_no_model => '선택된 모델 없음';
+
+  @override
+  String get new_chat_not_connected => '연결되지 않음';
 }

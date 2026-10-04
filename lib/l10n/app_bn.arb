@@ -955,5 +955,19 @@
   "background_generation_notice_info_untitled": "ব্যাকগ্রাউন্ডে অন্য একটি চ্যাটে উত্তর তৈরি হচ্ছে। খুলতে ট্যাপ করুন।",
   "background_generation_notice_multiple": "{count}টি চ্যাটে ব্যাকগ্রাউন্ডে উত্তর তৈরি হচ্ছে।",
   "background_generation_chat_untitled": "শিরোনামহীন চ্যাট",
-  "model_loaded_status": "লোড হয়েছে"
+  "model_loaded_status": "লোড হয়েছে",
+  "new_chat_title": "যেকোনো কিছু জিজ্ঞাসা করুন।",
+  "new_chat_on_device_headline": "সবকিছু এই ফোনেই থাকে।",
+  "new_chat_on_device_detail": "উত্তর এখানেই তৈরি হয় — কোনো আপলোড নেই, অ্যাকাউন্ট নেই, অফলাইনে কাজ করে।",
+  "new_chat_self_hosted_headline": "উত্তর দিচ্ছে {server}।",
+  "new_chat_self_hosted_detail": "মেসেজ আপনার নিজের সার্ভারে যায়, কোনো তৃতীয় পক্ষের কাছে নয়।",
+  "new_chat_endpoint_detail": "মেসেজ {server}-এ পাঠানো হয়, যা একটি OpenAI-সামঞ্জস্যপূর্ণ এন্ডপয়েন্ট।",
+  "new_chat_cloud_headline": "উত্তর আসছে ক্লাউড থেকে।",
+  "new_chat_router_detail": "মেসেজ {provider} এবং তার বেছে নেওয়া মডেল প্রোভাইডারের কাছে পাঠানো হয়।",
+  "new_chat_ollama_cloud_detail": "মেসেজ Ollama-র ক্লাউড সার্ভিসে পাঠানো হয়।",
+  "new_chat_no_server_headline": "শুরু করতে একটি মডেল বেছে নিন।",
+  "new_chat_no_server_detail": "এই ফোনে একটি চালান বা একটি সার্ভার যুক্ত করুন।",
+  "new_chat_works_offline": "অফলাইনে কাজ করে",
+  "new_chat_no_model": "কোনো মডেল বাছাই করা হয়নি",
+  "new_chat_not_connected": "সংযুক্ত নয়"
 }

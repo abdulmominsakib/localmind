@@ -3255,4 +3255,56 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get model_loaded_status => 'Загружена';
+
+  @override
+  String get new_chat_title => 'Спросите что угодно.';
+
+  @override
+  String get new_chat_on_device_headline => 'Всё остаётся на этом телефоне.';
+
+  @override
+  String get new_chat_on_device_detail =>
+      'Ответы создаются прямо здесь — без загрузки, без аккаунта, работает офлайн.';
+
+  @override
+  String new_chat_self_hosted_headline(String server) {
+    return 'Отвечает $server.';
+  }
+
+  @override
+  String get new_chat_self_hosted_detail =>
+      'Сообщения идут на ваш собственный сервер, а не третьим лицам.';
+
+  @override
+  String new_chat_endpoint_detail(String server) {
+    return 'Сообщения отправляются на $server — OpenAI-совместимый эндпоинт.';
+  }
+
+  @override
+  String get new_chat_cloud_headline => 'Ответы из облака.';
+
+  @override
+  String new_chat_router_detail(String provider) {
+    return 'Сообщения отправляются в $provider и провайдеру модели, к которому он их направляет.';
+  }
+
+  @override
+  String get new_chat_ollama_cloud_detail =>
+      'Сообщения отправляются в облачный сервис Ollama.';
+
+  @override
+  String get new_chat_no_server_headline => 'Выберите модель, чтобы начать.';
+
+  @override
+  String get new_chat_no_server_detail =>
+      'Запустите её на этом телефоне или подключите сервер.';
+
+  @override
+  String get new_chat_works_offline => 'Работает офлайн';
+
+  @override
+  String get new_chat_no_model => 'Модель не выбрана';
+
+  @override
+  String get new_chat_not_connected => 'Нет подключения';
 }

@@ -3227,4 +3227,56 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get model_loaded_status => 'مُحمَّل';
+
+  @override
+  String get new_chat_title => 'اسأل عن أي شيء.';
+
+  @override
+  String get new_chat_on_device_headline => 'يبقى على هذا الهاتف.';
+
+  @override
+  String get new_chat_on_device_detail =>
+      'تُنشأ الردود هنا مباشرةً — دون رفع أو حساب، وتعمل دون اتصال.';
+
+  @override
+  String new_chat_self_hosted_headline(String server) {
+    return 'يجيب $server.';
+  }
+
+  @override
+  String get new_chat_self_hosted_detail =>
+      'تُرسل الرسائل إلى خادمك الخاص، لا إلى طرف ثالث.';
+
+  @override
+  String new_chat_endpoint_detail(String server) {
+    return 'تُرسل الرسائل إلى $server، وهو نقطة نهاية متوافقة مع OpenAI.';
+  }
+
+  @override
+  String get new_chat_cloud_headline => 'يُجاب في السحابة.';
+
+  @override
+  String new_chat_router_detail(String provider) {
+    return 'تُرسل الرسائل إلى $provider وإلى مزوّد النموذج الذي يوجّهها إليه.';
+  }
+
+  @override
+  String get new_chat_ollama_cloud_detail =>
+      'تُرسل الرسائل إلى خدمة Ollama السحابية.';
+
+  @override
+  String get new_chat_no_server_headline => 'اختر نموذجًا للبدء.';
+
+  @override
+  String get new_chat_no_server_detail =>
+      'شغّل نموذجًا على هذا الهاتف أو اتصل بخادم.';
+
+  @override
+  String get new_chat_works_offline => 'يعمل دون اتصال';
+
+  @override
+  String get new_chat_no_model => 'لم يُحدَّد نموذج';
+
+  @override
+  String get new_chat_not_connected => 'غير متصل';
 }

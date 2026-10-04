@@ -955,5 +955,19 @@
   "background_generation_notice_info_untitled": "बैकग्राउंड में कोई दूसरी चैट जवाब बना रही है। खोलने के लिए टैप करें।",
   "background_generation_notice_multiple": "{count} चैट बैकग्राउंड में जवाब बना रही हैं।",
   "background_generation_chat_untitled": "बिना शीर्षक की चैट",
-  "model_loaded_status": "लोड किया गया"
+  "model_loaded_status": "लोड किया गया",
+  "new_chat_title": "कुछ भी पूछें।",
+  "new_chat_on_device_headline": "सब कुछ इसी फ़ोन पर रहता है।",
+  "new_chat_on_device_detail": "जवाब यहीं बनते हैं — न अपलोड, न अकाउंट, ऑफ़लाइन भी चलता है।",
+  "new_chat_self_hosted_headline": "जवाब दे रहा है {server}।",
+  "new_chat_self_hosted_detail": "संदेश आपके अपने सर्वर पर जाते हैं, किसी तीसरे पक्ष को नहीं।",
+  "new_chat_endpoint_detail": "संदेश {server} को भेजे जाते हैं, जो एक OpenAI-संगत एंडपॉइंट है।",
+  "new_chat_cloud_headline": "जवाब क्लाउड से।",
+  "new_chat_router_detail": "संदेश {provider} और उसके चुने गए मॉडल प्रदाता को भेजे जाते हैं।",
+  "new_chat_ollama_cloud_detail": "संदेश Ollama की क्लाउड सेवा को भेजे जाते हैं।",
+  "new_chat_no_server_headline": "शुरू करने के लिए एक मॉडल चुनें।",
+  "new_chat_no_server_detail": "इस फ़ोन पर एक चलाएँ या कोई सर्वर जोड़ें।",
+  "new_chat_works_offline": "ऑफ़लाइन चलता है",
+  "new_chat_no_model": "कोई मॉडल नहीं चुना गया",
+  "new_chat_not_connected": "कनेक्ट नहीं है"
 }

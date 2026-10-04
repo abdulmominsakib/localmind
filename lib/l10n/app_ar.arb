@@ -959,5 +959,19 @@
   "background_generation_notice_info_untitled": "محادثة أخرى تُنشئ ردًا في الخلفية. اضغط للفتح.",
   "background_generation_notice_multiple": "{count} محادثات تُنشئ ردودًا في الخلفية.",
   "background_generation_chat_untitled": "محادثة بلا عنوان",
-  "model_loaded_status": "مُحمَّل"
+  "model_loaded_status": "مُحمَّل",
+  "new_chat_title": "اسأل عن أي شيء.",
+  "new_chat_on_device_headline": "يبقى على هذا الهاتف.",
+  "new_chat_on_device_detail": "تُنشأ الردود هنا مباشرةً — دون رفع أو حساب، وتعمل دون اتصال.",
+  "new_chat_self_hosted_headline": "يجيب {server}.",
+  "new_chat_self_hosted_detail": "تُرسل الرسائل إلى خادمك الخاص، لا إلى طرف ثالث.",
+  "new_chat_endpoint_detail": "تُرسل الرسائل إلى {server}، وهو نقطة نهاية متوافقة مع OpenAI.",
+  "new_chat_cloud_headline": "يُجاب في السحابة.",
+  "new_chat_router_detail": "تُرسل الرسائل إلى {provider} وإلى مزوّد النموذج الذي يوجّهها إليه.",
+  "new_chat_ollama_cloud_detail": "تُرسل الرسائل إلى خدمة Ollama السحابية.",
+  "new_chat_no_server_headline": "اختر نموذجًا للبدء.",
+  "new_chat_no_server_detail": "شغّل نموذجًا على هذا الهاتف أو اتصل بخادم.",
+  "new_chat_works_offline": "يعمل دون اتصال",
+  "new_chat_no_model": "لم يُحدَّد نموذج",
+  "new_chat_not_connected": "غير متصل"
 }

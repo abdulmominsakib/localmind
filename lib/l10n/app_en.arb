@@ -3482,5 +3482,22 @@
   "model_loaded_status": "Loaded",
   "@model_loaded_status": {
     "description": "Status label on a model card when the model is loaded into the server's memory"
-  }
+  },
+  "new_chat_title": "Ask anything.",
+  "new_chat_on_device_headline": "It stays on this phone.",
+  "new_chat_on_device_detail": "Replies are generated right here — no upload, no account, works offline.",
+  "new_chat_self_hosted_headline": "Answered by {server}.",
+  "@new_chat_self_hosted_headline": {"description": "Second line of the new-chat heading for a self-hosted or OpenAI-compatible server", "placeholders": {"server": {"type": "String"}}},
+  "new_chat_self_hosted_detail": "Messages go to your own server, not to a third party.",
+  "new_chat_endpoint_detail": "Messages are sent to {server}, an OpenAI-compatible endpoint.",
+  "@new_chat_endpoint_detail": {"description": "New-chat note for an OpenAI-compatible server", "placeholders": {"server": {"type": "String"}}},
+  "new_chat_cloud_headline": "Answered in the cloud.",
+  "new_chat_router_detail": "Messages are sent to {provider} and the model provider it routes to.",
+  "@new_chat_router_detail": {"description": "New-chat note for a routing cloud provider such as OpenRouter or Requesty", "placeholders": {"provider": {"type": "String"}}},
+  "new_chat_ollama_cloud_detail": "Messages are sent to Ollama's cloud service.",
+  "new_chat_no_server_headline": "Pick a model to begin.",
+  "new_chat_no_server_detail": "Run one on this phone or connect a server.",
+  "new_chat_works_offline": "Works offline",
+  "new_chat_no_model": "No model selected",
+  "new_chat_not_connected": "Not connected"
 }

@@ -952,5 +952,19 @@
   "background_generation_notice_info_untitled": "Une autre discussion répond en arrière-plan. Touchez pour ouvrir.",
   "background_generation_notice_multiple": "{count} discussions répondent en arrière-plan.",
   "background_generation_chat_untitled": "Discussion sans titre",
-  "model_loaded_status": "Chargé"
+  "model_loaded_status": "Chargé",
+  "new_chat_title": "Demandez ce que vous voulez.",
+  "new_chat_on_device_headline": "Tout reste sur ce téléphone.",
+  "new_chat_on_device_detail": "Les réponses sont générées ici même : aucun envoi, aucun compte, fonctionne hors ligne.",
+  "new_chat_self_hosted_headline": "Réponse de {server}.",
+  "new_chat_self_hosted_detail": "Les messages vont à votre propre serveur, pas à un tiers.",
+  "new_chat_endpoint_detail": "Les messages sont envoyés à {server}, un point de terminaison compatible OpenAI.",
+  "new_chat_cloud_headline": "Réponses depuis le cloud.",
+  "new_chat_router_detail": "Les messages sont envoyés à {provider} et au fournisseur de modèle vers lequel il les dirige.",
+  "new_chat_ollama_cloud_detail": "Les messages sont envoyés au service cloud d'Ollama.",
+  "new_chat_no_server_headline": "Choisissez un modèle pour commencer.",
+  "new_chat_no_server_detail": "Exécutez-en un sur ce téléphone ou connectez un serveur.",
+  "new_chat_works_offline": "Fonctionne hors ligne",
+  "new_chat_no_model": "Aucun modèle sélectionné",
+  "new_chat_not_connected": "Non connecté"
 }

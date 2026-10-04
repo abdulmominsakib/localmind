@@ -955,5 +955,19 @@
   "background_generation_notice_info_untitled": "Otro chat está respondiendo en segundo plano. Toca para abrir.",
   "background_generation_notice_multiple": "{count} chats están respondiendo en segundo plano.",
   "background_generation_chat_untitled": "Chat sin título",
-  "model_loaded_status": "Cargado"
+  "model_loaded_status": "Cargado",
+  "new_chat_title": "Pregunta lo que quieras.",
+  "new_chat_on_device_headline": "Todo se queda en este teléfono.",
+  "new_chat_on_device_detail": "Las respuestas se generan aquí mismo: sin subidas, sin cuenta y sin conexión.",
+  "new_chat_self_hosted_headline": "Responde {server}.",
+  "new_chat_self_hosted_detail": "Los mensajes van a tu propio servidor, no a terceros.",
+  "new_chat_endpoint_detail": "Los mensajes se envían a {server}, un endpoint compatible con OpenAI.",
+  "new_chat_cloud_headline": "Respuestas desde la nube.",
+  "new_chat_router_detail": "Los mensajes se envían a {provider} y al proveedor del modelo al que los dirige.",
+  "new_chat_ollama_cloud_detail": "Los mensajes se envían al servicio en la nube de Ollama.",
+  "new_chat_no_server_headline": "Elige un modelo para empezar.",
+  "new_chat_no_server_detail": "Ejecuta uno en este teléfono o conecta un servidor.",
+  "new_chat_works_offline": "Funciona sin conexión",
+  "new_chat_no_model": "Ningún modelo seleccionado",
+  "new_chat_not_connected": "Sin conexión"
 }
