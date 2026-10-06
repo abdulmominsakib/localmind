@@ -16,6 +16,7 @@ class VoiceModePalette {
         return isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
       case VoiceModePhase.processing:
         return isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED);
+      case VoiceModePhase.sent:
       case VoiceModePhase.speaking:
         return isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5);
       case VoiceModePhase.idle:
@@ -32,6 +33,7 @@ class VoiceModePalette {
         return isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
       case VoiceModePhase.processing:
         return isDark ? const Color(0xFFE879F9) : const Color(0xFFC084FC);
+      case VoiceModePhase.sent:
       case VoiceModePhase.speaking:
         return isDark ? const Color(0xFFF472B6) : const Color(0xFFDB2777);
       case VoiceModePhase.idle:
@@ -64,6 +66,7 @@ class VoiceModePalette {
           secondary, // Magenta shimmer
           const Color(0xFF4C1D95), // Deep dark indigo edge
         ];
+      case VoiceModePhase.sent:
       case VoiceModePhase.speaking:
         return [
           const Color(0xFFFFAEE2), // Light peach pink top

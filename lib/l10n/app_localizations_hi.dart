@@ -541,6 +541,14 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settings_android_assistant => 'एंड्रॉइड असिस्टेंट';
 
   @override
+  String get assistant_screen_capture_disabled_snackbar =>
+      'To let the assistant see your current screen, enable LocalMind\'s Screen Capture in Accessibility settings.';
+
+  @override
+  String get assistant_screen_capture_failed_snackbar =>
+      'LocalMind could not capture the current screen; continuing with voice only.';
+
+  @override
   String get assistant_default_title => 'डिफ़ॉल्ट वॉयस असिस्टेंट';
 
   @override
@@ -2828,6 +2836,13 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get lm_studio_vision => 'विज़न (Vision)';
+
+  @override
+  String get model_vision_support_label => 'Vision support (manual)';
+
+  @override
+  String get model_vision_support_desc =>
+      'Some servers don\'t advertise capabilities. Force-on if the model really accepts images; force-off to hide the Screen toggle.';
 
   @override
   String get lm_studio_tool_use => 'टूल का उपयोग';

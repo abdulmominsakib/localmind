@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,11 +19,16 @@ enum VoiceModePhase {
   /// Actively listening for user speech via STT.
   listening,
 
-  /// User speech captured; waiting for LLM response.
+  /// User speech captured; the composed message is being sent.
   processing,
 
-  /// LLM response complete; TTS is speaking.
+  /// Transitional: retained for palette rendering compatibility; voice mode
+  /// no longer speaks inline by itself.
   speaking,
+
+  /// The message was handed to the chat. The overlay closes and the user
+  /// lands in the conversation thread.
+  sent,
 
   /// An error occurred in one of the phases.
   error,
@@ -33,7 +39,6 @@ class VoiceModeState {
   final VoiceModePhase phase;
   final String transcript;
   final String response;
-  final bool autoListen;
   final bool isMuted;
   final String? error;
 
@@ -41,15 +46,24 @@ class VoiceModeState {
   /// `onSoundLevelChange` callback. 0 when not listening.
   final double micLevel;
 
+  /// An assistant screen snapshot is waiting to be attached to the next
+  /// voice send.
+  final bool screenshotPending;
+
+  /// When a snapshot is pending, the user can exclude it from the next
+  /// send entirely.
+  final bool excludeScreenshot;
+
   const VoiceModeState({
     this.isActive = false,
     this.phase = VoiceModePhase.idle,
     this.transcript = '',
     this.response = '',
-    this.autoListen = true,
     this.isMuted = false,
     this.error,
     this.micLevel = 0,
+    this.screenshotPending = false,
+    this.excludeScreenshot = false,
   });
 
   VoiceModeState copyWith({
@@ -57,21 +71,23 @@ class VoiceModeState {
     VoiceModePhase? phase,
     String? transcript,
     String? response,
-    bool? autoListen,
     bool? isMuted,
     String? error,
     bool clearError = false,
     double? micLevel,
+    bool? screenshotPending,
+    bool? excludeScreenshot,
   }) {
     return VoiceModeState(
       isActive: isActive ?? this.isActive,
       phase: phase ?? this.phase,
       transcript: transcript ?? this.transcript,
       response: response ?? this.response,
-      autoListen: autoListen ?? this.autoListen,
       isMuted: isMuted ?? this.isMuted,
       error: clearError ? null : (error ?? this.error),
       micLevel: micLevel ?? this.micLevel,
+      screenshotPending: screenshotPending ?? this.screenshotPending,
+      excludeScreenshot: excludeScreenshot ?? this.excludeScreenshot,
     );
   }
 }
@@ -88,27 +104,10 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
   bool _active = false;
   bool _isSendingTranscript = false;
   int _listenAttempt = 0;
-
-  /// Whether the "generating" feedback cue has already fired for the
-  /// current streamed response. Reset on session start; consumed once
-  /// in `_handleStreamingComplete` so haptic only fires on the first
-  /// chunk arrival, not on every token.
-  bool _generatingFired = false;
+  String? _assistantScreenshotPath;
 
   @override
   VoiceModeState build() {
-    // Listen to chat streaming state changes.
-    ref.listen<bool>(
-      isStreamingProvider,
-      (previous, next) => _onStreamingChanged(previous ?? false, next),
-    );
-
-    // Listen to TTS speaking state changes.
-    ref.listen<TtsState>(
-      ttsProvider,
-      (previous, next) => _onTtsStateChanged(previous, next),
-    );
-
     // A server or genuinely loaded model can become available while the voice
     // overlay is open. Resume automatically instead of leaving the user on a
     // stale selection error.
@@ -138,14 +137,29 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
   // ──────────────────────────────────────────────────────
 
   /// Begin the voice mode session. Called when the overlay opens.
-  void startSession() {
+  ///
+  /// [assistantScreenshotPath] points at a screen snapshot captured on the
+  /// Android assistant invocation. It is only attached when the message is
+  /// actually sent — and can be excluded for the session by the user — so
+  /// sending without speech submits the screenshot alone in a fresh thread
+  /// when the active model can see images.
+  void startSession({String? assistantScreenshotPath}) {
     _active = true;
-    _generatingFired = false;
-    state = const VoiceModeState(isActive: true, phase: VoiceModePhase.idle);
+    _assistantScreenshotPath = assistantScreenshotPath;
+    state = VoiceModeState(
+      isActive: true,
+      phase: VoiceModePhase.idle,
+      screenshotPending: assistantScreenshotPath != null,
+    );
     if (!_ensureChatTarget()) return;
     ref.read(voiceFeedbackProvider).playConnected();
     // Auto-start listening.
     startListening();
+  }
+
+  /// Attach or drop the pending assistant snapshot for the next send.
+  void toggleExcludeScreenshot() {
+    state = state.copyWith(excludeScreenshot: !state.excludeScreenshot);
   }
 
   /// Start listening for user speech.
@@ -170,8 +184,12 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     final available = await stt.initSpeech();
     if (!_isCurrentListenAttempt(attempt)) return;
     if (!available) {
-      // A missing recognizer isn't a permission problem (#100).
-      final noRecognizer = ref.read(sttProvider).error == sttUnavailableCode;
+      // Distinguish a missing recognizer (#100) from a microphone permission
+      // that is genuinely missing or refused. A plain `false` with no code
+      // follows the plugin's own permission signal and stays a permission
+      // problem, matching the model-guard spec.
+      final code = ref.read(sttProvider).error;
+      final noRecognizer = code == sttUnavailableCode;
       state = state.copyWith(
         phase: VoiceModePhase.error,
         error: noRecognizer
@@ -212,11 +230,12 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
       },
       onFinal: (finalWords) async {
         if (!_active || !ref.mounted) return;
-        if (!state.autoListen) return;
         if (_isSendingTranscript) return;
         final text = finalWords.trim().isNotEmpty
             ? finalWords
             : state.transcript;
+        // Silence alone never fires a send; the user taps Send (or an
+        // attached screenshot makes it meaningful).
         if (text.trim().isEmpty) return;
         _isSendingTranscript = true;
         await stopListeningAndSend();
@@ -231,7 +250,9 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     );
   }
 
-  /// Stop listening and send the captured transcript to the LLM.
+  /// Stop listening and hand the composed message (transcript and/or the
+  /// assistant's screen snapshot) to the chat. The overlay transitions to
+  /// the conversation thread once this runs.
   Future<void> stopListeningAndSend() async {
     if (!_active || !ref.mounted) return;
     _listenAttempt++;
@@ -245,39 +266,59 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     if (!_active || !ref.mounted) return;
 
     final transcript = state.transcript.trim();
-    if (transcript.isEmpty) {
-      // Nothing was recognized — show error state directly on screen.
+    final attachments = <File>[];
+    final screenshot = _assistantScreenshotPath;
+    if (screenshot != null &&
+        !state.excludeScreenshot &&
+        _activeModelSupportsVision()) {
+      attachments.add(File(screenshot));
+      // The snapshot opens its own fresh thread so the conversation starts
+      // from the screen the assistant was fired on.
+      try {
+        await ref.read(chatProvider.notifier).startNewConversation();
+      } catch (e) {
+        if (!_active || !ref.mounted) return;
+        Log.error('Voice mode thread creation error: $e');
+        state = state.copyWith(
+          phase: VoiceModePhase.error,
+          error: e.toString(),
+        );
+        return;
+      }
+    }
+
+    if (transcript.isEmpty && attachments.isEmpty) {
+      // Nothing was recognized and there is nothing to attach — a sendless
+      // send is not allowed.
       state = state.copyWith(
         phase: VoiceModePhase.error,
         error: 'No speech recognized. Tap to try again.',
+        micLevel: 0,
       );
       return;
     }
 
-    if (!_ensureChatTarget()) return;
-
-    // Reset the mic level so the waveform visualizer doesn't keep
-    // dancing on a stale value once we leave the listening phase.
     state = state.copyWith(
       phase: VoiceModePhase.processing,
       response: '',
       micLevel: 0,
     );
 
-    // Send the transcript as a regular chat message. The streaming
-    // listener will handle the transition to speaking phase.
     try {
-      await ref.read(chatProvider.notifier).sendMessage(transcript);
+      await ref
+          .read(chatProvider.notifier)
+          .sendMessage(
+            transcript,
+            attachments: attachments.isEmpty ? null : attachments,
+          );
     } catch (e) {
       if (!_active || !ref.mounted) return;
       Log.error('Voice mode send error: $e');
       state = state.copyWith(phase: VoiceModePhase.error, error: e.toString());
+      return;
     }
-  }
-
-  /// Toggle auto-listen after TTS completes.
-  void toggleAutoListen() {
-    state = state.copyWith(autoListen: !state.autoListen);
+    if (!_active || !ref.mounted) return;
+    state = state.copyWith(phase: VoiceModePhase.sent);
   }
 
   /// Toggle mute (pause listening without ending session).
@@ -290,7 +331,6 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     _active = false;
     _listenAttempt++;
     _isSendingTranscript = false;
-    _generatingFired = false;
 
     // Cancel speech recognition before releasing the microphone service so
     // the recognizer never continues using an already-stopped FGS.
@@ -314,7 +354,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
       ref.read(voiceFeedbackProvider).playDisconnected();
     }
 
-    // Stop TTS if still speaking.
+    // Stop TTS if something is still speaking.
     try {
       if (ref.mounted) {
         final tts = ref.read(ttsProvider.notifier);
@@ -324,116 +364,31 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
       Log.error('Voice mode TTS stop error: $e');
     }
 
+    _deleteAssistantScreenshot();
     if (ref.mounted) {
       state = const VoiceModeState();
     }
   }
 
-  /// Manually interrupt speaking and re-listen.
-  Future<void> interrupt() async {
-    if (!_active || !ref.mounted) return;
+  // ──────────────────────────────────────────────────────
+  // Internal helpers
+  // ──────────────────────────────────────────────────────
+
+  /// True when the model picked for this session accepts image input.
+  bool _activeModelSupportsVision() {
+    return ref.read(activeChatTargetProvider).selectedModel?.supportsVision ??
+        false;
+  }
+
+  void _deleteAssistantScreenshot() {
+    final path = _assistantScreenshotPath;
+    _assistantScreenshotPath = null;
+    if (path == null) return;
     try {
-      final tts = ref.read(ttsProvider.notifier);
-      await tts.stop();
-    } catch (_) {}
-
-    if (!ref.mounted) return;
-    if (state.autoListen) {
-      startListening();
-    } else {
-      state = state.copyWith(phase: VoiceModePhase.idle);
-    }
-  }
-
-  // ──────────────────────────────────────────────────────
-  // Internal listeners
-  // ──────────────────────────────────────────────────────
-
-  void _onStreamingChanged(bool wasStreaming, bool isStreaming) {
-    if (!_active) return;
-    if (state.phase != VoiceModePhase.processing) return;
-
-    if (wasStreaming && !isStreaming) {
-      // Streaming just completed — grab the last assistant message content.
-      _handleStreamingComplete();
-    }
-  }
-
-  void _handleStreamingComplete() {
-    if (!_active) return;
-
-    final chatState = ref.read(chatProvider);
-    final messages = chatState.messages;
-    if (messages.isEmpty) return;
-
-    // The last message should be the assistant's response.
-    final lastMessage = messages.last;
-    final responseText = lastMessage.content.trim();
-
-    if (responseText.isEmpty) {
-      // No real content — try again or go idle.
-      if (state.autoListen) {
-        startListening();
-      } else {
-        state = state.copyWith(phase: VoiceModePhase.idle);
-      }
-      return;
-    }
-
-    state = state.copyWith(
-      phase: VoiceModePhase.speaking,
-      response: responseText,
-    );
-
-    // Fire the generating cue only on the first chunk of this response —
-    // repeated taps during streaming feel glitchy.
-    if (!_generatingFired) {
-      _generatingFired = true;
-      ref.read(voiceFeedbackProvider).playGenerating();
-    }
-
-    // Trigger TTS to speak the response. Pass message/conversation IDs so
-    // TTS can cache and resume playback against the right message.
-    final tts = ref.read(ttsProvider.notifier);
-    () async {
-      try {
-        await tts.speak(
-          responseText,
-          messageId: lastMessage.id,
-          conversationId: lastMessage.conversationId,
-        );
-      } catch (e) {
-        if (!_active || !ref.mounted) return;
-        Log.error('Voice mode TTS speak failed: $e');
-        state = state.copyWith(
-          phase: VoiceModePhase.error,
-          error: e.toString(),
-        );
-      }
-    }();
-  }
-
-  void _onTtsStateChanged(TtsState? previous, TtsState next) {
-    if (!_active) return;
-    if (state.phase != VoiceModePhase.speaking) return;
-
-    final wasSpeaking = previous?.isSpeaking ?? false;
-    final isSpeaking = next.isSpeaking;
-
-    if (wasSpeaking && !isSpeaking && !next.isPaused) {
-      // TTS just finished speaking.
-      _onSpeakingComplete();
-    }
-  }
-
-  void _onSpeakingComplete() {
-    if (!_active) return;
-
-    if (state.autoListen) {
-      // Restart listening for the next turn.
-      startListening();
-    } else {
-      state = state.copyWith(phase: VoiceModePhase.idle);
+      final file = File(path);
+      if (file.existsSync()) file.deleteSync();
+    } catch (e) {
+      Log.error('Assistant screenshot cleanup failed: $e');
     }
   }
 

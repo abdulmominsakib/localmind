@@ -19,7 +19,7 @@ class AndroidAssistantInvocationHost extends ConsumerStatefulWidget {
 
 class _AndroidAssistantInvocationHostState
     extends ConsumerState<AndroidAssistantInvocationHost> {
-  StreamSubscription<void>? _subscription;
+  StreamSubscription<AssistantInvocation>? _subscription;
   bool _isShowingVoiceMode = false;
 
   @override
@@ -28,21 +28,25 @@ class _AndroidAssistantInvocationHostState
     final service = ref.read(androidAssistantServiceProvider);
     if (!service.isSupportedPlatform) return;
 
-    _subscription = service.invocations.listen((_) {
-      unawaited(_showVoiceMode());
+    _subscription = service.invocations.listen((invocation) {
+      unawaited(_showVoiceMode(invocation));
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(service.initialize());
     });
   }
 
-  Future<void> _showVoiceMode() async {
+  Future<void> _showVoiceMode(AssistantInvocation invocation) async {
     if (!mounted || _isShowingVoiceMode) return;
     if (ref.read(voiceModeProvider).isActive) return;
 
     _isShowingVoiceMode = true;
     try {
-      await VoiceModeOverlay.show(context);
+      await VoiceModeOverlay.show(
+        context,
+        assistantScreenshotPath: invocation.screenshotPath,
+        assistantInvoked: invocation.assistantInvoked,
+      );
     } finally {
       _isShowingVoiceMode = false;
     }

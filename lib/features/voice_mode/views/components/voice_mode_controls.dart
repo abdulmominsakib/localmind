@@ -5,25 +5,27 @@ import '../../providers/voice_mode_provider.dart';
 import '../../voice_mode_palette.dart';
 
 /// Bottom control bar for voice mode overlay:
-/// auto-listen toggle, end-call button, primary mic action.
+/// optional screenshot-include toggle, end-call button, primary mic action.
 class VoiceModeControls extends StatelessWidget {
   final VoiceModePhase phase;
-  final bool autoListen;
+  final bool hasPendingScreenshot;
+  final bool excludeScreenshot;
   final bool isMuted;
   final VoidCallback onEnd;
+  final VoidCallback onToggleExcludeScreenshot;
   final VoidCallback onToggleMute;
-  final VoidCallback onToggleAutoListen;
   final VoidCallback onTapCenter;
 
   const VoiceModeControls({
     super.key,
     required this.phase,
-    required this.autoListen,
     required this.isMuted,
     required this.onEnd,
+    required this.onToggleExcludeScreenshot,
     required this.onToggleMute,
-    required this.onToggleAutoListen,
     required this.onTapCenter,
+    this.hasPendingScreenshot = false,
+    this.excludeScreenshot = false,
   });
 
   @override
@@ -36,35 +38,28 @@ class VoiceModeControls extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _PillControl(
-            icon: autoListen
-                ? HugeIcons.strokeRoundedRepeat
-                : HugeIcons.strokeRoundedRepeatOff,
-            label: autoListen ? 'Auto' : 'Manual',
-            isActive: autoListen,
-            activeColor: VoiceModePalette.accentFor(
-              VoiceModePhase.speaking,
-              isDark: isDark,
+          if (hasPendingScreenshot)
+            _PillControl(
+              icon: excludeScreenshot
+                  ? HugeIcons.strokeRoundedCancel02
+                  : HugeIcons.strokeRoundedImage01,
+              label: excludeScreenshot ? 'No screen' : 'Screen',
+              isActive: !excludeScreenshot,
+              activeColor: VoiceModePalette.accentFor(
+                VoiceModePhase.listening,
+                isDark: isDark,
+              ),
+              onTap: onToggleExcludeScreenshot,
             ),
-            onTap: onToggleAutoListen,
-          ),
 
           _EndCallButton(onTap: onEnd),
 
           _PillControl(
             icon: phase == VoiceModePhase.listening
                 ? HugeIcons.strokeRoundedSent
-                : phase == VoiceModePhase.speaking
-                ? HugeIcons.strokeRoundedStop
                 : HugeIcons.strokeRoundedMic01,
-            label: phase == VoiceModePhase.listening
-                ? 'Send'
-                : phase == VoiceModePhase.speaking
-                ? 'Stop'
-                : 'Speak',
-            isActive:
-                phase == VoiceModePhase.listening ||
-                phase == VoiceModePhase.speaking,
+            label: phase == VoiceModePhase.listening ? 'Send' : 'Speak',
+            isActive: phase == VoiceModePhase.listening,
             activeColor: VoiceModePalette.accentFor(
               VoiceModePhase.listening,
               isDark: isDark,

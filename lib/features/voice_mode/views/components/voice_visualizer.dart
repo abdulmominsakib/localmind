@@ -317,6 +317,7 @@ class _OrbWavePainter extends CustomPainter {
       case VoiceModePhase.processing:
         return 0.18 + 0.14 * (0.5 + 0.5 * math.sin(time * 3.6));
       case VoiceModePhase.idle:
+      case VoiceModePhase.sent:
         return 0.05 + 0.035 * (0.5 + 0.5 * math.sin(time * 1.1));
       case VoiceModePhase.error:
         return 0.07 + 0.04 * (0.5 + 0.5 * math.sin(time * 2.1));

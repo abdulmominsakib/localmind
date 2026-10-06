@@ -1089,6 +1089,18 @@ abstract class AppLocalizations {
   /// **'Android Assistant'**
   String get settings_android_assistant;
 
+  /// No description provided for @assistant_screen_capture_disabled_snackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'To let the assistant see your current screen, enable LocalMind\'s Screen Capture in Accessibility settings.'**
+  String get assistant_screen_capture_disabled_snackbar;
+
+  /// No description provided for @assistant_screen_capture_failed_snackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'LocalMind could not capture the current screen; continuing with voice only.'**
+  String get assistant_screen_capture_failed_snackbar;
+
   /// Title for the Android default assistant setting
   ///
   /// In en, this message translates to:
@@ -5276,6 +5288,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Vision'**
   String get lm_studio_vision;
+
+  /// Toggle in model info to manually mark a model as accepting image input
+  ///
+  /// In en, this message translates to:
+  /// **'Vision support (manual)'**
+  String get model_vision_support_label;
+
+  /// No description provided for @model_vision_support_desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Some servers don\'t advertise capabilities. Force-on if the model really accepts images; force-off to hide the Screen toggle.'**
+  String get model_vision_support_desc;
 
   /// No description provided for @lm_studio_tool_use.
   ///

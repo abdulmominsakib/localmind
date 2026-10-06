@@ -167,6 +167,7 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
           VoiceModePalette.accentFor(VoiceModePhase.speaking, isDark: isDark),
           false,
         );
+      case VoiceModePhase.sent:
       case VoiceModePhase.idle:
         return (
           'READY',
@@ -266,6 +267,7 @@ class _VoiceTranscriptState extends ConsumerState<VoiceTranscript> {
       case VoiceModePhase.speaking:
         return _SpeakingTranscript(response: widget.response, isDark: isDark);
 
+      case VoiceModePhase.sent:
       case VoiceModePhase.idle:
         return Text(
           'Tap to start speaking',

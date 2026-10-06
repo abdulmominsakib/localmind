@@ -1,5 +1,7 @@
 {
   "ar": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -11,6 +13,8 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "calendar_access",
     "calendar_access_desc",
     "calendar_permission_denied",
@@ -24,6 +28,8 @@
   ],
 
   "bn": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -35,6 +41,8 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
@@ -52,6 +60,8 @@
   ],
 
   "de": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -63,6 +73,8 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
@@ -80,6 +92,8 @@
   ],
 
   "es": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -91,6 +105,8 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
@@ -108,6 +124,8 @@
   ],
 
   "fr": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -119,6 +137,8 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
@@ -136,6 +156,8 @@
   ],
 
   "hi": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -147,6 +169,8 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
@@ -164,6 +188,8 @@
   ],
 
   "it": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -175,6 +201,8 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
@@ -192,6 +220,8 @@
   ],
 
   "ja": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -203,6 +233,8 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
@@ -220,34 +252,8 @@
   ],
 
   "ko": [
-    "gguf_vision_projector",
-    "gguf_attach_projector",
-    "gguf_change_projector",
-    "gguf_remove_projector",
-    "gguf_projector_attached",
-    "gguf_projector_removed",
-    "gguf_projector_auto_detected",
-    "gguf_is_projector_file",
-    "gguf_projector_url_label",
-    "gguf_projector_url_hint",
-    "gguf_vision_not_supported_error"
-  ],
-
-  "pt": [
-    "gguf_vision_projector",
-    "gguf_attach_projector",
-    "gguf_change_projector",
-    "gguf_remove_projector",
-    "gguf_projector_attached",
-    "gguf_projector_removed",
-    "gguf_projector_auto_detected",
-    "gguf_is_projector_file",
-    "gguf_projector_url_label",
-    "gguf_projector_url_hint",
-    "gguf_vision_not_supported_error"
-  ],
-
-  "ru": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -259,6 +265,44 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc"
+  ],
+
+  "pt": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
+    "gguf_vision_projector",
+    "gguf_attach_projector",
+    "gguf_change_projector",
+    "gguf_remove_projector",
+    "gguf_projector_attached",
+    "gguf_projector_removed",
+    "gguf_projector_auto_detected",
+    "gguf_is_projector_file",
+    "gguf_projector_url_label",
+    "gguf_projector_url_hint",
+    "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc"
+  ],
+
+  "ru": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
+    "gguf_vision_projector",
+    "gguf_attach_projector",
+    "gguf_change_projector",
+    "gguf_remove_projector",
+    "gguf_projector_attached",
+    "gguf_projector_removed",
+    "gguf_projector_auto_detected",
+    "gguf_is_projector_file",
+    "gguf_projector_url_label",
+    "gguf_projector_url_hint",
+    "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
@@ -276,6 +320,8 @@
   ],
 
   "tr": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -287,6 +333,8 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
@@ -304,6 +352,8 @@
   ],
 
   "zh": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -315,6 +365,8 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",
@@ -332,6 +384,8 @@
   ],
 
   "zh_TW": [
+    "assistant_screen_capture_disabled_snackbar",
+    "assistant_screen_capture_failed_snackbar",
     "gguf_vision_projector",
     "gguf_attach_projector",
     "gguf_change_projector",
@@ -343,6 +397,8 @@
     "gguf_projector_url_label",
     "gguf_projector_url_hint",
     "gguf_vision_not_supported_error",
+    "model_vision_support_label",
+    "model_vision_support_desc",
     "file_explorer_not_found",
     "export_data_failed",
     "file_pick_failed",

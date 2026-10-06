@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ import 'package:hugeicons/hugeicons.dart';
 
 import '../../../../core/models/enums.dart';
 import '../../../../core/providers/app_providers.dart';
+import '../../../../core/routes/app_routes.dart';
+import '../../../../core/services/android_assistant_service.dart';
 import '../../../../core/services/app_haptics.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../chat/providers/chat_notifier.dart';
@@ -28,10 +31,28 @@ import 'components/voice_visualizer.dart';
 /// Features a real-time glowing 3D crystal visualizer and auto-scrolling transcript
 /// set against an adaptive pearlescent or obsidian atmospheric backdrop.
 class VoiceModeOverlay extends ConsumerStatefulWidget {
-  const VoiceModeOverlay({super.key});
+  const VoiceModeOverlay({
+    this.assistantScreenshotPath,
+    this.assistantInvoked = false,
+    super.key,
+  });
+
+  /// Screen snapshot captured by the Android assistant on invocation, or
+  /// null. Submitted with the next voice send when the active model supports
+  /// images.
+  final String? assistantScreenshotPath;
+
+  /// True when the overlay was opened through an Android ASSIST invocation;
+  /// enables screen-capture related hints that must not appear for plain
+  /// in-app voice sessions.
+  final bool assistantInvoked;
 
   /// Show the voice mode overlay as a full-screen modal dialog.
-  static Future<void> show(BuildContext context) {
+  static Future<void> show(
+    BuildContext context, {
+    String? assistantScreenshotPath,
+    bool assistantInvoked = false,
+  }) {
     return showGeneralDialog(
       context: context,
       barrierDismissible: false,
@@ -51,7 +72,10 @@ class VoiceModeOverlay extends ConsumerStatefulWidget {
         );
       },
       pageBuilder: (context, animation, secondaryAnimation) {
-        return const VoiceModeOverlay();
+        return VoiceModeOverlay(
+          assistantScreenshotPath: assistantScreenshotPath,
+          assistantInvoked: assistantInvoked,
+        );
       },
     );
   }
@@ -66,8 +90,52 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
     super.initState();
     // Start the voice session once the overlay is mounted.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(voiceModeProvider.notifier).startSession();
+      ref
+          .read(voiceModeProvider.notifier)
+          .startSession(
+            assistantScreenshotPath: widget.assistantScreenshotPath,
+          );
+      if (widget.assistantInvoked && widget.assistantScreenshotPath == null) {
+        unawaited(_showScreenContextHint());
+      }
     });
+  }
+
+  /// An assistant invocation triggered no screen snapshot. Either the
+  /// Screen Capture accessibility service is off (offer the settings jump)
+  /// or the capture itself failed (say so instead of swallowing it). Voice
+  /// mode keeps working in both cases.
+  Future<void> _showScreenContextHint() async {
+    final service = ref.read(androidAssistantServiceProvider);
+    final enabled = await service.isScreenCaptureEnabled();
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger.showSnackBar(
+      enabled
+          ? SnackBar(
+              content: Text(l10n.assistant_screen_capture_failed_snackbar),
+            )
+          : SnackBar(
+              content: Text(l10n.assistant_screen_capture_disabled_snackbar),
+              action: SnackBarAction(
+                label: l10n.enable,
+                onPressed: () => service.openScreenCaptureSettings(),
+              ),
+            ),
+    );
+  }
+
+  /// A voice send hands the conversation over to the chat screen: close the
+  /// overlay, run the session cleanup, land on the chat route.
+  void _transitionToChat() {
+    if (!mounted) return;
+    final router = GoRouter.of(context);
+    final notifier = ref.read(voiceModeProvider.notifier);
+    if (mounted) context.pop();
+    router.go(AppRoutes.home);
+    unawaited(notifier.endSession());
   }
 
   Future<void> _endSession() async {
@@ -84,12 +152,12 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
     switch (phase) {
       case VoiceModePhase.listening:
         ref.read(voiceModeProvider.notifier).stopListeningAndSend();
-      case VoiceModePhase.speaking:
-        ref.read(voiceModeProvider.notifier).interrupt();
       case VoiceModePhase.idle:
       case VoiceModePhase.error:
         ref.read(voiceModeProvider.notifier).startListening();
       case VoiceModePhase.processing:
+      case VoiceModePhase.speaking:
+      case VoiceModePhase.sent:
         break;
     }
   }
@@ -163,6 +231,16 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(voiceModeProvider);
+    final activeModelSupportsVision =
+        ref.watch(activeChatTargetProvider).selectedModel?.supportsVision ??
+        false;
+    // A voice send hands the session over to the chat screen.
+    ref.listen<VoiceModePhase>(voiceModeProvider.select((s) => s.phase), (
+      previous,
+      next,
+    ) {
+      if (next == VoiceModePhase.sent) _transitionToChat();
+    });
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF090A10) : const Color(0xFFF4F6FA);
@@ -347,16 +425,19 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
 
                       VoiceModeControls(
                         phase: state.phase,
-                        autoListen: state.autoListen,
+                        hasPendingScreenshot:
+                            state.screenshotPending &&
+                            activeModelSupportsVision,
+                        excludeScreenshot: state.excludeScreenshot,
                         isMuted: state.isMuted,
                         onEnd: _endSession,
-                        onToggleMute: () {
-                          ref.read(voiceModeProvider.notifier).toggleMute();
-                        },
-                        onToggleAutoListen: () {
+                        onToggleExcludeScreenshot: () {
                           ref
                               .read(voiceModeProvider.notifier)
-                              .toggleAutoListen();
+                              .toggleExcludeScreenshot();
+                        },
+                        onToggleMute: () {
+                          ref.read(voiceModeProvider.notifier).toggleMute();
                         },
                         onTapCenter: _handleCenterAction,
                       ),
@@ -660,6 +741,7 @@ class _PulsingBackgroundGlowState extends State<_PulsingBackgroundGlow>
           case VoiceModePhase.processing:
             pulse = 0.16 + 0.18 * breath;
           case VoiceModePhase.idle:
+          case VoiceModePhase.sent:
             pulse = 0.06 + 0.06 * breath;
         }
 

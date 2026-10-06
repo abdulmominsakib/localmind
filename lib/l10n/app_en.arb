@@ -741,6 +741,8 @@
     "description": "Settings section header for TTS"
   },
   "settings_android_assistant": "Android Assistant",
+  "assistant_screen_capture_disabled_snackbar": "To let the assistant see your current screen, enable LocalMind's Screen Capture in Accessibility settings.",
+  "assistant_screen_capture_failed_snackbar": "LocalMind could not capture the current screen; continuing with voice only.",
   "@settings_android_assistant": {
     "description": "Settings section header for Android default assistant integration"
   },
@@ -3138,7 +3140,13 @@
   "lm_studio_arch": "ARCH",
   "lm_studio_domain": "DOMAIN",
   "lm_studio_format": "FORMAT",
-  "lm_studio_vision": "Vision",
+  "lm_studio_vision": "Vision",  
+  "model_vision_support_label": "Vision support (manual)",
+  "@model_vision_support_label": {
+    "description": "Toggle in model info to manually mark a model as accepting image input"
+  },
+  "model_vision_support_desc": "Some servers don't advertise capabilities. Force-on if the model really accepts images; force-off to hide the Screen toggle.",
+  "@model_vision_support_desc": {},
   "lm_studio_tool_use": "Tool use",
   "lm_studio_reasoning": "Reasoning",
   "openrouter_pricing_free": "Free",

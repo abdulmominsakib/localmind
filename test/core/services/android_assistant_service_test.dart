@@ -62,7 +62,9 @@ void main() {
 
   test('emits cold-start and live assistant invocations', () async {
     messenger.setMockMethodCallHandler(channel, (call) async {
-      if (call.method == 'consumePendingInvocation') return true;
+      if (call.method == 'consumePendingInvocation') {
+        return {'pending': true};
+      }
       return null;
     });
     final service = AndroidAssistantService(
@@ -90,6 +92,94 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     expect(invocationCount, 2);
+  });
+
+  test('carries the screenshot path with a cold-start invocation', () async {
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'consumePendingInvocation') {
+        return {'pending': true, 'screenshotPath': '/data/shot.png'};
+      }
+      return null;
+    });
+    final service = AndroidAssistantService(
+      channel: channel,
+      supportedPlatform: true,
+    );
+    addTearDown(service.dispose);
+    final paths = <String?>[];
+    final invocationKinds = <bool>[];
+    final subscription = service.invocations.listen((invocation) {
+      paths.add(invocation.screenshotPath);
+      invocationKinds.add(invocation.assistantInvoked);
+    });
+    addTearDown(subscription.cancel);
+
+    await service.initialize();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(paths, ['/data/shot.png']);
+    expect(invocationKinds, [true]);
+  });
+
+  test(
+    'defers the cold-start invocation while a screenshot is pending',
+    () async {
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'consumePendingInvocation') {
+          return {'pending': true, 'screenshotPending': true};
+        }
+        return null;
+      });
+      final service = AndroidAssistantService(
+        channel: channel,
+        supportedPlatform: true,
+      );
+      addTearDown(service.dispose);
+      final paths = <String?>[];
+      final invocationKinds = <bool>[];
+      final subscription = service.invocations.listen((invocation) {
+        paths.add(invocation.screenshotPath);
+        invocationKinds.add(invocation.assistantInvoked);
+      });
+      addTearDown(subscription.cancel);
+
+      await service.initialize();
+      await Future<void>.delayed(Duration.zero);
+      expect(paths, isEmpty);
+
+      final reply = Completer<ByteData?>();
+      await messenger.handlePlatformMessage(
+        channel.name,
+        const StandardMethodCodec().encodeMethodCall(
+          const MethodCall('assistantScreenshotReady', {
+            'screenshotPath': '/data/shot.png',
+          }),
+        ),
+        reply.complete,
+      );
+      await reply.future;
+      await Future<void>.delayed(Duration.zero);
+
+      expect(paths, ['/data/shot.png']);
+      expect(invocationKinds, [true]);
+    },
+  );
+
+  test('reports whether screen-capture accessibility is enabled', () async {
+    var enabled = false;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'isScreenshotCaptureEnabled') return enabled;
+      return null;
+    });
+    final service = AndroidAssistantService(
+      channel: channel,
+      supportedPlatform: true,
+    );
+    addTearDown(service.dispose);
+
+    expect(await service.isScreenCaptureEnabled(), isFalse);
+    enabled = true;
+    expect(await service.isScreenCaptureEnabled(), isTrue);
   });
 
   test('does not call native code on unsupported platforms', () async {

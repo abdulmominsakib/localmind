@@ -8,6 +8,23 @@ import '../logger/app_logger.dart';
 
 enum AndroidAssistantStatus { unsupported, available, active, manual, unknown }
 
+/// An assistant invocation reach event. [screenshotPath] points at a screen
+/// snapshot captured on the native side before the app surfaced, or is null
+/// when no capture was available (screen capture disabled or unsupported).
+class AssistantInvocation {
+  const AssistantInvocation({
+    this.screenshotPath,
+    this.assistantInvoked = false,
+  });
+
+  final String? screenshotPath;
+
+  /// True when this event came from an assistant (ASSIST) invocation rather
+  /// than a generic opening of voice mode; used by the UI for context-aware
+  /// hints only.
+  final bool assistantInvoked;
+}
+
 class AndroidAssistantService {
   AndroidAssistantService({MethodChannel? channel, bool? supportedPlatform})
     : _channel = channel ?? const MethodChannel(_channelName),
@@ -17,8 +34,8 @@ class AndroidAssistantService {
 
   final MethodChannel _channel;
   final bool? _supportedPlatformOverride;
-  final StreamController<void> _invocations =
-      StreamController<void>.broadcast();
+  final StreamController<AssistantInvocation> _invocations =
+      StreamController<AssistantInvocation>.broadcast();
 
   bool _initialized = false;
   bool _disposed = false;
@@ -27,7 +44,7 @@ class AndroidAssistantService {
       _supportedPlatformOverride ??
       (!kIsWeb && defaultTargetPlatform == TargetPlatform.android);
 
-  Stream<void> get invocations => _invocations.stream;
+  Stream<AssistantInvocation> get invocations => _invocations.stream;
 
   Future<void> initialize() async {
     if (!isSupportedPlatform || _initialized || _disposed) return;
@@ -36,11 +53,18 @@ class AndroidAssistantService {
     _channel.setMethodCallHandler(_handleNativeCall);
 
     try {
-      final pending =
-          await _channel.invokeMethod<bool>('consumePendingInvocation') ??
-          false;
-      if (pending && !_disposed) {
-        _invocations.add(null);
+      final data =
+          await _channel.invokeMethod<Map<Object?, Object?>>(
+            'consumePendingInvocation',
+          ) ??
+          const {};
+      final pending = data['pending'] == true;
+      if (!pending || _disposed) return;
+      // Media capture is still resolving on the native side; the invocation
+      // event (with its screenshot path) arrives via assistantScreenshotReady.
+      if (data['screenshotPending'] == true) return;
+      if (!_disposed) {
+        _addInvocation(data, assistantInvoked: true);
       }
     } on PlatformException catch (error) {
       Log.error('Android assistant initialization failed: $error');
@@ -75,16 +99,47 @@ class AndroidAssistantService {
     await _channel.invokeMethod<void>('openAssistantSettings');
   }
 
-  Future<dynamic> _handleNativeCall(MethodCall call) async {
-    if (call.method != 'assistantInvoked') {
-      throw MissingPluginException(
-        'Unknown Android assistant call: ${call.method}',
-      );
-    }
+  /// Whether the screen-capture accessibility service is enabled, i.e. the
+  /// assistant's "read the current screen" feature is usable.
+  Future<bool> isScreenCaptureEnabled() async {
+    if (!isSupportedPlatform) return false;
+    return await _channel.invokeMethod<bool>('isScreenshotCaptureEnabled') ??
+        false;
+  }
 
-    if (!_disposed) {
-      _invocations.add(null);
+  /// Opens the OS accessibility settings so the user can enable the
+  /// screen-capture service.
+  Future<void> openScreenCaptureSettings() async {
+    if (!isSupportedPlatform) return;
+    await _channel.invokeMethod<void>('openScreenCaptureSettings');
+  }
+
+  Future<dynamic> _handleNativeCall(MethodCall call) async {
+    switch (call.method) {
+      case 'assistantInvoked':
+        _addInvocation(call.arguments, assistantInvoked: true);
+        return true;
+      case 'assistantScreenshotReady':
+        _addInvocation(call.arguments, assistantInvoked: true);
+        return true;
+      default:
+        throw MissingPluginException(
+          'Unknown Android assistant call: ${call.method}',
+        );
     }
+  }
+
+  void _addInvocation(Object? arguments, {required bool assistantInvoked}) {
+    if (_disposed) return;
+    final path = arguments is Map
+        ? arguments['screenshotPath'] as String?
+        : null;
+    _invocations.add(
+      AssistantInvocation(
+        screenshotPath: path,
+        assistantInvoked: assistantInvoked,
+      ),
+    );
   }
 
   Future<void> dispose() async {
