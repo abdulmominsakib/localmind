@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../core/logger/app_logger.dart';
+import '../../../core/services/mic_permission_service.dart';
 import '../utils/stt_error_messages.dart';
 
 /// Double in dB-ish units (iOS) or 0..1-ish (Android) reported by the
@@ -42,14 +43,16 @@ class SttState {
 }
 
 class SttNotifier extends Notifier<SttState> {
-  SttNotifier({SpeechToText Function()? speechFactory})
-    : _speechFactory = speechFactory ?? SpeechToText.new;
+  SttNotifier({SpeechToText Function()? speechFactory, MicPermissionClient? micPermission})
+    : _speechFactory = speechFactory ?? SpeechToText.new,
+      _micPermission = micPermission ?? const MicPermissionClientImpl();
 
   /// Delay before re-listening after an `error_client`, giving the platform
   /// recognizer time to release the previous session.
   static const clientErrorRetryDelay = Duration(milliseconds: 300);
 
   final SpeechToText Function() _speechFactory;
+  final MicPermissionClient _micPermission;
   late SpeechToText _speech;
   bool _isInit = false;
   Future<bool>? _initialization;
@@ -89,6 +92,14 @@ class SttNotifier extends Notifier<SttState> {
 
   Future<bool> _initializeSpeech() async {
     try {
+      final micError = await _obtainMicPermission();
+      if (micError != null) {
+        if (!ref.mounted) return false;
+        Log.warning('STT mic permission missing: $micError');
+        _isInit = false;
+        state = state.copyWith(isAvailable: false, error: micError);
+        return false;
+      }
       final available = await _speech.initialize(
         onError: (val) {
           if (!ref.mounted) return;
@@ -96,12 +107,14 @@ class SttNotifier extends Notifier<SttState> {
           if (val.errorMsg == 'error_client' && _retryAfterClientError()) {
             return;
           }
-          if (_switchedRecognizerForRetry) {
-            // The other recognizer didn't help either; go back to the
-            // original one for the next attempt.
-            _useOnDeviceRecognizer = !_useOnDeviceRecognizer;
-            _switchedRecognizerForRetry = false;
+          if (isPermissionSttErrorCode(val.errorMsg)) {
+            // Samsung/One UI recognizers can report permission-class errors
+            // even when the OS grant is fine. Re-check the real state before
+            // blaming the permission.
+            unawaited(_handleRecognizerPermissionError(val.errorMsg));
+            return;
           }
+          _forgetRecognizerSwitchRetry();
           state = state.copyWith(error: val.errorMsg, isListening: false);
         },
         onStatus: (val) {
@@ -140,6 +153,59 @@ class SttNotifier extends Notifier<SttState> {
     }
   }
 
+  /// Verifies the microphone grant, prompting when needed (anthropic-plain:
+  /// the app owns the decision instead of racing the plugin's own dialog).
+  /// Returns null when usable or a denied/permanent error code otherwise.
+  Future<String?> _obtainMicPermission() async {
+    bool granted;
+    try {
+      granted = await _micPermission.isGranted();
+      if (!granted) {
+        granted = await _micPermission.request();
+      }
+    } catch (e) {
+      // A broken permission channel must not break voice capture entirely;
+      // the plugin below keeps its own (older) permission flow as fallback.
+      Log.error('STT mic permission check failed: $e');
+      return null;
+    }
+    if (granted) return null;
+    String? code;
+    try {
+      code = await _micPermission.isPermanentlyDenied()
+          ? micPermissionPermanentlyDeniedCode
+          : micPermissionDeniedCode;
+    } catch (e) {
+      code = micPermissionDeniedCode;
+    }
+    return code;
+  }
+
+  /// A recognizer permission-class error with a verified OS grant is a
+  /// recognizer failure, not a permission problem: retry once with the other
+  /// recognizer, otherwise report the recognizer as unavailable.
+  Future<void> _handleRecognizerPermissionError(String code) async {
+    final granted = await _micPermission.isGranted();
+    if (!ref.mounted) return;
+    if (!granted) {
+      _forgetRecognizerSwitchRetry();
+      state = state.copyWith(error: code, isListening: false);
+      return;
+    }
+    if (_retryAfterClientError()) return;
+    _forgetRecognizerSwitchRetry();
+    state = state.copyWith(error: sttUnavailableCode, isListening: false);
+  }
+
+  /// The other recognizer didn't help either; go back to the original one
+  /// for the next attempt.
+  void _forgetRecognizerSwitchRetry() {
+    if (_switchedRecognizerForRetry) {
+      _useOnDeviceRecognizer = !_useOnDeviceRecognizer;
+      _switchedRecognizerForRetry = false;
+    }
+  }
+
   Future<void> startListening({
     required void Function(String) onResult,
     void Function(String)? onFinal,
@@ -148,6 +214,10 @@ class SttNotifier extends Notifier<SttState> {
     final available = await initSpeech();
     if (!ref.mounted) return;
     if (!available) {
+      // initSpeech already wrote the precise failure code (mic permission,
+      // unavailable recognizer). Only fall back to a generic message when
+      // initialization failed silently.
+      if (state.error != null) return;
       state = state.copyWith(
         error: 'Speech recognition not available or permission denied',
       );

@@ -3,6 +3,19 @@ import '../../../l10n/app_localizations.dart';
 /// Reported when the device has no speech recognition service at all.
 const sttUnavailableCode = 'stt_unavailable';
 
+/// Reported when the microphone permission was requested and refused.
+const micPermissionDeniedCode = 'mic_permission_denied';
+
+/// Reported when the microphone permission was refused permanently and only
+/// the OS settings page can restore it.
+const micPermissionPermanentlyDeniedCode = 'mic_permission_permanently_denied';
+
+/// Speech recognizer error codes that the plugin reports for permission
+/// problems. Shared here because the notifier re-checks the real grant state
+/// before trusting them (Samsung recognizers fire them when granted).
+bool isPermissionSttErrorCode(String code) =>
+    code == 'error_permission' || code == 'error_insufficient_permissions';
+
 /// Whether [error] means the recognizer ran but heard nothing usable.
 bool isNoSpeechSttError(String? error) =>
     error == 'error_no_match' || error == 'error_speech_timeout';
@@ -14,6 +27,9 @@ String sttErrorMessage(AppLocalizations? l10n, String error) {
   switch (error) {
     case sttUnavailableCode:
       return l10n.stt_error_unavailable;
+    case micPermissionDeniedCode:
+    case micPermissionPermanentlyDeniedCode:
+      return l10n.stt_error_permission;
     case 'error_no_match':
       return l10n.stt_error_no_match;
     case 'error_speech_timeout':
