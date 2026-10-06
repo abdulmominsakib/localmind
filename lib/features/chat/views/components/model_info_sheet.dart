@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/features/chat/providers/chat_params_providers.dart';
+import 'package:localmind/features/models/components/model_vision_override_row.dart';
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/l10n/app_localizations.dart';
@@ -74,6 +75,12 @@ Future<void> showModelInfoSheet(
                     ? l10n.openrouter_pricing_free
                     : '${model.formattedInputPrice ?? '—'} / '
                           '${model.formattedOutputPrice ?? '—'}',
+              ),
+            if (server != null)
+              ModelVisionOverrideRow(
+                serverId: server.id,
+                modelId: identifier,
+                baseSupportsVision: model?.supportsVision ?? false,
               ),
           ],
         ),

@@ -8,6 +8,7 @@ import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/service_providers.dart';
 import 'package:localmind/core/theme/colors.dart';
 import 'package:localmind/features/chat/providers/model_selection_providers.dart';
+import 'package:localmind/features/models/components/model_vision_override_row.dart';
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/models/providers/model_metadata_providers.dart';
 import 'package:localmind/features/models/providers/model_picker_providers.dart';
@@ -133,7 +134,13 @@ class _ModelListState extends ConsumerState<ModelList> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
+                ModelVisionOverrideRow(
+                  serverId: widget.serverId,
+                  modelId: model.id,
+                  baseSupportsVision: model.supportsVision,
+                ),
+                const SizedBox(height: 8),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: HugeIcon(
