@@ -19,7 +19,6 @@ import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/features/tts/views/components/tts_player_bar.dart';
 import '../data/export_service.dart';
 import '../providers/chat_providers.dart';
-import 'components/chat_auto_scroll_controller.dart';
 import 'components/notification_permission_banner.dart';
 import 'components/top_bar/connection_banner.dart';
 import 'components/top_bar/persona_indicator.dart';
@@ -47,17 +46,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   final ScrollController _scrollController = ScrollController();
   final FocusNode _inputFocusNode = FocusNode();
   bool _isApprovalDialogOpen = false;
-  late final ChatAutoScrollController _autoScroll;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _inputFocusNode.addListener(() => setState(() {}));
-    _scrollController.addListener(
-      () => _autoScroll.onScrollChanged(_scrollController),
-    );
-    _autoScroll = ChatAutoScrollController();
   }
 
   @override
@@ -97,7 +91,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     return _ChatBody(
       scrollController: _scrollController,
       inputFocusNode: _inputFocusNode,
-      autoScroll: _autoScroll,
       onModelPicker: () => _showModelPicker(context),
       onMenuAction: (action) => _handleMenuAction(action, context),
     );
@@ -264,14 +257,12 @@ class _ChatBody extends ConsumerWidget {
   const _ChatBody({
     required this.scrollController,
     required this.inputFocusNode,
-    required this.autoScroll,
     required this.onModelPicker,
     required this.onMenuAction,
   });
 
   final ScrollController scrollController;
   final FocusNode inputFocusNode;
-  final ChatAutoScrollController autoScroll;
   final VoidCallback onModelPicker;
   final void Function(String) onMenuAction;
 
@@ -282,9 +273,6 @@ class _ChatBody extends ConsumerWidget {
     final isLoading = ref.watch(chatProvider.select((s) => s.isLoading));
     final messages = ref.watch(chatProvider.select((s) => s.messages));
     final isStreaming = ref.watch(chatProvider.select((s) => s.isStreaming));
-    final streamingLength = ref.watch(
-      chatProvider.select((s) => s.streamingMessage?.content.length ?? 0),
-    );
     final errorMessage = ref.watch(chatProvider.select((s) => s.errorMessage));
     final selectedModel = ref.watch(selectedModelProvider);
     final connectionStatus = ref.watch(connectionStatusProvider);
@@ -302,18 +290,6 @@ class _ChatBody extends ConsumerWidget {
     final effectiveBottomInset = keyboardBottomInset > 0
         ? 0.0
         : systemBottomInset + _tokenIndicatorRowHeight;
-
-    final needsScroll = autoScroll.checkAndUpdate(
-      messageCount: messages.length,
-      streamingLength: streamingLength,
-      isStreaming: isStreaming,
-    );
-    if (needsScroll) {
-      autoScroll.scheduleAutoScroll(
-        controller: scrollController,
-        streaming: isStreaming,
-      );
-    }
 
     return Column(
       children: [
