@@ -4,33 +4,44 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../logger/app_logger.dart';
 
 class ChatBackgroundService {
-  static const _channel = MethodChannel('localmind/chat_background');
-  bool _isActive = false;
+  ChatBackgroundService({MethodChannel? channel, bool? supportedPlatform})
+    : _channel = channel ?? const MethodChannel(_channelName),
+      _isAndroid = supportedPlatform ?? Platform.isAndroid;
+
+  static const _channelName = 'localmind/chat_background';
+
+  final MethodChannel _channel;
+  final bool _isAndroid;
+  int _holders = 0;
   bool _isMicActive = false;
 
+  /// Holds the service until a matching [stop]. Model loads and chat replies
+  /// hold it independently, so it stays up until the last of them stops.
+  ///
+  /// The hold is counted before the platform call so a [stop] issued while
+  /// this start is in flight still reaches Android, after the start.
   Future<void> start() async {
-    if (_isActive) return;
+    if (_holders++ > 0) return;
     try {
       Log.info('Starting background chat service');
-      if (Platform.isAndroid) {
+      if (_isAndroid) {
         await _channel.invokeMethod('startForeground');
       }
       await WakelockPlus.enable();
-      _isActive = true;
     } catch (e) {
       Log.error('Failed to start background chat service: $e');
     }
   }
 
   Future<void> stop() async {
-    if (!_isActive) return;
+    if (_holders == 0) return;
+    if (--_holders > 0) return;
     try {
       Log.info('Stopping background chat service');
-      if (Platform.isAndroid) {
+      if (_isAndroid) {
         await _channel.invokeMethod('stopForeground');
       }
       await WakelockPlus.disable();
-      _isActive = false;
     } catch (e) {
       Log.error('Failed to stop background chat service: $e');
     }
@@ -44,7 +55,7 @@ class ChatBackgroundService {
     if (_isMicActive) return true;
     try {
       Log.info('Starting background mic service');
-      if (Platform.isAndroid) {
+      if (_isAndroid) {
         await _channel.invokeMethod('startForegroundMic');
       }
       _isMicActive = true;
@@ -61,7 +72,7 @@ class ChatBackgroundService {
     if (!_isMicActive) return;
     try {
       Log.info('Stopping background mic service');
-      if (Platform.isAndroid) {
+      if (_isAndroid) {
         await _channel.invokeMethod('stopForegroundMic');
       }
       _isMicActive = false;

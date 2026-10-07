@@ -10,6 +10,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Process
 import android.provider.Settings
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -29,6 +30,24 @@ class MainActivity : AudioServiceActivity() {
         captureAssistantInvocation(intent)
     }
 
+    override fun onDestroy() {
+        // audio_service destroys the shared FlutterEngine once this activity
+        // is gone, but a held ChatForegroundService keeps the process alive.
+        // Native inference threads (LiteRT-LM streaming) would then call into
+        // the dead Dart isolate and abort the process in
+        // DLRT_GetFfiCallbackMetadata. End the process before the engine is
+        // torn down so that work can't outlive its isolate.
+        if (!isChangingConfigurations && ChatForegroundService.isHeld) {
+            Process.killProcess(Process.myPid())
+        }
+        super.onDestroy()
+    }
+
+    // Back on the root route would otherwise finish this activity and, with
+    // it, the Flutter engine while a reply may still be generating. Leave the
+    // app the way Android 12+ does instead.
+    override fun popSystemNavigator(): Boolean = moveTaskToBack(true)
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -41,16 +60,32 @@ class MainActivity : AudioServiceActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "startForeground" -> {
-                    ChatForegroundService.startService(this)
-                    result.success(null)
+                    try {
+                        ChatForegroundService.startService(applicationContext)
+                        result.success(null)
+                    } catch (error: IllegalStateException) {
+                        // Android 12+ refuses foreground services started
+                        // from the background.
+                        result.error(
+                            "foreground_service_unavailable",
+                            error.message ?: "The background service could not start.",
+                            null
+                        )
+                    }
                 }
                 "stopForeground" -> {
-                    ChatForegroundService.stopService(this)
+                    ChatForegroundService.stopService(
+                        applicationContext,
+                        ChatForegroundService.TYPE_SPECIAL_USE
+                    )
                     result.success(null)
                 }
                 "startForegroundMic" -> {
                     try {
-                        ChatForegroundService.startService(this, "microphone")
+                        ChatForegroundService.startService(
+                            applicationContext,
+                            ChatForegroundService.TYPE_MICROPHONE
+                        )
                         result.success(null)
                     } catch (error: SecurityException) {
                         result.error(
@@ -67,7 +102,10 @@ class MainActivity : AudioServiceActivity() {
                     }
                 }
                 "stopForegroundMic" -> {
-                    ChatForegroundService.stopService(this)
+                    ChatForegroundService.stopService(
+                        applicationContext,
+                        ChatForegroundService.TYPE_MICROPHONE
+                    )
                     result.success(null)
                 }
                 else -> {

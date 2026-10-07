@@ -417,9 +417,9 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     // Protect the heavy native model-load from Android CPU throttling
     final bgService = ref.read(chatBackgroundServiceProvider);
     await bgService.start();
-    if (!ref.mounted) return;
 
     try {
+      if (!ref.mounted) return;
       final effectiveBackend = model.isCpuOnly ? PreferredBackend.cpu : backend;
 
       // Yield control to the event loop so the UI has time to draw the loading indicator

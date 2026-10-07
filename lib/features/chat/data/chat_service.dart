@@ -1539,6 +1539,19 @@ String _handleChatError(dynamic e) {
         ).encode();
     }
   }
+  // Streamed bodies are read straight from dart:io, so a socket dropped
+  // mid-reply surfaces as a raw HttpException/SocketException, not a
+  // DioException. Long thinking phases make this likelier: the phone may
+  // sleep or switch networks before the reply finishes.
+  if (e is HttpException || e is SocketException) {
+    return const ChatApiError(
+      message:
+          'The connection to the AI server was lost before the reply finished. '
+          'Check that the server is still running and the device stayed on the '
+          'same network, then try again.',
+      type: 'connection_lost',
+    ).encode();
+  }
   return ChatApiError(message: e.toString()).encode();
 }
 
