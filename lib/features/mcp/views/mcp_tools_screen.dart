@@ -5,8 +5,6 @@ import 'package:localmind/l10n/app_localizations.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../chat/data/mcp_server_manager.dart';
-import '../../chat/data/tools/calendar_service.dart';
-import '../../chat/data/tools/location_service.dart';
 import '../../chat/data/tools/tool_definition.dart';
 import '../../chat/providers/chat_mcp_providers.dart';
 import '../../chat/providers/tooling_providers.dart';
@@ -110,13 +108,17 @@ class McpToolsScreen extends ConsumerWidget {
                       description: l10n.calendar_access_desc,
                       value: settings.calendarToolsEnabled,
                       onChanged: (value) async {
+                        // Read before awaiting: the permission prompt can
+                        // outlive this screen, and `ref` is unusable once
+                        // the widget unmounts.
+                        final settingsNotifier = ref.read(
+                          settingsProvider.notifier,
+                        );
                         if (value) {
-                          final cal = CalendarService.instance;
+                          final cal = ref.read(calendarServiceProvider);
                           final granted = await cal.requestAccess();
                           if (granted) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .setCalendarToolsEnabled(true);
+                            settingsNotifier.setCalendarToolsEnabled(true);
                           } else {
                             if (context.mounted) {
                               ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -129,9 +131,7 @@ class McpToolsScreen extends ConsumerWidget {
                             }
                           }
                         } else {
-                          ref
-                              .read(settingsProvider.notifier)
-                              .setCalendarToolsEnabled(false);
+                          settingsNotifier.setCalendarToolsEnabled(false);
                         }
                       },
                     ),
@@ -140,13 +140,17 @@ class McpToolsScreen extends ConsumerWidget {
                       description: l10n.location_access_desc,
                       value: settings.locationToolsEnabled,
                       onChanged: (value) async {
+                        // Read before awaiting: the permission prompt can
+                        // outlive this screen, and `ref` is unusable once
+                        // the widget unmounts.
+                        final settingsNotifier = ref.read(
+                          settingsProvider.notifier,
+                        );
                         if (value) {
-                          final location = LocationService.instance;
+                          final location = ref.read(locationServiceProvider);
                           final granted = await location.requestAccess();
                           if (granted) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .setLocationToolsEnabled(true);
+                            settingsNotifier.setLocationToolsEnabled(true);
                           } else {
                             if (context.mounted) {
                               ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -159,9 +163,7 @@ class McpToolsScreen extends ConsumerWidget {
                             }
                           }
                         } else {
-                          ref
-                              .read(settingsProvider.notifier)
-                              .setLocationToolsEnabled(false);
+                          settingsNotifier.setLocationToolsEnabled(false);
                         }
                       },
                     ),
