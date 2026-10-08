@@ -202,7 +202,7 @@
   "tts_speed_desc": "Ajuste a taxa de reprodução.",
   "manage_tts_models": "Gerenciar modelos TTS",
   "manage_on_device_models": "Gerenciar modelos no dispositivo",
-  "enable_smart_reply": "Respostas inteligentes no dispositivo",
+  "enable_smart_reply": "Respostas inteligentes",
   "ai_user_response_enabled": "Mensagem do usuário AI (manter envio)",
   "ai_user_response_enabled_desc": "Segure o botão enviar por 3 segundos para que a IA escreva e envie sua próxima mensagem",
   "ai_user_response_tooltip": "Gere mensagem do usuário com IA",

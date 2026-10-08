@@ -189,7 +189,7 @@
   "tts_speed_desc": "ضبط معدل التشغيل.",
   "manage_tts_models": "إدارة نماذج TTS",
   "manage_on_device_models": "إدارة النماذج المحلية",
-  "enable_smart_reply": "الردود الذكية المحلية",
+  "enable_smart_reply": "الردود الذكية",
   "ai_user_response_enabled": "رسالة مستخدم بالذكاء الاصطناعي (اضغط مطولاً)",
   "ai_user_response_enabled_desc": "اضغط مع الاستمرار على زر الإرسال لمدة 3 ثوانٍ ليقوم الذكاء الاصطناعي بكتابة وإرسال رسالتك التالية",
   "ai_user_response_tooltip": "إنشاء رسالة مستخدم بالذكاء الاصطناعي",

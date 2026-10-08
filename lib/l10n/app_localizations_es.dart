@@ -674,7 +674,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get manage_on_device_models => 'Gestionar modelos locales';
 
   @override
-  String get enable_smart_reply => 'Respuestas inteligentes locales';
+  String get enable_smart_reply => 'Respuestas inteligentes';
 
   @override
   String get ai_user_response_enabled =>

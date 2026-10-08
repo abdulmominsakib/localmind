@@ -669,7 +669,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get manage_on_device_models => 'إدارة النماذج المحلية';
 
   @override
-  String get enable_smart_reply => 'الردود الذكية المحلية';
+  String get enable_smart_reply => 'الردود الذكية';
 
   @override
   String get ai_user_response_enabled =>

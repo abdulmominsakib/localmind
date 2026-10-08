@@ -653,7 +653,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get manage_on_device_models => '管理设备端模型';
 
   @override
-  String get enable_smart_reply => '设备端智能回复';
+  String get enable_smart_reply => '智能回复';
 
   @override
   String get ai_user_response_enabled => 'AI 用户消息 (长按发送)';
@@ -3894,7 +3894,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get manage_on_device_models => '管理裝置端模型';
 
   @override
-  String get enable_smart_reply => '裝置端智慧回覆';
+  String get enable_smart_reply => '智慧回覆';
 
   @override
   String get ai_user_response_enabled => 'AI 用戶消息 (長按發送)';

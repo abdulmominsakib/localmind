@@ -673,7 +673,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get manage_on_device_models => 'Manage On-Device Modeller';
 
   @override
-  String get enable_smart_reply => 'Cihaz Üstü Akıllı Yanıtlar';
+  String get enable_smart_reply => 'Akıllı Yanıtlar';
 
   @override
   String get ai_user_response_enabled =>

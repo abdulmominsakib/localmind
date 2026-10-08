@@ -202,7 +202,7 @@
   "tts_speed_desc": "재생 속도를 조정합니다.",
   "manage_tts_models": "TTS 모델 관리",
   "manage_on_device_models": "온디바이스 모델 관리",
-  "enable_smart_reply": "기기 내 스마트 답장",
+  "enable_smart_reply": "스마트 답장",
   "ai_user_response_enabled": "AI 사용자 메시지(보류 보내기)",
   "ai_user_response_enabled_desc": "AI가 다음 메시지를 쓰고 보내도록 하려면 보내기 버튼을 3초 동안 누르세요.",
   "ai_user_response_tooltip": "AI로 사용자 메시지 생성",

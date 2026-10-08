@@ -189,7 +189,7 @@
   "tts_speed_desc": "Adjust the playback rate.",
   "manage_tts_models": "Manage TTS Models",
   "manage_on_device_models": "Manage On-Device Models",
-  "enable_smart_reply": "On-Device Smart Replies",
+  "enable_smart_reply": "Smart Replies",
   "ai_user_response_enabled": "AI user message (hold send)",
   "ai_user_response_enabled_desc": "Hold the send button for 3 seconds to have the AI write and send your next message",
   "ai_user_response_tooltip": "Generate user message with AI",

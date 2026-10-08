@@ -189,7 +189,7 @@
   "tts_speed_desc": "Oynatma hızını ayarlayın.",
   "manage_tts_models": "Manage TTS Modeller",
   "manage_on_device_models": "Manage On-Device Modeller",
-  "enable_smart_reply": "Cihaz Üstü Akıllı Yanıtlar",
+  "enable_smart_reply": "Akıllı Yanıtlar",
   "ai_user_response_enabled": "Yapay zeka kullanıcı mesajı (göndere basılı tutun)",
   "ai_user_response_enabled_desc": "Yapay zekanın sonraki mesajınızı yazıp göndermesini sağlamak için gönder düğmesini 3 saniye basılı tutun",
   "ai_user_response_tooltip": "Yapay zeka ile kullanıcı mesajı oluştur",

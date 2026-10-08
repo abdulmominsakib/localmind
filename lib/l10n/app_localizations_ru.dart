@@ -673,7 +673,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get manage_on_device_models => 'Управление моделями на устройстве';
 
   @override
-  String get enable_smart_reply => 'Умные ответы на устройстве';
+  String get enable_smart_reply => 'Умные ответы';
 
   @override
   String get ai_user_response_enabled =>

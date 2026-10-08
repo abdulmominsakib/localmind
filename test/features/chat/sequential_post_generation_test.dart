@@ -184,6 +184,105 @@ void main() {
       expect(replies, ['Tell me more', 'How do they form?']);
     },
   );
+
+  group('smartRepliesProvider with smart replies disabled', () {
+    test('returns no suggestions and never calls the model', () async {
+      var sendCount = 0;
+      final container = _smartReplyContainer(
+        smartReplyEnabled: false,
+        chatService: _SequentialTrackingChatService(onSend: (_) => sendCount++),
+      );
+      addTearDown(container.dispose);
+
+      final replies = await container.read(smartRepliesProvider.future);
+
+      expect(replies, isEmpty);
+      expect(sendCount, 0);
+    });
+
+    test('hides replies cached on the conversation', () async {
+      final container = _smartReplyContainer(
+        smartReplyEnabled: false,
+        chatService: _SequentialTrackingChatService(onSend: (_) {}),
+        cachedReplies: ['Cached reply'],
+      );
+      addTearDown(container.dispose);
+
+      final replies = await container.read(smartRepliesProvider.future);
+
+      expect(replies, isEmpty);
+    });
+  });
+
+  test(
+    'smartRepliesProvider falls back to keyword replies when the model returns nothing',
+    () async {
+      final container = _smartReplyContainer(
+        smartReplyEnabled: true,
+        chatService: _SequentialTrackingChatService(
+          onSend: (_) {},
+          response: '',
+        ),
+      );
+      addTearDown(container.dispose);
+
+      final replies = await container.read(smartRepliesProvider.future);
+
+      expect(replies, isNotEmpty);
+    },
+  );
+}
+
+ProviderContainer _smartReplyContainer({
+  required bool smartReplyEnabled,
+  required ChatService chatService,
+  List<String>? cachedReplies,
+}) {
+  final conversation = Conversation(
+    id: 'conv-1',
+    title: 'Stars',
+    serverId: 'server-1',
+    createdAt: DateTime.utc(2026, 8, 15),
+    updatedAt: DateTime.utc(2026, 8, 15),
+    smartReplies: cachedReplies,
+    smartRepliesLastMessageId: cachedReplies == null ? null : 'assistant-1',
+  );
+
+  return ProviderContainer(
+    overrides: [
+      conversationsProvider.overrideWith(_TestConversationsNotifier.new),
+      activeConversationProvider.overrideWith(
+        () => _TestActiveConversationNotifier(conversation),
+      ),
+      activeConversationIdProvider.overrideWith(
+        () => _TestActiveConversationIdNotifier('conv-1'),
+      ),
+      chatProvider.overrideWith(
+        () => _MockChatNotifier(
+          initialState: ChatState(
+            messages: [
+              Message(
+                id: 'assistant-1',
+                conversationId: 'conv-1',
+                role: MessageRole.assistant,
+                content: 'Stars are massive celestial bodies made of plasma.',
+                status: MessageStatus.complete,
+                createdAt: DateTime.utc(2026, 8, 15),
+              ),
+            ],
+          ),
+        ),
+      ),
+      chatServiceProvider.overrideWithValue(chatService),
+      activeServerProvider.overrideWith(_TestServerNotifier.new),
+      selectedModelProvider.overrideWith(_TestModelNotifier.new),
+      onDeviceEngineProvider.overrideWith(_TestOnDeviceEngineNotifier.new),
+      voiceModeProvider.overrideWith(_TestVoiceModeNotifier.new),
+      settingsProvider.overrideWith(
+        () => _TestSettingsNotifier(smartReplyEnabled: smartReplyEnabled),
+      ),
+    ],
+  );
 }
 
 class _MockChatNotifier extends ChatNotifier {
@@ -207,9 +306,13 @@ class _MockChatNotifier extends ChatNotifier {
 }
 
 class _SequentialTrackingChatService implements ChatService {
-  _SequentialTrackingChatService({required this.onSend});
+  _SequentialTrackingChatService({
+    required this.onSend,
+    this.response = '["Tell me more", "How do they form?"]',
+  });
 
   final void Function(String prompt) onSend;
+  final String response;
 
   @override
   Stream<ChatResponse> sendMessage({
@@ -222,10 +325,7 @@ class _SequentialTrackingChatService implements ChatService {
     bool continueGeneration = false,
   }) async* {
     onSend(messages.last.content);
-    yield const ChatResponse(
-      type: ChatResponseType.message,
-      content: '["Tell me more", "How do they form?"]',
-    );
+    yield ChatResponse(type: ChatResponseType.message, content: response);
     yield const ChatResponse(type: ChatResponseType.done);
   }
 
@@ -299,9 +399,13 @@ class _TestOnDeviceEngineNotifier extends OnDeviceEngineNotifier {
 }
 
 class _TestSettingsNotifier extends SettingsNotifier {
+  _TestSettingsNotifier({this.smartReplyEnabled = true});
+
+  final bool smartReplyEnabled;
+
   @override
   AppSettings build() => AppSettings(
-    smartReplyEnabled: true,
+    smartReplyEnabled: smartReplyEnabled,
     smartRepliesUsePersona: false,
     autoGenerateTitle: true,
   );

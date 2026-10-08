@@ -659,7 +659,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get manage_on_device_models => '온디바이스 모델 관리';
 
   @override
-  String get enable_smart_reply => '기기 내 스마트 답장';
+  String get enable_smart_reply => '스마트 답장';
 
   @override
   String get ai_user_response_enabled => 'AI 사용자 메시지(보류 보내기)';

@@ -1335,10 +1335,10 @@ abstract class AppLocalizations {
   /// **'Manage On-Device Models'**
   String get manage_on_device_models;
 
-  /// Toggle for on-device smart reply suggestions
+  /// Toggle for suggested reply chips shown under the last assistant message
   ///
   /// In en, this message translates to:
-  /// **'On-Device Smart Replies'**
+  /// **'Smart Replies'**
   String get enable_smart_reply;
 
   /// Settings toggle for AI-generated user message triggered by holding the send button

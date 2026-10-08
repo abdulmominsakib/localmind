@@ -189,7 +189,7 @@
   "tts_speed_desc": "調整播放速率。",
   "manage_tts_models": "管理 TTS 模型",
   "manage_on_device_models": "管理裝置端模型",
-  "enable_smart_reply": "裝置端智慧回覆",
+  "enable_smart_reply": "智慧回覆",
   "ai_user_response_enabled": "AI 用戶消息 (長按發送)",
   "ai_user_response_enabled_desc": "長按發送按鈕 3 秒鐘以讓 AI 撰寫並發送您的下一條消息",
   "ai_user_response_tooltip": "使用 AI 生成用戶消息",

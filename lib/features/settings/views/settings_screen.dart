@@ -174,6 +174,18 @@ class _SettingsViewsState extends ConsumerState<SettingsViews> {
           onChanged: notifier.setAutoGenerateTitle,
         ),
         _ToggleSetting(
+          label: l10n.enable_smart_reply,
+          value: settings.smartReplyEnabled,
+          onChanged: notifier.setSmartReplyEnabled,
+        ),
+        if (settings.smartReplyEnabled)
+          _ToggleSetting(
+            label: l10n.smart_replies_use_persona,
+            description: l10n.smart_replies_use_persona_desc,
+            value: settings.smartRepliesUsePersona,
+            onChanged: notifier.setSmartRepliesUsePersona,
+          ),
+        _ToggleSetting(
           label: l10n.resume_last_chat,
           description: l10n.resume_last_chat_desc,
           value: settings.resumeLastChat,
@@ -312,18 +324,6 @@ class _SettingsViewsState extends ConsumerState<SettingsViews> {
           label: l10n.manage_on_device_models,
           onPressed: () => context.push(AppRoutes.onDeviceModels),
         ),
-        _ToggleSetting(
-          label: l10n.enable_smart_reply,
-          value: settings.smartReplyEnabled,
-          onChanged: notifier.setSmartReplyEnabled,
-        ),
-        if (settings.smartReplyEnabled)
-          _ToggleSetting(
-            label: l10n.smart_replies_use_persona,
-            description: l10n.smart_replies_use_persona_desc,
-            value: settings.smartRepliesUsePersona,
-            onChanged: notifier.setSmartRepliesUsePersona,
-          ),
         _ToggleSetting(
           label: l10n.ai_user_response_enabled,
           description: l10n.ai_user_response_enabled_desc,

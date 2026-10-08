@@ -669,7 +669,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get manage_on_device_models => 'Gerenciar modelos no dispositivo';
 
   @override
-  String get enable_smart_reply => 'Respostas inteligentes no dispositivo';
+  String get enable_smart_reply => 'Respostas inteligentes';
 
   @override
   String get ai_user_response_enabled =>

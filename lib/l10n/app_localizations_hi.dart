@@ -675,7 +675,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get manage_on_device_models => 'ऑन-डिवाइस मॉडल प्रबंधित करें';
 
   @override
-  String get enable_smart_reply => 'ऑन-डिवाइस स्मार्ट रिप्लाइ';
+  String get enable_smart_reply => 'स्मार्ट रिप्लाइ';
 
   @override
   String get ai_user_response_enabled =>

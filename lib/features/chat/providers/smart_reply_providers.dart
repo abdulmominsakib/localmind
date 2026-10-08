@@ -19,6 +19,8 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
   final chatParams = ref.watch(chatParamsProvider);
   final chatService = ref.watch(chatServiceProvider);
 
+  // The setting hides every suggestion, including cached and fallback ones.
+  if (!settings.smartReplyEnabled) return [];
   if (isStreaming) return [];
   if (voiceState.isActive || voiceState.phase != VoiceModePhase.idle) return [];
 
@@ -61,26 +63,25 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
 
   List<String> suggestions = [];
 
-  if (settings.smartReplyEnabled) {
-    final server = target.server;
-    final modelId = target.effectiveModelId;
+  final server = target.server;
+  final modelId = target.effectiveModelId;
 
-    if (server != null && chatService != null && modelId != null) {
-      final service = ref.read(smartReplyServiceProvider);
-      suggestions = await service.suggestRepliesWithLLM(
-        chatService: chatService,
-        server: server,
-        modelId: modelId,
-        messages: messages,
-        params: chatParams,
-        personaSystemPrompt: settings.smartRepliesUsePersona
-            ? chatParams.systemPrompt
-            : null,
-      );
-      if (!ref.mounted) return [];
-    }
+  if (server != null && chatService != null && modelId != null) {
+    final service = ref.read(smartReplyServiceProvider);
+    suggestions = await service.suggestRepliesWithLLM(
+      chatService: chatService,
+      server: server,
+      modelId: modelId,
+      messages: messages,
+      params: chatParams,
+      personaSystemPrompt: settings.smartRepliesUsePersona
+          ? chatParams.systemPrompt
+          : null,
+    );
+    if (!ref.mounted) return [];
   }
 
+  // Keyword-based replies only cover a failed or empty model response.
   if (suggestions.isEmpty) {
     if (!ref.mounted) return [];
     final service = ref.read(smartReplyServiceProvider);

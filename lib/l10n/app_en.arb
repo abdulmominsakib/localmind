@@ -908,9 +908,9 @@
   "@manage_on_device_models": {
     "description": "Button to manage on-device models"
   },
-  "enable_smart_reply": "On-Device Smart Replies",
+  "enable_smart_reply": "Smart Replies",
   "@enable_smart_reply": {
-    "description": "Toggle for on-device smart reply suggestions"
+    "description": "Toggle for suggested reply chips shown under the last assistant message"
   },
   "ai_user_response_enabled": "AI user message (hold send)",
   "@ai_user_response_enabled": {

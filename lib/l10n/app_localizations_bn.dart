@@ -674,7 +674,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get manage_on_device_models => 'অন-ডিভাইস মডেল পরিচালনা করুন';
 
   @override
-  String get enable_smart_reply => 'অন-ডিভাইস স্মার্ট রিপ্লাই';
+  String get enable_smart_reply => 'স্মার্ট রিপ্লাই';
 
   @override
   String get ai_user_response_enabled =>

@@ -189,7 +189,7 @@
   "tts_speed_desc": "प्लेबैक की गति समायोजित करें।",
   "manage_tts_models": "TTS मॉडल प्रबंधित करें",
   "manage_on_device_models": "ऑन-डिवाइस मॉडल प्रबंधित करें",
-  "enable_smart_reply": "ऑन-डिवाइस स्मार्ट रिप्लाइ",
+  "enable_smart_reply": "स्मार्ट रिप्लाइ",
   "ai_user_response_enabled": "एआई उपयोगकर्ता संदेश (भेजें बटन दबाकर रखें)",
   "ai_user_response_enabled_desc": "एआई से अपना अगला संदेश लिखवाने और भेजने के लिए भेजें बटन को 3 सेकंड के लिए दबाकर रखें",
   "ai_user_response_tooltip": "एआई के साथ उपयोगकर्ता संदेश जनरेट करें",
