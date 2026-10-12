@@ -8,6 +8,10 @@ import 'package:localmind/features/chat/data/chat_api_error.dart';
 import 'package:localmind/features/chat/data/chat_service.dart';
 import 'package:localmind/features/chat/data/models/chat_parameters.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
+import 'package:localmind/features/chat/data/models/message.dart'
+    as msg
+    show ToolCallData;
+import 'package:localmind/features/chat/data/tools/tool_definition.dart';
 import 'package:localmind/features/on_device/data/on_device_chat_service.dart';
 import 'package:localmind/features/on_device/data/on_device_gemma_service.dart';
 import 'package:localmind/features/servers/data/models/server.dart';
@@ -848,12 +852,175 @@ void main() {
       await subscription.cancel();
     }
   });
+
+  test('offers tools to the model and reports its tool calls', () async {
+    final responses = <ChatResponse>[];
+    final done = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'gemma-4',
+          messages: [
+            _message('weather?', id: 'user-1'),
+            _message('', id: 'assistant-1', role: MessageRole.assistant),
+          ],
+          params: ChatParameters.defaults(),
+          tools: const [_weatherTool],
+        )
+        .listen(responses.add)
+        .asFuture<void>();
+
+    await _waitFor(
+      () =>
+          inferenceService.sessions.length == 1 &&
+          inferenceService.sessions.single.didGenerate,
+    );
+    final session = inferenceService.sessions.single;
+    session.responses.add(
+      const gemma.ParallelFunctionCallResponse(
+        calls: [
+          gemma.FunctionCallResponse(
+            name: 'get_weather',
+            args: {'city': 'Dhaka'},
+          ),
+        ],
+      ),
+    );
+    await session.responses.close();
+    await done;
+
+    final tool = inferenceService.toolLists.single.single;
+    expect(tool.name, 'get_weather');
+    expect(tool.description, 'Current weather for a city');
+    expect(tool.parameters, _weatherTool.inputSchema);
+    final toolCall = responses
+        .singleWhere((response) => response.type == ChatResponseType.toolCall)
+        .toolCall!;
+    expect(toolCall.tool, 'get_weather');
+    expect(toolCall.arguments, {'city': 'Dhaka'});
+  });
+
+  test('feeds tool results back without offering the tools again', () async {
+    final done = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'gemma-4',
+          messages: [
+            _message('earlier question', id: 'user-0'),
+            _message(
+              'earlier answer',
+              id: 'assistant-0',
+              role: MessageRole.assistant,
+            ),
+            _message('weather?', id: 'user-1'),
+            _message(
+              '',
+              id: 'assistant-1',
+              role: MessageRole.assistant,
+            ).copyWith(
+              toolCalls: [
+                msg.ToolCallData(
+                  id: 'call-1',
+                  toolName: 'get_weather',
+                  arguments: const {'city': 'Dhaka'},
+                  result: 'Sunny, 31C',
+                ),
+              ],
+            ),
+            _message(
+              'Sunny, 31C',
+              id: 'tool-1',
+              role: MessageRole.tool,
+            ).copyWith(toolCallId: 'call-1'),
+            _message('', id: 'assistant-2', role: MessageRole.assistant),
+          ],
+          params: ChatParameters.defaults(),
+          tools: const [_weatherTool],
+        )
+        .listen((_) {})
+        .asFuture<void>();
+
+    await _waitFor(
+      () =>
+          inferenceService.sessions.length == 1 &&
+          inferenceService.sessions.single.didGenerate,
+    );
+    final session = inferenceService.sessions.single;
+    session.responses.add(const gemma.TextResponse('It is sunny.'));
+    await session.responses.close();
+    await done;
+
+    expect(inferenceService.toolLists.single, isEmpty);
+    final prompt = session.messages.single;
+    expect(prompt.isUser, isTrue);
+    expect(prompt.text, contains('earlier answer'));
+    expect(prompt.text, contains('weather?'));
+    expect(prompt.text, contains('[get_weather]\nSunny, 31C'));
+  });
+
+  test('does not reuse a session opened with different tools', () async {
+    final firstDone = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'gemma-4',
+          messages: [
+            _message('first', id: 'user-1'),
+            _message('', id: 'assistant-1', role: MessageRole.assistant),
+          ],
+          params: ChatParameters.defaults(),
+        )
+        .listen((_) {})
+        .asFuture<void>();
+
+    await _waitFor(
+      () =>
+          inferenceService.sessions.length == 1 &&
+          inferenceService.sessions.single.didGenerate,
+    );
+    final first = inferenceService.sessions.single;
+    first.responses.add(const gemma.TextResponse('first answer'));
+    await first.responses.close();
+    await firstDone;
+
+    final secondDone = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'gemma-4',
+          messages: [
+            _message('first', id: 'user-1'),
+            _message(
+              'first answer',
+              id: 'assistant-1',
+              role: MessageRole.assistant,
+            ),
+            _message('second', id: 'user-2'),
+            _message('', id: 'assistant-2', role: MessageRole.assistant),
+          ],
+          params: ChatParameters.defaults(),
+          tools: const [_weatherTool],
+        )
+        .listen((_) {})
+        .asFuture<void>();
+
+    await _waitFor(
+      () =>
+          inferenceService.sessions.length == 2 &&
+          inferenceService.sessions.last.didGenerate,
+    );
+    final second = inferenceService.sessions.last;
+    second.responses.add(const gemma.TextResponse('second answer'));
+    await second.responses.close();
+    await secondDone;
+
+    expect(first.closeCount, 1);
+    expect(inferenceService.toolLists.last.single.name, 'get_weather');
+  });
 }
 
 class _FakeInferenceService implements OnDeviceInferenceService {
   final List<_FakeInferenceSession> sessions = [];
   final List<String?> systemInstructions = [];
   final List<bool?> supportImages = [];
+  final List<List<gemma.Tool>> toolLists = [];
   int createCount = 0;
   int recoverCount = 0;
   bool canReuseChatSession = true;
@@ -874,6 +1041,7 @@ class _FakeInferenceService implements OnDeviceInferenceService {
     bool? supportImage,
   }) async {
     createCount++;
+    toolLists.add(tools);
     systemInstructions.add(systemInstruction);
     supportImages.add(supportImage);
     final session = _FakeInferenceSession();
@@ -949,4 +1117,18 @@ Server _server() => Server(
   createdAt: DateTime.utc(2026, 8, 9),
   lastConnectedAt: DateTime.utc(2026, 8, 9),
   status: ConnectionStatus.connected,
+);
+
+const _weatherTool = ToolDefinition(
+  name: 'get_weather',
+  description: 'Current weather for a city',
+  inputSchema: {
+    'type': 'object',
+    'properties': {
+      'city': {'type': 'string'},
+    },
+    'required': ['city'],
+  },
+  providerType: ToolProviderType.mcp,
+  providerRef: 'Weather',
 );

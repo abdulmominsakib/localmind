@@ -933,6 +933,15 @@ class AppLocalizationsHi extends AppLocalizations {
   String get mcp_enable_chat => 'इस चैट के लिए MCP सक्षम करें';
 
   @override
+  String mcp_connection_failed(String error) {
+    return 'Couldn\'t connect: $error';
+  }
+
+  @override
+  String get mcp_tools_unsupported_runtime =>
+      'This model\'s runtime can\'t call tools yet. Switch to a Gemma (LiteRT) model or a server model to use MCP tools.';
+
+  @override
   String get auto_execute_tools => 'स्वचालित रूप से उपकरण निष्पादित करें';
 
   @override

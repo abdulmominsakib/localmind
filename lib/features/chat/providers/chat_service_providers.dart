@@ -71,6 +71,18 @@ final chatServiceFactoryProvider = Provider<ChatService? Function(Server)>((
   };
 });
 
+/// Whether the active model can call tools. The llama.cpp and MLX on-device
+/// runtimes don't support tool calling yet, so MCP tools never reach them.
+final activeModelSupportsToolsProvider = Provider<bool>((ref) {
+  final server = ref.watch(activeServerProvider);
+  if (server == null || !server.isOnDevice) return true;
+  final runtime = ref.watch(
+    onDeviceEngineProvider.select((s) => s.loadedRuntime),
+  );
+  return runtime != OnDeviceModelRuntime.llamaCpp &&
+      runtime != OnDeviceModelRuntime.mlx;
+});
+
 ChatService createChatServiceForServer({
   required Server server,
   required Dio dio,

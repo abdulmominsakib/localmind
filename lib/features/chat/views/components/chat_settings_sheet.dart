@@ -7,6 +7,8 @@ import 'package:localmind/core/theme/colors.dart';
 import '../../../../core/providers/app_providers.dart';
 import '../../../conversations/providers/conversation_providers.dart' as conv;
 import '../../providers/chat_mcp_providers.dart';
+import '../../providers/chat_service_providers.dart';
+import 'mcp_warning_notice.dart';
 
 class ChatSettingsSheet extends ConsumerStatefulWidget {
   const ChatSettingsSheet({super.key, this.initialTab = 'parameters'});
@@ -235,34 +237,11 @@ class _ChatSettingsSheetState extends ConsumerState<ChatSettingsSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isGloballyEnabled)
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  const HugeIcon(
-                    icon: HugeIcons.strokeRoundedAlertCircle,
-                    color: Colors.orange,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      l10n.mcp_disabled_warning,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.orange,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            McpWarningNotice(message: l10n.mcp_disabled_warning),
+          if (isGloballyEnabled &&
+              mcpConfig.enabled &&
+              !ref.watch(activeModelSupportsToolsProvider))
+            McpWarningNotice(message: l10n.mcp_tools_unsupported_runtime),
           ShadSwitch(
             value: mcpConfig.enabled,
             onChanged: isGloballyEnabled

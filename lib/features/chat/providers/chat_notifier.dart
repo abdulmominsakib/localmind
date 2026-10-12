@@ -211,6 +211,19 @@ class ChatNotifier extends Notifier<ChatState> {
     }
   }
 
+  /// Tools offered to the model this turn. Waits briefly for MCP servers that
+  /// are still connecting (e.g. right after launch) so their tools are not
+  /// silently missing from the first message.
+  Future<List<ToolDefinition>> _toolsForTurn(bool mcpEnabled) async {
+    if (!mcpEnabled) return const [];
+    await ref
+        .read(chatMcpConfigProvider.notifier)
+        .connectionsReady
+        .timeout(const Duration(seconds: 10), onTimeout: () {});
+    if (!ref.mounted) return const [];
+    return ref.read(toolRegistryProvider).listTools();
+  }
+
   /// Whether the open chat's reply may keep streaming after the user leaves
   /// it. Temporary chats aren't persisted, tool approvals need the chat on
   /// screen, and voice mode drives its own turn-taking.
@@ -980,10 +993,7 @@ class ChatNotifier extends Notifier<ChatState> {
             ? activeIntegrations
             : null;
 
-        final registry = ref.read(toolRegistryProvider);
-        final tools = mcpConfig.enabled
-            ? await registry.listTools()
-            : const <ToolDefinition>[];
+        final tools = await _toolsForTurn(mcpConfig.enabled);
 
         final collectedToolCalls = <ToolCallData>[];
 
@@ -2361,10 +2371,7 @@ class ChatNotifier extends Notifier<ChatState> {
           ? activeIntegrations
           : null;
 
-      final registry = ref.read(toolRegistryProvider);
-      final tools = mcpConfig.enabled
-          ? await registry.listTools()
-          : const <ToolDefinition>[];
+      final tools = await _toolsForTurn(mcpConfig.enabled);
 
       bool stateNeedsUpdate = false;
       bool streamHadError = false;

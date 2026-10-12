@@ -9,8 +9,16 @@ import '../data/tools/tool_definition.dart';
 import '../data/mcp_server_manager.dart';
 
 final mcpServerManagerProvider = Provider<McpServerManager>((ref) {
-  final packageInfo = ref.watch(packageInfoProvider);
-  return McpServerManager(appVersion: packageInfo.value?.version ?? '1.0.0');
+  // Built once: rebuilding would drop every live server connection, so the
+  // app version is applied when package info loads instead of watched.
+  final manager = McpServerManager(
+    appVersion: ref.read(packageInfoProvider).value?.version ?? '1.0.0',
+  );
+  ref.listen(packageInfoProvider, (_, next) {
+    final version = next.value?.version;
+    if (version != null) manager.appVersion = version;
+  });
+  return manager;
 });
 
 final calendarServiceProvider = Provider<CalendarService>(

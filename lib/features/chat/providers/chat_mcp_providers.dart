@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/app_providers.dart';
@@ -8,27 +9,68 @@ import 'tooling_providers.dart';
 export '../data/models/mcp_integration.dart';
 
 class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
+  final Map<String, Future<void>> _connections = {};
+
   @override
   ChatMcpConfig build() {
     final savedIntegrations = ref.read(settingsProvider).savedMcpIntegrations;
+    // The server manager only holds live connections, so saved servers have
+    // to be reconnected on every launch or their tools never reach the model.
+    for (final integration in savedIntegrations) {
+      if (integration.enabled) _connect(integration);
+    }
     return ChatMcpConfig(enabled: false, integrations: savedIntegrations);
   }
 
-  void setConfig(ChatMcpConfig config) {
-    state = config;
-    final manager = ref.read(mcpServerManagerProvider);
-    manager.clear();
-    for (final integration in config.integrations) {
-      if (integration.serverLabel != null && integration.serverUrl != null) {
-        manager
-            .addServer(
-              integration.serverLabel!,
-              integration.serverUrl!,
-              headers: integration.headers,
-            )
-            .catchError((_) {});
-      }
+  /// Completes once every server connection started so far has settled,
+  /// whether it succeeded or failed.
+  Future<void> get connectionsReady => Future.wait(_connections.values);
+
+  void _connect(McpIntegration integration) {
+    final label = integration.serverLabel;
+    final url = integration.serverUrl;
+    if (label == null || url == null) return;
+
+    late final Future<void> connection;
+    connection = ref
+        .read(mcpServerManagerProvider)
+        .addServer(label, url, headers: integration.headers)
+        .then<Object?>((_) => null, onError: (Object error) => error)
+        .then((error) {
+          if (!ref.mounted) return;
+          if (!identical(_connections[label], connection)) {
+            // Disconnected while connecting: drop the late connection. A
+            // newer connection for the same label owns the server instead.
+            if (error == null && !_connections.containsKey(label)) {
+              unawaited(ref.read(mcpServerManagerProvider).removeServer(label));
+            }
+            return;
+          }
+          _setConnectionError(label, error?.toString());
+          ref.invalidate(availableToolsProvider);
+        });
+    _connections[label] = connection;
+  }
+
+  void _disconnect(McpIntegration integration) {
+    final label = integration.serverLabel;
+    if (label == null) return;
+    _connections.remove(label);
+    _setConnectionError(label, null);
+    ref.read(mcpServerManagerProvider).removeServer(label).whenComplete(() {
+      if (ref.mounted) ref.invalidate(availableToolsProvider);
+    });
+  }
+
+  void _setConnectionError(String label, String? error) {
+    if (state.connectionErrors[label] == error) return;
+    final errors = Map<String, String>.from(state.connectionErrors);
+    if (error == null) {
+      errors.remove(label);
+    } else {
+      errors[label] = error;
     }
+    state = state.copyWith(connectionErrors: errors);
   }
 
   void setEnabled(bool enabled) {
@@ -53,16 +95,7 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
             }
           : state.activeMcpServers,
     );
-    if (integration.serverLabel != null && integration.serverUrl != null) {
-      ref
-          .read(mcpServerManagerProvider)
-          .addServer(
-            integration.serverLabel!,
-            integration.serverUrl!,
-            headers: integration.headers,
-          )
-          .catchError((_) {});
-    }
+    if (integration.enabled) _connect(integration);
     ref.read(settingsProvider.notifier).addSavedMcpIntegration(integration);
   }
 
@@ -115,9 +148,7 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
       integrations: newIntegrations,
       activeMcpServers: newServers,
     );
-    if (integration.serverLabel != null) {
-      ref.read(mcpServerManagerProvider).removeServer(integration.serverLabel!);
-    }
+    _disconnect(integration);
     final saved = ref.read(settingsProvider).savedMcpIntegrations;
     final savedIdx = saved.indexWhere(
       (i) =>
@@ -137,6 +168,11 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
     final newIntegrations = List<McpIntegration>.from(state.integrations);
     newIntegrations[index] = newIntegrations[index].copyWith(enabled: enabled);
     state = state.copyWith(integrations: newIntegrations);
+    if (enabled) {
+      _connect(integration);
+    } else {
+      _disconnect(integration);
+    }
 
     final saved = ref.read(settingsProvider).savedMcpIntegrations;
     final savedIdx = saved.indexWhere(
@@ -268,6 +304,7 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
       enabled: settings.mcpEnabled && settings.newChatMcpEnabled,
       integrations: settings.savedMcpIntegrations,
     );
+    _connections.clear();
     ref.read(mcpServerManagerProvider).clear();
   }
 }

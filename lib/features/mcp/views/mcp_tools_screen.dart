@@ -637,30 +637,15 @@ class __ConfiguredMcpServersCardState
   }
 
   void _addServer() {
-    final label = _serverLabelController.text.trim();
-    final url = _serverUrlController.text.trim();
-    if (label.isEmpty && url.isEmpty) return;
-
-    final McpIntegration integration;
-    if (label.contains('/') || url.contains('/')) {
-      final raw = label.isNotEmpty ? label : url;
-      final pluginId = raw.contains('/') ? raw : 'mcp/$raw';
-      integration = McpIntegration(
-        type: McpIntegrationType.plugin,
-        pluginId: pluginId,
-        serverLabel: label.isNotEmpty ? label : null,
-      );
-    } else {
-      if (label.isEmpty || url.isEmpty) return;
-      integration = McpIntegration(
-        type: McpIntegrationType.ephemeralMcp,
-        serverLabel: label,
-        serverUrl: url,
-      );
-    }
-
-    ref.read(settingsProvider.notifier).addSavedMcpIntegration(integration);
-    ref.read(chatMcpConfigProvider.notifier).addIntegration(integration);
+    // Shares the chat sheet's parsing: an http(s) URL is a remote server,
+    // anything else is an LM Studio plugin id.
+    final added = ref
+        .read(chatMcpConfigProvider.notifier)
+        .addIntegrationFromInput(
+          label: _serverLabelController.text,
+          url: _serverUrlController.text,
+        );
+    if (!added) return;
     _serverLabelController.clear();
     _serverUrlController.clear();
     widget.onServersChanged();
@@ -775,6 +760,9 @@ class __ConfiguredMcpServersCardState
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
     final savedIntegrations = settings.savedMcpIntegrations;
+    final connectionErrors = ref.watch(
+      chatMcpConfigProvider.select((config) => config.connectionErrors),
+    );
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return _McpSectionCard(
@@ -836,11 +824,29 @@ class __ConfiguredMcpServersCardState
                                 : AppColors.lightMutedText),
                     ),
                   ),
-                  subtitle: Text(
-                    integration.type == McpIntegrationType.plugin
-                        ? 'Plugin (${integration.pluginId})'
-                        : (integration.serverUrl ?? ''),
-                    style: const TextStyle(fontSize: 11),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        integration.type == McpIntegrationType.plugin
+                            ? 'Plugin (${integration.pluginId})'
+                            : (integration.serverUrl ?? ''),
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      if (integration.enabled &&
+                          connectionErrors[integration.serverLabel] != null)
+                        Text(
+                          l10n.mcp_connection_failed(
+                            connectionErrors[integration.serverLabel]!,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.red,
+                          ),
+                        ),
+                    ],
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,

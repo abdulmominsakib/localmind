@@ -86,21 +86,27 @@ class ChatMcpConfig {
   final Map<String, String> activeMcpServers;
   final bool enabled;
 
+  /// Last connection error per server label. Runtime-only: never persisted.
+  final Map<String, String> connectionErrors;
+
   const ChatMcpConfig({
     this.integrations = const [],
     this.activeMcpServers = const {},
     this.enabled = true,
+    this.connectionErrors = const {},
   });
 
   ChatMcpConfig copyWith({
     List<McpIntegration>? integrations,
     Map<String, String>? activeMcpServers,
     bool? enabled,
+    Map<String, String>? connectionErrors,
   }) {
     return ChatMcpConfig(
       integrations: integrations ?? this.integrations,
       activeMcpServers: activeMcpServers ?? this.activeMcpServers,
       enabled: enabled ?? this.enabled,
+      connectionErrors: connectionErrors ?? this.connectionErrors,
     );
   }
 

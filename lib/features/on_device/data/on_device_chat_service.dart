@@ -91,7 +91,9 @@ class OnDeviceChatService implements ChatService {
     }
 
     _activeRuns.add(run);
-    unawaited(_startInference(run, modelId, messages, params));
+    unawaited(
+      _startInference(run, modelId, messages, params, tools ?? const []),
+    );
     return controller.stream;
   }
 
@@ -100,6 +102,7 @@ class OnDeviceChatService implements ChatService {
     String modelId,
     List<Message> messages,
     ChatParameters params,
+    List<ToolDefinition> tools,
   ) async {
     try {
       final input = await _prepareInput(modelId, messages, params);
@@ -132,13 +135,21 @@ class OnDeviceChatService implements ChatService {
       }
       run.input = input;
 
+      // Auxiliary runs (titles, smart replies) never call tools. A turn that
+      // already carries tool results must answer with them rather than call
+      // again: small on-device models otherwise repeat the same call forever.
+      final sessionTools = input.isAuxiliary || input.toolResults.isNotEmpty
+          ? const <gemma.Tool>[]
+          : tools.map(_toGemmaTool).toList(growable: false);
+      run.toolNames = sessionTools.map((tool) => tool.name).toList();
+
       final retained = _retainedConversation;
 
       late final OnDeviceInferenceSession session;
       late final bool reusedSession;
       if (retained != null &&
           _gemmaService.supportsChatSessionReuse &&
-          retained.canContinueWith(input, modelId)) {
+          retained.canContinueWith(input, modelId, run.toolNames)) {
         _retainedConversation = null;
         _cancelRetainedExpiration();
         session = retained.session;
@@ -153,7 +164,7 @@ class OnDeviceChatService implements ChatService {
         final modelSupportsVision = _gemmaService.currentModelSupportsVision;
         session = await _gemmaService.createChat(
           systemInstruction: input.baseSystemInstruction,
-          tools: const [],
+          tools: sessionTools,
           supportImage: modelSupportsVision,
         );
         run.sessionSupportsImages = modelSupportsVision;
@@ -260,15 +271,11 @@ class OnDeviceChatService implements ChatService {
           );
         }
       } else if (response is gemma.FunctionCallResponse) {
-        run.controller.add(
-          ChatResponse(
-            type: ChatResponseType.toolCall,
-            toolCall: ToolCallData(
-              tool: response.name,
-              arguments: response.args,
-            ),
-          ),
-        );
+        _emitToolCall(run, response);
+      } else if (response is gemma.ParallelFunctionCallResponse) {
+        for (final call in response.calls) {
+          _emitToolCall(run, call);
+        }
       } else if (response is gemma.ThinkingResponse &&
           response.content.isNotEmpty) {
         final content =
@@ -289,6 +296,15 @@ class OnDeviceChatService implements ChatService {
         _finishWithError(run, 'Inference error: $error', abortGeneration: true),
       );
     }
+  }
+
+  void _emitToolCall(_InferenceRun run, gemma.FunctionCallResponse call) {
+    run.controller.add(
+      ChatResponse(
+        type: ChatResponseType.toolCall,
+        toolCall: ToolCallData(tool: call.name, arguments: call.args),
+      ),
+    );
   }
 
   Future<void> _finishSuccessfully(_InferenceRun run) async {
@@ -444,6 +460,7 @@ class OnDeviceChatService implements ChatService {
       baseSystemInstruction: input.baseSystemInstruction,
       timeline: input.completedTimeline(run.generatedContent.toString()),
       supportsImages: run.sessionSupportsImages,
+      toolNames: run.toolNames,
     );
     _armRetainedExpiration();
     if (previous != null && !identical(previous.session, session)) {
@@ -480,19 +497,61 @@ class OnDeviceChatService implements ChatService {
     await run.controller.close();
   }
 
+  static gemma.Tool _toGemmaTool(ToolDefinition tool) => gemma.Tool(
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.inputSchema,
+  );
+
   Future<_PreparedInput?> _prepareInput(
     String modelId,
     List<Message> messages,
     ChatParameters params,
   ) async {
-    final relevant = messages
-        .where(
-          (message) =>
-              message.role == MessageRole.user ||
-              message.role == MessageRole.assistant ||
-              message.role == MessageRole.system,
-        )
-        .toList(growable: true);
+    // After the app runs a tool, the follow-up request ends with the user
+    // turn, the assistant turn that made the call, the tool results and an
+    // empty pending reply. Gemma sessions are rebuilt from text, so the
+    // results are folded into the user turn and the call turn is dropped.
+    final lastUserIndex = messages.lastIndexWhere(
+      (message) => message.role == MessageRole.user,
+    );
+    final turnTail = lastUserIndex == -1
+        ? const <Message>[]
+        : messages.sublist(lastUserIndex + 1);
+    final toolNamesByCallId = <String, String>{
+      for (final message in turnTail)
+        for (final call in message.toolCalls ?? const [])
+          call.id: call.toolName,
+    };
+    final toolResults = [
+      for (final message in turnTail)
+        if (message.role == MessageRole.tool)
+          _ToolResult(
+            toolName: toolNamesByCallId[message.toolCallId] ?? 'tool',
+            content: message.content,
+          ),
+    ];
+
+    final relevant = <Message>[];
+    for (var index = 0; index < messages.length; index++) {
+      final message = messages[index];
+      if (message.role != MessageRole.user &&
+          message.role != MessageRole.assistant &&
+          message.role != MessageRole.system) {
+        continue;
+      }
+      if (message.role == MessageRole.assistant) {
+        final isPendingReply =
+            index == messages.length - 1 && message.content.isEmpty;
+        final isToolCallTurn = message.toolCalls?.isNotEmpty ?? false;
+        if (!isPendingReply &&
+            ((toolResults.isNotEmpty && index > lastUserIndex) ||
+                (isToolCallTurn && message.content.trim().isEmpty))) {
+          continue;
+        }
+      }
+      relevant.add(message);
+    }
 
     Message? pendingAssistant;
     if (relevant.isNotEmpty &&
@@ -573,6 +632,9 @@ class OnDeviceChatService implements ChatService {
       currentMessage: currentMessage,
       pendingAssistantId: pendingAssistant?.id,
       isAuxiliary: isAuxiliary,
+      toolResults: currentMessage.role == MessageRole.user
+          ? toolResults
+          : const [],
     );
   }
 
@@ -615,6 +677,7 @@ class _InferenceRun {
   final StringBuffer generatedContent = StringBuffer();
   bool generationStarted = false;
   bool sessionSupportsImages = false;
+  List<String> toolNames = const [];
   bool isCancelled = false;
   bool _isFinishing = false;
 
@@ -634,6 +697,7 @@ class _PreparedInput {
     required this.currentMessage,
     required this.pendingAssistantId,
     required this.isAuxiliary,
+    this.toolResults = const [],
   });
 
   final String conversationId;
@@ -644,11 +708,26 @@ class _PreparedInput {
   final String? pendingAssistantId;
   final bool isAuxiliary;
 
+  /// Results of tools the model called for [currentMessage], in call order.
+  final List<_ToolResult> toolResults;
+
   bool get hasImages => currentMessage.images.isNotEmpty;
+
+  String get _currentPrompt {
+    if (toolResults.isEmpty) return currentMessage.content;
+    final results = toolResults
+        .map((result) => '[${result.toolName}]\n${result.content}')
+        .join('\n\n');
+    return '${currentMessage.content}\n\n'
+        'Results from the tools you called:\n\n$results\n\n'
+        'Answer the message above using these results.';
+  }
 
   gemma.Message toGemmaMessage({required bool includeHistory}) {
     if (!includeHistory || history.isEmpty) {
-      return currentMessage.toGemmaMessage();
+      return currentMessage.toGemmaMessage(
+        promptOverride: toolResults.isEmpty ? null : _currentPrompt,
+      );
     }
     final transcript = history
         .map(
@@ -662,7 +741,7 @@ class _PreparedInput {
         : 'Assistant response to continue';
     final fullText =
         'Earlier conversation transcript (context only):\n\n$transcript\n\n'
-        '$currentLabel:\n${currentMessage.content}';
+        '$currentLabel:\n$_currentPrompt';
 
     if (currentMessage.images.isNotEmpty) {
       var text = fullText;
@@ -702,6 +781,13 @@ class _PreparedInput {
   }
 }
 
+class _ToolResult {
+  const _ToolResult({required this.toolName, required this.content});
+
+  final String toolName;
+  final String content;
+}
+
 class _RetainedConversation {
   const _RetainedConversation({
     required this.session,
@@ -710,6 +796,7 @@ class _RetainedConversation {
     required this.baseSystemInstruction,
     required this.timeline,
     required this.supportsImages,
+    required this.toolNames,
   });
 
   final OnDeviceInferenceSession session;
@@ -719,15 +806,32 @@ class _RetainedConversation {
   final List<_MessageSnapshot> timeline;
   final bool supportsImages;
 
-  bool canContinueWith(_PreparedInput input, String requestedModelId) {
+  /// Tools the session was opened with; they are fixed for its lifetime.
+  final List<String> toolNames;
+
+  bool canContinueWith(
+    _PreparedInput input,
+    String requestedModelId,
+    List<String> requestedToolNames,
+  ) {
     if (input.hasImages && !supportsImages) {
       return false;
     }
     return input.currentMessage.role == MessageRole.user &&
+        input.toolResults.isEmpty &&
+        _namesEqual(toolNames, requestedToolNames) &&
         conversationId == input.conversationId &&
         modelId == requestedModelId &&
         baseSystemInstruction == input.baseSystemInstruction &&
         _listEquals(timeline, input.history);
+  }
+
+  static bool _namesEqual(List<String> first, List<String> second) {
+    if (first.length != second.length) return false;
+    for (var index = 0; index < first.length; index++) {
+      if (first[index] != second[index]) return false;
+    }
+    return true;
   }
 
   static bool _listEquals(

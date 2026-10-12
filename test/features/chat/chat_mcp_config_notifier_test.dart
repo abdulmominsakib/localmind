@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
+import 'package:localmind/features/chat/data/mcp_client.dart';
 import 'package:localmind/features/chat/data/mcp_server_manager.dart';
 import 'package:localmind/features/chat/providers/chat_mcp_providers.dart';
 import 'package:localmind/features/chat/providers/tooling_providers.dart';
@@ -9,6 +11,8 @@ import 'package:localmind/features/chat/providers/tooling_providers.dart';
 class RecordingMcpServerManager extends McpServerManager {
   final List<({String label, String url, Map<String, String>? headers})>
   addedServers = [];
+  final List<String> removedServers = [];
+  final Set<String> unreachableLabels = {};
 
   @override
   Future<void> addServer(
@@ -17,8 +21,22 @@ class RecordingMcpServerManager extends McpServerManager {
     Map<String, String>? headers,
   }) async {
     addedServers.add((label: label, url: url, headers: headers));
+    if (unreachableLabels.contains(label)) {
+      throw McpException('Connection refused');
+    }
+  }
+
+  @override
+  Future<void> removeServer(String label) async {
+    removedServers.add(label);
   }
 }
+
+const _remoteServer = McpIntegration(
+  type: McpIntegrationType.ephemeralMcp,
+  serverLabel: 'Remote tools',
+  serverUrl: 'https://example.com/mcp',
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -158,6 +176,61 @@ void main() {
       expect(integration.pluginId, 'mcp/playwright');
       expect(integration.serverUrl, isNull);
       expect(mcpServerManager.addedServers, isEmpty);
+    });
+
+    test('reconnects enabled saved servers when the config is built', () async {
+      final settings = container.read(settingsProvider.notifier);
+      settings.addSavedMcpIntegration(_remoteServer);
+      settings.addSavedMcpIntegration(
+        const McpIntegration(
+          type: McpIntegrationType.ephemeralMcp,
+          serverLabel: 'Disabled tools',
+          serverUrl: 'https://example.com/disabled',
+          enabled: false,
+        ),
+      );
+
+      container.read(chatMcpConfigProvider);
+      await container.read(chatMcpConfigProvider.notifier).connectionsReady;
+
+      expect(mcpServerManager.addedServers.map((s) => s.label), [
+        'Remote tools',
+      ]);
+      expect(container.read(chatMcpConfigProvider).connectionErrors, isEmpty);
+    });
+
+    test('records a failed connection and clears it when disabled', () async {
+      mcpServerManager.unreachableLabels.add('Remote tools');
+      container
+          .read(settingsProvider.notifier)
+          .addSavedMcpIntegration(_remoteServer);
+
+      final notifier = container.read(chatMcpConfigProvider.notifier);
+      await notifier.connectionsReady;
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        container.read(chatMcpConfigProvider).connectionErrors['Remote tools'],
+        contains('Connection refused'),
+      );
+
+      notifier.toggleIntegration(0, false);
+
+      expect(container.read(chatMcpConfigProvider).connectionErrors, isEmpty);
+      expect(mcpServerManager.removedServers, ['Remote tools']);
+    });
+
+    test('re-enabling a saved server connects it again', () async {
+      container
+          .read(settingsProvider.notifier)
+          .addSavedMcpIntegration(_remoteServer.copyWith(enabled: false));
+      final notifier = container.read(chatMcpConfigProvider.notifier);
+      expect(mcpServerManager.addedServers, isEmpty);
+
+      notifier.toggleIntegration(0, true);
+      await notifier.connectionsReady;
+
+      expect(mcpServerManager.addedServers.single.label, 'Remote tools');
     });
 
     test('addIntegrationFromInput rejects an unlabeled MCP URL', () {

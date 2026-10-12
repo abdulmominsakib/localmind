@@ -1,12 +1,11 @@
-// ignore_for_file: prefer_initializing_formals
-
 import 'mcp_client.dart';
 
 const exampleMcpServerLabel = 'Example MCP';
 const exampleMcpServerUrl = 'local://example-mcp';
 
 class McpServerManager {
-  final String _appVersion;
+  /// Reported to servers on connect. Updated once package info loads.
+  String appVersion;
   final Map<String, McpClient> _clients = {};
   final Map<String, McpCapabilities> _capabilities = {};
   final Map<String, List<McpTool>> _tools = {};
@@ -14,7 +13,7 @@ class McpServerManager {
   final Set<String> _localExampleServers = {};
   final Set<String> _pendingLabels = {};
 
-  McpServerManager({String appVersion = '1.0.0'}) : _appVersion = appVersion;
+  McpServerManager({this.appVersion = '1.0.0'});
 
   Future<void> addServer(
     String label,
@@ -37,7 +36,7 @@ class McpServerManager {
       final client = McpClient(
         serverUrl: url,
         headers: headers,
-        version: _appVersion,
+        version: appVersion,
       );
 
       final capabilities = await client.initialize();

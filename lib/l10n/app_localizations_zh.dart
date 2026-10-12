@@ -901,6 +901,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mcp_enable_chat => '为此聊天启用 MCP';
 
   @override
+  String mcp_connection_failed(String error) {
+    return 'Couldn\'t connect: $error';
+  }
+
+  @override
+  String get mcp_tools_unsupported_runtime =>
+      'This model\'s runtime can\'t call tools yet. Switch to a Gemma (LiteRT) model or a server model to use MCP tools.';
+
+  @override
   String get auto_execute_tools => '自动执行工具';
 
   @override

@@ -1821,6 +1821,18 @@ abstract class AppLocalizations {
   /// **'Enable MCP for this chat'**
   String get mcp_enable_chat;
 
+  /// Shown under a saved MCP server whose connection failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t connect: {error}'**
+  String mcp_connection_failed(String error);
+
+  /// Shown in chat settings when the loaded on-device runtime (llama.cpp or MLX) does not support tool calling
+  ///
+  /// In en, this message translates to:
+  /// **'This model\'s runtime can\'t call tools yet. Switch to a Gemma (LiteRT) model or a server model to use MCP tools.'**
+  String get mcp_tools_unsupported_runtime;
+
   /// Toggle for auto-executing tools
   ///
   /// In en, this message translates to:

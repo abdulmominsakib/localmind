@@ -1241,6 +1241,20 @@
   "@mcp_enable_chat": {
     "description": "Toggle to enable MCP for current chat"
   },
+  "mcp_connection_failed": "Couldn't connect: {error}",
+  "@mcp_connection_failed": {
+    "description": "Shown under a saved MCP server whose connection failed",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Connection refused"
+      }
+    }
+  },
+  "mcp_tools_unsupported_runtime": "This model's runtime can't call tools yet. Switch to a Gemma (LiteRT) model or a server model to use MCP tools.",
+  "@mcp_tools_unsupported_runtime": {
+    "description": "Shown in chat settings when the loaded on-device runtime (llama.cpp or MLX) does not support tool calling"
+  },
   "auto_execute_tools": "Auto-execute tools",
   "@auto_execute_tools": {
     "description": "Toggle for auto-executing tools"
