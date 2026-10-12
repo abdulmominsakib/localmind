@@ -96,6 +96,7 @@ class MessageArea extends ConsumerWidget {
         presence: NewChatPresence.forServerType(serverType),
         serverName: activeServer?.name ?? '',
         readiness: _readiness(ref, serverType),
+        onModelPicker: onModelPicker,
         onQuickPrompt: (prompt) {
           if (!ref.read(activeChatTargetProvider).isReady) {
             final toastL10n = AppLocalizations.of(context)!;

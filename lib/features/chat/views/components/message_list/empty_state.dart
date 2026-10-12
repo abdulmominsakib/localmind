@@ -22,6 +22,7 @@ class EmptyState extends StatelessWidget {
     required this.readiness,
     required this.onQuickPrompt,
     required this.quickPrompts,
+    this.onModelPicker,
     this.bottomInset = 0,
     this.keyboardOpen = false,
   });
@@ -32,6 +33,9 @@ class EmptyState extends StatelessWidget {
   final String serverName;
 
   final NewChatReadiness readiness;
+
+  /// Opens the model picker from the "No model selected" tag.
+  final VoidCallback? onModelPicker;
 
   final void Function(String) onQuickPrompt;
   final List<QuickPrompt> quickPrompts;
@@ -71,6 +75,7 @@ class EmptyState extends StatelessWidget {
                     presence: presence,
                     serverName: serverName,
                     readiness: readiness,
+                    onModelPicker: onModelPicker,
                     keyboardOpen: keyboardOpen,
                   ),
                 ),
@@ -98,12 +103,14 @@ class NewChatIntro extends StatelessWidget {
     required this.presence,
     required this.serverName,
     required this.readiness,
+    this.onModelPicker,
     this.keyboardOpen = false,
   });
 
   final NewChatPresence presence;
   final String serverName;
   final NewChatReadiness readiness;
+  final VoidCallback? onModelPicker;
   final bool keyboardOpen;
 
   @override
@@ -210,6 +217,9 @@ class NewChatIntro extends StatelessWidget {
               status: status,
               isReady: readiness == NewChatReadiness.ready,
               provider: provider,
+              onStatusTap: readiness == NewChatReadiness.noModel
+                  ? onModelPicker
+                  : null,
             ),
           ),
         ],
