@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:characters/characters.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -173,6 +175,30 @@ void main() {
       );
 
       expect(report.error.toString(), contains('ListTile'));
+      expect(service.currentCrash.value, isNull);
+    });
+
+    test('out-of-storage errors are recorded without the crash screen', () {
+      final service = CrashReportService.instance;
+      // background_downloader forwards storage-isolate failures as strings
+      // from an unawaited future (#113).
+      const isolateError =
+          "FileSystemException: Creation failed, path = '/data/user/0/"
+          "pro.momin.localmind/files/backgroundDownloaderResumeData' "
+          '(OS Error: No space left on device, errno = 28)';
+      final report = service.capture(isolateError, StackTrace.empty);
+
+      expect(report.error, isolateError);
+      expect(service.currentCrash.value, isNull);
+
+      service.capture(
+        const FileSystemException(
+          'Creation failed',
+          '/data/user/0/app/files/x',
+          OSError('No space left on device', 28),
+        ),
+        StackTrace.current,
+      );
       expect(service.currentCrash.value, isNull);
     });
 

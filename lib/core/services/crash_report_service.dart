@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io' show Platform;
+import 'dart:io' show FileSystemException, Platform;
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -252,10 +252,28 @@ class CrashReportService {
       _recentCrashes.removeAt(0);
     }
 
-    if (showCrashScreen && !isDuplicate) {
+    if (showCrashScreen && !isDuplicate && !isOutOfStorageError(error)) {
       _setCurrentCrash(report);
     }
     return report;
+  }
+
+  /// Whether [error] means the device ran out of storage (ENOSPC).
+  ///
+  /// Such errors are recorded but never take over the app with the crash
+  /// screen: they're an environment condition, not a bug, and the flow that
+  /// hit them (e.g. a model download) reports its own "not enough storage"
+  /// message. They can still escape uncaught from third-party code — e.g.
+  /// `background_downloader` stores resume data without awaiting it, so a
+  /// full disk surfaces as an unhandled `FileSystemException` string (#113).
+  static bool isOutOfStorageError(Object error) {
+    if (error is FileSystemException && error.osError?.errorCode == 28) {
+      return true;
+    }
+    final errorStr = error.toString();
+    return errorStr.contains('No space left on device') ||
+        errorStr.contains('errno = 28') ||
+        errorStr.contains('ENOSPC');
   }
 
   /// Checks whether an error is a known non-fatal Flutter framework issue that
