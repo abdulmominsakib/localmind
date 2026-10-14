@@ -2385,6 +2385,60 @@ abstract class AppLocalizations {
   /// **'Choose a model to download.\nIt will run locally on your device.'**
   String get download_model_desc;
 
+  /// Title for dialog when user tries to continue without downloading a model
+  ///
+  /// In en, this message translates to:
+  /// **'No Model Downloaded'**
+  String get no_model_downloaded_title;
+
+  /// Description for dialog when user tries to continue without downloading a model
+  ///
+  /// In en, this message translates to:
+  /// **'To use on-device AI, you need to download or select at least one model. You can choose a model now, or skip and download one later in settings.'**
+  String get no_model_downloaded_desc;
+
+  /// Button label to dismiss warning and select or download a model
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Model'**
+  String get choose_a_model;
+
+  /// Button label to skip model download during onboarding
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for Now'**
+  String get skip_for_now;
+
+  /// Title for dialog when a model is actively downloading
+  ///
+  /// In en, this message translates to:
+  /// **'Download in Progress'**
+  String get download_in_progress_title;
+
+  /// Description for dialog when a model is actively downloading
+  ///
+  /// In en, this message translates to:
+  /// **'A model is currently downloading. You can wait for it to complete or continue in the background.'**
+  String get download_in_progress_desc;
+
+  /// Button label to wait for download to finish
+  ///
+  /// In en, this message translates to:
+  /// **'Wait'**
+  String get wait_for_download;
+
+  /// Button label to continue while download runs in background
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Anyway'**
+  String get continue_anyway;
+
+  /// Hint text displayed above continue button when no model has been downloaded
+  ///
+  /// In en, this message translates to:
+  /// **'At least one downloaded model is required for on-device chat.'**
+  String get download_model_required_hint;
+
   /// Platform limitation notice
   ///
   /// In en, this message translates to:

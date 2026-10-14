@@ -21,7 +21,9 @@ import '../../servers/data/models/server.dart';
 import '../../servers/providers/server_providers.dart';
 import '../../../core/providers/device_info_providers.dart';
 import '../../../core/device/device_memory_service.dart';
+import '../../../core/providers/app_providers.dart';
 import '../../models/components/ram_warning_dialog.dart';
+import '../components/onboarding_model_warning_dialog.dart';
 
 class OnboardingModelDownloadScreen extends ConsumerStatefulWidget {
   const OnboardingModelDownloadScreen({super.key});
@@ -44,8 +46,24 @@ class _OnboardingModelDownloadScreenState
     final downloadStates = ref.watch(foregroundDownloadNotifierProvider);
     final deviceMemoryAsync = ref.watch(deviceMemoryProvider);
 
+    final hasDownloadedModels = downloadedModelsAsync.value?.isNotEmpty == true;
+    final hasActiveDownloads = downloadStates.values.any(
+      (info) =>
+          info.status == DownloadStatus.running ||
+          info.status == DownloadStatus.pending,
+    );
+
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.download_model_title)),
+      appBar: AppBar(
+        title: Text(l10n.download_model_title),
+        actions: [
+          TextButton.icon(
+            onPressed: _isCreatingServer ? null : _skipOnboarding,
+            label: Text(l10n.skip),
+            icon: const HugeIcon(icon: HugeIcons.strokeRoundedNext, size: 18),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Cue.onMount(
           motion: .smooth(),
@@ -145,14 +163,25 @@ class _OnboardingModelDownloadScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (!hasDownloadedModels && !hasActiveDownloads)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            l10n.download_model_required_hint,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
+                            ),
+                          ),
+                        ),
                       if (_isCreatingServer)
                         const Center(child: CircularProgressIndicator())
                       else
                         ShadButton(
                           width: double.infinity,
-                          onPressed: _canContinue()
-                              ? _createOnDeviceServer
-                              : null,
+                          onPressed: _handleContinue,
                           child: Text(
                             l10n.continue_action,
                             style: const TextStyle(
@@ -172,12 +201,48 @@ class _OnboardingModelDownloadScreenState
     );
   }
 
-  bool _canContinue() {
-    final downloadedSet = ref.read(downloadedModelsProvider).whenData((s) => s);
-    return downloadedSet.hasValue && downloadedSet.value!.isNotEmpty;
+  Future<void> _skipOnboarding() async {
+    await _createOnDeviceServer(skipToHome: true);
   }
 
-  Future<void> _createOnDeviceServer() async {
+  Future<void> _handleContinue() async {
+    if (_isCreatingServer) return;
+
+    final downloadedSet =
+        ref.read(downloadedModelsProvider).value ?? <String>{};
+    if (downloadedSet.isNotEmpty) {
+      await _createOnDeviceServer();
+      return;
+    }
+
+    final downloadStates = ref.read(foregroundDownloadNotifierProvider);
+    final hasActiveDownload = downloadStates.values.any(
+      (info) =>
+          info.status == DownloadStatus.running ||
+          info.status == DownloadStatus.pending,
+    );
+
+    if (hasActiveDownload) {
+      if (!mounted) return;
+      final action = await OnboardingModelWarningDialog.showDownloadInProgress(
+        context,
+      );
+      if (action == OnboardingWarningAction.continueAnyway && mounted) {
+        await _createOnDeviceServer();
+      }
+      return;
+    }
+
+    if (!mounted) return;
+    final action = await OnboardingModelWarningDialog.showNoModelDownloaded(
+      context,
+    );
+    if (action == OnboardingWarningAction.skipForNow && mounted) {
+      await _createOnDeviceServer();
+    }
+  }
+
+  Future<void> _createOnDeviceServer({bool skipToHome = false}) async {
     setState(() => _isCreatingServer = true);
 
     try {
@@ -201,7 +266,16 @@ class _OnboardingModelDownloadScreenState
       ref.read(activeServerIdProvider.notifier).setActiveServer(server);
 
       if (mounted) {
-        context.push(AppRoutes.onboardingTheme);
+        if (skipToHome) {
+          final settings = ref.read(settingsProvider);
+          await ref
+              .read(settingsProvider.notifier)
+              .updateSettings(settings.copyWith(hasCompletedOnboarding: true));
+          if (!mounted) return;
+          context.go(AppRoutes.home);
+        } else {
+          context.push(AppRoutes.onboardingTheme);
+        }
       }
     } catch (e) {
       if (mounted) {

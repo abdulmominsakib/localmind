@@ -1666,6 +1666,42 @@
   "@download_model_desc": {
     "description": "Onboarding download model description"
   },
+  "no_model_downloaded_title": "No Model Downloaded",
+  "@no_model_downloaded_title": {
+    "description": "Title for dialog when user tries to continue without downloading a model"
+  },
+  "no_model_downloaded_desc": "To use on-device AI, you need to download or select at least one model. You can choose a model now, or skip and download one later in settings.",
+  "@no_model_downloaded_desc": {
+    "description": "Description for dialog when user tries to continue without downloading a model"
+  },
+  "choose_a_model": "Choose Model",
+  "@choose_a_model": {
+    "description": "Button label to dismiss warning and select or download a model"
+  },
+  "skip_for_now": "Skip for Now",
+  "@skip_for_now": {
+    "description": "Button label to skip model download during onboarding"
+  },
+  "download_in_progress_title": "Download in Progress",
+  "@download_in_progress_title": {
+    "description": "Title for dialog when a model is actively downloading"
+  },
+  "download_in_progress_desc": "A model is currently downloading. You can wait for it to complete or continue in the background.",
+  "@download_in_progress_desc": {
+    "description": "Description for dialog when a model is actively downloading"
+  },
+  "wait_for_download": "Wait",
+  "@wait_for_download": {
+    "description": "Button label to wait for download to finish"
+  },
+  "continue_anyway": "Continue Anyway",
+  "@continue_anyway": {
+    "description": "Button label to continue while download runs in background"
+  },
+  "download_model_required_hint": "At least one downloaded model is required for on-device chat.",
+  "@download_model_required_hint": {
+    "description": "Hint text displayed above continue button when no model has been downloaded"
+  },
   "on_device_android_only": "On-device inference is currently available on Android only.",
   "@on_device_android_only": {
     "description": "Platform limitation notice"

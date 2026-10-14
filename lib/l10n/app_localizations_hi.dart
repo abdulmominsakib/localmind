@@ -1245,6 +1245,36 @@ class AppLocalizationsHi extends AppLocalizations {
       'डाउनलोड करने के लिए एक मॉडल चुनें।\nयह आपके डिवाइस पर स्थानीय रूप से चलेगा।';
 
   @override
+  String get no_model_downloaded_title => 'No Model Downloaded';
+
+  @override
+  String get no_model_downloaded_desc =>
+      'To use on-device AI, you need to download or select at least one model. You can choose a model now, or skip and download one later in settings.';
+
+  @override
+  String get choose_a_model => 'Choose Model';
+
+  @override
+  String get skip_for_now => 'Skip for Now';
+
+  @override
+  String get download_in_progress_title => 'Download in Progress';
+
+  @override
+  String get download_in_progress_desc =>
+      'A model is currently downloading. You can wait for it to complete or continue in the background.';
+
+  @override
+  String get wait_for_download => 'Wait';
+
+  @override
+  String get continue_anyway => 'Continue Anyway';
+
+  @override
+  String get download_model_required_hint =>
+      'At least one downloaded model is required for on-device chat.';
+
+  @override
   String get on_device_android_only =>
       'ऑन-डिवाइस अनुमान वर्तमान में केवल Android पर उपलब्ध है।';
 
