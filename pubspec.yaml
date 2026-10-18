@@ -66,8 +66,12 @@ dependencies:
   path: ^1.9.1
   flutter_gemma: ^1.7.0
   flutter_gemma_litertlm: ^1.6.0
-  llamadart: ^0.8.4
-  llamadart_llama_cpp_flutter: ^0.0.4
+  # Keep these two pinned in lockstep: the companion ships the Apple native
+  # llama.cpp framework, and its tag must match llamadart's FFI bindings or
+  # model loading fails on iOS/macOS with missing symbols (#117).
+  # llamadart 0.8.18 -> llama.cpp b10276 -> llamadart_llama_cpp_flutter 0.0.12.
+  llamadart: 0.8.18
+  llamadart_llama_cpp_flutter: 0.0.12
   wakelock_plus: ^1.2.8
   flutter_local_notifications: ^22.0.1
   audioplayers: ^6.4.0

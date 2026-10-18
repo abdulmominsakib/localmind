@@ -1264,10 +1264,10 @@ packages:
     dependency: "direct main"
     description:
       name: llamadart_llama_cpp_flutter
-      sha256: "42b61754139aeef18cf571e12ce4194c56f5f3ead9dab5b253ce69136c4976d5"
+      sha256: "9e4639c3dbe7881e32f05fa645f6920fd2d63bc2301bd6ded9e5cf22580e1751"
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.4"
+    version: "0.0.12"
   loading_animation_widget:
     dependency: "direct main"
     description:
