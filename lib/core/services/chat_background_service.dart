@@ -47,6 +47,20 @@ class ChatBackgroundService {
     }
   }
 
+  /// Tells Android whether native on-device inference is running. Its
+  /// threads call back into this isolate, so the activity ends the process
+  /// rather than let the Flutter engine be torn down beneath them. Covers runs
+  /// that hold no foreground service, such as title generation, and holds
+  /// whose service Android refused to start.
+  Future<void> setNativeWorkActive(bool active) async {
+    if (!_isAndroid) return;
+    try {
+      await _channel.invokeMethod('setNativeWorkActive', active);
+    } catch (e) {
+      Log.error('Failed to report native work to Android: $e');
+    }
+  }
+
   /// Start a microphone-typed foreground service so that voice capture
   /// survives when the app is backgrounded (Android 14+ requirement).
   /// Does not toggle Wakelock — STT is short-lived and the overlay is

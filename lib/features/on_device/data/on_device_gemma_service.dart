@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
@@ -44,6 +47,137 @@ bool isCorruptedOnDeviceEngineError(Object error) {
       message.contains('internal: error');
 }
 
+/// How long a teardown waits for a stopped native generation to wind down
+/// before closing its conversation anyway.
+const onDeviceGenerationDrainTimeout = Duration(seconds: 5);
+
+/// Keeps native teardown off a generation that is still running.
+///
+/// Closing a LiteRT conversation that is still decoding blocks the calling
+/// thread in `ThreadedExecutionManager::WaitUntilSessionDone` until the decode
+/// drains, which on the UI isolate is an ANR. Cancelling the consumer's
+/// subscription doesn't wait either: native keeps decoding until it notices
+/// the cancel. So a cancel or [close] here asks native to stop, keeps
+/// listening until the stream really ends (or [drainTimeout] passes), and only
+/// then lets the conversation be deleted.
+@visibleForTesting
+class DrainingInferenceSession implements OnDeviceInferenceSession {
+  DrainingInferenceSession(
+    this._inner, {
+    this.drainTimeout = onDeviceGenerationDrainTimeout,
+    this.onGeneratingChanged,
+    this.onClosed,
+  });
+
+  final OnDeviceInferenceSession _inner;
+  final Duration drainTimeout;
+  final void Function(bool generating)? onGeneratingChanged;
+  final VoidCallback? onClosed;
+  _NativeGeneration? _generation;
+  bool _isClosed = false;
+
+  bool get isGenerating => _generation != null;
+
+  @override
+  Future<void> addQueryChunk(Message message) => _inner.addQueryChunk(message);
+
+  @override
+  Stream<ModelResponse> generateChatResponseAsync() {
+    late final StreamController<ModelResponse> controller;
+    _NativeGeneration? generation;
+
+    void settle() {
+      final current = generation;
+      if (current == null || current.done.isCompleted) return;
+      current.done.complete();
+      if (identical(_generation, current)) _generation = null;
+      onGeneratingChanged?.call(false);
+    }
+
+    controller = StreamController<ModelResponse>(
+      onListen: () {
+        final current = generation = _generation = _NativeGeneration(settle);
+        onGeneratingChanged?.call(true);
+        try {
+          current.subscription = _inner.generateChatResponseAsync().listen(
+            controller.add,
+            onError: controller.addError,
+            onDone: () {
+              settle();
+              controller.close();
+            },
+          );
+        } catch (error, stackTrace) {
+          settle();
+          controller.addError(error, stackTrace);
+          controller.close();
+        }
+      },
+      // Returning the drain makes the consumer's `cancel()` wait for native to
+      // stop, so whatever it closes next doesn't block on a live decode.
+      onCancel: () {
+        final current = generation;
+        if (current == null || current.done.isCompleted) return null;
+        return _drain(current);
+      },
+    );
+    return controller.stream;
+  }
+
+  @override
+  Future<void> stopGeneration() => _inner.stopGeneration();
+
+  /// Stops a running generation and waits for native to wind it down.
+  Future<void> drain() {
+    final current = _generation;
+    if (current == null) return Future.value();
+    return _drain(current);
+  }
+
+  Future<void> _drain(_NativeGeneration generation) {
+    return generation.draining ??= () async {
+      try {
+        await _inner.stopGeneration();
+      } catch (error) {
+        Log.warning('Error stopping on-device generation: $error');
+      }
+      try {
+        await generation.done.future.timeout(drainTimeout);
+      } on TimeoutException {
+        Log.warning(
+          'On-device generation did not stop within '
+          '${drainTimeout.inSeconds}s; closing it anyway',
+        );
+        final subscription = generation.subscription;
+        generation.subscription = null;
+        generation.settle();
+        await subscription?.cancel();
+      }
+    }();
+  }
+
+  @override
+  Future<void> close() async {
+    if (_isClosed) return;
+    _isClosed = true;
+    try {
+      await drain();
+      await _inner.close();
+    } finally {
+      onClosed?.call();
+    }
+  }
+}
+
+class _NativeGeneration {
+  _NativeGeneration(this.settle);
+
+  final VoidCallback settle;
+  final Completer<void> done = Completer<void>();
+  StreamSubscription<ModelResponse>? subscription;
+  Future<void>? draining;
+}
+
 class _GemmaInferenceSession implements OnDeviceInferenceSession {
   _GemmaInferenceSession(this._chat);
 
@@ -64,9 +198,19 @@ class _GemmaInferenceSession implements OnDeviceInferenceSession {
 }
 
 class OnDeviceGemmaService implements OnDeviceInferenceService {
+  OnDeviceGemmaService({this.onNativeWorkChanged});
+
   /// Total token budget (prompt + history + output) used when the caller
   /// doesn't pass one.
   static const defaultMaxTokens = 4096;
+
+  /// Called with true when a native generation starts while none was running,
+  /// and with false once the last one has wound down. Android uses it to end
+  /// the process before its Flutter engine is torn down under a live decode.
+  final void Function(bool active)? onNativeWorkChanged;
+
+  final Set<DrainingInferenceSession> _sessions = {};
+  int _liveGenerations = 0;
 
   InferenceModel? _model;
   String? _currentModelId;
@@ -329,8 +473,13 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     required List<Tool> tools,
     bool? supportImage,
   }) async {
-    final model = _model!;
     final visionEnabled = currentModelSupportsVision && (supportImage ?? true);
+    // createChat() keeps one native conversation per model and deletes the
+    // previous one first, so a reply still decoding there must stop before.
+    if (_model!.fileType != ModelFileType.builtIn && visionEnabled) {
+      await _drainGenerations();
+    }
+    final model = _model!;
 
     final InferenceChat chat;
     if (model.fileType == ModelFileType.builtIn) {
@@ -356,7 +505,29 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
         supportsFunctionCalls: tools.isNotEmpty,
       );
     }
-    return _GemmaInferenceSession(chat);
+    late final DrainingInferenceSession session;
+    session = DrainingInferenceSession(
+      _GemmaInferenceSession(chat),
+      onGeneratingChanged: _onGeneratingChanged,
+      onClosed: () => _sessions.remove(session),
+    );
+    _sessions.add(session);
+    return session;
+  }
+
+  void _onGeneratingChanged(bool generating) {
+    final wasActive = _liveGenerations > 0;
+    _liveGenerations += generating ? 1 : -1;
+    if (_liveGenerations < 0) _liveGenerations = 0;
+    final isActive = _liveGenerations > 0;
+    if (wasActive != isActive) onNativeWorkChanged?.call(isActive);
+  }
+
+  /// Stops every running generation and waits for native to wind it down, so
+  /// the conversation or engine close that follows doesn't block the UI
+  /// isolate on a live decode.
+  Future<void> _drainGenerations() async {
+    await Future.wait(_sessions.toList().map((session) => session.drain()));
   }
 
   bool _isClosedClientError(Object error) {
@@ -390,6 +561,8 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     final recovery = () async {
       final staleModel = _model;
       if (staleModel != null) {
+        await _drainGenerations();
+        _sessions.clear();
         try {
           await staleModel.close();
         } catch (error) {
@@ -410,6 +583,8 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
 
   Future<void> unloadModel() async {
     if (_model != null) {
+      await _drainGenerations();
+      _sessions.clear();
       try {
         await _model!.close();
       } catch (e) {

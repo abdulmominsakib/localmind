@@ -1,6 +1,7 @@
+import 'dart:io';
 import 'dart:isolate';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 
 import '../../../core/logger/app_logger.dart';
@@ -79,6 +80,7 @@ void ttsWorkerEntry(SendPort mainSendPort) {
         activeEngineId = message.engineId;
         activeInit = message;
 
+        validateTtsModelFiles(message);
         tts = _createTts(message);
         Log.info('Worker initialized engine: ${message.engineId}');
         mainSendPort.send(TtsWorkerResponse(isInitResponse: true));
@@ -89,6 +91,17 @@ void ttsWorkerEntry(SendPort mainSendPort) {
               chunkIndex: message.chunkIndex,
               sessionId: message.sessionId,
               error: 'No engine initialized in worker',
+            ),
+          );
+          return;
+        }
+
+        if (!hasSpeakableText(message.text)) {
+          mainSendPort.send(
+            TtsWorkerResponse(
+              chunkIndex: message.chunkIndex,
+              sessionId: message.sessionId,
+              error: 'Nothing to speak in chunk',
             ),
           );
           return;
@@ -128,9 +141,53 @@ void ttsWorkerEntry(SendPort mainSendPort) {
         // No-op: the main isolate handles queue cancellation.
       }
     } catch (e) {
-      mainSendPort.send(TtsWorkerResponse(error: e.toString()));
+      // A failed chunk must still answer for its own index, or playback
+      // waits on it and the error is mistaken for an init failure.
+      mainSendPort.send(
+        message is TtsSynthesizeRequest
+            ? TtsWorkerResponse(
+                chunkIndex: message.chunkIndex,
+                sessionId: message.sessionId,
+                error: e.toString(),
+              )
+            : TtsWorkerResponse(error: e.toString()),
+      );
     }
   });
+}
+
+/// Whether [text] has anything the engine can voice. Chunks of only
+/// punctuation, symbols or whitespace are left after markdown stripping, and
+/// passing them to native generation has crashed it.
+@visibleForTesting
+bool hasSpeakableText(String text) =>
+    RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(text);
+
+/// Rejects missing or empty model files before native code opens them. A
+/// bundle cut short by a full disk or a killed extraction otherwise reaches
+/// onnxruntime, which faults on it instead of returning an error.
+@visibleForTesting
+void validateTtsModelFiles(TtsInitRequest request) {
+  final required = <String>[
+    request.modelPath,
+    request.tokensPath,
+    if (request.engineId == EngineId.kitten) request.voicesPath,
+  ];
+  for (final path in required) {
+    final file = File(path);
+    if (path.isEmpty || !file.existsSync() || file.lengthSync() == 0) {
+      throw StateError(
+        'TTS model file is missing or incomplete: $path. '
+        'Delete the voice and download it again.',
+      );
+    }
+  }
+  if (request.dataDir.isNotEmpty && !Directory(request.dataDir).existsSync()) {
+    throw StateError(
+      'TTS data folder is missing: ${request.dataDir}. '
+      'Delete the voice and download it again.',
+    );
+  }
 }
 
 sherpa_onnx.OfflineTts _createTts(TtsInitRequest message) {
@@ -156,7 +213,7 @@ sherpa_onnx.OfflineTts _createTts(TtsInitRequest message) {
     vits: vits,
     kitten: kitten,
     numThreads: 2,
-    debug: true,
+    debug: false,
     provider: 'cpu',
   );
 

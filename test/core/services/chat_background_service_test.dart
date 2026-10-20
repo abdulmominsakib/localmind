@@ -10,11 +10,14 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
 
   late List<String> calls;
+  late List<Object?> arguments;
 
   setUp(() {
     calls = [];
+    arguments = [];
     messenger.setMockMethodCallHandler(channel, (call) async {
       calls.add(call.method);
+      arguments.add(call.arguments);
       return null;
     });
   });
@@ -49,5 +52,26 @@ void main() {
     await Future.wait([start, stop]);
 
     expect(calls, ['startForeground', 'stopForeground']);
+  });
+
+  test('reports native inference to Android', () async {
+    final service = createService();
+
+    await service.setNativeWorkActive(true);
+    await service.setNativeWorkActive(false);
+
+    expect(calls, ['setNativeWorkActive', 'setNativeWorkActive']);
+    expect(arguments, [true, false]);
+  });
+
+  test('skips the native work report off Android', () async {
+    final service = ChatBackgroundService(
+      channel: channel,
+      supportedPlatform: false,
+    );
+
+    await service.setNativeWorkActive(true);
+
+    expect(calls, isEmpty);
   });
 }

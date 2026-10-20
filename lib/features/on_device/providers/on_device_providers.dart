@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:apple_mlx/apple_mlx.dart';
@@ -29,7 +30,11 @@ final notificationPermissionServiceProvider =
     });
 
 final onDeviceGemmaServiceProvider = Provider<OnDeviceGemmaService>((ref) {
-  final service = OnDeviceGemmaService();
+  final background = ref.read(chatBackgroundServiceProvider);
+  final service = OnDeviceGemmaService(
+    onNativeWorkChanged: (active) =>
+        unawaited(background.setNativeWorkActive(active)),
+  );
   ref.onDispose(() => service.dispose());
   return service;
 });

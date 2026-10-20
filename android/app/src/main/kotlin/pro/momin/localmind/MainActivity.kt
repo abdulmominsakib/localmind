@@ -36,8 +36,12 @@ class MainActivity : AudioServiceActivity() {
         // Native inference threads (LiteRT-LM streaming) would then call into
         // the dead Dart isolate and abort the process in
         // DLRT_GetFfiCallbackMetadata. End the process before the engine is
-        // torn down so that work can't outlive its isolate.
-        if (!isChangingConfigurations && ChatForegroundService.isHeld) {
+        // torn down so that work can't outlive its isolate. Dart also reports
+        // native work directly: title generation holds no service, and
+        // Android can refuse to start one from the background.
+        if (!isChangingConfigurations &&
+            (ChatForegroundService.isHeld || nativeWorkActive)
+        ) {
             Process.killProcess(Process.myPid())
         }
         super.onDestroy()
@@ -100,6 +104,10 @@ class MainActivity : AudioServiceActivity() {
                             null
                         )
                     }
+                }
+                "setNativeWorkActive" -> {
+                    nativeWorkActive = call.arguments as? Boolean ?: false
+                    result.success(null)
                 }
                 "stopForegroundMic" -> {
                     ChatForegroundService.stopService(
@@ -269,5 +277,8 @@ class MainActivity : AudioServiceActivity() {
 
     companion object {
         private const val ASSISTANT_ROLE_REQUEST_CODE = 4101
+
+        // Only touched on the main thread, like ChatForegroundService's holds.
+        private var nativeWorkActive = false
     }
 }
