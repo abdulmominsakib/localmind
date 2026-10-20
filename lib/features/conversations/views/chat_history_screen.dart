@@ -180,7 +180,7 @@ class ChatHistoryScreen extends ConsumerWidget {
         ),
         if (!selectionMode)
           PositionedDirectional(
-            bottom: 24,
+            bottom: 24 + MediaQuery.paddingOf(context).bottom,
             end: 24,
             child: FloatingActionButton.extended(
               key: const ValueKey('history_new_chat'),

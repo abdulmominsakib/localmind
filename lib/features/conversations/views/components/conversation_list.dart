@@ -54,7 +54,9 @@ class ConversationList extends ConsumerWidget {
 
     return ListView.builder(
       // Room for the floating "New chat" button over the last row.
-      padding: const EdgeInsets.only(bottom: 96),
+      padding: EdgeInsets.only(
+        bottom: 96 + MediaQuery.paddingOf(context).bottom,
+      ),
       itemCount: sortedSections.length,
       itemBuilder: (context, sectionIndex) {
         final section = sortedSections[sectionIndex];

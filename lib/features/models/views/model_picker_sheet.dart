@@ -110,7 +110,12 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
         return Cue.onMount(
           motion: .smooth(),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              16 + MediaQuery.paddingOf(context).bottom,
+            ),
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkBackground : AppColors.lightSurface,
               borderRadius: const BorderRadius.vertical(
