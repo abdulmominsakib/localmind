@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -30,13 +31,32 @@ class BootstrapHost extends StatefulWidget {
 }
 
 class _BootstrapHostState extends State<BootstrapHost> {
+  /// The least time the splash stays up, so a fast start still plays the
+  /// logo's scrambled intro and a beat of its pulse. Startup runs meanwhile.
+  static const _splashMinDuration = Duration(milliseconds: 1600);
+
   BootstrapState _state = const BootstrapState();
   ProviderContainer? _container;
   Locale? _savedLocale;
+  Timer? _splashTimer;
+
+  /// The splash has played long enough to hand off to the app.
+  bool _splashPlayed = false;
 
   @override
   void initState() {
     super.initState();
+    if (WidgetsBinding
+        .instance
+        .platformDispatcher
+        .accessibilityFeatures
+        .disableAnimations) {
+      _splashPlayed = true;
+    } else {
+      _splashTimer = Timer(_splashMinDuration, () {
+        if (mounted) setState(() => _splashPlayed = true);
+      });
+    }
     _runBootstrap();
   }
 
@@ -140,26 +160,34 @@ class _BootstrapHostState extends State<BootstrapHost> {
 
   @override
   void dispose() {
+    _splashTimer?.cancel();
     _container?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_container != null) {
-      return UncontrolledProviderScope(
-        container: _container!,
-        child: SafeRiverpodScopeHost(
-          container: _container!,
-          child: const CloudSyncLifecycleHost(child: App()),
-        ),
-      );
-    }
-
-    return BootstrapScreen(
-      state: _state,
-      locale: _savedLocale,
-      onRetry: _state.stage == BootstrapStage.error ? _runBootstrap : null,
+    final container = _container;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      child: container != null && _splashPlayed
+          ? UncontrolledProviderScope(
+              key: const ValueKey('app'),
+              container: container,
+              child: SafeRiverpodScopeHost(
+                container: container,
+                child: const CloudSyncLifecycleHost(child: App()),
+              ),
+            )
+          : BootstrapScreen(
+              key: const ValueKey('splash'),
+              state: _state,
+              locale: _savedLocale,
+              showStatus: _splashPlayed,
+              onRetry: _state.stage == BootstrapStage.error
+                  ? _runBootstrap
+                  : null,
+            ),
     );
   }
 }
