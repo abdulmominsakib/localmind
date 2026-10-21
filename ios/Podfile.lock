@@ -6,14 +6,11 @@ PODS:
   - objectbox_flutter_libs (0.0.1):
     - Flutter
     - ObjectBox (= 5.3.0)
-  - sherpa_onnx_ios (1.13.3):
-    - Flutter
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_tts (from `.symlinks/plugins/flutter_tts/ios`)
   - objectbox_flutter_libs (from `.symlinks/plugins/objectbox_flutter_libs/ios`)
-  - sherpa_onnx_ios (from `.symlinks/plugins/sherpa_onnx_ios/ios`)
 
 SPEC REPOS:
   trunk:
@@ -26,15 +23,12 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_tts/ios"
   objectbox_flutter_libs:
     :path: ".symlinks/plugins/objectbox_flutter_libs/ios"
-  sherpa_onnx_ios:
-    :path: ".symlinks/plugins/sherpa_onnx_ios/ios"
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_tts: 91ad1884033cd95ef6e9338754adad54f01f090f
   ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
   objectbox_flutter_libs: bfbfc0486c06b0b29b130ca1ad9467e8314f32f1
-  sherpa_onnx_ios: 385d34da9ade98f8e012d9b518f1440bd8ba3636
 
 PODFILE CHECKSUM: 215ae534c1261f82e8c38d077336338426f826c5
 
