@@ -133,15 +133,6 @@ class ServerCard extends StatelessWidget {
               : theme.dividerColor.withValues(alpha: isDark ? 0.12 : 0.08),
           width: isActive ? 1.5 : 1,
         ),
-        boxShadow: isActive
-            ? [
-                BoxShadow(
-                  color: _accent.withValues(alpha: 0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(

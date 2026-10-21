@@ -8,6 +8,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../core/models/enums.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/utils/system_insets.dart';
 import '../../settings/data/models/app_settings.dart';
 import '../data/kitten_tts_model.dart';
 import '../data/piper_tts_model.dart';
@@ -67,7 +68,12 @@ class TtsModelManagerScreen extends ConsumerWidget {
         ),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              16 + bottomSystemInset(context),
+            ),
             children: [
               _SystemEngineCard(
                 isSelected: settings.ttsEngine == EngineId.system,

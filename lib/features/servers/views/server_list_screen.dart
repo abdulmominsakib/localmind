@@ -167,7 +167,7 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
           ],
         ),
         PositionedDirectional(
-          bottom: 24,
+          bottom: 24 + systemBottomInset,
           end: 24,
           child: FloatingActionButton(
             onPressed: () => context.push(AppRoutes.addServer),
