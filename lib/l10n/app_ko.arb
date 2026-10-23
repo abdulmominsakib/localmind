@@ -502,6 +502,7 @@
   "prompt_hint": "당신은 도움이되는 조수입니다 ...",
   "prompt_required": "시스템 프롬프트가 필요합니다",
   "prompt_max_chars": "최대 4000자",
+  "prompt_length_warning": "긴 프롬프트({count}자)는 모델의 컨텍스트 창을 더 많이 사용하며, 작은 모델에서는 응답이 느려지거나 오류가 발생할 수 있습니다.",
   "advanced_settings": "고급 설정",
   "temperature_label": "온도(0.0-2.0)",
   "top_p_label": "상위 P(0.0-1.0)",

@@ -2280,6 +2280,15 @@
   "@prompt_max_chars": {
     "description": "Validation: prompt max chars"
   },
+  "prompt_length_warning": "Long prompts ({count} characters) use more of the model's context window and can slow replies or cause errors on smaller models.",
+  "@prompt_length_warning": {
+    "description": "Soft warning shown when the persona prompt exceeds the recommended length",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "advanced_settings": "Advanced Settings",
   "@advanced_settings": {
     "description": "Expandable advanced settings section"

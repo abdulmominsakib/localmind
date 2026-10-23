@@ -472,6 +472,7 @@
   "prompt_hint": "你是一个得力的助手...",
   "prompt_required": "需要系统提示词",
   "prompt_max_chars": "最多 4000 个字符",
+  "prompt_length_warning": "较长的提示词（{count} 个字符）会占用更多模型上下文窗口，在较小的模型上可能导致回复变慢或出错。",
   "advanced_settings": "高级设置",
   "temperature_label": "温度 (0.0-2.0)",
   "top_p_label": "Top P (0.0-1.0)",

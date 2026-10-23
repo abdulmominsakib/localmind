@@ -3201,6 +3201,12 @@ abstract class AppLocalizations {
   /// **'Max 4000 characters'**
   String get prompt_max_chars;
 
+  /// Soft warning shown when the persona prompt exceeds the recommended length
+  ///
+  /// In en, this message translates to:
+  /// **'Long prompts ({count} characters) use more of the model\'s context window and can slow replies or cause errors on smaller models.'**
+  String prompt_length_warning(int count);
+
   /// Expandable advanced settings section
   ///
   /// In en, this message translates to:

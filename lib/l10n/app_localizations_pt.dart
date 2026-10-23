@@ -1682,6 +1682,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get prompt_max_chars => 'Máximo de 4.000 caracteres';
 
   @override
+  String prompt_length_warning(int count) {
+    return 'Prompts longos ($count caracteres) usam mais da janela de contexto do modelo e podem deixar as respostas lentas ou causar erros em modelos menores.';
+  }
+
+  @override
   String get advanced_settings => 'Configurações avançadas';
 
   @override

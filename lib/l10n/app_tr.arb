@@ -483,6 +483,7 @@
   "prompt_hint": "Sen yardımcı bir asistansın...",
   "prompt_required": "Sistem yönergesi gereklidir",
   "prompt_max_chars": "En fazla 4000 karakter",
+  "prompt_length_warning": "Uzun istemler ({count} karakter) modelin bağlam penceresinin daha fazlasını kullanır ve küçük modellerde yanıtları yavaşlatabilir veya hatalara yol açabilir.",
   "advanced_settings": "Advanced Ayarlar",
   "temperature_label": "Sıcaklık (0.0-2.0)",
   "top_p_label": "Top P (0.0-1.0)",

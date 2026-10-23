@@ -1646,6 +1646,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get prompt_max_chars => '최대 4000자';
 
   @override
+  String prompt_length_warning(int count) {
+    return '긴 프롬프트($count자)는 모델의 컨텍스트 창을 더 많이 사용하며, 작은 모델에서는 응답이 느려지거나 오류가 발생할 수 있습니다.';
+  }
+
+  @override
   String get advanced_settings => '고급 설정';
 
   @override

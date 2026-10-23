@@ -483,6 +483,7 @@
   "prompt_hint": "You are a helpful assistant...",
   "prompt_required": "System prompt is required",
   "prompt_max_chars": "Max 4000 characters",
+  "prompt_length_warning": "Les prompts longs ({count} caractères) utilisent davantage la fenêtre de contexte du modèle et peuvent ralentir les réponses ou provoquer des erreurs sur les petits modèles.",
   "advanced_settings": "Advanced Paramètres",
   "temperature_label": "Température (0.0-2.0)",
   "top_p_label": "Top P (0.0-1.0)",

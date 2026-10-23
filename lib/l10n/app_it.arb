@@ -472,6 +472,7 @@
   "prompt_hint": "Sei un assistente utile...",
   "prompt_required": "Il prompt di sistema è obbligatorio",
   "prompt_max_chars": "Max 4000 caratteri",
+  "prompt_length_warning": "I prompt lunghi ({count} caratteri) usano più finestra di contesto del modello e possono rallentare le risposte o causare errori sui modelli più piccoli.",
   "advanced_settings": "Impostazioni avanzate",
   "temperature_label": "Temperatura (0,0-2,0)",
   "top_p_label": "Top P (0,0-1,0)",

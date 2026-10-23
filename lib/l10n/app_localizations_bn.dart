@@ -1683,6 +1683,11 @@ class AppLocalizationsBn extends AppLocalizations {
   String get prompt_max_chars => 'সর্বোচ্চ ৪০০০ অক্ষর';
 
   @override
+  String prompt_length_warning(int count) {
+    return 'দীর্ঘ প্রম্পট ($count অক্ষর) মডেলের কনটেক্সট উইন্ডোর বেশি অংশ ব্যবহার করে এবং ছোট মডেলে উত্তর ধীর করতে বা ত্রুটি ঘটাতে পারে।';
+  }
+
+  @override
   String get advanced_settings => 'উন্নত সেটিংস';
 
   @override

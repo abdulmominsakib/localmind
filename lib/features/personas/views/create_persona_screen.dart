@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import '../data/models/persona.dart';
 import '../providers/personas_providers.dart';
+import 'components/prompt_length_warning.dart';
 
 class CreatePersonaScreen extends ConsumerStatefulWidget {
   final Persona? editPersona;
@@ -386,16 +387,17 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
                 ),
                 maxLines: 8,
                 minLines: 4,
-                maxLength: 4000,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
                     return l10n.prompt_required;
                   }
-                  if (v.trim().length > 4000) return l10n.prompt_max_chars;
                   return null;
                 },
                 onChanged: (_) => setState(() {}),
               ),
+            if (_promptController.text.trim().length >
+                PromptLengthWarning.threshold)
+              PromptLengthWarning(length: _promptController.text.trim().length),
             const SizedBox(height: 16),
 
             GestureDetector(

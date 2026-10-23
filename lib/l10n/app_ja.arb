@@ -472,6 +472,7 @@
   "prompt_hint": "あなたは親切なアシスタントです...",
   "prompt_required": "システムプロンプトは必須です",
   "prompt_max_chars": "最大4000文字",
+  "prompt_length_warning": "長いプロンプト（{count}文字）はモデルのコンテキストウィンドウをより多く消費し、小さいモデルでは応答が遅くなったりエラーが発生したりすることがあります。",
   "advanced_settings": "詳細設定",
   "temperature_label": "温度（0.0-2.0）",
   "top_p_label": "Top P（0.0-1.0）",

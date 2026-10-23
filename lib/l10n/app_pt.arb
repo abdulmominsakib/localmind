@@ -502,6 +502,7 @@
   "prompt_hint": "Você é um assistente prestativo...",
   "prompt_required": "O prompt do sistema é obrigatório",
   "prompt_max_chars": "Máximo de 4.000 caracteres",
+  "prompt_length_warning": "Prompts longos ({count} caracteres) usam mais da janela de contexto do modelo e podem deixar as respostas lentas ou causar erros em modelos menores.",
   "advanced_settings": "Configurações avançadas",
   "temperature_label": "Temperatura (0,0-2,0)",
   "top_p_label": "P superior (0,0-1,0)",

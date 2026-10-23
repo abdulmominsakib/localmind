@@ -1633,6 +1633,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get prompt_max_chars => '最多 4000 个字符';
 
   @override
+  String prompt_length_warning(int count) {
+    return '较长的提示词（$count 个字符）会占用更多模型上下文窗口，在较小的模型上可能导致回复变慢或出错。';
+  }
+
+  @override
   String get advanced_settings => '高级设置';
 
   @override
@@ -4872,6 +4877,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get prompt_max_chars => '最多 4000 個字元';
+
+  @override
+  String prompt_length_warning(int count) {
+    return '較長的提示詞（$count 個字元）會佔用更多模型上下文視窗，在較小的模型上可能導致回覆變慢或出錯。';
+  }
 
   @override
   String get advanced_settings => '進階設定';

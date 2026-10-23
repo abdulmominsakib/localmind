@@ -1681,6 +1681,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get prompt_max_chars => 'Макс. 4000 символов.';
 
   @override
+  String prompt_length_warning(int count) {
+    return 'Длинные промпты ($count симв.) занимают больше контекстного окна модели и могут замедлять ответы или вызывать ошибки на небольших моделях.';
+  }
+
+  @override
   String get advanced_settings => 'Расширенные настройки';
 
   @override

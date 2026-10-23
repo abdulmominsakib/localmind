@@ -1679,6 +1679,11 @@ class AppLocalizationsHi extends AppLocalizations {
   String get prompt_max_chars => 'अधिकतम 4000 वर्ण';
 
   @override
+  String prompt_length_warning(int count) {
+    return 'लंबे प्रॉम्प्ट ($count अक्षर) मॉडल की कॉन्टेक्स्ट विंडो का अधिक हिस्सा लेते हैं और छोटे मॉडल पर जवाब धीमे कर सकते हैं या त्रुटियाँ पैदा कर सकते हैं।';
+  }
+
+  @override
   String get advanced_settings => 'उन्नत सेटिंग्स';
 
   @override

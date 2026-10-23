@@ -1671,6 +1671,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get prompt_max_chars => 'الحد الأقصى 4000 حرف';
 
   @override
+  String prompt_length_warning(int count) {
+    return 'الموجّهات الطويلة ($count حرف) تستهلك جزءًا أكبر من نافذة سياق النموذج وقد تُبطئ الردود أو تسبب أخطاء في النماذج الأصغر.';
+  }
+
+  @override
   String get advanced_settings => 'الإعدادات المتقدمة';
 
   @override

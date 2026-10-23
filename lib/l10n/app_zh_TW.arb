@@ -472,6 +472,7 @@
   "prompt_hint": "你是一個得力的助手...",
   "prompt_required": "需要系統提示詞",
   "prompt_max_chars": "最多 4000 個字元",
+  "prompt_length_warning": "較長的提示詞（{count} 個字元）會佔用更多模型上下文視窗，在較小的模型上可能導致回覆變慢或出錯。",
   "advanced_settings": "進階設定",
   "temperature_label": "溫度 (0.0-2.0)",
   "top_p_label": "Top P (0.0-1.0)",

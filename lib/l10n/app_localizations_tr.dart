@@ -1684,6 +1684,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get prompt_max_chars => 'En fazla 4000 karakter';
 
   @override
+  String prompt_length_warning(int count) {
+    return 'Uzun istemler ($count karakter) modelin bağlam penceresinin daha fazlasını kullanır ve küçük modellerde yanıtları yavaşlatabilir veya hatalara yol açabilir.';
+  }
+
+  @override
   String get advanced_settings => 'Advanced Ayarlar';
 
   @override

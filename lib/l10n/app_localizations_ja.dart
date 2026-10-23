@@ -1645,6 +1645,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get prompt_max_chars => '最大4000文字';
 
   @override
+  String prompt_length_warning(int count) {
+    return '長いプロンプト（$count文字）はモデルのコンテキストウィンドウをより多く消費し、小さいモデルでは応答が遅くなったりエラーが発生したりすることがあります。';
+  }
+
+  @override
   String get advanced_settings => '詳細設定';
 
   @override

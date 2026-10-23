@@ -472,6 +472,7 @@
   "prompt_hint": "Usted es un asistente servicial...",
   "prompt_required": "La instrucción del sistema es requerida",
   "prompt_max_chars": "Máx. 4000 caracteres",
+  "prompt_length_warning": "Los prompts largos ({count} caracteres) usan más de la ventana de contexto del modelo y pueden ralentizar las respuestas o causar errores en modelos más pequeños.",
   "advanced_settings": "Ajustes avanzados",
   "temperature_label": "Temperatura (0.0-2.0)",
   "top_p_label": "Top P (0.0-1.0)",
