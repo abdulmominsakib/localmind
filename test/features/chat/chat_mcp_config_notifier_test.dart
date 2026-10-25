@@ -233,6 +233,25 @@ void main() {
       expect(mcpServerManager.addedServers.single.label, 'Remote tools');
     });
 
+    test(
+      'connectionsReady is safe for Future.timeout with a void onTimeout',
+      () async {
+        // Regression test for the crash reported in MCP-enabled chats:
+        // ChatNotifier._toolsForTurn calls
+        // `connectionsReady.timeout(Duration(seconds: 10), onTimeout: () {})`
+        // through a `Future`-typed reference. Future.wait returns an object
+        // whose runtime type argument is List<void>, so Future.timeout's
+        // runtime check rejected the `() {}` callback with
+        // "type '() => Null' is not a subtype of type
+        // '(() => FutureOr<List<void>>)?' of 'onTimeout'".
+        final notifier = container.read(chatMcpConfigProvider.notifier);
+        await notifier.connectionsReady.timeout(
+          const Duration(seconds: 1),
+          onTimeout: () {},
+        );
+      },
+    );
+
     test('addIntegrationFromInput rejects an unlabeled MCP URL', () {
       final notifier = container.read(chatMcpConfigProvider.notifier);
 
