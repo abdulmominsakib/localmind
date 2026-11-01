@@ -61,3 +61,6 @@ docs/marketing/
 .opencode/
 .config/
 RELEASE.md
+
+# Local plan files
+.agents/plans/
