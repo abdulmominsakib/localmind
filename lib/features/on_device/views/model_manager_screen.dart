@@ -52,6 +52,7 @@ class _OnDeviceModelManagerScreenState
         (a, b) => (b.importedAt ?? DateTime.fromMillisecondsSinceEpoch(0))
             .compareTo(a.importedAt ?? DateTime.fromMillisecondsSinceEpoch(0)),
       );
+    final curatedModels = models.where((model) => !model.isImported).toList();
 
     return Column(
       children: [
@@ -87,8 +88,8 @@ class _OnDeviceModelManagerScreenState
                 _EmptyImportedModelsCard(
                   onAddModels: () => context.push(AppRoutes.addOnDeviceModel),
                 )
-              else
-                ...models.map(
+              else ...[
+                ...curatedModels.map(
                   (model) => ModelCard(
                     model: model,
                     downloadedAsync: downloadedAsync,
@@ -96,6 +97,25 @@ class _OnDeviceModelManagerScreenState
                     engineState: engineState,
                   ),
                 ),
+                if (importedModels.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  _SectionHeader(
+                    title: 'Your models',
+                    subtitle: '${importedModels.length} added',
+                  ),
+                  const SizedBox(height: 4),
+                  ...importedModels.map(
+                    (model) => ModelCard(
+                      model: model,
+                      downloadedAsync: downloadedAsync,
+                      downloadProgress: downloadProgress[model.id],
+                      engineState: engineState,
+                    ),
+                  ),
+                ],
+              ],
               const SizedBox(height: 24),
             ],
           ),

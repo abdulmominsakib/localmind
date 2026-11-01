@@ -22,15 +22,12 @@ class _AddOnDeviceModelScreenState
   late final TabController _tabController;
   final TextEditingController _ggufUrlController = TextEditingController();
   final TextEditingController _ggufSearchController = TextEditingController();
+  final TextEditingController _litertUrlController = TextEditingController();
   final TextEditingController _litertSearchController = TextEditingController();
 
   List<HuggingFaceModelSearchResult> _ggufRepos = [];
-  List<HuggingFaceModelFile> _ggufFiles = [];
-  String? _selectedGgufRepo;
 
   List<HuggingFaceModelSearchResult> _litertRepos = [];
-  List<HuggingFaceModelFile> _litertFiles = [];
-  String? _selectedLitertRepo;
 
   bool _isSearching = false;
   bool _isLoadingFiles = false;
@@ -50,6 +47,7 @@ class _AddOnDeviceModelScreenState
     _tabController.dispose();
     _ggufUrlController.dispose();
     _ggufSearchController.dispose();
+    _litertUrlController.dispose();
     _litertSearchController.dispose();
     super.dispose();
   }
@@ -68,10 +66,54 @@ class _AddOnDeviceModelScreenState
             huggingFaceToken: _token,
           );
       if (!mounted) return;
+      setState(() => _addedFileUrls.add(url));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('GGUF model added')),
       );
       _ggufUrlController.clear();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    }
+  }
+
+  Future<void> _addLitertFromUrl() async {
+    final url = _litertUrlController.text.trim();
+    if (url.isEmpty) return;
+    try {
+      await ref.read(importedLitertModelsProvider.notifier).addFromUrl(
+            url,
+            token: _token,
+          );
+      if (!mounted) return;
+      setState(() => _addedFileUrls.add(url));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('LiteRT model added')),
+      );
+      _litertUrlController.clear();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    }
+  }
+
+  Future<void> _pickLitertFile() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['litertlm'],
+    );
+    if (result == null || result.files.isEmpty) return;
+    final path = result.files.single.path;
+    if (path == null) return;
+    try {
+      final model = await ref
+          .read(importedLitertModelsProvider.notifier)
+          .addFromPath(path);
+      if (!mounted) return;
+      setState(() => _addedFileUrls.add(model.huggingFaceUrl));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${model.name} added')),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
@@ -106,8 +148,6 @@ class _AddOnDeviceModelScreenState
     setState(() {
       _isSearching = true;
       _error = null;
-      _ggufFiles = [];
-      _selectedGgufRepo = null;
     });
     try {
       final repos = await _searchService.searchModels(
@@ -150,10 +190,7 @@ class _AddOnDeviceModelScreenState
         cancelToken: cancelToken,
       );
       if (!mounted || cancelToken.isCancelled) return;
-      setState(() {
-        _selectedGgufRepo = repoId;
-        _ggufFiles = files;
-      });
+      _showGgufFileSheet(repoId, files);
     } on DioException catch (e) {
       if (!mounted || CancelToken.isCancel(e)) return;
       setState(() => _error = e.toString());
@@ -193,8 +230,6 @@ class _AddOnDeviceModelScreenState
     setState(() {
       _isSearching = true;
       _error = null;
-      _litertFiles = [];
-      _selectedLitertRepo = null;
     });
     try {
       final repos = await _searchService.searchModels(
@@ -236,10 +271,7 @@ class _AddOnDeviceModelScreenState
         cancelToken: cancelToken,
       );
       if (!mounted || cancelToken.isCancelled) return;
-      setState(() {
-        _selectedLitertRepo = repoId;
-        _litertFiles = files;
-      });
+      _showLitertFileSheet(repoId, files);
     } on DioException catch (e) {
       if (!mounted || CancelToken.isCancel(e)) return;
       setState(() => _error = e.toString());
@@ -252,6 +284,108 @@ class _AddOnDeviceModelScreenState
         setState(() => _isLoadingFiles = false);
       }
     }
+  }
+
+  void _showGgufFileSheet(String repoId, List<HuggingFaceModelFile> files) {
+    final added = Set<String>.from(_addedFileUrls);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Files in $repoId',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    if (files.isEmpty)
+                      const Text('No GGUF files found.')
+                    else
+                      ...files.map((file) => ListTile(
+                            title: Text(file.name),
+                            subtitle: Text('${file.size} bytes'),
+                            trailing: ElevatedButton(
+                              onPressed: added.contains(file.downloadUrl)
+                                  ? null
+                                  : () async {
+                                      await _addGgufFile(file);
+                                      if (!mounted) return;
+                                      setSheetState(() {
+                                        added.add(file.downloadUrl);
+                                      });
+                                    },
+                              child: Text(
+                                added.contains(file.downloadUrl) ? 'Added' : 'Add',
+                              ),
+                            ),
+                          )),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showLitertFileSheet(String repoId, List<HuggingFaceModelFile> files) {
+    final added = Set<String>.from(_addedFileUrls);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Files in $repoId',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    if (files.isEmpty)
+                      const Text('No LiteRT files found.')
+                    else
+                      ...files.map((file) => ListTile(
+                            title: Text(file.name),
+                            subtitle: Text('${file.size} bytes'),
+                            trailing: ElevatedButton(
+                              onPressed: added.contains(file.downloadUrl)
+                                  ? null
+                                  : () async {
+                                      await _addLitertFile(file);
+                                      if (!mounted) return;
+                                      setSheetState(() {
+                                        added.add(file.downloadUrl);
+                                      });
+                                    },
+                              child: Text(
+                                added.contains(file.downloadUrl) ? 'Added' : 'Add',
+                              ),
+                            ),
+                          )),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _cancelActiveRequest() {
@@ -373,22 +507,6 @@ class _AddOnDeviceModelScreenState
               trailing: const Icon(Icons.chevron_right),
               onTap: _isLoadingFiles ? null : () => _openGgufRepo(repo.repoId),
             )),
-        if (_selectedGgufRepo != null) ...[
-          const SizedBox(height: 8),
-          Text('Files in $_selectedGgufRepo'),
-          ..._ggufFiles.map((file) => ListTile(
-                title: Text(file.name),
-                subtitle: Text('${file.size} bytes'),
-                trailing: ElevatedButton(
-                  onPressed: _addedFileUrls.contains(file.downloadUrl)
-                      ? null
-                      : () => _addGgufFile(file),
-                  child: Text(
-                    _addedFileUrls.contains(file.downloadUrl) ? 'Added' : 'Add',
-                  ),
-                ),
-              )),
-        ],
       ],
     );
   }
@@ -397,6 +515,28 @@ class _AddOnDeviceModelScreenState
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        TextField(
+          controller: _litertUrlController,
+          decoration: const InputDecoration(
+            labelText: 'Hugging Face LiteRT URL',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            ElevatedButton(
+              onPressed: _addLitertFromUrl,
+              child: const Text('Add from URL'),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+              onPressed: _pickLitertFile,
+              child: const Text('Pick local file'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
         TextField(
           controller: _litertSearchController,
           decoration: const InputDecoration(
@@ -439,22 +579,6 @@ class _AddOnDeviceModelScreenState
               trailing: const Icon(Icons.chevron_right),
               onTap: _isLoadingFiles ? null : () => _openLitertRepo(repo.repoId),
             )),
-        if (_selectedLitertRepo != null) ...[
-          const SizedBox(height: 8),
-          Text('Files in $_selectedLitertRepo'),
-          ..._litertFiles.map((file) => ListTile(
-                title: Text(file.name),
-                subtitle: Text('${file.size} bytes'),
-                trailing: ElevatedButton(
-                  onPressed: _addedFileUrls.contains(file.downloadUrl)
-                      ? null
-                      : () => _addLitertFile(file),
-                  child: Text(
-                    _addedFileUrls.contains(file.downloadUrl) ? 'Added' : 'Add',
-                  ),
-                ),
-              )),
-        ],
       ],
     );
   }
