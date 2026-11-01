@@ -50,6 +50,7 @@ class HuggingFaceModelSearchService {
     required String query,
     String? author,
     String? token,
+    CancelToken? cancelToken,
     int limit = 20,
   }) async {
     final trimmed = query.trim();
@@ -69,6 +70,7 @@ class HuggingFaceModelSearchService {
       'https://huggingface.co/api/models',
       queryParameters: params,
       options: _options(token),
+      cancelToken: cancelToken,
     );
 
     final data = response.data;
@@ -95,12 +97,14 @@ class HuggingFaceModelSearchService {
     required String repoId,
     required String extension,
     String? token,
+    CancelToken? cancelToken,
   }) async {
     final normalizedExtension = extension.toLowerCase();
     final response = await _dio.get(
       'https://huggingface.co/api/models/$repoId/tree/main',
       queryParameters: const {'recursive': 'true'},
       options: _options(token),
+      cancelToken: cancelToken,
     );
 
     final data = response.data;

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,7 +33,10 @@ class _AddOnDeviceModelScreenState
   String? _selectedLitertRepo;
 
   bool _isSearching = false;
+  bool _isLoadingFiles = false;
   String? _error;
+  CancelToken? _activeCancelToken;
+  final Set<String> _addedFileUrls = <String>{};
 
   @override
   void initState() {
@@ -42,6 +46,7 @@ class _AddOnDeviceModelScreenState
 
   @override
   void dispose() {
+    _activeCancelToken?.cancel('Screen disposed');
     _tabController.dispose();
     _ggufUrlController.dispose();
     _ggufSearchController.dispose();
@@ -94,6 +99,10 @@ class _AddOnDeviceModelScreenState
   }
 
   Future<void> _searchGguf() async {
+    _activeCancelToken?.cancel('New search started');
+    final cancelToken = CancelToken();
+    _activeCancelToken = cancelToken;
+
     setState(() {
       _isSearching = true;
       _error = null;
@@ -106,20 +115,31 @@ class _AddOnDeviceModelScreenState
             ? 'gguf'
             : _ggufSearchController.text.trim(),
         token: _token,
+        cancelToken: cancelToken,
       );
-      if (!mounted) return;
+      if (!mounted || cancelToken.isCancelled) return;
       setState(() => _ggufRepos = repos);
+    } on DioException catch (e) {
+      if (!mounted || CancelToken.isCancel(e)) return;
+      setState(() => _error = e.toString());
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
-      if (mounted) setState(() => _isSearching = false);
+      if (mounted && identical(_activeCancelToken, cancelToken)) {
+        _activeCancelToken = null;
+        setState(() => _isSearching = false);
+      }
     }
   }
 
   Future<void> _openGgufRepo(String repoId) async {
+    _activeCancelToken?.cancel('New repository opened');
+    final cancelToken = CancelToken();
+    _activeCancelToken = cancelToken;
+
     setState(() {
-      _isSearching = true;
+      _isLoadingFiles = true;
       _error = null;
     });
     try {
@@ -127,17 +147,24 @@ class _AddOnDeviceModelScreenState
         repoId: repoId,
         extension: '.gguf',
         token: _token,
+        cancelToken: cancelToken,
       );
-      if (!mounted) return;
+      if (!mounted || cancelToken.isCancelled) return;
       setState(() {
         _selectedGgufRepo = repoId;
         _ggufFiles = files;
       });
+    } on DioException catch (e) {
+      if (!mounted || CancelToken.isCancel(e)) return;
+      setState(() => _error = e.toString());
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
-      if (mounted) setState(() => _isSearching = false);
+      if (mounted && identical(_activeCancelToken, cancelToken)) {
+        _activeCancelToken = null;
+        setState(() => _isLoadingFiles = false);
+      }
     }
   }
 
@@ -148,6 +175,7 @@ class _AddOnDeviceModelScreenState
             huggingFaceToken: _token,
           );
       if (!mounted) return;
+      setState(() => _addedFileUrls.add(file.downloadUrl));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${file.name} added')),
       );
@@ -158,6 +186,10 @@ class _AddOnDeviceModelScreenState
   }
 
   Future<void> _searchLitert() async {
+    _activeCancelToken?.cancel('New search started');
+    final cancelToken = CancelToken();
+    _activeCancelToken = cancelToken;
+
     setState(() {
       _isSearching = true;
       _error = null;
@@ -169,20 +201,31 @@ class _AddOnDeviceModelScreenState
         query: _litertSearchController.text.trim(),
         author: 'litert-community',
         token: _token,
+        cancelToken: cancelToken,
       );
-      if (!mounted) return;
+      if (!mounted || cancelToken.isCancelled) return;
       setState(() => _litertRepos = repos);
+    } on DioException catch (e) {
+      if (!mounted || CancelToken.isCancel(e)) return;
+      setState(() => _error = e.toString());
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
-      if (mounted) setState(() => _isSearching = false);
+      if (mounted && identical(_activeCancelToken, cancelToken)) {
+        _activeCancelToken = null;
+        setState(() => _isSearching = false);
+      }
     }
   }
 
   Future<void> _openLitertRepo(String repoId) async {
+    _activeCancelToken?.cancel('New repository opened');
+    final cancelToken = CancelToken();
+    _activeCancelToken = cancelToken;
+
     setState(() {
-      _isSearching = true;
+      _isLoadingFiles = true;
       _error = null;
     });
     try {
@@ -190,17 +233,35 @@ class _AddOnDeviceModelScreenState
         repoId: repoId,
         extension: '.litertlm',
         token: _token,
+        cancelToken: cancelToken,
       );
-      if (!mounted) return;
+      if (!mounted || cancelToken.isCancelled) return;
       setState(() {
         _selectedLitertRepo = repoId;
         _litertFiles = files;
       });
+    } on DioException catch (e) {
+      if (!mounted || CancelToken.isCancel(e)) return;
+      setState(() => _error = e.toString());
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
-      if (mounted) setState(() => _isSearching = false);
+      if (mounted && identical(_activeCancelToken, cancelToken)) {
+        _activeCancelToken = null;
+        setState(() => _isLoadingFiles = false);
+      }
+    }
+  }
+
+  void _cancelActiveRequest() {
+    _activeCancelToken?.cancel('User canceled');
+    _activeCancelToken = null;
+    if (mounted) {
+      setState(() {
+        _isSearching = false;
+        _isLoadingFiles = false;
+      });
     }
   }
 
@@ -211,6 +272,7 @@ class _AddOnDeviceModelScreenState
             token: _token,
           );
       if (!mounted) return;
+      setState(() => _addedFileUrls.add(file.downloadUrl));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${file.name} added')),
       );
@@ -287,11 +349,29 @@ class _AddOnDeviceModelScreenState
           Text(_error!, style: const TextStyle(color: Colors.red)),
         ],
         const SizedBox(height: 16),
+        if (_isLoadingFiles) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(child: Text('Loading files...')),
+              TextButton(
+                onPressed: _cancelActiveRequest,
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        ],
         ..._ggufRepos.map((repo) => ListTile(
               title: Text(repo.repoId),
               subtitle: Text('${repo.downloads} downloads'),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => _openGgufRepo(repo.repoId),
+              onTap: _isLoadingFiles ? null : () => _openGgufRepo(repo.repoId),
             )),
         if (_selectedGgufRepo != null) ...[
           const SizedBox(height: 8),
@@ -300,8 +380,12 @@ class _AddOnDeviceModelScreenState
                 title: Text(file.name),
                 subtitle: Text('${file.size} bytes'),
                 trailing: ElevatedButton(
-                  onPressed: () => _addGgufFile(file),
-                  child: const Text('Add'),
+                  onPressed: _addedFileUrls.contains(file.downloadUrl)
+                      ? null
+                      : () => _addGgufFile(file),
+                  child: Text(
+                    _addedFileUrls.contains(file.downloadUrl) ? 'Added' : 'Add',
+                  ),
                 ),
               )),
         ],
@@ -331,11 +415,29 @@ class _AddOnDeviceModelScreenState
           Text(_error!, style: const TextStyle(color: Colors.red)),
         ],
         const SizedBox(height: 16),
+        if (_isLoadingFiles) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(child: Text('Loading files...')),
+              TextButton(
+                onPressed: _cancelActiveRequest,
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        ],
         ..._litertRepos.map((repo) => ListTile(
               title: Text(repo.repoId),
               subtitle: Text('${repo.downloads} downloads'),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => _openLitertRepo(repo.repoId),
+              onTap: _isLoadingFiles ? null : () => _openLitertRepo(repo.repoId),
             )),
         if (_selectedLitertRepo != null) ...[
           const SizedBox(height: 8),
@@ -344,8 +446,12 @@ class _AddOnDeviceModelScreenState
                 title: Text(file.name),
                 subtitle: Text('${file.size} bytes'),
                 trailing: ElevatedButton(
-                  onPressed: () => _addLitertFile(file),
-                  child: const Text('Add'),
+                  onPressed: _addedFileUrls.contains(file.downloadUrl)
+                      ? null
+                      : () => _addLitertFile(file),
+                  child: Text(
+                    _addedFileUrls.contains(file.downloadUrl) ? 'Added' : 'Add',
+                  ),
                 ),
               )),
         ],

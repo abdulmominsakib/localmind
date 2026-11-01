@@ -636,6 +636,13 @@ class ImportedGgufModelRepository {
     String? token,
   }) async {
     final normalizedUrl = _normalizeHuggingFaceGgufUrl(sourceUrl);
+    final existing = load().where(
+      (model) => model.sourceUrl == normalizedUrl.toString(),
+    );
+    if (existing.isNotEmpty) {
+      return existing.first;
+    }
+
     final originalName = _fileNameFromUri(normalizedUrl);
     final id = _createId(originalName);
 
