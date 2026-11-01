@@ -539,12 +539,12 @@ class _DownloadedActions extends ConsumerWidget {
             child: ShadButton.outline(
               size: ShadButtonSize.sm,
               onPressed: null,
-              child: const Text('Remove from list'),
+              child: Text(l10n.remove_model_from_list),
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Delete model file first',
+            l10n.delete_model_file_first,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),

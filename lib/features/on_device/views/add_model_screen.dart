@@ -7,6 +7,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import 'package:localmind/features/on_device/data/huggingface_model_search_service.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
+import 'package:localmind/l10n/app_localizations.dart';
 
 class AddOnDeviceModelScreen extends ConsumerStatefulWidget {
   const AddOnDeviceModelScreen({super.key});
@@ -35,6 +36,8 @@ class _AddOnDeviceModelScreenState
   CancelToken? _activeCancelToken;
   final Set<String> _addedFileUrls = <String>{};
   final Set<String> _addedFileNames = <String>{};
+
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -74,7 +77,7 @@ class _AddOnDeviceModelScreenState
       if (!mounted) return;
       setState(() => _addedFileUrls.add(url));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('GGUF model added')),
+        SnackBar(content: Text(_l10n.add_model_gguf_added)),
       );
       _ggufUrlController.clear();
     } catch (e) {
@@ -99,7 +102,7 @@ class _AddOnDeviceModelScreenState
       if (!mounted) return;
       setState(() => _addedFileUrls.add(url));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('LiteRT model added')),
+        SnackBar(content: Text(_l10n.add_model_litert_added)),
       );
       _litertUrlController.clear();
     } catch (e) {
@@ -132,7 +135,7 @@ class _AddOnDeviceModelScreenState
         _addedFileNames.add(name);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${model.name} added')),
+        SnackBar(content: Text(_l10n.add_model_file_added(model.name))),
       );
     } catch (e) {
       if (!mounted) return;
@@ -159,7 +162,7 @@ class _AddOnDeviceModelScreenState
       if (!mounted) return;
       setState(() => _addedFileNames.add(name));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('GGUF model added')),
+        SnackBar(content: Text(_l10n.add_model_gguf_added)),
       );
     } catch (e) {
       if (!mounted) return;
@@ -255,7 +258,7 @@ class _AddOnDeviceModelScreenState
         _addedFileNames.add(file.name);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${file.name} added')),
+        SnackBar(content: Text(_l10n.add_model_file_added(file.name))),
       );
     } catch (e) {
       if (!mounted) return;
@@ -343,12 +346,12 @@ class _AddOnDeviceModelScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Files in $repoId',
+                      _l10n.add_model_files_in(repoId),
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 12),
                     if (files.isEmpty)
-                      const Text('No GGUF files found.')
+                      Text(_l10n.add_model_no_gguf_files)
                     else
                       ...files.map((file) => ListTile(
                             title: Text(file.name),
@@ -402,12 +405,12 @@ class _AddOnDeviceModelScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Files in $repoId',
+                      _l10n.add_model_files_in(repoId),
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 12),
                     if (files.isEmpty)
-                      const Text('No LiteRT files found.')
+                      Text(_l10n.add_model_no_litert_files)
                     else
                       ...files.map((file) => ListTile(
                             title: Text(file.name),
@@ -423,7 +426,9 @@ class _AddOnDeviceModelScreenState
                                       });
                                     },
                               child: Text(
-                                added.contains(file.downloadUrl) ? 'Added' : 'Add',
+                                added.contains(file.downloadUrl)
+                                    ? _l10n.add_model_added
+                                    : _l10n.add_model_add,
                               ),
                             ),
                           )),
@@ -450,7 +455,7 @@ class _AddOnDeviceModelScreenState
   void _showAlreadyAdded() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Model already added')),
+      SnackBar(content: Text(_l10n.add_model_already_added)),
     );
   }
 
@@ -501,7 +506,7 @@ class _AddOnDeviceModelScreenState
         _addedFileNames.add(file.name);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${file.name} added')),
+        SnackBar(content: Text(_l10n.add_model_file_added(file.name))),
       );
     } catch (e) {
       if (!mounted) return;
@@ -513,12 +518,12 @@ class _AddOnDeviceModelScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add model'),
+        title: Text(_l10n.add_model_title),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'GGUF'),
-            Tab(text: 'LiteRT'),
+          tabs: [
+            Tab(text: _l10n.add_model_gguf_tab),
+            Tab(text: _l10n.add_model_litert_tab),
           ],
         ),
       ),
@@ -538,8 +543,8 @@ class _AddOnDeviceModelScreenState
       children: [
         TextField(
           controller: _ggufUrlController,
-          decoration: const InputDecoration(
-            labelText: 'Hugging Face GGUF URL',
+          decoration: InputDecoration(
+            labelText: _l10n.add_model_gguf_url_label,
             border: OutlineInputBorder(),
           ),
         ),
@@ -548,20 +553,20 @@ class _AddOnDeviceModelScreenState
           children: [
             ElevatedButton(
               onPressed: _addGgufFromUrl,
-              child: const Text('Add from URL'),
+              child: Text(_l10n.add_model_add_from_url),
             ),
             const SizedBox(width: 8),
             OutlinedButton(
               onPressed: _pickGgufFile,
-              child: const Text('Pick local file'),
+              child: Text(_l10n.add_model_pick_local_file),
             ),
           ],
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _ggufSearchController,
-          decoration: const InputDecoration(
-            labelText: 'Search GGUF models',
+          decoration: InputDecoration(
+            labelText: _l10n.add_model_search_gguf,
             border: OutlineInputBorder(),
           ),
           onSubmitted: (_) => _searchGguf(),
@@ -569,7 +574,7 @@ class _AddOnDeviceModelScreenState
         const SizedBox(height: 8),
         ElevatedButton(
           onPressed: _isSearching ? null : _searchGguf,
-          child: Text(_isSearching ? 'Searching...' : 'Search'),
+          child: Text(_isSearching ? _l10n.add_model_searching : _l10n.add_model_search),
         ),
         if (_error != null) ...[
           const SizedBox(height: 8),
@@ -586,10 +591,10 @@ class _AddOnDeviceModelScreenState
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
               const SizedBox(width: 10),
-              const Expanded(child: Text('Loading files...')),
+              Expanded(child: Text(_l10n.add_model_loading_files)),
               TextButton(
                 onPressed: _cancelActiveRequest,
-                child: const Text('Cancel'),
+                child: Text(_l10n.add_model_cancel),
               ),
             ],
           ),
@@ -610,8 +615,8 @@ class _AddOnDeviceModelScreenState
       children: [
         TextField(
           controller: _litertUrlController,
-          decoration: const InputDecoration(
-            labelText: 'Hugging Face LiteRT URL',
+          decoration: InputDecoration(
+            labelText: _l10n.add_model_litert_url_label,
             border: OutlineInputBorder(),
           ),
         ),
@@ -620,20 +625,20 @@ class _AddOnDeviceModelScreenState
           children: [
             ElevatedButton(
               onPressed: _addLitertFromUrl,
-              child: const Text('Add from URL'),
+              child: Text(_l10n.add_model_add_from_url),
             ),
             const SizedBox(width: 8),
             OutlinedButton(
               onPressed: _pickLitertFile,
-              child: const Text('Pick local file'),
+              child: Text(_l10n.add_model_pick_local_file),
             ),
           ],
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _litertSearchController,
-          decoration: const InputDecoration(
-            labelText: 'Search LiteRT models',
+          decoration: InputDecoration(
+            labelText: _l10n.add_model_search_litert,
             border: OutlineInputBorder(),
           ),
           onSubmitted: (_) => _searchLitert(),
@@ -641,7 +646,7 @@ class _AddOnDeviceModelScreenState
         const SizedBox(height: 8),
         ElevatedButton(
           onPressed: _isSearching ? null : _searchLitert,
-          child: Text(_isSearching ? 'Searching...' : 'Search'),
+          child: Text(_isSearching ? _l10n.add_model_searching : _l10n.add_model_search),
         ),
         if (_error != null) ...[
           const SizedBox(height: 8),
@@ -658,10 +663,10 @@ class _AddOnDeviceModelScreenState
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
               const SizedBox(width: 10),
-              const Expanded(child: Text('Loading files...')),
+              Expanded(child: Text(_l10n.add_model_loading_files)),
               TextButton(
                 onPressed: _cancelActiveRequest,
-                child: const Text('Cancel'),
+                child: Text(_l10n.add_model_cancel),
               ),
             ],
           ),

@@ -6242,6 +6242,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'App'**
   String get sidebar_section_app;
+
+  /// No description provided for @add_models_button.
+  ///
+  /// In en, this message translates to:
+  /// **'Add models'**
+  String get add_models_button;
+
+  /// No description provided for @your_models_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Your models'**
+  String get your_models_title;
+
+  /// No description provided for @your_models_count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} added'**
+  String your_models_count(Object count);
+
+  /// No description provided for @remove_model_from_list.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from list'**
+  String get remove_model_from_list;
+
+  /// No description provided for @delete_model_file_first.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete model file first'**
+  String get delete_model_file_first;
+
+  /// No description provided for @add_model_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add model'**
+  String get add_model_title;
+
+  /// No description provided for @add_model_gguf_tab.
+  ///
+  /// In en, this message translates to:
+  /// **'GGUF'**
+  String get add_model_gguf_tab;
+
+  /// No description provided for @add_model_litert_tab.
+  ///
+  /// In en, this message translates to:
+  /// **'LiteRT'**
+  String get add_model_litert_tab;
+
+  /// No description provided for @add_model_gguf_url_label.
+  ///
+  /// In en, this message translates to:
+  /// **'Hugging Face GGUF URL'**
+  String get add_model_gguf_url_label;
+
+  /// No description provided for @add_model_litert_url_label.
+  ///
+  /// In en, this message translates to:
+  /// **'Hugging Face LiteRT URL'**
+  String get add_model_litert_url_label;
+
+  /// No description provided for @add_model_add_from_url.
+  ///
+  /// In en, this message translates to:
+  /// **'Add from URL'**
+  String get add_model_add_from_url;
+
+  /// No description provided for @add_model_pick_local_file.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick local file'**
+  String get add_model_pick_local_file;
+
+  /// No description provided for @add_model_search_gguf.
+  ///
+  /// In en, this message translates to:
+  /// **'Search GGUF models'**
+  String get add_model_search_gguf;
+
+  /// No description provided for @add_model_search_litert.
+  ///
+  /// In en, this message translates to:
+  /// **'Search LiteRT models'**
+  String get add_model_search_litert;
+
+  /// No description provided for @add_model_searching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching...'**
+  String get add_model_searching;
+
+  /// No description provided for @add_model_search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get add_model_search;
+
+  /// No description provided for @add_model_loading_files.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading files...'**
+  String get add_model_loading_files;
+
+  /// No description provided for @add_model_cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get add_model_cancel;
+
+  /// No description provided for @add_model_files_in.
+  ///
+  /// In en, this message translates to:
+  /// **'Files in {repo}'**
+  String add_model_files_in(Object repo);
+
+  /// No description provided for @add_model_no_gguf_files.
+  ///
+  /// In en, this message translates to:
+  /// **'No GGUF files found.'**
+  String get add_model_no_gguf_files;
+
+  /// No description provided for @add_model_no_litert_files.
+  ///
+  /// In en, this message translates to:
+  /// **'No LiteRT files found.'**
+  String get add_model_no_litert_files;
+
+  /// No description provided for @add_model_added.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get add_model_added;
+
+  /// No description provided for @add_model_add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add_model_add;
+
+  /// No description provided for @add_model_gguf_added.
+  ///
+  /// In en, this message translates to:
+  /// **'GGUF model added'**
+  String get add_model_gguf_added;
+
+  /// No description provided for @add_model_litert_added.
+  ///
+  /// In en, this message translates to:
+  /// **'LiteRT model added'**
+  String get add_model_litert_added;
+
+  /// No description provided for @add_model_file_added.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} added'**
+  String add_model_file_added(Object name);
+
+  /// No description provided for @add_model_already_added.
+  ///
+  /// In en, this message translates to:
+  /// **'Model already added'**
+  String get add_model_already_added;
 }
 
 class _AppLocalizationsDelegate

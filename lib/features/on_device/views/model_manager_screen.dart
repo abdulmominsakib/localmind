@@ -102,8 +102,8 @@ class _OnDeviceModelManagerScreenState
                   const Divider(),
                   const SizedBox(height: 8),
                   _SectionHeader(
-                    title: 'Your models',
-                    subtitle: '${importedModels.length} added',
+                    title: l10n.your_models_title,
+                    subtitle: l10n.your_models_count(importedModels.length),
                   ),
                   const SizedBox(height: 4),
                   ...importedModels.map(
@@ -188,7 +188,7 @@ class _ManagerHeader extends StatelessWidget {
                 icon: HugeIcons.strokeRoundedAddCircle,
                 size: 18,
               ),
-              label: Text('Add models'),
+              label: Text(l10n.add_models_button),
             ),
         ],
       ),
@@ -296,7 +296,7 @@ class _ImportOverviewCard extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onAddModels,
                 icon: const HugeIcon(icon: HugeIcons.strokeRoundedAddCircle),
-                label: const Text('Add models'),
+                label: Text(l10n.add_models_button),
               ),
             ],
           ),
@@ -419,7 +419,7 @@ class _EmptyImportedModelsCard extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onAddModels,
                 icon: const HugeIcon(icon: HugeIcons.strokeRoundedAddCircle),
-                label: const Text('Add models'),
+                label: Text(l10n.add_models_button),
               ),
             ],
           ),
