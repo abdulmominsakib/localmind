@@ -14,7 +14,7 @@ class ImportedGgufModelMetadata {
 
   final String id;
   final String name;
-  final String filePath;
+  final String? filePath;
   final String? projectorPath;
   final int fileSizeBytes;
   final DateTime importedAt;
@@ -25,7 +25,7 @@ class ImportedGgufModelMetadata {
   const ImportedGgufModelMetadata({
     required this.id,
     required this.name,
-    required this.filePath,
+    this.filePath,
     this.projectorPath,
     required this.fileSizeBytes,
     required this.importedAt,
@@ -34,7 +34,15 @@ class ImportedGgufModelMetadata {
     this.reasoningEnabled,
   });
 
-  String get fileName => p.basename(filePath);
+  String get fileName {
+    if (filePath != null && filePath!.isNotEmpty) {
+      return p.basename(filePath!);
+    }
+    if (sourceUrl != null && sourceUrl!.isNotEmpty) {
+      return Uri.parse(sourceUrl!).pathSegments.last;
+    }
+    return '$id.gguf';
+  }
   String? get projectorFileName =>
       projectorPath != null && projectorPath!.isNotEmpty
       ? p.basename(projectorPath!)
@@ -129,7 +137,7 @@ class ImportedGgufModelMetadata {
     return ImportedGgufModelMetadata(
       id: json['id'] as String,
       name: json['name'] as String,
-      filePath: json['filePath'] as String,
+      filePath: json['filePath'] as String?,
       projectorPath: json['projectorPath'] as String?,
       fileSizeBytes: (json['fileSizeBytes'] as num).toInt(),
       importedAt: DateTime.parse(json['importedAt'] as String),
@@ -201,7 +209,11 @@ class ImportedGgufModelRepository {
     var hasChanges = false;
 
     for (final model in models) {
-      if (await File(model.filePath).exists()) {
+      if (model.filePath == null || model.filePath!.isEmpty) {
+        existing.add(model);
+        continue;
+      }
+      if (await File(model.filePath!).exists()) {
         if (model.projectorPath != null &&
             !await File(model.projectorPath!).exists()) {
           existing.add(model.copyWith(projectorPath: null));
@@ -618,15 +630,157 @@ class ImportedGgufModelRepository {
     }
   }
 
+  Future<ImportedGgufModelMetadata> addFromUrl(
+    String sourceUrl, {
+    String? projectorUrl,
+    String? token,
+  }) async {
+    final normalizedUrl = _normalizeHuggingFaceGgufUrl(sourceUrl);
+    final originalName = _fileNameFromUri(normalizedUrl);
+    final id = _createId(originalName);
+
+    int fileSizeBytes = 0;
+    try {
+      final response = await _dio.head(
+        normalizedUrl.toString(),
+        options: Options(
+          headers: {
+            if (token != null && token.isNotEmpty)
+              HttpHeaders.authorizationHeader: 'Bearer $token',
+          },
+          followRedirects: true,
+          validateStatus: (status) =>
+              status != null && status >= 200 && status < 400,
+        ),
+      );
+      final length = response.headers.value(HttpHeaders.contentLengthHeader);
+      if (length != null) {
+        fileSizeBytes = int.tryParse(length) ?? 0;
+      }
+    } catch (_) {
+      // Size is optional for deferred entries.
+    }
+
+    final metadata = ImportedGgufModelMetadata(
+      id: id,
+      name: _displayNameFromFileName(originalName),
+      filePath: null,
+      projectorPath: null,
+      fileSizeBytes: fileSizeBytes,
+      importedAt: DateTime.now(),
+      source: OnDeviceImportedSource.huggingFace,
+      sourceUrl: normalizedUrl.toString(),
+    );
+
+    final current = load();
+    await saveAll([...current, metadata]);
+    return metadata;
+  }
+
+  Future<void> download(
+    String modelId, {
+    String? token,
+    void Function(int receivedBytes, int totalBytes)? onProgress,
+  }) async {
+    final models = load();
+    final index = models.indexWhere((model) => model.id == modelId);
+    if (index < 0) {
+      throw StateError('Imported GGUF model no longer exists');
+    }
+
+    final model = models[index];
+    if (model.filePath != null && model.filePath!.isNotEmpty) {
+      return;
+    }
+    if (model.sourceUrl == null || model.sourceUrl!.isEmpty) {
+      throw const FormatException('Imported GGUF model has no source URL.');
+    }
+
+    final dir = await _modelsDirectory();
+    final originalName = _fileNameFromUri(Uri.parse(model.sourceUrl!));
+    final targetPath = p.join(dir.path, '$modelId-${_sanitizeFileName(originalName)}');
+    final tempPath = '$targetPath.part';
+    final tempFile = File(tempPath);
+    final targetFile = File(targetPath);
+
+    if (await tempFile.exists()) {
+      await tempFile.delete();
+    }
+
+    try {
+      await _dio.download(
+        model.sourceUrl!,
+        tempPath,
+        onReceiveProgress: onProgress,
+        options: Options(
+          headers: {
+            if (token != null && token.isNotEmpty)
+              HttpHeaders.authorizationHeader: 'Bearer $token',
+          },
+          followRedirects: true,
+          receiveTimeout: const Duration(hours: 12),
+          sendTimeout: const Duration(minutes: 5),
+          validateStatus: (status) =>
+              status != null && status >= 200 && status < 400,
+        ),
+      );
+
+      if (!await tempFile.exists() || await tempFile.length() <= 0) {
+        throw const FileSystemException(
+          'The downloaded GGUF file was empty or missing.',
+        );
+      }
+
+      await _validateGgufFile(tempFile);
+      await tempFile.rename(targetPath);
+
+      models[index] = model.copyWith(
+        filePath: targetFile.path,
+        fileSizeBytes: await targetFile.length(),
+      );
+      await saveAll(models);
+    } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) {
+        throw const HttpException('GGUF import canceled.');
+      }
+      throw HttpException(_friendlyDioError(e));
+    } finally {
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+    }
+  }
+
+  Future<void> deleteFile(String modelId) async {
+    final models = load();
+    final index = models.indexWhere((model) => model.id == modelId);
+    if (index < 0) {
+      throw StateError('Imported GGUF model no longer exists');
+    }
+
+    final model = models[index];
+    if (model.filePath != null) {
+      final file = File(model.filePath!);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+
+    models[index] = model.copyWith(filePath: null);
+    await saveAll(models);
+  }
+
   Future<void> delete(String id) async {
     final current = load();
     final kept = <ImportedGgufModelMetadata>[];
 
     for (final model in current) {
       if (model.id == id) {
-        final file = File(model.filePath);
-        if (await file.exists()) {
-          await file.delete();
+        if (model.filePath != null) {
+          final file = File(model.filePath!);
+          if (await file.exists()) {
+            await file.delete();
+          }
         }
         if (model.projectorPath != null) {
           final projFile = File(model.projectorPath!);
