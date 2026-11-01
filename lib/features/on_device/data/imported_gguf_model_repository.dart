@@ -770,6 +770,12 @@ class ImportedGgufModelRepository {
     await saveAll(models);
   }
 
+  Future<void> removeFromList(String id) async {
+    final current = load();
+    final kept = current.where((model) => model.id != id).toList();
+    await saveAll(kept);
+  }
+
   Future<void> delete(String id) async {
     final current = load();
     final kept = <ImportedGgufModelMetadata>[];

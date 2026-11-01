@@ -522,7 +522,20 @@ class _DownloadedActions extends ConsumerWidget {
                 onPressed: () => _loadModel(context, ref),
                 child: Text(l10n.load),
               ),
-            if (!model.isBuiltIn) ...[
+            if (model.isImported) ...[
+              const SizedBox(width: 8),
+              ShadButton.outline(
+                size: ShadButtonSize.sm,
+                onPressed: () => _removeFromList(context, ref),
+                child: Text('Remove from list'),
+              ),
+              const SizedBox(width: 8),
+              ShadButton.outline(
+                size: ShadButtonSize.sm,
+                onPressed: () => _deleteFile(context, ref),
+                child: Text(l10n.delete),
+              ),
+            ] else if (!model.isBuiltIn) ...[
               const SizedBox(width: 8),
               ShadButton.outline(
                 size: ShadButtonSize.sm,
@@ -595,6 +608,40 @@ class _DownloadedActions extends ConsumerWidget {
       if (!context.mounted) return;
       ref.invalidate(downloadedModelsProvider);
     }
+  }
+
+  Future<void> _removeFromList(BuildContext context, WidgetRef ref) async {
+    if (!context.mounted) return;
+    final engineState = ref.read(onDeviceEngineProvider);
+    if (engineState.loadedModelId == model.id) {
+      await ref.read(onDeviceEngineProvider.notifier).unloadModel();
+    }
+    if (!context.mounted) return;
+
+    if (model.runtime == OnDeviceModelRuntime.llamaCpp) {
+      await ref.read(importedGgufModelsProvider.notifier).removeFromList(model.id);
+    } else {
+      await ref.read(importedLitertModelsProvider.notifier).removeFromList(model.id);
+    }
+    if (!context.mounted) return;
+    ref.invalidate(downloadedModelsProvider);
+  }
+
+  Future<void> _deleteFile(BuildContext context, WidgetRef ref) async {
+    if (!context.mounted) return;
+    final engineState = ref.read(onDeviceEngineProvider);
+    if (engineState.loadedModelId == model.id) {
+      await ref.read(onDeviceEngineProvider.notifier).unloadModel();
+    }
+    if (!context.mounted) return;
+
+    if (model.runtime == OnDeviceModelRuntime.llamaCpp) {
+      await ref.read(importedGgufModelsProvider.notifier).deleteFile(model.id);
+    } else {
+      await ref.read(importedLitertModelsProvider.notifier).deleteFile(model.id);
+    }
+    if (!context.mounted) return;
+    ref.invalidate(downloadedModelsProvider);
   }
 }
 
@@ -849,6 +896,12 @@ class _NotDownloadedActions extends ConsumerWidget {
     final label = model.isBuiltIn ? l10n.builtin_ai_enable : l10n.download;
     return Row(
       children: [
+        if (model.isImported)
+          ShadButton.outline(
+            size: ShadButtonSize.sm,
+            onPressed: () => _removeFromList(context, ref),
+            child: const Text('Remove from list'),
+          ),
         const Spacer(),
         ShadButton.outline(
           size: ShadButtonSize.sm,
@@ -890,6 +943,16 @@ class _NotDownloadedActions extends ConsumerWidget {
         ),
       );
     }
+  }
+
+  Future<void> _removeFromList(BuildContext context, WidgetRef ref) async {
+    if (model.runtime == OnDeviceModelRuntime.llamaCpp) {
+      await ref.read(importedGgufModelsProvider.notifier).removeFromList(model.id);
+    } else {
+      await ref.read(importedLitertModelsProvider.notifier).removeFromList(model.id);
+    }
+    if (!context.mounted) return;
+    ref.invalidate(downloadedModelsProvider);
   }
 
   Future<bool> _showRamWarning(BuildContext context, String message) async {

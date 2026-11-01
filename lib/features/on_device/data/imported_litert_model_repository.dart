@@ -384,6 +384,12 @@ class ImportedLitertModelRepository {
     await saveAll(models);
   }
 
+  Future<void> removeFromList(String modelId) async {
+    final current = load();
+    final kept = current.where((model) => model.id != modelId).toList();
+    await saveAll(kept);
+  }
+
   Future<void> delete(String modelId) async {
     final models = load();
     final kept = <ImportedLitertModelMetadata>[];

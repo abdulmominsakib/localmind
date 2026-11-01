@@ -367,6 +367,18 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     state = state.where((model) => model.id != modelId).toList();
   }
 
+  Future<void> removeFromList(String modelId) async {
+    await _repository.removeFromList(modelId);
+    if (!ref.mounted) return;
+    state = state.where((model) => model.id != modelId).toList();
+  }
+
+  Future<void> deleteFile(String modelId) async {
+    await _repository.deleteFile(modelId);
+    if (!ref.mounted) return;
+    state = _repository.load().map((model) => model.toOnDeviceModel()).toList();
+  }
+
   /// Removes a single missing model from the list. Used when we try to load
   /// a specific imported GGUF and discover its file is gone, so other valid
   /// imports are not collateral damage.
@@ -437,6 +449,12 @@ class ImportedLitertModelsNotifier extends Notifier<List<OnDeviceModel>> {
 
   Future<void> deleteModel(String modelId) async {
     await _repository.delete(modelId);
+    if (!ref.mounted) return;
+    state = state.where((model) => model.id != modelId).toList();
+  }
+
+  Future<void> removeFromList(String modelId) async {
+    await _repository.removeFromList(modelId);
     if (!ref.mounted) return;
     state = state.where((model) => model.id != modelId).toList();
   }
