@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
+import 'package:localmind/core/providers/storage_providers.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localmind/core/routes/app_routes.dart';
 import 'package:localmind/l10n/app_localizations.dart';
@@ -26,16 +27,29 @@ class OnDeviceModelManagerScreen extends ConsumerStatefulWidget {
 
 class _OnDeviceModelManagerScreenState
     extends ConsumerState<OnDeviceModelManagerScreen> {
+  bool _curatedExpanded = true;
+  static const _curatedExpandedKey = 'on_device_curated_expanded';
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
+    Future.microtask(() async {
       // The microtask runs on the next event loop tick — by then the State
       // may already be deactivated, so we must guard the ref access.
       if (!mounted) return;
+      final prefs = ref.read(sharedPreferencesProvider);
+      _curatedExpanded = prefs.getBool(_curatedExpandedKey) ?? true;
+      if (mounted) setState(() {});
       ref.read(importedGgufModelsProvider.notifier).pruneMissing();
       ref.read(importedLitertModelsProvider.notifier).pruneMissing();
     });
+  }
+
+  void _setCuratedExpanded(bool value) {
+    _curatedExpanded = value;
+    setState(() {});
+    final prefs = ref.read(sharedPreferencesProvider);
+    prefs.setBool(_curatedExpandedKey, value);
   }
 
   @override
@@ -77,11 +91,23 @@ class _OnDeviceModelManagerScreenState
                 theme: theme,
               ),
               const SizedBox(height: 4),
-              _SectionHeader(
-                title: l10n.on_device_models_title,
-                subtitle: models.isEmpty
-                    ? l10n.gguf_curated_models_subtitle
-                    : '${models.length} models available',
+              GestureDetector(
+                onTap: () => _setCuratedExpanded(!_curatedExpanded),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _SectionHeader(
+                        title: l10n.curated_models_title,
+                        subtitle: l10n.curated_models_count(curatedModels.length),
+                      ),
+                    ),
+                    Icon(
+                      _curatedExpanded
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 4),
               if (models.isEmpty)
@@ -89,14 +115,15 @@ class _OnDeviceModelManagerScreenState
                   onAddModels: () => context.push(AppRoutes.addOnDeviceModel),
                 )
               else ...[
-                ...curatedModels.map(
-                  (model) => ModelCard(
-                    model: model,
-                    downloadedAsync: downloadedAsync,
-                    downloadProgress: downloadProgress[model.id],
-                    engineState: engineState,
+                if (_curatedExpanded)
+                  ...curatedModels.map(
+                    (model) => ModelCard(
+                      model: model,
+                      downloadedAsync: downloadedAsync,
+                      downloadProgress: downloadProgress[model.id],
+                      engineState: engineState,
+                    ),
                   ),
-                ),
                 if (importedModels.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   const Divider(),

@@ -6249,6 +6249,18 @@ abstract class AppLocalizations {
   /// **'Add models'**
   String get add_models_button;
 
+  /// No description provided for @curated_models_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Curated Models'**
+  String get curated_models_title;
+
+  /// No description provided for @curated_models_count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} models'**
+  String curated_models_count(Object count);
+
   /// No description provided for @your_models_title.
   ///
   /// In en, this message translates to:

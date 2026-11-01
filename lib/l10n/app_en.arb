@@ -3576,6 +3576,8 @@
   "sidebar_section_models": "Models",
   "sidebar_section_app": "App",
   "add_models_button": "Add models",
+  "curated_models_title": "Curated Models",
+  "curated_models_count": "{count} models",
   "your_models_title": "Your models",
   "your_models_count": "{count} added",
   "remove_model_from_list": "Remove from list",

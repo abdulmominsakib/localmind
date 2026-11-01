@@ -3402,6 +3402,14 @@ class AppLocalizationsBn extends AppLocalizations {
   String get add_models_button => 'Add models';
 
   @override
+  String get curated_models_title => 'Curated Models';
+
+  @override
+  String curated_models_count(Object count) {
+    return '$count models';
+  }
+
+  @override
   String get your_models_title => 'Your models';
 
   @override
