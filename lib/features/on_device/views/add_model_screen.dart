@@ -77,7 +77,6 @@ class _AddOnDeviceModelScreenState
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: const ['gguf'],
-      allowMultiple: false,
     );
     if (result == null || result.files.isEmpty) return;
     final path = result.files.single.path;
