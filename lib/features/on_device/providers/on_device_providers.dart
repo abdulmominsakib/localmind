@@ -35,6 +35,9 @@ final onDeviceGemmaServiceProvider = Provider<OnDeviceGemmaService>((ref) {
   final service = OnDeviceGemmaService(
     onNativeWorkChanged: (active) =>
         unawaited(background.setNativeWorkActive(active)),
+    modelResolver: (modelId) => ref
+        .read(onDeviceModelsProvider)
+        .firstWhere((model) => model.id == modelId),
   );
   ref.onDispose(() => service.dispose());
   return service;
@@ -520,6 +523,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     _gemmaService.syncFromRestoredSpec(
       backend,
       maxTokens: settings.contextLength,
+      model: model,
     );
 
     Log.info(
