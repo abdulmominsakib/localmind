@@ -522,29 +522,27 @@ class _DownloadedActions extends ConsumerWidget {
                 onPressed: () => _loadModel(context, ref),
                 child: Text(l10n.load),
               ),
-            if (model.isImported) ...[
+            if (!model.isBuiltIn) ...[
               const SizedBox(width: 8),
               ShadButton.outline(
                 size: ShadButtonSize.sm,
-                onPressed: () => _removeFromList(context, ref),
-                child: Text('Remove from list'),
-              ),
-              const SizedBox(width: 8),
-              ShadButton.outline(
-                size: ShadButtonSize.sm,
-                onPressed: () => _deleteFile(context, ref),
-                child: Text(l10n.delete),
-              ),
-            ] else if (!model.isBuiltIn) ...[
-              const SizedBox(width: 8),
-              ShadButton.outline(
-                size: ShadButtonSize.sm,
-                onPressed: () => _deleteModel(context, ref),
+                onPressed: () => _deleteFileOrModel(context, ref),
                 child: Text(l10n.delete),
               ),
             ],
           ],
         ),
+        if (model.isImported) ...[
+          const SizedBox(height: 8),
+          Tooltip(
+            message: 'Delete model file first',
+            child: ShadButton.outline(
+              size: ShadButtonSize.sm,
+              onPressed: null,
+              child: const Text('Remove from list'),
+            ),
+          ),
+        ],
         if (isLoading) ...[
           const SizedBox(height: 8),
           ClipRRect(
@@ -610,21 +608,12 @@ class _DownloadedActions extends ConsumerWidget {
     }
   }
 
-  Future<void> _removeFromList(BuildContext context, WidgetRef ref) async {
-    if (!context.mounted) return;
-    final engineState = ref.read(onDeviceEngineProvider);
-    if (engineState.loadedModelId == model.id) {
-      await ref.read(onDeviceEngineProvider.notifier).unloadModel();
-    }
-    if (!context.mounted) return;
-
-    if (model.runtime == OnDeviceModelRuntime.llamaCpp) {
-      await ref.read(importedGgufModelsProvider.notifier).removeFromList(model.id);
+  Future<void> _deleteFileOrModel(BuildContext context, WidgetRef ref) async {
+    if (model.isImported) {
+      await _deleteFile(context, ref);
     } else {
-      await ref.read(importedLitertModelsProvider.notifier).removeFromList(model.id);
+      await _deleteModel(context, ref);
     }
-    if (!context.mounted) return;
-    ref.invalidate(downloadedModelsProvider);
   }
 
   Future<void> _deleteFile(BuildContext context, WidgetRef ref) async {
