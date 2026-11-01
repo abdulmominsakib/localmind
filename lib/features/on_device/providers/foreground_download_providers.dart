@@ -135,6 +135,74 @@ class ForegroundDownloadNotifier
             _saveState();
           },
         );
+      } else if (model.isImported && model.isLlamaCpp) {
+        final repository = ref.read(importedGgufModelRepositoryProvider);
+        await repository.download(
+          model.id,
+          token: (hfToken != null && hfToken.isNotEmpty) ? hfToken : null,
+          onProgress: (received, total) {
+            if (!ref.mounted || _activeDownloads[modelId] != true) return;
+
+            final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
+            final elapsed = DateTime.now().difference(startTime).inSeconds;
+            final bytesPerSecond = elapsed > 0
+                ? (received / elapsed).round()
+                : 0;
+            final etaSeconds = bytesPerSecond > 0
+                ? ((total - received) / bytesPerSecond).round()
+                : null;
+            final progress = total > 0 ? (received / total) : 0.0;
+
+            state = {
+              ...state,
+              modelId: DownloadProgressInfo(
+                modelId: modelId,
+                status: DownloadStatus.running,
+                progress: progress.clamp(0.0, 1.0),
+                receivedBytes: received,
+                totalBytes: total > 0 ? total : model.fileSizeBytes,
+                bytesPerSecond: bytesPerSecond,
+                etaSeconds: etaSeconds,
+              ),
+            };
+            _saveState();
+          },
+        );
+        await ref.read(importedGgufModelsProvider.notifier).pruneMissing();
+      } else if (model.isImported && model.runtime == OnDeviceModelRuntime.gemma) {
+        final repository = ref.read(importedLitertModelRepositoryProvider);
+        await repository.download(
+          model.id,
+          token: (hfToken != null && hfToken.isNotEmpty) ? hfToken : null,
+          onProgress: (received, total) {
+            if (!ref.mounted || _activeDownloads[modelId] != true) return;
+
+            final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
+            final elapsed = DateTime.now().difference(startTime).inSeconds;
+            final bytesPerSecond = elapsed > 0
+                ? (received / elapsed).round()
+                : 0;
+            final etaSeconds = bytesPerSecond > 0
+                ? ((total - received) / bytesPerSecond).round()
+                : null;
+            final progress = total > 0 ? (received / total) : 0.0;
+
+            state = {
+              ...state,
+              modelId: DownloadProgressInfo(
+                modelId: modelId,
+                status: DownloadStatus.running,
+                progress: progress.clamp(0.0, 1.0),
+                receivedBytes: received,
+                totalBytes: total > 0 ? total : model.fileSizeBytes,
+                bytesPerSecond: bytesPerSecond,
+                etaSeconds: etaSeconds,
+              ),
+            };
+            _saveState();
+          },
+        );
+        await ref.read(importedLitertModelsProvider.notifier).pruneMissing();
       } else {
         await gemmaService.installModel(
           model,
