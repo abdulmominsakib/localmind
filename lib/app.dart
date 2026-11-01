@@ -18,6 +18,7 @@ import 'features/chat/views/chat_screen.dart';
 import 'features/conversations/views/chat_history_screen.dart';
 import 'features/mcp/views/mcp_tools_screen.dart';
 import 'features/on_device/views/model_manager_screen.dart';
+import 'features/on_device/views/add_model_screen.dart';
 import 'features/os_widget/views/os_widget_invocation_host.dart';
 import 'features/onboarding/screens/onboarding_language_screen.dart';
 import 'features/onboarding/screens/onboarding_model_download_screen.dart';
@@ -172,6 +173,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.mcpTools,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: ShellBackScope(child: McpToolsScreen()),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.addOnDeviceModel,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ShellBackScope(child: AddOnDeviceModelScreen()),
             ),
           ),
           GoRoute(

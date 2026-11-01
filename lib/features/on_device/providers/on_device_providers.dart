@@ -317,6 +317,23 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     return metadata.toOnDeviceModel();
   }
 
+  Future<OnDeviceModel> addFromUrl(
+    String sourceUrl, {
+    String? projectorUrl,
+    String? huggingFaceToken,
+  }) async {
+    final metadata = await _repository.addFromUrl(
+      sourceUrl,
+      projectorUrl: projectorUrl,
+      token: huggingFaceToken,
+    );
+    final model = metadata.toOnDeviceModel();
+    if (ref.mounted) {
+      state = [...state, model];
+    }
+    return model;
+  }
+
   Future<OnDeviceModel> importModelFromHuggingFaceUrl(
     String sourceUrl, {
     String? projectorUrl,
