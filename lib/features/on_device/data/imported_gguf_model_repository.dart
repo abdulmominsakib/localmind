@@ -257,6 +257,12 @@ class ImportedGgufModelRepository {
     }
 
     final originalName = p.basename(sourcePath);
+    final displayName = _displayNameFromFileName(originalName);
+    final existing = load().where((model) => model.name == displayName);
+    if (existing.isNotEmpty) {
+      return existing.first;
+    }
+
     if (isProjectorFileName(originalName) && projectorPath == null) {
       throw const FormatException(
         'The selected file appears to be a multimodal vision projector (mmproj), '

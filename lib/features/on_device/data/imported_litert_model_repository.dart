@@ -251,6 +251,12 @@ class ImportedLitertModelRepository {
     }
 
     final originalName = p.basename(sourcePath);
+    final displayName = _displayNameFromFileName(originalName);
+    final existing = load().where((model) => model.name == displayName);
+    if (existing.isNotEmpty) {
+      return existing.first;
+    }
+
     final dir = await _modelsDirectory();
     final id = _createId(originalName);
     final fileName = '$id-${_sanitizeFileName(originalName)}';

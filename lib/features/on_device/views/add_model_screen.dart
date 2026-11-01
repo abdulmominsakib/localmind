@@ -34,6 +34,7 @@ class _AddOnDeviceModelScreenState
   String? _error;
   CancelToken? _activeCancelToken;
   final Set<String> _addedFileUrls = <String>{};
+  final Set<String> _addedFileNames = <String>{};
 
   @override
   void initState() {
@@ -60,6 +61,11 @@ class _AddOnDeviceModelScreenState
   Future<void> _addGgufFromUrl() async {
     final url = _ggufUrlController.text.trim();
     if (url.isEmpty) return;
+    if (_registeredUrls.contains(url) || _addedFileUrls.contains(url)) {
+      setState(() => _addedFileUrls.add(url));
+      _showAlreadyAdded();
+      return;
+    }
     try {
       await ref.read(importedGgufModelsProvider.notifier).addFromUrl(
             url,
@@ -80,6 +86,11 @@ class _AddOnDeviceModelScreenState
   Future<void> _addLitertFromUrl() async {
     final url = _litertUrlController.text.trim();
     if (url.isEmpty) return;
+    if (_registeredUrls.contains(url) || _addedFileUrls.contains(url)) {
+      setState(() => _addedFileUrls.add(url));
+      _showAlreadyAdded();
+      return;
+    }
     try {
       await ref.read(importedLitertModelsProvider.notifier).addFromUrl(
             url,
@@ -104,13 +115,22 @@ class _AddOnDeviceModelScreenState
     );
     if (result == null || result.files.isEmpty) return;
     final path = result.files.single.path;
+    final name = result.files.single.name;
     if (path == null) return;
+    if (_registeredFileNames.contains(name) || _addedFileNames.contains(name)) {
+      setState(() => _addedFileNames.add(name));
+      _showAlreadyAdded();
+      return;
+    }
     try {
       final model = await ref
           .read(importedLitertModelsProvider.notifier)
           .addFromPath(path);
       if (!mounted) return;
-      setState(() => _addedFileUrls.add(model.huggingFaceUrl));
+      setState(() {
+        _addedFileUrls.add(model.huggingFaceUrl);
+        _addedFileNames.add(name);
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${model.name} added')),
       );
@@ -127,10 +147,17 @@ class _AddOnDeviceModelScreenState
     );
     if (result == null || result.files.isEmpty) return;
     final path = result.files.single.path;
+    final name = result.files.single.name;
     if (path == null) return;
+    if (_registeredFileNames.contains(name) || _addedFileNames.contains(name)) {
+      setState(() => _addedFileNames.add(name));
+      _showAlreadyAdded();
+      return;
+    }
     try {
       await ref.read(importedGgufModelsProvider.notifier).importModel(path);
       if (!mounted) return;
+      setState(() => _addedFileNames.add(name));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('GGUF model added')),
       );
@@ -206,13 +233,27 @@ class _AddOnDeviceModelScreenState
   }
 
   Future<void> _addGgufFile(HuggingFaceModelFile file) async {
+    if (_registeredUrls.contains(file.downloadUrl) ||
+        _addedFileUrls.contains(file.downloadUrl) ||
+        _registeredFileNames.contains(file.name) ||
+        _addedFileNames.contains(file.name)) {
+      setState(() {
+        _addedFileUrls.add(file.downloadUrl);
+        _addedFileNames.add(file.name);
+      });
+      _showAlreadyAdded();
+      return;
+    }
     try {
       await ref.read(importedGgufModelsProvider.notifier).addFromUrl(
             file.downloadUrl,
             huggingFaceToken: _token,
           );
       if (!mounted) return;
-      setState(() => _addedFileUrls.add(file.downloadUrl));
+      setState(() {
+        _addedFileUrls.add(file.downloadUrl);
+        _addedFileNames.add(file.name);
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${file.name} added')),
       );
@@ -311,9 +352,12 @@ class _AddOnDeviceModelScreenState
                     else
                       ...files.map((file) => ListTile(
                             title: Text(file.name),
-                            subtitle: Text('${file.size} bytes'),
+                            subtitle: Text(_formatBytes(file.size)),
                             trailing: ElevatedButton(
-                              onPressed: added.contains(file.downloadUrl)
+                              onPressed: added.contains(file.downloadUrl) ||
+                                      _registeredUrls.contains(file.downloadUrl) ||
+                                      _registeredFileNames.contains(file.name) ||
+                                      _addedFileNames.contains(file.name)
                                   ? null
                                   : () async {
                                       await _addGgufFile(file);
@@ -323,7 +367,12 @@ class _AddOnDeviceModelScreenState
                                       });
                                     },
                               child: Text(
-                                added.contains(file.downloadUrl) ? 'Added' : 'Add',
+                                added.contains(file.downloadUrl) ||
+                                        _registeredUrls.contains(file.downloadUrl) ||
+                                        _registeredFileNames.contains(file.name) ||
+                                        _addedFileNames.contains(file.name)
+                                    ? 'Added'
+                                    : 'Add',
                               ),
                             ),
                           )),
@@ -362,7 +411,7 @@ class _AddOnDeviceModelScreenState
                     else
                       ...files.map((file) => ListTile(
                             title: Text(file.name),
-                            subtitle: Text('${file.size} bytes'),
+                            subtitle: Text(_formatBytes(file.size)),
                             trailing: ElevatedButton(
                               onPressed: added.contains(file.downloadUrl)
                                   ? null
@@ -388,6 +437,36 @@ class _AddOnDeviceModelScreenState
     );
   }
 
+  Set<String> get _registeredUrls => {
+        ...ref.read(importedGgufModelsProvider).map((m) => m.huggingFaceUrl),
+        ...ref.read(importedLitertModelsProvider).map((m) => m.huggingFaceUrl),
+      }..removeWhere((url) => url.trim().isEmpty);
+
+  Set<String> get _registeredFileNames => {
+        ...ref.read(importedGgufModelsProvider).map((m) => m.name),
+        ...ref.read(importedLitertModelsProvider).map((m) => m.name),
+      };
+
+  void _showAlreadyAdded() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Model already added')),
+    );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    double value = bytes.toDouble();
+    int unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex++;
+    }
+    final decimals = unitIndex == 0 ? 0 : (value < 10 ? 2 : 1);
+    return '${value.toStringAsFixed(decimals)} ${units[unitIndex]}';
+  }
+
   void _cancelActiveRequest() {
     _activeCancelToken?.cancel('User canceled');
     _activeCancelToken = null;
@@ -400,13 +479,27 @@ class _AddOnDeviceModelScreenState
   }
 
   Future<void> _addLitertFile(HuggingFaceModelFile file) async {
+    if (_registeredUrls.contains(file.downloadUrl) ||
+        _addedFileUrls.contains(file.downloadUrl) ||
+        _registeredFileNames.contains(file.name) ||
+        _addedFileNames.contains(file.name)) {
+      setState(() {
+        _addedFileUrls.add(file.downloadUrl);
+        _addedFileNames.add(file.name);
+      });
+      _showAlreadyAdded();
+      return;
+    }
     try {
       await ref.read(importedLitertModelsProvider.notifier).addFromUrl(
             file.downloadUrl,
             token: _token,
           );
       if (!mounted) return;
-      setState(() => _addedFileUrls.add(file.downloadUrl));
+      setState(() {
+        _addedFileUrls.add(file.downloadUrl);
+        _addedFileNames.add(file.name);
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${file.name} added')),
       );

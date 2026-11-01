@@ -542,6 +542,13 @@ class _DownloadedActions extends ConsumerWidget {
               child: const Text('Remove from list'),
             ),
           ),
+          const SizedBox(height: 4),
+          Text(
+            'Delete model file first',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
         ],
         if (isLoading) ...[
           const SizedBox(height: 8),
@@ -886,7 +893,7 @@ class _NotDownloadedActions extends ConsumerWidget {
     return Row(
       children: [
         if (model.isImported)
-          ShadButton.outline(
+          ShadButton.destructive(
             size: ShadButtonSize.sm,
             onPressed: () => _removeFromList(context, ref),
             child: const Text('Remove from list'),
