@@ -24,7 +24,15 @@ class ChatMcpConfigNotifier extends Notifier<ChatMcpConfig> {
 
   /// Completes once every server connection started so far has settled,
   /// whether it succeeded or failed.
-  Future<void> get connectionsReady => Future.wait(_connections.values);
+  ///
+  /// `Future.wait` returns an object whose runtime type argument is
+  /// `List<void>`, which breaks `Future.timeout(onTimeout: ...)` calls made
+  /// through a `Future`-typed reference (runtime cast error:
+  /// `'() => Null' is not a subtype of '() => FutureOr<List<void>>'`).
+  /// The `.then((_) {})` erases the list result so the returned future's
+  /// runtime type argument is `void`.
+  Future<void> get connectionsReady =>
+      Future.wait(_connections.values).then((_) {});
 
   void _connect(McpIntegration integration) {
     final label = integration.serverLabel;
