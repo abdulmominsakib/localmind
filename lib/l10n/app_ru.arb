@@ -983,5 +983,6 @@
   "settings_group_composer": "Поле ввода",
   "sidebar_section_chats": "Чаты",
   "sidebar_section_models": "Модели",
-  "sidebar_section_app": "Приложение"
+  "sidebar_section_app": "Приложение",
+  "model_still_stopping": "Модель ещё останавливается. Подождите, прежде чем повторить попытку."
 }

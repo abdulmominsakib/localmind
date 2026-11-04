@@ -986,5 +986,6 @@
   "settings_group_composer": "Composizione",
   "sidebar_section_chats": "Chat",
   "sidebar_section_models": "Modelli",
-  "sidebar_section_app": "App"
+  "sidebar_section_app": "App",
+  "model_still_stopping": "Il modello si sta ancora arrestando. Attendi prima di riprovare."
 }

@@ -986,5 +986,6 @@
   "settings_group_composer": "লেখার বক্স",
   "sidebar_section_chats": "চ্যাট",
   "sidebar_section_models": "মডেল",
-  "sidebar_section_app": "অ্যাপ"
+  "sidebar_section_app": "অ্যাপ",
+  "model_still_stopping": "মডেলটি এখনও বন্ধ হচ্ছে। আবার চেষ্টা করার আগে অপেক্ষা করুন।"
 }

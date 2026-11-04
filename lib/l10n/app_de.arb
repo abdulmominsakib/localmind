@@ -983,5 +983,6 @@
   "settings_group_composer": "Eingabefeld",
   "sidebar_section_chats": "Chats",
   "sidebar_section_models": "Modelle",
-  "sidebar_section_app": "App"
+  "sidebar_section_app": "App",
+  "model_still_stopping": "Das Modell wird noch angehalten. Bitte warten Sie, bevor Sie es erneut versuchen."
 }

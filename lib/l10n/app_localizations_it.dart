@@ -3403,4 +3403,8 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get sidebar_section_app => 'App';
+
+  @override
+  String get model_still_stopping =>
+      'Il modello si sta ancora arrestando. Attendi prima di riprovare.';
 }

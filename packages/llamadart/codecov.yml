@@ -1,0 +1,18 @@
+codecov:
+  branch: main
+
+coverage:
+  status:
+    project:
+      default:
+        target: 70%
+        threshold: 1%
+    patch:
+      default:
+        target: 70%
+        threshold: 1%
+
+ignore:
+  - "lib/src/generated/**/*"
+  - "example/**/*"
+  - "test/**/*"

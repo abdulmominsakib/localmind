@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1
+services:
+  # Basic CLI App
+  basic-app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: basic-app
+    # volumes:
+    #   - /path/to/your/models:/app/models
+    environment:
+      - MODEL_PATH=/app/models/your_model.gguf
+    stdin_open: true
+    tty: true
+
+  # Chat App
+  chat-app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: chat-app-run
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    # environment:
+    #   - DISPLAY=${DISPLAY:-:0}
+    #   - NO_AT_BRIDGE=1
+    network_mode: host
+    # Runs the pre-compiled binary
+    entrypoint: ["/app/bundle/llamadart_chat_example"]

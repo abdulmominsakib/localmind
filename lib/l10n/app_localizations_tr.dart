@@ -3407,4 +3407,8 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get sidebar_section_app => 'Uygulama';
+
+  @override
+  String get model_still_stopping =>
+      'Model hâlâ durduruluyor. Tekrar denemeden önce lütfen bekleyin.';
 }

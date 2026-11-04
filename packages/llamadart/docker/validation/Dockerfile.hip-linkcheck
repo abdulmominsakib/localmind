@@ -1,0 +1,12 @@
+# syntax=docker/dockerfile:1
+FROM rocm/dev-ubuntu-24.04:6.3
+
+RUN apt-get update -o Acquire::Retries=5 \
+    && apt-get install -y --no-install-recommends --fix-missing -o Acquire::Retries=5 \
+    -o Dpkg::Options::="--force-overwrite" \
+    hipblas-rpath6.3.0 \
+    rocblas-rpath6.3.0 \
+    libamdhip64-5 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace

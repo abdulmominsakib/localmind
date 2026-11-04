@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:llamadart/llamadart.dart' as llama;
 
 import '../../../core/logger/app_logger.dart';
+import '../../../core/utils/async_operation_queue.dart';
 import '../../../core/models/enums.dart';
 import '../../chat/data/chat_api_error.dart';
 import '../../chat/data/chat_service.dart';
@@ -28,8 +29,11 @@ class OnDeviceLlamaService {
   String? _currentModelId;
   String? _currentProjectorPath;
   int? _currentContextLength;
+  bool? _currentUseGpu;
+  final _lifecycle = AsyncOperationQueue();
   String? _currentSystemPrompt;
   bool _isDisposed = false;
+  Object? _retirementError;
 
   /// Tracks the most recent user message we processed, so we can detect
   /// out-of-band edits or regenerations and rebuild the chat history.
@@ -54,9 +58,22 @@ class OnDeviceLlamaService {
     OnDeviceModel model, {
     int contextLength = 4096,
     bool useGpu = false,
+  }) => _lifecycle.run(
+    () => _loadModel(model, contextLength: contextLength, useGpu: useGpu),
+  );
+
+  Future<void> _loadModel(
+    OnDeviceModel model, {
+    int contextLength = 4096,
+    bool useGpu = false,
   }) async {
     if (_isDisposed) {
       throw StateError('OnDeviceLlamaService has been disposed');
+    }
+    if (_retirementError != null) {
+      throw StateError(
+        'Previous GGUF engine could not shut down: $_retirementError',
+      );
     }
     if (model.localPath == null || model.localPath!.isEmpty) {
       throw StateError('Imported GGUF model is missing a local file path');
@@ -67,11 +84,14 @@ class OnDeviceLlamaService {
     final contextChanged = _currentContextLength != contextLength;
     final projectorChanged = _currentProjectorPath != model.projectorPath;
 
-    if (alreadyLoaded && !contextChanged && !projectorChanged) {
+    if (alreadyLoaded &&
+        !contextChanged &&
+        !projectorChanged &&
+        _currentUseGpu == useGpu) {
       return;
     }
 
-    await unloadModel();
+    await _unloadModel();
 
     Log.info(
       'Loading GGUF model ${model.id} from ${model.localPath} '
@@ -114,12 +134,15 @@ class OnDeviceLlamaService {
     } catch (_) {
       try {
         await engine.dispose();
-      } catch (_) {}
+      } catch (error) {
+        _retirementError = error;
+      }
       rethrow;
     }
 
     _engine = engine;
     _currentModelId = model.id;
+    _currentUseGpu = useGpu;
     _currentProjectorPath = model.projectorPath;
     _currentContextLength = contextLength;
     _session = null;
@@ -339,13 +362,15 @@ class OnDeviceLlamaService {
     }
   }
 
-  Future<void> unloadModel() async {
+  Future<void> unloadModel() => _lifecycle.run(_unloadModel);
+
+  Future<void> _unloadModel() async {
     cancelGeneration();
-    _activeGenerationFuture = null;
     final engine = _engine;
     _engine = null;
     _session = null;
     _currentModelId = null;
+    _currentUseGpu = null;
     _currentProjectorPath = null;
     _currentContextLength = null;
     _currentSystemPrompt = null;
@@ -355,14 +380,20 @@ class OnDeviceLlamaService {
       try {
         await engine.dispose();
       } catch (e) {
+        _retirementError = e;
         Log.error('Error disposing GGUF engine: $e');
+        rethrow;
       }
     }
   }
 
   void dispose() {
     _isDisposed = true;
-    unawaited(unloadModel());
+    unawaited(
+      unloadModel().catchError((Object error) {
+        Log.warning('GGUF disposal did not complete: $error');
+      }),
+    );
   }
 }
 

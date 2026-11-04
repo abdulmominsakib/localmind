@@ -3400,4 +3400,8 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get sidebar_section_app => 'Приложение';
+
+  @override
+  String get model_still_stopping =>
+      'Модель ещё останавливается. Подождите, прежде чем повторить попытку.';
 }

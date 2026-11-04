@@ -1,0 +1,13 @@
+# Keep one prompt per line. Lines starting with # are comments.
+Explain in two sentences why deterministic seeds are useful in benchmark experiments.
+Write a short bullet list of three ways to reduce inference latency.
+Return a JSON object with keys title and score where score is an integer from 1 to 10.
+Summarize the difference between throughput and latency in one paragraph.
+Write a tiny Dart function named add that returns the sum of two integers.
+Translate this sentence to Korean: Performance tuning requires careful measurement.
+Give a concise checklist for validating model output consistency across runs.
+Provide exactly five comma-separated words related to optimization.
+Draft a one-sentence commit message for improving stream batching defaults.
+Explain why first-token latency and tokens-per-second can move in opposite directions.
+Return only a Markdown table with two columns: Metric and Description.
+Write a short haiku about profile-guided optimization.

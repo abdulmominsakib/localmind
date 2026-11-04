@@ -3316,4 +3316,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get sidebar_section_app => 'アプリ';
+
+  @override
+  String get model_still_stopping => 'モデルを停止しています。しばらく待ってからもう一度お試しください。';
 }

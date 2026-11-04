@@ -53,14 +53,55 @@ void main() {
     expect(inner.closedWhileGenerating, isFalse);
   });
 
-  test('close goes ahead once native ignores the stop too long', () async {
+  test('timeout retains native work until late completion', () async {
     session.generateChatResponseAsync().listen((_) {});
     await pumpEventQueue();
 
+    await expectLater(
+      session.close(),
+      throwsA(isA<NativeGenerationDrainTimeout>()),
+    );
+    expect(inner.closeCalls, 0);
+    expect(session.isGenerating, isTrue);
+    expect(activity, [true]);
+    expect(
+      () =>
+          session.addQueryChunk(gemma.Message.text(text: 'new', isUser: true)),
+      throwsStateError,
+    );
+
+    inner.finishNativeDecode();
+    await pumpEventQueue();
     await session.close();
     expect(inner.closeCalls, 1);
+    expect(inner.closedWhileGenerating, isFalse);
     expect(session.isGenerating, isFalse);
     expect(activity, [true, false]);
+  });
+
+  test('concurrent close requests delete only once', () async {
+    session.generateChatResponseAsync().listen((_) {});
+    await pumpEventQueue();
+    final first = session.close();
+    final second = session.close();
+    inner.finishNativeDecode();
+    await Future.wait([first, second]);
+    expect(inner.closeCalls, 1);
+  });
+
+  test('cancel timeout keeps listening for real completion', () async {
+    final subscription = session.generateChatResponseAsync().listen((_) {});
+    await pumpEventQueue();
+    await expectLater(
+      subscription.cancel(),
+      throwsA(isA<NativeGenerationDrainTimeout>()),
+    );
+    expect(session.isGenerating, isTrue);
+    inner.finishNativeDecode();
+    await pumpEventQueue();
+    expect(session.isGenerating, isFalse);
+    await session.close();
+    expect(inner.closeCalls, 1);
   });
 
   test('a finished generation closes without stopping', () async {

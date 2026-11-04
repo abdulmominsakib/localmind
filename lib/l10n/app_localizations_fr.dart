@@ -3391,4 +3391,8 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sidebar_section_app => 'App';
+
+  @override
+  String get model_still_stopping =>
+      'Le modèle est en cours d’arrêt. Veuillez patienter avant de réessayer.';
 }

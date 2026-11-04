@@ -6242,6 +6242,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'App'**
   String get sidebar_section_app;
+
+  /// No description provided for @model_still_stopping.
+  ///
+  /// In en, this message translates to:
+  /// **'The model is still stopping. Please wait before trying again.'**
+  String get model_still_stopping;
 }
 
 class _AppLocalizationsDelegate

@@ -8,6 +8,7 @@ import 'package:flutter_gemma/flutter_gemma.dart' show PreferredBackend;
 import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/async_operation_queue.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/app_providers.dart';
@@ -404,7 +405,12 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     await loadModel(modelId, current.backend ?? PreferredBackend.cpu);
   }
 
-  Future<void> loadModel(String modelId, PreferredBackend backend) async {
+  final _lifecycle = AsyncOperationQueue();
+
+  Future<void> loadModel(String modelId, PreferredBackend backend) =>
+      _lifecycle.run(() => _loadModel(modelId, backend));
+
+  Future<void> _loadModel(String modelId, PreferredBackend backend) async {
     if (!ref.mounted) return;
     final models = ref.read(onDeviceModelsProvider);
     final model = models.firstWhere(
@@ -555,7 +561,10 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     }
   }
 
-  Future<void> unloadModel() async {
+  Future<void> unloadModel() => _lifecycle.run(_unloadModel);
+
+  Future<void> _unloadModel() async {
+    Object? failure;
     final gemma = ref.mounted ? _gemmaService : null;
     final llama = ref.mounted ? _llamaService : null;
     final mlx = ref.mounted ? _mlxService : null;
@@ -563,6 +572,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       try {
         await gemma.unloadModel();
       } catch (e) {
+        failure ??= e;
         Log.error('Failed to unload gemma model: $e');
       }
     }
@@ -570,6 +580,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       try {
         await llama.unloadModel();
       } catch (e) {
+        failure ??= e;
         Log.error('Failed to unload llama.cpp model: $e');
       }
     }
@@ -577,11 +588,17 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       try {
         await mlx.unloadModel();
       } catch (e) {
+        failure ??= e;
         Log.error('Failed to unload MLX model: $e');
       }
     }
     if (ref.mounted) {
-      state = const OnDeviceEngineState();
+      state = failure == null
+          ? const OnDeviceEngineState()
+          : state.copyWith(
+              status: OnDeviceEngineStatus.error,
+              error: formatOnDeviceError(failure),
+            );
     }
   }
 

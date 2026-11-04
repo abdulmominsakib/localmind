@@ -3372,4 +3372,8 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sidebar_section_app => 'التطبيق';
+
+  @override
+  String get model_still_stopping =>
+      'لا يزال النموذج يتوقف. يُرجى الانتظار قبل المحاولة مرة أخرى.';
 }

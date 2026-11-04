@@ -3287,6 +3287,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sidebar_section_app => '应用';
+
+  @override
+  String get model_still_stopping => '模型仍在停止中，请稍后重试。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6439,4 +6442,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get sidebar_section_app => '應用程式';
+
+  @override
+  String get model_still_stopping => '模型仍在停止中，請稍後再試。';
 }

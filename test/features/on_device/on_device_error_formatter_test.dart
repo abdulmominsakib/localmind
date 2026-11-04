@@ -1,7 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:localmind/features/on_device/data/on_device_gemma_service.dart';
+import 'package:localmind/l10n/app_localizations_bn.dart';
 import 'package:localmind/features/on_device/utils/on_device_error_formatter.dart';
 
 void main() {
+  test('native drain timeout is not reported as a network error', () {
+    final error = NativeGenerationDrainTimeout(const Duration(seconds: 5));
+    final stored = formatOnDeviceError(error);
+    expect(
+      stored,
+      'The model is still stopping. Please wait before trying again.',
+    );
+    final localized = formatOnDeviceError(stored, l10n: AppLocalizationsBn());
+    expect(localized, AppLocalizationsBn().model_still_stopping);
+  });
+
   group('formatOnDeviceError', () {
     test(
       'returns generic unsupported message for BuiltInAiUnavailableException',

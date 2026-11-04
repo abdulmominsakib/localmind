@@ -16,9 +16,14 @@
 
     <application
         android:label="LocalMind"
-        android:name="${applicationName}"
+        android:name=".LocalMindApplication"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
+        <!-- LocalMind uses RemoteViews, never Glance action trampolines. -->
+        <activity android:name="androidx.glance.appwidget.action.ActionTrampolineActivity"
+            tools:node="remove" />
+        <activity android:name="androidx.glance.appwidget.action.InvisibleActionTrampolineActivity"
+            tools:node="remove" />
         <uses-native-library
             android:name="libOpenCL.so"
             android:required="false"/>

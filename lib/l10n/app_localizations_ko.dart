@@ -3298,4 +3298,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get sidebar_section_app => '앱';
+
+  @override
+  String get model_still_stopping => '모델을 중지하는 중입니다. 잠시 기다린 후 다시 시도해 주세요.';
 }

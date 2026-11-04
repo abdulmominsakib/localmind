@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:marionette_flutter/marionette_flutter.dart';
 import 'package:marionette_logger/marionette_logger.dart';
-import 'package:pdfrx/pdfrx.dart';
 
 import 'bootstrap/bootstrap_host.dart';
 import 'core/logger/app_logger.dart';
@@ -28,7 +27,6 @@ Future<void> main() async {
       } else {
         WidgetsFlutterBinding.ensureInitialized();
       }
-      await pdfrxFlutterInitialize();
       final crashReports = CrashReportService.instance;
       await crashReports.initialize();
 

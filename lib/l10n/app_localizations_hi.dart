@@ -3387,4 +3387,8 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get sidebar_section_app => 'ऐप';
+
+  @override
+  String get model_still_stopping =>
+      'मॉडल अभी बंद हो रहा है। दोबारा कोशिश करने से पहले कृपया प्रतीक्षा करें।';
 }

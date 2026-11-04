@@ -3397,4 +3397,8 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get sidebar_section_app => 'অ্যাপ';
+
+  @override
+  String get model_still_stopping =>
+      'মডেলটি এখনও বন্ধ হচ্ছে। আবার চেষ্টা করার আগে অপেক্ষা করুন।';
 }

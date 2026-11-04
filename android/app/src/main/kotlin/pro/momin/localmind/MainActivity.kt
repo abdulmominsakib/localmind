@@ -10,7 +10,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Process
+import android.util.Log
 import android.provider.Settings
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -31,19 +31,10 @@ class MainActivity : AudioServiceActivity() {
     }
 
     override fun onDestroy() {
-        // audio_service destroys the shared FlutterEngine once this activity
-        // is gone, but a held ChatForegroundService keeps the process alive.
-        // Native inference threads (LiteRT-LM streaming) would then call into
-        // the dead Dart isolate and abort the process in
-        // DLRT_GetFfiCallbackMetadata. End the process before the engine is
-        // torn down so that work can't outlive its isolate. Dart also reports
-        // native work directly: title generation holds no service, and
-        // Android can refuse to start one from the background.
-        if (!isChangingConfigurations &&
-            (ChatForegroundService.isHeld || nativeWorkActive)
-        ) {
-            Process.killProcess(Process.myPid())
-        }
+        assistantChannel?.setMethodCallHandler(null)
+        assistantChannel = null
+        pendingRoleRequest?.error("activity_detached", "Activity detached", null)
+        pendingRoleRequest = null
         super.onDestroy()
     }
 
@@ -61,11 +52,12 @@ class MainActivity : AudioServiceActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        val appContext = applicationContext
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "startForeground" -> {
                     try {
-                        ChatForegroundService.startService(applicationContext)
+                        ChatForegroundService.startService(appContext)
                         result.success(null)
                     } catch (error: IllegalStateException) {
                         // Android 12+ refuses foreground services started
@@ -79,7 +71,7 @@ class MainActivity : AudioServiceActivity() {
                 }
                 "stopForeground" -> {
                     ChatForegroundService.stopService(
-                        applicationContext,
+                        appContext,
                         ChatForegroundService.TYPE_SPECIAL_USE
                     )
                     result.success(null)
@@ -87,7 +79,7 @@ class MainActivity : AudioServiceActivity() {
                 "startForegroundMic" -> {
                     try {
                         ChatForegroundService.startService(
-                            applicationContext,
+                            appContext,
                             ChatForegroundService.TYPE_MICROPHONE
                         )
                         result.success(null)
@@ -111,7 +103,7 @@ class MainActivity : AudioServiceActivity() {
                 }
                 "stopForegroundMic" -> {
                     ChatForegroundService.stopService(
-                        applicationContext,
+                        appContext,
                         ChatForegroundService.TYPE_MICROPHONE
                     )
                     result.success(null)
@@ -125,7 +117,7 @@ class MainActivity : AudioServiceActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MEMORY_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "getMemoryInfo" -> {
-                    val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                    val activityManager = appContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
                     val memoryInfo = ActivityManager.MemoryInfo()
                     activityManager.getMemoryInfo(memoryInfo)
                     result.success(
@@ -170,14 +162,22 @@ class MainActivity : AudioServiceActivity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != ASSISTANT_ROLE_REQUEST_CODE) return
-
-        val result = pendingRoleRequest ?: return
-        pendingRoleRequest = null
-        result.success(
-            resultCode == Activity.RESULT_OK || getAssistantStatus() == "active"
-        )
+        if (requestCode == ASSISTANT_ROLE_REQUEST_CODE) {
+            val result = pendingRoleRequest ?: return
+            pendingRoleRequest = null
+            result.success(
+                resultCode == Activity.RESULT_OK || getAssistantStatus() == "active"
+            )
+            return
+        }
+        try {
+            super.onActivityResult(requestCode, resultCode, data)
+        } catch (error: IllegalStateException) {
+            // Contain only the observed Flutter ProcessText duplicate reply.
+            // Unrelated plugin errors must retain their original failure path.
+            if (!ActivityResultErrors.isDuplicateProcessTextReply(error)) throw error
+            Log.w("LocalMind", "ProcessText result was already delivered", error)
+        }
     }
 
     private fun captureAssistantInvocation(intent: Intent?) {

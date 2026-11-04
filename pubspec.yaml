@@ -169,3 +169,12 @@ hooks:
   user_defines:
     llamadart:
       llamadart_native_runtimes: [llama_cpp]
+
+# Scoped crash fixes; see packages/*/LOCALMIND_PATCHES.md for upstream baselines.
+dependency_overrides:
+  audio_service:
+    path: packages/audio_service
+  flutter_gemma_litertlm:
+    path: packages/flutter_gemma_litertlm
+  llamadart:
+    path: packages/llamadart

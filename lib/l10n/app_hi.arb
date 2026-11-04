@@ -986,5 +986,6 @@
   "settings_group_composer": "लिखने का बॉक्स",
   "sidebar_section_chats": "चैट",
   "sidebar_section_models": "मॉडल",
-  "sidebar_section_app": "ऐप"
+  "sidebar_section_app": "ऐप",
+  "model_still_stopping": "मॉडल अभी बंद हो रहा है। दोबारा कोशिश करने से पहले कृपया प्रतीक्षा करें।"
 }

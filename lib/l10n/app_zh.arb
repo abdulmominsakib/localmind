@@ -986,5 +986,6 @@
   "settings_group_composer": "输入框",
   "sidebar_section_chats": "聊天",
   "sidebar_section_models": "模型",
-  "sidebar_section_app": "应用"
+  "sidebar_section_app": "应用",
+  "model_still_stopping": "模型仍在停止中，请稍后重试。"
 }

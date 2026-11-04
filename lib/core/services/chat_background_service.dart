@@ -47,11 +47,9 @@ class ChatBackgroundService {
     }
   }
 
-  /// Tells Android whether native on-device inference is running. Its
-  /// threads call back into this isolate, so the activity ends the process
-  /// rather than let the Flutter engine be torn down beneath them. Covers runs
-  /// that hold no foreground service, such as title generation, and holds
-  /// whose service Android refused to start.
+  /// Reports native work independently of foreground-service holds, including
+  /// title generation and starts Android refused. The process-retained Flutter
+  /// engine keeps callback targets alive across Activity destruction.
   Future<void> setNativeWorkActive(bool active) async {
     if (!_isAndroid) return;
     try {

@@ -3401,4 +3401,8 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sidebar_section_app => 'App';
+
+  @override
+  String get model_still_stopping =>
+      'El modelo todavía se está deteniendo. Espera antes de volver a intentarlo.';
 }

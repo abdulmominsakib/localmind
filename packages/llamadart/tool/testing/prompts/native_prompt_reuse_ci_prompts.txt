@@ -1,0 +1,5 @@
+# Short prompt set for CI parity checks.
+Explain in one sentence why deterministic seeds help benchmark reproducibility.
+Return a JSON object with keys status and score where score is an integer.
+Write a concise bullet list of three latency optimization ideas.
+Summarize the difference between throughput and first-token latency in two sentences.

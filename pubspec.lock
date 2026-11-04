@@ -65,12 +65,11 @@ packages:
     source: hosted
     version: "0.1.0"
   audio_service:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: audio_service
-      sha256: cb122c7c2639d2a992421ef96b67948ad88c5221da3365ccef1031393a76e044
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/audio_service"
+      relative: true
+    source: path
     version: "0.18.18"
   audio_service_platform_interface:
     dependency: transitive
@@ -632,10 +631,9 @@ packages:
   flutter_gemma_litertlm:
     dependency: "direct main"
     description:
-      name: flutter_gemma_litertlm
-      sha256: "819955289cbd5d2877bac8065dba6710719b71adae764c38247f3817cdb2e1f3"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/flutter_gemma_litertlm"
+      relative: true
+    source: path
     version: "1.6.0"
   flutter_lints:
     dependency: "direct dev"
@@ -1255,10 +1253,9 @@ packages:
   llamadart:
     dependency: "direct main"
     description:
-      name: llamadart
-      sha256: c49692aff4b0bb2a402bdd3754a1ea021f3bd6892213949666b643e30d548058
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/llamadart"
+      relative: true
+    source: path
     version: "0.8.18"
   llamadart_llama_cpp_flutter:
     dependency: "direct main"

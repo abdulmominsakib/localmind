@@ -3418,4 +3418,8 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get sidebar_section_app => 'App';
+
+  @override
+  String get model_still_stopping =>
+      'O modelo ainda está parando. Aguarde antes de tentar novamente.';
 }
