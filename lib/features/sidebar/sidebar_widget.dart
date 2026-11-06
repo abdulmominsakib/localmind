@@ -34,6 +34,7 @@ class SidebarWidget extends ConsumerWidget {
     final isMcpTools = location.startsWith(AppRoutes.mcpTools);
     final isPersonas = location.startsWith(AppRoutes.personas);
     final isLocalModels = location.startsWith(AppRoutes.onDeviceModels);
+    final isLocalApi = location.startsWith(AppRoutes.localApi);
     final isTtsModels = location.startsWith(AppRoutes.ttsModels);
     final isCloudSync = location.startsWith(AppRoutes.cloudSync);
     final isSettings = location == AppRoutes.settings;
@@ -207,6 +208,13 @@ class SidebarWidget extends ConsumerWidget {
                           isSelected: isLocalModels,
                           onTap: () => open(AppRoutes.onDeviceModels),
                         ),
+                        if (AppRoutes.supportsLocalApi)
+                          DrawerNavItem(
+                            iconData: HugeIcons.strokeRoundedApi,
+                            label: l10n.localApiTitle,
+                            isSelected: isLocalApi,
+                            onTap: () => open(AppRoutes.localApi),
+                          ),
                         DrawerNavItem(
                           iconData: HugeIcons.strokeRoundedVoice,
                           label: l10n.nav_tts,

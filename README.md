@@ -45,6 +45,7 @@ Built for those who value privacy and performance, LocalMind runs models directl
 
 - **On-Device AI Support (iOS & Android)**: Private, fast, and offline. Run powerful GGUF and LiteRT models (Gemma, Qwen, DeepSeek R1) directly on your device via `llamadart` and `flutter_gemma`. No internet connection required.
 - **Model Context Protocol (MCP)**: Seamlessly connect to local or remote MCP servers. Grant models access to custom tools and integrations (e.g., file access, web APIs, shell actions) with fine-grained global and chat-level toggles.
+- **Local API (Android)**: Serve a loaded model to other apps through an authenticated OpenAI-compatible endpoint. See the [Local API setup guide](docs/local-api.md).
 - **Model Manager**: Download curated models or download GGUF models directly from HuggingFace. Manage model files directly within the app.
 - **Multi-Server Connection**: Connect to Ollama, LM Studio, OpenRouter, Requesty, or any OpenAI-compatible API with real-time server health and speed monitoring.
 - **Premium Chat Experience**: A polished, Claude/ChatGPT-inspired user interface featuring:

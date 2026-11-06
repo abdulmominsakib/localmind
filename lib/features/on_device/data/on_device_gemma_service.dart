@@ -8,6 +8,7 @@ import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../core/inference/local_inference.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/utils/async_operation_queue.dart';
 import 'models/on_device_model.dart';
@@ -232,7 +233,9 @@ class _GemmaInferenceSession implements OnDeviceInferenceSession {
 }
 
 class OnDeviceGemmaService implements OnDeviceInferenceService {
-  OnDeviceGemmaService({this.onNativeWorkChanged});
+  OnDeviceGemmaService({this.onNativeWorkChanged, this.coordinator});
+
+  final InferenceCoordinator? coordinator;
 
   /// Total token budget (prompt + history + output) used when the caller
   /// doesn't pass one.

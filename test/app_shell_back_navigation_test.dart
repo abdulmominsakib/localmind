@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +32,11 @@ void main() {
               path: AppRoutes.home,
               builder: (context, state) =>
                   const ShellBackScope(child: Text('Home')),
+            ),
+            GoRoute(
+              path: AppRoutes.localApi,
+              builder: (context, state) =>
+                  const ShellBackScope(child: Text('API server screen')),
             ),
             GoRoute(
               path: AppRoutes.ttsModels,
@@ -108,6 +114,35 @@ void main() {
 
   ScaffoldState shellScaffold(WidgetTester tester) =>
       tester.state<ScaffoldState>(find.byType(Scaffold));
+
+  testWidgets(
+    'Local API sidebar entry opens the Android route and closes the drawer',
+    (tester) async {
+      await pumpShell(tester);
+      shellScaffold(tester).openDrawer();
+      await tester.pumpAndSettle();
+
+      final entry = find.text('Local API');
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        expect(entry, findsNothing);
+        return;
+      }
+
+      await tester.ensureVisible(entry);
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+
+      expect(find.text('API server screen'), findsOneWidget);
+      expect(shellScaffold(tester).isDrawerOpen, isFalse);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Home'), findsOneWidget);
+    },
+    variant: TargetPlatformVariant({
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    }),
+  );
 
   testWidgets('back on empty home with the drawer closed leaves the app', (
     tester,

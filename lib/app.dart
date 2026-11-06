@@ -34,6 +34,7 @@ import 'features/tts/views/tts_model_manager_screen.dart';
 import 'features/saved_messages/views/saved_messages_screen.dart';
 import 'features/settings/views/settings_screen.dart';
 import 'features/cloud_sync/views/cloud_sync_screen.dart';
+import 'features/local_api/views/local_api_screen.dart';
 import 'features/lm_studio_catalog/views/lm_studio_model_browser_screen.dart';
 import 'features/sidebar/sidebar_drawer.dart';
 import 'features/sidebar/sidebar_widget.dart';
@@ -156,6 +157,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               child: ShellBackScope(child: SettingsViews()),
             ),
           ),
+          if (AppRoutes.supportsLocalApi)
+            GoRoute(
+              path: AppRoutes.localApi,
+              pageBuilder: (context, state) => const MaterialPage(
+                child: ShellBackScope(child: LocalApiScreen()),
+              ),
+            ),
           GoRoute(
             path: AppRoutes.cloudSync,
             pageBuilder: (context, state) => const MaterialPage(

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:llamadart/llamadart.dart' as llama;
 
+import '../../../core/inference/local_inference.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/utils/async_operation_queue.dart';
 import '../../../core/models/enums.dart';
@@ -17,7 +18,13 @@ import '../../servers/data/models/server.dart';
 import 'models/on_device_model.dart';
 
 class OnDeviceLlamaService {
-  OnDeviceLlamaService({this.reasoningPreference, this.engineFactory});
+  OnDeviceLlamaService({
+    this.reasoningPreference,
+    this.engineFactory,
+    this.coordinator,
+  });
+
+  final InferenceCoordinator? coordinator;
 
   final llama.LlamaEngine Function()? engineFactory;
 
@@ -167,6 +174,15 @@ class OnDeviceLlamaService {
     required List<Message> messages,
     required ChatParameters params,
   }) async* {
+    final lease = coordinator?.tryAcquire();
+    if (coordinator != null && lease == null) {
+      yield const ChatResponse(
+        type: ChatResponseType.error,
+        content: 'The on-device model is busy.',
+      );
+      yield const ChatResponse(type: ChatResponseType.done);
+      return;
+    }
     final prev = _activeGenerationFuture;
     final generationCompleter = Completer<void>();
     _activeGenerationFuture = generationCompleter.future;
@@ -341,12 +357,60 @@ class OnDeviceLlamaService {
         yield const ChatResponse(type: ChatResponseType.done);
       }
     } finally {
+      lease?.release();
       if (!generationCompleter.isCompleted) {
         generationCompleter.complete();
       }
       if (identical(_activeGenerationFuture, generationCompleter.future)) {
         _activeGenerationFuture = null;
       }
+    }
+  }
+
+  /// Uses the model without touching the retained in-app ChatSession.
+  /// The caller holds the shared inference lease.
+  Stream<InferenceEvent> generateExternal(
+    InferenceRequest request,
+    InferenceCancellation cancellation, {
+    required double defaultTemperature,
+    required double defaultTopP,
+    required int defaultMaxTokens,
+  }) async* {
+    final engine = _engine;
+    if (engine == null || !isLoaded || currentModelId != request.model) {
+      throw StateError('GGUF model is unavailable.');
+    }
+    final messages = [
+      for (final message in request.messages)
+        llama.LlamaChatMessage.fromText(
+          role: llama.LlamaChatRole.values.byName(message.role.name),
+          text: message.text,
+        ),
+    ];
+    final iterator = StreamIterator(
+      engine.create(
+        messages,
+        enableThinking: false,
+        params: llama.GenerationParams(
+          temp: request.temperature ?? defaultTemperature,
+          topP: request.topP ?? defaultTopP,
+          maxTokens: request.maxTokens ?? defaultMaxTokens,
+        ),
+      ),
+    );
+    try {
+      while (await cancellation.moveNext(iterator)) {
+        for (final choice in iterator.current.choices) {
+          final text = choice.delta.content;
+          if (text != null && text.isNotEmpty) yield InferenceText(text);
+          if (choice.finishReason != null) {
+            yield InferenceFinished(length: choice.finishReason == 'length');
+          }
+        }
+      }
+    } finally {
+      if (cancellation.isCancelled) engine.cancelGeneration();
+      await iterator.cancel();
     }
   }
 

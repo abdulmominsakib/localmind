@@ -6248,6 +6248,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The model is still stopping. Please wait before trying again.'**
   String get model_still_stopping;
+
+  /// No description provided for @localApiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local API'**
+  String get localApiTitle;
+
+  /// No description provided for @localApiIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your loaded model in other apps with an OpenAI-compatible API. Start the server before switching apps.'**
+  String get localApiIntro;
+
+  /// No description provided for @localApiRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Local API is running'**
+  String get localApiRunning;
+
+  /// No description provided for @localApiStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Server stopped'**
+  String get localApiStopped;
+
+  /// No description provided for @localApiStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting server…'**
+  String get localApiStarting;
+
+  /// No description provided for @localApiStopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping server…'**
+  String get localApiStopping;
+
+  /// No description provided for @localApiRotating.
+  ///
+  /// In en, this message translates to:
+  /// **'Replacing API key…'**
+  String get localApiRotating;
+
+  /// No description provided for @localApiModelRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Load a downloaded LiteRT or imported GGUF model first.'**
+  String get localApiModelRequired;
+
+  /// No description provided for @localApiInvalidPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a port from 1024 to 65535.'**
+  String get localApiInvalidPort;
+
+  /// No description provided for @localApiStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Android could not start the server. Try again while LocalMind is open.'**
+  String get localApiStartFailed;
+
+  /// No description provided for @localApiPortUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not listen on this port. Try another port.'**
+  String get localApiPortUnavailable;
+
+  /// No description provided for @localApiKeyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not access the API key.'**
+  String get localApiKeyFailed;
+
+  /// No description provided for @localApiModelId.
+  ///
+  /// In en, this message translates to:
+  /// **'Model ID'**
+  String get localApiModelId;
+
+  /// No description provided for @localApiTextAndTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Text and tool calls'**
+  String get localApiTextAndTools;
+
+  /// No description provided for @localApiTextOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Text only'**
+  String get localApiTextOnly;
+
+  /// No description provided for @localApiPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get localApiPort;
+
+  /// No description provided for @localApiLan.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow other devices on the local network'**
+  String get localApiLan;
+
+  /// No description provided for @localApiLanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this only on a trusted network. HTTP does not encrypt prompts or the API key.'**
+  String get localApiLanHint;
+
+  /// No description provided for @localApiStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start server'**
+  String get localApiStart;
+
+  /// No description provided for @localApiStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop server'**
+  String get localApiStop;
+
+  /// No description provided for @localApiUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Same-device base URL'**
+  String get localApiUrl;
+
+  /// No description provided for @localApiLanUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Local network base URL'**
+  String get localApiLanUrl;
+
+  /// No description provided for @localApiNoLan.
+  ///
+  /// In en, this message translates to:
+  /// **'No local network address is available.'**
+  String get localApiNoLan;
+
+  /// No description provided for @localApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get localApiKey;
+
+  /// No description provided for @localApiShowKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Show API key'**
+  String get localApiShowKey;
+
+  /// No description provided for @localApiHideKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide API key'**
+  String get localApiHideKey;
+
+  /// No description provided for @localApiRotateKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace API key'**
+  String get localApiRotateKey;
+
+  /// No description provided for @localApiRotateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The current key will stop working. Update your connected apps with the new key.'**
+  String get localApiRotateHint;
+
+  /// No description provided for @localApiCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy {label}'**
+  String localApiCopy(String label);
+
+  /// No description provided for @localApiCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get localApiCopied;
 }
 
 class _AppLocalizationsDelegate
