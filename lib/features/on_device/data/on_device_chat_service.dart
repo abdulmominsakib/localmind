@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
 
+import '../../../core/inference/local_inference.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/utils/bpe_decoder.dart';
@@ -40,6 +41,7 @@ class OnDeviceChatService implements ChatService {
   OnDeviceChatService(
     this._gemmaService, {
     Duration retainedSessionTtl = _defaultRetainedSessionTtl,
+    this.coordinator,
     this.imageCompressionEnabled = true,
     this.imageCompressionLevel = ImageCompressionLevel.medium,
     // The retained-session TTL is a separate constructor parameter (rather
@@ -49,6 +51,7 @@ class OnDeviceChatService implements ChatService {
   }) : _retainedSessionTtl = retainedSessionTtl;
 
   final OnDeviceInferenceService _gemmaService;
+  final InferenceCoordinator? coordinator;
   final Duration _retainedSessionTtl;
   final bool imageCompressionEnabled;
   final ImageCompressionLevel imageCompressionLevel;
@@ -72,7 +75,6 @@ class OnDeviceChatService implements ChatService {
     late final _InferenceRun run;
     final controller = StreamController<ChatResponse>();
     final sequence = ++_nextRunSequence;
-    _latestRunSequence = sequence;
     run = _InferenceRun(controller, sequence);
     controller.onCancel = () => _cancelRun(run, notifyListener: false);
 
@@ -90,9 +92,28 @@ class OnDeviceChatService implements ChatService {
       return controller.stream;
     }
 
+    final lease = coordinator?.tryAcquire();
+    if (coordinator != null && lease == null) {
+      controller.add(
+        const ChatResponse(
+          type: ChatResponseType.error,
+          content: 'The on-device model is busy.',
+        ),
+      );
+      controller.add(const ChatResponse(type: ChatResponseType.done));
+      unawaited(controller.close());
+      return controller.stream;
+    }
+    _latestRunSequence = sequence;
     _activeRuns.add(run);
     unawaited(
-      _startInference(run, modelId, messages, params, tools ?? const []),
+      _startInference(
+        run,
+        modelId,
+        messages,
+        params,
+        tools ?? const [],
+      ).whenComplete(() => lease?.release()),
     );
     return controller.stream;
   }
@@ -231,29 +252,20 @@ class OnDeviceChatService implements ChatService {
       return;
     }
 
-    final retained = _retainedConversation;
-    _retainedConversation = null;
-    _cancelRetainedExpiration();
     await _finishWithError(
       run,
       ChatApiError(
         message: 'Inference error: $error',
         code: ChatApiError.onDeviceEngineFailedCode,
       ).encode(),
-    );
-    if (retained != null) {
-      try {
-        await retained.session.close();
-      } catch (closeError) {
-        Log.warning('Error closing retained on-device session: $closeError');
-      }
-    }
-    unawaited(
-      _gemmaService.recoverAfterInferenceFailure().catchError((
-        Object recoveryError,
-      ) {
-        Log.error('On-device model recovery failed: $recoveryError');
-      }),
+      recover: () async {
+        try {
+          await _clearRetainedConversation();
+          await _gemmaService.recoverAfterInferenceFailure();
+        } catch (recoveryError) {
+          Log.error('On-device model recovery failed: $recoveryError');
+        }
+      },
     );
   }
 
@@ -333,7 +345,11 @@ class OnDeviceChatService implements ChatService {
       }
     }
 
-    await _retainOrCloseSession(run);
+    try {
+      await _retainOrCloseSession(run);
+    } catch (error) {
+      Log.warning('Could not close on-device chat session: $error');
+    }
     await _closeController(run, notifyListener: !run.isCancelled);
     _activeRuns.remove(run);
     _completeRunFuture(run);
@@ -343,6 +359,7 @@ class OnDeviceChatService implements ChatService {
     _InferenceRun run,
     String message, {
     bool abortGeneration = false,
+    Future<void> Function()? recover,
   }) async {
     if (!run.beginFinishing()) return;
 
@@ -360,6 +377,7 @@ class OnDeviceChatService implements ChatService {
       await subscription?.cancel();
     }
     await _closeSession(run, stopGeneration: false);
+    await recover?.call();
     if (!run.isCancelled && !run.controller.isClosed) {
       run.controller.add(
         ChatResponse(type: ChatResponseType.error, content: message),
@@ -462,6 +480,7 @@ class OnDeviceChatService implements ChatService {
       supportsImages: run.sessionSupportsImages,
       toolNames: run.toolNames,
     );
+    coordinator?.retain(_clearRetainedConversation);
     _armRetainedExpiration();
     if (previous != null && !identical(previous.session, session)) {
       await previous.session.close();
@@ -472,16 +491,30 @@ class OnDeviceChatService implements ChatService {
     _retainedExpirationTimer?.cancel();
     _retainedExpirationTimer = Timer(_retainedSessionTtl, () {
       if (_isDisposed) return;
-      final retained = _retainedConversation;
-      _retainedConversation = null;
-      _retainedExpirationTimer = null;
-      if (retained != null) {
-        unawaited(retained.session.close());
+      final owner = coordinator;
+      if (owner == null) {
+        unawaited(_clearRetainedConversation());
+      } else {
+        // Expiration must not close a session while another owner is decoding.
+        final lease = owner.tryAcquire();
+        if (lease == null) {
+          _armRetainedExpiration();
+          return;
+        }
+        unawaited(_clearRetainedConversation().whenComplete(lease.release));
       }
     });
   }
 
+  Future<void> _clearRetainedConversation() async {
+    final retained = _retainedConversation;
+    _retainedConversation = null;
+    _cancelRetainedExpiration();
+    await retained?.session.close();
+  }
+
   void _cancelRetainedExpiration() {
+    coordinator?.forget(_clearRetainedConversation);
     _retainedExpirationTimer?.cancel();
     _retainedExpirationTimer = null;
   }
@@ -654,12 +687,16 @@ class OnDeviceChatService implements ChatService {
     if (_isDisposed) return;
     _isDisposed = true;
     cancelStream();
-    _cancelRetainedExpiration();
-    final retained = _retainedConversation;
-    _retainedConversation = null;
-    if (retained != null) {
-      unawaited(retained.session.close());
-    }
+    if (_retainedConversation == null) return;
+    final owner = coordinator;
+    final cleanup = owner == null
+        ? _clearRetainedConversation()
+        : owner.transition(_clearRetainedConversation);
+    unawaited(
+      cleanup.catchError((Object error) {
+        Log.warning('Could not close retained on-device session: $error');
+      }),
+    );
   }
 }
 

@@ -3401,4 +3401,102 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get model_still_stopping =>
       'মডেলটি এখনও বন্ধ হচ্ছে। আবার চেষ্টা করার আগে অপেক্ষা করুন।';
+
+  @override
+  String get localApiTitle => 'Local API';
+
+  @override
+  String get localApiIntro =>
+      'Use your loaded model in other apps with an OpenAI-compatible API. Start the server before switching apps.';
+
+  @override
+  String get localApiRunning => 'Local API is running';
+
+  @override
+  String get localApiStopped => 'Server stopped';
+
+  @override
+  String get localApiStarting => 'Starting server…';
+
+  @override
+  String get localApiStopping => 'Stopping server…';
+
+  @override
+  String get localApiRotating => 'Replacing API key…';
+
+  @override
+  String get localApiModelRequired =>
+      'Load a downloaded LiteRT or imported GGUF model first.';
+
+  @override
+  String get localApiInvalidPort => 'Enter a port from 1024 to 65535.';
+
+  @override
+  String get localApiStartFailed =>
+      'Android could not start the server. Try again while LocalMind is open.';
+
+  @override
+  String get localApiPortUnavailable =>
+      'Could not listen on this port. Try another port.';
+
+  @override
+  String get localApiKeyFailed => 'Could not access the API key.';
+
+  @override
+  String get localApiModelId => 'Model ID';
+
+  @override
+  String get localApiTextAndTools => 'Text and tool calls';
+
+  @override
+  String get localApiTextOnly => 'Text only';
+
+  @override
+  String get localApiPort => 'Port';
+
+  @override
+  String get localApiLan => 'Allow other devices on the local network';
+
+  @override
+  String get localApiLanHint =>
+      'Use this only on a trusted network. HTTP does not encrypt prompts or the API key.';
+
+  @override
+  String get localApiStart => 'Start server';
+
+  @override
+  String get localApiStop => 'Stop server';
+
+  @override
+  String get localApiUrl => 'Same-device base URL';
+
+  @override
+  String get localApiLanUrl => 'Local network base URL';
+
+  @override
+  String get localApiNoLan => 'No local network address is available.';
+
+  @override
+  String get localApiKey => 'API key';
+
+  @override
+  String get localApiShowKey => 'Show API key';
+
+  @override
+  String get localApiHideKey => 'Hide API key';
+
+  @override
+  String get localApiRotateKey => 'Replace API key';
+
+  @override
+  String get localApiRotateHint =>
+      'The current key will stop working. Update your connected apps with the new key.';
+
+  @override
+  String localApiCopy(String label) {
+    return 'Copy $label';
+  }
+
+  @override
+  String get localApiCopied => 'Copied to clipboard';
 }

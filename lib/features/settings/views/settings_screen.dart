@@ -1,4 +1,5 @@
 import 'package:hugeicons/hugeicons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -324,6 +325,12 @@ class _SettingsViewsState extends ConsumerState<SettingsViews> {
           label: l10n.manage_on_device_models,
           onPressed: () => context.push(AppRoutes.onDeviceModels),
         ),
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+          _SectionActionButton(
+            icon: HugeIcons.strokeRoundedServerStack01,
+            label: l10n.localApiTitle,
+            onPressed: () => context.push(AppRoutes.localApi),
+          ),
         _ToggleSetting(
           label: l10n.ai_user_response_enabled,
           description: l10n.ai_user_response_enabled_desc,

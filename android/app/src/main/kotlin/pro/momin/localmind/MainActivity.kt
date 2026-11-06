@@ -18,6 +18,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : AudioServiceActivity() {
     private val CHANNEL = "localmind/chat_background"
+    private val LOCAL_API_CHANNEL = "localmind/local_api"
     private val MEMORY_CHANNEL = "localmind/device_memory"
     private val ASSISTANT_CHANNEL = "localmind/android_assistant"
 
@@ -111,6 +112,26 @@ class MainActivity : AudioServiceActivity() {
                 else -> {
                     result.notImplemented()
                 }
+            }
+        }
+
+        val localApiChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LOCAL_API_CHANNEL)
+        localApiChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> {
+                    val text = call.argument<String>("text")
+                    val stop = call.argument<String>("stop")
+                    if (text == null || stop == null) {
+                        result.error("invalid_notification", null, null)
+                    } else {
+                        ChatForegroundService.startLocalApi(appContext, localApiChannel, text, stop, result)
+                    }
+                }
+                "stop" -> {
+                    ChatForegroundService.stopService(appContext, ChatForegroundService.TYPE_LOCAL_API)
+                    result.success(null)
+                }
+                else -> result.notImplemented()
             }
         }
 

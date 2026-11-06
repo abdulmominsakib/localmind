@@ -9,6 +9,7 @@ import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/async_operation_queue.dart';
+import '../../../core/inference/local_inference.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/app_providers.dart';
@@ -33,6 +34,7 @@ final notificationPermissionServiceProvider =
 final onDeviceGemmaServiceProvider = Provider<OnDeviceGemmaService>((ref) {
   final background = ref.read(chatBackgroundServiceProvider);
   final service = OnDeviceGemmaService(
+    coordinator: ref.read(inferenceCoordinatorProvider),
     onNativeWorkChanged: (active) =>
         unawaited(background.setNativeWorkActive(active)),
   );
@@ -42,6 +44,7 @@ final onDeviceGemmaServiceProvider = Provider<OnDeviceGemmaService>((ref) {
 
 final onDeviceLlamaServiceProvider = Provider<OnDeviceLlamaService>((ref) {
   final service = OnDeviceLlamaService(
+    coordinator: ref.read(inferenceCoordinatorProvider),
     reasoningPreference: (modelId) => ref
         .read(importedGgufModelsProvider)
         .where((model) => model.id == modelId)
@@ -53,7 +56,10 @@ final onDeviceLlamaServiceProvider = Provider<OnDeviceLlamaService>((ref) {
 });
 
 final onDeviceMlxServiceProvider = Provider<OnDeviceMlxService>((ref) {
-  final service = OnDeviceMlxService(ref.read(dioProvider));
+  final service = OnDeviceMlxService(
+    ref.read(dioProvider),
+    coordinator: ref.read(inferenceCoordinatorProvider),
+  );
   ref.onDispose(() => service.dispose());
   return service;
 });
@@ -408,7 +414,11 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
   final _lifecycle = AsyncOperationQueue();
 
   Future<void> loadModel(String modelId, PreferredBackend backend) =>
-      _lifecycle.run(() => _loadModel(modelId, backend));
+      _lifecycle.run(
+        () => ref
+            .read(inferenceCoordinatorProvider)
+            .transition(() => _loadModel(modelId, backend)),
+      );
 
   Future<void> _loadModel(String modelId, PreferredBackend backend) async {
     if (!ref.mounted) return;
@@ -561,7 +571,9 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     }
   }
 
-  Future<void> unloadModel() => _lifecycle.run(_unloadModel);
+  Future<void> unloadModel() => _lifecycle.run(
+    () => ref.read(inferenceCoordinatorProvider).transition(_unloadModel),
+  );
 
   Future<void> _unloadModel() async {
     Object? failure;
