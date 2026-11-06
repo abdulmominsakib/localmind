@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class AppRoutes {
   static const String home = '/';
   static const String onboarding = '/onboarding';
@@ -12,6 +14,8 @@ class AppRoutes {
   static const String createPersona = '/personas/create';
   static const String settings = '/settings';
   static const String localApi = '/settings/local-api';
+  static bool get supportsLocalApi =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
   static const String cloudSync = '/settings/cloud-sync';
   static const String models = '/models';
   static const String mcpTools = '/mcp-tools';

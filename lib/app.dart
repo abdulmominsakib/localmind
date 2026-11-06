@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -158,7 +157,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               child: ShellBackScope(child: SettingsViews()),
             ),
           ),
-          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+          if (AppRoutes.supportsLocalApi)
             GoRoute(
               path: AppRoutes.localApi,
               pageBuilder: (context, state) => const MaterialPage(

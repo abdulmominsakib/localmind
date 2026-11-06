@@ -7,8 +7,9 @@ the loaded model on your phone.
 1. In **Settings → On-Device Inference → Manage on-device models**, download and load a
    LiteRT model or import and load a GGUF model. Use Gemma 4 E2B or E4B Instruct
    for clients that send function tools.
-2. Open **Settings → On-Device Inference → Local API**, choose a port (default **8000**),
-   and tap **Start server**.
+2. Open **Local API** under **Models** in the sidebar, choose a port (default
+   **8000**), and tap **Start server**. You can also find Local API under
+   **Settings → On-Device Inference**.
 3. Copy the base URL, API key, and model ID into the client. On the same phone,
    use `http://127.0.0.1:8000/v1` with the port displayed in LocalMind.
 
