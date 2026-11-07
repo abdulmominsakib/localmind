@@ -6602,6 +6602,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copied to clipboard'**
   String get localApiCopied;
+
+  /// No description provided for @onDeviceSearchModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Search models'**
+  String get onDeviceSearchModels;
+
+  /// No description provided for @onDeviceSearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching...'**
+  String get onDeviceSearching;
+
+  /// No description provided for @onDeviceSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get onDeviceSearch;
+
+  /// No description provided for @onDeviceModelTypeBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get onDeviceModelTypeBoth;
+
+  /// No description provided for @onDeviceModelTypeLitert.
+  ///
+  /// In en, this message translates to:
+  /// **'LiteRT'**
+  String get onDeviceModelTypeLitert;
+
+  /// No description provided for @onDeviceModelTypeGguf.
+  ///
+  /// In en, this message translates to:
+  /// **'Llama.cpp (GGUF)'**
+  String get onDeviceModelTypeGguf;
+
+  /// No description provided for @onDeviceModelTypeNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get onDeviceModelTypeNone;
+
+  /// No description provided for @onDeviceModalityAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get onDeviceModalityAll;
+
+  /// No description provided for @onDeviceModalityText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get onDeviceModalityText;
+
+  /// No description provided for @onDeviceModalityVision.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision'**
+  String get onDeviceModalityVision;
+
+  /// No description provided for @onDeviceModalityAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get onDeviceModalityAudio;
+
+  /// No description provided for @onDeviceModalityEmbedding.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedding'**
+  String get onDeviceModalityEmbedding;
+
+  /// No description provided for @onDeviceMinParam.
+  ///
+  /// In en, this message translates to:
+  /// **'Min B'**
+  String get onDeviceMinParam;
+
+  /// No description provided for @onDeviceMaxParam.
+  ///
+  /// In en, this message translates to:
+  /// **'Max B'**
+  String get onDeviceMaxParam;
+
+  /// No description provided for @onDeviceIncludeUnknownSizes.
+  ///
+  /// In en, this message translates to:
+  /// **'Include unknown sizes'**
+  String get onDeviceIncludeUnknownSizes;
+
+  /// No description provided for @onDeviceSplitModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Split models'**
+  String get onDeviceSplitModels;
+
+  /// No description provided for @onDeviceImportFromUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from URL'**
+  String get onDeviceImportFromUrl;
+
+  /// No description provided for @onDeviceAddModelFromUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Add model from URL'**
+  String get onDeviceAddModelFromUrl;
+
+  /// No description provided for @onDeviceHuggingFaceUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Hugging Face URL'**
+  String get onDeviceHuggingFaceUrl;
+
+  /// No description provided for @onDeviceUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get onDeviceUpdateAvailable;
+
+  /// No description provided for @onDeviceCheckForUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get onDeviceCheckForUpdates;
+
+  /// No description provided for @onDeviceAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get onDeviceAdded;
+
+  /// No description provided for @onDeviceSplitModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Split model'**
+  String get onDeviceSplitModel;
+
+  /// No description provided for @onDevicePickGguf.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick GGUF'**
+  String get onDevicePickGguf;
+
+  /// No description provided for @onDevicePickLitert.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick LiteRT'**
+  String get onDevicePickLitert;
+
+  /// No description provided for @onDeviceUnknownSizeHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} models with unknown size hidden'**
+  String onDeviceUnknownSizeHidden(int count);
 }
 
 class _AppLocalizationsDelegate

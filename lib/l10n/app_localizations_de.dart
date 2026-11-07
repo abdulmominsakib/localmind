@@ -3584,4 +3584,84 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get localApiCopied => 'Copied to clipboard';
+
+  @override
+  String get onDeviceSearchModels => 'Search models';
+
+  @override
+  String get onDeviceSearching => 'Searching...';
+
+  @override
+  String get onDeviceSearch => 'Search';
+
+  @override
+  String get onDeviceModelTypeBoth => 'Both';
+
+  @override
+  String get onDeviceModelTypeLitert => 'LiteRT';
+
+  @override
+  String get onDeviceModelTypeGguf => 'Llama.cpp (GGUF)';
+
+  @override
+  String get onDeviceModelTypeNone => 'None';
+
+  @override
+  String get onDeviceModalityAll => 'All';
+
+  @override
+  String get onDeviceModalityText => 'Text';
+
+  @override
+  String get onDeviceModalityVision => 'Vision';
+
+  @override
+  String get onDeviceModalityAudio => 'Audio';
+
+  @override
+  String get onDeviceModalityEmbedding => 'Embedding';
+
+  @override
+  String get onDeviceMinParam => 'Min B';
+
+  @override
+  String get onDeviceMaxParam => 'Max B';
+
+  @override
+  String get onDeviceIncludeUnknownSizes => 'Include unknown sizes';
+
+  @override
+  String get onDeviceSplitModels => 'Split models';
+
+  @override
+  String get onDeviceImportFromUrl => 'Import from URL';
+
+  @override
+  String get onDeviceAddModelFromUrl => 'Add model from URL';
+
+  @override
+  String get onDeviceHuggingFaceUrl => 'Hugging Face URL';
+
+  @override
+  String get onDeviceUpdateAvailable => 'Update available';
+
+  @override
+  String get onDeviceCheckForUpdates => 'Check for updates';
+
+  @override
+  String get onDeviceAdded => 'Added';
+
+  @override
+  String get onDeviceSplitModel => 'Split model';
+
+  @override
+  String get onDevicePickGguf => 'Pick GGUF';
+
+  @override
+  String get onDevicePickLitert => 'Pick LiteRT';
+
+  @override
+  String onDeviceUnknownSizeHidden(int count) {
+    return '$count models with unknown size hidden';
+  }
 }

@@ -3641,5 +3641,37 @@
       }
     }
   },
-  "localApiCopied": "Copied to clipboard"
+  "localApiCopied": "Copied to clipboard",
+
+  "onDeviceSearchModels": "Search models",
+  "onDeviceSearching": "Searching...",
+  "onDeviceSearch": "Search",
+  "onDeviceModelTypeBoth": "Both",
+  "onDeviceModelTypeLitert": "LiteRT",
+  "onDeviceModelTypeGguf": "Llama.cpp (GGUF)",
+  "onDeviceModelTypeNone": "None",
+  "onDeviceModalityAll": "All",
+  "onDeviceModalityText": "Text",
+  "onDeviceModalityVision": "Vision",
+  "onDeviceModalityAudio": "Audio",
+  "onDeviceModalityEmbedding": "Embedding",
+  "onDeviceMinParam": "Min B",
+  "onDeviceMaxParam": "Max B",
+  "onDeviceIncludeUnknownSizes": "Include unknown sizes",
+  "onDeviceSplitModels": "Split models",
+  "onDeviceImportFromUrl": "Import from URL",
+  "onDeviceAddModelFromUrl": "Add model from URL",
+  "onDeviceHuggingFaceUrl": "Hugging Face URL",
+  "onDeviceUpdateAvailable": "Update available",
+  "onDeviceCheckForUpdates": "Check for updates",
+  "onDeviceAdded": "Added",
+  "onDeviceSplitModel": "Split model",
+  "onDevicePickGguf": "Pick GGUF",
+  "onDevicePickLitert": "Pick LiteRT",
+  "onDeviceUnknownSizeHidden": "{count} models with unknown size hidden",
+  "@onDeviceUnknownSizeHidden": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  }
 }
