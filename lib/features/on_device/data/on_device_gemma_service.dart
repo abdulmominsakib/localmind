@@ -233,7 +233,14 @@ class _GemmaInferenceSession implements OnDeviceInferenceSession {
 }
 
 class OnDeviceGemmaService implements OnDeviceInferenceService {
-  OnDeviceGemmaService({this.onNativeWorkChanged, this.coordinator});
+  OnDeviceGemmaService({
+    this.onNativeWorkChanged,
+    this.modelResolver,
+    this.coordinator,
+  });
+
+  /// Resolves an [OnDeviceModel] by id, including imported models.
+  final OnDeviceModel Function(String modelId)? modelResolver;
 
   final InferenceCoordinator? coordinator;
 
@@ -252,6 +259,15 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
 
   InferenceModel? _model;
   String? _currentModelId;
+
+  OnDeviceModel _resolveModel(String modelId) {
+    final resolved = modelResolver?.call(modelId);
+    if (resolved != null) return resolved;
+    return OnDeviceModel.allCuratedModels.firstWhere(
+      (model) => model.id == modelId,
+      orElse: () => throw StateError('Model not found: $modelId'),
+    );
+  }
   PreferredBackend? _currentBackend;
   int _currentMaxTokens = defaultMaxTokens;
   bool _isDisposed = false;
@@ -263,10 +279,12 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   bool get currentModelSupportsVision {
     final id = _currentModelId;
     if (id == null) return false;
-    final model = OnDeviceModel.allCuratedModels
-        .where((m) => m.id == id || m.fileName == id)
-        .firstOrNull;
-    return model?.supportsVision ?? false;
+    try {
+      final model = _resolveModel(id);
+      return model.supportsVision;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
@@ -286,16 +304,21 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   /// spec so that [createChat] can lazy-load the model on first use after a
   /// restart. Sets both [_currentModelId] and [_currentBackend] so the
   /// lazy-load path in [createChat] can actually trigger.
-  void syncFromRestoredSpec(PreferredBackend backend, {int? maxTokens}) {
+  void syncFromRestoredSpec(
+    PreferredBackend backend, {
+    int? maxTokens,
+    OnDeviceModel? model,
+  }) {
     final specName = restoredActiveModelName;
     if (specName == null) return;
 
-    final model = OnDeviceModel.allCuratedModels.firstWhere(
-      (m) => m.fileName == specName || m.id == specName,
-      orElse: () => throw StateError('No curated model for $specName'),
-    );
+    final resolvedModel = model ??
+        OnDeviceModel.allCuratedModels.firstWhere(
+          (m) => m.fileName == specName || m.id == specName,
+          orElse: () => throw StateError('No curated model for $specName'),
+        );
 
-    _currentModelId = model.id;
+    _currentModelId = resolvedModel.id;
     _currentBackend = backend;
     if (maxTokens != null) _currentMaxTokens = maxTokens;
   }
@@ -340,10 +363,12 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   }
 
   Future<bool> isModelInstalled(String modelId) async {
-    final model = OnDeviceModel.allCuratedModels.firstWhere(
-      (m) => m.id == modelId || m.fileName == modelId,
-      orElse: () => throw Exception('Model not found: $modelId'),
-    );
+    final OnDeviceModel model;
+    try {
+      model = _resolveModel(modelId);
+    } catch (_) {
+      return false;
+    }
     if (model.isBuiltIn) {
       try {
         final availability = await BuiltInAi.availability();
@@ -369,10 +394,12 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   }
 
   Future<void> deleteModel(String modelId) async {
-    final model = OnDeviceModel.allCuratedModels.firstWhere(
-      (m) => m.id == modelId || m.fileName == modelId,
-      orElse: () => throw Exception('Model not found: $modelId'),
-    );
+    final OnDeviceModel model;
+    try {
+      model = _resolveModel(modelId);
+    } catch (_) {
+      return;
+    }
     await FlutterGemma.uninstallModel(model.fileName);
 
     if (model.isBuiltIn) {
@@ -428,10 +455,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
       'maxTokens=$effectiveMaxTokens',
     );
 
-    final model = OnDeviceModel.allCuratedModels.firstWhere(
-      (m) => m.id == modelId || m.fileName == modelId,
-      orElse: () => throw Exception('Model not found: $modelId'),
-    );
+    final model = _resolveModel(modelId);
 
     final InferenceModelSpec spec;
     if (model.isBuiltIn) {
@@ -450,9 +474,20 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
         fileType: ModelFileType.builtIn,
       );
     } else {
+      final ModelSource source;
+      if (model.localPath != null &&
+          model.localPath!.isNotEmpty &&
+          File(model.localPath!).existsSync()) {
+        source = ModelSource.file(model.localPath!);
+      } else if (model.huggingFaceUrl.trim().isNotEmpty) {
+        source = ModelSource.network(model.huggingFaceUrl);
+      } else {
+        throw StateError('LiteRT model has no loadable source: $modelId');
+      }
+
       spec = InferenceModelSpec(
         name: model.fileName,
-        modelSource: ModelSource.network(model.huggingFaceUrl),
+        modelSource: source,
         modelType: model.flutterGemmaModelType,
         fileType: ModelFileType.litertlm,
       );

@@ -3,6 +3,7 @@ import '../features/on_device/providers/external_inference_provider.dart';
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -112,6 +113,55 @@ class _BootstrapHostState extends State<BootstrapHost> {
         settingsProvider.select((s) => s.huggingFaceToken),
       );
       await OnDeviceGemmaService.initialize(huggingFaceToken: hfToken);
+
+      // Configure app-owned LiteRT downloads (background_downloader).
+      final liteRtDownloader = FileDownloader();
+      await liteRtDownloader.configure(
+        androidConfig: [
+          (Config.runInForeground, Config.always),
+          (Config.useCacheDir, Config.never),
+        ],
+      );
+      liteRtDownloader.configureNotificationForGroup(
+        'localmind_litert_downloads',
+        running: const TaskNotification('Downloading model', '{filename}'),
+        paused: const TaskNotification('Download paused', '{filename}'),
+        complete: const TaskNotification('Download complete', '{filename}'),
+        error: const TaskNotification('Download failed', '{filename}'),
+        canceled: const TaskNotification('Download canceled', '{filename}'),
+        progressBar: true,
+      );
+      // Register a group status callback so completed/paused/failed/canceled
+      // tasks that finish while the Dart isolate is alive are observed.
+      liteRtDownloader.registerCallbacks(
+        group: 'localmind_litert_downloads',
+        taskStatusCallback: (update) {
+          // Reconciliation is performed lazily at launch (see
+          // ImportedLitertModelRepository.reconcileCompletedDownloads). This
+          // callback keeps the package from dropping updates silently.
+          if (update.status == TaskStatus.complete) {
+            unawaited(
+              container
+                  .read(importedLitertModelRepositoryProvider)
+                  .reconcileCompletedDownloads(),
+            );
+          }
+        },
+      );
+      await liteRtDownloader.trackTasksInGroup('localmind_litert_downloads');
+      await liteRtDownloader.resumeFromBackground();
+
+      // Reschedule tasks that were killed before completion, per package docs.
+      Timer(const Duration(seconds: 5), () {
+        unawaited(liteRtDownloader.rescheduleKilledTasks());
+      });
+
+      // Reconcile any completed tasks that finished while the app was dead.
+      unawaited(
+        container
+            .read(importedLitertModelRepositoryProvider)
+            .reconcileCompletedDownloads(),
+      );
 
       // Migrate models from old custom download location in background to prevent cold start ANR
       OnDeviceGemmaService.migrateOldModels().catchError((e) {

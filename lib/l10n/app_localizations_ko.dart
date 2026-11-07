@@ -3300,7 +3300,103 @@ class AppLocalizationsKo extends AppLocalizations {
   String get sidebar_section_app => '앱';
 
   @override
-  String get model_still_stopping => '모델을 중지하는 중입니다. 잠시 기다린 후 다시 시도해 주세요.';
+  String get add_models_button => 'Add models';
+
+  @override
+  String get curated_models_title => 'Curated Models';
+
+  @override
+  String curated_models_count(Object count) {
+    return '$count models';
+  }
+
+  @override
+  String get your_models_title => 'Your models';
+
+  @override
+  String your_models_count(Object count) {
+    return '$count added';
+  }
+
+  @override
+  String get remove_model_from_list => 'Remove from list';
+
+  @override
+  String get delete_model_file_first => 'Delete model file first';
+
+  @override
+  String get add_model_title => 'Add model';
+
+  @override
+  String get add_model_gguf_tab => 'GGUF';
+
+  @override
+  String get add_model_litert_tab => 'LiteRT';
+
+  @override
+  String get add_model_gguf_url_label => 'Hugging Face GGUF URL';
+
+  @override
+  String get add_model_litert_url_label => 'Hugging Face LiteRT URL';
+
+  @override
+  String get add_model_add_from_url => 'Add from URL';
+
+  @override
+  String get add_model_pick_local_file => 'Pick local file';
+
+  @override
+  String get add_model_search_gguf => 'Search GGUF models';
+
+  @override
+  String get add_model_search_litert => 'Search LiteRT models';
+
+  @override
+  String get add_model_searching => 'Searching...';
+
+  @override
+  String get add_model_search => 'Search';
+
+  @override
+  String get add_model_loading_files => 'Loading files...';
+
+  @override
+  String get add_model_cancel => 'Cancel';
+
+  @override
+  String add_model_files_in(Object repo) {
+    return 'Files in $repo';
+  }
+
+  @override
+  String get add_model_no_gguf_files => 'No GGUF files found.';
+
+  @override
+  String get add_model_no_litert_files => 'No LiteRT files found.';
+
+  @override
+  String get add_model_added => 'Added';
+
+  @override
+  String get add_model_add => 'Add';
+
+  @override
+  String get add_model_gguf_added => 'GGUF model added';
+
+  @override
+  String get add_model_litert_added => 'LiteRT model added';
+
+  @override
+  String add_model_file_added(Object name) {
+    return '$name added';
+  }
+
+  @override
+  String get add_model_already_added => 'Model already added';
+
+  @override
+  String get model_still_stopping =>
+      'The model is still stopping. Please wait before trying again.';
 
   @override
   String get localApiTitle => 'Local API';

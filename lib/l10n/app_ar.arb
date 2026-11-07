@@ -990,6 +990,5 @@
   "settings_group_composer": "مربع الكتابة",
   "sidebar_section_chats": "المحادثات",
   "sidebar_section_models": "النماذج",
-  "sidebar_section_app": "التطبيق",
-  "model_still_stopping": "لا يزال النموذج يتوقف. يُرجى الانتظار قبل المحاولة مرة أخرى."
+  "sidebar_section_app": "التطبيق"
 }

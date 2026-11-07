@@ -983,6 +983,5 @@
   "settings_group_composer": "Yazma alanı",
   "sidebar_section_chats": "Sohbetler",
   "sidebar_section_models": "Modeller",
-  "sidebar_section_app": "Uygulama",
-  "model_still_stopping": "Model hâlâ durduruluyor. Tekrar denemeden önce lütfen bekleyin."
+  "sidebar_section_app": "Uygulama"
 }

@@ -986,6 +986,5 @@
   "settings_group_composer": "入力欄",
   "sidebar_section_chats": "チャット",
   "sidebar_section_models": "モデル",
-  "sidebar_section_app": "アプリ",
-  "model_still_stopping": "モデルを停止しています。しばらく待ってからもう一度お試しください。"
+  "sidebar_section_app": "アプリ"
 }

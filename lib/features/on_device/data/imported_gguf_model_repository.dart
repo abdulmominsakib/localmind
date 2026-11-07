@@ -7,34 +7,86 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/utils/async_mutex.dart';
+import '../utils/model_quantization_parser.dart';
+import '../../../core/utils/hugging_face_url.dart';
+
 import 'models/on_device_model.dart';
+import '../utils/model_param_size_parser.dart';
+import 'huggingface_model_search_service.dart';
 
 class ImportedGgufModelMetadata {
   static const _unset = Object();
 
   final String id;
   final String name;
-  final String filePath;
+  final String? filePath;
   final String? projectorPath;
   final int fileSizeBytes;
   final DateTime importedAt;
   final OnDeviceImportedSource source;
   final String? sourceUrl;
   final bool? reasoningEnabled;
+  // Hugging Face metadata (Phase 4)
+  final String? repoId;
+  final String? rfilename;
+  final String? revision;
+  final String? fileOid;
+  final DateTime? lastModified;
+  final DateTime? lastCheckedAt;
+  final String? pipelineTag;
+  final String? libraryName;
+  final String? license;
+  final String? baseModel;
+  final String? architecture;
+  final int? contextLength;
+  final String? quantization;
+  final List<String> languages;
+  final List<String> modalities;
+  final String? parameterLabelOverride;
+  final bool? updateAvailable;
+  final String? latestRevision;
 
   const ImportedGgufModelMetadata({
     required this.id,
     required this.name,
-    required this.filePath,
+    this.filePath,
     this.projectorPath,
     required this.fileSizeBytes,
     required this.importedAt,
     required this.source,
     this.sourceUrl,
     this.reasoningEnabled,
+    this.repoId,
+    this.rfilename,
+    this.revision,
+    this.fileOid,
+    this.lastModified,
+    this.lastCheckedAt,
+    this.pipelineTag,
+    this.libraryName,
+    this.license,
+    this.baseModel,
+    this.architecture,
+    this.contextLength,
+    this.quantization,
+    this.languages = const <String>[],
+    this.modalities = const <String>[],
+    this.parameterLabelOverride,
+    this.updateAvailable,
+    this.latestRevision,
   });
 
-  String get fileName => p.basename(filePath);
+  String get fileName {
+    if (filePath != null && filePath!.isNotEmpty) {
+      return p.basename(filePath!);
+    }
+    if (sourceUrl != null && sourceUrl!.isNotEmpty) {
+      return Uri.parse(sourceUrl!).pathSegments.last;
+    }
+    return '$id.gguf';
+  }
+
   String? get projectorFileName =>
       projectorPath != null && projectorPath!.isNotEmpty
       ? p.basename(projectorPath!)
@@ -57,26 +109,78 @@ class ImportedGgufModelMetadata {
   ImportedGgufModelMetadata copyWith({
     String? id,
     String? name,
-    String? filePath,
+    Object? filePath = _unset,
     Object? projectorPath = _unset,
     int? fileSizeBytes,
     DateTime? importedAt,
     OnDeviceImportedSource? source,
-    String? sourceUrl,
+    Object? sourceUrl = _unset,
     bool? reasoningEnabled,
+    Object? repoId = _unset,
+    Object? rfilename = _unset,
+    Object? revision = _unset,
+    Object? fileOid = _unset,
+    Object? lastModified = _unset,
+    Object? lastCheckedAt = _unset,
+    Object? pipelineTag = _unset,
+    Object? libraryName = _unset,
+    Object? license = _unset,
+    Object? baseModel = _unset,
+    Object? architecture = _unset,
+    Object? contextLength = _unset,
+    Object? quantization = _unset,
+    List<String>? languages,
+    List<String>? modalities,
+    Object? parameterLabelOverride = _unset,
+    Object? updateAvailable = _unset,
+    Object? latestRevision = _unset,
   }) {
     return ImportedGgufModelMetadata(
       id: id ?? this.id,
       name: name ?? this.name,
-      filePath: filePath ?? this.filePath,
+      filePath: identical(filePath, _unset)
+          ? this.filePath
+          : filePath as String?,
       projectorPath: identical(projectorPath, _unset)
           ? this.projectorPath
           : projectorPath as String?,
       fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
       importedAt: importedAt ?? this.importedAt,
       source: source ?? this.source,
-      sourceUrl: sourceUrl ?? this.sourceUrl,
+      sourceUrl: identical(sourceUrl, _unset)
+          ? this.sourceUrl
+          : sourceUrl as String?,
       reasoningEnabled: reasoningEnabled ?? this.reasoningEnabled,
+      repoId: identical(repoId, _unset) ? this.repoId : repoId as String?,
+      rfilename: identical(rfilename, _unset) ? this.rfilename : rfilename as String?,
+      revision: identical(revision, _unset) ? this.revision : revision as String?,
+      fileOid: identical(fileOid, _unset) ? this.fileOid : fileOid as String?,
+      lastModified: identical(lastModified, _unset)
+          ? this.lastModified
+          : lastModified as DateTime?,
+      lastCheckedAt: identical(lastCheckedAt, _unset)
+          ? this.lastCheckedAt
+          : lastCheckedAt as DateTime?,
+      pipelineTag: identical(pipelineTag, _unset) ? this.pipelineTag : pipelineTag as String?,
+      libraryName: identical(libraryName, _unset) ? this.libraryName : libraryName as String?,
+      license: identical(license, _unset) ? this.license : license as String?,
+      baseModel: identical(baseModel, _unset) ? this.baseModel : baseModel as String?,
+      architecture: identical(architecture, _unset) ? this.architecture : architecture as String?,
+      contextLength: identical(contextLength, _unset)
+          ? this.contextLength
+          : contextLength as int?,
+      quantization: identical(quantization, _unset) ? this.quantization : quantization as String?,
+      languages: languages ?? this.languages,
+      modalities: modalities ?? this.modalities,
+      parameterLabelOverride: identical(parameterLabelOverride, _unset)
+          ? this.parameterLabelOverride
+          : parameterLabelOverride as String?,
+      updateAvailable: identical(updateAvailable, _unset)
+          ? this.updateAvailable
+          : updateAvailable as bool?,
+      latestRevision: identical(latestRevision, _unset)
+          ? this.latestRevision
+          : latestRevision as String?,
     );
   }
 
@@ -84,19 +188,22 @@ class ImportedGgufModelMetadata {
     final isHuggingFace = source == OnDeviceImportedSource.huggingFace;
     final hasProjector =
         projectorPath != null && projectorPath!.trim().isNotEmpty;
+    final langs = languages.isNotEmpty
+        ? languages.join(', ')
+        : 'Local';
     return OnDeviceModel(
       id: id,
       name: name,
       huggingFaceUrl: isHuggingFace ? (sourceUrl ?? '') : '',
       fileSizeBytes: fileSizeBytes,
-      license: sourceLabel,
+      license: license ?? sourceLabel,
       description: isHuggingFace
           ? 'Imported GGUF model from Hugging Face for local llama.cpp inference.'
           : 'Imported GGUF model from a local file for local llama.cpp inference.',
       minRamMb: estimatedMinRamMb,
-      parameterLabel: 'GGUF',
+      parameterLabel: parameterLabelOverride ?? 'GGUF',
       bestFor: 'Local GGUF inference',
-      languagesLabel: 'Local',
+      languagesLabel: langs,
       backendNote: 'llama.cpp',
       isCpuOnly: true,
       runtime: OnDeviceModelRuntime.llamaCpp,
@@ -104,6 +211,10 @@ class ImportedGgufModelMetadata {
       localPath: filePath,
       projectorPath: projectorPath,
       supportsVision: hasProjector,
+      modality: hasProjector ? 'vision' : 'text',
+      quantization: quantization ?? parseQuantization(name),
+      repoId: repoId,
+      updateAvailable: updateAvailable ?? false,
       importedAt: importedAt,
       isImported: true,
       importedSource: source,
@@ -122,20 +233,66 @@ class ImportedGgufModelMetadata {
       'source': source.name,
       'sourceUrl': sourceUrl,
       'reasoningEnabled': reasoningEnabled,
+      'repoId': repoId,
+      'rfilename': rfilename,
+      'revision': revision,
+      'fileOid': fileOid,
+      'lastModified': lastModified?.toIso8601String(),
+      'lastCheckedAt': lastCheckedAt?.toIso8601String(),
+      'pipelineTag': pipelineTag,
+      'libraryName': libraryName,
+      'license': license,
+      'baseModel': baseModel,
+      'architecture': architecture,
+      'contextLength': contextLength,
+      'quantization': quantization,
+      'languages': languages,
+      'modalities': modalities,
+      'parameterLabelOverride': parameterLabelOverride,
+      'updateAvailable': updateAvailable,
+      'latestRevision': latestRevision,
     };
   }
 
   factory ImportedGgufModelMetadata.fromJson(Map<String, dynamic> json) {
+    final langs = json['languages'];
+    final mods = json['modalities'];
     return ImportedGgufModelMetadata(
       id: json['id'] as String,
       name: json['name'] as String,
-      filePath: json['filePath'] as String,
+      filePath: json['filePath'] as String?,
       projectorPath: json['projectorPath'] as String?,
       fileSizeBytes: (json['fileSizeBytes'] as num).toInt(),
       importedAt: DateTime.parse(json['importedAt'] as String),
       source: _sourceFromJson(json['source']),
       sourceUrl: json['sourceUrl'] as String?,
       reasoningEnabled: json['reasoningEnabled'] as bool?,
+      repoId: json['repoId'] as String?,
+      rfilename: json['rfilename'] as String?,
+      revision: json['revision'] as String?,
+      fileOid: json['fileOid'] as String?,
+      lastModified: json['lastModified'] != null
+          ? DateTime.tryParse(json['lastModified'] as String)
+          : null,
+      lastCheckedAt: json['lastCheckedAt'] != null
+          ? DateTime.tryParse(json['lastCheckedAt'] as String)
+          : null,
+      pipelineTag: json['pipelineTag'] as String?,
+      libraryName: json['libraryName'] as String?,
+      license: json['license'] as String?,
+      baseModel: json['baseModel'] as String?,
+      architecture: json['architecture'] as String?,
+      contextLength: (json['contextLength'] as num?)?.toInt(),
+      quantization: json['quantization'] as String?,
+      languages: langs is List
+          ? langs.map((e) => e.toString()).toList()
+          : const <String>[],
+      modalities: mods is List
+          ? mods.map((e) => e.toString()).toList()
+          : const <String>[],
+      parameterLabelOverride: json['parameterLabelOverride'] as String?,
+      updateAvailable: json['updateAvailable'] as bool?,
+      latestRevision: json['latestRevision'] as String?,
     );
   }
 
@@ -158,6 +315,11 @@ class ImportedGgufModelRepository {
   final Dio _dio;
   final Random _random;
   final Future<Directory> Function()? modelsDirectoryProvider;
+  final AsyncMutex _mutex = AsyncMutex();
+  final Map<String, AsyncMutex> _downloadMutexes = <String, AsyncMutex>{};
+  final Map<String, _GgufDownloadAttempt> _ggufAttempts =
+      <String, _GgufDownloadAttempt>{};
+  int _ggufAttemptCounter = 0;
 
   ImportedGgufModelRepository(
     this._prefs,
@@ -179,15 +341,17 @@ class ImportedGgufModelRepository {
         .toList();
   }
 
-  Future<void> updateReasoning(String modelId, bool? enabled) async {
-    final models = load();
-    final index = models.indexWhere((model) => model.id == modelId);
-    if (index < 0) throw StateError('Imported model no longer exists');
-    models[index] = ImportedGgufModelMetadata.fromJson({
-      ...models[index].toJson(),
-      'reasoningEnabled': enabled,
+  Future<void> updateReasoning(String modelId, bool? enabled) {
+    return _mutex.run(() async {
+      final models = load();
+      final index = models.indexWhere((model) => model.id == modelId);
+      if (index < 0) throw StateError('Imported model no longer exists');
+      models[index] = ImportedGgufModelMetadata.fromJson({
+        ...models[index].toJson(),
+        'reasoningEnabled': enabled,
+      });
+      await _saveAllUnlocked(models);
     });
-    await saveAll(models);
   }
 
   static bool isProjectorFileName(String name) {
@@ -197,131 +361,169 @@ class ImportedGgufModelRepository {
 
   Future<List<ImportedGgufModelMetadata>> loadExisting() async {
     final models = load();
-    final existing = <ImportedGgufModelMetadata>[];
-    var hasChanges = false;
-
+    // Perform real file I/O outside the mutex so it does not break fake-async
+    // widget tests and does not hold the lock across disk access.
+    final fileExists = <String, bool>{};
+    final projectorExists = <String, bool>{};
+    final toDeleteProjectors = <String>[];
     for (final model in models) {
-      if (await File(model.filePath).exists()) {
-        if (model.projectorPath != null &&
-            !await File(model.projectorPath!).exists()) {
-          existing.add(model.copyWith(projectorPath: null));
-          hasChanges = true;
-        } else {
-          existing.add(model);
-        }
-      } else {
-        hasChanges = true;
-        if (model.projectorPath != null) {
-          final proj = File(model.projectorPath!);
-          if (await proj.exists()) {
-            await proj.delete();
-          }
+      if (model.filePath != null && model.filePath!.isNotEmpty) {
+        fileExists[model.id] = await File(model.filePath!).exists();
+      }
+      if (model.projectorPath != null && model.projectorPath!.isNotEmpty) {
+        final exists = await File(model.projectorPath!).exists();
+        projectorExists[model.id] = exists;
+        if (!exists) {
+          toDeleteProjectors.add(model.projectorPath!);
         }
       }
     }
-
-    if (hasChanges || existing.length != models.length) {
-      await saveAll(existing);
+    // Delete projectors when the model file is missing and projector exists.
+    for (final model in models) {
+      if (model.filePath != null &&
+          model.filePath!.isNotEmpty &&
+          fileExists[model.id] != true &&
+          model.projectorPath != null &&
+          projectorExists[model.id] == true) {
+        try {
+          await File(model.projectorPath!).delete();
+        } catch (_) {}
+      }
     }
 
-    return existing;
+    return _mutex.run(() async {
+      final existing = <ImportedGgufModelMetadata>[];
+      var hasChanges = false;
+
+      for (final model in models) {
+        if (model.filePath == null || model.filePath!.isEmpty) {
+          existing.add(model);
+          continue;
+        }
+        if (fileExists[model.id] == true) {
+          if (model.projectorPath != null &&
+              projectorExists[model.id] != true) {
+            existing.add(model.copyWith(projectorPath: null));
+            hasChanges = true;
+          } else {
+            existing.add(model);
+          }
+        } else {
+          hasChanges = true;
+        }
+      }
+
+      if (hasChanges || existing.length != models.length) {
+        await _saveAllUnlocked(existing);
+      }
+
+      return existing;
+    });
   }
 
   Future<ImportedGgufModelMetadata> importFromPath(
     String sourcePath, {
     String? projectorPath,
-  }) async {
-    final source = File(sourcePath);
-    if (!sourcePath.toLowerCase().endsWith('.gguf')) {
-      throw const FormatException(
-        'Only GGUF models are supported for this import.',
-      );
-    }
-    if (!await source.exists()) {
-      throw FileSystemException(
-        'Selected model file does not exist',
-        sourcePath,
-      );
-    }
+  }) {
+    return _mutex.run(() async {
+      final source = File(sourcePath);
+      if (!sourcePath.toLowerCase().endsWith('.gguf')) {
+        throw const FormatException(
+          'Only GGUF models are supported for this import.',
+        );
+      }
+      if (!await source.exists()) {
+        throw FileSystemException(
+          'Selected model file does not exist',
+          sourcePath,
+        );
+      }
 
-    final originalName = p.basename(sourcePath);
-    if (isProjectorFileName(originalName) && projectorPath == null) {
-      throw const FormatException(
-        'The selected file appears to be a multimodal vision projector (mmproj), '
-        'not a standalone model. Please select the main model file or attach this '
-        'projector to an existing model.',
-      );
-    }
+      final originalName = p.basename(sourcePath);
+      final displayName = _displayNameFromFileName(originalName);
+      final existing = load().where((model) => model.name == displayName);
+      if (existing.isNotEmpty) {
+        return existing.first;
+      }
 
-    String? resolvedProjectorPath = projectorPath;
-    if (resolvedProjectorPath == null) {
+      if (isProjectorFileName(originalName) && projectorPath == null) {
+        throw const FormatException(
+          'The selected file appears to be a multimodal vision projector (mmproj), '
+          'not a standalone model. Please select the main model file or attach this '
+          'projector to an existing model.',
+        );
+      }
+
+      String? resolvedProjectorPath = projectorPath;
+      if (resolvedProjectorPath == null) {
+        try {
+          final parentDir = source.parent;
+          if (parentDir.existsSync()) {
+            final candidates = parentDir
+                .listSync()
+                .whereType<File>()
+                .where(
+                  (f) =>
+                      f.path.toLowerCase().endsWith('.gguf') &&
+                      isProjectorFileName(p.basename(f.path)),
+                )
+                .map((file) => file.path)
+                .toList();
+            resolvedProjectorPath = _uniqueProjectorForModel(
+              sourcePath,
+              candidates,
+              allowSingleFallback: true,
+            );
+          }
+        } catch (_) {}
+      }
+
+      final dir = await _modelsDirectory();
+      final id = _createId(originalName);
+      final fileName = '$id-${_sanitizeFileName(originalName)}';
+      final target = File(p.join(dir.path, fileName));
+      File? targetProjector;
+
       try {
-        final parentDir = source.parent;
-        if (parentDir.existsSync()) {
-          final candidates = parentDir
-              .listSync()
-              .whereType<File>()
-              .where(
-                (f) =>
-                    f.path.toLowerCase().endsWith('.gguf') &&
-                    isProjectorFileName(p.basename(f.path)),
-              )
-              .map((file) => file.path)
-              .toList();
-          resolvedProjectorPath = _uniqueProjectorForModel(
-            sourcePath,
-            candidates,
-            allowSingleFallback: true,
-          );
+        await source.copy(target.path);
+        await _validateGgufFile(target);
+
+        if (resolvedProjectorPath != null) {
+          final projSource = File(resolvedProjectorPath);
+          if (await projSource.exists() &&
+              projSource.path.toLowerCase().endsWith('.gguf')) {
+            final projOriginalName = p.basename(resolvedProjectorPath);
+            final projFileName =
+                '$id-mmproj-${_sanitizeFileName(projOriginalName)}';
+            targetProjector = File(p.join(dir.path, projFileName));
+            await projSource.copy(targetProjector.path);
+            await _validateGgufFile(targetProjector);
+          }
         }
-      } catch (_) {}
-    }
 
-    final dir = await _modelsDirectory();
-    final id = _createId(originalName);
-    final fileName = '$id-${_sanitizeFileName(originalName)}';
-    final target = File(p.join(dir.path, fileName));
-    File? targetProjector;
+        final metadata = ImportedGgufModelMetadata(
+          id: id,
+          name: _displayNameFromFileName(originalName),
+          filePath: target.path,
+          projectorPath: targetProjector?.path,
+          fileSizeBytes: await target.length(),
+          importedAt: DateTime.now(),
+          source: OnDeviceImportedSource.localFile,
+        );
 
-    try {
-      await source.copy(target.path);
-      await _validateGgufFile(target);
-
-      if (resolvedProjectorPath != null) {
-        final projSource = File(resolvedProjectorPath);
-        if (await projSource.exists() &&
-            projSource.path.toLowerCase().endsWith('.gguf')) {
-          final projOriginalName = p.basename(resolvedProjectorPath);
-          final projFileName =
-              '$id-mmproj-${_sanitizeFileName(projOriginalName)}';
-          targetProjector = File(p.join(dir.path, projFileName));
-          await projSource.copy(targetProjector.path);
-          await _validateGgufFile(targetProjector);
+        final current = load();
+        await _saveAllUnlocked([...current, metadata]);
+        return metadata;
+      } catch (_) {
+        if (await target.exists()) {
+          await target.delete();
         }
+        if (targetProjector != null && await targetProjector.exists()) {
+          await targetProjector.delete();
+        }
+        rethrow;
       }
-
-      final metadata = ImportedGgufModelMetadata(
-        id: id,
-        name: _displayNameFromFileName(originalName),
-        filePath: target.path,
-        projectorPath: targetProjector?.path,
-        fileSizeBytes: await target.length(),
-        importedAt: DateTime.now(),
-        source: OnDeviceImportedSource.localFile,
-      );
-
-      final current = load();
-      await saveAll([...current, metadata]);
-      return metadata;
-    } catch (_) {
-      if (await target.exists()) {
-        await target.delete();
-      }
-      if (targetProjector != null && await targetProjector.exists()) {
-        await targetProjector.delete();
-      }
-      rethrow;
-    }
+    });
   }
 
   Future<List<ImportedGgufModelMetadata>> importFromPaths(
@@ -390,95 +592,99 @@ class ImportedGgufModelRepository {
   Future<ImportedGgufModelMetadata> attachProjector(
     String modelId,
     String projectorSourcePath,
-  ) async {
-    final projSource = File(projectorSourcePath);
-    if (!projectorSourcePath.toLowerCase().endsWith('.gguf')) {
-      throw const FormatException('Only GGUF projector files are supported.');
-    }
-    if (!await projSource.exists()) {
-      throw FileSystemException(
-        'Selected projector file does not exist',
-        projectorSourcePath,
-      );
-    }
+  ) {
+    return _mutex.run(() async {
+      final projSource = File(projectorSourcePath);
+      if (!projectorSourcePath.toLowerCase().endsWith('.gguf')) {
+        throw const FormatException('Only GGUF projector files are supported.');
+      }
+      if (!await projSource.exists()) {
+        throw FileSystemException(
+          'Selected projector file does not exist',
+          projectorSourcePath,
+        );
+      }
 
-    final models = load();
-    final index = models.indexWhere((m) => m.id == modelId);
-    if (index < 0) {
-      throw StateError('Imported model no longer exists');
-    }
+      final models = load();
+      final index = models.indexWhere((m) => m.id == modelId);
+      if (index < 0) {
+        throw StateError('Imported model no longer exists');
+      }
 
-    final dir = await _modelsDirectory();
-    final projOriginalName = p.basename(projectorSourcePath);
-    final projFileName =
-        '$modelId-mmproj-${_createId(projOriginalName)}-'
-        '${_sanitizeFileName(projOriginalName)}';
-    final targetProjector = File(p.join(dir.path, projFileName));
-    final stagedProjector = File('${targetProjector.path}.part');
-    var metadataSaved = false;
+      final dir = await _modelsDirectory();
+      final projOriginalName = p.basename(projectorSourcePath);
+      final projFileName =
+          '$modelId-mmproj-${_createId(projOriginalName)}-'
+          '${_sanitizeFileName(projOriginalName)}';
+      final targetProjector = File(p.join(dir.path, projFileName));
+      final stagedProjector = File('${targetProjector.path}.part');
+      var metadataSaved = false;
 
-    try {
-      await projSource.copy(stagedProjector.path);
-      await _validateGgufFile(stagedProjector);
-      await stagedProjector.rename(targetProjector.path);
+      try {
+        await projSource.copy(stagedProjector.path);
+        await _validateGgufFile(stagedProjector);
+        await stagedProjector.rename(targetProjector.path);
+
+        final oldProjPath = models[index].projectorPath;
+        final updated = models[index].copyWith(
+          projectorPath: targetProjector.path,
+        );
+        models[index] = updated;
+        await _saveAllUnlocked(models);
+        metadataSaved = true;
+
+        if (oldProjPath != null && oldProjPath != targetProjector.path) {
+          final oldProj = File(oldProjPath);
+          if (await oldProj.exists() && p.isWithin(dir.path, oldProj.path)) {
+            try {
+              await oldProj.delete();
+            } catch (_) {
+              // Metadata already points at the validated replacement. A stale
+              // file is safer than rolling back to a missing projector.
+            }
+          }
+        }
+        return updated;
+      } catch (_) {
+        if (!metadataSaved && await targetProjector.exists()) {
+          await targetProjector.delete();
+        }
+        rethrow;
+      } finally {
+        if (await stagedProjector.exists()) {
+          await stagedProjector.delete();
+        }
+      }
+    });
+  }
+
+  Future<ImportedGgufModelMetadata> removeProjector(String modelId) {
+    return _mutex.run(() async {
+      final models = load();
+      final index = models.indexWhere((m) => m.id == modelId);
+      if (index < 0) {
+        throw StateError('Imported model no longer exists');
+      }
 
       final oldProjPath = models[index].projectorPath;
-      final updated = models[index].copyWith(
-        projectorPath: targetProjector.path,
-      );
+      final updated = models[index].copyWith(projectorPath: null);
       models[index] = updated;
-      await saveAll(models);
-      metadataSaved = true;
+      await _saveAllUnlocked(models);
 
-      if (oldProjPath != null && oldProjPath != targetProjector.path) {
-        final oldProj = File(oldProjPath);
-        if (await oldProj.exists() && p.isWithin(dir.path, oldProj.path)) {
-          try {
+      if (oldProjPath != null) {
+        try {
+          final dir = await _modelsDirectory();
+          final oldProj = File(oldProjPath);
+          if (await oldProj.exists() && p.isWithin(dir.path, oldProj.path)) {
             await oldProj.delete();
-          } catch (_) {
-            // Metadata already points at the validated replacement. A stale
-            // file is safer than rolling back to a missing projector.
           }
+        } catch (_) {
+          // The model is already safely detached in metadata. A stale file can
+          // be cleaned up later without breaking the model entry.
         }
       }
       return updated;
-    } catch (_) {
-      if (!metadataSaved && await targetProjector.exists()) {
-        await targetProjector.delete();
-      }
-      rethrow;
-    } finally {
-      if (await stagedProjector.exists()) {
-        await stagedProjector.delete();
-      }
-    }
-  }
-
-  Future<ImportedGgufModelMetadata> removeProjector(String modelId) async {
-    final models = load();
-    final index = models.indexWhere((m) => m.id == modelId);
-    if (index < 0) {
-      throw StateError('Imported model no longer exists');
-    }
-
-    final oldProjPath = models[index].projectorPath;
-    final updated = models[index].copyWith(projectorPath: null);
-    models[index] = updated;
-    await saveAll(models);
-
-    if (oldProjPath != null) {
-      try {
-        final dir = await _modelsDirectory();
-        final oldProj = File(oldProjPath);
-        if (await oldProj.exists() && p.isWithin(dir.path, oldProj.path)) {
-          await oldProj.delete();
-        }
-      } catch (_) {
-        // The model is already safely detached in metadata. A stale file can
-        // be cleaned up later without breaking the model entry.
-      }
-    }
-    return updated;
+    });
   }
 
   Future<ImportedGgufModelMetadata> importFromHuggingFaceUrl(
@@ -487,162 +693,621 @@ class ImportedGgufModelRepository {
     String? token,
     void Function(int receivedBytes, int totalBytes)? onProgress,
     CancelToken? cancelToken,
-  }) async {
-    final normalizedUrl = _normalizeHuggingFaceGgufUrl(sourceUrl);
-    final originalName = _fileNameFromUri(normalizedUrl);
-    final dir = await _modelsDirectory();
-    final id = _createId(originalName);
-    final fileName = '$id-${_sanitizeFileName(originalName)}';
-    final targetPath = p.join(dir.path, fileName);
-    final tempPath = '$targetPath.part';
-    final tempFile = File(tempPath);
-    final targetFile = File(targetPath);
+  }) {
+    return _mutex.run(() async {
+      final normalizedUrl = _normalizeHuggingFaceGgufUrl(sourceUrl);
+      // Dedupe by sourceUrl or (repoId, rfilename).
+      final segs = normalizedUrl.pathSegments;
+      final repoId = segs.length >= 2 ? '${segs[0]}/${segs[1]}' : null;
+      final rfilename = segs.isNotEmpty ? segs.last : null;
+      final existing = load().where((m) {
+        if (m.sourceUrl == normalizedUrl.toString()) { return true; }
+        if (repoId != null && rfilename != null &&
+            m.repoId == repoId && m.rfilename == rfilename) { return true; }
+        return false;
+      }).firstOrNull;
+      if (existing != null) return existing;
 
-    if (await tempFile.exists()) {
-      await tempFile.delete();
-    }
+      final originalName = _fileNameFromUri(normalizedUrl);
+      final dir = await _modelsDirectory();
+      final id = _createId(originalName);
+      final fileName = '$id-${_sanitizeFileName(originalName)}';
+      final targetPath = p.join(dir.path, fileName);
+      final tempPath = '$targetPath.part';
+      final tempFile = File(tempPath);
+      final targetFile = File(targetPath);
 
-    File? targetProjectorFile;
-    var metadataSaved = false;
-
-    try {
-      await _dio.download(
-        normalizedUrl.toString(),
-        tempPath,
-        cancelToken: cancelToken,
-        onReceiveProgress: onProgress,
-        options: Options(
-          headers: {
-            if (token != null && token.isNotEmpty)
-              HttpHeaders.authorizationHeader: 'Bearer $token',
-          },
-          followRedirects: true,
-          receiveTimeout: const Duration(hours: 12),
-          sendTimeout: const Duration(minutes: 5),
-          validateStatus: (status) =>
-              status != null && status >= 200 && status < 400,
-        ),
-      );
-
-      if (!await tempFile.exists() || await tempFile.length() <= 0) {
-        throw const FileSystemException(
-          'The downloaded GGUF file was empty or missing.',
-        );
-      }
-
-      await _validateGgufFile(tempFile);
-      await tempFile.rename(targetPath);
-
-      if (projectorUrl != null && projectorUrl.trim().isNotEmpty) {
-        final normalizedProjUrl = _normalizeHuggingFaceGgufUrl(
-          projectorUrl.trim(),
-        );
-        final projOriginalName = _fileNameFromUri(normalizedProjUrl);
-        final projFileName =
-            '$id-mmproj-${_sanitizeFileName(projOriginalName)}';
-        final projTargetPath = p.join(dir.path, projFileName);
-        final projTempPath = '$projTargetPath.part';
-        final projTempFile = File(projTempPath);
-        targetProjectorFile = File(projTargetPath);
-
-        if (await projTempFile.exists()) {
-          await projTempFile.delete();
-        }
-
-        try {
-          await _dio.download(
-            normalizedProjUrl.toString(),
-            projTempPath,
-            cancelToken: cancelToken,
-            options: Options(
-              headers: {
-                if (token != null && token.isNotEmpty)
-                  HttpHeaders.authorizationHeader: 'Bearer $token',
-              },
-              followRedirects: true,
-              receiveTimeout: const Duration(hours: 12),
-              sendTimeout: const Duration(minutes: 5),
-              validateStatus: (status) =>
-                  status != null && status >= 200 && status < 400,
-            ),
-          );
-
-          if (!await projTempFile.exists() ||
-              await projTempFile.length() <= 0) {
-            throw const FileSystemException(
-              'The downloaded projector GGUF file was empty or missing.',
-            );
-          }
-
-          await _validateGgufFile(projTempFile);
-          await projTempFile.rename(projTargetPath);
-        } finally {
-          if (await projTempFile.exists()) {
-            await projTempFile.delete();
-          }
-        }
-      }
-
-      final metadata = ImportedGgufModelMetadata(
-        id: id,
-        name: _displayNameFromFileName(originalName),
-        filePath: targetFile.path,
-        projectorPath: targetProjectorFile?.path,
-        fileSizeBytes: await targetFile.length(),
-        importedAt: DateTime.now(),
-        source: OnDeviceImportedSource.huggingFace,
-        sourceUrl: normalizedUrl.toString(),
-      );
-
-      final current = load();
-      await saveAll([...current, metadata]);
-      metadataSaved = true;
-      return metadata;
-    } on DioException catch (e) {
-      if (CancelToken.isCancel(e)) {
-        throw const HttpException('GGUF import canceled.');
-      }
-      throw HttpException(_friendlyDioError(e));
-    } finally {
       if (await tempFile.exists()) {
         await tempFile.delete();
       }
-      if (!metadataSaved) {
-        if (await targetFile.exists()) {
-          await targetFile.delete();
+
+      File? targetProjectorFile;
+      var metadataSaved = false;
+
+      try {
+        await _dio.download(
+          normalizedUrl.toString(),
+          tempPath,
+          cancelToken: cancelToken,
+          onReceiveProgress: onProgress,
+          options: Options(
+            headers: {
+              if (token != null && token.isNotEmpty)
+                HttpHeaders.authorizationHeader: 'Bearer $token',
+            },
+            followRedirects: true,
+            receiveTimeout: const Duration(hours: 12),
+            sendTimeout: const Duration(minutes: 5),
+            validateStatus: (status) =>
+                status != null && status >= 200 && status < 400,
+          ),
+        );
+
+        if (!await tempFile.exists() || await tempFile.length() <= 0) {
+          throw const FileSystemException(
+            'The downloaded GGUF file was empty or missing.',
+          );
         }
-        if (targetProjectorFile != null && await targetProjectorFile.exists()) {
-          await targetProjectorFile.delete();
+
+        await _validateGgufFile(tempFile);
+        await tempFile.rename(targetPath);
+
+        if (projectorUrl != null && projectorUrl.trim().isNotEmpty) {
+          final normalizedProjUrl = _normalizeHuggingFaceGgufUrl(
+            projectorUrl.trim(),
+          );
+          final projOriginalName = _fileNameFromUri(normalizedProjUrl);
+          final projFileName =
+              '$id-mmproj-${_sanitizeFileName(projOriginalName)}';
+          final projTargetPath = p.join(dir.path, projFileName);
+          final projTempPath = '$projTargetPath.part';
+          final projTempFile = File(projTempPath);
+          targetProjectorFile = File(projTargetPath);
+
+          if (await projTempFile.exists()) {
+            await projTempFile.delete();
+          }
+
+          try {
+            await _dio.download(
+              normalizedProjUrl.toString(),
+              projTempPath,
+              cancelToken: cancelToken,
+              options: Options(
+                headers: {
+                  if (token != null && token.isNotEmpty)
+                    HttpHeaders.authorizationHeader: 'Bearer $token',
+                },
+                followRedirects: true,
+                receiveTimeout: const Duration(hours: 12),
+                sendTimeout: const Duration(minutes: 5),
+                validateStatus: (status) =>
+                    status != null && status >= 200 && status < 400,
+              ),
+            );
+
+            if (!await projTempFile.exists() ||
+                await projTempFile.length() <= 0) {
+              throw const FileSystemException(
+                'The downloaded projector GGUF file was empty or missing.',
+              );
+            }
+
+            await _validateGgufFile(projTempFile);
+            await projTempFile.rename(projTargetPath);
+          } finally {
+            if (await projTempFile.exists()) {
+              await projTempFile.delete();
+            }
+          }
+        }
+
+        final metadata0 = ImportedGgufModelMetadata(
+          id: id,
+          name: _displayNameFromFileName(originalName),
+          filePath: targetFile.path,
+          projectorPath: targetProjectorFile?.path,
+          fileSizeBytes: await targetFile.length(),
+          importedAt: DateTime.now(),
+          source: OnDeviceImportedSource.huggingFace,
+          sourceUrl: normalizedUrl.toString(),
+          repoId: repoId,
+          rfilename: rfilename,
+          revision: (segs.length >= 5 && segs[2].toLowerCase() == 'resolve' && segs[3].toLowerCase() != 'main') ? segs[3] : null,
+        );
+        final metadata = await _enrichGgufMetadata(metadata0, token);
+
+        final current = load();
+        await _saveAllUnlocked([...current, metadata]);
+        metadataSaved = true;
+        return metadata;
+      } on DioException catch (e) {
+        if (CancelToken.isCancel(e)) {
+          throw const HttpException('GGUF import canceled.');
+        }
+        throw HttpException(_friendlyDioError(e));
+      } finally {
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+        if (!metadataSaved) {
+          if (await targetFile.exists()) {
+            await targetFile.delete();
+          }
+          if (targetProjectorFile != null &&
+              await targetProjectorFile.exists()) {
+            await targetProjectorFile.delete();
+          }
         }
       }
+    });
+  }
+
+  Future<ImportedGgufModelMetadata> addFromUrl(
+    String sourceUrl, {
+    String? projectorUrl,
+    String? token,
+  }) {
+    return _mutex.run(() async {
+      final normalizedUrl = _normalizeHuggingFaceGgufUrl(sourceUrl);
+      final existing = load().where(
+        (model) => model.sourceUrl == normalizedUrl.toString(),
+      );
+      if (existing.isNotEmpty) {
+        return existing.first;
+      }
+
+      final originalName = _fileNameFromUri(normalizedUrl);
+      final id = _createId(originalName);
+
+      int fileSizeBytes = 0;
+      try {
+        final response = await _dio.head(
+          normalizedUrl.toString(),
+          options: Options(
+            headers: {
+              if (token != null && token.isNotEmpty)
+                HttpHeaders.authorizationHeader: 'Bearer $token',
+            },
+            followRedirects: true,
+            validateStatus: (status) =>
+                status != null && status >= 200 && status < 400,
+          ),
+        );
+        final length = response.headers.value(HttpHeaders.contentLengthHeader);
+        if (length != null) {
+          fileSizeBytes = int.tryParse(length) ?? 0;
+        }
+      } catch (_) {
+        // Size is optional for deferred entries.
+      }
+
+      final segs = normalizedUrl.pathSegments;
+      final parsedRepoId = segs.length >= 2 ? '${segs[0]}/${segs[1]}' : null;
+      final parsedRfilename = originalName;
+      String? parsedRevision;
+      if (segs.length >= 5 && segs[2].toLowerCase() == 'resolve' &&
+          segs[3].toLowerCase() != 'main') {
+        parsedRevision = segs[3];
+      }
+
+      // Dedupe by (repoId, rfilename).
+      if (parsedRepoId != null) {
+        final current = load();
+        final existing = current.where((m) =>
+            m.repoId == parsedRepoId && m.rfilename == parsedRfilename).firstOrNull;
+        if (existing != null) return existing;
+      }
+
+      var metadata = ImportedGgufModelMetadata(
+        id: id,
+        name: _displayNameFromFileName(originalName),
+        filePath: null,
+        projectorPath: null,
+        fileSizeBytes: fileSizeBytes,
+        importedAt: DateTime.now(),
+        source: OnDeviceImportedSource.huggingFace,
+        sourceUrl: normalizedUrl.toString(),
+        repoId: parsedRepoId,
+        rfilename: parsedRfilename,
+        revision: parsedRevision,
+      );
+
+      // Best-effort metadata enrichment.
+      metadata = await _enrichGgufMetadata(metadata, token);
+
+      final current2 = load();
+      // Re-check dedupe after enrichment/network.
+      if (metadata.repoId != null) {
+        final dup = current2.where((m) =>
+            m.repoId == metadata.repoId && m.rfilename == metadata.rfilename).firstOrNull;
+        if (dup != null) return dup;
+      }
+      await _saveAllUnlocked([...current2, metadata]);
+      return metadata;
+    });
+  }
+
+
+  Future<ImportedGgufModelMetadata> _enrichGgufMetadata(
+    ImportedGgufModelMetadata metadata,
+    String? token,
+  ) async {
+    if (metadata.repoId == null || metadata.rfilename == null) return metadata;
+    try {
+      final service = HuggingFaceModelSearchService(dio: _dio);
+      final info = await service.fetchModelInfo(
+        metadata.repoId!,
+        rfilename: metadata.rfilename,
+        token: token,
+      );
+      if (info == null) return metadata;
+      return metadata.copyWith(
+        revision: metadata.revision ?? info.sha,
+        fileOid: info.fileOid,
+        lastModified: info.lastModified,
+        pipelineTag: info.pipelineTag,
+        libraryName: info.libraryName,
+        license: info.license,
+        baseModel: info.baseModel,
+        architecture: info.architecture,
+        contextLength: info.contextLength,
+        quantization: info.quantization ?? parseQuantization(metadata.name),
+        languages: info.languages.isNotEmpty ? info.languages : metadata.languages,
+        modalities: info.modalities.isNotEmpty ? info.modalities : metadata.modalities,
+        parameterLabelOverride: info.totalParameters != null
+            ? formatParameterSize(info.totalParameters!)
+            : metadata.parameterLabelOverride,
+      );
+    } catch (_) {
+      return metadata;
     }
   }
 
-  Future<void> delete(String id) async {
-    final current = load();
-    final kept = <ImportedGgufModelMetadata>[];
 
-    for (final model in current) {
-      if (model.id == id) {
-        final file = File(model.filePath);
+  Future<int> checkForUpdates({String? token}) async {
+    final models = load().where((m) =>
+        m.source == OnDeviceImportedSource.huggingFace &&
+        m.repoId != null &&
+        m.rfilename != null).toList();
+    int updated = 0;
+    for (final model in models) {
+      try {
+        final service = HuggingFaceModelSearchService(dio: _dio);
+        final info = await service.fetchModelInfo(
+          model.repoId!,
+          rfilename: model.rfilename,
+          token: token,
+        );
+        if (info == null) continue;
+        // Compare fileOid first, then sha.
+        bool changed = false;
+        if (model.fileOid != null && info.fileOid != null) {
+          changed = model.fileOid != info.fileOid;
+        } else if (model.revision != null && info.sha != null) {
+          changed = model.revision != info.sha;
+        } else if (info.sha != null && model.revision == null) {
+          changed = false; // no baseline
+        }
+        await _mutex.run(() async {
+          final fresh = load();
+          final idx = fresh.indexWhere((m) => m.id == model.id);
+          if (idx < 0) return;
+          fresh[idx] = fresh[idx].copyWith(
+            lastCheckedAt: DateTime.now(),
+            updateAvailable: changed ? true : fresh[idx].updateAvailable,
+            latestRevision: changed ? info.sha : fresh[idx].latestRevision,
+            // enrich metadata on change
+            fileOid: info.fileOid ?? fresh[idx].fileOid,
+            lastModified: info.lastModified ?? fresh[idx].lastModified,
+            pipelineTag: info.pipelineTag ?? fresh[idx].pipelineTag,
+            libraryName: info.libraryName ?? fresh[idx].libraryName,
+            license: info.license ?? fresh[idx].license,
+            baseModel: info.baseModel ?? fresh[idx].baseModel,
+            architecture: info.architecture ?? fresh[idx].architecture,
+            contextLength: info.contextLength ?? fresh[idx].contextLength,
+            quantization: info.quantization ?? fresh[idx].quantization,
+            languages: info.languages.isNotEmpty ? info.languages : fresh[idx].languages,
+            modalities: info.modalities.isNotEmpty ? info.modalities : fresh[idx].modalities,
+          );
+          await _saveAllUnlocked(fresh);
+        });
+        if (changed) updated++;
+      } catch (_) {
+        // best-effort
+      }
+    }
+    return updated;
+  }
+
+  Future<void> download(
+    String modelId, {
+    String? token,
+    CancelToken? cancelToken,
+    void Function(int receivedBytes, int totalBytes)? onProgress,
+  }) async {
+    final lock = _downloadMutexes.putIfAbsent(modelId, () => AsyncMutex());
+    await lock.run(() async {
+      final models = load();
+      final index = models.indexWhere((model) => model.id == modelId);
+      if (index < 0) {
+        throw StateError('Imported GGUF model no longer exists');
+      }
+
+      final model = models[index];
+      if (model.filePath != null && model.filePath!.isNotEmpty) {
+        return;
+      }
+      if (model.sourceUrl == null || model.sourceUrl!.isEmpty) {
+        throw const FormatException('Imported GGUF model has no source URL.');
+      }
+
+      final dir = await _modelsDirectory();
+      final originalName = _fileNameFromUri(Uri.parse(model.sourceUrl!));
+      final targetPath = p.join(
+        dir.path,
+        '$modelId-${_sanitizeFileName(originalName)}',
+      );
+      final targetFile = File(targetPath);
+
+      // Cancel any previous attempt for this model. Its unique temp file is
+      // cleaned in its own finally block; this attempt uses a new temp path.
+      final previousAttempt = _ggufAttempts[modelId];
+      if (previousAttempt != null) {
+        previousAttempt.cancelToken.cancel(
+          'Superseded by a new download attempt.',
+        );
+      }
+
+      final attemptId = 'gguf-${++_ggufAttemptCounter}';
+      final effectiveToken = cancelToken ?? CancelToken();
+      final attempt = _GgufDownloadAttempt(
+        id: attemptId,
+        cancelToken: effectiveToken,
+      );
+      _ggufAttempts[modelId] = attempt;
+      final tempPath = '$targetPath.part';
+      final tempFile = File(tempPath);
+
+      // Determine whether we are resuming a paused partial download.
+      int startingOffset = 0;
+      bool resuming = false;
+      if (await tempFile.exists()) {
+        final partialSize = await tempFile.length();
+        if (partialSize > 0) {
+          // Try to resume via Range header.
+          try {
+            final head = await _dio.head(
+              model.sourceUrl!,
+              options: Options(
+                headers: {
+                  if (token != null && token.isNotEmpty)
+                    HttpHeaders.authorizationHeader: 'Bearer $token',
+                },
+                followRedirects: true,
+                validateStatus: (status) =>
+                    status != null && status >= 200 && status < 400,
+              ),
+            );
+            final totalHeader = head.headers.value(HttpHeaders.contentLengthHeader);
+            final serverTotal = totalHeader != null ? int.tryParse(totalHeader) ?? 0 : 0;
+            final acceptRanges = head.headers.value('accept-ranges');
+            if (acceptRanges != null &&
+                acceptRanges.toLowerCase().contains('bytes') &&
+                serverTotal > 0 &&
+                partialSize < serverTotal) {
+              startingOffset = partialSize;
+              resuming = true;
+            } else {
+              // Server doesn't support range or partial is complete; restart.
+              await tempFile.delete();
+            }
+          } catch (_) {
+            // Could not probe; restart from scratch.
+            try { await tempFile.delete(); } catch (_) {}
+          }
+        } else {
+          await tempFile.delete();
+        }
+      }
+
+      var renamed = false;
+      try {
+        final downloadHeaders = <String, dynamic>{
+          if (token != null && token.isNotEmpty)
+            HttpHeaders.authorizationHeader: 'Bearer $token',
+          if (resuming) 'Range': 'bytes=$startingOffset-',
+        };
+
+        await _dio.download(
+          model.sourceUrl!,
+          tempPath,
+          cancelToken: effectiveToken,
+          onReceiveProgress: (received, total) {
+            if (onProgress == null) return;
+            // Adjust for resumed partial offset.
+            final cumReceived = resuming ? startingOffset + received : received;
+            final cumTotal = resuming
+                ? (total > 0 ? startingOffset + total : (model.fileSizeBytes > 0 ? model.fileSizeBytes : total))
+                : (total > 0 ? total : 0);
+            onProgress(cumReceived, cumTotal > 0 ? cumTotal : (model.fileSizeBytes > 0 ? model.fileSizeBytes : 0));
+          },
+          fileAccessMode: resuming ? FileAccessMode.append : FileAccessMode.write,
+          options: Options(
+            headers: downloadHeaders,
+            followRedirects: true,
+            receiveTimeout: const Duration(hours: 12),
+            sendTimeout: const Duration(minutes: 5),
+            validateStatus: (status) =>
+                status != null && status >= 200 && status < 400,
+          ),
+        );
+
+        if (effectiveToken.isCancelled) {
+          throw const HttpException('GGUF import canceled.');
+        }
+        if (!await tempFile.exists() || await tempFile.length() <= 0) {
+          throw const FileSystemException(
+            'The downloaded GGUF file was empty or missing.',
+          );
+        }
+
+        await _validateGgufFile(tempFile);
+        if (_ggufAttempts[modelId]?.id != attemptId ||
+            effectiveToken.isCancelled) {
+          throw const HttpException('GGUF import canceled.');
+        }
+
+        await tempFile.rename(targetPath);
+        renamed = true;
+        attempt.renamedTarget = true;
+
+        if (_ggufAttempts[modelId]?.id != attemptId ||
+            effectiveToken.isCancelled) {
+          if (await targetFile.exists()) {
+            await targetFile.delete();
+          }
+          throw const HttpException('GGUF import canceled.');
+        }
+
+        // Projector download, if any, is intentionally left to the caller's
+        // explicit attach flow. This download path handles the main model only.
+
+        final fileSize = await targetFile.length();
+        await _mutex.run(() async {
+          final freshModels = load();
+          final freshIndex = freshModels.indexWhere((m) => m.id == modelId);
+          if (freshIndex >= 0) {
+            freshModels[freshIndex] = freshModels[freshIndex].copyWith(
+              filePath: targetFile.path,
+              fileSizeBytes: fileSize,
+            );
+            await _saveAllUnlocked(freshModels);
+          }
+        });
+      } on DioException catch (e) {
+        if (CancelToken.isCancel(e) || effectiveToken.isCancelled) {
+          if (attempt.paused) {
+            // Keep partial file; resume will continue from it.
+            throw const HttpException('GGUF import paused.');
+          }
+          if (renamed && await targetFile.exists()) {
+            await targetFile.delete();
+          }
+          throw const HttpException('GGUF import canceled.');
+        }
+        if (renamed && await targetFile.exists()) {
+          await targetFile.delete();
+        }
+        throw HttpException(_friendlyDioError(e));
+      } catch (e) {
+        if (renamed && await targetFile.exists()) {
+          await targetFile.delete();
+        }
+        rethrow;
+      } finally {
+        if (!(attempt.paused) && await tempFile.exists()) {
+          await tempFile.delete();
+        }
+        if (_ggufAttempts[modelId]?.id == attemptId && !attempt.paused) {
+          _ggufAttempts.remove(modelId);
+        }
+      }
+    });
+  }
+
+  Future<bool> pauseDownload(String modelId) async {
+    final attempt = _ggufAttempts[modelId];
+    if (attempt == null) return false;
+    attempt.paused = true;
+    attempt.cancelToken.cancel('Paused by user');
+    return true;
+  }
+
+  Future<void> resumeDownload(
+    String modelId, {
+    String? token,
+    CancelToken? cancelToken,
+  }) async {
+    // Re-run the download; it auto-detects the partial file and resumes via Range.
+    await download(
+      modelId,
+      token: token,
+      cancelToken: cancelToken,
+    );
+  }
+
+  Future<void> deleteFile(String modelId) async {
+    final attempt = _ggufAttempts.remove(modelId);
+    attempt?.cancelToken.cancel('Deleted by user');
+
+    await _mutex.run(() async {
+      final models = load();
+      final index = models.indexWhere((model) => model.id == modelId);
+      if (index < 0) {
+        throw StateError('Imported GGUF model no longer exists');
+      }
+
+      final model = models[index];
+      if (model.filePath != null) {
+        final file = File(model.filePath!);
         if (await file.exists()) {
           await file.delete();
         }
-        if (model.projectorPath != null) {
-          final projFile = File(model.projectorPath!);
-          if (await projFile.exists()) {
-            await projFile.delete();
-          }
-        }
-      } else {
-        kept.add(model);
       }
-    }
+      if (model.projectorPath != null) {
+        final projFile = File(model.projectorPath!);
+        if (await projFile.exists()) {
+          await projFile.delete();
+        }
+      }
 
-    await saveAll(kept);
+      models[index] = model.copyWith(filePath: null, projectorPath: null);
+      await _saveAllUnlocked(models);
+    });
   }
 
-  Future<void> saveAll(List<ImportedGgufModelMetadata> models) async {
+  Future<void> removeFromList(String id) {
+    return _mutex.run(() async {
+      final current = load();
+      final kept = current.where((model) => model.id != id).toList();
+      await _saveAllUnlocked(kept);
+    });
+  }
+
+  Future<void> delete(String id) {
+    return _mutex.run(() async {
+      final current = load();
+      final kept = <ImportedGgufModelMetadata>[];
+
+      for (final model in current) {
+        if (model.id == id) {
+          if (model.filePath != null) {
+            final file = File(model.filePath!);
+            if (await file.exists()) {
+              await file.delete();
+            }
+          }
+          if (model.projectorPath != null) {
+            final projFile = File(model.projectorPath!);
+            if (await projFile.exists()) {
+              await projFile.delete();
+            }
+          }
+        } else {
+          kept.add(model);
+        }
+      }
+
+      await _saveAllUnlocked(kept);
+    });
+  }
+
+  Future<void> saveAll(List<ImportedGgufModelMetadata> models) {
+    return _mutex.run(() => _saveAllUnlocked(models));
+  }
+
+  Future<void> _saveAllUnlocked(List<ImportedGgufModelMetadata> models) async {
     final encoded = json.encode(models.map((m) => m.toJson()).toList());
     if (!await _prefs.setString(_storageKey, encoded)) {
       throw StateError('Could not save imported models');
@@ -701,37 +1366,10 @@ class ImportedGgufModelRepository {
   }
 
   Uri _normalizeHuggingFaceGgufUrl(String input) {
-    final trimmed = input.trim();
-    if (trimmed.isEmpty) {
-      throw const FormatException('Enter a Hugging Face GGUF URL.');
-    }
-
-    final withScheme =
-        trimmed.startsWith('http://') || trimmed.startsWith('https://')
-        ? trimmed
-        : 'https://huggingface.co/$trimmed';
-
-    final uri = Uri.parse(withScheme);
-    final host = uri.host.toLowerCase();
-    if (!_isAllowedHuggingFaceHost(host)) {
-      throw const FormatException(
-        'Only official Hugging Face GGUF URLs are supported.',
-      );
-    }
-
-    if (uri.scheme.toLowerCase() != 'https') {
-      throw const FormatException(
-        'Use an HTTPS Hugging Face URL for GGUF import.',
-      );
-    }
-
-    final normalizedSegments = [...uri.pathSegments];
-    final blobIndex = normalizedSegments.indexOf('blob');
-    if (blobIndex != -1) {
-      normalizedSegments[blobIndex] = 'resolve';
-    }
-
-    final normalizedUri = uri.replace(pathSegments: normalizedSegments);
+    final normalizedUri = canonicalizeHuggingFaceUrl(
+      input,
+      emptyMessage: 'Enter a Hugging Face GGUF URL.',
+    );
     final fileName = _fileNameFromUri(normalizedUri);
     if (!fileName.toLowerCase().endsWith('.gguf')) {
       throw const FormatException(
@@ -754,12 +1392,6 @@ class ImportedGgufModelRepository {
       throw const FormatException('Unable to determine the GGUF file name.');
     }
     return fileName;
-  }
-
-  bool _isAllowedHuggingFaceHost(String host) {
-    return host == 'huggingface.co' ||
-        host == 'www.huggingface.co' ||
-        host == 'hf.co';
   }
 
   Future<void> _validateGgufFile(File file) async {
@@ -821,4 +1453,13 @@ class ImportedGgufModelRepository {
         .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
         .join(' ');
   }
+}
+
+class _GgufDownloadAttempt {
+  _GgufDownloadAttempt({required this.id, required this.cancelToken});
+
+  final String id;
+  final CancelToken cancelToken;
+  bool renamedTarget = false;
+  bool paused = false;
 }
