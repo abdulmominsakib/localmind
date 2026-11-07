@@ -29,6 +29,7 @@ class OnDeviceModel {
   final OnDeviceModelRuntime runtime;
   final OnDeviceModelFormat format;
   final String? localPath;
+  final String? installFileName;
   final String? projectorPath;
   final DateTime? importedAt;
   final bool isImported;
@@ -56,6 +57,7 @@ class OnDeviceModel {
     this.runtime = OnDeviceModelRuntime.gemma,
     this.format = OnDeviceModelFormat.litertlm,
     this.localPath,
+    this.installFileName,
     this.projectorPath,
     this.importedAt,
     this.isImported = false,
@@ -78,6 +80,9 @@ class OnDeviceModel {
   String get fileName {
     if (isBuiltIn) {
       return id;
+    }
+    if (installFileName != null && installFileName!.isNotEmpty) {
+      return installFileName!;
     }
     if (localPath != null && localPath!.isNotEmpty) {
       return localPath!.split('/').last;

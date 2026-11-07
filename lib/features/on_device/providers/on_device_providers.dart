@@ -179,18 +179,28 @@ final downloadedModelsProvider = FutureProvider<Set<String>>((ref) async {
   } catch (_) {}
 
   final importedGgufDownloaded = importedGguf
-      .where((model) =>
-          model.localPath != null &&
-          model.localPath!.isNotEmpty &&
-          File(model.localPath!).existsSync())
+      .where(
+        (model) =>
+            model.localPath != null &&
+            model.localPath!.isNotEmpty &&
+            File(model.localPath!).existsSync(),
+      )
       .map((model) => model.id);
 
-  final importedLitertDownloaded = importedLitert.where((model) {
-    if (model.localPath != null && model.localPath!.isNotEmpty) {
-      return File(model.localPath!).existsSync();
-    }
-    return flutterGemmaInstalled.contains(model.fileName);
-  }).map((model) => model.id);
+  final importedLitertDownloaded = importedLitert
+      .where((model) {
+        if (model.localPath != null && model.localPath!.isNotEmpty) {
+          return File(model.localPath!).existsSync();
+        }
+        final sameNameCount = importedLitert
+            .where((other) => other.fileName == model.fileName)
+            .length;
+        if (sameNameCount > 1) {
+          return false;
+        }
+        return flutterGemmaInstalled.contains(model.fileName);
+      })
+      .map((model) => model.id);
 
   return {
     ...builtInIds,
@@ -278,7 +288,13 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     );
     final model = metadata.toOnDeviceModel();
     if (ref.mounted) {
-      state = [...state, model];
+      if (state.any((existing) => existing.id == model.id)) {
+        state = state
+            .map((existing) => existing.id == model.id ? model : existing)
+            .toList();
+      } else {
+        state = [...state, model];
+      }
     }
     return model;
   }
@@ -287,7 +303,11 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     final metadatas = await _repository.importFromPaths(paths);
     final models = metadatas.map((m) => m.toOnDeviceModel()).toList();
     if (ref.mounted) {
-      state = [...state, ...models];
+      final byId = {for (final m in state) m.id: m};
+      for (final m in models) {
+        byId[m.id] = m;
+      }
+      state = byId.values.toList();
     }
     return models;
   }
@@ -332,7 +352,13 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     );
     final model = metadata.toOnDeviceModel();
     if (ref.mounted) {
-      state = [...state, model];
+      if (state.any((existing) => existing.id == model.id)) {
+        state = state
+            .map((existing) => existing.id == model.id ? model : existing)
+            .toList();
+      } else {
+        state = [...state, model];
+      }
     }
     return model;
   }
@@ -353,7 +379,13 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     );
     final model = metadata.toOnDeviceModel();
     if (ref.mounted) {
-      state = [...state, model];
+      if (state.any((existing) => existing.id == model.id)) {
+        state = state
+            .map((existing) => existing.id == model.id ? model : existing)
+            .toList();
+      } else {
+        state = [...state, model];
+      }
     }
     return model;
   }
@@ -401,12 +433,16 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     final existing = await _repository.loadExisting();
     if (!ref.mounted) return;
 
-    final keptIds = existing.map((m) => m.id).toSet();
-    if (keptIds.length == state.length &&
-        state.every((m) => keptIds.contains(m.id))) {
-      return;
+    final next = existing.map((m) => m.toOnDeviceModel()).toList();
+    String signature(List<OnDeviceModel> models) => models
+        .map(
+          (m) =>
+              '${m.id}|${m.localPath}|${m.reasoningEnabled}|${m.installFileName}|${m.projectorPath}|${m.fileSizeBytes}',
+        )
+        .join(',');
+    if (signature(state) != signature(next)) {
+      state = next;
     }
-    state = existing.map((m) => m.toOnDeviceModel()).toList();
   }
 }
 
@@ -421,9 +457,10 @@ class ImportedLitertModelsNotifier extends Notifier<List<OnDeviceModel>> {
     if (!_hasScheduledInitialPrune) {
       _hasScheduledInitialPrune = true;
       Future.microtask(() async {
-        if (ref.mounted) {
-          await pruneMissing();
-        }
+        if (!ref.mounted) return;
+        await pruneMissing();
+        if (!ref.mounted) return;
+        await _repository.registerLocalModels();
       });
     }
     return _repository.load().map((model) => model.toOnDeviceModel()).toList();
@@ -433,19 +470,28 @@ class ImportedLitertModelsNotifier extends Notifier<List<OnDeviceModel>> {
     final metadata = await _repository.addFromPath(sourcePath);
     final model = metadata.toOnDeviceModel();
     if (ref.mounted) {
-      state = [...state, model];
+      if (state.any((existing) => existing.id == model.id)) {
+        state = state
+            .map((existing) => existing.id == model.id ? model : existing)
+            .toList();
+      } else {
+        state = [...state, model];
+      }
     }
     return model;
   }
 
-  Future<OnDeviceModel> addFromUrl(
-    String sourceUrl, {
-    String? token,
-  }) async {
+  Future<OnDeviceModel> addFromUrl(String sourceUrl, {String? token}) async {
     final metadata = await _repository.addFromUrl(sourceUrl, token: token);
     final model = metadata.toOnDeviceModel();
     if (ref.mounted) {
-      state = [...state, model];
+      if (state.any((existing) => existing.id == model.id)) {
+        state = state
+            .map((existing) => existing.id == model.id ? model : existing)
+            .toList();
+      } else {
+        state = [...state, model];
+      }
     }
     return model;
   }
@@ -471,12 +517,16 @@ class ImportedLitertModelsNotifier extends Notifier<List<OnDeviceModel>> {
   Future<void> pruneMissing() async {
     final existing = await _repository.loadExisting();
     if (!ref.mounted) return;
-    final keptIds = existing.map((m) => m.id).toSet();
-    if (keptIds.length == state.length &&
-        state.every((m) => keptIds.contains(m.id))) {
-      return;
+    final next = existing.map((m) => m.toOnDeviceModel()).toList();
+    String signature(List<OnDeviceModel> models) => models
+        .map(
+          (m) =>
+              '${m.id}|${m.localPath}|${m.reasoningEnabled}|${m.installFileName}|${m.projectorPath}|${m.fileSizeBytes}',
+        )
+        .join(',');
+    if (signature(state) != signature(next)) {
+      state = next;
     }
-    state = existing.map((m) => m.toOnDeviceModel()).toList();
   }
 
   Future<void> updateReasoning(String modelId, bool? enabled) async {
@@ -511,7 +561,24 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     if (specName == null) return;
 
     final models = ref.read(onDeviceModelsProvider);
-    final model = models.where((m) => m.fileName == specName).firstOrNull;
+    OnDeviceModel? model = models
+        .where((m) => m.fileName == specName)
+        .firstOrNull;
+    if (model == null) {
+      final specBase = specName.contains('.')
+          ? specName.substring(0, specName.lastIndexOf('.'))
+          : specName;
+      final candidates = models.where((m) {
+        final name = m.fileName;
+        final base = name.contains('.')
+            ? name.substring(0, name.lastIndexOf('.'))
+            : name;
+        return base == specBase;
+      }).toList();
+      if (candidates.length == 1) {
+        model = candidates.first;
+      }
+    }
     if (model == null) return;
 
     final settings = ref.read(settingsProvider);
