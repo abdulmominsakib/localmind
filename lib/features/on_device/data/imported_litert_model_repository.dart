@@ -13,6 +13,9 @@ import '../../../core/utils/hugging_face_url.dart';
 import 'package:background_downloader/background_downloader.dart';
 
 import 'models/on_device_model.dart';
+import 'huggingface_model_search_service.dart';
+import '../utils/model_quantization_parser.dart';
+import '../utils/model_param_size_parser.dart';
 
 class ImportedLitertModelMetadata {
   static const _unset = Object();
@@ -27,6 +30,25 @@ class ImportedLitertModelMetadata {
   final OnDeviceImportedSource source;
   final String? projectorPath;
   final bool? reasoningEnabled;
+  // Hugging Face metadata (Phase 4)
+  final String? repoId;
+  final String? rfilename;
+  final String? revision;
+  final String? fileOid;
+  final DateTime? lastModified;
+  final DateTime? lastCheckedAt;
+  final String? pipelineTag;
+  final String? libraryName;
+  final String? license;
+  final String? baseModel;
+  final String? architecture;
+  final int? contextLength;
+  final String? quantization;
+  final List<String> languages;
+  final List<String> modalities;
+  final String? parameterLabelOverride;
+  final bool? updateAvailable;
+  final String? latestRevision;
 
   const ImportedLitertModelMetadata({
     required this.id,
@@ -39,6 +61,24 @@ class ImportedLitertModelMetadata {
     required this.source,
     this.projectorPath,
     this.reasoningEnabled,
+    this.repoId,
+    this.rfilename,
+    this.revision,
+    this.fileOid,
+    this.lastModified,
+    this.lastCheckedAt,
+    this.pipelineTag,
+    this.libraryName,
+    this.license,
+    this.baseModel,
+    this.architecture,
+    this.contextLength,
+    this.quantization,
+    this.languages = const <String>[],
+    this.modalities = const <String>[],
+    this.parameterLabelOverride,
+    this.updateAvailable,
+    this.latestRevision,
   });
 
   String get fileName {
@@ -81,6 +121,24 @@ class ImportedLitertModelMetadata {
     OnDeviceImportedSource? source,
     Object? projectorPath = _unset,
     bool? reasoningEnabled,
+    Object? repoId = _unset,
+    Object? rfilename = _unset,
+    Object? revision = _unset,
+    Object? fileOid = _unset,
+    Object? lastModified = _unset,
+    Object? lastCheckedAt = _unset,
+    Object? pipelineTag = _unset,
+    Object? libraryName = _unset,
+    Object? license = _unset,
+    Object? baseModel = _unset,
+    Object? architecture = _unset,
+    Object? contextLength = _unset,
+    Object? quantization = _unset,
+    List<String>? languages,
+    List<String>? modalities,
+    Object? parameterLabelOverride = _unset,
+    Object? updateAvailable = _unset,
+    Object? latestRevision = _unset,
   }) {
     return ImportedLitertModelMetadata(
       id: id ?? this.id,
@@ -101,24 +159,59 @@ class ImportedLitertModelMetadata {
           ? this.projectorPath
           : projectorPath as String?,
       reasoningEnabled: reasoningEnabled ?? this.reasoningEnabled,
+      repoId: identical(repoId, _unset) ? this.repoId : repoId as String?,
+      rfilename: identical(rfilename, _unset) ? this.rfilename : rfilename as String?,
+      revision: identical(revision, _unset) ? this.revision : revision as String?,
+      fileOid: identical(fileOid, _unset) ? this.fileOid : fileOid as String?,
+      lastModified: identical(lastModified, _unset)
+          ? this.lastModified
+          : lastModified as DateTime?,
+      lastCheckedAt: identical(lastCheckedAt, _unset)
+          ? this.lastCheckedAt
+          : lastCheckedAt as DateTime?,
+      pipelineTag: identical(pipelineTag, _unset) ? this.pipelineTag : pipelineTag as String?,
+      libraryName: identical(libraryName, _unset) ? this.libraryName : libraryName as String?,
+      license: identical(license, _unset) ? this.license : license as String?,
+      baseModel: identical(baseModel, _unset) ? this.baseModel : baseModel as String?,
+      architecture: identical(architecture, _unset) ? this.architecture : architecture as String?,
+      contextLength: identical(contextLength, _unset)
+          ? this.contextLength
+          : contextLength as int?,
+      quantization: identical(quantization, _unset) ? this.quantization : quantization as String?,
+      languages: languages ?? this.languages,
+      modalities: modalities ?? this.modalities,
+      parameterLabelOverride: identical(parameterLabelOverride, _unset)
+          ? this.parameterLabelOverride
+          : parameterLabelOverride as String?,
+      updateAvailable: identical(updateAvailable, _unset)
+          ? this.updateAvailable
+          : updateAvailable as bool?,
+      latestRevision: identical(latestRevision, _unset)
+          ? this.latestRevision
+          : latestRevision as String?,
     );
   }
 
   OnDeviceModel toOnDeviceModel() {
     final isHuggingFace = source == OnDeviceImportedSource.huggingFace;
+    final langs = languages.isNotEmpty ? languages.join(', ') : 'Local';
+    // modality from pipeline/tags heuristic: vision if projector or vision modalities
+    final mod = modalities.contains('vision') || (projectorPath != null && projectorPath!.isNotEmpty)
+        ? 'vision'
+        : (modalities.isNotEmpty ? modalities.first : 'text');
     return OnDeviceModel(
       id: id,
       name: name,
       huggingFaceUrl: isHuggingFace ? (sourceUrl ?? '') : '',
       fileSizeBytes: fileSizeBytes,
-      license: sourceLabel,
+      license: license ?? sourceLabel,
       description: isHuggingFace
           ? 'Imported LiteRT model from Hugging Face for on-device Gemma inference.'
           : 'Imported LiteRT model from a local file for on-device Gemma inference.',
       minRamMb: 2048,
-      parameterLabel: 'LiteRT',
+      parameterLabel: parameterLabelOverride ?? 'LiteRT',
       bestFor: 'Local LiteRT inference',
-      languagesLabel: 'Local',
+      languagesLabel: langs,
       backendNote: 'LiteRT',
       runtime: OnDeviceModelRuntime.gemma,
       format: OnDeviceModelFormat.litertlm,
@@ -126,6 +219,9 @@ class ImportedLitertModelMetadata {
       installFileName: installFileName,
       projectorPath: projectorPath,
       supportsVision: projectorPath != null && projectorPath!.isNotEmpty,
+      modality: mod,
+      quantization: quantization,
+      repoId: repoId,
       importedAt: importedAt,
       isImported: true,
       importedSource: source,
@@ -145,10 +241,30 @@ class ImportedLitertModelMetadata {
       'source': source.name,
       'projectorPath': projectorPath,
       'reasoningEnabled': reasoningEnabled,
+      'repoId': repoId,
+      'rfilename': rfilename,
+      'revision': revision,
+      'fileOid': fileOid,
+      'lastModified': lastModified?.toIso8601String(),
+      'lastCheckedAt': lastCheckedAt?.toIso8601String(),
+      'pipelineTag': pipelineTag,
+      'libraryName': libraryName,
+      'license': license,
+      'baseModel': baseModel,
+      'architecture': architecture,
+      'contextLength': contextLength,
+      'quantization': quantization,
+      'languages': languages,
+      'modalities': modalities,
+      'parameterLabelOverride': parameterLabelOverride,
+      'updateAvailable': updateAvailable,
+      'latestRevision': latestRevision,
     };
   }
 
   factory ImportedLitertModelMetadata.fromJson(Map<String, dynamic> json) {
+    final langs = json['languages'];
+    final mods = json['modalities'];
     return ImportedLitertModelMetadata(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -160,6 +276,32 @@ class ImportedLitertModelMetadata {
       source: _sourceFromJson(json['source']),
       projectorPath: json['projectorPath'] as String?,
       reasoningEnabled: json['reasoningEnabled'] as bool?,
+      repoId: json['repoId'] as String?,
+      rfilename: json['rfilename'] as String?,
+      revision: json['revision'] as String?,
+      fileOid: json['fileOid'] as String?,
+      lastModified: json['lastModified'] != null
+          ? DateTime.tryParse(json['lastModified'] as String)
+          : null,
+      lastCheckedAt: json['lastCheckedAt'] != null
+          ? DateTime.tryParse(json['lastCheckedAt'] as String)
+          : null,
+      pipelineTag: json['pipelineTag'] as String?,
+      libraryName: json['libraryName'] as String?,
+      license: json['license'] as String?,
+      baseModel: json['baseModel'] as String?,
+      architecture: json['architecture'] as String?,
+      contextLength: (json['contextLength'] as num?)?.toInt(),
+      quantization: json['quantization'] as String?,
+      languages: langs is List
+          ? langs.map((e) => e.toString()).toList()
+          : const <String>[],
+      modalities: mods is List
+          ? mods.map((e) => e.toString()).toList()
+          : const <String>[],
+      parameterLabelOverride: json['parameterLabelOverride'] as String?,
+      updateAvailable: json['updateAvailable'] as bool?,
+      latestRevision: json['latestRevision'] as String?,
     );
   }
 
@@ -347,6 +489,42 @@ class ImportedLitertModelRepository {
     }
   }
 
+
+  Future<ImportedLitertModelMetadata> _enrichLitertMetadata(
+    ImportedLitertModelMetadata metadata,
+    String? token,
+  ) async {
+    if (metadata.repoId == null || metadata.rfilename == null) return metadata;
+    try {
+      final service = HuggingFaceModelSearchService(dio: _dio);
+      final info = await service.fetchModelInfo(
+        metadata.repoId!,
+        rfilename: metadata.rfilename,
+        token: token,
+      );
+      if (info == null) return metadata;
+      return metadata.copyWith(
+        revision: metadata.revision ?? info.sha,
+        fileOid: info.fileOid,
+        lastModified: info.lastModified,
+        pipelineTag: info.pipelineTag,
+        libraryName: info.libraryName,
+        license: info.license,
+        baseModel: info.baseModel,
+        architecture: info.architecture,
+        contextLength: info.contextLength,
+        quantization: info.quantization ?? parseQuantization(metadata.name),
+        languages: info.languages.isNotEmpty ? info.languages : metadata.languages,
+        modalities: info.modalities.isNotEmpty ? info.modalities : metadata.modalities,
+        parameterLabelOverride: info.totalParameters != null
+            ? formatParameterSize(info.totalParameters!)
+            : metadata.parameterLabelOverride,
+      );
+    } catch (_) {
+      return metadata;
+    }
+  }
+
   Future<void> _ensureRegistered(ImportedLitertModelMetadata model) async {
     final installName = model.installFileName ?? model.fileName;
     final alreadyInstalled = await FlutterGemma.isModelInstalled(installName);
@@ -456,7 +634,23 @@ class ImportedLitertModelRepository {
         // Size is optional for deferred entries.
       }
 
-      final metadata = ImportedLitertModelMetadata(
+      final segs = normalizedUrl.pathSegments;
+      final parsedRepoId = segs.length >= 2 ? '${segs[0]}/${segs[1]}' : null;
+      final parsedRfilename = originalName;
+      String? parsedRevision;
+      if (segs.length >= 5 && segs[2].toLowerCase() == 'resolve' &&
+          segs[3].toLowerCase() != 'main') {
+        parsedRevision = segs[3];
+      }
+
+      // Dedupe by (repoId, rfilename).
+      if (parsedRepoId != null) {
+        final existing = load().where((m) =>
+            m.repoId == parsedRepoId && m.rfilename == parsedRfilename).firstOrNull;
+        if (existing != null) return existing;
+      }
+
+      var metadata = ImportedLitertModelMetadata(
         id: id,
         name: _displayNameFromFileName(originalName),
         filePath: null,
@@ -465,10 +659,21 @@ class ImportedLitertModelRepository {
         fileSizeBytes: fileSizeBytes,
         importedAt: DateTime.now(),
         source: OnDeviceImportedSource.huggingFace,
+        repoId: parsedRepoId,
+        rfilename: parsedRfilename,
+        revision: parsedRevision,
       );
 
-      final current = load();
-      await _saveAllUnlocked([...current, metadata]);
+      // Best-effort metadata enrichment.
+      metadata = await _enrichLitertMetadata(metadata, token);
+
+      final current2 = load();
+      if (metadata.repoId != null) {
+        final dup = current2.where((m) =>
+            m.repoId == metadata.repoId && m.rfilename == metadata.rfilename).firstOrNull;
+        if (dup != null) return dup;
+      }
+      await _saveAllUnlocked([...current2, metadata]);
       return metadata;
     });
   }

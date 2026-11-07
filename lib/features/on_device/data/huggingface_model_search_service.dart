@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'models/huggingface_model_info.dart';
 
 class HuggingFaceModelSearchResult {
   const HuggingFaceModelSearchResult({
@@ -146,6 +147,37 @@ class HuggingFaceModelSearchService {
         })
         .where((file) => file.path.toLowerCase().endsWith(normalizedExtension))
         .toList();
+  }
+
+  final Map<String, HuggingFaceModelInfo> _infoCache = <String, HuggingFaceModelInfo>{};
+
+  /// Best-effort fetch of extended model metadata. Returns cached result for
+  /// the session when available. Never throws; returns null on failure.
+  Future<HuggingFaceModelInfo?> fetchModelInfo(
+    String repoId, {
+    String? rfilename,
+    String? token,
+  }) async {
+    if (_infoCache.containsKey(repoId)) {
+      return _infoCache[repoId];
+    }
+    try {
+      final response = await _dio.get(
+        'https://huggingface.co/api/models/$repoId',
+        queryParameters: const {'blobs': 'true'},
+        options: _options(token).copyWith(
+          receiveTimeout: const Duration(seconds: 15),
+        ),
+        cancelToken: null,
+      );
+      final data = response.data;
+      if (data is! Map<String, dynamic>) return null;
+      final info = HuggingFaceModelInfo.fromJson(data, rfilename: rfilename);
+      _infoCache[repoId] = info;
+      return info;
+    } catch (_) {
+      return null;
+    }
   }
 
   Options _options(String? token) {

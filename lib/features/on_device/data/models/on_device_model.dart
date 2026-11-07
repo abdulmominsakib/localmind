@@ -23,6 +23,9 @@ class OnDeviceModel {
   final bool supportsThinking;
   final bool? reasoningEnabled;
   final bool supportsVision;
+  final String? modality;
+  final String? quantization;
+  final String? repoId;
   final String languagesLabel;
   final String? backendNote;
   final bool isCpuOnly;
@@ -51,6 +54,9 @@ class OnDeviceModel {
     this.supportsThinking = false,
     this.reasoningEnabled,
     this.supportsVision = false,
+    this.modality,
+    this.quantization,
+    this.repoId,
     required this.languagesLabel,
     this.backendNote,
     this.isCpuOnly = false,
