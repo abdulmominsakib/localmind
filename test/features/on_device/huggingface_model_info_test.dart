@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/features/on_device/data/huggingface_model_search_service.dart';
-import 'package:localmind/features/on_device/data/models/huggingface_model_info.dart';
 
 class _InfoInterceptor extends Interceptor {
   _InfoInterceptor(this.payload);
