@@ -24,6 +24,14 @@ Follow `.agents/skills/flutter-feature-based-architecture/SKILL.md` for every fe
 
 Use two-space indentation and `dart format`. Name files `snake_case.dart`, types `UpperCamelCase`, and members and providers `lowerCamelCase`. Render every icon with `HugeIcon` and a `HugeIcons.*` constant; do not use Flutter `Icon` or `Icons.*`. For animation, prefer Cue, provide an explicit motion, and use one `Cue` per coordinated scene with `Actor` delays for stagger. Follow `.agents/skills/hugeicons-usage/SKILL.md` and `.agents/skills/cue-animations/SKILL.md`. Do not hand-edit generated files.
 
+## Implementation Plans
+
+Local implementation plans live in `.agents/plans/` and are intentionally ignored by git. Move finished or superseded plans to `.agents/plans/archive/` instead of deleting them. Before changing an area that has a plan, read the active plan and follow its phase order, file scope, and exit criteria. Do not skip ahead to later phases.
+
+- Imported on-device models (LiteRT/GGUF add, download, delete, cancel, restore): read `.agents/plans/on-device-imported-model-fixes-remediation.md` first (consolidates the original plan and device QA checklist).
+
+If a referenced plan is missing, ask the user for the current plan before inferring the design from the code alone.
+
 ## Testing Guidelines
 
 Tests use `flutter_test` and end in `_test.dart`. Add regression tests beside the feature; use widget tests for navigation and provider-driven UI. Run tests and analysis before a PR. The MinIO test requires `LOCALMIND_MINIO_*` variables. No numeric coverage threshold is enforced, but changed behavior should be covered.
