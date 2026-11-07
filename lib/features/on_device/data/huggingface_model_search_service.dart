@@ -8,12 +8,18 @@ class HuggingFaceModelSearchResult {
     required this.downloads,
     required this.likes,
     this.tags = const <String>[],
+    this.createdAt,
+    this.pipelineTag,
+    this.libraryName,
   });
 
   final String repoId;
   final int downloads;
   final int likes;
   final List<String> tags;
+  final DateTime? createdAt;
+  final String? pipelineTag;
+  final String? libraryName;
 
   String get name => repoId.split('/').last;
 }
@@ -86,6 +92,11 @@ class HuggingFaceModelSearchService {
     return data
         .whereType<Map<String, dynamic>>()
         .map((json) {
+          final createdRaw = json['createdAt'] ?? json['created_at'];
+          DateTime? createdAt;
+          if (createdRaw is String) {
+            createdAt = DateTime.tryParse(createdRaw);
+          }
           return HuggingFaceModelSearchResult(
             repoId: (json['modelId'] ?? json['id'] ?? '').toString(),
             downloads: (json['downloads'] as num?)?.toInt() ?? 0,
@@ -94,6 +105,11 @@ class HuggingFaceModelSearchService {
                     ?.map((tag) => tag.toString())
                     .toList() ??
                 const <String>[],
+            createdAt: createdAt,
+            pipelineTag: (json['pipeline_tag'] ?? json['pipelineTag'])
+                ?.toString(),
+            libraryName: (json['library_name'] ?? json['libraryName'])
+                ?.toString(),
           );
         })
         .where((result) => result.repoId.isNotEmpty)
