@@ -46,9 +46,13 @@ class HuggingFaceModelSearchService {
 
   final Dio _dio;
 
+  /// Supported filter values (Hugging Face `filter` query param):
+  /// `gguf`, `litert-lm`, `litertlm`. Only one value is honored by the API
+  /// (chaining does not AND); callers merge client-side for "Both".
   Future<List<HuggingFaceModelSearchResult>> searchModels({
     required String query,
     String? author,
+    String? filter,
     String? token,
     CancelToken? cancelToken,
     int limit = 20,
@@ -64,6 +68,9 @@ class HuggingFaceModelSearchService {
     }
     if (author != null && author.trim().isNotEmpty) {
       params['author'] = author.trim();
+    }
+    if (filter != null && filter.trim().isNotEmpty) {
+      params['filter'] = filter.trim();
     }
 
     final response = await _dio.get(
