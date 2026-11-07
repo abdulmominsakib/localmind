@@ -1,0 +1,9 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  exclude:
+    - packages/**
+
+linter:
+  rules:
+    public_member_api_docs: true

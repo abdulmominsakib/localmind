@@ -324,6 +324,12 @@ class _SettingsViewsState extends ConsumerState<SettingsViews> {
           label: l10n.manage_on_device_models,
           onPressed: () => context.push(AppRoutes.onDeviceModels),
         ),
+        if (AppRoutes.supportsLocalApi)
+          _SectionActionButton(
+            icon: HugeIcons.strokeRoundedApi,
+            label: l10n.localApiTitle,
+            onPressed: () => context.push(AppRoutes.localApi),
+          ),
         _ToggleSetting(
           label: l10n.ai_user_response_enabled,
           description: l10n.ai_user_response_enabled_desc,

@@ -13,6 +13,7 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import io.flutter.plugin.common.MethodChannel
 
 class ChatForegroundService : Service() {
     companion object {
@@ -24,6 +25,44 @@ class ChatForegroundService : Service() {
         private const val WAKE_LOCK_TIMEOUT_MS = 60 * 60 * 1000L
         const val TYPE_SPECIAL_USE = "specialUse"
         const val TYPE_MICROPHONE = "microphone"
+        const val TYPE_LOCAL_API = "localApi"
+        private const val STOP_LOCAL_API = "pro.momin.localmind.STOP_LOCAL_API"
+
+        private var instance: ChatForegroundService? = null
+        private var localApiChannel: MethodChannel? = null
+        private var localApiStart: MethodChannel.Result? = null
+        private var localApiText: String? = null
+        private var localApiStopLabel: String? = null
+
+        fun startLocalApi(
+            context: Context,
+            channel: MethodChannel,
+            text: String,
+            stopLabel: String,
+            result: MethodChannel.Result
+        ) {
+            if (localApiStart != null || TYPE_LOCAL_API in activeTypes) {
+                result.error("foreground_service_busy", "Local API already starting or running.", null)
+                return
+            }
+            try {
+                startService(context, TYPE_LOCAL_API)
+            } catch (error: RuntimeException) {
+                result.error("foreground_service_unavailable", null, null)
+                return
+            }
+            localApiStart = result
+            localApiChannel = channel
+            localApiText = text
+            localApiStopLabel = stopLabel
+        }
+
+        private fun finishLocalApiStart(success: Boolean) {
+            val result = localApiStart ?: return
+            localApiStart = null
+            if (success) result.success(null)
+            else result.error("foreground_service_unavailable", null, null)
+        }
 
         // Only touched on the main thread: the method channel handlers and
         // onStartCommand both run there.
@@ -47,7 +86,16 @@ class ChatForegroundService : Service() {
 
         fun stopService(context: Context, type: String) {
             activeTypes.remove(type)
-            if (activeTypes.isNotEmpty()) return
+            if (type == TYPE_LOCAL_API) {
+                finishLocalApiStart(false)
+                localApiChannel = null
+                localApiText = null
+                localApiStopLabel = null
+            }
+            if (activeTypes.isNotEmpty()) {
+                if (pendingStarts == 0) instance?.refreshForeground()
+                return
+            }
             // Stopping before onStartCommand has called startForeground()
             // crashes the app with ForegroundServiceDidNotStartInTimeException,
             // so onStartCommand finishes a stop that races a start.
@@ -64,15 +112,24 @@ class ChatForegroundService : Service() {
 
     private var wakeLock: PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
+    private var serverWakeLock: PowerManager.WakeLock? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == STOP_LOCAL_API) {
+            localApiChannel?.invokeMethod("stopLocalApiFromNotification", null)
+            return START_NOT_STICKY
+        }
         if (pendingStarts > 0) pendingStarts--
         createNotificationChannel()
 
         // Every startForegroundService() must be answered by startForeground(),
         // even when the service is about to stop, or Android kills the app.
-        val useMicrophone = TYPE_MICROPHONE in activeTypes && hasMicrophonePermission(this)
-        if (!promoteToForeground(useMicrophone)) {
+        if (!refreshForeground()) {
             stopSelf()
             return START_NOT_STICKY
         }
@@ -83,8 +140,6 @@ class ChatForegroundService : Service() {
             return START_NOT_STICKY
         }
 
-        acquireLocks()
-
         // A restarted service would have no Flutter engine behind it.
         return START_NOT_STICKY
     }
@@ -92,8 +147,39 @@ class ChatForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        instance = null
+        finishLocalApiStart(false)
+        localApiChannel?.invokeMethod("localApiServiceEnded", null)
+        localApiChannel = null
+        localApiText = null
+        localApiStopLabel = null
+        activeTypes.clear()
+        pendingStarts = 0
         releaseLocks()
+        serverWakeLock?.takeIf { it.isHeld }?.release()
+        serverWakeLock = null
         super.onDestroy()
+    }
+
+    private fun refreshForeground(): Boolean {
+        val useMic = TYPE_MICROPHONE in activeTypes && hasMicrophonePermission(this)
+        if (!promoteToForeground(useMic)) {
+            finishLocalApiStart(false)
+            return false
+        }
+        if (activeTypes.isNotEmpty()) acquireLocks()
+        if (TYPE_LOCAL_API in activeTypes) {
+            if (serverWakeLock?.isHeld != true) {
+                serverWakeLock = getSystemService(PowerManager::class.java)
+                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LocalMind:localApi")
+                    .apply { setReferenceCounted(false); acquire() }
+            }
+            finishLocalApiStart(true)
+        } else {
+            serverWakeLock?.takeIf { it.isHeld }?.release()
+            serverWakeLock = null
+        }
+        return true
     }
 
     /**
@@ -136,14 +222,23 @@ class ChatForegroundService : Service() {
         val pendingIntent = PendingIntent.getActivity(
             this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE
         )
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+        val serving = TYPE_LOCAL_API in activeTypes
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("LocalMind")
-            .setContentText(if (useMicrophone) "Listening…" else "Generating response…")
+            .setContentText(
+                if (serving) localApiText
+                else if (useMicrophone) "Listening…" else "Generating response…"
+            )
             .setSmallIcon(android.R.drawable.stat_notify_chat)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
+        if (serving) {
+            val stopIntent = Intent(this, ChatForegroundService::class.java).setAction(STOP_LOCAL_API)
+            val stop = PendingIntent.getService(this, 1, stopIntent, PendingIntent.FLAG_IMMUTABLE)
+            builder.addAction(0, localApiStopLabel, stop)
+        }
+        val notification = builder.build()
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             return try {
@@ -159,7 +254,9 @@ class ChatForegroundService : Service() {
         // not visible); fall back to special use so the start still completes.
         val candidates = if (useMicrophone) {
             listOf(
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+                if (serving || TYPE_SPECIAL_USE in activeTypes)
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                else ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
             )
         } else {

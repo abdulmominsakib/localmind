@@ -8,6 +8,8 @@ import 'package:flutter_gemma/flutter_gemma.dart' hide CancelToken;
 import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/async_operation_queue.dart';
+import '../../../core/inference/local_inference.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/app_providers.dart';
@@ -33,6 +35,7 @@ final notificationPermissionServiceProvider =
 final onDeviceGemmaServiceProvider = Provider<OnDeviceGemmaService>((ref) {
   final background = ref.read(chatBackgroundServiceProvider);
   final service = OnDeviceGemmaService(
+    coordinator: ref.read(inferenceCoordinatorProvider),
     onNativeWorkChanged: (active) =>
         unawaited(background.setNativeWorkActive(active)),
     modelResolver: (modelId) => ref
@@ -45,6 +48,7 @@ final onDeviceGemmaServiceProvider = Provider<OnDeviceGemmaService>((ref) {
 
 final onDeviceLlamaServiceProvider = Provider<OnDeviceLlamaService>((ref) {
   final service = OnDeviceLlamaService(
+    coordinator: ref.read(inferenceCoordinatorProvider),
     reasoningPreference: (modelId) => ref
         .read(importedGgufModelsProvider)
         .where((model) => model.id == modelId)
@@ -56,7 +60,10 @@ final onDeviceLlamaServiceProvider = Provider<OnDeviceLlamaService>((ref) {
 });
 
 final onDeviceMlxServiceProvider = Provider<OnDeviceMlxService>((ref) {
-  final service = OnDeviceMlxService(ref.read(dioProvider));
+  final service = OnDeviceMlxService(
+    ref.read(dioProvider),
+    coordinator: ref.read(inferenceCoordinatorProvider),
+  );
   ref.onDispose(() => service.dispose());
   return service;
 });
@@ -617,7 +624,16 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     await loadModel(modelId, current.backend ?? PreferredBackend.cpu);
   }
 
-  Future<void> loadModel(String modelId, PreferredBackend backend) async {
+  final _lifecycle = AsyncOperationQueue();
+
+  Future<void> loadModel(String modelId, PreferredBackend backend) =>
+      _lifecycle.run(
+        () => ref
+            .read(inferenceCoordinatorProvider)
+            .transition(() => _loadModel(modelId, backend)),
+      );
+
+  Future<void> _loadModel(String modelId, PreferredBackend backend) async {
     if (!ref.mounted) return;
     final models = ref.read(onDeviceModelsProvider);
     final model = models.firstWhere(
@@ -768,7 +784,12 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     }
   }
 
-  Future<void> unloadModel() async {
+  Future<void> unloadModel() => _lifecycle.run(
+    () => ref.read(inferenceCoordinatorProvider).transition(_unloadModel),
+  );
+
+  Future<void> _unloadModel() async {
+    Object? failure;
     final gemma = ref.mounted ? _gemmaService : null;
     final llama = ref.mounted ? _llamaService : null;
     final mlx = ref.mounted ? _mlxService : null;
@@ -776,6 +797,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       try {
         await gemma.unloadModel();
       } catch (e) {
+        failure ??= e;
         Log.error('Failed to unload gemma model: $e');
       }
     }
@@ -783,6 +805,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       try {
         await llama.unloadModel();
       } catch (e) {
+        failure ??= e;
         Log.error('Failed to unload llama.cpp model: $e');
       }
     }
@@ -790,11 +813,17 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
       try {
         await mlx.unloadModel();
       } catch (e) {
+        failure ??= e;
         Log.error('Failed to unload MLX model: $e');
       }
     }
     if (ref.mounted) {
-      state = const OnDeviceEngineState();
+      state = failure == null
+          ? const OnDeviceEngineState()
+          : state.copyWith(
+              status: OnDeviceEngineStatus.error,
+              error: formatOnDeviceError(failure),
+            );
     }
   }
 

@@ -1,0 +1,249 @@
+#!/bin/bash
+# Build libLiteRtLm.dylib for iOS device (arm64) and simulator (arm64).
+#
+# Prerequisites:
+#   - Bazel (via bazelisk): brew install bazelisk
+#   - Xcode with iOS SDK
+#   - Git LFS: brew install git-lfs
+#
+# Usage:
+#   ./build_ios.sh [ref]
+#   ./build_ios.sh 032334d        # default for 0.15.0 (post-6571c42 main HEAD)
+#   ./build_ios.sh v0.11.0        # WARNING: v0.11.0 prebuilt accelerators
+#                                 # are ABI-incompatible with libLiteRtLm
+#                                 # rebuilt from v0.11.0 source — crashes
+#                                 # in libLiteRtMetalAccelerator on engine
+#                                 # init/teardown. Use 032334d (post-6571c42
+#                                 # which re-syncs accelerator binaries with
+#                                 # WORKSPACE LITERT_REF).
+#   ./build_ios.sh v0.10.2        # WARNING: predates Metal accelerator,
+#                                 # produces libLiteRtLm.dylib that crashes
+#                                 # iPhone GPU with EXC_BAD_ACCESS in
+#                                 # litert_lm_engine_create.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LITERT_LM_DIR="${LITERT_LM_DIR:-/tmp/LiteRT-LM}"
+VERSION="${1:-}"
+
+echo "=== Building libLiteRtLm.dylib for iOS ==="
+
+# 1. Clone or update LiteRT-LM
+if [ -d "$LITERT_LM_DIR/.git" ]; then
+  echo "Updating $LITERT_LM_DIR..."
+  cd "$LITERT_LM_DIR"
+  # --force so a tag that moved upstream (e.g. v0.11.0 itself was retagged
+  # while we waited for accelerator fixes) doesn't abort the fetch.
+  git fetch --tags --force origin
+else
+  echo "Cloning LiteRT-LM..."
+  git clone https://github.com/google-ai-edge/LiteRT-LM "$LITERT_LM_DIR"
+  cd "$LITERT_LM_DIR"
+fi
+
+# 2. Checkout version
+# 032334d (main HEAD on 2026-05-08) is post-6571c42 "Update dependencies of
+# litert_lm" which rebuilt all prebuilt accelerator dylibs (Metal, WebGPU,
+# Gpu, OpenCL, samplers) AND re-synced WORKSPACE LITERT_REF to 5c5b9ce6.
+# This is the first public LiteRT-LM commit where libLiteRtLm rebuilt from
+# source has matching ABI with the prebuilt accelerators. v0.11.0 itself
+# is broken — see the WARNING above and the upstream issue we filed.
+DEFAULT_REF="924e79c91542761242244e4f1651851f822e4cbb"
+TARGET_REF="${VERSION:-$DEFAULT_REF}"
+echo "Checking out $TARGET_REF..."
+git checkout -f "$TARGET_REF"
+echo "Building from: $(git log --oneline -1)"
+
+# 3. Ensure shared library target exists
+if ! grep -q '"libLiteRtLm.dylib"' c/BUILD; then
+  echo "Adding shared library target to c/BUILD..."
+  cat >> c/BUILD << 'BUILDEOF'
+
+cc_binary(
+    name = "libLiteRtLm.dylib",
+    linkshared = True,
+    linkopts = select({
+        "@platforms//os:macos": ["-Wl,-exported_symbol,_LiteRt*", "-Wl,-exported_symbol,_litert_lm_*"],
+        "@platforms//os:ios": ["-Wl,-exported_symbol,_LiteRt*", "-Wl,-exported_symbol,_litert_lm_*", "-Wl,-x"],
+        "@platforms//os:linux": ["-Wl,--export-dynamic-symbol=LiteRt*", "-Wl,--export-dynamic-symbol=litert_lm_*"],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [":engine"],
+)
+BUILDEOF
+fi
+
+# 3b. Apply C API patch (adds set_max_num_images, set_litert_dispatch_lib_dir, etc).
+# git checkout above resets the source tree, so we re-apply on every build.
+bash "$SCRIPT_DIR/patch_c_api.sh" "$LITERT_LM_DIR"
+
+# 4. Pull LFS files
+echo "Pulling LFS files..."
+git lfs pull --include="prebuilt/ios_arm64/*,prebuilt/ios_sim_arm64/*"
+
+verify_flutter_ios_strip() {
+  local dylib="$1"
+  local probe
+  local output
+
+  probe="$(mktemp)"
+  cp "$dylib" "$probe"
+  if ! output="$(xcrun strip -x -S "$probe" 2>&1)"; then
+    rm -f "$probe"
+    echo "ERROR: $dylib is not compatible with Flutter iOS Native Assets release stripping."
+    echo "Flutter runs: xcrun strip -x -S <dylib>"
+    printf '%s\n' "$output"
+    return 1
+  fi
+  rm -f "$probe"
+}
+
+# 5. Build for iOS device (arm64)
+echo ""
+echo "=== Building for iOS device (arm64) ==="
+bazelisk build -c opt --strip=always --config=ios_arm64 '//c:libLiteRtLm.dylib'
+DEVICE_DIR="$SCRIPT_DIR/prebuilt/ios_arm64"
+mkdir -p "$DEVICE_DIR"
+cp bazel-bin/c/libLiteRtLm.dylib "$DEVICE_DIR/"
+chmod +w "$DEVICE_DIR/libLiteRtLm.dylib"
+install_name_tool -id @rpath/libLiteRtLm.dylib "$DEVICE_DIR/libLiteRtLm.dylib"
+install_name_tool -add_rpath '@loader_path/../../..' "$DEVICE_DIR/libLiteRtLm.dylib" 2>/dev/null || true
+
+# 6. Build for iOS simulator (arm64)
+echo ""
+echo "=== Building for iOS simulator (arm64) ==="
+bazelisk build --config=ios_sim_arm64 '//c:libLiteRtLm.dylib'
+SIM_DIR="$SCRIPT_DIR/prebuilt/ios_sim_arm64"
+mkdir -p "$SIM_DIR"
+cp bazel-bin/c/libLiteRtLm.dylib "$SIM_DIR/"
+chmod +w "$SIM_DIR/libLiteRtLm.dylib"
+install_name_tool -id @rpath/libLiteRtLm.dylib "$SIM_DIR/libLiteRtLm.dylib"
+install_name_tool -add_rpath '@loader_path/../../..' "$SIM_DIR/libLiteRtLm.dylib" 2>/dev/null || true
+
+# 7. Build StreamProxy for both targets
+echo ""
+echo "=== Building StreamProxy ==="
+clang -shared -o "$DEVICE_DIR/libStreamProxy.dylib" \
+  -arch arm64 -target arm64-apple-ios15.0 \
+  -isysroot "$(xcrun --sdk iphoneos --show-sdk-path)" \
+  -install_name @rpath/libStreamProxy.dylib \
+  -Wl,-headerpad_max_install_names \
+  "$SCRIPT_DIR/stream_proxy.c"
+echo "StreamProxy (device): OK"
+
+clang -shared -o "$SIM_DIR/libStreamProxy.dylib" \
+  -arch arm64 -target arm64-apple-ios15.0-simulator \
+  -isysroot "$(xcrun --sdk iphonesimulator --show-sdk-path)" \
+  -install_name @rpath/libStreamProxy.dylib \
+  -Wl,-headerpad_max_install_names \
+  "$SCRIPT_DIR/stream_proxy.c"
+echo "StreamProxy (simulator): OK"
+
+# 8. Copy companion libs
+echo ""
+echo "=== Copying companion libs ==="
+# libLiteRtMetalAccelerator.dylib was added upstream in commit 5e0d86b ("Update
+# dependencies of litert_lm") — must be on a tag/commit that includes it. The
+# v0.10.2 tag predates that commit. libLiteRt.dylib and libLiteRtTopKMetalSampler.dylib
+# in 5e0d86b are mistakenly x86_64 macOS binaries (upstream issue #2072), so we
+# only pick up the Metal accelerator which is actually arm64 iOS / arm64 iOSSim.
+for lib in libGemmaModelConstraintProvider.dylib libLiteRtMetalAccelerator.dylib; do
+  [ -f "prebuilt/ios_arm64/$lib" ] && cp "prebuilt/ios_arm64/$lib" "$DEVICE_DIR/$lib" && echo "  $lib → device"
+  [ -f "prebuilt/ios_sim_arm64/$lib" ] && cp "prebuilt/ios_sim_arm64/$lib" "$SIM_DIR/$lib" && echo "  $lib → simulator"
+done
+
+# 8b. Normalize iOS minos of all 4 companion dylibs to 13.0 — this matches
+# the MinimumOSVersion that Flutter Native Assets hardcodes into the
+# generated framework wrapper Info.plist (flutter/flutter#148501). Without
+# this, App Store Connect rejects the archive with ITMS-90208 ("framework
+# does not support the minimum OS Version specified in the Info.plist")
+# whenever a dylib's binary minos differs from the wrapper plist's 13.0.
+#
+# The declared floor is flutter_gemma's podspec `s.platform = :ios, '15.0'`
+# (#441; 16.0 only for flutter_gemma_mediapipe) — that's the real contract.
+# The minos here is just metadata to satisfy validator equality between binary
+# and wrapper plist; the actual minimum is enforced by whichever dependency
+# manager the app uses — SwiftPM against the Runner target on the default path,
+# CocoaPods against the Podfile platform when the app has one.
+# NOTE: the published native-v0.16.0 `libStreamProxy.dylib` was compiled at
+# ios16.0 (LC_BUILD_VERSION vtool'd to 13.0, so the artifact cannot show it).
+# Its imports are all pre-iOS-13 libc, so it is safe under the 15.0 floor; the
+# targets above take effect at the next native rebuild. Delete this note after
+# the release that follows native-v0.16.0.
+# See #245, #286.
+echo ""
+echo "=== Patch iOS companion dylibs minos → 13.0 ==="
+# Normalize an Apple slice's minimum-OS metadata to 13.0.
+#
+# Flutter hardcodes `MinimumOSVersion 13.0` into the Native-Assets framework
+# wrapper it generates, and App Store Connect compares each framework's BINARY
+# against ITS OWN wrapper plist — so any other value is ITMS-90208, whatever the
+# app's own deployment target is. This rewrites metadata only: the real floor is
+# enforced by the podspec, not by this number. See #245, #286.
+#
+# `-output` is the SAME path as the input, deliberately. vtool re-signs its
+# output ad-hoc and derives the signature Identifier from the -output BASENAME,
+# so the `-output "$lib.new"` + `mv` shape bakes ".new" into the shipped
+# binary's identifier — which is what every simulator dylib in this repo carried
+# — the identifier every simulator dylib in native-v0.16.0 still carries, since
+# a released tarball cannot be re-uploaded; corrected from the next native
+# release onward. Same path in and out, no temp name, no wrong identifier.
+#
+# Reads BOTH fields back afterwards. vtool accepts a wrong platform silently, so
+# a device slice stamped MACOS still reports minos 13.0 and passes a minos-only
+# check — then fails at dlopen with "built for a different platform", far from
+# here.
+normalize_apple_minos() {
+  local lib="$1" platform="$2" want
+  # Derived, never passed in: a caller that supplies both can get them out of
+  # step, and "expected" would then be whatever the mistake was.
+  case "$platform" in
+    ios)    want=IOS ;;
+    iossim) want=IOSSIMULATOR ;;
+    *) echo "ERROR: unsupported platform '$platform'" >&2; exit 1 ;;
+  esac
+  vtool -set-build-version "$platform" 13.0 18.5 -replace -output "$lib" "$lib"
+  local info; info="$(vtool -show-build-version "$lib")"
+  local got_plat got_min
+  got_plat="$(awk '/platform/ {print $2; exit}' <<<"$info")"
+  got_min="$(awk '/minos/ {print $2; exit}' <<<"$info")"
+  [ "$got_plat" = "$want" ] && [ "$got_min" = "13.0" ] || {
+    echo "ERROR: $(basename "$lib") is platform='$got_plat' minos='$got_min', want $want 13.0" >&2
+    exit 1
+  }
+  echo "    minos -> 13.0 ($want)"
+}
+
+for arch_dir_pair in "ios:$DEVICE_DIR" "iossim:$SIM_DIR"; do
+  platform="${arch_dir_pair%%:*}"
+  dir="${arch_dir_pair##*:}"
+  for libname in libGemmaModelConstraintProvider libLiteRtLm libLiteRtMetalAccelerator libStreamProxy; do
+    d="$dir/${libname}.dylib"
+    if [ -f "$d" ]; then
+      normalize_apple_minos "$d" "$platform"
+      chmod +w "$d"
+      echo "  $d: minos $(vtool -show-build "$d" | grep minos | awk '{print $2}'), sdk $(vtool -show-build "$d" | grep sdk | awk '{print $2}')"
+    fi
+  done
+done
+
+# 9. Verify
+echo ""
+echo "=== Verification ==="
+echo "Device (ios_arm64):"
+ls -lh "$DEVICE_DIR/"
+nm -gU "$DEVICE_DIR/libLiteRtLm.dylib" | grep "litert_lm_engine_create" | head -1
+for dylib in "$DEVICE_DIR"/*.dylib; do
+  verify_flutter_ios_strip "$dylib"
+done
+echo ""
+echo "Simulator (ios_sim_arm64):"
+ls -lh "$SIM_DIR/"
+nm -gU "$SIM_DIR/libLiteRtLm.dylib" | grep "litert_lm_engine_create" | head -1
+for dylib in "$SIM_DIR"/*.dylib; do
+  verify_flutter_ios_strip "$dylib"
+done
+echo ""
+echo "=== Done ==="

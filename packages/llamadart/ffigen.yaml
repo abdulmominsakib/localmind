@@ -1,0 +1,31 @@
+name: LlamaCpp
+description: Bindings to llama.cpp
+output: 'lib/src/backends/llama_cpp/bindings.dart'
+headers:
+  entry-points:
+    - '.dart_tool/llamadart/ffigen_headers/llama_cpp/include/llama.h'
+    - '.dart_tool/llamadart/ffigen_headers/llama_cpp/ggml/include/ggml.h'
+    - '.dart_tool/llamadart/ffigen_headers/llama_cpp/ggml/include/ggml-backend.h'
+    - '.dart_tool/llamadart/ffigen_headers/llama_cpp/tools/mtmd/mtmd.h'
+    - '.dart_tool/llamadart/ffigen_headers/llama_cpp/tools/mtmd/mtmd-helper.h'
+    - '.dart_tool/llamadart/ffigen_headers/libllamadart/llama_dart_wrapper.h'
+  include-directives:
+    - '.dart_tool/llamadart/ffigen_headers/llama_cpp/include/llama.h'
+    - '.dart_tool/llamadart/ffigen_headers/llama_cpp/ggml/include/ggml.h'
+    - '.dart_tool/llamadart/ffigen_headers/llama_cpp/ggml/include/ggml-backend.h'
+    - '.dart_tool/llamadart/ffigen_headers/llama_cpp/tools/mtmd/mtmd.h'
+    - '.dart_tool/llamadart/ffigen_headers/llama_cpp/tools/mtmd/mtmd-helper.h'
+    - '.dart_tool/llamadart/ffigen_headers/libllamadart/llama_dart_wrapper.h'
+compiler-opts:
+  - '-I.dart_tool/llamadart/ffigen_headers/llama_cpp/ggml/include'
+  - '-I.dart_tool/llamadart/ffigen_headers/llama_cpp/include'
+  - '-I.dart_tool/llamadart/ffigen_headers/llama_cpp/tools/mtmd'
+preamble: |
+  // coverage:ignore-file
+  // ignore_for_file: always_specify_types, unused_field
+  // ignore_for_file: camel_case_types
+  // ignore_for_file: non_constant_identifier_names
+  /// @nodoc
+silence-enum-warning: true
+ffi-native:
+  asset-id: 'package:llamadart/llamadart'

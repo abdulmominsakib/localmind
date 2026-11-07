@@ -1,0 +1,9 @@
+platforms:
+  - vm
+  - chrome
+
+tags:
+  local-only:
+    skip: "Runs only on local machines. Use: dart test --run-skipped -t local-only"
+  e2e:
+    timeout: 15m

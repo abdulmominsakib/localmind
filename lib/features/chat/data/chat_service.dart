@@ -80,6 +80,7 @@ abstract class ChatService {
         }
         return OnDeviceChatService(
           onDeviceGemma,
+          coordinator: onDeviceGemma.coordinator,
           imageCompressionEnabled: imageCompressionEnabled,
           imageCompressionLevel: imageCompressionLevel,
         );

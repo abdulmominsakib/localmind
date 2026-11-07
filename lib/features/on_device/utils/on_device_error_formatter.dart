@@ -8,6 +8,13 @@ String formatOnDeviceError(
   AppLocalizations? l10n,
 }) {
   final raw = error.toString();
+  const stopping =
+      'The model is still stopping. Please wait before trying again.';
+  // This timeout is native cancellation, not a network failure. Also accept
+  // the fallback text stored by the notifier so views can localize it later.
+  if (raw.contains('Native generation is still stopping') || raw == stopping) {
+    return l10n?.model_still_stopping ?? stopping;
+  }
 
   // 1. Built-in AI / System AI availability errors
   if (isBuiltIn ||

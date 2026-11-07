@@ -1,0 +1,43 @@
+name: flutter_gemma_litertlm
+description: "LiteRT-LM (.litertlm) on-device inference engine for flutter_gemma via dart:ffi (5 native platforms) + web. Opt-in InferenceEngineProvider. Also ships the LiteRT C API embedding backend (LiteRtEmbeddingBackend)."
+version: 1.6.0
+homepage: https://fluttergemma.dev
+repository: https://github.com/DenisovAV/flutter_gemma/tree/main/packages/flutter_gemma_litertlm
+topics: [gemma, llm, litert, on-device, ffi]
+
+# All six platforms: 5 native via dart:ffi (LiteRT-LM C API) + web via
+# @litert-lm/core. Declared explicitly so the supported set is the package's own
+# contract, not inferred from the transitive import graph.
+platforms:
+  android:
+  ios:
+  web:
+  macos:
+  windows:
+  linux:
+
+resolution: workspace
+
+environment:
+  sdk: '>=3.12.0 <4.0.0'
+  flutter: '>=3.44.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_gemma: ^1.7.0
+  flutter_gemma_embeddings: ^2.0.0
+  ffi: ^2.1.0
+  mutex: ^3.1.0
+  hooks: ^2.0.0
+  code_assets: ^1.2.0
+  crypto: ^3.0.6
+  path_provider: ^2.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+# No flutter: plugin/asset block — the native lib is delivered as a CodeAsset by
+# hook/build.dart (Native Assets). This package OWNS the litertlm bundle.

@@ -3603,5 +3603,43 @@
   "add_model_gguf_added": "GGUF model added",
   "add_model_litert_added": "LiteRT model added",
   "add_model_file_added": "{name} added",
-  "add_model_already_added": "Model already added"
+  "add_model_already_added": "Model already added",
+  "model_still_stopping": "The model is still stopping. Please wait before trying again.",
+  "localApiTitle": "Local API",
+  "localApiIntro": "Use your loaded model in other apps with an OpenAI-compatible API. Start the server before switching apps.",
+  "localApiRunning": "Local API is running",
+  "localApiStopped": "Server stopped",
+  "localApiStarting": "Starting server…",
+  "localApiStopping": "Stopping server…",
+  "localApiRotating": "Replacing API key…",
+  "localApiModelRequired": "Load a downloaded LiteRT or imported GGUF model first.",
+  "localApiInvalidPort": "Enter a port from 1024 to 65535.",
+  "localApiStartFailed": "Android could not start the server. Try again while LocalMind is open.",
+  "localApiPortUnavailable": "Could not listen on this port. Try another port.",
+  "localApiKeyFailed": "Could not access the API key.",
+  "localApiModelId": "Model ID",
+  "localApiTextAndTools": "Text and tool calls",
+  "localApiTextOnly": "Text only",
+  "localApiPort": "Port",
+  "localApiLan": "Allow other devices on the local network",
+  "localApiLanHint": "Use this only on a trusted network. HTTP does not encrypt prompts or the API key.",
+  "localApiStart": "Start server",
+  "localApiStop": "Stop server",
+  "localApiUrl": "Same-device base URL",
+  "localApiLanUrl": "Local network base URL",
+  "localApiNoLan": "No local network address is available.",
+  "localApiKey": "API key",
+  "localApiShowKey": "Show API key",
+  "localApiHideKey": "Hide API key",
+  "localApiRotateKey": "Replace API key",
+  "localApiRotateHint": "The current key will stop working. Update your connected apps with the new key.",
+  "localApiCopy": "Copy {label}",
+  "@localApiCopy": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "localApiCopied": "Copied to clipboard"
 }

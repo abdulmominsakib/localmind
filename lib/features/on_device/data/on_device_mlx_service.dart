@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../../core/inference/local_inference.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
 import '../../servers/data/models/server.dart';
@@ -23,6 +24,7 @@ class OnDeviceMlxService {
   OnDeviceMlxService(
     this._dio, {
     this.modelsDirectoryProvider,
+    this.coordinator,
     AppleMlxLlmManager Function()? llmManagerFactory,
     bool? nativeInferenceAvailable,
     bool? isApplePlatform,
@@ -38,6 +40,7 @@ class OnDeviceMlxService {
   static const String _downloadCompleteFileName = '.download_complete';
 
   final Dio _dio;
+  final InferenceCoordinator? coordinator;
   final Future<Directory> Function()? modelsDirectoryProvider;
   final AppleMlxLlmManager Function() _llmManagerFactory;
   final bool _nativeInferenceAvailable;
@@ -380,6 +383,27 @@ class OnDeviceMlxService {
 
   /// Streams chat responses from the loaded MLX model.
   Stream<ChatResponse> sendMessage({
+    required String modelId,
+    required List<Message> messages,
+    required ChatParameters params,
+  }) async* {
+    final lease = coordinator?.tryAcquire();
+    if (coordinator != null && lease == null) {
+      yield const ChatResponse(
+        type: ChatResponseType.error,
+        content: 'The on-device model is busy.',
+      );
+      yield const ChatResponse(type: ChatResponseType.done);
+      return;
+    }
+    try {
+      yield* _sendMessage(modelId: modelId, messages: messages, params: params);
+    } finally {
+      lease?.release();
+    }
+  }
+
+  Stream<ChatResponse> _sendMessage({
     required String modelId,
     required List<Message> messages,
     required ChatParameters params,

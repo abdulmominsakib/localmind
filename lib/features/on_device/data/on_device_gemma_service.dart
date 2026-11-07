@@ -8,7 +8,9 @@ import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../core/inference/local_inference.dart';
 import '../../../core/logger/app_logger.dart';
+import '../../../core/utils/async_operation_queue.dart';
 import 'models/on_device_model.dart';
 
 abstract interface class OnDeviceInferenceSession {
@@ -48,7 +50,7 @@ bool isCorruptedOnDeviceEngineError(Object error) {
 }
 
 /// How long a teardown waits for a stopped native generation to wind down
-/// before closing its conversation anyway.
+/// before reporting that teardown must be deferred.
 const onDeviceGenerationDrainTimeout = Duration(seconds: 5);
 
 /// Keeps native teardown off a generation that is still running.
@@ -58,8 +60,16 @@ const onDeviceGenerationDrainTimeout = Duration(seconds: 5);
 /// drains, which on the UI isolate is an ANR. Cancelling the consumer's
 /// subscription doesn't wait either: native keeps decoding until it notices
 /// the cancel. So a cancel or [close] here asks native to stop, keeps
-/// listening until the stream really ends (or [drainTimeout] passes), and only
+/// listening until the stream really ends, and only
 /// then lets the conversation be deleted.
+class NativeGenerationDrainTimeout extends TimeoutException {
+  NativeGenerationDrainTimeout(Duration duration)
+    : super(
+        'Native generation is still stopping; retry once it finishes.',
+        duration,
+      );
+}
+
 @visibleForTesting
 class DrainingInferenceSession implements OnDeviceInferenceSession {
   DrainingInferenceSession(
@@ -75,11 +85,16 @@ class DrainingInferenceSession implements OnDeviceInferenceSession {
   final VoidCallback? onClosed;
   _NativeGeneration? _generation;
   bool _isClosed = false;
+  Future<void>? _closeFuture;
 
   bool get isGenerating => _generation != null;
+  bool get isStopping => _generation?.draining != null;
 
   @override
-  Future<void> addQueryChunk(Message message) => _inner.addQueryChunk(message);
+  Future<void> addQueryChunk(Message message) {
+    if (_isClosed) throw StateError('Session is closing');
+    return _inner.addQueryChunk(message);
+  }
 
   @override
   Stream<ModelResponse> generateChatResponseAsync() {
@@ -96,6 +111,13 @@ class DrainingInferenceSession implements OnDeviceInferenceSession {
 
     controller = StreamController<ModelResponse>(
       onListen: () {
+        if (_isClosed || _generation != null) {
+          controller.addError(
+            StateError('Session is closing or already generating'),
+          );
+          controller.close();
+          return;
+        }
         final current = generation = _generation = _NativeGeneration(settle);
         onGeneratingChanged?.call(true);
         try {
@@ -144,28 +166,41 @@ class DrainingInferenceSession implements OnDeviceInferenceSession {
       try {
         await generation.done.future.timeout(drainTimeout);
       } on TimeoutException {
-        Log.warning(
-          'On-device generation did not stop within '
-          '${drainTimeout.inSeconds}s; closing it anyway',
-        );
-        final subscription = generation.subscription;
-        generation.subscription = null;
-        generation.settle();
-        await subscription?.cancel();
+        // Keep listening and keep native-work accounting active. Consumer
+        // cancellation is not permission to free native memory.
+        throw NativeGenerationDrainTimeout(drainTimeout);
       }
     }();
   }
 
   @override
-  Future<void> close() async {
-    if (_isClosed) return;
+  Future<void> close() {
+    return _closeFuture ??= _close();
+  }
+
+  Future<void> _close() async {
     _isClosed = true;
     try {
       await drain();
-      await _inner.close();
-    } finally {
-      onClosed?.call();
+    } on NativeGenerationDrainTimeout {
+      final generation = _generation;
+      if (generation != null) {
+        final deferred = generation.done.future.then((_) => _finishClose());
+        _closeFuture = deferred;
+        unawaited(
+          deferred.catchError((Object error, StackTrace stack) {
+            Log.error('Deferred native session cleanup failed: $error');
+          }),
+        );
+      }
+      rethrow;
     }
+    await _finishClose();
+  }
+
+  Future<void> _finishClose() async {
+    await _inner.close();
+    onClosed?.call();
   }
 }
 
@@ -201,21 +236,25 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   OnDeviceGemmaService({
     this.onNativeWorkChanged,
     this.modelResolver,
+    this.coordinator,
   });
 
   /// Resolves an [OnDeviceModel] by id, including imported models.
   final OnDeviceModel Function(String modelId)? modelResolver;
+
+  final InferenceCoordinator? coordinator;
 
   /// Total token budget (prompt + history + output) used when the caller
   /// doesn't pass one.
   static const defaultMaxTokens = 4096;
 
   /// Called with true when a native generation starts while none was running,
-  /// and with false once the last one has wound down. Android uses it to end
-  /// the process before its Flutter engine is torn down under a live decode.
+  /// and with false once the last one has wound down. Keep this accounting
+  /// active through cancellation timeouts; the Android engine is process-owned.
   final void Function(bool active)? onNativeWorkChanged;
 
   final Set<DrainingInferenceSession> _sessions = {};
+  final _lifecycle = AsyncOperationQueue();
   int _liveGenerations = 0;
 
   InferenceModel? _model;
@@ -387,6 +426,13 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     String modelId,
     PreferredBackend backend, {
     int? maxTokens,
+  }) =>
+      _lifecycle.run(() => _loadModel(modelId, backend, maxTokens: maxTokens));
+
+  Future<void> _loadModel(
+    String modelId,
+    PreferredBackend backend, {
+    int? maxTokens,
   }) async {
     final effectiveMaxTokens = maxTokens ?? _currentMaxTokens;
     if (_isDisposed) {
@@ -401,7 +447,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     }
 
     if (_model != null) {
-      await unloadModel();
+      await _unloadModel();
     }
 
     Log.info(
@@ -467,7 +513,23 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     String? systemInstruction,
     List<Tool> tools = const [],
     bool? supportImage,
+  }) => _lifecycle.run(
+    () => _createChat(
+      systemInstruction: systemInstruction,
+      tools: tools,
+      supportImage: supportImage,
+    ),
+  );
+
+  Future<OnDeviceInferenceSession> _createChat({
+    String? systemInstruction,
+    List<Tool> tools = const [],
+    bool? supportImage,
   }) async {
+    if (_isDisposed) throw StateError('OnDeviceGemmaService has been disposed');
+    if (_sessions.any((session) => session.isStopping)) {
+      throw NativeGenerationDrainTimeout(onDeviceGenerationDrainTimeout);
+    }
     await _ensureModelLoaded();
 
     try {
@@ -499,7 +561,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     if (_currentModelId == null || _currentBackend == null) {
       throw StateError('Model not loaded. Call loadModel first.');
     }
-    await loadModel(_currentModelId!, _currentBackend!);
+    await _loadModel(_currentModelId!, _currentBackend!);
   }
 
   Future<OnDeviceInferenceSession> _openChat({
@@ -577,7 +639,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
       return Future.value();
     }
     Log.warning('Reloading on-device model after a native inference failure');
-    return _recoverClosedModel();
+    return _lifecycle.run(_recoverClosedModel);
   }
 
   Future<void> _recoverClosedModel() {
@@ -596,15 +658,18 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
       final staleModel = _model;
       if (staleModel != null) {
         await _drainGenerations();
-        _sessions.clear();
+        for (final session in _sessions.toList()) {
+          await session.close();
+        }
         try {
           await staleModel.close();
         } catch (error) {
           Log.warning('Error awaiting stale Gemma model shutdown: $error');
+          rethrow;
         }
       }
       _model = null;
-      await loadModel(modelId, backend, maxTokens: _currentMaxTokens);
+      await _loadModel(modelId, backend, maxTokens: _currentMaxTokens);
     }();
 
     _recoveryFuture = recovery;
@@ -615,14 +680,19 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     });
   }
 
-  Future<void> unloadModel() async {
+  Future<void> unloadModel() => _lifecycle.run(_unloadModel);
+
+  Future<void> _unloadModel() async {
     if (_model != null) {
       await _drainGenerations();
-      _sessions.clear();
+      for (final session in _sessions.toList()) {
+        await session.close();
+      }
       try {
         await _model!.close();
       } catch (e) {
         Log.error('Error closing model: $e');
+        rethrow;
       }
       _model = null;
       _currentModelId = null;
@@ -632,7 +702,11 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
 
   void dispose() {
     _isDisposed = true;
-    unloadModel();
+    unawaited(
+      unloadModel().catchError((Object error) {
+        Log.warning('Native model disposal deferred: $error');
+      }),
+    );
   }
 
   /// Migrate models from old custom download location to flutter_gemma storage.

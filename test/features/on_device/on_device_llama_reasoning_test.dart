@@ -14,6 +14,7 @@ class RecordingEngine implements llama.LlamaEngine {
   final thinking = <bool>[];
   final loadedProjectors = <String>[];
   bool visionSupported = false;
+  bool failDisposal = false;
 
   @override
   Future<bool> get supportsVision => Future.value(visionSupported);
@@ -22,8 +23,11 @@ class RecordingEngine implements llama.LlamaEngine {
   dynamic noSuchMethod(Invocation invocation) {
     switch (invocation.memberName) {
       case #loadModel:
-      case #dispose:
         return Future<void>.value();
+      case #dispose:
+        return failDisposal
+            ? Future<void>.error(StateError('native disposal failed'))
+            : Future<void>.value();
       case #loadMultimodalProjector:
         loadedProjectors.add(invocation.positionalArguments[0] as String);
         return Future<void>.value();
@@ -58,6 +62,55 @@ class RecordingEngine implements llama.LlamaEngine {
 }
 
 void main() {
+  test('failed native disposal prevents loading another engine', () async {
+    final engine = RecordingEngine();
+    var creations = 0;
+    final service = OnDeviceLlamaService(
+      engineFactory: () {
+        creations++;
+        return engine;
+      },
+    );
+    final model = ImportedGgufModelMetadata(
+      id: 'shutdown-test',
+      name: 'Shutdown test',
+      filePath: '/tmp/model.gguf',
+      fileSizeBytes: 4,
+      importedAt: DateTime.utc(2026),
+      source: OnDeviceImportedSource.localFile,
+    ).toOnDeviceModel();
+    await service.loadModel(model);
+    engine.failDisposal = true;
+    await expectLater(service.unloadModel(), throwsStateError);
+    await expectLater(service.loadModel(model), throwsStateError);
+    expect(creations, 1);
+  });
+
+  test('changing CPU to GPU reloads the same model', () async {
+    final engines = <RecordingEngine>[];
+    final service = OnDeviceLlamaService(
+      engineFactory: () {
+        final engine = RecordingEngine();
+        engines.add(engine);
+        return engine;
+      },
+    );
+    final model = ImportedGgufModelMetadata(
+      id: 'backend-test',
+      name: 'Backend test',
+      filePath: '/tmp/model.gguf',
+      fileSizeBytes: 4,
+      importedAt: DateTime.utc(2026),
+      source: OnDeviceImportedSource.localFile,
+    ).toOnDeviceModel();
+    await service.loadModel(model);
+    await service.loadModel(model);
+    expect(engines.length, 1);
+    await service.loadModel(model, useGpu: true);
+    expect(engines.length, 2);
+    await service.unloadModel();
+  });
+
   test(
     'saved setting reaches generation, including edits while loaded and reset',
     () async {

@@ -16,9 +16,14 @@
 
     <application
         android:label="LocalMind"
-        android:name="${applicationName}"
+        android:name=".LocalMindApplication"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
+        <!-- LocalMind uses RemoteViews, never Glance action trampolines. -->
+        <activity android:name="androidx.glance.appwidget.action.ActionTrampolineActivity"
+            tools:node="remove" />
+        <activity android:name="androidx.glance.appwidget.action.InvisibleActionTrampolineActivity"
+            tools:node="remove" />
         <uses-native-library
             android:name="libOpenCL.so"
             android:required="false"/>
@@ -85,7 +90,7 @@
             android:foregroundServiceType="specialUse|microphone">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Used to keep the local AI model inference process alive when the user switches apps, and to keep microphone capture active for the assistant voice session when invoked from the lock screen or another app." />
+                android:value="Keeps on-device inference, the user-started local model API server, and assistant microphone capture active when the user switches apps. The server can be stopped from its notification." />
         </service>
 
         <service

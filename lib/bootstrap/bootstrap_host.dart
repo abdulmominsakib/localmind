@@ -1,3 +1,5 @@
+import '../core/inference/local_inference.dart';
+import '../features/on_device/providers/external_inference_provider.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -92,6 +94,13 @@ class _BootstrapHostState extends State<BootstrapHost> {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           databaseProvider.overrideWithValue(database),
+          localInferenceProvider.overrideWith(
+            (ref) => ref.watch(externalInferenceProvider),
+          ),
+          localInferenceModelProvider.overrideWith((ref) {
+            ref.watch(onDeviceEngineProvider);
+            return ref.watch(localInferenceProvider)?.model;
+          }),
         ],
       );
 

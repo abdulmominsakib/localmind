@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:llamadart/llamadart.dart' as llama;
 
+import '../../../core/inference/local_inference.dart';
 import '../../../core/logger/app_logger.dart';
+import '../../../core/utils/async_operation_queue.dart';
 import '../../../core/models/enums.dart';
 import '../../chat/data/chat_api_error.dart';
 import '../../chat/data/chat_service.dart';
@@ -16,7 +18,13 @@ import '../../servers/data/models/server.dart';
 import 'models/on_device_model.dart';
 
 class OnDeviceLlamaService {
-  OnDeviceLlamaService({this.reasoningPreference, this.engineFactory});
+  OnDeviceLlamaService({
+    this.reasoningPreference,
+    this.engineFactory,
+    this.coordinator,
+  });
+
+  final InferenceCoordinator? coordinator;
 
   final llama.LlamaEngine Function()? engineFactory;
 
@@ -28,8 +36,11 @@ class OnDeviceLlamaService {
   String? _currentModelId;
   String? _currentProjectorPath;
   int? _currentContextLength;
+  bool? _currentUseGpu;
+  final _lifecycle = AsyncOperationQueue();
   String? _currentSystemPrompt;
   bool _isDisposed = false;
+  Object? _retirementError;
 
   /// Tracks the most recent user message we processed, so we can detect
   /// out-of-band edits or regenerations and rebuild the chat history.
@@ -54,9 +65,22 @@ class OnDeviceLlamaService {
     OnDeviceModel model, {
     int contextLength = 4096,
     bool useGpu = false,
+  }) => _lifecycle.run(
+    () => _loadModel(model, contextLength: contextLength, useGpu: useGpu),
+  );
+
+  Future<void> _loadModel(
+    OnDeviceModel model, {
+    int contextLength = 4096,
+    bool useGpu = false,
   }) async {
     if (_isDisposed) {
       throw StateError('OnDeviceLlamaService has been disposed');
+    }
+    if (_retirementError != null) {
+      throw StateError(
+        'Previous GGUF engine could not shut down: $_retirementError',
+      );
     }
     if (model.localPath == null || model.localPath!.isEmpty) {
       throw StateError('Imported GGUF model is missing a local file path');
@@ -67,11 +91,14 @@ class OnDeviceLlamaService {
     final contextChanged = _currentContextLength != contextLength;
     final projectorChanged = _currentProjectorPath != model.projectorPath;
 
-    if (alreadyLoaded && !contextChanged && !projectorChanged) {
+    if (alreadyLoaded &&
+        !contextChanged &&
+        !projectorChanged &&
+        _currentUseGpu == useGpu) {
       return;
     }
 
-    await unloadModel();
+    await _unloadModel();
 
     Log.info(
       'Loading GGUF model ${model.id} from ${model.localPath} '
@@ -114,12 +141,15 @@ class OnDeviceLlamaService {
     } catch (_) {
       try {
         await engine.dispose();
-      } catch (_) {}
+      } catch (error) {
+        _retirementError = error;
+      }
       rethrow;
     }
 
     _engine = engine;
     _currentModelId = model.id;
+    _currentUseGpu = useGpu;
     _currentProjectorPath = model.projectorPath;
     _currentContextLength = contextLength;
     _session = null;
@@ -144,6 +174,15 @@ class OnDeviceLlamaService {
     required List<Message> messages,
     required ChatParameters params,
   }) async* {
+    final lease = coordinator?.tryAcquire();
+    if (coordinator != null && lease == null) {
+      yield const ChatResponse(
+        type: ChatResponseType.error,
+        content: 'The on-device model is busy.',
+      );
+      yield const ChatResponse(type: ChatResponseType.done);
+      return;
+    }
     final prev = _activeGenerationFuture;
     final generationCompleter = Completer<void>();
     _activeGenerationFuture = generationCompleter.future;
@@ -318,12 +357,60 @@ class OnDeviceLlamaService {
         yield const ChatResponse(type: ChatResponseType.done);
       }
     } finally {
+      lease?.release();
       if (!generationCompleter.isCompleted) {
         generationCompleter.complete();
       }
       if (identical(_activeGenerationFuture, generationCompleter.future)) {
         _activeGenerationFuture = null;
       }
+    }
+  }
+
+  /// Uses the model without touching the retained in-app ChatSession.
+  /// The caller holds the shared inference lease.
+  Stream<InferenceEvent> generateExternal(
+    InferenceRequest request,
+    InferenceCancellation cancellation, {
+    required double defaultTemperature,
+    required double defaultTopP,
+    required int defaultMaxTokens,
+  }) async* {
+    final engine = _engine;
+    if (engine == null || !isLoaded || currentModelId != request.model) {
+      throw StateError('GGUF model is unavailable.');
+    }
+    final messages = [
+      for (final message in request.messages)
+        llama.LlamaChatMessage.fromText(
+          role: llama.LlamaChatRole.values.byName(message.role.name),
+          text: message.text,
+        ),
+    ];
+    final iterator = StreamIterator(
+      engine.create(
+        messages,
+        enableThinking: false,
+        params: llama.GenerationParams(
+          temp: request.temperature ?? defaultTemperature,
+          topP: request.topP ?? defaultTopP,
+          maxTokens: request.maxTokens ?? defaultMaxTokens,
+        ),
+      ),
+    );
+    try {
+      while (await cancellation.moveNext(iterator)) {
+        for (final choice in iterator.current.choices) {
+          final text = choice.delta.content;
+          if (text != null && text.isNotEmpty) yield InferenceText(text);
+          if (choice.finishReason != null) {
+            yield InferenceFinished(length: choice.finishReason == 'length');
+          }
+        }
+      }
+    } finally {
+      if (cancellation.isCancelled) engine.cancelGeneration();
+      await iterator.cancel();
     }
   }
 
@@ -339,13 +426,15 @@ class OnDeviceLlamaService {
     }
   }
 
-  Future<void> unloadModel() async {
+  Future<void> unloadModel() => _lifecycle.run(_unloadModel);
+
+  Future<void> _unloadModel() async {
     cancelGeneration();
-    _activeGenerationFuture = null;
     final engine = _engine;
     _engine = null;
     _session = null;
     _currentModelId = null;
+    _currentUseGpu = null;
     _currentProjectorPath = null;
     _currentContextLength = null;
     _currentSystemPrompt = null;
@@ -355,14 +444,20 @@ class OnDeviceLlamaService {
       try {
         await engine.dispose();
       } catch (e) {
+        _retirementError = e;
         Log.error('Error disposing GGUF engine: $e');
+        rethrow;
       }
     }
   }
 
   void dispose() {
     _isDisposed = true;
-    unawaited(unloadModel());
+    unawaited(
+      unloadModel().catchError((Object error) {
+        Log.warning('GGUF disposal did not complete: $error');
+      }),
+    );
   }
 }
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:pdfrx/pdfrx.dart';
+import '../../../core/services/pdf_text_service.dart';
 
 class AttachmentHelpers {
   AttachmentHelpers._();
@@ -68,29 +68,8 @@ class AttachmentHelpers {
     return Future.value(null);
   }
 
-  static Future<String?> _readPdfText(String path) async {
-    PdfDocument? document;
-    try {
-      final file = File(path);
-      if (!await file.exists()) return null;
-
-      document = await PdfDocument.openFile(path);
-      final text = StringBuffer();
-      for (final page in document.pages) {
-        final pageText = await page.loadText();
-        final content = pageText?.fullText.trim() ?? '';
-        if (content.isEmpty) continue;
-        if (text.isNotEmpty) text.writeln('\n--- Page ${page.pageNumber} ---');
-        text.write(content);
-      }
-      final extracted = text.toString().trim();
-      return extracted.isEmpty ? null : extracted;
-    } catch (_) {
-      return null;
-    } finally {
-      await document?.dispose();
-    }
-  }
+  static Future<String?> _readPdfText(String path) =>
+      PdfTextService.instance.read(path);
 
   static Future<String?> readImageBase64(String path) async {
     try {
