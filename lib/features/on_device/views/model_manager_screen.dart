@@ -15,6 +15,7 @@ import 'package:localmind/features/on_device/providers/foreground_download_provi
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 import 'package:localmind/features/on_device/components/memory_stats_panel.dart';
 import 'package:localmind/features/on_device/components/model_card.dart';
+import 'package:localmind/features/on_device/providers/imported_model_update_provider.dart';
 import 'package:localmind/features/on_device/views/components/add_model_from_url_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -129,9 +130,38 @@ class _OnDeviceModelManagerScreenState
                   const SizedBox(height: 8),
                   const Divider(),
                   const SizedBox(height: 8),
-                  _SectionHeader(
-                    title: l10n.your_models_title,
-                    subtitle: l10n.your_models_count(importedModels.length),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SectionHeader(
+                          title: l10n.your_models_title,
+                          subtitle: l10n.your_models_count(importedModels.length),
+                        ),
+                      ),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final async = ref.watch(importedModelUpdateProvider);
+                          return IconButton(
+                            tooltip: 'Check for updates',
+                            onPressed: async.isLoading
+                                ? null
+                                : () => ref
+                                    .read(importedModelUpdateProvider.notifier)
+                                    .checkForUpdates(),
+                            icon: async.isLoading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const HugeIcon(
+                                    icon: HugeIcons.strokeRoundedRefresh,
+                                    size: 20,
+                                  ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   ...importedModels.map(

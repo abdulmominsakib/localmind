@@ -26,6 +26,7 @@ class OnDeviceModel {
   final String? modality;
   final String? quantization;
   final String? repoId;
+  final bool updateAvailable;
   final String languagesLabel;
   final String? backendNote;
   final bool isCpuOnly;
@@ -57,6 +58,7 @@ class OnDeviceModel {
     this.modality,
     this.quantization,
     this.repoId,
+    this.updateAvailable = false,
     required this.languagesLabel,
     this.backendNote,
     this.isCpuOnly = false,

@@ -264,6 +264,7 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
 
   ImportedGgufModelRepository get _repository =>
       ref.read(importedGgufModelRepositoryProvider);
+  ImportedGgufModelRepository get repository => _repository;
 
   @override
   List<OnDeviceModel> build() {
@@ -451,6 +452,7 @@ class ImportedLitertModelsNotifier extends Notifier<List<OnDeviceModel>> {
 
   ImportedLitertModelRepository get _repository =>
       ref.read(importedLitertModelRepositoryProvider);
+  ImportedLitertModelRepository get repository => _repository;
 
   @override
   List<OnDeviceModel> build() {

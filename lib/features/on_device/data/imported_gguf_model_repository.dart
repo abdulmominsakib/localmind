@@ -214,6 +214,7 @@ class ImportedGgufModelMetadata {
       modality: hasProjector ? 'vision' : 'text',
       quantization: quantization ?? parseQuantization(name),
       repoId: repoId,
+      updateAvailable: updateAvailable ?? false,
       importedAt: importedAt,
       isImported: true,
       importedSource: source,
@@ -961,6 +962,62 @@ class ImportedGgufModelRepository {
     } catch (_) {
       return metadata;
     }
+  }
+
+
+  Future<int> checkForUpdates({String? token}) async {
+    final models = load().where((m) =>
+        m.source == OnDeviceImportedSource.huggingFace &&
+        m.repoId != null &&
+        m.rfilename != null).toList();
+    int updated = 0;
+    for (final model in models) {
+      try {
+        final service = HuggingFaceModelSearchService(dio: _dio);
+        final info = await service.fetchModelInfo(
+          model.repoId!,
+          rfilename: model.rfilename,
+          token: token,
+        );
+        if (info == null) continue;
+        // Compare fileOid first, then sha.
+        bool changed = false;
+        if (model.fileOid != null && info.fileOid != null) {
+          changed = model.fileOid != info.fileOid;
+        } else if (model.revision != null && info.sha != null) {
+          changed = model.revision != info.sha;
+        } else if (info.sha != null && model.revision == null) {
+          changed = false; // no baseline
+        }
+        await _mutex.run(() async {
+          final fresh = load();
+          final idx = fresh.indexWhere((m) => m.id == model.id);
+          if (idx < 0) return;
+          fresh[idx] = fresh[idx].copyWith(
+            lastCheckedAt: DateTime.now(),
+            updateAvailable: changed ? true : fresh[idx].updateAvailable,
+            latestRevision: changed ? info.sha : fresh[idx].latestRevision,
+            // enrich metadata on change
+            fileOid: info.fileOid ?? fresh[idx].fileOid,
+            lastModified: info.lastModified ?? fresh[idx].lastModified,
+            pipelineTag: info.pipelineTag ?? fresh[idx].pipelineTag,
+            libraryName: info.libraryName ?? fresh[idx].libraryName,
+            license: info.license ?? fresh[idx].license,
+            baseModel: info.baseModel ?? fresh[idx].baseModel,
+            architecture: info.architecture ?? fresh[idx].architecture,
+            contextLength: info.contextLength ?? fresh[idx].contextLength,
+            quantization: info.quantization ?? fresh[idx].quantization,
+            languages: info.languages.isNotEmpty ? info.languages : fresh[idx].languages,
+            modalities: info.modalities.isNotEmpty ? info.modalities : fresh[idx].modalities,
+          );
+          await _saveAllUnlocked(fresh);
+        });
+        if (changed) updated++;
+      } catch (_) {
+        // best-effort
+      }
+    }
+    return updated;
   }
 
   Future<void> download(
