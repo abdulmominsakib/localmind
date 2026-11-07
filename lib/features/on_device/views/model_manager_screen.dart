@@ -15,6 +15,7 @@ import 'package:localmind/features/on_device/providers/foreground_download_provi
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 import 'package:localmind/features/on_device/components/memory_stats_panel.dart';
 import 'package:localmind/features/on_device/components/model_card.dart';
+import 'package:localmind/features/on_device/views/components/add_model_from_url_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class OnDeviceModelManagerScreen extends ConsumerStatefulWidget {
@@ -325,6 +326,16 @@ class _ImportOverviewCard extends StatelessWidget {
                 icon: const HugeIcon(icon: HugeIcons.strokeRoundedAddCircle),
                 label: Text(l10n.add_models_button),
               ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  showDialog<bool>(
+                    context: context,
+                    builder: (_) => const AddModelFromUrlDialog(),
+                  );
+                },
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedLink01),
+                label: const Text('Import from URL'),
+              ),
             ],
           ),
         ],
@@ -447,6 +458,16 @@ class _EmptyImportedModelsCard extends StatelessWidget {
                 onPressed: onAddModels,
                 icon: const HugeIcon(icon: HugeIcons.strokeRoundedAddCircle),
                 label: Text(l10n.add_models_button),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  showDialog<bool>(
+                    context: context,
+                    builder: (_) => const AddModelFromUrlDialog(),
+                  );
+                },
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedLink01),
+                label: const Text('Import from URL'),
               ),
             ],
           ),
