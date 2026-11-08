@@ -2988,6 +2988,22 @@
   "@unload_models_before_load": {
     "description": "Setting to unload every loaded model instance before loading another"
   },
+  "settings_allow_background_downloads": "Allow background downloads",
+  "@settings_allow_background_downloads": {
+    "description": "Continue downloading models when the app is backgrounded"
+  },
+  "settings_allow_background_downloads_desc": "Continue downloading models when you switch apps or lock your screen.",
+  "@settings_allow_background_downloads_desc": {
+    "description": "Description for allow background downloads toggle"
+  },
+  "settings_download_over_wifi_only": "Download over WiFi only",
+  "@settings_download_over_wifi_only": {
+    "description": "Only download models on WiFi or unmetered connections"
+  },
+  "settings_download_over_wifi_only_desc": "Only download models when an eligible WiFi or unmetered connection is available.",
+  "@settings_download_over_wifi_only_desc": {
+    "description": "Description for download over WiFi only toggle"
+  },
   "temp_chat_keyboard_incognito": "Incognito keyboard in temporary chat",
   "@temp_chat_keyboard_incognito": {
     "description": "Use private/incognito keyboard mode while in a temporary chat"

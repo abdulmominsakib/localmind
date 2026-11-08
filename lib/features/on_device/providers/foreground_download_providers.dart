@@ -196,6 +196,8 @@ class ForegroundDownloadNotifier
       final next = Map<String, DownloadProgressInfo>.from(state);
       bool changed = false;
       for (final id in activeIds) {
+        // Skip if cancelled or removed from state while we awaited.
+        if (_cancelled.contains(id) || !state.containsKey(id)) continue;
         final r = byId[id];
         if (r == null) continue;
         if (r.status == TaskStatus.complete ||
@@ -396,7 +398,6 @@ class ForegroundDownloadNotifier
         final status = await repository.download(
           model.id,
           token: (hfToken != null && hfToken.isNotEmpty) ? hfToken : null,
-          cancelToken: cancelToken,
           onProgress: (received, total) {
             if (!ref.mounted || _activeDownloads[modelId] != true) return;
             if (_pausedDownloads.contains(modelId)) return;
@@ -666,20 +667,26 @@ class ForegroundDownloadNotifier
     final models = ref.read(onDeviceModelsProvider);
     final model = models.where((m) => m.id == modelId).firstOrNull;
     if (model != null && model.isImported) {
-      if (model.runtime == OnDeviceModelRuntime.gemma) {
-        final repository = ref.read(importedLitertModelRepositoryProvider);
-        await repository.cancelDownload(modelId);
-      } else if (model.isLlamaCpp) {
-        final repository = ref.read(importedGgufModelRepositoryProvider);
-        await repository.cancelDownload(modelId);
+      try {
+        if (model.runtime == OnDeviceModelRuntime.gemma) {
+          final repository = ref.read(importedLitertModelRepositoryProvider);
+          await repository.cancelDownload(modelId);
+        } else if (model.isLlamaCpp) {
+          final repository = ref.read(importedGgufModelRepositoryProvider);
+          await repository.cancelDownload(modelId);
+        }
+      } catch (_) {
+        // Best-effort; still update UI state below.
       }
     }
 
     final isCurated = model != null && !model.isImported;
     final inflight = _inFlightDownloads[modelId];
 
-    // No-op if no download is in flight.
-    if (inflight == null && _activeDownloads[modelId] != true) {
+    // No-op if no download is in flight AND not tracked in state.
+    if (inflight == null &&
+        _activeDownloads[modelId] != true &&
+        !state.containsKey(modelId)) {
       // Still cancel any tokens we have.
       _cancelTokens.remove(modelId)?.cancel('Canceled by user');
       _gemmaCancelTokens.remove(modelId)?.cancel('Canceled by user');
@@ -858,7 +865,6 @@ class ForegroundDownloadNotifier
         await repository.resumeDownload(
           modelId,
           token: token,
-          cancelToken: cancelToken,
           onProgress: (received, total) {
           if (!ref.mounted || _activeDownloads[modelId] != true) return;
           if (_pausedDownloads.contains(modelId)) return;

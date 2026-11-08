@@ -2357,6 +2357,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get unload_models_before_load => '加载前卸载模型';
 
   @override
+  String get settings_allow_background_downloads =>
+      'Allow background downloads';
+
+  @override
+  String get settings_allow_background_downloads_desc =>
+      'Continue downloading models when you switch apps or lock your screen.';
+
+  @override
+  String get settings_download_over_wifi_only => 'Download over WiFi only';
+
+  @override
+  String get settings_download_over_wifi_only_desc =>
+      'Only download models when an eligible WiFi or unmetered connection is available.';
+
+  @override
   String get temp_chat_keyboard_incognito => '临时聊天中的隐私键盘';
 
   @override
@@ -5876,6 +5891,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get unload_models_before_load => '載入前卸載模型';
+
+  @override
+  String get settings_allow_background_downloads =>
+      'Allow background downloads';
+
+  @override
+  String get settings_allow_background_downloads_desc =>
+      'Continue downloading models when you switch apps or lock your screen.';
+
+  @override
+  String get settings_download_over_wifi_only => 'Download over WiFi only';
+
+  @override
+  String get settings_download_over_wifi_only_desc =>
+      'Only download models when an eligible WiFi or unmetered connection is available.';
 
   @override
   String get temp_chat_keyboard_incognito => '臨時聊天中的隱私鍵盤';

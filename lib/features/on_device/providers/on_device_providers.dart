@@ -218,14 +218,6 @@ final downloadedModelsProvider = FutureProvider<Set<String>>((ref) async {
   };
 });
 
-final onDeviceModelStateProvider =
-    NotifierProvider<
-      OnDeviceModelStateNotifier,
-      Map<String, OnDeviceModelStateInfo>
-    >(() {
-      return OnDeviceModelStateNotifier();
-    });
-
 class OnDeviceEngineState {
   static const _unset = Object();
 
@@ -832,65 +824,6 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     _llamaService.dispose();
     _mlxService.dispose();
     state = const OnDeviceEngineState();
-  }
-}
-
-class OnDeviceModelStateNotifier
-    extends Notifier<Map<String, OnDeviceModelStateInfo>> {
-  @override
-  Map<String, OnDeviceModelStateInfo> build() {
-    return {};
-  }
-
-  void updateModelState(
-    String modelId, {
-    OnDeviceModelState? modelState,
-    double? downloadProgress,
-    String? error,
-    PreferredBackend? backend,
-    OnDeviceEngineStatus? engineStatus,
-  }) {
-    final current = state[modelId] ?? OnDeviceModelStateInfo(modelId: modelId);
-    state = {
-      ...state,
-      modelId: current.copyWith(
-        state: modelState ?? current.state,
-        downloadProgress: downloadProgress ?? current.downloadProgress,
-        error: error ?? current.error,
-        backend: backend ?? current.backend,
-        engineStatus: engineStatus ?? current.engineStatus,
-      ),
-    };
-  }
-
-  void setDownloading(String modelId, double progress) {
-    updateModelState(
-      modelId,
-      modelState: OnDeviceModelState.downloading,
-      downloadProgress: progress,
-    );
-  }
-
-  void setDownloaded(String modelId) {
-    updateModelState(
-      modelId,
-      modelState: OnDeviceModelState.downloaded,
-      downloadProgress: 1.0,
-    );
-  }
-
-  void setDownloadError(String modelId, String error) {
-    updateModelState(
-      modelId,
-      modelState: OnDeviceModelState.error,
-      error: error,
-    );
-  }
-
-  void removeModel(String modelId) {
-    final newState = Map<String, OnDeviceModelStateInfo>.from(state);
-    newState.remove(modelId);
-    state = newState;
   }
 }
 

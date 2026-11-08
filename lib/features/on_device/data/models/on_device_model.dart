@@ -1,7 +1,5 @@
 import 'package:flutter_gemma/flutter_gemma.dart';
 
-import '../../../../core/models/enums.dart';
-
 enum OnDeviceModelRuntime { gemma, llamaCpp, mlx }
 
 enum OnDeviceModelFormat { litertlm, task, binary, gguf, mlx, builtIn }
@@ -494,42 +492,6 @@ class DownloadedModel {
       modelId: map['modelId'] as String,
       filePath: map['filePath'] as String,
       downloadedAt: DateTime.parse(map['downloadedAt'] as String),
-    );
-  }
-}
-
-class OnDeviceModelStateInfo {
-  final String modelId;
-  final OnDeviceModelState state;
-  final double downloadProgress;
-  final String? error;
-  final PreferredBackend backend;
-  final OnDeviceEngineStatus engineStatus;
-
-  const OnDeviceModelStateInfo({
-    required this.modelId,
-    this.state = OnDeviceModelState.notDownloaded,
-    this.downloadProgress = 0.0,
-    this.error,
-    this.backend = PreferredBackend.cpu,
-    this.engineStatus = OnDeviceEngineStatus.notLoaded,
-  });
-
-  OnDeviceModelStateInfo copyWith({
-    String? modelId,
-    OnDeviceModelState? state,
-    double? downloadProgress,
-    String? error,
-    PreferredBackend? backend,
-    OnDeviceEngineStatus? engineStatus,
-  }) {
-    return OnDeviceModelStateInfo(
-      modelId: modelId ?? this.modelId,
-      state: state ?? this.state,
-      downloadProgress: downloadProgress ?? this.downloadProgress,
-      error: error ?? this.error,
-      backend: backend ?? this.backend,
-      engineStatus: engineStatus ?? this.engineStatus,
     );
   }
 }

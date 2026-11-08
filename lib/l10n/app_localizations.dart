@@ -4503,6 +4503,30 @@ abstract class AppLocalizations {
   /// **'Unload all models before loading a new one'**
   String get unload_models_before_load;
 
+  /// Continue downloading models when the app is backgrounded
+  ///
+  /// In en, this message translates to:
+  /// **'Allow background downloads'**
+  String get settings_allow_background_downloads;
+
+  /// Description for allow background downloads toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Continue downloading models when you switch apps or lock your screen.'**
+  String get settings_allow_background_downloads_desc;
+
+  /// Only download models on WiFi or unmetered connections
+  ///
+  /// In en, this message translates to:
+  /// **'Download over WiFi only'**
+  String get settings_download_over_wifi_only;
+
+  /// Description for download over WiFi only toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Only download models when an eligible WiFi or unmetered connection is available.'**
+  String get settings_download_over_wifi_only_desc;
+
   /// Use private/incognito keyboard mode while in a temporary chat
   ///
   /// In en, this message translates to:

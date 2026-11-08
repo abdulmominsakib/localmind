@@ -2432,6 +2432,21 @@ class AppLocalizationsPt extends AppLocalizations {
       'Descarregue todos os modelos antes de carregar um novo';
 
   @override
+  String get settings_allow_background_downloads =>
+      'Allow background downloads';
+
+  @override
+  String get settings_allow_background_downloads_desc =>
+      'Continue downloading models when you switch apps or lock your screen.';
+
+  @override
+  String get settings_download_over_wifi_only => 'Download over WiFi only';
+
+  @override
+  String get settings_download_over_wifi_only_desc =>
+      'Only download models when an eligible WiFi or unmetered connection is available.';
+
+  @override
   String get temp_chat_keyboard_incognito =>
       'Teclado anônimo em bate-papo temporário';
 

@@ -414,15 +414,36 @@ class ImportedLitertModelRepository {
       var hasChanges = false;
 
       for (final model in models) {
-        if (model.filePath == null || model.filePath!.isEmpty) {
-          existing.add(model);
+        // Backfill repo metadata from sourceUrl when missing (best-effort).
+        var working = model;
+        if (working.sourceUrl != null && working.sourceUrl!.isNotEmpty &&
+            (working.repoId == null || working.rfilename == null || working.revision == null)) {
+          try {
+            final parsed = parseHuggingFaceUrlMetadata(working.sourceUrl!);
+            working = working.copyWith(
+              repoId: working.repoId ?? parsed.repoId,
+              rfilename: working.rfilename ?? parsed.rfilename,
+              revision: working.revision ?? parsed.revision,
+            );
+            if (working.repoId != model.repoId ||
+                working.rfilename != model.rfilename ||
+                working.revision != model.revision) {
+              hasChanges = true;
+            }
+          } catch (_) {
+            // Best-effort; leave nulls.
+          }
+        }
+
+        if (working.filePath == null || working.filePath!.isEmpty) {
+          existing.add(working);
           continue;
         }
-        final exists = fileExists.containsKey(model.id)
-            ? fileExists[model.id]!
-            : await File(model.filePath!).exists();
+        final exists = fileExists.containsKey(working.id)
+            ? fileExists[working.id]!
+            : await File(working.filePath!).exists();
         if (exists) {
-          existing.add(model);
+          existing.add(working);
         } else {
           hasChanges = true;
         }
@@ -440,11 +461,10 @@ class ImportedLitertModelRepository {
     final models = load();
     for (final model in models) {
       if (model.filePath == null || model.filePath!.isEmpty) continue;
-      if (!_registeredLocalModels.add(model.id)) continue;
       try {
         await _ensureRegistered(model);
       } catch (_) {
-        _registeredLocalModels.remove(model.id);
+        // _ensureRegistered already removed from the set on failure.
       }
     }
   }
@@ -614,21 +634,29 @@ class ImportedLitertModelRepository {
   }
 
   Future<void> _ensureRegistered(ImportedLitertModelMetadata model) async {
-    final installName = model.installFileName ?? model.fileName;
-    final alreadyInstalled = await FlutterGemma.isModelInstalled(installName);
-    if (alreadyInstalled) return;
+    // Single-flight guard: avoid concurrent registration of the same model
+    // (e.g. startup microtask + import overlap).
+    if (!_registeredLocalModels.add(model.id)) return;
+    try {
+      final installName = model.installFileName ?? model.fileName;
+      final alreadyInstalled = await FlutterGemma.isModelInstalled(installName);
+      if (alreadyInstalled) return;
 
-    final previousSpec = FlutterGemma.activeModelSpec;
-    await FlutterGemma.installModel(
-      modelType: ModelType.general,
-      fileType: ModelFileType.litertlm,
-    ).fromFile(model.filePath!).install();
+      final previousSpec = FlutterGemma.activeModelSpec;
+      await FlutterGemma.installModel(
+        modelType: ModelType.general,
+        fileType: ModelFileType.litertlm,
+      ).fromFile(model.filePath!).install();
 
-    final manager = FlutterGemmaPlugin.instance.modelManager;
-    if (previousSpec != null) {
-      manager.setActiveModel(previousSpec);
-    } else {
-      await FlutterGemma.clearActiveInferenceIdentity();
+      final manager = FlutterGemmaPlugin.instance.modelManager;
+      if (previousSpec != null) {
+        manager.setActiveModel(previousSpec);
+      } else {
+        await FlutterGemma.clearActiveInferenceIdentity();
+      }
+    } catch (e) {
+      _registeredLocalModels.remove(model.id);
+      rethrow;
     }
   }
 
@@ -651,7 +679,12 @@ class ImportedLitertModelRepository {
       final displayName = _displayNameFromFileName(originalName);
       final existing = load().where((model) => model.name == displayName);
       if (existing.isNotEmpty) {
-        return existing.first;
+        final found = existing.first;
+        if (found.filePath != null && found.filePath!.isNotEmpty) {
+          await _ensureRegistered(found);
+          _registeredLocalModels.add(found.id);
+        }
+        return found;
       }
 
       final dir = await _modelsDirectory();
@@ -671,6 +704,10 @@ class ImportedLitertModelRepository {
           importedAt: DateTime.now(),
           source: OnDeviceImportedSource.localFile,
         );
+        // Register with FlutterGemma before persisting, so a failed
+        // registration does not leave a misleading ready entry.
+        await _ensureRegistered(metadata);
+        _registeredLocalModels.add(metadata.id);
         final current = load();
         await _saveAllUnlocked([...current, metadata]);
         return metadata;

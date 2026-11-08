@@ -73,10 +73,17 @@ class DownloadProgressInfo {
     };
   }
 
+  static DownloadStatus _statusFromJson(dynamic value) {
+    if (value is int && value >= 0 && value < DownloadStatus.values.length) {
+      return DownloadStatus.values[value];
+    }
+    return DownloadStatus.pending;
+  }
+
   factory DownloadProgressInfo.fromJson(Map<String, dynamic> json) {
     return DownloadProgressInfo(
       modelId: json['modelId'] as String,
-      status: DownloadStatus.values[json['status'] as int],
+      status: _statusFromJson(json['status']),
       progress: (json['progress'] as num).toDouble(),
       taskId: json['taskId'] as String?,
       error: json['error'] as String?,

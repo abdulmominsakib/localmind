@@ -396,26 +396,47 @@ class ImportedGgufModelRepository {
       var hasChanges = false;
 
       for (final model in models) {
-        if (model.filePath == null || model.filePath!.isEmpty) {
-          existing.add(model);
+        // Backfill repo metadata from sourceUrl when missing (best-effort).
+        var working = model;
+        if (working.sourceUrl != null && working.sourceUrl!.isNotEmpty &&
+            (working.repoId == null || working.rfilename == null || working.revision == null)) {
+          try {
+            final parsed = parseHuggingFaceUrlMetadata(working.sourceUrl!);
+            working = working.copyWith(
+              repoId: working.repoId ?? parsed.repoId,
+              rfilename: working.rfilename ?? parsed.rfilename,
+              revision: working.revision ?? parsed.revision,
+            );
+            if (working.repoId != model.repoId ||
+                working.rfilename != model.rfilename ||
+                working.revision != model.revision) {
+              hasChanges = true;
+            }
+          } catch (_) {
+            // Best-effort; leave nulls.
+          }
+        }
+
+        if (working.filePath == null || working.filePath!.isEmpty) {
+          existing.add(working);
           continue;
         }
-        final exists = fileExists.containsKey(model.id)
-            ? fileExists[model.id]!
-            : await File(model.filePath!).exists();
+        final exists = fileExists.containsKey(working.id)
+            ? fileExists[working.id]!
+            : await File(working.filePath!).exists();
         if (exists) {
-          final projExists = projectorExists.containsKey(model.id)
-              ? projectorExists[model.id]!
-              : (model.projectorPath != null && model.projectorPath!.isNotEmpty
-                  ? await File(model.projectorPath!).exists()
+          final projExists = projectorExists.containsKey(working.id)
+              ? projectorExists[working.id]!
+              : (working.projectorPath != null && working.projectorPath!.isNotEmpty
+                  ? await File(working.projectorPath!).exists()
                   : false);
-          if (model.projectorPath != null &&
-              model.projectorPath!.isNotEmpty &&
+          if (working.projectorPath != null &&
+              working.projectorPath!.isNotEmpty &&
               !projExists) {
-            existing.add(model.copyWith(projectorPath: null));
+            existing.add(working.copyWith(projectorPath: null));
             hasChanges = true;
           } else {
-            existing.add(model);
+            existing.add(working);
           }
         } else {
           hasChanges = true;
@@ -1109,7 +1130,6 @@ class ImportedGgufModelRepository {
   Future<TaskStatus> download(
     String modelId, {
     String? token,
-    CancelToken? cancelToken,
     void Function(int receivedBytes, int totalBytes)? onProgress,
   }) async {
     final lock = _downloadMutexes.putIfAbsent(modelId, () => AsyncMutex());
@@ -1243,7 +1263,6 @@ class ImportedGgufModelRepository {
   Future<TaskStatus> resumeDownload(
     String modelId, {
     String? token,
-    CancelToken? cancelToken,
     void Function(int receivedBytes, int totalBytes)? onProgress,
   }) async {
     final models = load();
@@ -1258,7 +1277,7 @@ class ImportedGgufModelRepository {
       task = existing as DownloadTask?;
     }
     if (task == null) {
-      await download(modelId, token: token, cancelToken: cancelToken, onProgress: onProgress);
+      await download(modelId, token: token, onProgress: onProgress);
       return TaskStatus.complete;
     }
     _activeGgufTasks[modelId] = task;
@@ -1314,7 +1333,7 @@ class ImportedGgufModelRepository {
       if (dbStatus == TaskStatus.paused) {
         try { await FileDownloader().cancel(task); } catch (_) {}
         try { await FileDownloader().database.deleteRecordWithId(modelId); } catch (_) {}
-        await download(modelId, token: token, cancelToken: cancelToken, onProgress: onProgress);
+        await download(modelId, token: token, onProgress: onProgress);
         return TaskStatus.complete;
       }
       _activeGgufTasks.remove(modelId);

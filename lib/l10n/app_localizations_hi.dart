@@ -2417,6 +2417,21 @@ class AppLocalizationsHi extends AppLocalizations {
   String get unload_models_before_load => 'लोड करने से पहले मॉडल अनलोड करें';
 
   @override
+  String get settings_allow_background_downloads =>
+      'Allow background downloads';
+
+  @override
+  String get settings_allow_background_downloads_desc =>
+      'Continue downloading models when you switch apps or lock your screen.';
+
+  @override
+  String get settings_download_over_wifi_only => 'Download over WiFi only';
+
+  @override
+  String get settings_download_over_wifi_only_desc =>
+      'Only download models when an eligible WiFi or unmetered connection is available.';
+
+  @override
   String get temp_chat_keyboard_incognito =>
       'अस्थायी चैट में गुप्त (Incognito) कीबोर्ड';
 

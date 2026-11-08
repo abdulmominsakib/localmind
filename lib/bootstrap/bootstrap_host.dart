@@ -21,6 +21,7 @@ import '../features/personas/providers/personas_providers.dart';
 import '../features/servers/data/models/server.dart';
 import '../features/servers/providers/server_providers.dart';
 import '../features/cloud_sync/views/cloud_sync_lifecycle_host.dart';
+import 'download_policy_host.dart';
 import '../core/logger/app_logger.dart';
 import '../core/utils/locale_utils.dart';
 import 'bootstrap_screen.dart';
@@ -115,6 +116,11 @@ class _BootstrapHostState extends State<BootstrapHost> {
       );
       await OnDeviceGemmaService.initialize(huggingFaceToken: hfToken);
 
+      // Read download policy settings.
+      final downloadOverWifiOnly = container.read(
+        settingsProvider.select((s) => s.downloadOverWifiOnly),
+      );
+
       // Configure app-owned LiteRT downloads (background_downloader).
       final liteRtDownloader = FileDownloader();
       // Disable automatic global reschedule (it touches FlutterGemma records
@@ -204,6 +210,13 @@ class _BootstrapHostState extends State<BootstrapHost> {
       await ggufDownloader.trackTasksInGroup('localmind_gguf_downloads');
       await ggufDownloader.resumeFromBackground();
 
+      // Apply WiFi policy (global, covers imported + FlutterGemma downloads).
+      await FileDownloader().requireWiFi(
+        downloadOverWifiOnly
+            ? RequireWiFi.forAllTasks
+            : RequireWiFi.forNoTasks,
+      );
+
       // Await first reconcile for both groups so hydration sees final state.
       await container
           .read(importedLitertModelRepositoryProvider)
@@ -289,7 +302,9 @@ class _BootstrapHostState extends State<BootstrapHost> {
               container: container,
               child: SafeRiverpodScopeHost(
                 container: container,
-                child: const CloudSyncLifecycleHost(child: App()),
+                child: DownloadPolicyHost(
+                  child: const CloudSyncLifecycleHost(child: App()),
+                ),
               ),
             )
           : BootstrapScreen(

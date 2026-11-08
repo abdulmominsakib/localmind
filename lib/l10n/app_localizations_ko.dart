@@ -2359,6 +2359,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get unload_models_before_load => '새 모델을 로드하기 전에 모든 모델을 언로드하세요.';
 
   @override
+  String get settings_allow_background_downloads =>
+      'Allow background downloads';
+
+  @override
+  String get settings_allow_background_downloads_desc =>
+      'Continue downloading models when you switch apps or lock your screen.';
+
+  @override
+  String get settings_download_over_wifi_only => 'Download over WiFi only';
+
+  @override
+  String get settings_download_over_wifi_only_desc =>
+      'Only download models when an eligible WiFi or unmetered connection is available.';
+
+  @override
   String get temp_chat_keyboard_incognito => '임시 채팅의 시크릿 키보드';
 
   @override
