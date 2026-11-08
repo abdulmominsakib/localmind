@@ -34,6 +34,7 @@ class ForegroundDownloadNotifier
   final Map<String, CancelToken> _cancelTokens = {};
   final Map<String, gemma.CancelToken> _gemmaCancelTokens = {};
   final Map<String, Future<String?>> _inFlightDownloads = {};
+  final Set<String> _updateInProgress = {};
   Timer? _hydrationPollTimer;
   bool _isHydrating = false;
   static const _storageKey = 'model_downloads_state';
@@ -308,21 +309,34 @@ class ForegroundDownloadNotifier
   }
 
   Future<String?> startUpdateDownload(String modelId) {
+    if (_updateInProgress.contains(modelId)) {
+      final existing = _inFlightDownloads[modelId];
+      if (existing != null) return existing;
+      // Already in progress but no future tracked — return null.
+      return Future.value(null);
+    }
     final existing = _inFlightDownloads[modelId];
     if (existing != null) return existing;
+    _updateInProgress.add(modelId);
     final future = _startUpdateDownloadImpl(modelId);
     _inFlightDownloads[modelId] = future;
     future.whenComplete(() {
       _inFlightDownloads.remove(modelId);
+      _updateInProgress.remove(modelId);
     }).catchError((Object e, StackTrace st) {
       Log.error('startUpdateDownload failed for $modelId: $e');
       _inFlightDownloads.remove(modelId);
+      _updateInProgress.remove(modelId);
       return null;
     });
     return future;
   }
 
   Future<String?> _startUpdateDownloadImpl(String modelId) async {
+    if (_activeDownloads[modelId] == true && _updateInProgress.contains(modelId)) {
+      // Already running; don't start a duplicate.
+      return null;
+    }
     final models = ref.read(onDeviceModelsProvider);
     final model = models.firstWhere(
       (m) => m.id == modelId,
@@ -336,6 +350,16 @@ class ForegroundDownloadNotifier
       if (hfToken == null || hfToken.isEmpty) {
         return 'missing_huggingface_token';
       }
+    }
+
+    // If the model is currently loaded for inference, unload it before
+    // replacing the underlying file.
+    final engineState = ref.read(onDeviceEngineProvider);
+    final wasLoaded = engineState.loadedModelId == modelId;
+    if (wasLoaded) {
+      try {
+        await ref.read(onDeviceEngineProvider.notifier).unloadModel();
+      } catch (_) {}
     }
 
     _cancelled.remove(modelId);
@@ -432,6 +456,13 @@ class ForegroundDownloadNotifier
           ref.invalidate(importedGgufModelsProvider);
           ref.invalidate(downloadedModelsProvider);
         }
+        // Reload model if it was loaded before update.
+        if (wasLoaded && ref.mounted) {
+          try {
+            final settings = ref.read(settingsProvider);
+            await ref.read(onDeviceEngineProvider.notifier).loadModel(modelId, settings.preferredBackend);
+          } catch (_) {}
+        }
       }
       return null;
     } catch (e) {
@@ -451,6 +482,7 @@ class ForegroundDownloadNotifier
               status: DownloadStatus.failed,
               progress: 0.0,
               error: e.toString(),
+              errorCategory: categorizeDownloadError(e),
             ),
           };
         }
@@ -779,6 +811,7 @@ class ForegroundDownloadNotifier
               receivedBytes: state[modelId]?.receivedBytes ?? 0,
               totalBytes: state[modelId]?.totalBytes ?? 0,
               error: formattedError,
+              errorCategory: categorizeDownloadError(e),
             ),
           };
         }
@@ -878,7 +911,7 @@ class ForegroundDownloadNotifier
     }
   }
 
-  Future<void> pauseDownload(String modelId) async {
+  Future<void> pauseDownload(String modelId, {DownloadPauseReason reason = DownloadPauseReason.user}) async {
     if (!ref.mounted) return;
     _pausedDownloads.add(modelId);
     final models = ref.read(onDeviceModelsProvider);
@@ -892,15 +925,32 @@ class ForegroundDownloadNotifier
         final repository = ref.read(importedGgufModelRepositoryProvider);
         paused = await repository.pauseDownload(modelId);
       }
+    } else {
+      // Curated downloads: assume pause succeeds (gemma service handles).
+      paused = true;
     }
     if (ref.mounted) {
       final info = state[modelId];
       if (info != null) {
-        state = {
-          ...state,
-          modelId: info.copyWith(status: DownloadStatus.paused),
-        };
-        _saveState();
+        if (paused) {
+          state = {
+            ...state,
+            modelId: info.copyWith(
+              status: DownloadStatus.paused,
+              pauseReason: reason,
+            ),
+          };
+          _saveState();
+        } else {
+          // Native pause failed — revert to running.
+          Log.warning('Native pause failed for $modelId');
+          _pausedDownloads.remove(modelId);
+          state = {
+            ...state,
+            modelId: info.copyWith(status: DownloadStatus.running),
+          };
+          _saveState();
+        }
       }
     }
     if (!paused) {
@@ -1100,6 +1150,11 @@ class ForegroundDownloadNotifier
   Future<void> retryDownload(String modelId) async {
     await cancelDownload(modelId);
     await startDownload(modelId);
+  }
+
+  Future<void> retryUpdateDownload(String modelId) async {
+    await cancelDownload(modelId);
+    await startUpdateDownload(modelId);
   }
 
   DownloadProgressInfo? getProgressForModel(String modelId) {

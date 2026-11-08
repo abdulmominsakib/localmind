@@ -8,3 +8,17 @@ enum DownloadStatus {
   undefined,
 }
 
+enum DownloadPauseReason {
+  user,
+  backgroundPolicy,
+  networkPolicy,
+}
+
+enum DownloadErrorCategory {
+  network,
+  httpAuth,
+  httpNotFound,
+  storage,
+  registration,
+  unknown,
+}

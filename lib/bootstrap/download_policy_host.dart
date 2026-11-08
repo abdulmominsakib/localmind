@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,7 +80,7 @@ class _DownloadPolicyHostState extends ConsumerState<DownloadPolicyHost>
       if (info.status == DownloadStatus.running) {
         _backgroundPaused.add(entry.key);
         // ignore: unawaited_futures
-        notifier.pauseDownload(entry.key);
+        notifier.pauseDownload(entry.key, reason: DownloadPauseReason.backgroundPolicy);
       }
     }
   }
@@ -98,6 +96,10 @@ class _DownloadPolicyHostState extends ConsumerState<DownloadPolicyHost>
       final info = state[id];
       if (info == null) continue;
       if (info.status != DownloadStatus.paused) continue;
+      // Only resume downloads that were paused by background policy.
+      if (info.pauseReason != null && info.pauseReason != DownloadPauseReason.backgroundPolicy) {
+        continue;
+      }
       // ignore: unawaited_futures
       notifier.resumeDownload(id);
     }

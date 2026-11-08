@@ -925,7 +925,7 @@ class _FailedDownloadActions extends ConsumerWidget {
               size: ShadButtonSize.sm,
               onPressed: () => ref
                   .read(foregroundDownloadNotifierProvider.notifier)
-                  .startUpdateDownload(model.id),
+                  .retryUpdateDownload(model.id),
               child: Text(l10n.model_update_button),
             )
           else

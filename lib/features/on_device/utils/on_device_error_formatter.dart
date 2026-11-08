@@ -1,4 +1,5 @@
 import '../../../../l10n/app_localizations.dart';
+import '../data/models/download_status.dart';
 
 /// Formats raw on-device engine, download, or initialization errors into
 /// clean, user-friendly, and localized error messages.
@@ -61,4 +62,30 @@ String formatOnDeviceError(
   }
 
   return clean;
+}
+
+
+DownloadErrorCategory categorizeDownloadError(Object error) {
+  final raw = error.toString().toLowerCase();
+  if (raw.contains('enospc') ||
+      raw.contains('no space left') ||
+      raw.contains('not enough storage')) {
+    return DownloadErrorCategory.storage;
+  }
+  if (raw.contains('401') || raw.contains('403') || raw.contains('gatedrepo')) {
+    return DownloadErrorCategory.httpAuth;
+  }
+  if (raw.contains('404') || raw.contains('not found')) {
+    return DownloadErrorCategory.httpNotFound;
+  }
+  if (raw.contains('socketexception') ||
+      raw.contains('connection closed') ||
+      raw.contains('failed host lookup') ||
+      raw.contains('timeoutexception')) {
+    return DownloadErrorCategory.network;
+  }
+  if (raw.contains('registration') || raw.contains('installmodel')) {
+    return DownloadErrorCategory.registration;
+  }
+  return DownloadErrorCategory.unknown;
 }

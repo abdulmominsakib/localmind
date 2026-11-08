@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/utils/async_mutex.dart';
+import '../../../core/logger/app_logger.dart';
 import '../utils/model_quantization_parser.dart';
 import '../../../core/utils/hugging_face_url.dart';
 
@@ -1320,6 +1321,7 @@ class ImportedGgufModelRepository {
         throw StateError('Imported GGUF model no longer exists');
       }
       final model = models[index];
+      final originalRevision = model.revision;
       if (model.sourceUrl == null || model.sourceUrl!.isEmpty) {
         throw const FormatException('Imported GGUF model has no source URL.');
       }
@@ -1403,26 +1405,30 @@ class ImportedGgufModelRepository {
       await _mutex.run(() async {
         final freshModels = load();
         final freshIndex = freshModels.indexWhere((m) => m.id == modelId);
-        if (freshIndex >= 0) {
-          // Update metadata FIRST (crash-safe).
-          freshModels[freshIndex] = freshModels[freshIndex].copyWith(
-            filePath: filePath,
-            fileSizeBytes: fileSize,
-            revision: freshModels[freshIndex].latestRevision ?? freshModels[freshIndex].revision,
-            updateAvailable: false,
-            latestRevision: null,
-            lastCheckedAt: DateTime.now(),
-          );
-          await _saveAllUnlocked(freshModels);
+        if (freshIndex < 0) return;
+        // Revalidate revision.
+        if (freshModels[freshIndex].revision != originalRevision) {
+          Log.warning('Revision changed during GGUF update for $modelId; aborting finalization.');
+          return;
+        }
+        // Update metadata FIRST (crash-safe).
+        freshModels[freshIndex] = freshModels[freshIndex].copyWith(
+          filePath: filePath,
+          fileSizeBytes: fileSize,
+          revision: freshModels[freshIndex].latestRevision ?? freshModels[freshIndex].revision,
+          updateAvailable: false,
+          latestRevision: null,
+          lastCheckedAt: DateTime.now(),
+        );
+        await _saveAllUnlocked(freshModels);
 
-          // THEN delete old file (best-effort).
-          if (oldFilePath != null &&
-              oldFilePath != filePath &&
-              await File(oldFilePath).exists()) {
-            try {
-              await File(oldFilePath).delete();
-            } catch (_) {}
-          }
+        // THEN delete old file (best-effort).
+        if (oldFilePath != null &&
+            oldFilePath != filePath &&
+            await File(oldFilePath).exists()) {
+          try {
+            await File(oldFilePath).delete();
+          } catch (_) {}
         }
       });
 

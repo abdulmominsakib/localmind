@@ -11,6 +11,8 @@ class DownloadProgressInfo {
   final int? bytesPerSecond;
   final int? etaSeconds;
   final bool isResumed;
+  final DownloadPauseReason? pauseReason;
+  final DownloadErrorCategory? errorCategory;
 
   const DownloadProgressInfo({
     required this.modelId,
@@ -23,9 +25,10 @@ class DownloadProgressInfo {
     this.bytesPerSecond,
     this.etaSeconds,
     this.isResumed = false,
+    this.pauseReason,
+    this.errorCategory,
   });
 
-  // Sentinel to distinguish "not provided" from an explicit null in copyWith.
   static const Object _unset = Object();
 
   DownloadProgressInfo copyWith({
@@ -39,6 +42,8 @@ class DownloadProgressInfo {
     Object? bytesPerSecond = _unset,
     Object? etaSeconds = _unset,
     bool? isResumed,
+    Object? pauseReason = _unset,
+    Object? errorCategory = _unset,
   }) {
     return DownloadProgressInfo(
       modelId: modelId ?? this.modelId,
@@ -55,6 +60,12 @@ class DownloadProgressInfo {
           ? this.etaSeconds
           : etaSeconds as int?,
       isResumed: isResumed ?? this.isResumed,
+      pauseReason: identical(pauseReason, _unset)
+          ? this.pauseReason
+          : pauseReason as DownloadPauseReason?,
+      errorCategory: identical(errorCategory, _unset)
+          ? this.errorCategory
+          : errorCategory as DownloadErrorCategory?,
     );
   }
 
@@ -70,6 +81,8 @@ class DownloadProgressInfo {
       'bytesPerSecond': bytesPerSecond,
       'etaSeconds': etaSeconds,
       'isResumed': isResumed,
+      'pauseReason': pauseReason?.index,
+      'errorCategory': errorCategory?.index,
     };
   }
 
@@ -80,18 +93,44 @@ class DownloadProgressInfo {
     return DownloadStatus.pending;
   }
 
+  static DownloadPauseReason? _pauseReasonFromJson(dynamic value) {
+    if (value is int && value >= 0 && value < DownloadPauseReason.values.length) {
+      return DownloadPauseReason.values[value];
+    }
+    return null;
+  }
+
+  static DownloadErrorCategory? _errorCategoryFromJson(dynamic value) {
+    if (value is int && value >= 0 && value < DownloadErrorCategory.values.length) {
+      return DownloadErrorCategory.values[value];
+    }
+    return null;
+  }
+
   factory DownloadProgressInfo.fromJson(Map<String, dynamic> json) {
+    final rawProgress = (json['progress'] as num?)?.toDouble() ?? 0.0;
+    final clampedProgress = rawProgress.clamp(0.0, 1.0);
+    final rawReceived = (json['receivedBytes'] as num?)?.toInt() ?? 0;
+    final rawTotal = (json['totalBytes'] as num?)?.toInt() ?? 0;
+    final receivedBytes = rawReceived < 0 ? 0 : rawReceived;
+    final totalBytes = rawTotal < 0 ? 0 : rawTotal;
+    final safeTotal = (totalBytes > 0 && receivedBytes > totalBytes)
+        ? receivedBytes
+        : totalBytes;
+
     return DownloadProgressInfo(
       modelId: json['modelId'] as String? ?? '',
       status: _statusFromJson(json['status']),
-      progress: (json['progress'] as num?)?.toDouble() ?? 0.0,
+      progress: clampedProgress,
       taskId: json['taskId'] as String?,
       error: json['error'] as String?,
-      receivedBytes: (json['receivedBytes'] as num?)?.toInt() ?? 0,
-      totalBytes: (json['totalBytes'] as num?)?.toInt() ?? 0,
+      receivedBytes: receivedBytes,
+      totalBytes: safeTotal,
       bytesPerSecond: (json['bytesPerSecond'] as num?)?.toInt(),
       etaSeconds: (json['etaSeconds'] as num?)?.toInt(),
       isResumed: json['isResumed'] as bool? ?? false,
+      pauseReason: _pauseReasonFromJson(json['pauseReason']),
+      errorCategory: _errorCategoryFromJson(json['errorCategory']),
     );
   }
 

@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/utils/async_mutex.dart';
+import '../../../core/logger/app_logger.dart';
 import '../../../core/utils/hugging_face_url.dart';
 import 'package:background_downloader/background_downloader.dart';
 
@@ -1157,20 +1158,29 @@ class ImportedLitertModelRepository {
     await _mutex.run(() async {
       final models = load();
       final index = models.indexWhere((m) => m.id == modelId);
-      if (index >= 0) {
-        // Update metadata FIRST (crash-safe: if save fails, old file is still intact).
-        models[index] = models[index].copyWith(
-          filePath: filePath,
-          installFileName: installName,
-          fileSizeBytes: await file.length(),
-          revision: oldModel.latestRevision ?? oldModel.revision,
-          fileOid: oldModel.fileOid,
-          lastModified: oldModel.lastModified,
-          updateAvailable: false,
-          latestRevision: null,
-          lastCheckedAt: DateTime.now(),
-        );
-        await _saveAllUnlocked(models);
+      if (index < 0) {
+        // Model removed during download — don't overwrite.
+        return;
+      }
+      // Revalidate revision: if the model's revision changed since update
+      // started, abort to avoid clobbering newer metadata.
+      if (models[index].revision != oldModel.revision) {
+        Log.warning('Revision changed during update for $modelId; aborting finalization.');
+        return;
+      }
+      // Update metadata FIRST (crash-safe: if save fails, old file is still intact).
+      models[index] = models[index].copyWith(
+        filePath: filePath,
+        installFileName: installName,
+        fileSizeBytes: await file.length(),
+        revision: oldModel.latestRevision ?? oldModel.revision,
+        fileOid: oldModel.fileOid,
+        lastModified: oldModel.lastModified,
+        updateAvailable: false,
+        latestRevision: null,
+        lastCheckedAt: DateTime.now(),
+      );
+      await _saveAllUnlocked(models);
 
         // THEN delete old install + file (best-effort; lingering old file is OK).
         if (oldInstallName != installName) {
@@ -1183,7 +1193,6 @@ class ImportedLitertModelRepository {
             await File(oldFilePath).exists()) {
           try { await File(oldFilePath).delete(); } catch (_) {}
         }
-      }
     });
 
     _activeLitertTasks.remove(modelId);
