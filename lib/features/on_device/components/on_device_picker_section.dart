@@ -746,7 +746,7 @@ class _OnDeviceModelTile extends ConsumerWidget {
     }
   }
 
-  void _deleteModel(BuildContext context, WidgetRef ref) async {
+  Future<void> _deleteModel(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;
     final confirm = await ModelConfirmDialog.show(
       context: context,
@@ -758,30 +758,19 @@ class _OnDeviceModelTile extends ConsumerWidget {
       icon: HugeIcons.strokeRoundedDelete02,
     );
 
-    if (confirm == true) {
+    if (confirm != true || !context.mounted) return;
+
+    try {
+      await ref.read(onDeviceEngineProvider.notifier).deleteModel(model);
       if (!context.mounted) return;
-
-      final engineState = ref.read(onDeviceEngineProvider);
-      final engineNotifier = ref.read(onDeviceEngineProvider.notifier);
-      final selectedModelNotifier = ref.read(selectedModelProvider.notifier);
-
-      if (engineState.loadedModelId == model.id) {
-        await engineNotifier.unloadModel();
-        if (!context.mounted) return;
-        selectedModelNotifier.clear();
+      if (ref.read(selectedModelProvider)?.id == model.id) {
+        ref.read(selectedModelProvider.notifier).clear();
       }
-
-      if (model.isImported) {
-        await ref
-            .read(importedGgufModelsProvider.notifier)
-            .deleteModel(model.id);
-      } else {
-        // Use gemma service for non-imported models
-        final gemmaService = ref.read(onDeviceGemmaServiceProvider);
-        await gemmaService.deleteModel(model.id);
-      }
+    } catch (error) {
       if (!context.mounted) return;
-      ref.invalidate(downloadedModelsProvider);
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(l10n.error_with_message(error.toString()))),
+      );
     }
   }
 }

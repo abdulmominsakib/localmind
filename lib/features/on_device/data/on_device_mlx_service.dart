@@ -322,6 +322,7 @@ class OnDeviceMlxService {
       Log.info('Deleted MLX model $modelId');
     } catch (e) {
       Log.error('Error deleting MLX model $modelId: $e');
+      rethrow;
     }
   }
 

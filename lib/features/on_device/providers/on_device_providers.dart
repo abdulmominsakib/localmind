@@ -575,6 +575,33 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     () => ref.read(inferenceCoordinatorProvider).transition(_unloadModel),
   );
 
+  Future<void> deleteModel(OnDeviceModel model) => _lifecycle.run(
+    () => ref.read(inferenceCoordinatorProvider).transition(() async {
+      if (!ref.mounted) return;
+      try {
+        if (state.loadedModelId == model.id) {
+          await _unloadModel();
+          if (!ref.mounted) return;
+          if (state.status == OnDeviceEngineStatus.error) {
+            throw StateError(state.error ?? 'Failed to unload model');
+          }
+        }
+
+        if (model.isImported) {
+          await ref
+              .read(importedGgufModelsProvider.notifier)
+              .deleteModel(model.id);
+        } else if (model.runtime == OnDeviceModelRuntime.mlx) {
+          await _mlxService.deleteModel(model.id);
+        } else {
+          await _gemmaService.deleteModel(model.id);
+        }
+      } finally {
+        if (ref.mounted) ref.invalidate(downloadedModelsProvider);
+      }
+    }),
+  );
+
   Future<void> _unloadModel() async {
     Object? failure;
     final gemma = ref.mounted ? _gemmaService : null;
