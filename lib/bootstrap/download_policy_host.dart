@@ -29,8 +29,23 @@ class _DownloadPolicyHostState extends ConsumerState<DownloadPolicyHost>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Track state changes to clear _backgroundPaused on cancel.
+    ref.listenManual(foregroundDownloadNotifierProvider, (prev, next) {
+      // Remove entries that are no longer in state (canceled/removed).
+      _backgroundPaused.removeWhere((id) => !next.containsKey(id));
+    });
+
     _settingsSub = ref.listenManual(settingsProvider, (prev, next) {
-      _applyWifiPolicy(next?.downloadOverWifiOnly ?? true);
+      _applyWifiPolicy(next.downloadOverWifiOnly);
+      // Apply background toggle changes to in-flight downloads.
+      if (prev != null &&
+          prev.allowBackgroundDownloads != next.allowBackgroundDownloads) {
+        if (next.allowBackgroundDownloads) {
+          _resumePausedDownloads();
+        } else {
+          _pauseActiveDownloads();
+        }
+      }
     });
     // Apply initial WiFi policy.
     final wifiOnly = ref.read(settingsProvider).downloadOverWifiOnly;
@@ -75,9 +90,14 @@ class _DownloadPolicyHostState extends ConsumerState<DownloadPolicyHost>
   void _resumePausedDownloads() {
     if (_backgroundPaused.isEmpty) return;
     final notifier = ref.read(foregroundDownloadNotifierProvider.notifier);
+    final state = ref.read(foregroundDownloadNotifierProvider);
     final toResume = List<String>.from(_backgroundPaused);
     _backgroundPaused.clear();
     for (final id in toResume) {
+      // Guard: only resume if still in state and paused, not canceled.
+      final info = state[id];
+      if (info == null) continue;
+      if (info.status != DownloadStatus.paused) continue;
       // ignore: unawaited_futures
       notifier.resumeDownload(id);
     }

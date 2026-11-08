@@ -2354,6 +2354,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get model_note_hint => '为此模型添加个人备注...';
 
   @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
+
+  @override
   String get unload_models_before_load => '加载前卸载模型';
 
   @override
@@ -5888,6 +5894,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get model_note_hint => '為此模型添加個人備註...';
+
+  @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
 
   @override
   String get unload_models_before_load => '載入前卸載模型';

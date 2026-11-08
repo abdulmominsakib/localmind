@@ -2369,6 +2369,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get model_note_hint => 'このモデル用の非公開メモを追加...';
 
   @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
+
+  @override
   String get unload_models_before_load => 'ロード前にモデルをアンロード';
 
   @override

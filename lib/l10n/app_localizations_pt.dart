@@ -2428,6 +2428,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get model_note_hint => 'Adicione uma observação sobre este modelo…';
 
   @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
+
+  @override
   String get unload_models_before_load =>
       'Descarregue todos os modelos antes de carregar um novo';
 

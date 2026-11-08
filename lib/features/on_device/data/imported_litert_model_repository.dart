@@ -887,7 +887,7 @@ class ImportedLitertModelRepository {
     // already handles resume data internally when the task is paused.
     var lastReceived = 0;
     final result = await FileDownloader().download(
-      task as DownloadTask,
+      task,
       onProgress: (progress) {
         final clamped = progress.clamp(0.0, 1.0);
         if (totalBytes > 0) {
@@ -985,7 +985,7 @@ class ImportedLitertModelRepository {
 
     var lastReceived = 0;
     final result = await FileDownloader().download(
-      task as DownloadTask,
+      task,
       onProgress: (progress) {
         final clamped = progress.clamp(0.0, 1.0);
         if (totalBytes > 0) {
@@ -1013,7 +1013,7 @@ class ImportedLitertModelRepository {
       await FileDownloader().database.deleteRecordWithId(updateTaskId);
       // Clean up temp file.
       try {
-        final tempPath = await (task as DownloadTask).filePath();
+        final tempPath = await task.filePath();
         final tempFile = File(tempPath);
         if (await tempFile.exists()) await tempFile.delete();
       } catch (_) {}
@@ -1026,7 +1026,7 @@ class ImportedLitertModelRepository {
     try {
       final status = await _finalizeLitertUpdate(
         modelId,
-        task as DownloadTask,
+        task,
         updateInstallName,
         model,
         oldFilePath,
@@ -1039,7 +1039,7 @@ class ImportedLitertModelRepository {
       await FileDownloader().database.deleteRecordWithId(updateTaskId);
       // Clean up temp file.
       try {
-        final tempPath = await (task as DownloadTask).filePath();
+        final tempPath = await task.filePath();
         final tempFile = File(tempPath);
         if (await tempFile.exists()) await tempFile.delete();
       } catch (_) {}
@@ -1055,8 +1055,6 @@ class ImportedLitertModelRepository {
     String? oldFilePath,
     String oldInstallName,
   ) async {
-    _activeLitertTasks.remove(modelId);
-
     final filePath = await task.filePath();
     final file = File(filePath);
     if (!await file.exists() || await file.length() <= 0) {
@@ -1310,17 +1308,20 @@ class ImportedLitertModelRepository {
   }
 
   Future<void> cancelDownload(String modelId) async {
-    final tasks = (await FileDownloader().allTasks(allGroups: true))
-        .where((t) => t.taskId == modelId)
-        .toList();
-    if (tasks.isEmpty) {
-      final t = _activeLitertTasks[modelId] ?? await FileDownloader().taskForId(modelId);
-      if (t != null) tasks.add(t);
+    // Cancel both normal and update tasks.
+    for (final taskId in [modelId, '$modelId-update']) {
+      final tasks = (await FileDownloader().allTasks(allGroups: true))
+          .where((t) => t.taskId == taskId)
+          .toList();
+      if (tasks.isEmpty) {
+        final t = _activeLitertTasks[modelId] ?? await FileDownloader().taskForId(taskId);
+        if (t != null) tasks.add(t);
+      }
+      for (final t in tasks) {
+        try { await FileDownloader().cancel(t); } catch (_) {}
+      }
+      await FileDownloader().cancelTaskWithId(taskId);
     }
-    for (final t in tasks) {
-      try { await FileDownloader().cancel(t); } catch (_) {}
-    }
-    await FileDownloader().cancelTaskWithId(modelId);
     _activeLitertTasks.remove(modelId);
   }
 

@@ -2400,6 +2400,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get model_note_hint => 'أضف ملاحظة خاصة لهذا النموذج...';
 
   @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
+
+  @override
   String get unload_models_before_load =>
       'إلغاء تحميل النماذج قبل التحميل الجديد';
 

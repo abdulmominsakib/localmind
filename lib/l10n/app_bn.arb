@@ -675,6 +675,8 @@
   "model_note_label": "নোট",
   "model_note_hint": "এই মডেলটির জন্য একটি ব্যক্তিগত নোট যোগ করুন...",
   "unload_models_before_load": "লোড করার আগে মডেল আনলোড করুন",
+  "model_update_available": "Update available",
+  "model_update_button": "Update",
   "settings_allow_background_downloads": "Allow background downloads",
   "settings_allow_background_downloads_desc": "Continue downloading models when you switch apps or lock your screen.",
   "settings_download_over_wifi_only": "Download over WiFi only",

@@ -675,6 +675,8 @@
   "model_note_label": "टिप्पणी (Note)",
   "model_note_hint": "इस मॉडल के लिए एक निजी टिप्पणी जोड़ें...",
   "unload_models_before_load": "लोड करने से पहले मॉडल अनलोड करें",
+  "model_update_available": "Update available",
+  "model_update_button": "Update",
   "settings_allow_background_downloads": "Allow background downloads",
   "settings_allow_background_downloads_desc": "Continue downloading models when you switch apps or lock your screen.",
   "settings_download_over_wifi_only": "Download over WiFi only",

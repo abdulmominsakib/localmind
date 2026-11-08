@@ -2984,6 +2984,14 @@
   "@model_note_hint": {
     "description": "Hint for model note text field"
   },
+  "model_update_available": "Update available",
+  "@model_update_available": {
+    "description": "Badge shown when a model update is available"
+  },
+  "model_update_button": "Update",
+  "@model_update_button": {
+    "description": "Button to download a model update"
+  },
   "unload_models_before_load": "Unload all models before loading a new one",
   "@unload_models_before_load": {
     "description": "Setting to unload every loaded model instance before loading another"

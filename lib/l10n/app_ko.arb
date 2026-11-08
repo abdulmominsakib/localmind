@@ -708,6 +708,8 @@
   "model_note_label": "참고",
   "model_note_hint": "이 모델에 대한 메모를 추가하세요…",
   "unload_models_before_load": "새 모델을 로드하기 전에 모든 모델을 언로드하세요.",
+  "model_update_available": "Update available",
+  "model_update_button": "Update",
   "settings_allow_background_downloads": "Allow background downloads",
   "settings_allow_background_downloads_desc": "Continue downloading models when you switch apps or lock your screen.",
   "settings_download_over_wifi_only": "Download over WiFi only",

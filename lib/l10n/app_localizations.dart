@@ -4497,6 +4497,18 @@ abstract class AppLocalizations {
   /// **'Add a note about this model…'**
   String get model_note_hint;
 
+  /// Badge shown when a model update is available
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get model_update_available;
+
+  /// Button to download a model update
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get model_update_button;
+
   /// Setting to unload every loaded model instance before loading another
   ///
   /// In en, this message translates to:

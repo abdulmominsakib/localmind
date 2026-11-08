@@ -82,15 +82,15 @@ class DownloadProgressInfo {
 
   factory DownloadProgressInfo.fromJson(Map<String, dynamic> json) {
     return DownloadProgressInfo(
-      modelId: json['modelId'] as String,
+      modelId: json['modelId'] as String? ?? '',
       status: _statusFromJson(json['status']),
-      progress: (json['progress'] as num).toDouble(),
+      progress: (json['progress'] as num?)?.toDouble() ?? 0.0,
       taskId: json['taskId'] as String?,
       error: json['error'] as String?,
-      receivedBytes: json['receivedBytes'] as int,
-      totalBytes: json['totalBytes'] as int,
-      bytesPerSecond: json['bytesPerSecond'] as int?,
-      etaSeconds: json['etaSeconds'] as int?,
+      receivedBytes: (json['receivedBytes'] as num?)?.toInt() ?? 0,
+      totalBytes: (json['totalBytes'] as num?)?.toInt() ?? 0,
+      bytesPerSecond: (json['bytesPerSecond'] as num?)?.toInt(),
+      etaSeconds: (json['etaSeconds'] as num?)?.toInt(),
       isResumed: json['isResumed'] as bool? ?? false,
     );
   }

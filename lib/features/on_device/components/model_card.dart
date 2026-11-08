@@ -591,7 +591,7 @@ class _DownloadedActions extends ConsumerWidget {
               ShadButton.outline(
                 size: ShadButtonSize.sm,
                 onPressed: () => _startUpdate(context, ref),
-                child: const Text('Update'),
+                child: Text(l10n.model_update_button),
               ),
             ],
             if (!model.isBuiltIn) ...[
@@ -920,13 +920,22 @@ class _FailedDownloadActions extends ConsumerWidget {
         ),
         if (!isDeviceUnsupported) ...[
           const SizedBox(width: 8),
-          ShadButton.outline(
-            size: ShadButtonSize.sm,
-            onPressed: () => ref
-                .read(foregroundDownloadNotifierProvider.notifier)
-                .retryDownload(model.id),
-            child: Text(l10n.retry),
-          ),
+          if (model.isImported && model.updateAvailable)
+            ShadButton.outline(
+              size: ShadButtonSize.sm,
+              onPressed: () => ref
+                  .read(foregroundDownloadNotifierProvider.notifier)
+                  .startUpdateDownload(model.id),
+              child: Text(l10n.model_update_button),
+            )
+          else
+            ShadButton.outline(
+              size: ShadButtonSize.sm,
+              onPressed: () => ref
+                  .read(foregroundDownloadNotifierProvider.notifier)
+                  .retryDownload(model.id),
+              child: Text(l10n.retry),
+            ),
         ],
       ],
     );

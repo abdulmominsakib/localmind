@@ -2422,6 +2422,12 @@ class AppLocalizationsBn extends AppLocalizations {
       'এই মডেলটির জন্য একটি ব্যক্তিগত নোট যোগ করুন...';
 
   @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
+
+  @override
   String get unload_models_before_load => 'লোড করার আগে মডেল আনলোড করুন';
 
   @override

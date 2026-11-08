@@ -1511,14 +1511,16 @@ class ImportedGgufModelRepository {
   }
 
   Future<void> cancelDownload(String modelId) async {
-    final tasks = (await FileDownloader().allTasks(allGroups: true))
-        .where((t) => t.taskId == modelId)
-        .toList();
-    _activeGgufTasks.remove(modelId);
-    for (final t in tasks) {
-      try { await FileDownloader().cancel(t); } catch (_) {}
+    for (final taskId in [modelId, '$modelId-update']) {
+      final tasks = (await FileDownloader().allTasks(allGroups: true))
+          .where((t) => t.taskId == taskId)
+          .toList();
+      for (final t in tasks) {
+        try { await FileDownloader().cancel(t); } catch (_) {}
+      }
+      await FileDownloader().cancelTaskWithId(taskId);
     }
-    await FileDownloader().cancelTaskWithId(modelId);
+    _activeGgufTasks.remove(modelId);
   }
 
   Future<void> deleteFile(String modelId) async {

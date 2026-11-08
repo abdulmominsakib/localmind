@@ -675,6 +675,8 @@
   "model_note_label": "Заметка",
   "model_note_hint": "Добавить личную заметку для этой модели...",
   "unload_models_before_load": "Выгружать модели перед загрузкой",
+  "model_update_available": "Update available",
+  "model_update_button": "Update",
   "settings_allow_background_downloads": "Allow background downloads",
   "settings_allow_background_downloads_desc": "Continue downloading models when you switch apps or lock your screen.",
   "settings_download_over_wifi_only": "Download over WiFi only",

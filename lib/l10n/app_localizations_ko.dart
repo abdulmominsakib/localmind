@@ -2356,6 +2356,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get model_note_hint => '이 모델에 대한 메모를 추가하세요…';
 
   @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
+
+  @override
   String get unload_models_before_load => '새 모델을 로드하기 전에 모든 모델을 언로드하세요.';
 
   @override

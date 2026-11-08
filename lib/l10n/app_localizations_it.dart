@@ -2429,6 +2429,12 @@ class AppLocalizationsIt extends AppLocalizations {
       'Aggiungi una nota privata per questo modello...';
 
   @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
+
+  @override
   String get unload_models_before_load => 'Scarica modelli prima di caricare';
 
   @override

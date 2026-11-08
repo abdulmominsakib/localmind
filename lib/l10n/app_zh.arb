@@ -675,6 +675,8 @@
   "model_note_label": "备注",
   "model_note_hint": "为此模型添加个人备注...",
   "unload_models_before_load": "加载前卸载模型",
+  "model_update_available": "Update available",
+  "model_update_button": "Update",
   "settings_allow_background_downloads": "Allow background downloads",
   "settings_allow_background_downloads_desc": "Continue downloading models when you switch apps or lock your screen.",
   "settings_download_over_wifi_only": "Download over WiFi only",

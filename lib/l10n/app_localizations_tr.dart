@@ -2424,6 +2424,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get model_note_hint => 'Add a note about this model…';
 
   @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
+
+  @override
   String get unload_models_before_load =>
       'Unload all models before loading a new one';
 

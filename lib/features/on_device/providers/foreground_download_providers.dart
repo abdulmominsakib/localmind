@@ -410,35 +410,53 @@ class ForegroundDownloadNotifier
         throw Exception('Unsupported runtime for update: ${model.runtime}');
       }
 
-      if (status == TaskStatus.complete) {
+      if (status == TaskStatus.paused) {
+        if (ref.mounted) {
+          final info = state[modelId];
+          if (info != null) {
+            state = {
+              ...state,
+              modelId: info.copyWith(status: DownloadStatus.paused),
+            };
+            _saveState();
+          }
+        }
+      } else if (status == TaskStatus.complete) {
         _activeDownloads.remove(modelId);
         _downloadStartTimes.remove(modelId);
         if (ref.mounted) {
           state = {...state}..remove(modelId);
           _saveState();
+          // Refresh models list.
+          ref.invalidate(importedLitertModelsProvider);
+          ref.invalidate(importedGgufModelsProvider);
+          ref.invalidate(downloadedModelsProvider);
         }
-        // Refresh models list.
-        ref.invalidate(importedLitertModelsProvider);
-        ref.invalidate(importedGgufModelsProvider);
-        ref.invalidate(downloadedModelsProvider);
       }
       return null;
     } catch (e) {
       _activeDownloads.remove(modelId);
       _downloadStartTimes.remove(modelId);
+      final isCanceled = _cancelled.contains(modelId) ||
+          e.toString().toLowerCase().contains('cancel');
       if (ref.mounted) {
-        state = {
-          ...state,
-          modelId: DownloadProgressInfo(
-            modelId: modelId,
-            status: DownloadStatus.failed,
-            progress: 0.0,
-            error: e.toString(),
-          ),
-        };
+        if (isCanceled) {
+          _cancelled.remove(modelId);
+          state = {...state}..remove(modelId);
+        } else {
+          state = {
+            ...state,
+            modelId: DownloadProgressInfo(
+              modelId: modelId,
+              status: DownloadStatus.failed,
+              progress: 0.0,
+              error: e.toString(),
+            ),
+          };
+        }
         _saveState();
       }
-      return e.toString();
+      return isCanceled ? null : e.toString();
     }
   }
 

@@ -2414,6 +2414,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get model_note_hint => 'इस मॉडल के लिए एक निजी टिप्पणी जोड़ें...';
 
   @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
+
+  @override
   String get unload_models_before_load => 'लोड करने से पहले मॉडल अनलोड करें';
 
   @override
