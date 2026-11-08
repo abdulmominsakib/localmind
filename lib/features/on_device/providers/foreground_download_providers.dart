@@ -307,6 +307,141 @@ class ForegroundDownloadNotifier
     return future;
   }
 
+  Future<String?> startUpdateDownload(String modelId) {
+    final existing = _inFlightDownloads[modelId];
+    if (existing != null) return existing;
+    final future = _startUpdateDownloadImpl(modelId);
+    _inFlightDownloads[modelId] = future;
+    future.whenComplete(() {
+      _inFlightDownloads.remove(modelId);
+    }).catchError((Object e, StackTrace st) {
+      Log.error('startUpdateDownload failed for $modelId: $e');
+      _inFlightDownloads.remove(modelId);
+      return null;
+    });
+    return future;
+  }
+
+  Future<String?> _startUpdateDownloadImpl(String modelId) async {
+    final models = ref.read(onDeviceModelsProvider);
+    final model = models.firstWhere(
+      (m) => m.id == modelId,
+      orElse: () => throw Exception('Model not found: $modelId'),
+    );
+
+    if (model.requiresHuggingFaceToken) {
+      final hfToken = ref.read(
+        settingsProvider.select((s) => s.huggingFaceToken),
+      );
+      if (hfToken == null || hfToken.isEmpty) {
+        return 'missing_huggingface_token';
+      }
+    }
+
+    _cancelled.remove(modelId);
+    _activeDownloads[modelId] = true;
+    _downloadStartTimes[modelId] = DateTime.now();
+
+    final existingInfo = state[modelId];
+    state = {
+      ...state,
+      modelId: DownloadProgressInfo(
+        modelId: modelId,
+        status: DownloadStatus.running,
+        progress: existingInfo?.progress ?? 0.0,
+        receivedBytes: existingInfo?.receivedBytes ?? 0,
+        totalBytes: existingInfo?.totalBytes ?? model.fileSizeBytes,
+      ),
+    };
+    _saveState();
+
+    final hfToken = ref.read(
+      settingsProvider.select((s) => s.huggingFaceToken),
+    );
+    final token = (hfToken != null && hfToken.isNotEmpty) ? hfToken : null;
+
+    try {
+      TaskStatus status;
+      if (model.runtime == OnDeviceModelRuntime.gemma) {
+        final repository = ref.read(importedLitertModelRepositoryProvider);
+        status = await repository.downloadUpdate(
+          modelId,
+          token: token,
+          onProgress: (received, total) {
+            if (!ref.mounted || _activeDownloads[modelId] != true) return;
+            if (_pausedDownloads.contains(modelId)) return;
+            if (_cancelled.contains(modelId)) return;
+            final progress = total > 0 ? (received / total) : 0.0;
+            state = {
+              ...state,
+              modelId: DownloadProgressInfo(
+                modelId: modelId,
+                status: DownloadStatus.running,
+                progress: progress.clamp(0.0, 1.0),
+                receivedBytes: received,
+                totalBytes: total,
+              ),
+            };
+          },
+        );
+      } else if (model.isLlamaCpp) {
+        final repository = ref.read(importedGgufModelRepositoryProvider);
+        status = await repository.downloadUpdate(
+          modelId,
+          token: token,
+          onProgress: (received, total) {
+            if (!ref.mounted || _activeDownloads[modelId] != true) return;
+            if (_pausedDownloads.contains(modelId)) return;
+            if (_cancelled.contains(modelId)) return;
+            final progress = total > 0 ? (received / total) : 0.0;
+            state = {
+              ...state,
+              modelId: DownloadProgressInfo(
+                modelId: modelId,
+                status: DownloadStatus.running,
+                progress: progress.clamp(0.0, 1.0),
+                receivedBytes: received,
+                totalBytes: total,
+              ),
+            };
+          },
+        );
+      } else {
+        throw Exception('Unsupported runtime for update: ${model.runtime}');
+      }
+
+      if (status == TaskStatus.complete) {
+        _activeDownloads.remove(modelId);
+        _downloadStartTimes.remove(modelId);
+        if (ref.mounted) {
+          state = {...state}..remove(modelId);
+          _saveState();
+        }
+        // Refresh models list.
+        ref.invalidate(importedLitertModelsProvider);
+        ref.invalidate(importedGgufModelsProvider);
+        ref.invalidate(downloadedModelsProvider);
+      }
+      return null;
+    } catch (e) {
+      _activeDownloads.remove(modelId);
+      _downloadStartTimes.remove(modelId);
+      if (ref.mounted) {
+        state = {
+          ...state,
+          modelId: DownloadProgressInfo(
+            modelId: modelId,
+            status: DownloadStatus.failed,
+            progress: 0.0,
+            error: e.toString(),
+          ),
+        };
+        _saveState();
+      }
+      return e.toString();
+    }
+  }
+
   Future<String?> _startDownloadImpl(String modelId) async {
     final models = ref.read(onDeviceModelsProvider);
     final model = models.firstWhere(

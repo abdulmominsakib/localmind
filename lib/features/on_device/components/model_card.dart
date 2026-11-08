@@ -586,6 +586,14 @@ class _DownloadedActions extends ConsumerWidget {
                 onPressed: () => _loadModel(context, ref),
                 child: Text(l10n.load),
               ),
+            if (model.isImported && model.updateAvailable) ...[
+              const SizedBox(width: 8),
+              ShadButton.outline(
+                size: ShadButtonSize.sm,
+                onPressed: () => _startUpdate(context, ref),
+                child: const Text('Update'),
+              ),
+            ],
             if (!model.isBuiltIn) ...[
               const SizedBox(width: 8),
               ShadButton.outline(
@@ -684,6 +692,25 @@ class _DownloadedActions extends ConsumerWidget {
       await _deleteFile(context, ref);
     } else {
       await _deleteModel(context, ref);
+    }
+  }
+
+  Future<void> _startUpdate(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await ref
+        .read(foregroundDownloadNotifierProvider.notifier)
+        .startUpdateDownload(model.id);
+    if (result == 'missing_huggingface_token' && context.mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(l10n.model_missing_huggingface_token),
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(
+            label: l10n.settings_title,
+            onPressed: () => context.push(AppRoutes.settings),
+          ),
+        ),
+      );
     }
   }
 

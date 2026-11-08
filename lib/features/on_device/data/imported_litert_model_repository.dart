@@ -925,6 +925,196 @@ class ImportedLitertModelRepository {
     return status;
   }
 
+
+  /// Download an update for an already-imported LiteRT model.
+  /// Downloads to a temp path, then on success swaps metadata and cleans up old.
+  Future<TaskStatus> downloadUpdate(
+    String modelId, {
+    String? token,
+    void Function(int receivedBytes, int totalBytes)? onProgress,
+  }) async {
+    final model = await _mutex.run(() async {
+      final models = load();
+      final index = models.indexWhere((m) => m.id == modelId);
+      if (index < 0) {
+        throw StateError('Imported LiteRT model no longer exists');
+      }
+      return models[index];
+    });
+
+    if (model.sourceUrl == null || model.sourceUrl!.isEmpty) {
+      throw const FormatException('Imported LiteRT model has no source URL.');
+    }
+
+    final updateTaskId = '$modelId-update';
+    final updateInstallName = '$modelId-update.litertlm';
+    final oldFilePath = model.filePath;
+    final oldInstallName = model.installFileName ?? model.fileName;
+    final totalBytes = model.fileSizeBytes > 0 ? model.fileSizeBytes : 0;
+
+    // Best-effort notification permission.
+    try {
+      await FileDownloader().permissions
+          .request(PermissionType.notifications)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => PermissionStatus.requestError,
+          );
+    } catch (_) {}
+
+    var task = await FileDownloader().taskForId(updateTaskId);
+    if (task == null) {
+      task = DownloadTask(
+        taskId: updateTaskId,
+        url: model.sourceUrl!,
+        filename: updateInstallName,
+        directory: _storageDirName,
+        baseDirectory: BaseDirectory.applicationSupport,
+        headers: {
+          if (token != null && token.isNotEmpty)
+            HttpHeaders.authorizationHeader: 'Bearer $token',
+        },
+        allowPause: true,
+        retries: 3,
+        updates: Updates.statusAndProgress,
+        group: 'localmind_litert_downloads',
+        displayName: '${model.name} (update)',
+      );
+    }
+    _activeLitertTasks[modelId] = task as DownloadTask;
+
+    var lastReceived = 0;
+    final result = await FileDownloader().download(
+      task as DownloadTask,
+      onProgress: (progress) {
+        final clamped = progress.clamp(0.0, 1.0);
+        if (totalBytes > 0) {
+          final received = (clamped * totalBytes).round().clamp(0, totalBytes);
+          if (received >= lastReceived) {
+            lastReceived = received;
+            onProgress?.call(received, totalBytes);
+          }
+        } else {
+          onProgress?.call((clamped * 100).round().clamp(0, 100), 100);
+        }
+      },
+    );
+
+    if (result.status == TaskStatus.paused) {
+      return TaskStatus.paused;
+    }
+    if (result.status == TaskStatus.canceled) {
+      _activeLitertTasks.remove(modelId);
+      await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      throw const HttpException('LiteRT update canceled.');
+    }
+    if (result.status != TaskStatus.complete) {
+      _activeLitertTasks.remove(modelId);
+      await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      // Clean up temp file.
+      try {
+        final tempPath = await (task as DownloadTask).filePath();
+        final tempFile = File(tempPath);
+        if (await tempFile.exists()) await tempFile.delete();
+      } catch (_) {}
+      throw HttpException(
+        result.exception?.description ?? 'LiteRT update failed.',
+      );
+    }
+
+    // Finalize: register new install, swap metadata, clean up old.
+    try {
+      final status = await _finalizeLitertUpdate(
+        modelId,
+        task as DownloadTask,
+        updateInstallName,
+        model,
+        oldFilePath,
+        oldInstallName,
+      );
+      await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      return status;
+    } catch (e) {
+      _activeLitertTasks.remove(modelId);
+      await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      // Clean up temp file.
+      try {
+        final tempPath = await (task as DownloadTask).filePath();
+        final tempFile = File(tempPath);
+        if (await tempFile.exists()) await tempFile.delete();
+      } catch (_) {}
+      rethrow;
+    }
+  }
+
+  Future<TaskStatus> _finalizeLitertUpdate(
+    String modelId,
+    DownloadTask task,
+    String installName,
+    ImportedLitertModelMetadata oldModel,
+    String? oldFilePath,
+    String oldInstallName,
+  ) async {
+    _activeLitertTasks.remove(modelId);
+
+    final filePath = await task.filePath();
+    final file = File(filePath);
+    if (!await file.exists() || await file.length() <= 0) {
+      throw const FileSystemException('The downloaded LiteRT file was empty or missing.');
+    }
+
+    // Register new install.
+    final previousSpec = FlutterGemma.activeModelSpec;
+    await FlutterGemma.installModel(
+      modelType: ModelType.general,
+      fileType: ModelFileType.litertlm,
+    ).fromFile(filePath).install();
+    final manager = FlutterGemmaPlugin.instance.modelManager;
+    if (previousSpec != null) {
+      manager.setActiveModel(previousSpec);
+    } else {
+      await FlutterGemma.clearActiveInferenceIdentity();
+    }
+
+    await _mutex.run(() async {
+      final models = load();
+      final index = models.indexWhere((m) => m.id == modelId);
+      if (index >= 0) {
+        // Delete old FlutterGemma install (if different name).
+        if (oldInstallName != installName) {
+          try {
+            await FlutterGemma.uninstallModel(oldInstallName);
+          } catch (_) {}
+        }
+        // Delete old file.
+        if (oldFilePath != null &&
+            oldFilePath != filePath &&
+            await File(oldFilePath).exists()) {
+          try {
+            await File(oldFilePath).delete();
+          } catch (_) {}
+        }
+        // Update metadata: point to new file, update revision, clear updateAvailable.
+        models[index] = models[index].copyWith(
+          filePath: filePath,
+          installFileName: installName,
+          fileSizeBytes: await file.length(),
+          revision: oldModel.latestRevision ?? oldModel.revision,
+          fileOid: oldModel.fileOid,
+          lastModified: oldModel.lastModified,
+          updateAvailable: false,
+          latestRevision: null,
+          lastCheckedAt: DateTime.now(),
+        );
+        await _saveAllUnlocked(models);
+      }
+    });
+
+    _activeLitertTasks.remove(modelId);
+    return TaskStatus.complete;
+  }
+
+
   Future<TaskStatus> _finalizeLitertDownload(
     String modelId,
     DownloadTask task,

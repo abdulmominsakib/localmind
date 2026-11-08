@@ -1240,6 +1240,132 @@ class ImportedGgufModelRepository {
     return TaskStatus.complete;
   }
 
+
+  /// Download an update for an already-imported GGUF model.
+  Future<TaskStatus> downloadUpdate(
+    String modelId, {
+    String? token,
+    void Function(int receivedBytes, int totalBytes)? onProgress,
+  }) async {
+    final lock = _downloadMutexes.putIfAbsent(modelId, () => AsyncMutex());
+    return lock.run(() async {
+      final models = load();
+      final index = models.indexWhere((model) => model.id == modelId);
+      if (index < 0) {
+        throw StateError('Imported GGUF model no longer exists');
+      }
+      final model = models[index];
+      if (model.sourceUrl == null || model.sourceUrl!.isEmpty) {
+        throw const FormatException('Imported GGUF model has no source URL.');
+      }
+
+      final oldFilePath = model.filePath;
+      final originalName = _fileNameFromUri(Uri.parse(model.sourceUrl!));
+      final task = DownloadTask(
+        taskId: '$modelId-update',
+        url: model.sourceUrl!,
+        filename: '$modelId-update-${_sanitizeFileName(originalName)}',
+        directory: _storageDirName,
+        baseDirectory: BaseDirectory.applicationSupport,
+        headers: {
+          if (token != null && token.isNotEmpty)
+            HttpHeaders.authorizationHeader: 'Bearer $token',
+        },
+        allowPause: true,
+        retries: 3,
+        updates: Updates.statusAndProgress,
+        group: 'localmind_gguf_downloads',
+        displayName: '${model.name} (update)',
+      );
+
+      _activeGgufTasks[modelId] = task;
+
+      var lastReceived = 0;
+      final result = await FileDownloader().download(
+        task,
+        onProgress: (progress) {
+          if (onProgress == null) return;
+          final total = model.fileSizeBytes > 0 ? model.fileSizeBytes : 0;
+          if (total > 0) {
+            final received = (progress.clamp(0.0, 1.0) * total).round().clamp(0, total);
+            if (received >= lastReceived) {
+              lastReceived = received;
+              onProgress(received, total);
+            }
+          } else {
+            onProgress(
+              (progress.clamp(0.0, 1.0) * 100).round().clamp(0, 100),
+              100,
+            );
+          }
+        },
+      );
+
+      if (result.status == TaskStatus.paused) {
+        _activeGgufTasks.remove(modelId);
+        throw const HttpException('GGUF update paused.');
+      }
+      if (result.status == TaskStatus.canceled) {
+        _activeGgufTasks.remove(modelId);
+        await FileDownloader().database.deleteRecordWithId('$modelId-update');
+        throw const HttpException('GGUF update canceled.');
+      }
+      if (result.status != TaskStatus.complete) {
+        _activeGgufTasks.remove(modelId);
+        await FileDownloader().database.deleteRecordWithId('$modelId-update');
+        // Clean up temp file.
+        try {
+          final tempPath = await task.filePath();
+          final tempFile = File(tempPath);
+          if (await tempFile.exists()) await tempFile.delete();
+        } catch (_) {}
+        throw HttpException(
+          result.exception?.description ?? 'GGUF update failed.',
+        );
+      }
+
+      final filePath = await task.filePath();
+      final file = File(filePath);
+      if (!await file.exists() || await file.length() <= 0) {
+        _activeGgufTasks.remove(modelId);
+        await FileDownloader().database.deleteRecordWithId('$modelId-update');
+        throw const FileSystemException('The downloaded GGUF file was empty or missing.');
+      }
+
+      await _validateGgufFile(file);
+
+      final fileSize = await file.length();
+      await _mutex.run(() async {
+        final freshModels = load();
+        final freshIndex = freshModels.indexWhere((m) => m.id == modelId);
+        if (freshIndex >= 0) {
+          // Delete old file.
+          if (oldFilePath != null &&
+              oldFilePath != filePath &&
+              await File(oldFilePath).exists()) {
+            try {
+              await File(oldFilePath).delete();
+            } catch (_) {}
+          }
+          freshModels[freshIndex] = freshModels[freshIndex].copyWith(
+            filePath: filePath,
+            fileSizeBytes: fileSize,
+            revision: freshModels[freshIndex].latestRevision ?? freshModels[freshIndex].revision,
+            updateAvailable: false,
+            latestRevision: null,
+            lastCheckedAt: DateTime.now(),
+          );
+          await _saveAllUnlocked(freshModels);
+        }
+      });
+
+      _activeGgufTasks.remove(modelId);
+      await FileDownloader().database.deleteRecordWithId('$modelId-update');
+      return TaskStatus.complete;
+    });
+  }
+
+
   Future<bool> pauseDownload(String modelId) async {
     final tasks = (await FileDownloader().allTasks(allGroups: true))
         .where((t) => t.taskId == modelId)
