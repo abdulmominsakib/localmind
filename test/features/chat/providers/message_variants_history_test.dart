@@ -19,6 +19,24 @@ void main() {
       ['old-user', 'old-assistant', 'new-user', 'new-assistant'],
     );
   });
+
+  test('keeps later messages attached to a legacy tool result', () {
+    final history = [
+      _message('user', MessageRole.user, 0),
+      _message('call', MessageRole.assistant, 1, parent: 'user'),
+      _message('tool-a', MessageRole.tool, 1, parent: 'call'),
+      _message('tool-b', MessageRole.tool, 1, parent: 'call'),
+      _message('reply', MessageRole.assistant, 2, parent: 'call'),
+      _message('next-user', MessageRole.user, 3, parent: 'tool-a'),
+    ];
+
+    expect(
+      MessageVariants.resolveActiveTimeline(
+        history,
+      ).map((message) => message.id),
+      ['user', 'call', 'tool-a', 'tool-b', 'reply', 'next-user'],
+    );
+  });
 }
 
 Message _message(String id, MessageRole role, int order, {String? parent}) {

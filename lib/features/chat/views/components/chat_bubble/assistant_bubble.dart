@@ -74,7 +74,8 @@ class AssistantBubble extends StatelessWidget {
           else if (isStreaming)
             _StreamingContent(content: message.content, isDark: isDark)
           else if (message.content.isEmpty &&
-              (message.reasoningContent?.isEmpty ?? true))
+              (message.reasoningContent?.isEmpty ?? true) &&
+              (message.toolEvents?.isEmpty ?? true))
             Text(
               AppLocalizations.of(context)!.no_response,
               style: TextStyle(

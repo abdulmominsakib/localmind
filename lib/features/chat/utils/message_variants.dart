@@ -1,3 +1,4 @@
+import '../../../core/models/enums.dart';
 import '../data/models/message.dart';
 
 class MessageVariants {
@@ -35,11 +36,32 @@ class MessageVariants {
 
     final timeline = <Message>[];
     var current = _pickActiveSibling(roots);
+    var legacyReplies = <Message>[];
     while (true) {
       timeline.add(current);
-      final children = childrenOf[current.id];
-      if (children == null || children.isEmpty) break;
-      current = _pickActiveSibling(children);
+      final children = childrenOf[current.id] ?? legacyReplies;
+      legacyReplies = [];
+      if (children.isEmpty) break;
+
+      final replies = <Message>[];
+      for (final child in children) {
+        if (child.role == MessageRole.tool) {
+          // Results belong to the tool-call turn and can arrive in parallel.
+          timeline.add(child);
+          legacyReplies.addAll(childrenOf[child.id] ?? const []);
+        } else {
+          replies.add(child);
+        }
+      }
+      // Older versions could attach the next user turn to a tool result.
+      // Preserve that continuation if the actual reply has no children.
+      if (replies.isEmpty) {
+        if (legacyReplies.isEmpty) break;
+        current = _pickActiveSibling(legacyReplies);
+        legacyReplies = [];
+      } else {
+        current = _pickActiveSibling(replies);
+      }
     }
     return timeline;
   }
@@ -105,7 +127,11 @@ class MessageVariants {
       );
       previousActiveId = active.id;
     }
-    return updated;
+    return messages
+        .map(
+          (message) => message.copyWith(parentMessageId: parents[message.id]),
+        )
+        .toList();
   }
 
   static Message _pickActiveSibling(List<Message> siblings) {
@@ -139,7 +165,14 @@ class MessageVariants {
     Message message,
   ) {
     final gid = groupId(message);
-    return allMessages.where((m) => groupId(m) == gid).toList()
+    return allMessages
+        .where(
+          (m) =>
+              groupId(m) == gid &&
+              m.role == message.role &&
+              m.parentMessageId == message.parentMessageId,
+        )
+        .toList()
       ..sort((a, b) => a.variantIndex.compareTo(b.variantIndex));
   }
 

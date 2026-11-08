@@ -9,7 +9,7 @@ import 'package:localmind/core/providers/storage_providers.dart';
 import 'package:localmind/core/services/chat_background_service.dart';
 import 'package:localmind/features/chat/data/chat_service.dart';
 import 'package:localmind/features/chat/data/models/chat_parameters.dart';
-import 'package:localmind/features/chat/data/models/message.dart';
+import 'package:localmind/features/chat/data/models/message.dart' show Message;
 import 'package:localmind/features/chat/data/tools/tool_definition.dart';
 import 'package:localmind/features/chat/data/tools/tool_registry.dart';
 import 'package:localmind/features/chat/providers/chat_mcp_providers.dart';
@@ -33,6 +33,7 @@ void main() {
 
   late _ControllableChatService chatService;
   late _TestChatBackgroundService bgService;
+  late _TestMcpToolProvider mcpTools;
   late ProviderContainer container;
   late _BackgroundTestChatNotifier notifier;
 
@@ -41,6 +42,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     chatService = _ControllableChatService();
     bgService = _TestChatBackgroundService();
+    mcpTools = _TestMcpToolProvider();
     container = ProviderContainer(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
@@ -59,7 +61,7 @@ void main() {
         chatParamsProvider.overrideWithValue(ChatParameters.defaults()),
         chatMcpConfigProvider.overrideWith(_DisabledMcpNotifier.new),
         toolRegistryProvider.overrideWithValue(
-          ToolRegistry(providers: const []),
+          ToolRegistry(providers: [mcpTools]),
         ),
         chatBackgroundServiceProvider.overrideWithValue(bgService),
         settingsProvider.overrideWith(_TestSettingsNotifier.new),
@@ -82,6 +84,124 @@ void main() {
     chatService.emit('Hello');
     await _pump();
   }
+
+  for (final retry in [false, true]) {
+    test(
+      'MCP tool results and final reply survive ${retry ? 'retry' : 'send'}',
+      () async {
+        await notifier.loadConversation(_conversationA);
+        container.read(chatMcpConfigProvider.notifier).setEnabled(true);
+        if (retry) {
+          await notifier.retryMessage('a-assistant');
+        } else {
+          await notifier.sendMessage('Check my tools.');
+        }
+        chatService.emitToolResult('first_tool', 'First result');
+        chatService.emitToolResult('second_tool', 'Second result');
+        await chatService.finish();
+        await _pump();
+
+        expect(chatService.controllers, hasLength(2));
+        final followUp = chatService.requests.last;
+        final callTurn = followUp.singleWhere(
+          (message) => message.toolCalls != null,
+        );
+        final results = followUp.where(
+          (message) => message.role == MessageRole.tool,
+        );
+        expect(results.map((message) => message.content), [
+          'First result',
+          'Second result',
+        ]);
+        expect(
+          results.map((message) => message.toolCallId),
+          callTurn.toolCalls!.map((call) => call.id),
+        );
+
+        chatService.emit('Here is the answer.');
+        await chatService.finish();
+        await _pump();
+
+        final state = container.read(chatProvider);
+        expect(state.isStreaming, isFalse);
+        expect(state.messages.last.content, 'Here is the answer.');
+        expect(
+          notifier.saved
+              .lastWhere((message) => message.id == callTurn.id)
+              .toolCalls,
+          hasLength(2),
+        );
+        await notifier.sendMessage('Follow-up question.');
+        expect(
+          chatService.requests.last.map((message) => message.content),
+          contains('Here is the answer.'),
+        );
+        await chatService.finish();
+        await _pump();
+      },
+    );
+  }
+
+  test(
+    'MCP with zero tools keeps normal chat history and flags an empty retry',
+    () async {
+      await notifier.loadConversation(_conversationA);
+      container.read(chatMcpConfigProvider.notifier).setEnabled(true);
+      await notifier.sendMessage('Follow-up question.');
+
+      expect(chatService.offeredTools.single, isEmpty);
+      expect(
+        chatService.requests.single.map((message) => message.content),
+        containsAllInOrder(['Hi A', 'Hey', 'Follow-up question.']),
+      );
+      chatService.emit('An answer');
+      await chatService.finish();
+      await _pump();
+
+      final reply = container.read(chatProvider).messages.last;
+      await notifier.retryMessage(reply.id);
+      await chatService.finish();
+      await _pump();
+
+      final retry = container.read(chatProvider).messages.last;
+      expect(retry.status, MessageStatus.error);
+      expect(retry.errorMessage, contains('empty reply'));
+    },
+  );
+
+  test(
+    'retry executes an approved MCP tool and requests a text reply',
+    () async {
+      mcpTools.enabled = true;
+      await notifier.loadConversation(_conversationA);
+      container.read(chatMcpConfigProvider.notifier).setEnabled(true);
+      await notifier.retryMessage('a-assistant');
+      expect(chatService.offeredTools.single?.single.name, 'lookup');
+
+      chatService.emitToolResult('lookup', null);
+      await chatService.finish();
+      await _pump();
+      expect(container.read(chatProvider).pendingToolApproval, isNotNull);
+      notifier.approveTool(true);
+      await _pump();
+
+      expect(mcpTools.executed, ['lookup']);
+      expect(chatService.offeredTools.last, isEmpty);
+      expect(
+        chatService.requests.last
+            .singleWhere((message) => message.role == MessageRole.tool)
+            .content,
+        'Lookup result',
+      );
+      chatService.emit('Answer based on the lookup.');
+      await chatService.finish();
+      await _pump();
+      expect(
+        container.read(chatProvider).messages.last.content,
+        'Answer based on the lookup.',
+      );
+    },
+  );
 
   test('switching chats keeps the reply generating (#94)', () async {
     await startReplyInA();
@@ -499,11 +619,22 @@ class _BackgroundTestChatNotifier extends ChatNotifier {
 
 class _ControllableChatService implements ChatService {
   final List<StreamController<ChatResponse>> controllers = [];
+  final List<List<Message>> requests = [];
+  final List<List<ToolDefinition>?> offeredTools = [];
   int cancelCount = 0;
 
   void emit(String content) {
     controllers.last.add(
       ChatResponse(type: ChatResponseType.message, content: content),
+    );
+  }
+
+  void emitToolResult(String name, String? output) {
+    controllers.last.add(
+      ChatResponse(
+        type: ChatResponseType.toolCall,
+        toolCall: ToolCallData(tool: name, arguments: const {}, output: output),
+      ),
     );
   }
 
@@ -524,12 +655,39 @@ class _ControllableChatService implements ChatService {
   }) {
     final controller = StreamController<ChatResponse>();
     controllers.add(controller);
+    requests.add(messages);
+    offeredTools.add(tools);
     return controller.stream;
   }
 
   @override
   void cancelStream() {
     cancelCount++;
+  }
+}
+
+class _TestMcpToolProvider implements ToolProvider {
+  bool enabled = false;
+  final executed = <String>[];
+
+  @override
+  Future<List<ToolDefinition>> listTools() async => [
+    if (enabled)
+      const ToolDefinition(
+        name: 'lookup',
+        description: 'Look up a value.',
+        inputSchema: {'type': 'object'},
+        providerType: ToolProviderType.mcp,
+      ),
+  ];
+
+  @override
+  Future<ToolExecutionResult> execute(
+    String name,
+    Map<String, dynamic> args,
+  ) async {
+    executed.add(name);
+    return const ToolExecutionResult.success('Lookup result');
   }
 }
 

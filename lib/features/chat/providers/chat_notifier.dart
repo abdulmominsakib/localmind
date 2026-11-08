@@ -25,7 +25,6 @@ import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/objectbox.g.dart';
 import '../data/chat_service.dart';
-import '../data/models/chat_parameters.dart';
 import '../data/models/message.dart' hide ToolCallData;
 import '../data/models/message.dart' as msg_model show ToolCallData;
 import '../data/title_generation_service.dart';
@@ -969,6 +968,7 @@ class ChatNotifier extends Notifier<ChatState> {
             : null;
 
         final tools = await _toolsForTurn(mcpConfig.enabled);
+        if (!ref.mounted || session.cancelled) return;
 
         final collectedToolCalls = <ToolCallData>[];
 
@@ -1141,15 +1141,14 @@ class ChatNotifier extends Notifier<ChatState> {
                 final isCurrentContext = _activeConversationId == streamConvId;
                 final streamingMessage = streamingAssistantMessage;
                 final hasContent =
-                    streamingMessage.content.isNotEmpty ||
-                    (streamingMessage.reasoningContent?.isNotEmpty ?? false) ||
-                    collectedToolCalls.isNotEmpty;
+                    _hasReplyContent(streamingMessage) ||
+                    (mcpConfig.enabled && collectedToolCalls.isNotEmpty);
 
                 if (!hasContent) {
                   final errorMessage = streamingMessage.copyWith(
                     status: MessageStatus.error,
                     errorMessage:
-                        'Model failed to respond. This may happen with free tier models that refuse certain prompts or when the service is busy.',
+                        'The model returned an empty reply. Try regenerating the response.',
                     isProcessing: false,
                   );
                   await _saveMessage(errorMessage, persist: session.persisted);
@@ -1175,162 +1174,16 @@ class ChatNotifier extends Notifier<ChatState> {
                   );
 
                   if (mcpConfig.enabled && collectedToolCalls.isNotEmpty) {
-                    try {
-                      // Split collected tool calls into:
-                      //  - `serverExecuted`: calls whose output the server
-                      //    already populated (e.g. LM Studio's native
-                      //    /api/v1/chat runs MCP tools server-side). These
-                      //    must NOT be re-executed by the client.
-                      //  - `clientExecuted`: calls that arrived without
-                      //    output (OpenAI-compatible streaming tool calls).
-                      //    These are run by ToolExecutionLoop as before.
-                      final dedupedCalls = <String, ToolCallData>{};
-                      for (final tc in collectedToolCalls) {
-                        dedupedCalls[tc.tool] = tc;
-                      }
-                      final allCalls = dedupedCalls.values.toList();
-                      final serverExecuted = allCalls
-                          .where((tc) => tc.output != null)
-                          .toList();
-                      final clientExecuted = allCalls
-                          .where((tc) => tc.output == null)
-                          .toList();
-
-                      final toolEvents = <ToolEvent>[];
-
-                      if (serverExecuted.isNotEmpty) {
-                        final sessionId = DateTime.now().millisecondsSinceEpoch
-                            .toString();
-                        for (final tc in serverExecuted) {
-                          final eventId =
-                              '${sessionId}_1_${tc.tool}.server_executed';
-                          toolEvents.add(
-                            ToolEvent(
-                              eventId: eventId,
-                              timestamp: DateTime.now(),
-                              status: ToolEventStatus.completed,
-                              toolName: tc.tool,
-                              providerType: ToolProviderType.lmStudioServer,
-                              arguments: tc.arguments,
-                              result: tc.output,
-                            ),
-                          );
-                        }
-                      }
-
-                      if (clientExecuted.isNotEmpty && ref.mounted) {
-                        final registry = ref.read(toolRegistryProvider);
-                        final adapter = createAdapterForServerType(server.type);
-
-                        final preParsedCalls = clientExecuted
-                            .map(
-                              (tc) => ParsedToolCall(
-                                id: tc.tool,
-                                name: tc.tool,
-                                arguments: tc.arguments,
-                              ),
-                            )
-                            .toList();
-
-                        final loop = ToolExecutionLoop(
-                          adapter: adapter,
-                          registry: registry,
-                          onRequestApproval: (call) async {
-                            final completer = Completer<bool>();
-                            final approval = PendingToolApproval(
-                              toolCall: call,
-                              completer: completer,
-                            );
-                            _pendingToolApproval = approval;
-                            if (ref.mounted) {
-                              state = state.copyWith(
-                                pendingToolApproval: approval,
-                              );
-                            }
-
-                            final result = await completer.future;
-
-                            _pendingToolApproval = null;
-                            if (ref.mounted) {
-                              state = state.copyWith(
-                                clearPendingApproval: true,
-                              );
-                            }
-
-                            return result;
-                          },
-                        );
-
-                        final loopResult = await loop.run(
-                          initialUserMessage: content,
-                          assistantContent: streamingAssistantMessage.content,
-                          preParsedCalls: preParsedCalls,
-                        );
-
-                        if (loopResult.events.isNotEmpty) {
-                          toolEvents.addAll(loopResult.events);
-                        }
-                      }
-
-                      if (toolEvents.isNotEmpty) {
-                        finalMessage = finalMessage.copyWith(
-                          toolEvents: toolEvents,
-                        );
-                      }
-
-                      // After successful tool execution the chat must
-                      // continue: the model has emitted a tool call, the
-                      // client (or server) executed it, and now we need to
-                      // send a follow-up chat completion containing the
-                      // tool-role result(s) so the model can produce the
-                      // final answer. Without this, the conversation just
-                      // ends as soon as the tool returns — see issue #77.
-                      final completedResults = toolEvents
-                          .where((e) => e.status == ToolEventStatus.completed)
-                          .toList();
-                      if (ref.mounted && completedResults.isNotEmpty) {
-                        await _sendFollowupWithToolResults(
-                          previousAssistant: finalMessage,
-                          toolEvents: toolEvents,
-                          server: server,
-                          selectedModel: selectedModel,
-                          effectiveModelId: effectiveModelId,
-                          chatService: chatService,
-                          chatParams: chatParams,
-                          tools: tools,
-                          integrations: integrations,
-                          streamConvId: streamConvId,
-                          isCurrentContext: isCurrentContext,
-                        );
-                        // After the follow-up the original `finalMessage`
-                        // already contains its `toolEvents` and is on disk;
-                        // mark it as final and bail out of the rest of the
-                        // post-stream bookkeeping that was meant for the
-                        // first turn only.
-                        if (ref.mounted) {
-                          await _saveMessage(
-                            finalMessage,
-                            persist: session.persisted,
-                          );
-                          if (isCurrentContext) {
-                            _replaceMessageInState(
-                              finalMessage,
-                              clearStreaming: true,
-                            );
-                          }
-                        }
-                        return;
-                      }
-                    } catch (e) {
-                      Log.error('Tool execution loop failed: $e');
-                      // A follow-up that failed after registering its own
-                      // session must not leave it running forever.
-                      final followUp = _sessions[session.conversationId];
-                      if (followUp != null && !identical(followUp, session)) {
-                        await followUp.detach();
-                        _endSession(followUp);
-                      }
-                    }
+                    final toolReply = await _finishToolTurn(
+                      session,
+                      finalMessage,
+                      collectedToolCalls,
+                      selectedModel,
+                      effectiveModelId,
+                      content,
+                    );
+                    if (toolReply == null) return;
+                    finalMessage = toolReply;
                   }
 
                   await _saveMessage(finalMessage, persist: session.persisted);
@@ -1590,7 +1443,18 @@ class ChatNotifier extends Notifier<ChatState> {
     }
 
     final contextLength = ref.read(chatParamsProvider).contextLength;
-    return _truncateToContextWindow(messages, contextLength);
+    final history = _truncateToContextWindow(messages, contextLength);
+    final callIds = {
+      for (final message in history)
+        for (final call in message.toolCalls ?? const []) call.id,
+    };
+    return history
+        .where(
+          (message) =>
+              message.role != MessageRole.tool ||
+              callIds.contains(message.toolCallId),
+        )
+        .toList();
   }
 
   List<Message> _buildMessagesForContinue(
@@ -2037,16 +1901,14 @@ class ChatNotifier extends Notifier<ChatState> {
     final newIndex = (currentIndex + direction).clamp(0, variants.length - 1);
     if (newIndex == currentIndex) return;
 
-    final groupId = MessageVariants.groupId(displayMsg);
+    final variantIds = variants.map((variant) => variant.id).toSet();
     final targetId = variants[newIndex].id;
     final updatedAll = state.allMessages.map((message) {
-      if (MessageVariants.groupId(message) != groupId) return message;
+      if (!variantIds.contains(message.id)) return message;
       return message.copyWith(isActiveVariant: message.id == targetId);
     }).toList();
 
-    for (final message in updatedAll.where(
-      (m) => MessageVariants.groupId(m) == groupId,
-    )) {
+    for (final message in updatedAll.where((m) => variantIds.contains(m.id))) {
       await _saveMessage(message);
     }
     _setAllMessages(updatedAll);
@@ -2072,10 +1934,15 @@ class ChatNotifier extends Notifier<ChatState> {
       final message = state.messages[messageIndex];
       if (message.role != MessageRole.assistant) return;
 
-      if (messageIndex > 0 &&
-          state.messages[messageIndex - 1].role == MessageRole.user) {
-        final userMessage = state.messages[messageIndex - 1];
-        final groupId = MessageVariants.groupId(message);
+      final groupId = MessageVariants.groupId(message);
+      final turnIndex = state.messages.indexWhere(
+        (entry) =>
+            entry.role == MessageRole.assistant &&
+            MessageVariants.groupId(entry) == groupId,
+      );
+      if (turnIndex > 0 &&
+          state.messages[turnIndex - 1].role == MessageRole.user) {
+        final userMessage = state.messages[turnIndex - 1];
 
         final deactivated = state.allMessages.map((m) {
           if (MessageVariants.groupId(m) != groupId) return m;
@@ -2091,7 +1958,7 @@ class ChatNotifier extends Notifier<ChatState> {
         await _regenerateAssistant(
           userMessage,
           variantGroupId: groupId,
-          threadOrder: message.threadOrder,
+          threadOrder: state.messages[turnIndex].threadOrder,
           variantIndex: _nextVariantIndex(groupId),
         );
       }
@@ -2170,6 +2037,105 @@ class ChatNotifier extends Notifier<ChatState> {
     );
   }
 
+  Future<Message?> _finishToolTurn(
+    GenerationSession session,
+    Message assistant,
+    List<ToolCallData> calls,
+    ModelInfo? selectedModel,
+    String modelId,
+    String userContent,
+  ) async {
+    try {
+      // LM Studio can report the same call more than once, including a
+      // completed event with the output already attached.
+      final callsByName = {for (final call in calls) call.tool: call};
+      final events = <ToolEvent>[];
+      final clientCalls = <ParsedToolCall>[];
+      for (final call in callsByName.values) {
+        if (call.output == null) {
+          clientCalls.add(
+            ParsedToolCall(
+              id: call.tool,
+              name: call.tool,
+              arguments: call.arguments,
+            ),
+          );
+        } else {
+          events.add(
+            ToolEvent(
+              eventId: generateUuid(),
+              timestamp: DateTime.now(),
+              status: ToolEventStatus.completed,
+              toolName: call.tool,
+              providerType: ToolProviderType.lmStudioServer,
+              arguments: call.arguments,
+              result: call.output,
+            ),
+          );
+        }
+      }
+
+      if (clientCalls.isNotEmpty && ref.mounted && !session.cancelled) {
+        final loop = ToolExecutionLoop(
+          adapter: createAdapterForServerType(session.server.type),
+          registry: ref.read(toolRegistryProvider),
+          onRequestApproval: (call) async {
+            if (!ref.mounted || session.cancelled) return false;
+            final approval = PendingToolApproval(
+              toolCall: call,
+              completer: Completer<bool>(),
+            );
+            _pendingToolApproval = approval;
+            state = state.copyWith(pendingToolApproval: approval);
+            try {
+              return await approval.completer.future.timeout(
+                const Duration(seconds: 60),
+                onTimeout: () => false,
+              );
+            } finally {
+              if (identical(_pendingToolApproval, approval)) {
+                _clearPendingApproval();
+              }
+            }
+          },
+        );
+        final result = await loop.run(
+          initialUserMessage: userContent,
+          assistantContent: assistant.content,
+          preParsedCalls: clientCalls,
+        );
+        events.addAll(result.events);
+      }
+
+      if (!ref.mounted || session.cancelled) return null;
+      if (events.isNotEmpty) assistant = assistant.copyWith(toolEvents: events);
+      if (events.any((event) => event.status == ToolEventStatus.completed) &&
+          _activeConversationId == session.conversationId) {
+        await _sendFollowupWithToolResults(
+          session,
+          previousAssistant: assistant,
+          toolEvents: events,
+          selectedModel: selectedModel,
+          effectiveModelId: modelId,
+        );
+        return null;
+      }
+    } catch (error) {
+      Log.error('Tool execution failed: $error');
+      if (!ref.mounted || session.cancelled) return null;
+    }
+    if (_hasReplyContent(assistant)) return assistant;
+    return assistant.copyWith(
+      status: MessageStatus.error,
+      errorMessage: 'The tool call did not produce a reply.',
+      stopReason: 'error',
+    );
+  }
+
+  bool _hasReplyContent(Message message) =>
+      message.content.trim().isNotEmpty ||
+      (message.reasoningContent?.trim().isNotEmpty ?? false);
+
   /// After successful tool execution (issue #77), build `tool` role messages
   /// for each completed tool event, persist them, and re-issue the chat
   /// completion so the model can produce the final answer.
@@ -2179,25 +2145,16 @@ class ChatNotifier extends Notifier<ChatState> {
   /// messages are appended right after it so the OpenAI-compatible protocol
   /// gets the `tool_call_id` ↔ `tool_calls[].id` pairing the model needs to
   /// continue the turn.
-  Future<void> _sendFollowupWithToolResults({
+  Future<void> _sendFollowupWithToolResults(
+    GenerationSession origin, {
     required Message previousAssistant,
     required List<ToolEvent> toolEvents,
-    required Server server,
     required ModelInfo? selectedModel,
     required String effectiveModelId,
-    required ChatService chatService,
-    required ChatParameters chatParams,
-    required List<ToolDefinition> tools,
-    required List<McpIntegration>? integrations,
-    required String streamConvId,
-    required bool isCurrentContext,
   }) async {
-    if (!ref.mounted) return;
-
     final completed = toolEvents
         .where((e) => e.status == ToolEventStatus.completed)
         .toList();
-    if (completed.isEmpty) return;
 
     // Synthesize stable tool-call IDs that match between the assistant
     // message's `tool_calls[].id` and the tool role message's `tool_call_id`.
@@ -2225,11 +2182,7 @@ class ChatNotifier extends Notifier<ChatState> {
       toolCalls: toolCallEntries,
       stopReason: 'tool_use',
     );
-    await _saveMessage(assistantWithToolCalls);
-    if (!ref.mounted) return;
-    if (isCurrentContext) {
-      _replaceMessageInAll(assistantWithToolCalls, clearStreaming: true);
-    }
+    await _saveMessage(assistantWithToolCalls, persist: origin.persisted);
 
     final toolMessages = completed.map((e) {
       final callId = toolCallIdFor(e);
@@ -2243,32 +2196,33 @@ class ChatNotifier extends Notifier<ChatState> {
         toolCallId: callId,
         toolSessionId: previousAssistant.toolSessionId,
         parentMessageId: previousAssistant.id,
-        threadOrder: previousAssistant.threadOrder + 0,
+        threadOrder: previousAssistant.threadOrder,
         variantGroupId: previousAssistant.variantGroupId,
         variantIndex: previousAssistant.variantIndex,
       );
     }).toList();
 
     for (final tm in toolMessages) {
-      await _saveMessage(tm);
+      await _saveMessage(tm, persist: origin.persisted);
     }
 
-    if (!ref.mounted) return;
+    if (!ref.mounted ||
+        origin.cancelled ||
+        _activeConversationId != origin.conversationId) {
+      _endSession(origin);
+      return;
+    }
 
-    // Persist the assistant+tool messages into state.allMessages so future
-    // `_buildMessagesForApi(selectedModel)` calls (used by the follow-up
-    // stream) include them. Without this the next request would be missing
-    // the tool history and the model would re-emit the same tool call.
-    final newAll = [...state.allMessages, ...toolMessages];
-    final activeTimeline = MessageVariants.resolveActiveTimeline(newAll);
-    state = state.copyWith(allMessages: newAll, messages: activeTimeline);
-
-    // Create a new assistant message that will receive the model's final
-    // answer. It shares the variant group with the previous assistant turn
-    // so users see a single grouped assistant card that contains both the
-    // tool-call turn and the follow-up answer.
+    final messagesWithTools = [
+      for (final message in state.allMessages)
+        if (message.id == assistantWithToolCalls.id)
+          assistantWithToolCalls
+        else
+          message,
+      ...toolMessages,
+    ];
     final continuationThreadOrder = MessageVariants.nextThreadOrder(
-      state.allMessages,
+      messagesWithTools,
     );
     final continuationMessage = Message(
       id: generateUuid(),
@@ -2285,7 +2239,15 @@ class ChatNotifier extends Notifier<ChatState> {
       parentMessageId: previousAssistant.id,
     );
 
-    final newAllWithAssistant = [...newAll, continuationMessage];
+    await _saveMessage(continuationMessage, persist: origin.persisted);
+    if (!ref.mounted ||
+        origin.cancelled ||
+        _activeConversationId != origin.conversationId) {
+      _endSession(origin);
+      return;
+    }
+
+    final newAllWithAssistant = [...messagesWithTools, continuationMessage];
     state = state.copyWith(
       allMessages: newAllWithAssistant,
       messages: MessageVariants.resolveActiveTimeline(newAllWithAssistant),
@@ -2295,23 +2257,15 @@ class ChatNotifier extends Notifier<ChatState> {
     );
     final session = _beginSession(
       continuationMessage.conversationId,
-      server,
-      chatService,
+      origin.server,
+      origin.chatService,
     );
-    await _saveMessage(continuationMessage, persist: session.persisted);
-    if (!ref.mounted) return;
-
-    // Reuse the streaming logic — `_runAssistantStream` builds the API
-    // message list from state, which now contains the tool history, and
-    // will issue a fresh chat completion. If the model emits another tool
-    // call, the same onDone flow will execute it again until the model
-    // yields a final answer or `maxIterations` (enforced inside
-    // `ToolExecutionLoop`) is reached.
     await _runAssistantStream(
       session,
       continuationMessage,
       selectedModel,
       effectiveModelId: effectiveModelId,
+      isToolFollowup: true,
     );
   }
 
@@ -2321,6 +2275,7 @@ class ChatNotifier extends Notifier<ChatState> {
     ModelInfo? selectedModel, {
     required String effectiveModelId,
     bool continueGeneration = false,
+    bool isToolFollowup = false,
   }) async {
     final server = session.server;
     final chatService = session.chatService;
@@ -2342,11 +2297,13 @@ class ChatNotifier extends Notifier<ChatState> {
       final activeIntegrations = mcpConfig.integrations
           .where((i) => i.enabled)
           .toList();
-      final integrations = mcpConfig.enabled && activeIntegrations.isNotEmpty
+      final toolsEnabled = mcpConfig.enabled && !isToolFollowup;
+      final integrations = toolsEnabled && activeIntegrations.isNotEmpty
           ? activeIntegrations
           : null;
 
-      final tools = await _toolsForTurn(mcpConfig.enabled);
+      final tools = await _toolsForTurn(toolsEnabled);
+      final collectedToolCalls = <ToolCallData>[];
 
       bool stateNeedsUpdate = false;
       bool streamHadError = false;
@@ -2359,7 +2316,7 @@ class ChatNotifier extends Notifier<ChatState> {
         }
       }
 
-      if (session.cancelled) return;
+      if (!ref.mounted || session.cancelled) return;
 
       session.uiUpdateTimer = Timer.periodic(const Duration(milliseconds: 80), (
         _,
@@ -2473,6 +2430,11 @@ class ChatNotifier extends Notifier<ChatState> {
                     _endSession(session);
                   }
                   break;
+                case ChatResponseType.toolCall:
+                  if (response.toolCall case final call?) {
+                    collectedToolCalls.add(call);
+                  }
+                  break;
                 case ChatResponseType.done:
                   if (response.stats != null) {
                     session.stats = response.stats;
@@ -2493,14 +2455,37 @@ class ChatNotifier extends Notifier<ChatState> {
               final streamConvId = assistantMessage.conversationId;
               final isCurrentContext = _activeConversationId == streamConvId;
 
-              final finalMessage = _finalizeStreamMessage(
+              final hasReply = _hasReplyContent(streamingAssistantMessage);
+              final hasCalls = toolsEnabled && collectedToolCalls.isNotEmpty;
+              final completed = hasReply || hasCalls;
+              var finalMessage = _finalizeStreamMessage(
                 streamingAssistantMessage.copyWith(
-                  status: MessageStatus.complete,
+                  status: completed
+                      ? MessageStatus.complete
+                      : MessageStatus.error,
+                  errorMessage: completed
+                      ? null
+                      : 'The model returned an empty reply. Try regenerating the response.',
                   isProcessing: false,
                 ),
-                stopReason: 'complete',
+                stopReason: completed ? 'complete' : 'error',
                 session: session,
               );
+              if (hasCalls) {
+                final lastUser = messagesForApi.reversed
+                    .where((message) => message.role == MessageRole.user)
+                    .firstOrNull;
+                final toolReply = await _finishToolTurn(
+                  session,
+                  finalMessage,
+                  collectedToolCalls,
+                  selectedModel,
+                  effectiveModelId,
+                  lastUser?.content ?? '',
+                );
+                if (toolReply == null) return;
+                finalMessage = toolReply;
+              }
               await _saveMessage(finalMessage, persist: session.persisted);
               if (!ref.mounted) return;
               if (isCurrentContext) {
@@ -2519,7 +2504,9 @@ class ChatNotifier extends Notifier<ChatState> {
                 finalMessage,
                 isCurrentContext: isCurrentContext,
               );
-              if (!ref.mounted) return;
+              if (!ref.mounted || finalMessage.status == MessageStatus.error) {
+                return;
+              }
               _maybeRequestReviewAfterSuccessfulCompletion(
                 finalMessage: finalMessage,
                 server: server,
