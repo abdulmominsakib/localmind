@@ -10,7 +10,7 @@ class MessageVariants {
     if (allMessages.isEmpty) return [];
 
     final normalized = allMessages.map(_normalizeLegacy).toList();
-    final withParents = _ensureParentLinks(normalized);
+    final withParents = ensureParentLinks(normalized);
 
     final childrenOf = <String, List<Message>>{};
     final roots = <Message>[];
@@ -68,23 +68,36 @@ class MessageVariants {
     return active;
   }
 
-  static List<Message> _ensureParentLinks(List<Message> messages) {
-    if (messages.any((m) => m.parentMessageId?.isNotEmpty == true)) {
-      return messages;
+  static List<Message> ensureParentLinks(List<Message> messages) {
+    // A legacy chat may have gained linked replies after it was opened.
+    // Its older prefix still needs to be linked when read from storage.
+    int? firstLinkedOrder;
+    for (final message in messages) {
+      if (message.parentMessageId?.isNotEmpty == true &&
+          (firstLinkedOrder == null ||
+              message.threadOrder < firstLinkedOrder)) {
+        firstLinkedOrder = message.threadOrder;
+      }
     }
-
     final byThreadOrder = <int, List<Message>>{};
     for (final message in messages) {
+      if (firstLinkedOrder != null && message.threadOrder >= firstLinkedOrder) {
+        continue;
+      }
       byThreadOrder.putIfAbsent(message.threadOrder, () => []).add(message);
     }
+    if (byThreadOrder.length < 2) return messages;
+
     final orders = byThreadOrder.keys.toList()..sort();
 
     String? previousActiveId;
-    final updated = <Message>[];
+    final parents = <String, String>{};
     for (final order in orders) {
       final group = byThreadOrder[order]!;
-      for (final message in group) {
-        updated.add(message.copyWith(parentMessageId: previousActiveId));
+      if (previousActiveId != null) {
+        for (final message in group) {
+          parents[message.id] = previousActiveId;
+        }
       }
       final active = group.firstWhere(
         (m) => m.isActiveVariant,

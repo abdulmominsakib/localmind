@@ -583,32 +583,7 @@ class ChatNotifier extends Notifier<ChatState> {
         isActiveVariant: true,
       );
     }).toList();
-    return _assignLegacyParentsIfNeeded(normalized);
-  }
-
-  static List<Message> _assignLegacyParentsIfNeeded(List<Message> messages) {
-    if (messages.any((m) => m.parentMessageId?.isNotEmpty == true)) {
-      return messages;
-    }
-    final byThreadOrder = <int, List<Message>>{};
-    for (final message in messages) {
-      byThreadOrder.putIfAbsent(message.threadOrder, () => []).add(message);
-    }
-    final orders = byThreadOrder.keys.toList()..sort();
-    String? previousActiveId;
-    final updated = <Message>[];
-    for (final order in orders) {
-      final group = byThreadOrder[order]!;
-      for (final message in group) {
-        updated.add(message.copyWith(parentMessageId: previousActiveId));
-      }
-      final active = group.firstWhere(
-        (m) => m.isActiveVariant,
-        orElse: () => group.last,
-      );
-      previousActiveId = active.id;
-    }
-    return updated;
+    return MessageVariants.ensureParentLinks(normalized);
   }
 
   void _setAllMessages(List<Message> allMessages) {
