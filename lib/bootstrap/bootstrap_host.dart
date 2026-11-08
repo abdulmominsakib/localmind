@@ -14,6 +14,7 @@ import '../core/providers/highlighter_provider.dart';
 import '../core/providers/storage_providers.dart';
 import '../core/storage/objectbox_store.dart';
 import '../features/on_device/data/on_device_gemma_service.dart';
+import '../features/on_device/providers/foreground_download_providers.dart';
 import '../features/on_device/providers/on_device_providers.dart';
 import '../core/models/enums.dart';
 import '../features/personas/providers/personas_providers.dart';
@@ -116,6 +117,9 @@ class _BootstrapHostState extends State<BootstrapHost> {
 
       // Configure app-owned LiteRT downloads (background_downloader).
       final liteRtDownloader = FileDownloader();
+      // Disable automatic global reschedule (it touches FlutterGemma records
+      // and can create duplicate WorkSpecs). We do group-scoped recovery below.
+      await liteRtDownloader.start(doRescheduleKilledTasks: false);
       await liteRtDownloader.configure(
         androidConfig: [
           (Config.runInForeground, Config.always),
@@ -152,9 +156,13 @@ class _BootstrapHostState extends State<BootstrapHost> {
       await liteRtDownloader.resumeFromBackground();
 
       // Reschedule tasks that were killed before completion, per package docs.
-      Timer(const Duration(seconds: 5), () {
-        unawaited(liteRtDownloader.rescheduleKilledTasks());
-      });
+      // Run after reconcile to avoid racing resumeFromBackground with a second
+      // WorkSpec for the same taskId (process-death duplicate bug).
+      unawaited(Future.delayed(const Duration(seconds: 5), () async {
+        await container
+            .read(importedLitertModelRepositoryProvider)
+            .reconcileCompletedDownloads();
+      }));
 
       // Reconcile any completed tasks that finished while the app was dead.
       unawaited(
@@ -162,6 +170,52 @@ class _BootstrapHostState extends State<BootstrapHost> {
             .read(importedLitertModelRepositoryProvider)
             .reconcileCompletedDownloads(),
       );
+
+      // Configure app-owned GGUF downloads (background_downloader).
+      final ggufDownloader = FileDownloader();
+      await ggufDownloader.start(doRescheduleKilledTasks: false);
+      await ggufDownloader.configure(
+        androidConfig: [
+          (Config.runInForeground, Config.always),
+          (Config.useCacheDir, Config.never),
+        ],
+      );
+      ggufDownloader.configureNotificationForGroup(
+        'localmind_gguf_downloads',
+        running: const TaskNotification('Downloading model', '{filename}'),
+        paused: const TaskNotification('Download paused', '{filename}'),
+        complete: const TaskNotification('Download complete', '{filename}'),
+        error: const TaskNotification('Download failed', '{filename}'),
+        canceled: const TaskNotification('Download canceled', '{filename}'),
+        progressBar: true,
+      );
+      ggufDownloader.registerCallbacks(
+        group: 'localmind_gguf_downloads',
+        taskStatusCallback: (update) {
+          if (update.status == TaskStatus.complete) {
+            unawaited(
+              container
+                  .read(importedGgufModelRepositoryProvider)
+                  .reconcileCompletedDownloads(),
+            );
+          }
+        },
+      );
+      await ggufDownloader.trackTasksInGroup('localmind_gguf_downloads');
+      await ggufDownloader.resumeFromBackground();
+
+      // Await first reconcile for both groups so hydration sees final state.
+      await container
+          .read(importedLitertModelRepositoryProvider)
+          .reconcileCompletedDownloads();
+      await container
+          .read(importedGgufModelRepositoryProvider)
+          .reconcileCompletedDownloads();
+
+      // Hydrate download state from background tasks.
+      await container
+          .read(foregroundDownloadNotifierProvider.notifier)
+          .hydrateFromBackground();
 
       // Migrate models from old custom download location in background to prevent cold start ANR
       OnDeviceGemmaService.migrateOldModels().catchError((e) {

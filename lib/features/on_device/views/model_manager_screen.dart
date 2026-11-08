@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/models/enums.dart';
@@ -103,16 +103,17 @@ class _OnDeviceModelManagerScreenState
                         subtitle: l10n.curated_models_count(curatedModels.length),
                       ),
                     ),
-                    Icon(
-                      _curatedExpanded
-                          ? Icons.expand_less
-                          : Icons.expand_more,
+                    HugeIcon(
+                      icon: _curatedExpanded
+                          ? HugeIcons.strokeRoundedArrowUp01
+                          : HugeIcons.strokeRoundedArrowDown01,
+                      size: 20,
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 4),
-              if (models.isEmpty)
+              if (importedModels.isEmpty)
                 _EmptyImportedModelsCard(
                   onAddModels: () => context.push(AppRoutes.addOnDeviceModel),
                 )
@@ -142,7 +143,7 @@ class _OnDeviceModelManagerScreenState
                         builder: (context, ref, _) {
                           final async = ref.watch(importedModelUpdateProvider);
                           return IconButton(
-                            tooltip: 'Check for updates',
+                            tooltip: l10n.onDeviceCheckForUpdates,
                             onPressed: async.isLoading
                                 ? null
                                 : () => ref
@@ -238,23 +239,14 @@ class _ManagerHeader extends StatelessWidget {
               ),
             ),
           ),
-          if (defaultTargetPlatform == TargetPlatform.android ||
-              defaultTargetPlatform == TargetPlatform.iOS)
-            ElevatedButton.icon(
-              onPressed: onAddModels,
-              icon: const HugeIcon(
-                icon: HugeIcons.strokeRoundedAddCircle,
-                size: 18,
-              ),
-              label: Text(l10n.add_models_button),
-            ),
+          // Top header "Add models" button removed; import actions live in cards.
         ],
       ),
     );
   }
 }
 
-class _ImportOverviewCard extends StatelessWidget {
+class _ImportOverviewCard extends ConsumerWidget {
   const _ImportOverviewCard({
     required this.importedModels,
     required this.onAddModels,
@@ -264,15 +256,9 @@ class _ImportOverviewCard extends StatelessWidget {
   final VoidCallback onAddModels;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final localImports = importedModels
-        .where((model) => model.isImportedFromLocalFile)
-        .length;
-    final huggingFaceImports = importedModels
-        .where((model) => model.isImportedFromHuggingFace)
-        .length;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -336,14 +322,6 @@ class _ImportOverviewCard extends StatelessWidget {
                 label:
                     '${importedModels.length} ${l10n.gguf_imported_count_label}',
               ),
-              _SummaryPill(
-                icon: HugeIcons.strokeRoundedFolder01,
-                label: '$localImports ${l10n.gguf_local_files_label}',
-              ),
-              _SummaryPill(
-                icon: HugeIcons.strokeRoundedCloudDownload,
-                label: '$huggingFaceImports ${l10n.gguf_huggingface_label}',
-              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -353,8 +331,8 @@ class _ImportOverviewCard extends StatelessWidget {
             children: [
               OutlinedButton.icon(
                 onPressed: onAddModels,
-                icon: const HugeIcon(icon: HugeIcons.strokeRoundedAddCircle),
-                label: Text(l10n.add_models_button),
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedSearch01),
+                label: Text(l10n.onDeviceSearchModels),
               ),
               OutlinedButton.icon(
                 onPressed: () {
@@ -364,7 +342,12 @@ class _ImportOverviewCard extends StatelessWidget {
                   );
                 },
                 icon: const HugeIcon(icon: HugeIcons.strokeRoundedLink01),
-                label: const Text('Import from URL'),
+                label: Text(l10n.onDeviceImportFromUrl),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _importFromDevice(context, ref, l10n),
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedFile01),
+                label: Text(l10n.onDeviceImportFromDevice),
               ),
             ],
           ),
@@ -442,7 +425,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _EmptyImportedModelsCard extends StatelessWidget {
+class _EmptyImportedModelsCard extends ConsumerWidget {
   const _EmptyImportedModelsCard({
     required this.onAddModels,
   });
@@ -450,7 +433,7 @@ class _EmptyImportedModelsCard extends StatelessWidget {
   final VoidCallback onAddModels;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     return Container(
@@ -486,8 +469,8 @@ class _EmptyImportedModelsCard extends StatelessWidget {
             children: [
               OutlinedButton.icon(
                 onPressed: onAddModels,
-                icon: const HugeIcon(icon: HugeIcons.strokeRoundedAddCircle),
-                label: Text(l10n.add_models_button),
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedSearch01),
+                label: Text(l10n.onDeviceSearchModels),
               ),
               OutlinedButton.icon(
                 onPressed: () {
@@ -497,7 +480,12 @@ class _EmptyImportedModelsCard extends StatelessWidget {
                   );
                 },
                 icon: const HugeIcon(icon: HugeIcons.strokeRoundedLink01),
-                label: const Text('Import from URL'),
+                label: Text(l10n.onDeviceImportFromUrl),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _importFromDevice(context, ref, l10n),
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedFile01),
+                label: Text(l10n.onDeviceImportFromDevice),
               ),
             ],
           ),
@@ -1296,5 +1284,47 @@ class _EngineStatusCard extends StatelessWidget {
     }
 
     return const SizedBox.shrink();
+  }
+}
+
+Future<void> _importFromDevice(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+) async {
+  final result = await FilePicker.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: const ['gguf', 'litertlm'],
+  );
+  if (result == null || result.files.isEmpty) return;
+  final path = result.files.single.path;
+  final name = result.files.single.name;
+  if (path == null) return;
+
+  // Show a blocking spinner while importing.
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    if (name.toLowerCase().endsWith('.gguf')) {
+      await ref.read(importedGgufModelsProvider.notifier).importModel(path);
+    } else {
+      await ref.read(importedLitertModelsProvider.notifier).addFromPath(path);
+    }
+    if (!context.mounted) return;
+    Navigator.of(context).pop(); // dismiss spinner
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.add_model_file_added(name))),
+    );
+  } catch (e) {
+    if (context.mounted) {
+      Navigator.of(context).pop(); // dismiss spinner
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Import failed. Please check the file and try again.')),
+      );
+    }
   }
 }

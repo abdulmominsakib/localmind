@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/app_providers.dart';
 import '../../../../core/providers/service_providers.dart';
 import '../../providers/on_device_providers.dart';
+import 'package:localmind/core/utils/hugging_face_url.dart';
 import '../../utils/gguf_file_classifier.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
@@ -41,6 +42,12 @@ class _AddModelFromUrlDialogState
     if (isProjectorFile(fileName)) {
       return 'Projector (mmproj) files cannot be added as a model.';
     }
+    // Validate host before any network request.
+    try {
+      canonicalizeHuggingFaceUrl(url);
+    } catch (_) {
+      return 'Only official Hugging Face URLs are supported.';
+    }
     return null;
   }
 
@@ -60,10 +67,23 @@ class _AddModelFromUrlDialogState
     final token = ref.read(settingsProvider).huggingFaceToken;
     final dio = ref.read(dioProvider);
 
+    // Canonicalize (host validation) before any network request.
+    Uri canonical;
+    try {
+      canonical = canonicalizeHuggingFaceUrl(url);
+    } catch (_) {
+      setState(() {
+        _isImporting = false;
+        _error = 'Only official Hugging Face URLs are supported.';
+      });
+      return;
+    }
+    final canonicalUrl = canonical.toString();
+
     // Best-effort HEAD to confirm existence.
     try {
       await dio.head(
-        url,
+        canonicalUrl,
         options: Options(
           headers: {
             if (token != null && token.isNotEmpty)
@@ -93,16 +113,16 @@ class _AddModelFromUrlDialogState
       // ignore
     }
 
-    final lower = url.toLowerCase();
+    final lower = canonicalUrl.toLowerCase();
     try {
       if (lower.endsWith('.litertlm')) {
         await ref.read(importedLitertModelsProvider.notifier).addFromUrl(
-              url,
+              canonicalUrl,
               token: token,
             );
       } else {
         await ref.read(importedGgufModelsProvider.notifier).addFromUrl(
-              url,
+              canonicalUrl,
               huggingFaceToken: token,
             );
       }

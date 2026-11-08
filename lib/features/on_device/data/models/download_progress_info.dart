@@ -8,7 +8,7 @@ class DownloadProgressInfo {
   final String? error;
   final int receivedBytes;
   final int totalBytes;
-  final int bytesPerSecond;
+  final int? bytesPerSecond;
   final int? etaSeconds;
   final bool isResumed;
 
@@ -20,33 +20,40 @@ class DownloadProgressInfo {
     this.error,
     this.receivedBytes = 0,
     this.totalBytes = 0,
-    this.bytesPerSecond = 0,
+    this.bytesPerSecond,
     this.etaSeconds,
     this.isResumed = false,
   });
+
+  // Sentinel to distinguish "not provided" from an explicit null in copyWith.
+  static const Object _unset = Object();
 
   DownloadProgressInfo copyWith({
     String? modelId,
     DownloadStatus? status,
     double? progress,
-    String? taskId,
-    String? error,
+    Object? taskId = _unset,
+    Object? error = _unset,
     int? receivedBytes,
     int? totalBytes,
-    int? bytesPerSecond,
-    int? etaSeconds,
+    Object? bytesPerSecond = _unset,
+    Object? etaSeconds = _unset,
     bool? isResumed,
   }) {
     return DownloadProgressInfo(
       modelId: modelId ?? this.modelId,
       status: status ?? this.status,
       progress: progress ?? this.progress,
-      taskId: taskId ?? this.taskId,
-      error: error ?? this.error,
+      taskId: identical(taskId, _unset) ? this.taskId : taskId as String?,
+      error: identical(error, _unset) ? this.error : error as String?,
       receivedBytes: receivedBytes ?? this.receivedBytes,
       totalBytes: totalBytes ?? this.totalBytes,
-      bytesPerSecond: bytesPerSecond ?? this.bytesPerSecond,
-      etaSeconds: etaSeconds ?? this.etaSeconds,
+      bytesPerSecond: identical(bytesPerSecond, _unset)
+          ? this.bytesPerSecond
+          : bytesPerSecond as int?,
+      etaSeconds: identical(etaSeconds, _unset)
+          ? this.etaSeconds
+          : etaSeconds as int?,
       isResumed: isResumed ?? this.isResumed,
     );
   }
@@ -75,22 +82,24 @@ class DownloadProgressInfo {
       error: json['error'] as String?,
       receivedBytes: json['receivedBytes'] as int,
       totalBytes: json['totalBytes'] as int,
-      bytesPerSecond: json['bytesPerSecond'] as int,
+      bytesPerSecond: json['bytesPerSecond'] as int?,
       etaSeconds: json['etaSeconds'] as int?,
       isResumed: json['isResumed'] as bool? ?? false,
     );
   }
 
   String get speedFormatted {
-    if (bytesPerSecond < 1024) return '$bytesPerSecond B/s';
-    if (bytesPerSecond < 1024 * 1024) {
-      return '${(bytesPerSecond / 1024).toStringAsFixed(1)} KB/s';
+    final bps = bytesPerSecond;
+    if (bps == null || bps <= 0) return '—';
+    if (bps < 1024) return '$bps B/s';
+    if (bps < 1024 * 1024) {
+      return '${(bps / 1024).toStringAsFixed(1)} KB/s';
     }
-    return '${(bytesPerSecond / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+    return '${(bps / (1024 * 1024)).toStringAsFixed(1)} MB/s';
   }
 
   String get etaFormatted {
-    if (etaSeconds == null) return 'Unknown';
+    if (etaSeconds == null) return '—';
     if (etaSeconds! < 60) return '$etaSeconds sec';
     final minutes = etaSeconds! ~/ 60;
     final seconds = etaSeconds! % 60;

@@ -4002,13 +4002,13 @@ abstract class AppLocalizations {
   /// No description provided for @gguf_overview_title.
   ///
   /// In en, this message translates to:
-  /// **'Bring your own GGUF models'**
+  /// **'Add/import your models'**
   String get gguf_overview_title;
 
   /// No description provided for @gguf_overview_subtitle.
   ///
   /// In en, this message translates to:
-  /// **'Import a .gguf from local storage or download one straight from Hugging Face. Imported models stay on this device and load with llama.cpp.'**
+  /// **'Import a GGUF or LiteRT model from local storage, from a URL, or search Hugging Face. Imported models stay on this device.'**
   String get gguf_overview_subtitle;
 
   /// No description provided for @gguf_imported_count_label.
@@ -6675,6 +6675,72 @@ abstract class AppLocalizations {
   /// **'Embedding'**
   String get onDeviceModalityEmbedding;
 
+  /// No description provided for @onDeviceModalityOmni.
+  ///
+  /// In en, this message translates to:
+  /// **'Omni'**
+  String get onDeviceModalityOmni;
+
+  /// No description provided for @onDeviceModalityUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get onDeviceModalityUnknown;
+
+  /// No description provided for @downloadBackgroundActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get downloadBackgroundActive;
+
+  /// No description provided for @downloadBackgroundDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.'**
+  String get downloadBackgroundDescription;
+
+  /// No description provided for @downloadQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get downloadQueued;
+
+  /// No description provided for @downloadWaitingToRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to retry'**
+  String get downloadWaitingToRetry;
+
+  /// No description provided for @onDeviceEnterSearchTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a search term'**
+  String get onDeviceEnterSearchTerm;
+
+  /// No description provided for @onDeviceFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get onDeviceFilters;
+
+  /// No description provided for @onDeviceFramework.
+  ///
+  /// In en, this message translates to:
+  /// **'Framework'**
+  String get onDeviceFramework;
+
+  /// No description provided for @onDeviceModality.
+  ///
+  /// In en, this message translates to:
+  /// **'Modality'**
+  String get onDeviceModality;
+
+  /// No description provided for @onDeviceParameterSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Parameter size'**
+  String get onDeviceParameterSize;
+
   /// No description provided for @onDeviceMinParam.
   ///
   /// In en, this message translates to:
@@ -6704,6 +6770,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Import from URL'**
   String get onDeviceImportFromUrl;
+
+  /// No description provided for @onDeviceImportFromDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from device'**
+  String get onDeviceImportFromDevice;
 
   /// No description provided for @onDeviceAddModelFromUrl.
   ///

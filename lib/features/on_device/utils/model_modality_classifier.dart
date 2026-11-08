@@ -1,5 +1,5 @@
 /// Modality classification for an on-device model.
-enum ModelModality { text, vision, audio, embedding, unknown }
+enum ModelModality { text, vision, audio, embedding, omni, unknown }
 
 /// Classifies a modality from a pipeline tag, tags, and (optionally) the
 /// repo/model name. Returns [ModelModality.unknown] when no signal is found.
@@ -11,6 +11,15 @@ ModelModality classifyModality({
   final pipeline = (pipelineTag ?? '').toLowerCase().trim();
   final tagSet = tags.map((t) => t.toLowerCase().trim()).toSet();
   final haystack = '$pipeline ${tags.join(' ')} ${name ?? ''}'.toLowerCase();
+
+  // Omni-modal (any-to-any): handles text + image + audio + video.
+  // Restricted to pipeline_tag/tags (not name) to avoid false positives.
+  if (pipeline.contains('any-to-any') ||
+      tagSet.contains('any-to-any') ||
+      pipeline.contains('omni') ||
+      tagSet.contains('omni')) {
+    return ModelModality.omni;
+  }
 
   // Embedding / feature extraction.
   if (pipeline.contains('feature-extraction') ||

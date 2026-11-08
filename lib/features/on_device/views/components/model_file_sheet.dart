@@ -51,31 +51,39 @@ class ModelFileSheet extends StatelessWidget {
             if (visible.isEmpty)
               const Text('No model files found.')
             else
-              ...visible.map((file) {
-                final isSplit = isSplitModelFile(file.path);
-                final already = addedUrls.contains(file.downloadUrl) ||
-                    registeredUrls.contains(file.downloadUrl) ||
-                    registeredFileNames.contains(file.name) ||
-                    addedFileNames.contains(file.name);
-                return ListTile(
-                  title: Text(
-                    file.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(_formatBytes(file.size)),
-                  trailing: isSplit
-                      ? const _SplitBadge()
-                      : ElevatedButton(
-                          onPressed: already
-                              ? null
-                              : () async {
-                                  await onAddFile(file);
-                                },
-                          child: Text(already ? 'Added' : 'Add'),
-                        ),
-                );
-              }),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.6,
+                ),
+                child: ListView(
+                  shrinkWrap: true,
+                  children: visible.map((file) {
+                    final isSplit = isSplitModelFile(file.path);
+                    final already = addedUrls.contains(file.downloadUrl) ||
+                        registeredUrls.contains(file.downloadUrl) ||
+                        registeredFileNames.contains(file.name) ||
+                        addedFileNames.contains(file.name);
+                    return ListTile(
+                      title: Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(_formatBytes(file.size)),
+                      trailing: isSplit
+                          ? const _SplitBadge()
+                          : ElevatedButton(
+                              onPressed: already
+                                  ? null
+                                  : () async {
+                                      await onAddFile(file);
+                                    },
+                              child: Text(already ? 'Added' : 'Add'),
+                            ),
+                    );
+                  }).toList(),
+                ),
+              ),
           ],
         ),
       ),

@@ -18,6 +18,30 @@ class ModelSearchResultRow extends StatelessWidget {
   final VoidCallback onTap;
   final bool alreadyAdded;
 
+  static void _showDetails(BuildContext context, HuggingFaceModelSearchResult result) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(result.repoId, style: Theme.of(ctx).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            SelectableText(result.repoId),
+            const SizedBox(height: 8),
+            Text('${result.downloads} downloads · ${result.likes} likes'),
+            if (parseParameterSizeBillions(result.repoId) != null)
+              Text('Size: ${formatParameterSize(parseParameterSizeBillions(result.repoId)!)}'),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final quant = parseQuantization(result.repoId);
@@ -41,21 +65,32 @@ class ModelSearchResultRow extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: Wrap(
-          spacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
+        trailing: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 140),
+          child: Wrap(
+            spacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
             if (quant != null)
               _Badge(label: quant, color: Colors.blueGrey),
             _ModalityIcon(modality: modality),
             if (alreadyAdded)
               const _Badge(label: 'Added', color: Colors.green),
+            InkWell(
+              onTap: () => _showDetails(context, result),
+              child: HugeIcon(
+                icon: HugeIcons.strokeRoundedInformationCircle,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
             HugeIcon(
               icon: HugeIcons.strokeRoundedArrowRight01,
               size: 18,
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ],
+          ),
         ),
         onTap: onTap,
       ),
@@ -104,6 +139,10 @@ class _ModalityIcon extends StatelessWidget {
       case ModelModality.embedding:
         icon = HugeIcons.strokeRoundedDatabase;
         color = Colors.purple;
+        break;
+      case ModelModality.omni:
+        icon = HugeIcons.strokeRoundedLayers01;
+        color = Colors.teal;
         break;
       case ModelModality.unknown:
         icon = HugeIcons.strokeRoundedHelpCircle;

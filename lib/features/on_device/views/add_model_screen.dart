@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -98,7 +97,10 @@ class _AddOnDeviceModelScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(
+          content: Text(e.toString()),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } finally {
       cancelToken?.cancel();
@@ -126,40 +128,18 @@ class _AddOnDeviceModelScreenState
         _addedFileNames.add(file.name);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_l10n.add_model_file_added(file.name))),
+        SnackBar(
+          content: Text(_l10n.add_model_file_added(file.name)),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
-    }
-  }
-
-  Future<void> _pickLocalFile({required bool gguf}) async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: gguf ? const ['gguf'] : const ['litertlm'],
-    );
-    if (result == null || result.files.isEmpty) return;
-    final path = result.files.single.path;
-    final name = result.files.single.name;
-    if (path == null) return;
-    try {
-      if (gguf) {
-        await ref.read(importedGgufModelsProvider.notifier).importModel(path);
-      } else {
-        await ref.read(importedLitertModelsProvider.notifier).addFromPath(path);
-      }
-      if (!mounted) return;
-      setState(() => _addedFileNames.add(name));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_l10n.add_model_file_added(name))),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(
+          content: Text(e.toString()),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -170,82 +150,85 @@ class _AddOnDeviceModelScreenState
     final notifier = ref.read(unifiedModelSearchProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_l10n.add_model_title)),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          labelText: 'Search models',
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: HugeIcon(icon: HugeIcons.strokeRoundedSearch01, size: 20),
-                            onPressed: () {
-                              notifier.setQuery(_searchController.text);
-                              notifier.search();
-                            },
+      appBar: AppBar(title: Text(_l10n.onDeviceSearchModels)),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            labelText: _l10n.onDeviceSearchModels,
+                            border: const OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              icon: HugeIcon(icon: HugeIcons.strokeRoundedSearch01, size: 20),
+                              onPressed: _searchController.text.trim().isEmpty
+                                  ? null
+                                  : () {
+                                      notifier.setQuery(_searchController.text);
+                                      notifier.search();
+                                    },
+                            ),
                           ),
+                          onSubmitted: (v) {
+                            notifier.setQuery(v);
+                            notifier.search();
+                          },
                         ),
-                        onSubmitted: (v) {
-                          notifier.setQuery(v);
-                          notifier.search();
-                        },
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ModelSearchFilterBar(state: state, notifier: notifier),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        notifier.setQuery(_searchController.text);
-                        notifier.search();
-                      },
-                      child: Text(state.isLoading ? 'Searching...' : 'Search'),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton(
-                      onPressed: () => _pickLocalFile(gguf: true),
-                      child: const Text('Pick GGUF'),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton(
-                      onPressed: () => _pickLocalFile(gguf: false),
-                      child: const Text('Pick LiteRT'),
-                    ),
-                  ],
-                ),
-                if (state.error != null) ...[
-                  const SizedBox(height: 8),
-                  Text(state.error!, style: const TextStyle(color: Colors.red)),
-                ],
-                if (state.hiddenUnknownCount > 0) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${state.hiddenUnknownCount} models with unknown size hidden',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      const SizedBox(width: 8),
+                    ],
                   ),
+                  const SizedBox(height: 8),
+                  ModelSearchFilterBar(state: state, notifier: notifier),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _searchController.text.trim().isEmpty
+                            ? null
+                            : () {
+                                notifier.setQuery(_searchController.text);
+                                notifier.search();
+                              },
+                        child: Text(state.isLoading ? _l10n.onDeviceSearching : _l10n.onDeviceSearch),
+                      ),
+                    ],
+                  ),
+                  if (state.error != null) ...[
+                    const SizedBox(height: 8),
+                    Text(state.error!, style: const TextStyle(color: Colors.red)),
+                  ],
+                  if (!state.hasSearched) ...[
+                    const SizedBox(height: 8),
+                    Text(_l10n.onDeviceEnterSearchTerm,
+                        style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
+                  if (state.hiddenUnknownCount > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _l10n.onDeviceUnknownSizeHidden(state.hiddenUnknownCount),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           if (state.isLoading)
-            const LinearProgressIndicator(),
-          Expanded(
-            child: ListView.builder(
-              itemCount: state.results.length,
-              itemBuilder: (context, index) {
+            const SliverToBoxAdapter(child: LinearProgressIndicator()),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
                 final result = state.results[index];
                 final already = _registeredUrls.contains(result.repoId) ||
                     _addedFileUrls.contains(result.repoId);
@@ -255,7 +238,11 @@ class _AddOnDeviceModelScreenState
                   onTap: () => _openRepo(result.repoId),
                 );
               },
+              childCount: state.results.length,
             ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(height: MediaQuery.of(context).padding.bottom + 24),
           ),
         ],
       ),

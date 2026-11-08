@@ -2090,11 +2090,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get gguf_import_action => 'GGUF 가져오기';
 
   @override
-  String get gguf_overview_title => '나만의 GGUF 모델 가져오기';
+  String get gguf_overview_title => 'Add/import your models';
 
   @override
   String get gguf_overview_subtitle =>
-      '로컬 저장소에서 .gguf를 가져오거나 Hugging Face에서 바로 다운로드하세요. 가져온 모델은 이 장치에 유지되며 llama.cpp로 로드됩니다.';
+      'Import a GGUF or LiteRT model from local storage, from a URL, or search Hugging Face. Imported models stay on this device.';
 
   @override
   String get gguf_imported_count_label => '수입됨';
@@ -3533,6 +3533,40 @@ class AppLocalizationsKo extends AppLocalizations {
   String get onDeviceModalityEmbedding => 'Embedding';
 
   @override
+  String get onDeviceModalityOmni => 'Omni';
+
+  @override
+  String get onDeviceModalityUnknown => 'Unknown';
+
+  @override
+  String get downloadBackgroundActive => 'Background';
+
+  @override
+  String get downloadBackgroundDescription =>
+      'This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.';
+
+  @override
+  String get downloadQueued => 'Queued';
+
+  @override
+  String get downloadWaitingToRetry => 'Waiting to retry';
+
+  @override
+  String get onDeviceEnterSearchTerm => 'Enter a search term';
+
+  @override
+  String get onDeviceFilters => 'Filters';
+
+  @override
+  String get onDeviceFramework => 'Framework';
+
+  @override
+  String get onDeviceModality => 'Modality';
+
+  @override
+  String get onDeviceParameterSize => 'Parameter size';
+
+  @override
   String get onDeviceMinParam => 'Min B';
 
   @override
@@ -3546,6 +3580,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get onDeviceImportFromUrl => 'Import from URL';
+
+  @override
+  String get onDeviceImportFromDevice => 'Import from device';
 
   @override
   String get onDeviceAddModelFromUrl => 'Add model from URL';

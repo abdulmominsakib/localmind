@@ -27,6 +27,7 @@ class UnifiedModelSearchState {
     this.isLoading = false,
     this.error,
     this.hiddenUnknownCount = 0,
+    this.hasSearched = false,
   });
 
   final String query;
@@ -40,6 +41,7 @@ class UnifiedModelSearchState {
   final bool isLoading;
   final String? error;
   final int hiddenUnknownCount;
+  final bool hasSearched;
 
   UnifiedModelSearchState copyWith({
     String? query,
@@ -57,6 +59,7 @@ class UnifiedModelSearchState {
     String? error,
     bool clearError = false,
     int? hiddenUnknownCount,
+    bool? hasSearched,
   }) {
     return UnifiedModelSearchState(
       query: query ?? this.query,
@@ -74,6 +77,7 @@ class UnifiedModelSearchState {
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
       hiddenUnknownCount: hiddenUnknownCount ?? this.hiddenUnknownCount,
+      hasSearched: hasSearched ?? this.hasSearched,
     );
   }
 }
@@ -112,6 +116,38 @@ class UnifiedModelSearchNotifier extends Notifier<UnifiedModelSearchState> {
     state = state.copyWith(modelType: value);
   }
 
+  void setLitertEnabled(bool enabled) {
+    final gguf = state.modelType == UnifiedModelTypeFilter.gguf ||
+        state.modelType == UnifiedModelTypeFilter.both;
+    UnifiedModelTypeFilter next;
+    if (enabled && gguf) {
+      next = UnifiedModelTypeFilter.both;
+    } else if (enabled) {
+      next = UnifiedModelTypeFilter.litert;
+    } else if (gguf) {
+      next = UnifiedModelTypeFilter.gguf;
+    } else {
+      next = UnifiedModelTypeFilter.none;
+    }
+    state = state.copyWith(modelType: next);
+  }
+
+  void setGgufEnabled(bool enabled) {
+    final litert = state.modelType == UnifiedModelTypeFilter.litert ||
+        state.modelType == UnifiedModelTypeFilter.both;
+    UnifiedModelTypeFilter next;
+    if (litert && enabled) {
+      next = UnifiedModelTypeFilter.both;
+    } else if (litert) {
+      next = UnifiedModelTypeFilter.litert;
+    } else if (enabled) {
+      next = UnifiedModelTypeFilter.gguf;
+    } else {
+      next = UnifiedModelTypeFilter.none;
+    }
+    state = state.copyWith(modelType: next);
+  }
+
   void setModality(ModelModality? value) {
     if (value == null) {
       state = state.copyWith(clearModality: true);
@@ -145,7 +181,6 @@ class UnifiedModelSearchNotifier extends Notifier<UnifiedModelSearchState> {
 
   void setIncludeUnknownParam(bool value) {
     state = state.copyWith(includeUnknownParam: value);
-    _applyParamFilter();
   }
 
   void setShowSplitModels(bool value) {
@@ -162,7 +197,17 @@ class UnifiedModelSearchNotifier extends Notifier<UnifiedModelSearchState> {
     final generation = ++_generation;
 
     final trimmedQuery = state.query.trim();
-    final effectiveQuery = trimmedQuery.isEmpty ? '' : trimmedQuery;
+
+    if (trimmedQuery.isEmpty) {
+      state = state.copyWith(
+        isLoading: false,
+        results: const [],
+        clearError: true,
+        hiddenUnknownCount: 0,
+        hasSearched: false,
+      );
+      return;
+    }
 
     state = state.copyWith(isLoading: true, clearError: true, results: const []);
 
@@ -175,7 +220,7 @@ class UnifiedModelSearchNotifier extends Notifier<UnifiedModelSearchState> {
         if (cancelToken.isCancelled) return;
         try {
           final repos = await _service.searchModels(
-            query: effectiveQuery,
+            query: trimmedQuery,
             filter: filter,
             token: _token,
             cancelToken: cancelToken,
@@ -229,6 +274,7 @@ class UnifiedModelSearchNotifier extends Notifier<UnifiedModelSearchState> {
         results: filtered,
         isLoading: false,
         hiddenUnknownCount: hiddenUnknown,
+        hasSearched: true,
       );
     } catch (e) {
       if (cancelToken.isCancelled || generation != _generation) return;
@@ -248,11 +294,6 @@ class UnifiedModelSearchNotifier extends Notifier<UnifiedModelSearchState> {
 
   void clearResults() {
     state = state.copyWith(results: const [], hiddenUnknownCount: 0);
-  }
-
-  void _applyParamFilter() {
-    // Re-run search to recompute hidden count / filtering.
-    unawaited(search());
   }
 
   List<String?> _filtersFor(UnifiedModelTypeFilter type) {

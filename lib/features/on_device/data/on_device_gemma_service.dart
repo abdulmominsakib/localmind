@@ -335,25 +335,32 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     OnDeviceModel model, {
     void Function(int)? onProgress,
     String? token,
+    CancelToken? cancelToken,
   }) async {
     if (model.isBuiltIn) {
       Log.info('Installing built-in model ${model.id}');
       await BuiltInAi.ensureReady(onProgress: onProgress);
-      await FlutterGemma.installModel(
+      var builder = FlutterGemma.installModel(
         modelType: ModelType.general,
         fileType: ModelFileType.builtIn,
-      ).fromBundled(model.fileName).install();
+      ).fromBundled(model.fileName);
+      if (cancelToken != null) builder = builder.withCancelToken(cancelToken);
+      await builder.install();
       Log.info('Built-in model ${model.id} ready');
       return;
     }
 
     Log.info('Installing model ${model.id} from ${model.huggingFaceUrl}');
 
-    await FlutterGemma.installModel(
+    var builder = FlutterGemma.installModel(
           modelType: model.flutterGemmaModelType,
           fileType: ModelFileType.litertlm,
         )
-        .fromNetwork(model.huggingFaceUrl, token: token, foreground: true)
+        .fromNetwork(model.huggingFaceUrl, token: token, foreground: true);
+    if (cancelToken != null) {
+      builder = builder.withCancelToken(cancelToken);
+    }
+    await builder
         .withProgress((progress) {
           onProgress?.call(progress);
         })

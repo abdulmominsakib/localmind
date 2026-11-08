@@ -2124,11 +2124,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gguf_import_action => 'Import GGUF';
 
   @override
-  String get gguf_overview_title => 'Bring your own GGUF models';
+  String get gguf_overview_title => 'Add/import your models';
 
   @override
   String get gguf_overview_subtitle =>
-      'Import a .gguf from local storage or download one straight from Hugging Face. Imported models stay on this device and load with llama.cpp.';
+      'Import a GGUF or LiteRT model from local storage, from a URL, or search Hugging Face. Imported models stay on this device.';
 
   @override
   String get gguf_imported_count_label => 'imported';
@@ -3610,6 +3610,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onDeviceModalityEmbedding => 'Embedding';
 
   @override
+  String get onDeviceModalityOmni => 'Omni';
+
+  @override
+  String get onDeviceModalityUnknown => 'Unknown';
+
+  @override
+  String get downloadBackgroundActive => 'Background';
+
+  @override
+  String get downloadBackgroundDescription =>
+      'This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.';
+
+  @override
+  String get downloadQueued => 'Queued';
+
+  @override
+  String get downloadWaitingToRetry => 'Waiting to retry';
+
+  @override
+  String get onDeviceEnterSearchTerm => 'Enter a search term';
+
+  @override
+  String get onDeviceFilters => 'Filters';
+
+  @override
+  String get onDeviceFramework => 'Framework';
+
+  @override
+  String get onDeviceModality => 'Modality';
+
+  @override
+  String get onDeviceParameterSize => 'Parameter size';
+
+  @override
   String get onDeviceMinParam => 'Min B';
 
   @override
@@ -3623,6 +3657,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onDeviceImportFromUrl => 'Import from URL';
+
+  @override
+  String get onDeviceImportFromDevice => 'Import from device';
 
   @override
   String get onDeviceAddModelFromUrl => 'Add model from URL';

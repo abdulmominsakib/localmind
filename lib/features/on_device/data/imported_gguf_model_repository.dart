@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:background_downloader/background_downloader.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -319,6 +321,7 @@ class ImportedGgufModelRepository {
   final Map<String, AsyncMutex> _downloadMutexes = <String, AsyncMutex>{};
   final Map<String, _GgufDownloadAttempt> _ggufAttempts =
       <String, _GgufDownloadAttempt>{};
+  final Map<String, DownloadTask> _activeGgufTasks = <String, DownloadTask>{};
   int _ggufAttemptCounter = 0;
 
   ImportedGgufModelRepository(
@@ -360,26 +363,20 @@ class ImportedGgufModelRepository {
   }
 
   Future<List<ImportedGgufModelMetadata>> loadExisting() async {
-    final models = load();
-    // Perform real file I/O outside the mutex so it does not break fake-async
-    // widget tests and does not hold the lock across disk access.
+    // Snapshot paths under the lock, then do file I/O outside the lock.
+    final firstModels = await _mutex.run(() async => load());
     final fileExists = <String, bool>{};
     final projectorExists = <String, bool>{};
-    final toDeleteProjectors = <String>[];
-    for (final model in models) {
+    for (final model in firstModels) {
       if (model.filePath != null && model.filePath!.isNotEmpty) {
         fileExists[model.id] = await File(model.filePath!).exists();
       }
       if (model.projectorPath != null && model.projectorPath!.isNotEmpty) {
-        final exists = await File(model.projectorPath!).exists();
-        projectorExists[model.id] = exists;
-        if (!exists) {
-          toDeleteProjectors.add(model.projectorPath!);
-        }
+        projectorExists[model.id] = await File(model.projectorPath!).exists();
       }
     }
     // Delete projectors when the model file is missing and projector exists.
-    for (final model in models) {
+    for (final model in firstModels) {
       if (model.filePath != null &&
           model.filePath!.isNotEmpty &&
           fileExists[model.id] != true &&
@@ -392,6 +389,9 @@ class ImportedGgufModelRepository {
     }
 
     return _mutex.run(() async {
+      // Re-read current metadata under the lock so concurrent writes are not
+      // clobbered by a stale snapshot.
+      final models = load();
       final existing = <ImportedGgufModelMetadata>[];
       var hasChanges = false;
 
@@ -400,9 +400,18 @@ class ImportedGgufModelRepository {
           existing.add(model);
           continue;
         }
-        if (fileExists[model.id] == true) {
+        final exists = fileExists.containsKey(model.id)
+            ? fileExists[model.id]!
+            : await File(model.filePath!).exists();
+        if (exists) {
+          final projExists = projectorExists.containsKey(model.id)
+              ? projectorExists[model.id]!
+              : (model.projectorPath != null && model.projectorPath!.isNotEmpty
+                  ? await File(model.projectorPath!).exists()
+                  : false);
           if (model.projectorPath != null &&
-              projectorExists[model.id] != true) {
+              model.projectorPath!.isNotEmpty &&
+              !projExists) {
             existing.add(model.copyWith(projectorPath: null));
             hasChanges = true;
           } else {
@@ -884,7 +893,17 @@ class ImportedGgufModelRepository {
 
       final segs = normalizedUrl.pathSegments;
       final parsedRepoId = segs.length >= 2 ? '${segs[0]}/${segs[1]}' : null;
-      final parsedRfilename = originalName;
+      // Use the full repository-relative path (not just the basename) so that
+      // files with the same basename in different subdirectories do not collide.
+      String parsedRfilename = originalName;
+      final resolveIdx = segs.indexWhere((s) => s.toLowerCase() == 'resolve');
+      if (resolveIdx >= 0 && resolveIdx + 2 < segs.length) {
+        parsedRfilename = segs.sublist(resolveIdx + 2).map(Uri.decodeComponent).join('/');
+      } else if (resolveIdx >= 0 && resolveIdx + 1 < segs.length && segs.length > resolveIdx + 1) {
+        // No explicit revision segment; treat the rest as the path.
+        parsedRfilename = segs.sublist(resolveIdx + 1).map(Uri.decodeComponent).join('/');
+      }
+      if (parsedRfilename.isEmpty) parsedRfilename = originalName;
       String? parsedRevision;
       if (segs.length >= 5 && segs[2].toLowerCase() == 'resolve' &&
           segs[3].toLowerCase() != 'main') {
@@ -895,7 +914,7 @@ class ImportedGgufModelRepository {
       if (parsedRepoId != null) {
         final current = load();
         final existing = current.where((m) =>
-            m.repoId == parsedRepoId && m.rfilename == parsedRfilename).firstOrNull;
+            m.repoId == parsedRepoId && m.rfilename == parsedRfilename && m.revision == parsedRevision).firstOrNull;
         if (existing != null) return existing;
       }
 
@@ -920,7 +939,7 @@ class ImportedGgufModelRepository {
       // Re-check dedupe after enrichment/network.
       if (metadata.repoId != null) {
         final dup = current2.where((m) =>
-            m.repoId == metadata.repoId && m.rfilename == metadata.rfilename).firstOrNull;
+            m.repoId == metadata.repoId && m.rfilename == metadata.rfilename && m.revision == metadata.revision).firstOrNull;
         if (dup != null) return dup;
       }
       await _saveAllUnlocked([...current2, metadata]);
@@ -928,6 +947,73 @@ class ImportedGgufModelRepository {
     });
   }
 
+
+  Future<void> reconcileCompletedDownloads() async {
+    List<TaskRecord> records;
+    try {
+      records = await FileDownloader().database.allRecords(
+        group: 'localmind_gguf_downloads',
+      );
+    } catch (_) {
+      return;
+    }
+
+    // Dedupe: cancel all but the first task sharing a taskId.
+    final byId = <String, List<TaskRecord>>{};
+    for (final r in records) {
+      byId.putIfAbsent(r.task.taskId, () => []).add(r);
+    }
+    for (final entry in byId.entries) {
+      if (entry.value.length <= 1) continue;
+      for (final r in entry.value.skip(1)) {
+        try { await FileDownloader().cancel(r.task); } catch (_) {}
+        try { await FileDownloader().database.deleteRecordWithId(r.task.taskId); } catch (_) {}
+      }
+    }
+
+    for (final record in records) {
+      if (record.status != TaskStatus.complete) continue;
+      final modelId = record.task.taskId;
+      final models = load();
+      final index = models.indexWhere((m) => m.id == modelId);
+      if (index < 0) continue;
+      final model = models[index];
+      if (model.filePath != null &&
+          model.filePath!.isNotEmpty &&
+          await File(model.filePath!).exists()) {
+        continue;
+      }
+
+      String? filePath;
+      try {
+        filePath = await record.task.filePath();
+      } catch (_) {
+        continue;
+      }
+      if (filePath.isEmpty) continue;
+      final file = File(filePath);
+      if (!await file.exists() || await file.length() <= 0) continue;
+
+      try {
+        await _validateGgufFile(file);
+      } catch (_) {
+        continue;
+      }
+
+      await _mutex.run(() async {
+        final fresh = load();
+        final i = fresh.indexWhere((m) => m.id == modelId);
+        if (i >= 0) {
+          fresh[i] = fresh[i].copyWith(
+            filePath: filePath,
+            fileSizeBytes: await file.length(),
+          );
+          await _saveAllUnlocked(fresh);
+        }
+      });
+      await FileDownloader().database.deleteRecordWithId(modelId);
+    }
+  }
 
   Future<ImportedGgufModelMetadata> _enrichGgufMetadata(
     ImportedGgufModelMetadata metadata,
@@ -1020,7 +1106,7 @@ class ImportedGgufModelRepository {
     return updated;
   }
 
-  Future<void> download(
+  Future<TaskStatus> download(
     String modelId, {
     String? token,
     CancelToken? cancelToken,
@@ -1036,205 +1122,258 @@ class ImportedGgufModelRepository {
 
       final model = models[index];
       if (model.filePath != null && model.filePath!.isNotEmpty) {
-        return;
+        return TaskStatus.complete;
       }
       if (model.sourceUrl == null || model.sourceUrl!.isEmpty) {
         throw const FormatException('Imported GGUF model has no source URL.');
       }
 
-      final dir = await _modelsDirectory();
+      await _modelsDirectory();
+
       final originalName = _fileNameFromUri(Uri.parse(model.sourceUrl!));
-      final targetPath = p.join(
-        dir.path,
-        '$modelId-${_sanitizeFileName(originalName)}',
-      );
-      final targetFile = File(targetPath);
-
-      // Cancel any previous attempt for this model. Its unique temp file is
-      // cleaned in its own finally block; this attempt uses a new temp path.
-      final previousAttempt = _ggufAttempts[modelId];
-      if (previousAttempt != null) {
-        previousAttempt.cancelToken.cancel(
-          'Superseded by a new download attempt.',
-        );
-      }
-
-      final attemptId = 'gguf-${++_ggufAttemptCounter}';
-      final effectiveToken = cancelToken ?? CancelToken();
-      final attempt = _GgufDownloadAttempt(
-        id: attemptId,
-        cancelToken: effectiveToken,
-      );
-      _ggufAttempts[modelId] = attempt;
-      final tempPath = '$targetPath.part';
-      final tempFile = File(tempPath);
-
-      // Determine whether we are resuming a paused partial download.
-      int startingOffset = 0;
-      bool resuming = false;
-      if (await tempFile.exists()) {
-        final partialSize = await tempFile.length();
-        if (partialSize > 0) {
-          // Try to resume via Range header.
-          try {
-            final head = await _dio.head(
-              model.sourceUrl!,
-              options: Options(
-                headers: {
-                  if (token != null && token.isNotEmpty)
-                    HttpHeaders.authorizationHeader: 'Bearer $token',
-                },
-                followRedirects: true,
-                validateStatus: (status) =>
-                    status != null && status >= 200 && status < 400,
-              ),
-            );
-            final totalHeader = head.headers.value(HttpHeaders.contentLengthHeader);
-            final serverTotal = totalHeader != null ? int.tryParse(totalHeader) ?? 0 : 0;
-            final acceptRanges = head.headers.value('accept-ranges');
-            if (acceptRanges != null &&
-                acceptRanges.toLowerCase().contains('bytes') &&
-                serverTotal > 0 &&
-                partialSize < serverTotal) {
-              startingOffset = partialSize;
-              resuming = true;
-            } else {
-              // Server doesn't support range or partial is complete; restart.
-              await tempFile.delete();
-            }
-          } catch (_) {
-            // Could not probe; restart from scratch.
-            try { await tempFile.delete(); } catch (_) {}
-          }
-        } else {
-          await tempFile.delete();
-        }
-      }
-
-      var renamed = false;
-      try {
-        final downloadHeaders = <String, dynamic>{
+      final task = DownloadTask(
+        taskId: modelId,
+        url: model.sourceUrl!,
+        filename: '$modelId-${_sanitizeFileName(originalName)}',
+        directory: _storageDirName,
+        baseDirectory: BaseDirectory.applicationSupport,
+        headers: {
           if (token != null && token.isNotEmpty)
             HttpHeaders.authorizationHeader: 'Bearer $token',
-          if (resuming) 'Range': 'bytes=$startingOffset-',
-        };
+        },
+        allowPause: true,
+        retries: 3,
+        updates: Updates.statusAndProgress,
+        group: 'localmind_gguf_downloads',
+        displayName: model.name,
+      );
 
-        await _dio.download(
-          model.sourceUrl!,
-          tempPath,
-          cancelToken: effectiveToken,
-          onReceiveProgress: (received, total) {
-            if (onProgress == null) return;
-            // Adjust for resumed partial offset.
-            final cumReceived = resuming ? startingOffset + received : received;
-            final cumTotal = resuming
-                ? (total > 0 ? startingOffset + total : (model.fileSizeBytes > 0 ? model.fileSizeBytes : total))
-                : (total > 0 ? total : 0);
-            onProgress(cumReceived, cumTotal > 0 ? cumTotal : (model.fileSizeBytes > 0 ? model.fileSizeBytes : 0));
-          },
-          fileAccessMode: resuming ? FileAccessMode.append : FileAccessMode.write,
-          options: Options(
-            headers: downloadHeaders,
-            followRedirects: true,
-            receiveTimeout: const Duration(hours: 12),
-            sendTimeout: const Duration(minutes: 5),
-            validateStatus: (status) =>
-                status != null && status >= 200 && status < 400,
-          ),
-        );
+      _activeGgufTasks[modelId] = task;
 
-        if (effectiveToken.isCancelled) {
-          throw const HttpException('GGUF import canceled.');
-        }
-        if (!await tempFile.exists() || await tempFile.length() <= 0) {
-          throw const FileSystemException(
-            'The downloaded GGUF file was empty or missing.',
-          );
-        }
-
-        await _validateGgufFile(tempFile);
-        if (_ggufAttempts[modelId]?.id != attemptId ||
-            effectiveToken.isCancelled) {
-          throw const HttpException('GGUF import canceled.');
-        }
-
-        await tempFile.rename(targetPath);
-        renamed = true;
-        attempt.renamedTarget = true;
-
-        if (_ggufAttempts[modelId]?.id != attemptId ||
-            effectiveToken.isCancelled) {
-          if (await targetFile.exists()) {
-            await targetFile.delete();
-          }
-          throw const HttpException('GGUF import canceled.');
-        }
-
-        // Projector download, if any, is intentionally left to the caller's
-        // explicit attach flow. This download path handles the main model only.
-
-        final fileSize = await targetFile.length();
-        await _mutex.run(() async {
-          final freshModels = load();
-          final freshIndex = freshModels.indexWhere((m) => m.id == modelId);
-          if (freshIndex >= 0) {
-            freshModels[freshIndex] = freshModels[freshIndex].copyWith(
-              filePath: targetFile.path,
-              fileSizeBytes: fileSize,
+      var lastReceived = 0;
+      final result = await FileDownloader().download(
+        task,
+        onProgress: (progress) {
+          if (onProgress == null) return;
+          final total = model.fileSizeBytes > 0 ? model.fileSizeBytes : 0;
+          if (total > 0) {
+            final received = (progress.clamp(0.0, 1.0) * total).round().clamp(0, total);
+            if (received >= lastReceived) {
+              lastReceived = received;
+              onProgress(received, total);
+            }
+          } else {
+            onProgress(
+              (progress.clamp(0.0, 1.0) * 100).round().clamp(0, 100),
+              100,
             );
-            await _saveAllUnlocked(freshModels);
           }
-        });
-      } on DioException catch (e) {
-        if (CancelToken.isCancel(e) || effectiveToken.isCancelled) {
-          if (attempt.paused) {
-            // Keep partial file; resume will continue from it.
-            throw const HttpException('GGUF import paused.');
-          }
-          if (renamed && await targetFile.exists()) {
-            await targetFile.delete();
-          }
-          throw const HttpException('GGUF import canceled.');
-        }
-        if (renamed && await targetFile.exists()) {
-          await targetFile.delete();
-        }
-        throw HttpException(_friendlyDioError(e));
-      } catch (e) {
-        if (renamed && await targetFile.exists()) {
-          await targetFile.delete();
-        }
-        rethrow;
-      } finally {
-        if (!(attempt.paused) && await tempFile.exists()) {
-          await tempFile.delete();
-        }
-        if (_ggufAttempts[modelId]?.id == attemptId && !attempt.paused) {
-          _ggufAttempts.remove(modelId);
-        }
+        },
+      );
+
+      if (result.status == TaskStatus.paused) {
+        _activeGgufTasks.remove(modelId);
+        throw const HttpException('GGUF import paused.');
       }
+      if (result.status == TaskStatus.canceled) {
+        _activeGgufTasks.remove(modelId);
+        await FileDownloader().database.deleteRecordWithId(modelId);
+        throw const HttpException('GGUF import canceled.');
+      }
+      if (result.status != TaskStatus.complete) {
+        _activeGgufTasks.remove(modelId);
+        await FileDownloader().database.deleteRecordWithId(modelId);
+        throw HttpException(
+          result.exception?.description ?? 'GGUF download failed.',
+        );
+      }
+
+      final filePath = await task.filePath();
+      final file = File(filePath);
+      if (!await file.exists() || await file.length() <= 0) {
+        _activeGgufTasks.remove(modelId);
+        await FileDownloader().database.deleteRecordWithId(modelId);
+        throw const FileSystemException(
+          'The downloaded GGUF file was empty or missing.',
+        );
+      }
+
+      await _validateGgufFile(file);
+
+      final fileSize = await file.length();
+      await _mutex.run(() async {
+        final freshModels = load();
+        final freshIndex = freshModels.indexWhere((m) => m.id == modelId);
+        if (freshIndex >= 0) {
+          freshModels[freshIndex] = freshModels[freshIndex].copyWith(
+            filePath: filePath,
+            fileSizeBytes: fileSize,
+          );
+          await _saveAllUnlocked(freshModels);
+        }
+      });
+
+      _activeGgufTasks.remove(modelId);
+      await FileDownloader().database.deleteRecordWithId(modelId);
+      return TaskStatus.complete;
     });
+    return TaskStatus.complete;
   }
 
   Future<bool> pauseDownload(String modelId) async {
-    final attempt = _ggufAttempts[modelId];
-    if (attempt == null) return false;
-    attempt.paused = true;
-    attempt.cancelToken.cancel('Paused by user');
-    return true;
+    final tasks = (await FileDownloader().allTasks(allGroups: true))
+        .where((t) => t.taskId == modelId)
+        .toList();
+    if (tasks.isEmpty) {
+      final t = _activeGgufTasks[modelId];
+      if (t != null) tasks.add(t);
+    }
+    if (tasks.isEmpty) return false;
+    bool any = false;
+    for (final t in tasks) {
+      _activeGgufTasks[modelId] = t as DownloadTask;
+      try {
+        final ok = await FileDownloader().pause(t as DownloadTask);
+        if (ok) any = true;
+      } catch (_) {}
+    }
+    return any;
   }
 
-  Future<void> resumeDownload(
+  Future<TaskStatus> resumeDownload(
     String modelId, {
     String? token,
     CancelToken? cancelToken,
+    void Function(int receivedBytes, int totalBytes)? onProgress,
   }) async {
-    // Re-run the download; it auto-detects the partial file and resumes via Range.
-    await download(
-      modelId,
-      token: token,
-      cancelToken: cancelToken,
+    final models = load();
+    final idx = models.indexWhere((m) => m.id == modelId);
+    if (idx < 0) throw StateError('Imported GGUF model no longer exists');
+    final model = models[idx];
+    if (model.filePath != null && model.filePath!.isNotEmpty) return TaskStatus.complete;
+
+    var task = _activeGgufTasks[modelId];
+    if (task == null) {
+      final existing = await FileDownloader().taskForId(modelId);
+      task = existing as DownloadTask?;
+    }
+    if (task == null) {
+      await download(modelId, token: token, cancelToken: cancelToken, onProgress: onProgress);
+      return TaskStatus.complete;
+    }
+    _activeGgufTasks[modelId] = task;
+
+    final totalBytes = model.fileSizeBytes > 0 ? model.fileSizeBytes : 0;
+    final completer = Completer<void>();
+    var lastReceived = 0;
+    final sub = FileDownloader().updates.listen((update) {
+      if (update.task.taskId != modelId) return;
+      if (update is TaskProgressUpdate) {
+        final total = (update.hasExpectedFileSize && update.expectedFileSize > 0)
+            ? update.expectedFileSize
+            : totalBytes;
+        if (total > 0 && onProgress != null) {
+          final received = (update.progress.clamp(0.0, 1.0) * total).round();
+          if (received >= lastReceived) {
+            lastReceived = received;
+            onProgress(received, total);
+          }
+        }
+        if (update.progress >= 1.0 && !completer.isCompleted) {
+          completer.complete();
+        }
+      } else if (update is TaskStatusUpdate) {
+        if (update.status == TaskStatus.complete ||
+            update.status == TaskStatus.canceled ||
+            update.status == TaskStatus.failed ||
+            update.status == TaskStatus.paused ||
+            update.status == TaskStatus.notFound) {
+          if (!completer.isCompleted) completer.complete();
+        }
+      }
+    });
+
+    // If the surviving task is already running/complete, don't re-enqueue.
+    bool ok = true;
+    TaskStatus? dbStatus;
+    try {
+      dbStatus = (await FileDownloader().database.recordForId(modelId))?.status;
+      if (dbStatus != null &&
+          (dbStatus == TaskStatus.running || dbStatus == TaskStatus.enqueued)) {
+        ok = true;
+      } else if (dbStatus == TaskStatus.paused) {
+        ok = await FileDownloader().resume(task);
+      } else {
+        ok = true;
+      }
+    } catch (_) {
+      ok = await FileDownloader().resume(task);
+    }
+    if (!ok) {
+      await sub.cancel();
+      if (dbStatus == TaskStatus.paused) {
+        try { await FileDownloader().cancel(task); } catch (_) {}
+        try { await FileDownloader().database.deleteRecordWithId(modelId); } catch (_) {}
+        await download(modelId, token: token, cancelToken: cancelToken, onProgress: onProgress);
+        return TaskStatus.complete;
+      }
+      _activeGgufTasks.remove(modelId);
+      return TaskStatus.running;
+    }
+
+    if (dbStatus == TaskStatus.complete) {
+      await sub.cancel();
+      return TaskStatus.complete;
+    }
+
+    await completer.future.timeout(
+      const Duration(seconds: 120),
+      onTimeout: () {},
     );
+    await sub.cancel();
+
+    TaskStatus status;
+    try {
+      status = (await FileDownloader().database.recordForId(modelId))?.status ?? TaskStatus.running;
+    } catch (_) {
+      status = TaskStatus.running;
+    }
+
+    if (status == TaskStatus.complete) {
+      final filePath = await task.filePath();
+      final file = File(filePath);
+      if (await file.exists() && await file.length() > 0) {
+        try {
+          await _validateGgufFile(file);
+          final fileSize = await file.length();
+          await _mutex.run(() async {
+            final freshModels = load();
+            final freshIndex = freshModels.indexWhere((m) => m.id == modelId);
+            if (freshIndex >= 0) {
+              freshModels[freshIndex] = freshModels[freshIndex].copyWith(
+                filePath: filePath,
+                fileSizeBytes: fileSize,
+              );
+              await _saveAllUnlocked(freshModels);
+            }
+          });
+        } catch (_) {}
+      }
+    } else if (status == TaskStatus.paused || status == TaskStatus.canceled || status == TaskStatus.failed) {
+      _activeGgufTasks.remove(modelId);
+    }
+    return status == TaskStatus.running ? TaskStatus.paused : status;
+  }
+
+  Future<void> cancelDownload(String modelId) async {
+    final tasks = (await FileDownloader().allTasks(allGroups: true))
+        .where((t) => t.taskId == modelId)
+        .toList();
+    _activeGgufTasks.remove(modelId);
+    for (final t in tasks) {
+      try { await FileDownloader().cancel(t); } catch (_) {}
+    }
+    await FileDownloader().cancelTaskWithId(modelId);
   }
 
   Future<void> deleteFile(String modelId) async {
@@ -1311,6 +1450,20 @@ class ImportedGgufModelRepository {
     final encoded = json.encode(models.map((m) => m.toJson()).toList());
     if (!await _prefs.setString(_storageKey, encoded)) {
       throw StateError('Could not save imported models');
+    }
+  }
+
+  /// Remove all persisted downloader task records for this group, so that
+  /// (possibly token-bearing) headers do not linger after the credential is
+  /// cleared or replaced.
+  Future<void> scrubDownloadTaskRecords() async {
+    try {
+      final records = await FileDownloader().database.allRecords(group: 'localmind_gguf_downloads');
+      await FileDownloader().database.deleteRecordsWithIds(
+        records.map((r) => r.taskId),
+      );
+    } catch (_) {
+      // Best-effort.
     }
   }
 

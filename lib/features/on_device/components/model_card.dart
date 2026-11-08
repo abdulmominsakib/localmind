@@ -65,9 +65,9 @@ class ModelCard extends ConsumerWidget {
         (downloadProgress!.status == DownloadStatus.running ||
             downloadProgress!.status == DownloadStatus.pending);
 
-    final isPaused =
-        downloadProgress?.status == DownloadStatus.paused ||
-        downloadProgress?.status == DownloadStatus.canceled;
+    final isPaused = model.isImported &&
+        downloadProgress?.status == DownloadStatus.paused;
+    final isCanceled = downloadProgress?.status == DownloadStatus.canceled;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -142,6 +142,7 @@ class ModelCard extends ConsumerWidget {
               isLoading: isLoading,
               isDownloading: isDownloading,
               isPaused: isPaused,
+              isCanceled: isCanceled,
               downloadProgress: downloadProgress,
               theme: theme,
               l10n: l10n,
@@ -426,6 +427,7 @@ class _ModelCardActions extends ConsumerWidget {
     required this.isLoading,
     required this.isDownloading,
     required this.isPaused,
+    this.isCanceled = false,
     this.downloadProgress,
     required this.theme,
     required this.l10n,
@@ -439,6 +441,7 @@ class _ModelCardActions extends ConsumerWidget {
   final bool isLoading;
   final bool isDownloading;
   final bool isPaused;
+  final bool isCanceled;
   final DownloadProgressInfo? downloadProgress;
   final ThemeData theme;
   final AppLocalizations l10n;
@@ -463,6 +466,18 @@ class _ModelCardActions extends ConsumerWidget {
         downloadProgress: downloadProgress,
         theme: theme,
         l10n: l10n,
+      );
+    }
+
+    if (isCanceled) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(
+          'Canceling…',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
       );
     }
 
@@ -738,7 +753,7 @@ class _DownloadingActions extends ConsumerWidget {
                           l10n.download_progress(
                             ((downloadProgress?.progress ?? 0) * 100)
                                 .toStringAsFixed(1),
-                            downloadProgress?.speedFormatted ?? '0 B/s',
+                            downloadProgress?.speedFormatted ?? '—',
                           ),
                           style: theme.textTheme.labelSmall?.copyWith(
                             fontWeight: FontWeight.w600,
@@ -746,6 +761,36 @@ class _DownloadingActions extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      if (downloadProgress?.isResumed == true) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              HugeIcon(
+                                icon: HugeIcons.strokeRoundedCloudDownload,
+                                size: 10,
+                                color: Colors.blue,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                l10n.downloadBackgroundActive,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(

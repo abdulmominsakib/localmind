@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -363,6 +364,20 @@ class ImportedLitertModelRepository {
     }
   }
 
+  /// Remove all persisted downloader task records for this group, so that
+  /// (possibly token-bearing) headers do not linger after the credential is
+  /// cleared or replaced.
+  Future<void> scrubDownloadTaskRecords() async {
+    try {
+      final records = await FileDownloader().database.allRecords(group: 'localmind_litert_downloads');
+      await FileDownloader().database.deleteRecordsWithIds(
+        records.map((r) => r.taskId),
+      );
+    } catch (_) {
+      // Best-effort.
+    }
+  }
+
   Future<Directory> _modelsDirectory() async {
     final provided = modelsDirectoryProvider;
     if (provided != null) {
@@ -381,15 +396,20 @@ class ImportedLitertModelRepository {
   }
 
   Future<List<ImportedLitertModelMetadata>> loadExisting() async {
-    final models = load();
+    // Read the current metadata under the lock first (avoid stale snapshot),
+    // then perform file I/O outside the lock.
+    final firstModels = await _mutex.run(() async => load());
     final fileExists = <String, bool>{};
-    for (final model in models) {
+    for (final model in firstModels) {
       if (model.filePath != null && model.filePath!.isNotEmpty) {
         fileExists[model.id] = await File(model.filePath!).exists();
       }
     }
 
     return _mutex.run(() async {
+      // Re-read current metadata under the lock so concurrent writes are not
+      // clobbered by a stale snapshot.
+      final models = load();
       final existing = <ImportedLitertModelMetadata>[];
       var hasChanges = false;
 
@@ -398,7 +418,10 @@ class ImportedLitertModelRepository {
           existing.add(model);
           continue;
         }
-        if (fileExists[model.id] == true) {
+        final exists = fileExists.containsKey(model.id)
+            ? fileExists[model.id]!
+            : await File(model.filePath!).exists();
+        if (exists) {
           existing.add(model);
         } else {
           hasChanges = true;
@@ -434,6 +457,20 @@ class ImportedLitertModelRepository {
       );
     } catch (_) {
       return;
+    }
+
+    // Dedupe: if multiple unfinished tasks share a taskId (process-death
+    // duplicate), cancel all but the first before reconciling.
+    final byId = <String, List<TaskRecord>>{};
+    for (final r in records) {
+      byId.putIfAbsent(r.task.taskId, () => []).add(r);
+    }
+    for (final entry in byId.entries) {
+      if (entry.value.length <= 1) continue;
+      for (final r in entry.value.skip(1)) {
+        try { await FileDownloader().cancel(r.task); } catch (_) {}
+        try { await FileDownloader().database.deleteRecordWithId(r.task.taskId); } catch (_) {}
+      }
     }
 
     for (final record in records) {
@@ -687,7 +724,17 @@ class ImportedLitertModelRepository {
 
       final segs = normalizedUrl.pathSegments;
       final parsedRepoId = segs.length >= 2 ? '${segs[0]}/${segs[1]}' : null;
-      final parsedRfilename = originalName;
+      // Use the full repository-relative path (not just the basename) so that
+      // files with the same basename in different subdirectories do not collide.
+      String parsedRfilename = originalName;
+      final resolveIdx = segs.indexWhere((s) => s.toLowerCase() == 'resolve');
+      if (resolveIdx >= 0 && resolveIdx + 2 < segs.length) {
+        parsedRfilename = segs.sublist(resolveIdx + 2).map(Uri.decodeComponent).join('/');
+      } else if (resolveIdx >= 0 && resolveIdx + 1 < segs.length && segs.length > resolveIdx + 1) {
+        // No explicit revision segment; treat the rest as the path.
+        parsedRfilename = segs.sublist(resolveIdx + 1).map(Uri.decodeComponent).join('/');
+      }
+      if (parsedRfilename.isEmpty) parsedRfilename = originalName;
       String? parsedRevision;
       if (segs.length >= 5 && segs[2].toLowerCase() == 'resolve' &&
           segs[3].toLowerCase() != 'main') {
@@ -697,7 +744,7 @@ class ImportedLitertModelRepository {
       // Dedupe by (repoId, rfilename).
       if (parsedRepoId != null) {
         final existing = load().where((m) =>
-            m.repoId == parsedRepoId && m.rfilename == parsedRfilename).firstOrNull;
+            m.repoId == parsedRepoId && m.rfilename == parsedRfilename && m.revision == parsedRevision).firstOrNull;
         if (existing != null) return existing;
       }
 
@@ -721,7 +768,7 @@ class ImportedLitertModelRepository {
       final current2 = load();
       if (metadata.repoId != null) {
         final dup = current2.where((m) =>
-            m.repoId == metadata.repoId && m.rfilename == metadata.rfilename).firstOrNull;
+            m.repoId == metadata.repoId && m.rfilename == metadata.rfilename && m.revision == metadata.revision).firstOrNull;
         if (dup != null) return dup;
       }
       await _saveAllUnlocked([...current2, metadata]);
@@ -776,31 +823,42 @@ class ImportedLitertModelRepository {
       // Do not block the download on a denial or a thrown request.
     }
 
-    final task = DownloadTask(
-      taskId: model.id,
-      url: model.sourceUrl!,
-      filename: installName,
-      directory: _storageDirName,
-      baseDirectory: BaseDirectory.applicationSupport,
-      headers: {
-        if (token != null && token.isNotEmpty)
-          HttpHeaders.authorizationHeader: 'Bearer $token',
-      },
-      allowPause: true,
-      retries: 3,
-      updates: Updates.statusAndProgress,
-      group: 'localmind_litert_downloads',
-      displayName: model.name,
-    );
+    // Dedupe: if a task with this id is already running/paused (e.g. after
+    // process death), reuse it instead of enqueuing a duplicate WorkSpec.
+    var task = await FileDownloader().taskForId(model.id);
+    if (task == null) {
+      task = DownloadTask(
+        taskId: model.id,
+        url: model.sourceUrl!,
+        filename: installName,
+        directory: _storageDirName,
+        baseDirectory: BaseDirectory.applicationSupport,
+        headers: {
+          if (token != null && token.isNotEmpty)
+            HttpHeaders.authorizationHeader: 'Bearer $token',
+        },
+        allowPause: true,
+        retries: 3,
+        updates: Updates.statusAndProgress,
+        group: 'localmind_litert_downloads',
+        displayName: model.name,
+      );
+    }
+    _activeLitertTasks[model.id] = task as DownloadTask;
 
-    _activeLitertTasks[model.id] = task;
-
+    // Do NOT call resume() here — it enqueues a second WorkSpec. download()
+    // already handles resume data internally when the task is paused.
+    var lastReceived = 0;
     final result = await FileDownloader().download(
-      task,
+      task as DownloadTask,
       onProgress: (progress) {
         final clamped = progress.clamp(0.0, 1.0);
         if (totalBytes > 0) {
-          onProgress?.call((clamped * totalBytes).round().clamp(0, totalBytes), totalBytes);
+          final received = (clamped * totalBytes).round().clamp(0, totalBytes);
+          if (received >= lastReceived) {
+            lastReceived = received;
+            onProgress?.call(received, totalBytes);
+          }
         } else {
           onProgress?.call((clamped * 100).round().clamp(0, 100), 100);
         }
@@ -813,20 +871,34 @@ class ImportedLitertModelRepository {
     }
     if (result.status == TaskStatus.canceled) {
       _activeLitertTasks.remove(model.id);
+      await FileDownloader().database.deleteRecordWithId(model.id);
       throw const HttpException('LiteRT import canceled.');
     }
     if (result.status != TaskStatus.complete) {
       _activeLitertTasks.remove(model.id);
+      await FileDownloader().database.deleteRecordWithId(model.id);
       throw HttpException(
         result.exception?.description ?? 'LiteRT download failed.',
       );
     }
-    _activeLitertTasks.remove(model.id);
+    final status = await _finalizeLitertDownload(modelId, task as DownloadTask, installName);
+    // Remove the persisted task record so the (possibly token-bearing) headers
+    // do not linger in the downloader's database.
+    await FileDownloader().database.deleteRecordWithId(model.id);
+    return status;
+  }
+
+  Future<TaskStatus> _finalizeLitertDownload(
+    String modelId,
+    DownloadTask task,
+    String installName,
+  ) async {
+    _activeLitertTasks.remove(modelId);
 
     final filePath = await task.filePath();
     final file = File(filePath);
     if (!await file.exists() || await file.length() <= 0) {
-      _activeLitertTasks.remove(model.id);
+      _activeLitertTasks.remove(modelId);
       throw const FileSystemException(
         'The downloaded LiteRT file was empty or missing.',
       );
@@ -857,44 +929,171 @@ class ImportedLitertModelRepository {
       }
     });
 
-    _activeLitertTasks.remove(model.id);
+    _activeLitertTasks.remove(modelId);
     return TaskStatus.complete;
   }
 
   Future<bool> pauseDownload(String modelId) async {
-    final task =
-        _activeLitertTasks[modelId] ??
-        await FileDownloader().taskForId(modelId);
-    if (task != null) {
-      _activeLitertTasks[modelId] = task;
-      final ok = await FileDownloader().pause(task as DownloadTask);
-      return ok;
+    // Pause every task sharing this id (handles duplicate WorkSpecs after
+    // process death).
+    final tasks = (await FileDownloader().allTasks(allGroups: true))
+        .where((t) => t.taskId == modelId)
+        .toList();
+    if (tasks.isEmpty) {
+      final t = _activeLitertTasks[modelId] ?? await FileDownloader().taskForId(modelId);
+      if (t != null) tasks.add(t);
     }
-    return false;
+    if (tasks.isEmpty) return false;
+    bool any = false;
+    for (final t in tasks) {
+      _activeLitertTasks[modelId] = t;
+      try {
+        final ok = await FileDownloader().pause(t as DownloadTask);
+        if (ok) any = true;
+      } catch (_) {}
+    }
+    return any;
   }
 
-  Future<void> resumeDownload(String modelId, {String? token}) async {
+  Future<TaskStatus> resumeDownload(
+    String modelId, {
+    String? token,
+    void Function(int receivedBytes, int totalBytes)? onProgress,
+  }) async {
+    final models = load();
+    final modelIdx = models.indexWhere((m) => m.id == modelId);
+    final totalBytes = (modelIdx >= 0 && models[modelIdx].fileSizeBytes > 0)
+        ? models[modelIdx].fileSizeBytes
+        : 0;
     final task =
         _activeLitertTasks[modelId] ??
         await FileDownloader().taskForId(modelId);
-    if (task != null) {
-      _activeLitertTasks[modelId] = task;
-      final ok = await FileDownloader().resume(task as DownloadTask);
-      if (ok) return;
+    if (task == null) {
+      final st = await download(modelId, token: token, onProgress: onProgress);
+      return st;
     }
-    // Fall back to starting the download again.
-    await download(modelId, token: token);
+    _activeLitertTasks[modelId] = task;
+
+    // Subscribe BEFORE resume() so we capture every progress update.
+    final completer = Completer<TaskStatus>();
+    var lastReceived = 0;
+    // Progress from the updates stream.
+    final sub = FileDownloader().updates.listen((update) {
+      if (update.task.taskId != modelId) return;
+      if (update is TaskProgressUpdate) {
+        final total = (update.hasExpectedFileSize && update.expectedFileSize > 0)
+            ? update.expectedFileSize
+            : totalBytes;
+        if (total > 0 && onProgress != null) {
+          final received = (update.progress.clamp(0.0, 1.0) * total).round();
+          // Monotonic guard: ignore stale lower-progress updates from a
+          // duplicate background task after process death.
+          if (received >= lastReceived) {
+            lastReceived = received;
+            onProgress(received, total);
+          }
+        }
+        if (update.progress >= 1.0 && !completer.isCompleted) {
+          completer.complete(TaskStatus.complete);
+        }
+      } else if (update is TaskStatusUpdate) {
+        if (update.status == TaskStatus.complete ||
+            update.status == TaskStatus.canceled ||
+            update.status == TaskStatus.failed ||
+            update.status == TaskStatus.paused ||
+            update.status == TaskStatus.notFound) {
+          if (!completer.isCompleted) completer.complete(update.status);
+        }
+      }
+    });
+
+    final ok = await FileDownloader().resume(task as DownloadTask);
+    if (!ok) {
+      // resume() returns false if no resume data (task already running or
+      // completed). Check DB status before deciding.
+      await sub.cancel();
+      TaskStatus? dbStatus;
+      try {
+        dbStatus = (await FileDownloader().database.recordForId(modelId))?.status;
+      } catch (_) {}
+      if (dbStatus == TaskStatus.paused) {
+        // Paused but no resume data — retire stale attempt, start fresh.
+        try { await FileDownloader().cancel(task as DownloadTask); } catch (_) {}
+        try { await FileDownloader().database.deleteRecordWithId(modelId); } catch (_) {}
+        final st = await download(modelId, token: token, onProgress: onProgress);
+        return st;
+      }
+      // Running/enqueued/complete/unknown — attach (no enqueue).
+      _activeLitertTasks[modelId] = task as DownloadTask;
+      if (dbStatus == TaskStatus.complete) {
+        return TaskStatus.complete;
+      }
+      // Wait for terminal via DB polling (longer timeout, no fabricated failure).
+      TaskStatus status = TaskStatus.running;
+      for (int i = 0; i < 300 && status == TaskStatus.running; i++) {
+        await Future.delayed(const Duration(seconds: 1));
+        if (completer.isCompleted) break;
+        try {
+          final s = (await FileDownloader().database.recordForId(modelId))?.status;
+          if (s != null) status = s;
+        } catch (_) {}
+      }
+      await sub.cancel();
+      if (status == TaskStatus.complete) {
+        if (onProgress != null && totalBytes > 0) onProgress(totalBytes, totalBytes);
+        try {
+          final t = _activeLitertTasks[modelId] ?? await FileDownloader().taskForId(modelId);
+          if (t != null) {
+            final models2 = load();
+            final idx = models2.indexWhere((m) => m.id == modelId);
+            final installName = (idx >= 0 ? models2[idx].installFileName : null) ?? modelId;
+            await _finalizeLitertDownload(modelId, t as DownloadTask, installName);
+          }
+        } catch (_) {}
+      } else if (status == TaskStatus.paused || status == TaskStatus.canceled || status == TaskStatus.failed) {
+        _activeLitertTasks.remove(modelId);
+      }
+      return status == TaskStatus.running ? TaskStatus.paused : status;
+    }
+
+    TaskStatus status;
+    try {
+      status = await completer.future.timeout(const Duration(seconds: 120));
+    } catch (_) {
+      // Timeout is NOT a failure — keep the task alive.
+      status = TaskStatus.running;
+    }
+    await sub.cancel();
+
+    if (status == TaskStatus.complete) {
+      if (onProgress != null && totalBytes > 0) onProgress(totalBytes, totalBytes);
+      try {
+        final t = _activeLitertTasks[modelId] ?? await FileDownloader().taskForId(modelId);
+        if (t != null) {
+          final models2 = load();
+          final idx = models2.indexWhere((m) => m.id == modelId);
+          final installName = (idx >= 0 ? models2[idx].installFileName : null) ?? modelId;
+          await _finalizeLitertDownload(modelId, t as DownloadTask, installName);
+        }
+      } catch (_) {}
+    } else if (status == TaskStatus.paused || status == TaskStatus.canceled || status == TaskStatus.failed) {
+      _activeLitertTasks.remove(modelId);
+    }
+    return status == TaskStatus.running ? TaskStatus.paused : status;
   }
 
   Future<void> cancelDownload(String modelId) async {
-    final task =
-        _activeLitertTasks[modelId] ??
-        await FileDownloader().taskForId(modelId);
-    if (task != null) {
-      await FileDownloader().cancel(task);
-    } else {
-      await FileDownloader().cancelTaskWithId(modelId);
+    final tasks = (await FileDownloader().allTasks(allGroups: true))
+        .where((t) => t.taskId == modelId)
+        .toList();
+    if (tasks.isEmpty) {
+      final t = _activeLitertTasks[modelId] ?? await FileDownloader().taskForId(modelId);
+      if (t != null) tasks.add(t);
     }
+    for (final t in tasks) {
+      try { await FileDownloader().cancel(t); } catch (_) {}
+    }
+    await FileDownloader().cancelTaskWithId(modelId);
     _activeLitertTasks.remove(modelId);
   }
 
