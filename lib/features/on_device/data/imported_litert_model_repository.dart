@@ -479,6 +479,20 @@ class ImportedLitertModelRepository {
       return;
     }
 
+    // Clean up canceled/failed update tasks.
+    for (final record in records) {
+      final rawId = record.task.taskId;
+      if (!rawId.endsWith('-update')) continue;
+      if (record.status == TaskStatus.canceled || record.status == TaskStatus.failed) {
+        try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+        try {
+          final tempPath = await record.task.filePath();
+          final tempFile = File(tempPath);
+          if (await tempFile.exists()) await tempFile.delete();
+        } catch (_) {}
+      }
+    }
+
     // Dedupe: if multiple unfinished tasks share a taskId (process-death
     // duplicate), cancel all but the first before reconciling.
     final byId = <String, List<TaskRecord>>{};
@@ -495,7 +509,73 @@ class ImportedLitertModelRepository {
 
     for (final record in records) {
       if (record.status != TaskStatus.complete) continue;
-      final modelId = record.task.taskId;
+      final rawId = record.task.taskId;
+
+      // Handle update tasks ($modelId-update).
+      if (rawId.endsWith('-update')) {
+        final modelId = rawId.substring(0, rawId.length - '-update'.length);
+        final models = load();
+        final index = models.indexWhere((m) => m.id == modelId);
+        if (index < 0) continue;
+
+        String? filePath;
+        try {
+          filePath = await record.task.filePath();
+        } catch (_) {
+          continue;
+        }
+        if (filePath == null || filePath.isEmpty) continue;
+        final file = File(filePath);
+        if (!await file.exists() || await file.length() <= 0) continue;
+
+        try {
+          final previousSpec = FlutterGemma.activeModelSpec;
+          await FlutterGemma.installModel(
+            modelType: ModelType.general,
+            fileType: ModelFileType.litertlm,
+          ).fromFile(filePath).install();
+          final manager = FlutterGemmaPlugin.instance.modelManager;
+          if (previousSpec != null) {
+            manager.setActiveModel(previousSpec);
+          } else {
+            await FlutterGemma.clearActiveInferenceIdentity();
+          }
+        } catch (_) {
+          continue;
+        }
+
+        await _mutex.run(() async {
+          final fresh = load();
+          final i = fresh.indexWhere((m) => m.id == modelId);
+          if (i >= 0) {
+            final oldInstallName = fresh[i].installFileName ?? fresh[i].fileName;
+            final oldPath = fresh[i].filePath;
+            if (oldInstallName != record.task.filename) {
+              try {
+                await FlutterGemma.uninstallModel(oldInstallName);
+              } catch (_) {}
+            }
+            if (oldPath != null && oldPath != filePath && await File(oldPath).exists()) {
+              try { await File(oldPath).delete(); } catch (_) {}
+            }
+            fresh[i] = fresh[i].copyWith(
+              filePath: filePath,
+              installFileName: record.task.filename,
+              fileSizeBytes: await file.length(),
+              revision: fresh[i].latestRevision ?? fresh[i].revision,
+              updateAvailable: false,
+              latestRevision: null,
+              lastCheckedAt: DateTime.now(),
+            );
+            await _saveAllUnlocked(fresh);
+          }
+        });
+
+        try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+        continue;
+      }
+
+      final modelId = rawId;
       final models = load();
       final index = models.indexWhere((m) => m.id == modelId);
       if (index < 0) continue;
@@ -1078,21 +1158,7 @@ class ImportedLitertModelRepository {
       final models = load();
       final index = models.indexWhere((m) => m.id == modelId);
       if (index >= 0) {
-        // Delete old FlutterGemma install (if different name).
-        if (oldInstallName != installName) {
-          try {
-            await FlutterGemma.uninstallModel(oldInstallName);
-          } catch (_) {}
-        }
-        // Delete old file.
-        if (oldFilePath != null &&
-            oldFilePath != filePath &&
-            await File(oldFilePath).exists()) {
-          try {
-            await File(oldFilePath).delete();
-          } catch (_) {}
-        }
-        // Update metadata: point to new file, update revision, clear updateAvailable.
+        // Update metadata FIRST (crash-safe: if save fails, old file is still intact).
         models[index] = models[index].copyWith(
           filePath: filePath,
           installFileName: installName,
@@ -1105,6 +1171,18 @@ class ImportedLitertModelRepository {
           lastCheckedAt: DateTime.now(),
         );
         await _saveAllUnlocked(models);
+
+        // THEN delete old install + file (best-effort; lingering old file is OK).
+        if (oldInstallName != installName) {
+          try {
+            await FlutterGemma.uninstallModel(oldInstallName);
+          } catch (_) {}
+        }
+        if (oldFilePath != null &&
+            oldFilePath != filePath &&
+            await File(oldFilePath).exists()) {
+          try { await File(oldFilePath).delete(); } catch (_) {}
+        }
       }
     });
 

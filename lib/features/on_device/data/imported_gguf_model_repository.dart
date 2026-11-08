@@ -992,9 +992,74 @@ class ImportedGgufModelRepository {
       }
     }
 
+    // Clean up canceled/failed update tasks.
+    for (final record in records) {
+      final rawId = record.task.taskId;
+      if (!rawId.endsWith('-update')) continue;
+      if (record.status == TaskStatus.canceled || record.status == TaskStatus.failed) {
+        try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+        try {
+          final tempPath = await record.task.filePath();
+          final tempFile = File(tempPath);
+          if (await tempFile.exists()) await tempFile.delete();
+        } catch (_) {}
+      }
+    }
+
     for (final record in records) {
       if (record.status != TaskStatus.complete) continue;
-      final modelId = record.task.taskId;
+      final rawId = record.task.taskId;
+
+      // Handle update tasks ($modelId-update).
+      if (rawId.endsWith('-update')) {
+        final modelId = rawId.substring(0, rawId.length - '-update'.length);
+        final models = load();
+        final index = models.indexWhere((m) => m.id == modelId);
+        if (index < 0) continue;
+
+        String? filePath;
+        try {
+          filePath = await record.task.filePath();
+        } catch (_) {
+          continue;
+        }
+        if (filePath == null || filePath.isEmpty) continue;
+        final file = File(filePath);
+        if (!await file.exists() || await file.length() <= 0) continue;
+
+        try {
+          await _validateGgufFile(file);
+        } catch (_) {
+          continue;
+        }
+
+        final oldFilePath = models[index].filePath;
+        await _mutex.run(() async {
+          final fresh = load();
+          final i = fresh.indexWhere((m) => m.id == modelId);
+          if (i >= 0) {
+            if (oldFilePath != null &&
+                oldFilePath != filePath &&
+                await File(oldFilePath).exists()) {
+              try { await File(oldFilePath).delete(); } catch (_) {}
+            }
+            fresh[i] = fresh[i].copyWith(
+              filePath: filePath,
+              fileSizeBytes: await file.length(),
+              revision: fresh[i].latestRevision ?? fresh[i].revision,
+              updateAvailable: false,
+              latestRevision: null,
+              lastCheckedAt: DateTime.now(),
+            );
+            await _saveAllUnlocked(fresh);
+          }
+        });
+
+        try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+        continue;
+      }
+
+      final modelId = rawId;
       final models = load();
       final index = models.indexWhere((m) => m.id == modelId);
       if (index < 0) continue;
@@ -1339,14 +1404,7 @@ class ImportedGgufModelRepository {
         final freshModels = load();
         final freshIndex = freshModels.indexWhere((m) => m.id == modelId);
         if (freshIndex >= 0) {
-          // Delete old file.
-          if (oldFilePath != null &&
-              oldFilePath != filePath &&
-              await File(oldFilePath).exists()) {
-            try {
-              await File(oldFilePath).delete();
-            } catch (_) {}
-          }
+          // Update metadata FIRST (crash-safe).
           freshModels[freshIndex] = freshModels[freshIndex].copyWith(
             filePath: filePath,
             fileSizeBytes: fileSize,
@@ -1356,6 +1414,15 @@ class ImportedGgufModelRepository {
             lastCheckedAt: DateTime.now(),
           );
           await _saveAllUnlocked(freshModels);
+
+          // THEN delete old file (best-effort).
+          if (oldFilePath != null &&
+              oldFilePath != filePath &&
+              await File(oldFilePath).exists()) {
+            try {
+              await File(oldFilePath).delete();
+            } catch (_) {}
+          }
         }
       });
 
