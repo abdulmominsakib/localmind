@@ -31,6 +31,13 @@ class ForegroundDownloadNotifier
   final Map<String, DateTime> _downloadStartTimes = {};
   final Set<String> _pausedDownloads = {};
   final Set<String> _cancelled = {};
+  // Operation-scoped state (generation token). Model-scoped state above is
+  // retained for compatibility but new code should use these.
+  int _opCounter = 0;
+  final Map<String, String> _activeOperationIds = {}; // modelId -> opId
+  final Set<String> _pausedOperations = {}; // opIds
+  final Set<String> _cancelRequested = {}; // opIds
+  final Map<String, int> _sessionBaselineBytes = {}; // modelId -> baseline
   final Map<String, CancelToken> _cancelTokens = {};
   final Map<String, gemma.CancelToken> _gemmaCancelTokens = {};
   final Map<String, Future<String?>> _inFlightDownloads = {};
@@ -41,6 +48,7 @@ class ForegroundDownloadNotifier
 
   @override
   Map<String, DownloadProgressInfo> build() {
+    ref.onDispose(() => _hydrationPollTimer?.cancel());
     ref.listen(settingsProvider.select((s) => s.huggingFaceToken), (prev, next) {
       if (prev == next) return;
       // Scrub persisted downloader task records so a cleared/replaced
@@ -49,6 +57,33 @@ class ForegroundDownloadNotifier
       ref.read(importedGgufModelRepositoryProvider).scrubDownloadTaskRecords();
     });
     return _loadState();
+  }
+
+
+  String _beginOperation(String modelId, {int baselineBytes = 0}) {
+    final opId = '$modelId:${DateTime.now().microsecondsSinceEpoch}:${++_opCounter}';
+    _activeOperationIds[modelId] = opId;
+    _activeDownloads[modelId] = true;
+    _downloadStartTimes[modelId] = DateTime.now();
+    _sessionBaselineBytes[modelId] = baselineBytes;
+    _cancelled.remove(modelId);
+    _pausedDownloads.remove(modelId);
+    _pausedOperations.removeWhere((o) => o.startsWith('$modelId:'));
+    _cancelRequested.removeWhere((o) => o.startsWith('$modelId:'));
+    return opId;
+  }
+
+  bool _isActiveOp(String modelId, String opId) =>
+      _activeOperationIds[modelId] == opId;
+
+  void _endOperation(String modelId, String opId) {
+    if (_activeOperationIds[modelId] != opId) return;
+    _activeOperationIds.remove(modelId);
+    _activeDownloads.remove(modelId);
+    _downloadStartTimes.remove(modelId);
+    _sessionBaselineBytes.remove(modelId);
+    _pausedOperations.remove(opId);
+    _cancelRequested.remove(opId);
   }
 
   /// Hydrate download state from persisted background tasks. Called from
@@ -299,10 +334,10 @@ class ForegroundDownloadNotifier
     final future = _startDownloadImpl(modelId);
     _inFlightDownloads[modelId] = future;
     future.whenComplete(() {
-      _inFlightDownloads.remove(modelId);
+      if (identical(_inFlightDownloads[modelId], future)) _inFlightDownloads.remove(modelId);
     }).catchError((Object e, StackTrace st) {
       Log.error('startDownload failed for $modelId: $e');
-      _inFlightDownloads.remove(modelId);
+      if (identical(_inFlightDownloads[modelId], future)) _inFlightDownloads.remove(modelId);
       return null;
     });
     return future;
@@ -321,11 +356,11 @@ class ForegroundDownloadNotifier
     final future = _startUpdateDownloadImpl(modelId);
     _inFlightDownloads[modelId] = future;
     future.whenComplete(() {
-      _inFlightDownloads.remove(modelId);
+      if (identical(_inFlightDownloads[modelId], future)) _inFlightDownloads.remove(modelId);
       _updateInProgress.remove(modelId);
     }).catchError((Object e, StackTrace st) {
       Log.error('startUpdateDownload failed for $modelId: $e');
-      _inFlightDownloads.remove(modelId);
+      if (identical(_inFlightDownloads[modelId], future)) _inFlightDownloads.remove(modelId);
       _updateInProgress.remove(modelId);
       return null;
     });
@@ -362,9 +397,10 @@ class ForegroundDownloadNotifier
       } catch (_) {}
     }
 
-    _cancelled.remove(modelId);
-    _activeDownloads[modelId] = true;
-    _downloadStartTimes[modelId] = DateTime.now();
+    // Allocate operation token (generation guard).
+    final baselineBytes = state[modelId]?.receivedBytes ?? 0;
+    final opId = _beginOperation(modelId, baselineBytes: baselineBytes);
+    final opStart = DateTime.now();
 
     final existingInfo = state[modelId];
     state = {
@@ -392,9 +428,10 @@ class ForegroundDownloadNotifier
           modelId,
           token: token,
           onProgress: (received, total) {
-            if (!ref.mounted || _activeDownloads[modelId] != true) return;
-            if (_pausedDownloads.contains(modelId)) return;
-            if (_cancelled.contains(modelId)) return;
+            if (!ref.mounted) return;
+            if (!_isActiveOp(modelId, opId)) return;
+            if (_pausedOperations.contains(opId)) return;
+            if (_cancelRequested.contains(opId)) return;
             final progress = total > 0 ? (received / total) : 0.0;
             state = {
               ...state,
@@ -414,9 +451,10 @@ class ForegroundDownloadNotifier
           modelId,
           token: token,
           onProgress: (received, total) {
-            if (!ref.mounted || _activeDownloads[modelId] != true) return;
-            if (_pausedDownloads.contains(modelId)) return;
-            if (_cancelled.contains(modelId)) return;
+            if (!ref.mounted) return;
+            if (!_isActiveOp(modelId, opId)) return;
+            if (_pausedOperations.contains(opId)) return;
+            if (_cancelRequested.contains(opId)) return;
             final progress = total > 0 ? (received / total) : 0.0;
             state = {
               ...state,
@@ -446,8 +484,7 @@ class ForegroundDownloadNotifier
           }
         }
       } else if (status == TaskStatus.complete) {
-        _activeDownloads.remove(modelId);
-        _downloadStartTimes.remove(modelId);
+        _endOperation(modelId, opId);
         if (ref.mounted) {
           state = {...state}..remove(modelId);
           _saveState();
@@ -466,9 +503,9 @@ class ForegroundDownloadNotifier
       }
       return null;
     } catch (e) {
-      _activeDownloads.remove(modelId);
-      _downloadStartTimes.remove(modelId);
-      final isCanceled = _cancelled.contains(modelId) ||
+      final wasCurrent = _isActiveOp(modelId, opId);
+      if (!wasCurrent) return null;
+      final isCanceled = _cancelRequested.contains(opId) ||
           e.toString().toLowerCase().contains('cancel');
       if (ref.mounted) {
         if (isCanceled) {
@@ -488,6 +525,7 @@ class ForegroundDownloadNotifier
         }
         _saveState();
       }
+      if (wasCurrent) _endOperation(modelId, opId);
       return isCanceled ? null : e.toString();
     }
   }
@@ -508,12 +546,12 @@ class ForegroundDownloadNotifier
       }
     }
 
-    if (_activeDownloads[modelId] == true) {
+    if (_activeOperationIds.containsKey(modelId)) {
       return null;
     }
-    _cancelled.remove(modelId);
-    _activeDownloads[modelId] = true;
-    _downloadStartTimes[modelId] = DateTime.now();
+    final baselineBytes = state[modelId]?.receivedBytes ?? 0;
+    final opId = _beginOperation(modelId, baselineBytes: baselineBytes);
+    final opStart = DateTime.now();
 
     final existingInfo = state[modelId];
     state = {
@@ -542,16 +580,17 @@ class ForegroundDownloadNotifier
               ? hfToken
               : null,
           onProgress: (received, total) {
-            if (!ref.mounted || _activeDownloads[modelId] != true) return;
-            if (_pausedDownloads.contains(modelId)) return;
-            if (_cancelled.contains(modelId)) return;
+            if (!ref.mounted) return;
+            if (!_isActiveOp(modelId, opId)) return;
+            if (_pausedOperations.contains(opId)) return;
+            if (_cancelRequested.contains(opId)) return;
 
             final clampedReceived = received.clamp(0, total > 0 ? total : received);
-            final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
+            final startTime = opStart;
             final elapsedMs = DateTime.now().difference(startTime).inMilliseconds;
             int? bytesPerSecond;
             if (elapsedMs >= 2000 && clampedReceived > 0 && total > 0) {
-              bytesPerSecond = (clampedReceived * 1000 / elapsedMs).round();
+              bytesPerSecond = ((clampedReceived - baselineBytes).clamp(0, clampedReceived) * 1000 / elapsedMs).round();
             }
             int? etaSeconds;
             if (bytesPerSecond != null &&
@@ -584,14 +623,15 @@ class ForegroundDownloadNotifier
           model.id,
           token: (hfToken != null && hfToken.isNotEmpty) ? hfToken : null,
           onProgress: (received, total) {
-            if (!ref.mounted || _activeDownloads[modelId] != true) return;
-            if (_pausedDownloads.contains(modelId)) return;
+            if (!ref.mounted) return;
+            if (!_isActiveOp(modelId, opId)) return;
+            if (_pausedOperations.contains(opId)) return;
 
-            final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
+            final startTime = opStart;
             final elapsedMs = DateTime.now().difference(startTime).inMilliseconds;
             int? bytesPerSecond;
             if (elapsedMs >= 2000 && received > 0 && total > 0) {
-              bytesPerSecond = (received * 1000 / elapsedMs).round();
+              bytesPerSecond = ((received - baselineBytes).clamp(0, received) * 1000 / elapsedMs).round();
             }
             int? etaSeconds;
             if (bytesPerSecond != null &&
@@ -628,15 +668,16 @@ class ForegroundDownloadNotifier
           model.id,
           token: (hfToken != null && hfToken.isNotEmpty) ? hfToken : null,
           onProgress: (received, total) {
-            if (!ref.mounted || _activeDownloads[modelId] != true) return;
-            if (_pausedDownloads.contains(modelId)) return;
+            if (!ref.mounted) return;
+            if (!_isActiveOp(modelId, opId)) return;
+            if (_pausedOperations.contains(opId)) return;
 
             final clampedReceived = received.clamp(0, total > 0 ? total : received);
-            final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
+            final startTime = opStart;
             final elapsedMs = DateTime.now().difference(startTime).inMilliseconds;
             int? bytesPerSecond;
             if (elapsedMs >= 2000 && clampedReceived > 0 && total > 0) {
-              bytesPerSecond = (clampedReceived * 1000 / elapsedMs).round();
+              bytesPerSecond = ((clampedReceived - baselineBytes).clamp(0, clampedReceived) * 1000 / elapsedMs).round();
             }
             int? etaSeconds;
             if (bytesPerSecond != null &&
@@ -679,11 +720,12 @@ class ForegroundDownloadNotifier
           token: (hfToken != null && hfToken.isNotEmpty) ? hfToken : null,
           cancelToken: gemmaCancelToken,
           onProgress: (progress) {
-            if (!ref.mounted || _activeDownloads[modelId] != true) return;
-            if (_pausedDownloads.contains(modelId)) return;
-            if (_cancelled.contains(modelId)) return;
+            if (!ref.mounted) return;
+            if (!_isActiveOp(modelId, opId)) return;
+            if (_pausedOperations.contains(opId)) return;
+            if (_cancelRequested.contains(opId)) return;
 
-            final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
+            final startTime = opStart;
             final elapsedMs = DateTime.now().difference(startTime).inMilliseconds;
             final total = model.fileSizeBytes > 0 ? model.fileSizeBytes : 100;
             final received = model.fileSizeBytes > 0
@@ -692,7 +734,7 @@ class ForegroundDownloadNotifier
 
             int? bytesPerSecond;
             if (elapsedMs >= 2000 && received > 0) {
-              bytesPerSecond = (received * 1000 / elapsedMs).round();
+              bytesPerSecond = ((received - baselineBytes).clamp(0, received) * 1000 / elapsedMs).round();
             }
             int? etaSeconds;
             if (bytesPerSecond != null &&
@@ -719,8 +761,8 @@ class ForegroundDownloadNotifier
       }
 
       // Download completed
-      if (_activeDownloads[modelId] == true) {
-        if (_cancelled.contains(modelId)) {
+      if (_isActiveOp(modelId, opId)) {
+        if (_cancelRequested.contains(opId)) {
           // Canceled but install completed anyway; route cleanup by runtime.
           try {
             if (model.runtime == OnDeviceModelRuntime.mlx) {
@@ -736,9 +778,8 @@ class ForegroundDownloadNotifier
           } catch (e) {
             Log.error('Failed to clean up canceled model $modelId: $e');
           }
-          _cancelled.remove(modelId);
-          _activeDownloads.remove(modelId);
-          _downloadStartTimes.remove(modelId);
+          _cancelRequested.remove(opId);
+          _endOperation(modelId, opId);
           _inFlightDownloads.remove(modelId);
           final current = Map<String, DownloadProgressInfo>.from(state);
           current.remove(modelId);
@@ -778,11 +819,11 @@ class ForegroundDownloadNotifier
           msg.contains('canceled') ||
           msg.contains('cancelled');
       final isPaused = !isCancel && msg.contains('paused');
-      final isCanceled = isCancel || _cancelled.contains(modelId);
+      final isCanceled = isCancel || _cancelRequested.contains(opId);
       if (!isPaused && !isCanceled) {
         Log.error('Download failed for $modelId: $e');
       }
-      if (_activeDownloads[modelId] == true && ref.mounted) {
+      if (_isActiveOp(modelId, opId) && ref.mounted) {
         final current = state[modelId];
         if (isPaused) {
           state = {
@@ -818,14 +859,14 @@ class ForegroundDownloadNotifier
         _saveState();
       }
     } finally {
-      final wasPaused = _pausedDownloads.contains(modelId);
-      if (!wasPaused) {
-        _activeDownloads.remove(modelId);
-        _downloadStartTimes.remove(modelId);
+      final wasPaused = _pausedOperations.contains(opId);
+      if (!wasPaused && _isActiveOp(modelId, opId)) {
+        _endOperation(modelId, opId);
       }
       _cancelTokens.remove(modelId);
       _gemmaCancelTokens.remove(modelId);
-      _cancelled.remove(modelId);
+      _cancelRequested.remove(opId);
+      _pausedOperations.remove(opId);
     }
     return null;
   }
@@ -843,6 +884,8 @@ class ForegroundDownloadNotifier
   Future<void> cancelDownload(String modelId) async {
     if (!ref.mounted) return;
     _cancelled.add(modelId);
+    final opId = _activeOperationIds[modelId];
+    if (opId != null) _cancelRequested.add(opId);
     final mlxService = ref.read(onDeviceMlxServiceProvider);
     mlxService.cancelDownload(modelId);
     final cancelToken = _cancelTokens.remove(modelId);
@@ -882,8 +925,7 @@ class ForegroundDownloadNotifier
     // For curated, keep _activeDownloads alive until the in-flight future
     // settles to prevent a retry race. Imported downloads remove immediately.
     if (!isCurated) {
-      _activeDownloads.remove(modelId);
-      _downloadStartTimes.remove(modelId);
+      if (opId != null) _endOperation(modelId, opId);
     }
     if (!ref.mounted) return;
     if (isCurated) {
@@ -914,6 +956,8 @@ class ForegroundDownloadNotifier
   Future<void> pauseDownload(String modelId, {DownloadPauseReason reason = DownloadPauseReason.user}) async {
     if (!ref.mounted) return;
     _pausedDownloads.add(modelId);
+    final opId = _activeOperationIds[modelId];
+    if (opId != null) _pausedOperations.add(opId);
     final models = ref.read(onDeviceModelsProvider);
     final model = models.where((m) => m.id == modelId).firstOrNull;
     var paused = false;
@@ -964,16 +1008,17 @@ class ForegroundDownloadNotifier
     final model = models.where((m) => m.id == modelId).firstOrNull;
     if (model == null) return;
 
+    final prevOpId = _activeOperationIds[modelId];
+    if (prevOpId != null) _pausedOperations.remove(prevOpId);
+
     _pausedDownloads.remove(modelId);
-    _activeDownloads[modelId] = false;
-    _activeDownloads.remove(modelId);
 
     if (ref.mounted) {
       final info = state[modelId];
       if (info != null) {
         state = {
           ...state,
-          modelId: info.copyWith(status: DownloadStatus.running),
+          modelId: info.copyWith(status: DownloadStatus.running, pauseReason: null),
         };
         _saveState();
       }
@@ -984,8 +1029,13 @@ class ForegroundDownloadNotifier
     );
     final token = (hfToken != null && hfToken.isNotEmpty) ? hfToken : null;
 
-    _activeDownloads[modelId] = true;
-    _downloadStartTimes[modelId] = DateTime.now();
+    final baselineBytes = state[modelId]?.receivedBytes ?? 0;
+    // Reuse existing op if present, otherwise allocate new.
+    final opId = prevOpId ?? _beginOperation(modelId, baselineBytes: baselineBytes);
+    if (prevOpId == null) {
+      _sessionBaselineBytes[modelId] = baselineBytes;
+    }
+    final opStart = DateTime.now();
 
     if (model.isImported && model.runtime == OnDeviceModelRuntime.gemma) {
       final repository = ref.read(importedLitertModelRepositoryProvider);
@@ -997,14 +1047,15 @@ class ForegroundDownloadNotifier
           modelId,
           token: token,
           onProgress: (received, total) {
-          if (!ref.mounted || _activeDownloads[modelId] != true) return;
-          if (_pausedDownloads.contains(modelId)) return;
+          if (!ref.mounted) return;
+          if (!_isActiveOp(modelId, opId)) return;
+          if (_pausedOperations.contains(opId)) return;
           final clampedReceived = received.clamp(0, total > 0 ? total : received);
-          final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
+          final startTime = opStart;
           final elapsedMs = DateTime.now().difference(startTime).inMilliseconds;
           int? bytesPerSecond;
           if (elapsedMs >= 2000 && clampedReceived > 0 && total > 0) {
-            bytesPerSecond = (clampedReceived * 1000 / elapsedMs).round();
+            bytesPerSecond = ((clampedReceived - baselineBytes).clamp(0, clampedReceived) * 1000 / elapsedMs).round();
           }
           int? etaSeconds;
           if (bytesPerSecond != null &&
@@ -1069,13 +1120,14 @@ class ForegroundDownloadNotifier
           modelId,
           token: token,
           onProgress: (received, total) {
-          if (!ref.mounted || _activeDownloads[modelId] != true) return;
-          if (_pausedDownloads.contains(modelId)) return;
-          final startTime = _downloadStartTimes[modelId] ?? DateTime.now();
+          if (!ref.mounted) return;
+          if (!_isActiveOp(modelId, opId)) return;
+          if (_pausedOperations.contains(opId)) return;
+          final startTime = opStart;
           final elapsedMs = DateTime.now().difference(startTime).inMilliseconds;
           int? bytesPerSecond;
           if (elapsedMs >= 2000 && received > 0 && total > 0) {
-            bytesPerSecond = (received * 1000 / elapsedMs).round();
+            bytesPerSecond = ((received - baselineBytes).clamp(0, received) * 1000 / elapsedMs).round();
           }
           int? etaSeconds;
           if (bytesPerSecond != null &&
