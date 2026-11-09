@@ -19,6 +19,8 @@ abstract class DownloadTaskGateway {
   Future<bool> cancel(DownloadTask task);
   Future<void> cancelTaskWithId(String id);
   Future<bool> deleteRecord(String id);
+  Future<void> deleteRecordsWithIds(Iterable<String> ids);
+  Future<PermissionStatus> requestPermission(PermissionType type);
   Stream<TaskUpdate> get statusUpdates;
   Stream<TaskUpdate> get progressUpdates;
 }
@@ -77,6 +79,22 @@ class FileDownloaderGateway implements DownloadTaskGateway {
       return true;
     } catch (_) {
       return false;
+    }
+  }
+
+  @override
+  Future<void> deleteRecordsWithIds(Iterable<String> ids) async {
+    try {
+      await _downloader.database.deleteRecordsWithIds(ids);
+    } catch (_) {}
+  }
+
+  @override
+  Future<PermissionStatus> requestPermission(PermissionType type) async {
+    try {
+      return await _downloader.permissions.request(type);
+    } catch (_) {
+      return PermissionStatus.requestError;
     }
   }
 

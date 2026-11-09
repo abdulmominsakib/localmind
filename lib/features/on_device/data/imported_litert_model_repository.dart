@@ -350,6 +350,7 @@ class ImportedLitertModelRepository {
   final Future<Directory> Function()? modelsDirectoryProvider;
   final DownloadOperationStore? operations;
   final DownloadTaskGateway? gateway;
+  DownloadTaskGateway get _gateway => gateway ?? FileDownloaderGateway();
   final AsyncMutex _mutex = AsyncMutex();
   Future<void>? _reconcileFuture;
   final Set<String> _registeredLocalModels = <String>{};
@@ -396,8 +397,8 @@ class ImportedLitertModelRepository {
   /// cleared or replaced.
   Future<void> scrubDownloadTaskRecords() async {
     try {
-      final records = await FileDownloader().database.allRecords(group: 'localmind_litert_downloads');
-      await FileDownloader().database.deleteRecordsWithIds(
+      final records = await _gateway.allRecords(group: 'localmind_litert_downloads');
+      await _gateway.deleteRecordsWithIds(
         records.map((r) => r.taskId),
       );
     } catch (_) {
@@ -511,7 +512,7 @@ class ImportedLitertModelRepository {
   Future<void> _reconcileOnce() async {
     List<TaskRecord> records;
     try {
-      records = await FileDownloader().database.allRecords(
+      records = await _gateway.allRecords(
         group: 'localmind_litert_downloads',
       );
     } catch (_) {
@@ -523,7 +524,7 @@ class ImportedLitertModelRepository {
       final rawId = record.task.taskId;
       if (!rawId.endsWith('-update')) continue;
       if (record.status == TaskStatus.canceled || record.status == TaskStatus.failed) {
-        try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+        try { await _gateway.deleteRecord(rawId); } catch (_) {}
         try {
           final tempPath = await record.task.filePath();
           final tempFile = File(tempPath);
@@ -541,8 +542,8 @@ class ImportedLitertModelRepository {
     for (final entry in byId.entries) {
       if (entry.value.length <= 1) continue;
       for (final r in entry.value.skip(1)) {
-        try { await FileDownloader().cancel(r.task); } catch (_) {}
-        try { await FileDownloader().database.deleteRecordWithId(r.task.taskId); } catch (_) {}
+        try { await _gateway.cancel(r.task as DownloadTask); } catch (_) {}
+        try { await _gateway.deleteRecord(r.task.taskId); } catch (_) {}
       }
     }
 
@@ -564,7 +565,7 @@ class ImportedLitertModelRepository {
             models[index].latestRevision != null &&
             op.targetRevision != models[index].latestRevision) {
           // Stale artifact — quarantine.
-          try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+          try { await _gateway.deleteRecord(rawId); } catch (_) {}
           try {
             final tp = await record.task.filePath();
             final tf = File(tp);
@@ -581,12 +582,12 @@ class ImportedLitertModelRepository {
           continue;
         }
         if (filePath == null || filePath.isEmpty) {
-          try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+          try { await _gateway.deleteRecord(rawId); } catch (_) {}
           continue;
         }
         final file = File(filePath);
         if (!await file.exists() || await file.length() <= 0) {
-          try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+          try { await _gateway.deleteRecord(rawId); } catch (_) {}
           continue;
         }
 
@@ -604,7 +605,7 @@ class ImportedLitertModelRepository {
           }
         } catch (_) {
           // Quarantine: delete record and temp file.
-          try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+          try { await _gateway.deleteRecord(rawId); } catch (_) {}
           try {
             final tp = await record.task.filePath();
             final tf = File(tp);
@@ -642,7 +643,7 @@ class ImportedLitertModelRepository {
           }
         });
 
-        try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+        try { await _gateway.deleteRecord(rawId); } catch (_) {}
         continue;
       }
 
@@ -695,7 +696,7 @@ class ImportedLitertModelRepository {
           await _saveAllUnlocked(fresh);
         }
       });
-      try { await FileDownloader().database.deleteRecordWithId(modelId); } catch (_) {}
+      try { await _gateway.deleteRecord(modelId); } catch (_) {}
     }
   }
 
@@ -1004,8 +1005,8 @@ class ImportedLitertModelRepository {
     // Best-effort POST_NOTIFICATIONS request on Android 13+ so the foreground
     // service actually gets its exemption. Mirrors SmartDownloader.
     try {
-      await FileDownloader().permissions
-          .request(PermissionType.notifications)
+      await _gateway
+          .requestPermission(PermissionType.notifications)
           .timeout(
             const Duration(seconds: 10),
             onTimeout: () => PermissionStatus.requestError,
@@ -1016,7 +1017,7 @@ class ImportedLitertModelRepository {
 
     // Dedupe: if a task with this id is already running/paused (e.g. after
     // process death), reuse it instead of enqueuing a duplicate WorkSpec.
-    var task = await FileDownloader().taskForId(model.id);
+    var task = await _gateway.taskForId(model.id);
     if (task == null) {
       task = DownloadTask(
         taskId: model.id,
@@ -1040,7 +1041,7 @@ class ImportedLitertModelRepository {
     // Do NOT call resume() here — it enqueues a second WorkSpec. download()
     // already handles resume data internally when the task is paused.
     var lastReceived = 0;
-    final result = await FileDownloader().download(
+    final result = await _gateway.download(
       task,
       onProgress: (progress) {
         final clamped = progress.clamp(0.0, 1.0);
@@ -1062,12 +1063,12 @@ class ImportedLitertModelRepository {
     }
     if (result.status == TaskStatus.canceled) {
       _activeLitertTasks.remove(model.id);
-      await FileDownloader().database.deleteRecordWithId(model.id);
+      await _gateway.deleteRecord(model.id);
       throw const HttpException('LiteRT import canceled.');
     }
     if (result.status != TaskStatus.complete) {
       _activeLitertTasks.remove(model.id);
-      await FileDownloader().database.deleteRecordWithId(model.id);
+      await _gateway.deleteRecord(model.id);
       throw HttpException(
         result.exception?.description ?? 'LiteRT download failed.',
       );
@@ -1075,7 +1076,7 @@ class ImportedLitertModelRepository {
     final status = await _finalizeLitertDownload(modelId, task as DownloadTask, installName);
     // Remove the persisted task record so the (possibly token-bearing) headers
     // do not linger in the downloader's database.
-    await FileDownloader().database.deleteRecordWithId(model.id);
+    await _gateway.deleteRecord(model.id);
     return status;
   }
 
@@ -1087,6 +1088,7 @@ class ImportedLitertModelRepository {
     String? token,
     String? operationId,
     void Function(int receivedBytes, int totalBytes)? onProgress,
+    Future<void> Function()? onFinalizing,
   }) async {
     // Write-ahead intent.
     if (operations != null && operationId != null) {
@@ -1131,15 +1133,15 @@ class ImportedLitertModelRepository {
 
     // Best-effort notification permission.
     try {
-      await FileDownloader().permissions
-          .request(PermissionType.notifications)
+      await _gateway
+          .requestPermission(PermissionType.notifications)
           .timeout(
             const Duration(seconds: 10),
             onTimeout: () => PermissionStatus.requestError,
           );
     } catch (_) {}
 
-    var task = await FileDownloader().taskForId(updateTaskId);
+    var task = await _gateway.taskForId(updateTaskId);
     if (task == null) {
       task = DownloadTask(
         taskId: updateTaskId,
@@ -1161,7 +1163,7 @@ class ImportedLitertModelRepository {
     _activeLitertTasks[modelId] = task as DownloadTask;
 
     var lastReceived = 0;
-    final result = await FileDownloader().download(
+    final result = await _gateway.download(
       task,
       onProgress: (progress) {
         final clamped = progress.clamp(0.0, 1.0);
@@ -1182,7 +1184,7 @@ class ImportedLitertModelRepository {
     }
     if (result.status == TaskStatus.canceled) {
       _activeLitertTasks.remove(modelId);
-      await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      await _gateway.deleteRecord(updateTaskId);
       if (operations != null && operationId != null) {
         await operations!.fail(operationId);
       }
@@ -1190,7 +1192,7 @@ class ImportedLitertModelRepository {
     }
     if (result.status != TaskStatus.complete) {
       _activeLitertTasks.remove(modelId);
-      await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      await _gateway.deleteRecord(updateTaskId);
       if (operations != null && operationId != null) {
         await operations!.fail(operationId);
       }
@@ -1205,6 +1207,10 @@ class ImportedLitertModelRepository {
       );
     }
 
+    // Unload inference engine just before finalization (file swap) — Phase 4.
+    if (onFinalizing != null) {
+      try { await onFinalizing(); } catch (_) {}
+    }
     // Finalize: register new install, swap metadata, clean up old.
     if (operations != null && operationId != null) {
       await operations!.markPhase(operationId, DownloadOperationPhase.finalizing);
@@ -1218,14 +1224,14 @@ class ImportedLitertModelRepository {
         oldFilePath,
         oldInstallName,
       );
-      await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      await _gateway.deleteRecord(updateTaskId);
       if (operations != null && operationId != null) {
         await operations!.complete(operationId);
       }
       return status;
     } catch (e) {
       _activeLitertTasks.remove(modelId);
-      await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      await _gateway.deleteRecord(updateTaskId);
       if (operations != null && operationId != null) {
         await operations!.fail(operationId);
       }
@@ -1368,13 +1374,13 @@ class ImportedLitertModelRepository {
   Future<bool> pauseDownload(String modelId) async {
     // Pause every task sharing this id (handles duplicate WorkSpecs after
     // process death).
-    final tasks = (await FileDownloader().allTasks(allGroups: true))
+    final tasks = (await _gateway.allTasks(allGroups: true))
         .where((t) => t.taskId == modelId || t.taskId == '$modelId-update')
         .toList();
     if (tasks.isEmpty) {
-      final t = _activeLitertTasks[modelId] ?? await FileDownloader().taskForId(modelId);
+      final t = _activeLitertTasks[modelId] ?? await _gateway.taskForId(modelId);
       if (t != null) tasks.add(t);
-      final ut = await FileDownloader().taskForId('$modelId-update');
+      final ut = await _gateway.taskForId('$modelId-update');
       if (ut != null) tasks.add(ut);
     }
     if (tasks.isEmpty) return false;
@@ -1382,7 +1388,7 @@ class ImportedLitertModelRepository {
     for (final t in tasks) {
       _activeLitertTasks[modelId] = t;
       try {
-        final ok = await FileDownloader().pause(t as DownloadTask);
+        final ok = await _gateway.pause(t as DownloadTask);
         if (ok) any = true;
       } catch (_) {}
     }
@@ -1401,7 +1407,7 @@ class ImportedLitertModelRepository {
         : 0;
     final task =
         _activeLitertTasks[modelId] ??
-        await FileDownloader().taskForId(modelId);
+        await _gateway.taskForId(modelId);
     if (task == null) {
       final st = await download(modelId, token: token, onProgress: onProgress);
       return st;
@@ -1412,7 +1418,7 @@ class ImportedLitertModelRepository {
     final completer = Completer<TaskStatus>();
     var lastReceived = 0;
     // Progress from the updates stream.
-    final sub = FileDownloader().updates.listen((update) {
+    final sub = _gateway.statusUpdates.listen((update) {
       if (update.task.taskId != modelId) return;
       if (update is TaskProgressUpdate) {
         final total = (update.hasExpectedFileSize && update.expectedFileSize > 0)
@@ -1441,19 +1447,19 @@ class ImportedLitertModelRepository {
       }
     });
 
-    final ok = await FileDownloader().resume(task as DownloadTask);
+    final ok = await _gateway.resume(task as DownloadTask);
     if (!ok) {
       // resume() returns false if no resume data (task already running or
       // completed). Check DB status before deciding.
       await sub.cancel();
       TaskStatus? dbStatus;
       try {
-        dbStatus = (await FileDownloader().database.recordForId(modelId))?.status;
+        dbStatus = (await _gateway.recordForId(modelId))?.status;
       } catch (_) {}
       if (dbStatus == TaskStatus.paused) {
         // Paused but no resume data — retire stale attempt, start fresh.
-        try { await FileDownloader().cancel(task as DownloadTask); } catch (_) {}
-        try { await FileDownloader().database.deleteRecordWithId(modelId); } catch (_) {}
+        try { await _gateway.cancel(task as DownloadTask); } catch (_) {}
+        try { await _gateway.deleteRecord(modelId); } catch (_) {}
         final st = await download(modelId, token: token, onProgress: onProgress);
         return st;
       }
@@ -1468,7 +1474,7 @@ class ImportedLitertModelRepository {
         await Future.delayed(const Duration(seconds: 1));
         if (completer.isCompleted) break;
         try {
-          final s = (await FileDownloader().database.recordForId(modelId))?.status;
+          final s = (await _gateway.recordForId(modelId))?.status;
           if (s != null) status = s;
         } catch (_) {}
       }
@@ -1476,7 +1482,7 @@ class ImportedLitertModelRepository {
       if (status == TaskStatus.complete) {
         if (onProgress != null && totalBytes > 0) onProgress(totalBytes, totalBytes);
         try {
-          final t = _activeLitertTasks[modelId] ?? await FileDownloader().taskForId(modelId);
+          final t = _activeLitertTasks[modelId] ?? await _gateway.taskForId(modelId);
           if (t != null) {
             final models2 = load();
             final idx = models2.indexWhere((m) => m.id == modelId);
@@ -1502,7 +1508,7 @@ class ImportedLitertModelRepository {
     if (status == TaskStatus.complete) {
       if (onProgress != null && totalBytes > 0) onProgress(totalBytes, totalBytes);
       try {
-        final t = _activeLitertTasks[modelId] ?? await FileDownloader().taskForId(modelId);
+        final t = _activeLitertTasks[modelId] ?? await _gateway.taskForId(modelId);
         if (t != null) {
           final models2 = load();
           final idx = models2.indexWhere((m) => m.id == modelId);
@@ -1520,24 +1526,24 @@ class ImportedLitertModelRepository {
     // Cancel both normal and update tasks.
     for (final taskId in [modelId, '$modelId-update']) {
       try {
-        final tasks = (await FileDownloader()
+        final tasks = (await _gateway
                 .allTasks(allGroups: true)
                 .timeout(const Duration(seconds: 2)))
             .where((t) => t.taskId == taskId)
             .toList();
         if (tasks.isEmpty) {
           final t = _activeLitertTasks[modelId] ??
-              await FileDownloader().taskForId(taskId).timeout(const Duration(seconds: 2));
+              await _gateway.taskForId(taskId).timeout(const Duration(seconds: 2));
           if (t != null) tasks.add(t);
         }
         for (final t in tasks) {
           try {
-            await FileDownloader().cancel(t).timeout(const Duration(seconds: 2));
+            await _gateway.cancel(t as DownloadTask).timeout(const Duration(seconds: 2));
           } catch (_) {}
         }
       } catch (_) {}
       try {
-        await FileDownloader()
+        await _gateway
             .cancelTaskWithId(taskId)
             .timeout(const Duration(seconds: 2));
       } catch (_) {}
@@ -1545,7 +1551,7 @@ class ImportedLitertModelRepository {
     _activeLitertTasks.remove(modelId);
     // Clean up partial update temp file (best-effort).
     try {
-      final t = await FileDownloader()
+      final t = await _gateway
           .taskForId('$modelId-update')
           .timeout(const Duration(seconds: 2));
       if (t != null) {

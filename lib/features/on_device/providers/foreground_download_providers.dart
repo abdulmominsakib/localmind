@@ -420,15 +420,11 @@ class ForegroundDownloadNotifier
       }
     }
 
-    // If the model is currently loaded for inference, unload it before
-    // replacing the underlying file.
+    // Track whether the model was loaded for inference; we unload it only
+    // right before finalization (file swap) so chat stays usable during the
+    // long download. See Phase 4.
     final engineState = ref.read(onDeviceEngineProvider);
     final wasLoaded = engineState.loadedModelId == modelId;
-    if (wasLoaded) {
-      try {
-        await ref.read(onDeviceEngineProvider.notifier).unloadModel();
-      } catch (_) {}
-    }
 
     // Allocate operation token (generation guard).
     final baselineBytes = state[modelId]?.receivedBytes ?? 0;
@@ -461,6 +457,13 @@ class ForegroundDownloadNotifier
           modelId,
           token: token,
           operationId: opId,
+          onFinalizing: () async {
+            if (wasLoaded) {
+              try {
+                await ref.read(onDeviceEngineProvider.notifier).unloadModel();
+              } catch (_) {}
+            }
+          },
           onProgress: (received, total) {
             if (!ref.mounted) return;
             if (!_isActiveOp(modelId, opId)) return;
@@ -485,6 +488,13 @@ class ForegroundDownloadNotifier
           modelId,
           token: token,
           operationId: opId,
+          onFinalizing: () async {
+            if (wasLoaded) {
+              try {
+                await ref.read(onDeviceEngineProvider.notifier).unloadModel();
+              } catch (_) {}
+            }
+          },
           onProgress: (received, total) {
             if (!ref.mounted) return;
             if (!_isActiveOp(modelId, opId)) return;

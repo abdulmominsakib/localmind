@@ -341,9 +341,11 @@ class ImportedGgufModelRepository {
   final Future<Directory> Function()? modelsDirectoryProvider;
   final DownloadOperationStore? operations;
   final DownloadTaskGateway? gateway;
+  DownloadTaskGateway get _gateway => gateway ?? FileDownloaderGateway();
   final AsyncMutex _mutex = AsyncMutex();
   Future<void>? _reconcileFuture;
-  final Map<String, AsyncMutex> _downloadMutexes = <String, AsyncMutex>{};
+  // (removed) _downloadMutexes no longer used; per-model dedup handled by
+  // taskForId reuse + provider-level _inFlightDownloads.
   final Map<String, _GgufDownloadAttempt> _ggufAttempts =
       <String, _GgufDownloadAttempt>{};
   final Map<String, DownloadTask> _activeGgufTasks = <String, DownloadTask>{};
@@ -1011,7 +1013,7 @@ class ImportedGgufModelRepository {
   Future<void> _reconcileOnce() async {
     List<TaskRecord> records;
     try {
-      records = await FileDownloader().database.allRecords(
+      records = await _gateway.allRecords(
         group: 'localmind_gguf_downloads',
       );
     } catch (_) {
@@ -1026,8 +1028,8 @@ class ImportedGgufModelRepository {
     for (final entry in byId.entries) {
       if (entry.value.length <= 1) continue;
       for (final r in entry.value.skip(1)) {
-        try { await FileDownloader().cancel(r.task); } catch (_) {}
-        try { await FileDownloader().database.deleteRecordWithId(r.task.taskId); } catch (_) {}
+        try { await _gateway.cancel(r.task as DownloadTask); } catch (_) {}
+        try { await _gateway.deleteRecord(r.task.taskId); } catch (_) {}
       }
     }
 
@@ -1036,7 +1038,7 @@ class ImportedGgufModelRepository {
       final rawId = record.task.taskId;
       if (!rawId.endsWith('-update')) continue;
       if (record.status == TaskStatus.canceled || record.status == TaskStatus.failed) {
-        try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+        try { await _gateway.deleteRecord(rawId); } catch (_) {}
         try {
           final tempPath = await record.task.filePath();
           final tempFile = File(tempPath);
@@ -1062,7 +1064,7 @@ class ImportedGgufModelRepository {
             op.targetRevision != null &&
             models[index].latestRevision != null &&
             op.targetRevision != models[index].latestRevision) {
-          try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+          try { await _gateway.deleteRecord(rawId); } catch (_) {}
           try {
             final tp = await record.task.filePath();
             final tf = File(tp);
@@ -1116,7 +1118,7 @@ class ImportedGgufModelRepository {
           }
         });
 
-        try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+        try { await _gateway.deleteRecord(rawId); } catch (_) {}
         continue;
       }
 
@@ -1158,7 +1160,7 @@ class ImportedGgufModelRepository {
           await _saveAllUnlocked(fresh);
         }
       });
-      await FileDownloader().database.deleteRecordWithId(modelId);
+      await _gateway.deleteRecord(modelId);
     }
   }
 
@@ -1261,14 +1263,12 @@ class ImportedGgufModelRepository {
     void Function(int receivedBytes, int totalBytes)? onProgress,
   }) async {
     try {
-      await FileDownloader().permissions
-          .request(PermissionType.notifications)
+      await _gateway
+          .requestPermission(PermissionType.notifications)
           .timeout(const Duration(seconds: 10),
               onTimeout: () => PermissionStatus.requestError);
     } catch (_) {}
 
-    final lock = _downloadMutexes.putIfAbsent(modelId, () => AsyncMutex());
-    await lock.run(() async {
       final models = load();
       final index = models.indexWhere((model) => model.id == modelId);
       if (index < 0) {
@@ -1288,7 +1288,7 @@ class ImportedGgufModelRepository {
       // Reuse an existing native task if present (avoids duplicate downloads
       // on retry after pause/cancel/process-death). Fall back to creating a
       // fresh task otherwise.
-      DownloadTask? task = await FileDownloader().taskForId(modelId) as DownloadTask?;
+      DownloadTask? task = await _gateway.taskForId(modelId) as DownloadTask?;
       if (task == null) {
         final originalName = _fileNameFromUri(Uri.parse(model.sourceUrl!));
         task = DownloadTask(
@@ -1312,7 +1312,7 @@ class ImportedGgufModelRepository {
       _activeGgufTasks[modelId] = task;
 
       var lastReceived = 0;
-      final result = await FileDownloader().download(
+      final result = await _gateway.download(
         task,
         onProgress: (progress) {
           if (onProgress == null) return;
@@ -1338,12 +1338,12 @@ class ImportedGgufModelRepository {
       }
       if (result.status == TaskStatus.canceled) {
         _activeGgufTasks.remove(modelId);
-        await FileDownloader().database.deleteRecordWithId(modelId);
+        await _gateway.deleteRecord(modelId);
         throw const HttpException('GGUF import canceled.');
       }
       if (result.status != TaskStatus.complete) {
         _activeGgufTasks.remove(modelId);
-        await FileDownloader().database.deleteRecordWithId(modelId);
+        await _gateway.deleteRecord(modelId);
         throw HttpException(
           result.exception?.description ?? 'GGUF download failed.',
         );
@@ -1353,7 +1353,7 @@ class ImportedGgufModelRepository {
       final file = File(filePath);
       if (!await file.exists() || await file.length() <= 0) {
         _activeGgufTasks.remove(modelId);
-        await FileDownloader().database.deleteRecordWithId(modelId);
+        await _gateway.deleteRecord(modelId);
         throw const FileSystemException(
           'The downloaded GGUF file was empty or missing.',
         );
@@ -1375,10 +1375,8 @@ class ImportedGgufModelRepository {
       });
 
       _activeGgufTasks.remove(modelId);
-      await FileDownloader().database.deleteRecordWithId(modelId);
+      await _gateway.deleteRecord(modelId);
       return TaskStatus.complete;
-    });
-    return TaskStatus.complete;
   }
 
 
@@ -1388,16 +1386,15 @@ class ImportedGgufModelRepository {
     String? token,
     String? operationId,
     void Function(int receivedBytes, int totalBytes)? onProgress,
+    Future<void> Function()? onFinalizing,
   }) async {
     try {
-      await FileDownloader().permissions
-          .request(PermissionType.notifications)
+      await _gateway
+          .requestPermission(PermissionType.notifications)
           .timeout(const Duration(seconds: 10),
               onTimeout: () => PermissionStatus.requestError);
     } catch (_) {}
 
-    final lock = _downloadMutexes.putIfAbsent(modelId, () => AsyncMutex());
-    return lock.run(() async {
       // Write-ahead intent.
       if (operations != null && operationId != null) {
         await operations!.begin(DownloadOperation(
@@ -1435,7 +1432,7 @@ class ImportedGgufModelRepository {
       // publishes a new projector alongside the model, re-download it separately.
       // See audit G-12.
       final originalName = _fileNameFromUri(Uri.parse(model.sourceUrl!));
-      DownloadTask? task = await FileDownloader().taskForId('$modelId-update') as DownloadTask?;
+      DownloadTask? task = await _gateway.taskForId('$modelId-update') as DownloadTask?;
       if (task == null) {
         task = DownloadTask(
           taskId: '$modelId-update',
@@ -1458,7 +1455,7 @@ class ImportedGgufModelRepository {
       _activeGgufTasks[modelId] = task;
 
       var lastReceived = 0;
-      final result = await FileDownloader().download(
+      final result = await _gateway.download(
         task,
         onProgress: (progress) {
           if (onProgress == null) return;
@@ -1484,7 +1481,7 @@ class ImportedGgufModelRepository {
       }
       if (result.status == TaskStatus.canceled) {
         _activeGgufTasks.remove(modelId);
-        await FileDownloader().database.deleteRecordWithId('$modelId-update');
+        await _gateway.deleteRecord('$modelId-update');
         if (operations != null && operationId != null) {
           await operations!.fail(operationId);
         }
@@ -1492,7 +1489,7 @@ class ImportedGgufModelRepository {
       }
       if (result.status != TaskStatus.complete) {
         _activeGgufTasks.remove(modelId);
-        await FileDownloader().database.deleteRecordWithId('$modelId-update');
+        await _gateway.deleteRecord('$modelId-update');
         if (operations != null && operationId != null) {
           await operations!.fail(operationId);
         }
@@ -1511,7 +1508,7 @@ class ImportedGgufModelRepository {
       final file = File(filePath);
       if (!await file.exists() || await file.length() <= 0) {
         _activeGgufTasks.remove(modelId);
-        await FileDownloader().database.deleteRecordWithId('$modelId-update');
+        await _gateway.deleteRecord('$modelId-update');
         throw const FileSystemException('The downloaded GGUF file was empty or missing.');
       }
 
@@ -1530,6 +1527,10 @@ class ImportedGgufModelRepository {
           // Clean up temp file (best-effort).
           try { await File(filePath).delete(); } catch (_) {}
           throw const HttpException('revision_changed');
+        }
+        // Unload inference engine just before swapping the underlying file (Phase 4).
+        if (onFinalizing != null) {
+          try { await onFinalizing(); } catch (_) {}
         }
         // Update metadata FIRST (crash-safe).
         freshModels[freshIndex] = freshModels[freshIndex].copyWith(
@@ -1556,20 +1557,19 @@ class ImportedGgufModelRepository {
         await operations!.complete(operationId);
       }
       _activeGgufTasks.remove(modelId);
-      await FileDownloader().database.deleteRecordWithId('$modelId-update');
+      await _gateway.deleteRecord('$modelId-update');
       return TaskStatus.complete;
-    });
   }
 
 
   Future<bool> pauseDownload(String modelId) async {
-    final tasks = (await FileDownloader().allTasks(allGroups: true))
+    final tasks = (await _gateway.allTasks(allGroups: true))
         .where((t) => t.taskId == modelId || t.taskId == '$modelId-update')
         .toList();
     if (tasks.isEmpty) {
       final t = _activeGgufTasks[modelId];
       if (t != null) tasks.add(t);
-      final ut = await FileDownloader().taskForId('$modelId-update');
+      final ut = await _gateway.taskForId('$modelId-update');
       if (ut != null) tasks.add(ut);
     }
     if (tasks.isEmpty) return false;
@@ -1577,7 +1577,7 @@ class ImportedGgufModelRepository {
     for (final t in tasks) {
       _activeGgufTasks[modelId] = t as DownloadTask;
       try {
-        final ok = await FileDownloader().pause(t);
+        final ok = await _gateway.pause(t);
         if (ok) any = true;
       } catch (_) {}
     }
@@ -1597,7 +1597,7 @@ class ImportedGgufModelRepository {
 
     var task = _activeGgufTasks[modelId];
     if (task == null) {
-      final existing = await FileDownloader().taskForId(modelId);
+      final existing = await _gateway.taskForId(modelId);
       task = existing as DownloadTask?;
     }
     if (task == null) {
@@ -1609,7 +1609,7 @@ class ImportedGgufModelRepository {
     final totalBytes = model.fileSizeBytes > 0 ? model.fileSizeBytes : 0;
     final completer = Completer<void>();
     var lastReceived = 0;
-    final sub = FileDownloader().updates.listen((update) {
+    final sub = _gateway.statusUpdates.listen((update) {
       if (update.task.taskId != modelId) return;
       if (update is TaskProgressUpdate) {
         final total = (update.hasExpectedFileSize && update.expectedFileSize > 0)
@@ -1640,23 +1640,23 @@ class ImportedGgufModelRepository {
     bool ok = true;
     TaskStatus? dbStatus;
     try {
-      dbStatus = (await FileDownloader().database.recordForId(modelId))?.status;
+      dbStatus = (await _gateway.recordForId(modelId))?.status;
       if (dbStatus != null &&
           (dbStatus == TaskStatus.running || dbStatus == TaskStatus.enqueued)) {
         ok = true;
       } else if (dbStatus == TaskStatus.paused) {
-        ok = await FileDownloader().resume(task);
+        ok = await _gateway.resume(task);
       } else {
         ok = true;
       }
     } catch (_) {
-      ok = await FileDownloader().resume(task);
+      ok = await _gateway.resume(task);
     }
     if (!ok) {
       await sub.cancel();
       if (dbStatus == TaskStatus.paused) {
-        try { await FileDownloader().cancel(task); } catch (_) {}
-        try { await FileDownloader().database.deleteRecordWithId(modelId); } catch (_) {}
+        try { await _gateway.cancel(task); } catch (_) {}
+        try { await _gateway.deleteRecord(modelId); } catch (_) {}
         await download(modelId, token: token, onProgress: onProgress);
         return TaskStatus.complete;
       }
@@ -1677,7 +1677,7 @@ class ImportedGgufModelRepository {
 
     TaskStatus status;
     try {
-      status = (await FileDownloader().database.recordForId(modelId))?.status ?? TaskStatus.running;
+      status = (await _gateway.recordForId(modelId))?.status ?? TaskStatus.running;
     } catch (_) {
       status = TaskStatus.running;
     }
@@ -1711,26 +1711,26 @@ class ImportedGgufModelRepository {
   Future<void> cancelDownload(String modelId) async {
     for (final taskId in [modelId, '$modelId-update']) {
       try {
-        final tasks = (await FileDownloader()
+        final tasks = (await _gateway
                 .allTasks(allGroups: true)
                 .timeout(const Duration(seconds: 2)))
             .where((t) => t.taskId == taskId)
             .toList();
         for (final t in tasks) {
           try {
-            await FileDownloader().cancel(t).timeout(const Duration(seconds: 2));
+            await _gateway.cancel(t as DownloadTask).timeout(const Duration(seconds: 2));
           } catch (_) {}
         }
       } catch (_) {}
       try {
-        await FileDownloader()
+        await _gateway
             .cancelTaskWithId(taskId)
             .timeout(const Duration(seconds: 2));
       } catch (_) {}
     }
     _activeGgufTasks.remove(modelId);
     try {
-      final t = await FileDownloader()
+      final t = await _gateway
           .taskForId('$modelId-update')
           .timeout(const Duration(seconds: 2));
       if (t != null) {
@@ -1825,8 +1825,8 @@ class ImportedGgufModelRepository {
   /// cleared or replaced.
   Future<void> scrubDownloadTaskRecords() async {
     try {
-      final records = await FileDownloader().database.allRecords(group: 'localmind_gguf_downloads');
-      await FileDownloader().database.deleteRecordsWithIds(
+      final records = await _gateway.allRecords(group: 'localmind_gguf_downloads');
+      await _gateway.deleteRecordsWithIds(
         records.map((r) => r.taskId),
       );
     } catch (_) {
