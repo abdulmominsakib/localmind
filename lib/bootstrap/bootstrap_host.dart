@@ -148,15 +148,14 @@ class _BootstrapHostState extends State<BootstrapHost> {
       liteRtDownloader.registerCallbacks(
         group: 'localmind_litert_downloads',
         taskStatusCallback: (update) {
-          // Reconciliation is performed lazily at launch (see
-          // ImportedLitertModelRepository.reconcileCompletedDownloads). This
-          // callback keeps the package from dropping updates silently.
+          // Defer reconcile to avoid racing inline downloadUpdate finalization.
+          // Single-flight guard in reconcile prevents duplicate work.
           if (update.status == TaskStatus.complete) {
-            unawaited(
+            unawaited(Future.delayed(const Duration(milliseconds: 500), () {
               container
                   .read(importedLitertModelRepositoryProvider)
-                  .reconcileCompletedDownloads(),
-            );
+                  .reconcileCompletedDownloads();
+            }));
           }
         },
       );
@@ -201,11 +200,11 @@ class _BootstrapHostState extends State<BootstrapHost> {
         group: 'localmind_gguf_downloads',
         taskStatusCallback: (update) {
           if (update.status == TaskStatus.complete) {
-            unawaited(
+            unawaited(Future.delayed(const Duration(milliseconds: 500), () {
               container
                   .read(importedGgufModelRepositoryProvider)
-                  .reconcileCompletedDownloads(),
-            );
+                  .reconcileCompletedDownloads();
+            }));
           }
         },
       );

@@ -536,6 +536,23 @@ class ImportedLitertModelRepository {
         final index = models.indexWhere((m) => m.id == modelId);
         if (index < 0) continue;
 
+        // Revision revalidation: if a newer revision is targeted now, discard.
+        final op = operations?.forModel(modelId);
+        if (op != null && op.type == DownloadOperationType.update &&
+            op.targetRevision != null &&
+            models[index].latestRevision != null &&
+            op.targetRevision != models[index].latestRevision) {
+          // Stale artifact — quarantine.
+          try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+          try {
+            final tp = await record.task.filePath();
+            final tf = File(tp);
+            if (await tf.exists()) await tf.delete();
+          } catch (_) {}
+          if (operations != null) await operations!.fail(op.operationId);
+          continue;
+        }
+
         String? filePath;
         try {
           filePath = await record.task.filePath();
@@ -657,6 +674,7 @@ class ImportedLitertModelRepository {
           await _saveAllUnlocked(fresh);
         }
       });
+      try { await FileDownloader().database.deleteRecordWithId(modelId); } catch (_) {}
     }
   }
 
@@ -1230,13 +1248,20 @@ class ImportedLitertModelRepository {
       final index = models.indexWhere((m) => m.id == modelId);
       if (index < 0) {
         // Model removed during download — don't overwrite.
-        return;
+        throw StateError('Model removed during update: $modelId');
       }
       // Revalidate revision: if the model's revision changed since update
       // started, abort to avoid clobbering newer metadata.
       if (models[index].revision != oldModel.revision) {
         Log.warning('Revision changed during update for $modelId; aborting finalization.');
-        return;
+        // Clean up the orphan install + temp file (best-effort).
+        try { await FlutterGemma.uninstallModel(installName); } catch (_) {}
+        try {
+          final tp = await task.filePath();
+          final tf = File(tp);
+          if (await tf.exists()) await tf.delete();
+        } catch (_) {}
+        throw const HttpException('revision_changed');
       }
       // Update metadata FIRST (crash-safe: if save fails, old file is still intact).
       models[index] = models[index].copyWith(
@@ -1482,6 +1507,15 @@ class ImportedLitertModelRepository {
       await FileDownloader().cancelTaskWithId(taskId);
     }
     _activeLitertTasks.remove(modelId);
+    // Clean up partial update temp file (best-effort).
+    try {
+      final t = await FileDownloader().taskForId('$modelId-update');
+      if (t != null) {
+        final tp = await t.filePath();
+        final tf = File(tp);
+        if (await tf.exists()) await tf.delete();
+      }
+    } catch (_) {}
   }
 
   Future<void> deleteFile(String modelId) async {

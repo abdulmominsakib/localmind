@@ -1035,6 +1035,22 @@ class ImportedGgufModelRepository {
         final index = models.indexWhere((m) => m.id == modelId);
         if (index < 0) continue;
 
+        // Revision revalidation.
+        final op = operations?.forModel(modelId);
+        if (op != null && op.type == DownloadOperationType.update &&
+            op.targetRevision != null &&
+            models[index].latestRevision != null &&
+            op.targetRevision != models[index].latestRevision) {
+          try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+          try {
+            final tp = await record.task.filePath();
+            final tf = File(tp);
+            if (await tf.exists()) await tf.delete();
+          } catch (_) {}
+          if (operations != null) await operations!.fail(op.operationId);
+          continue;
+        }
+
         String? filePath;
         try {
           filePath = await record.task.filePath();
@@ -1217,6 +1233,13 @@ class ImportedGgufModelRepository {
     String? token,
     void Function(int receivedBytes, int totalBytes)? onProgress,
   }) async {
+    try {
+      await FileDownloader().permissions
+          .request(PermissionType.notifications)
+          .timeout(const Duration(seconds: 10),
+              onTimeout: () => PermissionStatus.requestError);
+    } catch (_) {}
+
     final lock = _downloadMutexes.putIfAbsent(modelId, () => AsyncMutex());
     await lock.run(() async {
       final models = load();
@@ -1333,6 +1356,13 @@ class ImportedGgufModelRepository {
     String? operationId,
     void Function(int receivedBytes, int totalBytes)? onProgress,
   }) async {
+    try {
+      await FileDownloader().permissions
+          .request(PermissionType.notifications)
+          .timeout(const Duration(seconds: 10),
+              onTimeout: () => PermissionStatus.requestError);
+    } catch (_) {}
+
     final lock = _downloadMutexes.putIfAbsent(modelId, () => AsyncMutex());
     return lock.run(() async {
       // Write-ahead intent.
@@ -1452,11 +1482,15 @@ class ImportedGgufModelRepository {
       await _mutex.run(() async {
         final freshModels = load();
         final freshIndex = freshModels.indexWhere((m) => m.id == modelId);
-        if (freshIndex < 0) return;
+        if (freshIndex < 0) {
+          throw StateError('Model removed during update: $modelId');
+        }
         // Revalidate revision.
         if (freshModels[freshIndex].revision != originalRevision) {
           Log.warning('Revision changed during GGUF update for $modelId; aborting finalization.');
-          return;
+          // Clean up temp file (best-effort).
+          try { await File(filePath).delete(); } catch (_) {}
+          throw const HttpException('revision_changed');
         }
         // Update metadata FIRST (crash-safe).
         freshModels[freshIndex] = freshModels[freshIndex].copyWith(
@@ -1646,6 +1680,14 @@ class ImportedGgufModelRepository {
       await FileDownloader().cancelTaskWithId(taskId);
     }
     _activeGgufTasks.remove(modelId);
+    try {
+      final t = await FileDownloader().taskForId('$modelId-update');
+      if (t != null) {
+        final tp = await t.filePath();
+        final tf = File(tp);
+        if (await tf.exists()) await tf.delete();
+      }
+    } catch (_) {}
   }
 
   Future<void> deleteFile(String modelId) async {

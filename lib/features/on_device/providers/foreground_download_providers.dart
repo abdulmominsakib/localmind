@@ -339,9 +339,23 @@ class ForegroundDownloadNotifier
     try {
       final prefs = ref.read(sharedPreferencesProvider);
       final data = state.map((k, v) => MapEntry(k, v.toJson()));
+      // ignore: unawaited_futures
       prefs.setString(_storageKey, json.encode(data));
     } catch (e) {
       // Ignore errors saving state
+    }
+  }
+
+  Future<void> _persistState() async {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final data = state.map((k, v) => MapEntry(k, v.toJson()));
+      final ok = await prefs.setString(_storageKey, json.encode(data));
+      if (!ok) {
+        Log.warning('Failed to persist download state');
+      }
+    } catch (e) {
+      Log.warning('Failed to persist download state: $e');
     }
   }
 
@@ -552,6 +566,12 @@ class ForegroundDownloadNotifier
           };
         }
         _saveState();
+      }
+      if (wasLoaded && ref.mounted) {
+        try {
+          final settings = ref.read(settingsProvider);
+          await ref.read(onDeviceEngineProvider.notifier).loadModel(modelId, settings.preferredBackend);
+        } catch (_) {}
       }
       if (wasCurrent) _endOperation(modelId, opId);
       return isCanceled ? null : e.toString();
@@ -994,7 +1014,7 @@ class ForegroundDownloadNotifier
       ...state,
       modelId: info.copyWith(status: DownloadStatus.paused, pauseReason: reason),
     };
-    _saveState();
+    await _persistState();
 
     final models = ref.read(onDeviceModelsProvider);
     final model = models.where((m) => m.id == modelId).firstOrNull;
