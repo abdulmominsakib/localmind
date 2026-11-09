@@ -78,8 +78,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 700));
 
-      expect(find.text('Import GGUF'), findsOneWidget);
-      expect(find.text('Imported GGUF models'), findsOneWidget);
+      expect(find.text('Search models'), findsWidgets);
+      expect(find.text('On-Device Models'), findsWidgets);
 
       await tester.scrollUntilVisible(find.text('Widget GGUF'), 400);
       await tester.pump();

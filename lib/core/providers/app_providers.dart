@@ -146,6 +146,10 @@ class SettingsNotifier extends Notifier<AppSettings> {
   void setSendTemperature(bool value) =>
       _update(state.copyWith(sendTemperature: value));
   void setSendTopP(bool value) => _update(state.copyWith(sendTopP: value));
+  void setAllowBackgroundDownloads(bool value) =>
+      _update(state.copyWith(allowBackgroundDownloads: value));
+  void setDownloadOverWifiOnly(bool value) =>
+      _update(state.copyWith(downloadOverWifiOnly: value));
   void setDefaultSystemPrompt(String value) =>
       _update(state.copyWith(defaultSystemPrompt: value.trim()));
 

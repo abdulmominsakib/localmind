@@ -2876,8 +2876,8 @@
   "gguf_download_empty": "The downloaded GGUF file was empty or missing.",
   "gguf_selected_file_missing": "Selected model file does not exist.",
   "gguf_import_action": "Import GGUF",
-  "gguf_overview_title": "Bring your own GGUF models",
-  "gguf_overview_subtitle": "Import a .gguf from local storage or download one straight from Hugging Face. Imported models stay on this device and load with llama.cpp.",
+  "gguf_overview_title": "Add/import your models",
+  "gguf_overview_subtitle": "Import a GGUF or LiteRT model from local storage, from a URL, or search Hugging Face. Imported models stay on this device.",
   "gguf_imported_count_label": "imported",
   "gguf_local_files_label": "local files",
   "gguf_huggingface_label": "Hugging Face",
@@ -2984,9 +2984,33 @@
   "@model_note_hint": {
     "description": "Hint for model note text field"
   },
+  "model_update_available": "Update available",
+  "@model_update_available": {
+    "description": "Badge shown when a model update is available"
+  },
+  "model_update_button": "Update",
+  "@model_update_button": {
+    "description": "Button to download a model update"
+  },
   "unload_models_before_load": "Unload all models before loading a new one",
   "@unload_models_before_load": {
     "description": "Setting to unload every loaded model instance before loading another"
+  },
+  "settings_allow_background_downloads": "Allow background downloads",
+  "@settings_allow_background_downloads": {
+    "description": "Continue downloading models when the app is backgrounded"
+  },
+  "settings_allow_background_downloads_desc": "Continue downloading models when you switch apps or lock your screen.",
+  "@settings_allow_background_downloads_desc": {
+    "description": "Description for allow background downloads toggle"
+  },
+  "settings_download_over_wifi_only": "Download over WiFi only",
+  "@settings_download_over_wifi_only": {
+    "description": "Only download models on WiFi or unmetered connections"
+  },
+  "settings_download_over_wifi_only_desc": "Only download models when an eligible WiFi or unmetered connection is available.",
+  "@settings_download_over_wifi_only_desc": {
+    "description": "Description for download over WiFi only toggle"
   },
   "temp_chat_keyboard_incognito": "Incognito keyboard in temporary chat",
   "@temp_chat_keyboard_incognito": {
@@ -3575,6 +3599,35 @@
   "sidebar_section_chats": "Chats",
   "sidebar_section_models": "Models",
   "sidebar_section_app": "App",
+  "add_models_button": "Add models",
+  "curated_models_title": "Curated Models",
+  "curated_models_count": "{count} models",
+  "your_models_title": "Your models",
+  "your_models_count": "{count} added",
+  "remove_model_from_list": "Remove from list",
+  "delete_model_file_first": "Delete model file first",
+  "add_model_title": "Add model",
+  "add_model_gguf_tab": "GGUF",
+  "add_model_litert_tab": "LiteRT",
+  "add_model_gguf_url_label": "Hugging Face GGUF URL",
+  "add_model_litert_url_label": "Hugging Face LiteRT URL",
+  "add_model_add_from_url": "Add from URL",
+  "add_model_pick_local_file": "Pick local file",
+  "add_model_search_gguf": "Search GGUF models",
+  "add_model_search_litert": "Search LiteRT models",
+  "add_model_searching": "Searching...",
+  "add_model_search": "Search",
+  "add_model_loading_files": "Loading files...",
+  "add_model_cancel": "Cancel",
+  "add_model_files_in": "Files in {repo}",
+  "add_model_no_gguf_files": "No GGUF files found.",
+  "add_model_no_litert_files": "No LiteRT files found.",
+  "add_model_added": "Added",
+  "add_model_add": "Add",
+  "add_model_gguf_added": "GGUF model added",
+  "add_model_litert_added": "LiteRT model added",
+  "add_model_file_added": "{name} added",
+  "add_model_already_added": "Model already added",
   "model_still_stopping": "The model is still stopping. Please wait before trying again.",
   "localApiTitle": "Local API",
   "localApiIntro": "Use your loaded model in other apps with an OpenAI-compatible API. Start the server before switching apps.",
@@ -3612,5 +3665,49 @@
       }
     }
   },
-  "localApiCopied": "Copied to clipboard"
+  "localApiCopied": "Copied to clipboard",
+
+  "onDeviceSearchModels": "Search models",
+  "onDeviceSearching": "Searching...",
+  "onDeviceSearch": "Search",
+  "onDeviceModelTypeBoth": "Both",
+  "onDeviceModelTypeLitert": "LiteRT",
+  "onDeviceModelTypeGguf": "Llama.cpp (GGUF)",
+  "onDeviceModelTypeNone": "None",
+  "onDeviceModalityAll": "All",
+  "onDeviceModalityText": "Text",
+  "onDeviceModalityVision": "Vision",
+  "onDeviceModalityAudio": "Audio",
+  "onDeviceModalityEmbedding": "Embedding",
+  "onDeviceModalityOmni": "Omni",
+  "onDeviceModalityUnknown": "Unknown",
+  "downloadBackgroundActive": "Background",
+  "downloadBackgroundDescription": "This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.",
+  "downloadQueued": "Queued",
+  "downloadWaitingToRetry": "Waiting to retry",
+  "onDeviceEnterSearchTerm": "Enter a search term",
+  "onDeviceFilters": "Filters",
+  "onDeviceFramework": "Framework",
+  "onDeviceModality": "Modality",
+  "onDeviceParameterSize": "Parameter size",
+  "onDeviceMinParam": "Min B",
+  "onDeviceMaxParam": "Max B",
+  "onDeviceIncludeUnknownSizes": "Include unknown sizes",
+  "onDeviceSplitModels": "Split models",
+  "onDeviceImportFromUrl": "Import from URL",
+  "onDeviceImportFromDevice": "Import from device",
+  "onDeviceAddModelFromUrl": "Add model from URL",
+  "onDeviceHuggingFaceUrl": "Hugging Face URL",
+  "onDeviceUpdateAvailable": "Update available",
+  "onDeviceCheckForUpdates": "Check for updates",
+  "onDeviceAdded": "Added",
+  "onDeviceSplitModel": "Split model",
+  "onDevicePickGguf": "Pick GGUF",
+  "onDevicePickLitert": "Pick LiteRT",
+  "onDeviceUnknownSizeHidden": "{count} models with unknown size hidden",
+  "@onDeviceUnknownSizeHidden": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  }
 }

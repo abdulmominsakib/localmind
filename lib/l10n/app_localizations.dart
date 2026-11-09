@@ -4002,13 +4002,13 @@ abstract class AppLocalizations {
   /// No description provided for @gguf_overview_title.
   ///
   /// In en, this message translates to:
-  /// **'Bring your own GGUF models'**
+  /// **'Add/import your models'**
   String get gguf_overview_title;
 
   /// No description provided for @gguf_overview_subtitle.
   ///
   /// In en, this message translates to:
-  /// **'Import a .gguf from local storage or download one straight from Hugging Face. Imported models stay on this device and load with llama.cpp.'**
+  /// **'Import a GGUF or LiteRT model from local storage, from a URL, or search Hugging Face. Imported models stay on this device.'**
   String get gguf_overview_subtitle;
 
   /// No description provided for @gguf_imported_count_label.
@@ -4497,11 +4497,47 @@ abstract class AppLocalizations {
   /// **'Add a note about this model…'**
   String get model_note_hint;
 
+  /// Badge shown when a model update is available
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get model_update_available;
+
+  /// Button to download a model update
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get model_update_button;
+
   /// Setting to unload every loaded model instance before loading another
   ///
   /// In en, this message translates to:
   /// **'Unload all models before loading a new one'**
   String get unload_models_before_load;
+
+  /// Continue downloading models when the app is backgrounded
+  ///
+  /// In en, this message translates to:
+  /// **'Allow background downloads'**
+  String get settings_allow_background_downloads;
+
+  /// Description for allow background downloads toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Continue downloading models when you switch apps or lock your screen.'**
+  String get settings_allow_background_downloads_desc;
+
+  /// Only download models on WiFi or unmetered connections
+  ///
+  /// In en, this message translates to:
+  /// **'Download over WiFi only'**
+  String get settings_download_over_wifi_only;
+
+  /// Description for download over WiFi only toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Only download models when an eligible WiFi or unmetered connection is available.'**
+  String get settings_download_over_wifi_only_desc;
 
   /// Use private/incognito keyboard mode while in a temporary chat
   ///
@@ -6243,6 +6279,180 @@ abstract class AppLocalizations {
   /// **'App'**
   String get sidebar_section_app;
 
+  /// No description provided for @add_models_button.
+  ///
+  /// In en, this message translates to:
+  /// **'Add models'**
+  String get add_models_button;
+
+  /// No description provided for @curated_models_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Curated Models'**
+  String get curated_models_title;
+
+  /// No description provided for @curated_models_count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} models'**
+  String curated_models_count(Object count);
+
+  /// No description provided for @your_models_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Your models'**
+  String get your_models_title;
+
+  /// No description provided for @your_models_count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} added'**
+  String your_models_count(Object count);
+
+  /// No description provided for @remove_model_from_list.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from list'**
+  String get remove_model_from_list;
+
+  /// No description provided for @delete_model_file_first.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete model file first'**
+  String get delete_model_file_first;
+
+  /// No description provided for @add_model_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add model'**
+  String get add_model_title;
+
+  /// No description provided for @add_model_gguf_tab.
+  ///
+  /// In en, this message translates to:
+  /// **'GGUF'**
+  String get add_model_gguf_tab;
+
+  /// No description provided for @add_model_litert_tab.
+  ///
+  /// In en, this message translates to:
+  /// **'LiteRT'**
+  String get add_model_litert_tab;
+
+  /// No description provided for @add_model_gguf_url_label.
+  ///
+  /// In en, this message translates to:
+  /// **'Hugging Face GGUF URL'**
+  String get add_model_gguf_url_label;
+
+  /// No description provided for @add_model_litert_url_label.
+  ///
+  /// In en, this message translates to:
+  /// **'Hugging Face LiteRT URL'**
+  String get add_model_litert_url_label;
+
+  /// No description provided for @add_model_add_from_url.
+  ///
+  /// In en, this message translates to:
+  /// **'Add from URL'**
+  String get add_model_add_from_url;
+
+  /// No description provided for @add_model_pick_local_file.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick local file'**
+  String get add_model_pick_local_file;
+
+  /// No description provided for @add_model_search_gguf.
+  ///
+  /// In en, this message translates to:
+  /// **'Search GGUF models'**
+  String get add_model_search_gguf;
+
+  /// No description provided for @add_model_search_litert.
+  ///
+  /// In en, this message translates to:
+  /// **'Search LiteRT models'**
+  String get add_model_search_litert;
+
+  /// No description provided for @add_model_searching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching...'**
+  String get add_model_searching;
+
+  /// No description provided for @add_model_search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get add_model_search;
+
+  /// No description provided for @add_model_loading_files.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading files...'**
+  String get add_model_loading_files;
+
+  /// No description provided for @add_model_cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get add_model_cancel;
+
+  /// No description provided for @add_model_files_in.
+  ///
+  /// In en, this message translates to:
+  /// **'Files in {repo}'**
+  String add_model_files_in(Object repo);
+
+  /// No description provided for @add_model_no_gguf_files.
+  ///
+  /// In en, this message translates to:
+  /// **'No GGUF files found.'**
+  String get add_model_no_gguf_files;
+
+  /// No description provided for @add_model_no_litert_files.
+  ///
+  /// In en, this message translates to:
+  /// **'No LiteRT files found.'**
+  String get add_model_no_litert_files;
+
+  /// No description provided for @add_model_added.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get add_model_added;
+
+  /// No description provided for @add_model_add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add_model_add;
+
+  /// No description provided for @add_model_gguf_added.
+  ///
+  /// In en, this message translates to:
+  /// **'GGUF model added'**
+  String get add_model_gguf_added;
+
+  /// No description provided for @add_model_litert_added.
+  ///
+  /// In en, this message translates to:
+  /// **'LiteRT model added'**
+  String get add_model_litert_added;
+
+  /// No description provided for @add_model_file_added.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} added'**
+  String add_model_file_added(Object name);
+
+  /// No description provided for @add_model_already_added.
+  ///
+  /// In en, this message translates to:
+  /// **'Model already added'**
+  String get add_model_already_added;
+
   /// No description provided for @model_still_stopping.
   ///
   /// In en, this message translates to:
@@ -6428,6 +6638,234 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copied to clipboard'**
   String get localApiCopied;
+
+  /// No description provided for @onDeviceSearchModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Search models'**
+  String get onDeviceSearchModels;
+
+  /// No description provided for @onDeviceSearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching...'**
+  String get onDeviceSearching;
+
+  /// No description provided for @onDeviceSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get onDeviceSearch;
+
+  /// No description provided for @onDeviceModelTypeBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get onDeviceModelTypeBoth;
+
+  /// No description provided for @onDeviceModelTypeLitert.
+  ///
+  /// In en, this message translates to:
+  /// **'LiteRT'**
+  String get onDeviceModelTypeLitert;
+
+  /// No description provided for @onDeviceModelTypeGguf.
+  ///
+  /// In en, this message translates to:
+  /// **'Llama.cpp (GGUF)'**
+  String get onDeviceModelTypeGguf;
+
+  /// No description provided for @onDeviceModelTypeNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get onDeviceModelTypeNone;
+
+  /// No description provided for @onDeviceModalityAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get onDeviceModalityAll;
+
+  /// No description provided for @onDeviceModalityText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get onDeviceModalityText;
+
+  /// No description provided for @onDeviceModalityVision.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision'**
+  String get onDeviceModalityVision;
+
+  /// No description provided for @onDeviceModalityAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get onDeviceModalityAudio;
+
+  /// No description provided for @onDeviceModalityEmbedding.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedding'**
+  String get onDeviceModalityEmbedding;
+
+  /// No description provided for @onDeviceModalityOmni.
+  ///
+  /// In en, this message translates to:
+  /// **'Omni'**
+  String get onDeviceModalityOmni;
+
+  /// No description provided for @onDeviceModalityUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get onDeviceModalityUnknown;
+
+  /// No description provided for @downloadBackgroundActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get downloadBackgroundActive;
+
+  /// No description provided for @downloadBackgroundDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.'**
+  String get downloadBackgroundDescription;
+
+  /// No description provided for @downloadQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get downloadQueued;
+
+  /// No description provided for @downloadWaitingToRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to retry'**
+  String get downloadWaitingToRetry;
+
+  /// No description provided for @onDeviceEnterSearchTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a search term'**
+  String get onDeviceEnterSearchTerm;
+
+  /// No description provided for @onDeviceFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get onDeviceFilters;
+
+  /// No description provided for @onDeviceFramework.
+  ///
+  /// In en, this message translates to:
+  /// **'Framework'**
+  String get onDeviceFramework;
+
+  /// No description provided for @onDeviceModality.
+  ///
+  /// In en, this message translates to:
+  /// **'Modality'**
+  String get onDeviceModality;
+
+  /// No description provided for @onDeviceParameterSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Parameter size'**
+  String get onDeviceParameterSize;
+
+  /// No description provided for @onDeviceMinParam.
+  ///
+  /// In en, this message translates to:
+  /// **'Min B'**
+  String get onDeviceMinParam;
+
+  /// No description provided for @onDeviceMaxParam.
+  ///
+  /// In en, this message translates to:
+  /// **'Max B'**
+  String get onDeviceMaxParam;
+
+  /// No description provided for @onDeviceIncludeUnknownSizes.
+  ///
+  /// In en, this message translates to:
+  /// **'Include unknown sizes'**
+  String get onDeviceIncludeUnknownSizes;
+
+  /// No description provided for @onDeviceSplitModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Split models'**
+  String get onDeviceSplitModels;
+
+  /// No description provided for @onDeviceImportFromUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from URL'**
+  String get onDeviceImportFromUrl;
+
+  /// No description provided for @onDeviceImportFromDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from device'**
+  String get onDeviceImportFromDevice;
+
+  /// No description provided for @onDeviceAddModelFromUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Add model from URL'**
+  String get onDeviceAddModelFromUrl;
+
+  /// No description provided for @onDeviceHuggingFaceUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Hugging Face URL'**
+  String get onDeviceHuggingFaceUrl;
+
+  /// No description provided for @onDeviceUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get onDeviceUpdateAvailable;
+
+  /// No description provided for @onDeviceCheckForUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get onDeviceCheckForUpdates;
+
+  /// No description provided for @onDeviceAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get onDeviceAdded;
+
+  /// No description provided for @onDeviceSplitModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Split model'**
+  String get onDeviceSplitModel;
+
+  /// No description provided for @onDevicePickGguf.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick GGUF'**
+  String get onDevicePickGguf;
+
+  /// No description provided for @onDevicePickLitert.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick LiteRT'**
+  String get onDevicePickLitert;
+
+  /// No description provided for @onDeviceUnknownSizeHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} models with unknown size hidden'**
+  String onDeviceUnknownSizeHidden(int count);
 }
 
 class _AppLocalizationsDelegate

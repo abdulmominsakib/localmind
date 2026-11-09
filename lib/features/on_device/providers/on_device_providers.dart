@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:apple_mlx/apple_mlx.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_gemma/flutter_gemma.dart' show PreferredBackend;
+import 'package:flutter_gemma/flutter_gemma.dart' hide CancelToken;
 import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +18,9 @@ import '../../../core/providers/review_prompt_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/storage_providers.dart';
 import '../data/imported_gguf_model_repository.dart';
+import '../data/imported_litert_model_repository.dart';
+import '../data/download_operation_store.dart';
+import '../data/download_task_gateway.dart';
 import '../data/models/on_device_model.dart';
 import '../data/notification_permission_service.dart';
 import '../data/on_device_gemma_service.dart';
@@ -37,6 +40,9 @@ final onDeviceGemmaServiceProvider = Provider<OnDeviceGemmaService>((ref) {
     coordinator: ref.read(inferenceCoordinatorProvider),
     onNativeWorkChanged: (active) =>
         unawaited(background.setNativeWorkActive(active)),
+    modelResolver: (modelId) => ref
+        .read(onDeviceModelsProvider)
+        .firstWhere((model) => model.id == modelId),
   );
   ref.onDispose(() => service.dispose());
   return service;
@@ -69,12 +75,29 @@ final importedGgufModelRepositoryProvider =
       return ImportedGgufModelRepository(
         ref.read(sharedPreferencesProvider),
         ref.read(dioProvider),
+        operations: ref.read(downloadOperationStoreProvider),
+        gateway: FileDownloaderGateway(),
+      );
+    });
+
+final importedLitertModelRepositoryProvider =
+    Provider<ImportedLitertModelRepository>((ref) {
+      return ImportedLitertModelRepository(
+        ref.read(sharedPreferencesProvider),
+        ref.read(dioProvider),
+        operations: ref.read(downloadOperationStoreProvider),
+        gateway: FileDownloaderGateway(),
       );
     });
 
 final importedGgufModelsProvider =
     NotifierProvider<ImportedGgufModelsNotifier, List<OnDeviceModel>>(() {
       return ImportedGgufModelsNotifier();
+    });
+
+final importedLitertModelsProvider =
+    NotifierProvider<ImportedLitertModelsNotifier, List<OnDeviceModel>>(() {
+      return ImportedLitertModelsNotifier();
     });
 
 final onDeviceEngineProvider =
@@ -129,14 +152,16 @@ final builtInAiAvailabilityProvider = FutureProvider<BuiltInAiAvailability>((
 });
 
 final onDeviceModelsProvider = Provider<List<OnDeviceModel>>((ref) {
-  final imported = ref.watch(importedGgufModelsProvider);
+  final importedGguf = ref.watch(importedGgufModelsProvider);
+  final importedLitert = ref.watch(importedLitertModelsProvider);
   final mlxModels = availableCuratedMlxModels();
   final builtInModels = availableCuratedBuiltInModels();
   return [
     ...builtInModels,
     ...mlxModels,
     ...OnDeviceModel.curatedModels,
-    ...imported,
+    ...importedGguf,
+    ...importedLitert,
   ];
 });
 
@@ -148,7 +173,11 @@ final downloadedModelsProvider = FutureProvider<Set<String>>((ref) async {
   final mlxInstalled = isApple
       ? await mlxService.getInstalledModelIds()
       : const <String>{};
-  final imported = ref.watch(importedGgufModelsProvider);
+  final importedGguf = ref.watch(importedGgufModelsProvider);
+  final importedLitert = ref.watch(importedLitertModelsProvider);
+  final flutterGemmaInstalled = importedLitert.isEmpty
+      ? const <String>{}
+      : await FlutterGemma.listInstalledModels();
 
   final builtInIds = <String>{};
   try {
@@ -162,21 +191,38 @@ final downloadedModelsProvider = FutureProvider<Set<String>>((ref) async {
     }
   } catch (_) {}
 
+  final importedGgufDownloaded = importedGguf
+      .where(
+        (model) =>
+            model.localPath != null &&
+            model.localPath!.isNotEmpty &&
+            File(model.localPath!).existsSync(),
+      )
+      .map((model) => model.id);
+
+  final importedLitertDownloaded = importedLitert
+      .where((model) {
+        if (model.localPath != null && model.localPath!.isNotEmpty) {
+          return File(model.localPath!).existsSync();
+        }
+        final sameNameCount = importedLitert
+            .where((other) => other.fileName == model.fileName)
+            .length;
+        if (sameNameCount > 1) {
+          return false;
+        }
+        return flutterGemmaInstalled.contains(model.fileName);
+      })
+      .map((model) => model.id);
+
   return {
     ...builtInIds,
     ...installed,
     ...mlxInstalled,
-    ...imported.map((model) => model.id),
+    ...importedGgufDownloaded,
+    ...importedLitertDownloaded,
   };
 });
-
-final onDeviceModelStateProvider =
-    NotifierProvider<
-      OnDeviceModelStateNotifier,
-      Map<String, OnDeviceModelStateInfo>
-    >(() {
-      return OnDeviceModelStateNotifier();
-    });
 
 class OnDeviceEngineState {
   static const _unset = Object();
@@ -223,6 +269,7 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
 
   ImportedGgufModelRepository get _repository =>
       ref.read(importedGgufModelRepositoryProvider);
+  ImportedGgufModelRepository get repository => _repository;
 
   @override
   List<OnDeviceModel> build() {
@@ -247,7 +294,13 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     );
     final model = metadata.toOnDeviceModel();
     if (ref.mounted) {
-      state = [...state, model];
+      if (state.any((existing) => existing.id == model.id)) {
+        state = state
+            .map((existing) => existing.id == model.id ? model : existing)
+            .toList();
+      } else {
+        state = [...state, model];
+      }
     }
     return model;
   }
@@ -256,7 +309,11 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     final metadatas = await _repository.importFromPaths(paths);
     final models = metadatas.map((m) => m.toOnDeviceModel()).toList();
     if (ref.mounted) {
-      state = [...state, ...models];
+      final byId = {for (final m in state) m.id: m};
+      for (final m in models) {
+        byId[m.id] = m;
+      }
+      state = byId.values.toList();
     }
     return models;
   }
@@ -289,6 +346,29 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     return metadata.toOnDeviceModel();
   }
 
+  Future<OnDeviceModel> addFromUrl(
+    String sourceUrl, {
+    String? projectorUrl,
+    String? huggingFaceToken,
+  }) async {
+    final metadata = await _repository.addFromUrl(
+      sourceUrl,
+      projectorUrl: projectorUrl,
+      token: huggingFaceToken,
+    );
+    final model = metadata.toOnDeviceModel();
+    if (ref.mounted) {
+      if (state.any((existing) => existing.id == model.id)) {
+        state = state
+            .map((existing) => existing.id == model.id ? model : existing)
+            .toList();
+      } else {
+        state = [...state, model];
+      }
+    }
+    return model;
+  }
+
   Future<OnDeviceModel> importModelFromHuggingFaceUrl(
     String sourceUrl, {
     String? projectorUrl,
@@ -305,7 +385,13 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     );
     final model = metadata.toOnDeviceModel();
     if (ref.mounted) {
-      state = [...state, model];
+      if (state.any((existing) => existing.id == model.id)) {
+        state = state
+            .map((existing) => existing.id == model.id ? model : existing)
+            .toList();
+      } else {
+        state = [...state, model];
+      }
     }
     return model;
   }
@@ -320,6 +406,18 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     await _repository.delete(modelId);
     if (!ref.mounted) return;
     state = state.where((model) => model.id != modelId).toList();
+  }
+
+  Future<void> removeFromList(String modelId) async {
+    await _repository.removeFromList(modelId);
+    if (!ref.mounted) return;
+    state = state.where((model) => model.id != modelId).toList();
+  }
+
+  Future<void> deleteFile(String modelId) async {
+    await _repository.deleteFile(modelId);
+    if (!ref.mounted) return;
+    state = _repository.load().map((model) => model.toOnDeviceModel()).toList();
   }
 
   /// Removes a single missing model from the list. Used when we try to load
@@ -341,12 +439,107 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     final existing = await _repository.loadExisting();
     if (!ref.mounted) return;
 
-    final keptIds = existing.map((m) => m.id).toSet();
-    if (keptIds.length == state.length &&
-        state.every((m) => keptIds.contains(m.id))) {
-      return;
+    final next = existing.map((m) => m.toOnDeviceModel()).toList();
+    String signature(List<OnDeviceModel> models) => models
+        .map(
+          (m) =>
+              '${m.id}|${m.localPath}|${m.reasoningEnabled}|${m.installFileName}|${m.projectorPath}|${m.fileSizeBytes}',
+        )
+        .join(',');
+    if (signature(state) != signature(next)) {
+      state = next;
     }
-    state = existing.map((m) => m.toOnDeviceModel()).toList();
+  }
+}
+
+class ImportedLitertModelsNotifier extends Notifier<List<OnDeviceModel>> {
+  bool _hasScheduledInitialPrune = false;
+
+  ImportedLitertModelRepository get _repository =>
+      ref.read(importedLitertModelRepositoryProvider);
+  ImportedLitertModelRepository get repository => _repository;
+
+  @override
+  List<OnDeviceModel> build() {
+    if (!_hasScheduledInitialPrune) {
+      _hasScheduledInitialPrune = true;
+      Future.microtask(() async {
+        if (!ref.mounted) return;
+        await pruneMissing();
+        if (!ref.mounted) return;
+        await _repository.registerLocalModels();
+      });
+    }
+    return _repository.load().map((model) => model.toOnDeviceModel()).toList();
+  }
+
+  Future<OnDeviceModel> addFromPath(String sourcePath) async {
+    final metadata = await _repository.addFromPath(sourcePath);
+    final model = metadata.toOnDeviceModel();
+    if (ref.mounted) {
+      if (state.any((existing) => existing.id == model.id)) {
+        state = state
+            .map((existing) => existing.id == model.id ? model : existing)
+            .toList();
+      } else {
+        state = [...state, model];
+      }
+    }
+    return model;
+  }
+
+  Future<OnDeviceModel> addFromUrl(String sourceUrl, {String? token}) async {
+    final metadata = await _repository.addFromUrl(sourceUrl, token: token);
+    final model = metadata.toOnDeviceModel();
+    if (ref.mounted) {
+      if (state.any((existing) => existing.id == model.id)) {
+        state = state
+            .map((existing) => existing.id == model.id ? model : existing)
+            .toList();
+      } else {
+        state = [...state, model];
+      }
+    }
+    return model;
+  }
+
+  Future<void> deleteModel(String modelId) async {
+    await _repository.delete(modelId);
+    if (!ref.mounted) return;
+    state = state.where((model) => model.id != modelId).toList();
+  }
+
+  Future<void> removeFromList(String modelId) async {
+    await _repository.removeFromList(modelId);
+    if (!ref.mounted) return;
+    state = state.where((model) => model.id != modelId).toList();
+  }
+
+  Future<void> deleteFile(String modelId) async {
+    await _repository.deleteFile(modelId);
+    if (!ref.mounted) return;
+    state = _repository.load().map((model) => model.toOnDeviceModel()).toList();
+  }
+
+  Future<void> pruneMissing() async {
+    final existing = await _repository.loadExisting();
+    if (!ref.mounted) return;
+    final next = existing.map((m) => m.toOnDeviceModel()).toList();
+    String signature(List<OnDeviceModel> models) => models
+        .map(
+          (m) =>
+              '${m.id}|${m.localPath}|${m.reasoningEnabled}|${m.installFileName}|${m.projectorPath}|${m.fileSizeBytes}',
+        )
+        .join(',');
+    if (signature(state) != signature(next)) {
+      state = next;
+    }
+  }
+
+  Future<void> updateReasoning(String modelId, bool? enabled) async {
+    await _repository.updateReasoning(modelId, enabled);
+    if (!ref.mounted) return;
+    state = _repository.load().map((model) => model.toOnDeviceModel()).toList();
   }
 }
 
@@ -375,7 +568,24 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     if (specName == null) return;
 
     final models = ref.read(onDeviceModelsProvider);
-    final model = models.where((m) => m.fileName == specName).firstOrNull;
+    OnDeviceModel? model = models
+        .where((m) => m.fileName == specName)
+        .firstOrNull;
+    if (model == null) {
+      final specBase = specName.contains('.')
+          ? specName.substring(0, specName.lastIndexOf('.'))
+          : specName;
+      final candidates = models.where((m) {
+        final name = m.fileName;
+        final base = name.contains('.')
+            ? name.substring(0, name.lastIndexOf('.'))
+            : name;
+        return base == specBase;
+      }).toList();
+      if (candidates.length == 1) {
+        model = candidates.first;
+      }
+    }
     if (model == null) return;
 
     final settings = ref.read(settingsProvider);
@@ -387,6 +597,7 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     _gemmaService.syncFromRestoredSpec(
       backend,
       maxTokens: settings.contextLength,
+      model: model,
     );
 
     Log.info(
@@ -646,65 +857,6 @@ class OnDeviceEngineNotifier extends Notifier<OnDeviceEngineState> {
     _llamaService.dispose();
     _mlxService.dispose();
     state = const OnDeviceEngineState();
-  }
-}
-
-class OnDeviceModelStateNotifier
-    extends Notifier<Map<String, OnDeviceModelStateInfo>> {
-  @override
-  Map<String, OnDeviceModelStateInfo> build() {
-    return {};
-  }
-
-  void updateModelState(
-    String modelId, {
-    OnDeviceModelState? modelState,
-    double? downloadProgress,
-    String? error,
-    PreferredBackend? backend,
-    OnDeviceEngineStatus? engineStatus,
-  }) {
-    final current = state[modelId] ?? OnDeviceModelStateInfo(modelId: modelId);
-    state = {
-      ...state,
-      modelId: current.copyWith(
-        state: modelState ?? current.state,
-        downloadProgress: downloadProgress ?? current.downloadProgress,
-        error: error ?? current.error,
-        backend: backend ?? current.backend,
-        engineStatus: engineStatus ?? current.engineStatus,
-      ),
-    };
-  }
-
-  void setDownloading(String modelId, double progress) {
-    updateModelState(
-      modelId,
-      modelState: OnDeviceModelState.downloading,
-      downloadProgress: progress,
-    );
-  }
-
-  void setDownloaded(String modelId) {
-    updateModelState(
-      modelId,
-      modelState: OnDeviceModelState.downloaded,
-      downloadProgress: 1.0,
-    );
-  }
-
-  void setDownloadError(String modelId, String error) {
-    updateModelState(
-      modelId,
-      modelState: OnDeviceModelState.error,
-      error: error,
-    );
-  }
-
-  void removeModel(String modelId) {
-    final newState = Map<String, OnDeviceModelStateInfo>.from(state);
-    newState.remove(modelId);
-    state = newState;
   }
 }
 

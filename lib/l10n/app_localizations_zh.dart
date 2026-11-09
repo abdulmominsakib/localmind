@@ -2080,11 +2080,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get gguf_import_action => 'Import GGUF';
 
   @override
-  String get gguf_overview_title => 'Bring your own GGUF models';
+  String get gguf_overview_title => 'Add/import your models';
 
   @override
   String get gguf_overview_subtitle =>
-      'Import a .gguf from local storage or download one straight from Hugging Face. Imported models stay on this device and load with llama.cpp.';
+      'Import a GGUF or LiteRT model from local storage, from a URL, or search Hugging Face. Imported models stay on this device.';
 
   @override
   String get gguf_imported_count_label => 'imported';
@@ -2354,7 +2354,28 @@ class AppLocalizationsZh extends AppLocalizations {
   String get model_note_hint => '为此模型添加个人备注...';
 
   @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
+
+  @override
   String get unload_models_before_load => '加载前卸载模型';
+
+  @override
+  String get settings_allow_background_downloads =>
+      'Allow background downloads';
+
+  @override
+  String get settings_allow_background_downloads_desc =>
+      'Continue downloading models when you switch apps or lock your screen.';
+
+  @override
+  String get settings_download_over_wifi_only => 'Download over WiFi only';
+
+  @override
+  String get settings_download_over_wifi_only_desc =>
+      'Only download models when an eligible WiFi or unmetered connection is available.';
 
   @override
   String get temp_chat_keyboard_incognito => '临时聊天中的隐私键盘';
@@ -3289,7 +3310,103 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sidebar_section_app => '应用';
 
   @override
-  String get model_still_stopping => '模型仍在停止中，请稍后重试。';
+  String get add_models_button => 'Add models';
+
+  @override
+  String get curated_models_title => 'Curated Models';
+
+  @override
+  String curated_models_count(Object count) {
+    return '$count models';
+  }
+
+  @override
+  String get your_models_title => 'Your models';
+
+  @override
+  String your_models_count(Object count) {
+    return '$count added';
+  }
+
+  @override
+  String get remove_model_from_list => 'Remove from list';
+
+  @override
+  String get delete_model_file_first => 'Delete model file first';
+
+  @override
+  String get add_model_title => 'Add model';
+
+  @override
+  String get add_model_gguf_tab => 'GGUF';
+
+  @override
+  String get add_model_litert_tab => 'LiteRT';
+
+  @override
+  String get add_model_gguf_url_label => 'Hugging Face GGUF URL';
+
+  @override
+  String get add_model_litert_url_label => 'Hugging Face LiteRT URL';
+
+  @override
+  String get add_model_add_from_url => 'Add from URL';
+
+  @override
+  String get add_model_pick_local_file => 'Pick local file';
+
+  @override
+  String get add_model_search_gguf => 'Search GGUF models';
+
+  @override
+  String get add_model_search_litert => 'Search LiteRT models';
+
+  @override
+  String get add_model_searching => 'Searching...';
+
+  @override
+  String get add_model_search => 'Search';
+
+  @override
+  String get add_model_loading_files => 'Loading files...';
+
+  @override
+  String get add_model_cancel => 'Cancel';
+
+  @override
+  String add_model_files_in(Object repo) {
+    return 'Files in $repo';
+  }
+
+  @override
+  String get add_model_no_gguf_files => 'No GGUF files found.';
+
+  @override
+  String get add_model_no_litert_files => 'No LiteRT files found.';
+
+  @override
+  String get add_model_added => 'Added';
+
+  @override
+  String get add_model_add => 'Add';
+
+  @override
+  String get add_model_gguf_added => 'GGUF model added';
+
+  @override
+  String get add_model_litert_added => 'LiteRT model added';
+
+  @override
+  String add_model_file_added(Object name) {
+    return '$name added';
+  }
+
+  @override
+  String get add_model_already_added => 'Model already added';
+
+  @override
+  String get model_still_stopping =>
+      'The model is still stopping. Please wait before trying again.';
 
   @override
   String get localApiTitle => 'Local API';
@@ -3388,6 +3505,123 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get localApiCopied => 'Copied to clipboard';
+
+  @override
+  String get onDeviceSearchModels => 'Search models';
+
+  @override
+  String get onDeviceSearching => 'Searching...';
+
+  @override
+  String get onDeviceSearch => 'Search';
+
+  @override
+  String get onDeviceModelTypeBoth => 'Both';
+
+  @override
+  String get onDeviceModelTypeLitert => 'LiteRT';
+
+  @override
+  String get onDeviceModelTypeGguf => 'Llama.cpp (GGUF)';
+
+  @override
+  String get onDeviceModelTypeNone => 'None';
+
+  @override
+  String get onDeviceModalityAll => 'All';
+
+  @override
+  String get onDeviceModalityText => 'Text';
+
+  @override
+  String get onDeviceModalityVision => 'Vision';
+
+  @override
+  String get onDeviceModalityAudio => 'Audio';
+
+  @override
+  String get onDeviceModalityEmbedding => 'Embedding';
+
+  @override
+  String get onDeviceModalityOmni => 'Omni';
+
+  @override
+  String get onDeviceModalityUnknown => 'Unknown';
+
+  @override
+  String get downloadBackgroundActive => 'Background';
+
+  @override
+  String get downloadBackgroundDescription =>
+      'This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.';
+
+  @override
+  String get downloadQueued => 'Queued';
+
+  @override
+  String get downloadWaitingToRetry => 'Waiting to retry';
+
+  @override
+  String get onDeviceEnterSearchTerm => 'Enter a search term';
+
+  @override
+  String get onDeviceFilters => 'Filters';
+
+  @override
+  String get onDeviceFramework => 'Framework';
+
+  @override
+  String get onDeviceModality => 'Modality';
+
+  @override
+  String get onDeviceParameterSize => 'Parameter size';
+
+  @override
+  String get onDeviceMinParam => 'Min B';
+
+  @override
+  String get onDeviceMaxParam => 'Max B';
+
+  @override
+  String get onDeviceIncludeUnknownSizes => 'Include unknown sizes';
+
+  @override
+  String get onDeviceSplitModels => 'Split models';
+
+  @override
+  String get onDeviceImportFromUrl => 'Import from URL';
+
+  @override
+  String get onDeviceImportFromDevice => 'Import from device';
+
+  @override
+  String get onDeviceAddModelFromUrl => 'Add model from URL';
+
+  @override
+  String get onDeviceHuggingFaceUrl => 'Hugging Face URL';
+
+  @override
+  String get onDeviceUpdateAvailable => 'Update available';
+
+  @override
+  String get onDeviceCheckForUpdates => 'Check for updates';
+
+  @override
+  String get onDeviceAdded => 'Added';
+
+  @override
+  String get onDeviceSplitModel => 'Split model';
+
+  @override
+  String get onDevicePickGguf => 'Pick GGUF';
+
+  @override
+  String get onDevicePickLitert => 'Pick LiteRT';
+
+  @override
+  String onDeviceUnknownSizeHidden(int count) {
+    return '$count models with unknown size hidden';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -5428,11 +5662,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get gguf_import_action => 'Import GGUF';
 
   @override
-  String get gguf_overview_title => 'Bring your own GGUF models';
+  String get gguf_overview_title => 'Add/import your models';
 
   @override
   String get gguf_overview_subtitle =>
-      'Import a .gguf from local storage or download one straight from Hugging Face. Imported models stay on this device and load with llama.cpp.';
+      'Import a GGUF or LiteRT model from local storage, from a URL, or search Hugging Face. Imported models stay on this device.';
 
   @override
   String get gguf_imported_count_label => 'imported';
@@ -5662,7 +5896,28 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get model_note_hint => '為此模型添加個人備註...';
 
   @override
+  String get model_update_available => 'Update available';
+
+  @override
+  String get model_update_button => 'Update';
+
+  @override
   String get unload_models_before_load => '載入前卸載模型';
+
+  @override
+  String get settings_allow_background_downloads =>
+      'Allow background downloads';
+
+  @override
+  String get settings_allow_background_downloads_desc =>
+      'Continue downloading models when you switch apps or lock your screen.';
+
+  @override
+  String get settings_download_over_wifi_only => 'Download over WiFi only';
+
+  @override
+  String get settings_download_over_wifi_only_desc =>
+      'Only download models when an eligible WiFi or unmetered connection is available.';
 
   @override
   String get temp_chat_keyboard_incognito => '臨時聊天中的隱私鍵盤';
@@ -6542,5 +6797,39 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get sidebar_section_app => '應用程式';
 
   @override
-  String get model_still_stopping => '模型仍在停止中，請稍後再試。';
+  String get onDeviceModalityOmni => 'Omni';
+
+  @override
+  String get onDeviceModalityUnknown => 'Unknown';
+
+  @override
+  String get downloadBackgroundActive => 'Background';
+
+  @override
+  String get downloadBackgroundDescription =>
+      'This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.';
+
+  @override
+  String get downloadQueued => 'Queued';
+
+  @override
+  String get downloadWaitingToRetry => 'Waiting to retry';
+
+  @override
+  String get onDeviceEnterSearchTerm => 'Enter a search term';
+
+  @override
+  String get onDeviceFilters => 'Filters';
+
+  @override
+  String get onDeviceFramework => 'Framework';
+
+  @override
+  String get onDeviceModality => 'Modality';
+
+  @override
+  String get onDeviceParameterSize => 'Parameter size';
+
+  @override
+  String get onDeviceImportFromDevice => 'Import from device';
 }

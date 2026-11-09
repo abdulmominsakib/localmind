@@ -342,6 +342,18 @@ class _SettingsViewsState extends ConsumerState<SettingsViews> {
           value: settings.unloadModelsBeforeLoad,
           onChanged: notifier.setUnloadModelsBeforeLoad,
         ),
+        _ToggleSetting(
+          label: l10n.settings_allow_background_downloads,
+          description: l10n.settings_allow_background_downloads_desc,
+          value: settings.allowBackgroundDownloads,
+          onChanged: notifier.setAllowBackgroundDownloads,
+        ),
+        _ToggleSetting(
+          label: l10n.settings_download_over_wifi_only,
+          description: l10n.settings_download_over_wifi_only_desc,
+          value: settings.downloadOverWifiOnly,
+          onChanged: notifier.setDownloadOverWifiOnly,
+        ),
         _HuggingFaceTokenSetting(
           currentToken: settings.huggingFaceToken,
           onSave: (value) {

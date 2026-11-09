@@ -46,6 +46,16 @@ class ModelCard extends ConsumerWidget {
       error: (_, _) => false,
     );
 
+    final importedLitert = ref.watch(importedLitertModelsProvider);
+    final isLegacyCollision =
+        model.isImported &&
+        model.runtime == OnDeviceModelRuntime.gemma &&
+        !isDownloaded &&
+        importedLitert
+                .where((other) => other.fileName == model.fileName)
+                .length >
+            1;
+
     final isLoading =
         engineState.status == OnDeviceEngineStatus.loading &&
         engineState.loadedModelId == model.id;
@@ -55,9 +65,9 @@ class ModelCard extends ConsumerWidget {
         (downloadProgress!.status == DownloadStatus.running ||
             downloadProgress!.status == DownloadStatus.pending);
 
-    final isPaused =
-        downloadProgress?.status == DownloadStatus.paused ||
-        downloadProgress?.status == DownloadStatus.canceled;
+    final isPaused = model.isImported &&
+        downloadProgress?.status == DownloadStatus.paused;
+    final isCanceled = downloadProgress?.status == DownloadStatus.canceled;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -98,13 +108,41 @@ class ModelCard extends ConsumerWidget {
               ImportedModelProjectorSetting(model: model),
             const SizedBox(height: 8),
             _ModelMetaRow(model: model, theme: theme, l10n: l10n),
+            if (model.isImported && model.updateAvailable) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const HugeIcon(
+                      icon: HugeIcons.strokeRoundedArrowUp01,
+                      size: 14,
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Update available',
+                      style: const TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             _ModelCardActions(
               model: model,
               isDownloaded: isDownloaded,
+              isLegacyCollision: isLegacyCollision,
               isLoading: isLoading,
               isDownloading: isDownloading,
               isPaused: isPaused,
+              isCanceled: isCanceled,
               downloadProgress: downloadProgress,
               theme: theme,
               l10n: l10n,
@@ -385,9 +423,11 @@ class _ModelCardActions extends ConsumerWidget {
   const _ModelCardActions({
     required this.model,
     required this.isDownloaded,
+    this.isLegacyCollision = false,
     required this.isLoading,
     required this.isDownloading,
     required this.isPaused,
+    this.isCanceled = false,
     this.downloadProgress,
     required this.theme,
     required this.l10n,
@@ -397,9 +437,11 @@ class _ModelCardActions extends ConsumerWidget {
 
   final OnDeviceModel model;
   final bool isDownloaded;
+  final bool isLegacyCollision;
   final bool isLoading;
   final bool isDownloading;
   final bool isPaused;
+  final bool isCanceled;
   final DownloadProgressInfo? downloadProgress;
   final ThemeData theme;
   final AppLocalizations l10n;
@@ -424,6 +466,18 @@ class _ModelCardActions extends ConsumerWidget {
         downloadProgress: downloadProgress,
         theme: theme,
         l10n: l10n,
+      );
+    }
+
+    if (isCanceled) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(
+          'Canceling…',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
       );
     }
 
@@ -457,6 +511,16 @@ class _ModelCardActions extends ConsumerWidget {
 
     if (isBuiltInUnsupported) {
       return _BuiltInUnsupportedActions(model: model, theme: theme, l10n: l10n);
+    }
+
+    if (isLegacyCollision) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(
+          'Needs re-download: remove and re-add this model.',
+          style: theme.textTheme.bodySmall?.copyWith(color: Colors.orange),
+        ),
+      );
     }
 
     return _NotDownloadedActions(
@@ -522,16 +586,42 @@ class _DownloadedActions extends ConsumerWidget {
                 onPressed: () => _loadModel(context, ref),
                 child: Text(l10n.load),
               ),
+            if (model.isImported && model.updateAvailable) ...[
+              const SizedBox(width: 8),
+              ShadButton.outline(
+                size: ShadButtonSize.sm,
+                onPressed: () => _startUpdate(context, ref),
+                child: Text(l10n.model_update_button),
+              ),
+            ],
             if (!model.isBuiltIn) ...[
               const SizedBox(width: 8),
               ShadButton.outline(
                 size: ShadButtonSize.sm,
-                onPressed: () => _deleteModel(context, ref),
+                onPressed: () => _deleteFileOrModel(context, ref),
                 child: Text(l10n.delete),
               ),
             ],
           ],
         ),
+        if (model.isImported) ...[
+          const SizedBox(height: 8),
+          Tooltip(
+            message: 'Delete model file first',
+            child: ShadButton.outline(
+              size: ShadButtonSize.sm,
+              onPressed: null,
+              child: Text(l10n.remove_model_from_list),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.delete_model_file_first,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
         if (isLoading) ...[
           const SizedBox(height: 8),
           ClipRRect(
@@ -579,6 +669,52 @@ class _DownloadedActions extends ConsumerWidget {
       );
     }
   }
+
+  Future<void> _deleteFileOrModel(BuildContext context, WidgetRef ref) async {
+    if (model.isImported) {
+      await _deleteFile(context, ref);
+    } else {
+      await _deleteModel(context, ref);
+    }
+  }
+
+  Future<void> _startUpdate(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await ref
+        .read(foregroundDownloadNotifierProvider.notifier)
+        .startUpdateDownload(model.id);
+    if (result == 'missing_huggingface_token' && context.mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(l10n.model_missing_huggingface_token),
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(
+            label: l10n.settings_title,
+            onPressed: () => context.push(AppRoutes.settings),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteFile(BuildContext context, WidgetRef ref) async {
+    if (!context.mounted) return;
+    final engineState = ref.read(onDeviceEngineProvider);
+    if (engineState.loadedModelId == model.id) {
+      await ref.read(onDeviceEngineProvider.notifier).unloadModel();
+    }
+    if (!context.mounted) return;
+
+    if (model.runtime == OnDeviceModelRuntime.llamaCpp) {
+      await ref.read(importedGgufModelsProvider.notifier).deleteFile(model.id);
+    } else {
+      await ref
+          .read(importedLitertModelsProvider.notifier)
+          .deleteFile(model.id);
+    }
+    if (!context.mounted) return;
+    ref.invalidate(downloadedModelsProvider);
+  }
 }
 
 class _DownloadingActions extends ConsumerWidget {
@@ -622,21 +758,59 @@ class _DownloadingActions extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        l10n.download_progress(
-                          ((downloadProgress?.progress ?? 0) * 100)
-                              .toStringAsFixed(1),
-                          downloadProgress?.speedFormatted ?? '0 B/s',
-                        ),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                      Flexible(
+                        child: Text(
+                          l10n.download_progress(
+                            ((downloadProgress?.progress ?? 0) * 100)
+                                .toStringAsFixed(1),
+                            downloadProgress?.speedFormatted ?? '—',
+                          ),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        l10n.eta_label(
-                          downloadProgress?.etaFormatted ?? l10n.calculating,
+                      if (downloadProgress?.isResumed == true) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              HugeIcon(
+                                icon: HugeIcons.strokeRoundedCloudDownload,
+                                size: 10,
+                                color: Colors.blue,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                l10n.downloadBackgroundActive,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        style: theme.textTheme.labelSmall,
+                      ],
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          l10n.eta_label(
+                            downloadProgress?.etaFormatted ?? l10n.calculating,
+                          ),
+                          style: theme.textTheme.labelSmall,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                        ),
                       ),
                     ],
                   ),
@@ -651,7 +825,22 @@ class _DownloadingActions extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            if (model.isImported &&
+                (model.runtime == OnDeviceModelRuntime.gemma ||
+                    (model.isLlamaCpp &&
+                        model.huggingFaceUrl.isNotEmpty &&
+                        (model.localPath == null ||
+                            model.localPath!.isEmpty)))) ...[
+              const SizedBox(width: 8),
+              ShadButton.outline(
+                size: ShadButtonSize.sm,
+                onPressed: () => ref
+                    .read(foregroundDownloadNotifierProvider.notifier)
+                    .pauseDownload(model.id),
+                child: Text(l10n.pause),
+              ),
+            ],
+            const SizedBox(width: 8),
             ShadButton.outline(
               size: ShadButtonSize.sm,
               onPressed: () => ref
@@ -714,13 +903,22 @@ class _FailedDownloadActions extends ConsumerWidget {
         ),
         if (!isDeviceUnsupported) ...[
           const SizedBox(width: 8),
-          ShadButton.outline(
-            size: ShadButtonSize.sm,
-            onPressed: () => ref
-                .read(foregroundDownloadNotifierProvider.notifier)
-                .retryDownload(model.id),
-            child: Text(l10n.retry),
-          ),
+          if (model.isImported && model.updateAvailable)
+            ShadButton.outline(
+              size: ShadButtonSize.sm,
+              onPressed: () => ref
+                  .read(foregroundDownloadNotifierProvider.notifier)
+                  .retryUpdateDownload(model.id),
+              child: Text(l10n.model_update_button),
+            )
+          else
+            ShadButton.outline(
+              size: ShadButtonSize.sm,
+              onPressed: () => ref
+                  .read(foregroundDownloadNotifierProvider.notifier)
+                  .retryDownload(model.id),
+              child: Text(l10n.retry),
+            ),
         ],
       ],
     );
@@ -787,30 +985,21 @@ class _PausedDownloadActions extends ConsumerWidget {
         const Spacer(),
         ShadButton.outline(
           size: ShadButtonSize.sm,
-          onPressed: () => _startDownload(context, ref),
+          onPressed: () => ref
+              .read(foregroundDownloadNotifierProvider.notifier)
+              .resumeDownload(model.id),
           child: Text(l10n.resume),
+        ),
+        const SizedBox(width: 8),
+        ShadButton.outline(
+          size: ShadButtonSize.sm,
+          onPressed: () => ref
+              .read(foregroundDownloadNotifierProvider.notifier)
+              .cancelDownload(model.id),
+          child: Text(l10n.cancel),
         ),
       ],
     );
-  }
-
-  Future<void> _startDownload(BuildContext context, WidgetRef ref) async {
-    final result = await ref
-        .read(foregroundDownloadNotifierProvider.notifier)
-        .startDownload(model.id);
-
-    if (result == 'missing_huggingface_token' && context.mounted) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(l10n.model_missing_huggingface_token),
-          duration: const Duration(seconds: 6),
-          action: SnackBarAction(
-            label: l10n.settings_title,
-            onPressed: () => context.push(AppRoutes.settings),
-          ),
-        ),
-      );
-    }
   }
 }
 
@@ -832,6 +1021,12 @@ class _NotDownloadedActions extends ConsumerWidget {
     final label = model.isBuiltIn ? l10n.builtin_ai_enable : l10n.download;
     return Row(
       children: [
+        if (model.isImported)
+          ShadButton.destructive(
+            size: ShadButtonSize.sm,
+            onPressed: () => _removeFromList(context, ref),
+            child: const Text('Remove from list'),
+          ),
         const Spacer(),
         ShadButton.outline(
           size: ShadButtonSize.sm,
@@ -873,6 +1068,20 @@ class _NotDownloadedActions extends ConsumerWidget {
         ),
       );
     }
+  }
+
+  Future<void> _removeFromList(BuildContext context, WidgetRef ref) async {
+    if (model.runtime == OnDeviceModelRuntime.llamaCpp) {
+      await ref
+          .read(importedGgufModelsProvider.notifier)
+          .removeFromList(model.id);
+    } else {
+      await ref
+          .read(importedLitertModelsProvider.notifier)
+          .removeFromList(model.id);
+    }
+    if (!context.mounted) return;
+    ref.invalidate(downloadedModelsProvider);
   }
 
   Future<bool> _showRamWarning(BuildContext context, String message) async {
