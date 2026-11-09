@@ -516,10 +516,19 @@ class ForegroundDownloadNotifier
     } catch (e) {
       final wasCurrent = _isActiveOp(modelId, opId);
       if (!wasCurrent) return null;
-      final isCanceled = _cancelRequested.contains(opId) ||
-          e.toString().toLowerCase().contains('cancel');
+      final msg = e.toString().toLowerCase();
+      final isCancel = msg.contains('canceled') || msg.contains('cancelled');
+      final isPaused = !isCancel && msg.contains('paused');
+      final isCanceled = isCancel || _cancelRequested.contains(opId);
       if (ref.mounted) {
-        if (isCanceled) {
+        if (isPaused) {
+          state = {
+            ...state,
+            modelId: (state[modelId] ?? DownloadProgressInfo(modelId: modelId)).copyWith(
+              status: DownloadStatus.paused,
+            ),
+          };
+        } else if (isCanceled) {
           _cancelled.remove(modelId);
           state = {...state}..remove(modelId);
         } else {

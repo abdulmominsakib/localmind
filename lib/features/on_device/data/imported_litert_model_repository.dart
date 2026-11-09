@@ -1319,11 +1319,13 @@ class ImportedLitertModelRepository {
     // Pause every task sharing this id (handles duplicate WorkSpecs after
     // process death).
     final tasks = (await FileDownloader().allTasks(allGroups: true))
-        .where((t) => t.taskId == modelId)
+        .where((t) => t.taskId == modelId || t.taskId == '$modelId-update')
         .toList();
     if (tasks.isEmpty) {
       final t = _activeLitertTasks[modelId] ?? await FileDownloader().taskForId(modelId);
       if (t != null) tasks.add(t);
+      final ut = await FileDownloader().taskForId('$modelId-update');
+      if (ut != null) tasks.add(ut);
     }
     if (tasks.isEmpty) return false;
     bool any = false;

@@ -1277,8 +1277,8 @@ class ImportedGgufModelRepository {
       );
 
       if (result.status == TaskStatus.paused) {
-        _activeGgufTasks.remove(modelId);
-        throw const HttpException('GGUF import paused.');
+        _activeGgufTasks[modelId] = task as DownloadTask;
+        return TaskStatus.paused;
       }
       if (result.status == TaskStatus.canceled) {
         _activeGgufTasks.remove(modelId);
@@ -1410,8 +1410,8 @@ class ImportedGgufModelRepository {
       );
 
       if (result.status == TaskStatus.paused) {
-        _activeGgufTasks.remove(modelId);
-        throw const HttpException('GGUF update paused.');
+        _activeGgufTasks[modelId] = task as DownloadTask;
+        return TaskStatus.paused;
       }
       if (result.status == TaskStatus.canceled) {
         _activeGgufTasks.remove(modelId);
@@ -1491,11 +1491,13 @@ class ImportedGgufModelRepository {
 
   Future<bool> pauseDownload(String modelId) async {
     final tasks = (await FileDownloader().allTasks(allGroups: true))
-        .where((t) => t.taskId == modelId)
+        .where((t) => t.taskId == modelId || t.taskId == '$modelId-update')
         .toList();
     if (tasks.isEmpty) {
       final t = _activeGgufTasks[modelId];
       if (t != null) tasks.add(t);
+      final ut = await FileDownloader().taskForId('$modelId-update');
+      if (ut != null) tasks.add(ut);
     }
     if (tasks.isEmpty) return false;
     bool any = false;
