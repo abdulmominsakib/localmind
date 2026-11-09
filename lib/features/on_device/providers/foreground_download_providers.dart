@@ -177,6 +177,7 @@ class ForegroundDownloadNotifier
             r.status == TaskStatus.enqueued ||
             r.status == TaskStatus.waitingToRetry;
 
+        final prev = state[modelId];
         next[modelId] = DownloadProgressInfo(
           modelId: modelId,
           status: r.status == TaskStatus.paused
@@ -187,6 +188,10 @@ class ForegroundDownloadNotifier
           totalBytes: total,
           taskId: rawTaskId,
           isResumed: isBg,
+          pauseReason: r.status == TaskStatus.paused
+              ? (prev?.pauseReason ?? DownloadPauseReason.interrupted)
+              : null,
+          errorCategory: prev?.errorCategory,
         );
 
         if (isBg) {
@@ -314,7 +319,10 @@ class ForegroundDownloadNotifier
           if (info.status == DownloadStatus.canceled) continue;
           if (info.status == DownloadStatus.running ||
               info.status == DownloadStatus.pending) {
-            result[e.key] = info.copyWith(status: DownloadStatus.paused);
+            result[e.key] = info.copyWith(
+              status: DownloadStatus.paused,
+              pauseReason: info.pauseReason ?? DownloadPauseReason.interrupted,
+            );
           } else {
             result[e.key] = info;
           }
@@ -975,9 +983,19 @@ class ForegroundDownloadNotifier
 
   Future<void> pauseDownload(String modelId, {DownloadPauseReason reason = DownloadPauseReason.user}) async {
     if (!ref.mounted) return;
-    _pausedDownloads.add(modelId);
     final opId = _activeOperationIds[modelId];
+    final info = state[modelId];
+    if (info == null) return;
+
+    // Write-ahead: persist paused intent before native call.
+    _pausedDownloads.add(modelId);
     if (opId != null) _pausedOperations.add(opId);
+    state = {
+      ...state,
+      modelId: info.copyWith(status: DownloadStatus.paused, pauseReason: reason),
+    };
+    _saveState();
+
     final models = ref.read(onDeviceModelsProvider);
     final model = models.where((m) => m.id == modelId).firstOrNull;
     var paused = false;
@@ -990,35 +1008,24 @@ class ForegroundDownloadNotifier
         paused = await repository.pauseDownload(modelId);
       }
     } else {
-      // Curated downloads: assume pause succeeds (gemma service handles).
       paused = true;
     }
-    if (ref.mounted) {
-      final info = state[modelId];
-      if (info != null) {
-        if (paused) {
-          state = {
-            ...state,
-            modelId: info.copyWith(
-              status: DownloadStatus.paused,
-              pauseReason: reason,
-            ),
-          };
-          _saveState();
-        } else {
-          // Native pause failed — revert to running.
-          Log.warning('Native pause failed for $modelId');
-          _pausedDownloads.remove(modelId);
-          state = {
-            ...state,
-            modelId: info.copyWith(status: DownloadStatus.running),
-          };
-          _saveState();
-        }
+    if (!paused && ref.mounted) {
+      Log.warning('Native pause failed for $modelId');
+      _pausedDownloads.remove(modelId);
+      if (opId != null) _pausedOperations.remove(opId);
+      final cur = state[modelId];
+      if (cur != null) {
+        state = {
+          ...state,
+          modelId: cur.copyWith(status: DownloadStatus.running, pauseReason: null),
+        };
+        _saveState();
       }
     }
     if (!paused) {
       _pausedDownloads.remove(modelId);
+      if (opId != null) _pausedOperations.remove(opId);
     }
   }
 

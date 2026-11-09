@@ -12,6 +12,7 @@ enum DownloadPauseReason {
   user,
   backgroundPolicy,
   networkPolicy,
+  interrupted,
 }
 
 enum DownloadErrorCategory {
