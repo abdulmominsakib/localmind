@@ -10,6 +10,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/utils/async_mutex.dart';
+import 'download_operation_store.dart';
+import 'models/download_operation.dart';
 import '../../../core/logger/app_logger.dart';
 import '../utils/model_quantization_parser.dart';
 import '../../../core/utils/hugging_face_url.dart';
@@ -318,7 +320,9 @@ class ImportedGgufModelRepository {
   final Dio _dio;
   final Random _random;
   final Future<Directory> Function()? modelsDirectoryProvider;
+  final DownloadOperationStore? operations;
   final AsyncMutex _mutex = AsyncMutex();
+  Future<void>? _reconcileFuture;
   final Map<String, AsyncMutex> _downloadMutexes = <String, AsyncMutex>{};
   final Map<String, _GgufDownloadAttempt> _ggufAttempts =
       <String, _GgufDownloadAttempt>{};
@@ -330,6 +334,7 @@ class ImportedGgufModelRepository {
     this._dio, {
     Random? random,
     this.modelsDirectoryProvider,
+    this.operations,
   }) : _random = random ?? Random.secure();
 
   List<ImportedGgufModelMetadata> load() {
@@ -971,6 +976,18 @@ class ImportedGgufModelRepository {
 
 
   Future<void> reconcileCompletedDownloads() async {
+    final pending = _reconcileFuture;
+    if (pending != null) return pending;
+    final future = _reconcileOnce();
+    _reconcileFuture = future;
+    try {
+      await future;
+    } finally {
+      _reconcileFuture = null;
+    }
+  }
+
+  Future<void> _reconcileOnce() async {
     List<TaskRecord> records;
     try {
       records = await FileDownloader().database.allRecords(
@@ -1039,11 +1056,7 @@ class ImportedGgufModelRepository {
           final fresh = load();
           final i = fresh.indexWhere((m) => m.id == modelId);
           if (i >= 0) {
-            if (oldFilePath != null &&
-                oldFilePath != filePath &&
-                await File(oldFilePath).exists()) {
-              try { await File(oldFilePath).delete(); } catch (_) {}
-            }
+            // Save metadata FIRST (crash-safe).
             fresh[i] = fresh[i].copyWith(
               filePath: filePath,
               fileSizeBytes: await file.length(),
@@ -1053,6 +1066,12 @@ class ImportedGgufModelRepository {
               lastCheckedAt: DateTime.now(),
             );
             await _saveAllUnlocked(fresh);
+            // THEN delete old file (best-effort).
+            if (oldFilePath != null &&
+                oldFilePath != filePath &&
+                await File(oldFilePath).exists()) {
+              try { await File(oldFilePath).delete(); } catch (_) {}
+            }
           }
         });
 
@@ -1311,10 +1330,24 @@ class ImportedGgufModelRepository {
   Future<TaskStatus> downloadUpdate(
     String modelId, {
     String? token,
+    String? operationId,
     void Function(int receivedBytes, int totalBytes)? onProgress,
   }) async {
     final lock = _downloadMutexes.putIfAbsent(modelId, () => AsyncMutex());
     return lock.run(() async {
+      // Write-ahead intent.
+      if (operations != null && operationId != null) {
+        await operations!.begin(DownloadOperation(
+          operationId: operationId,
+          modelId: modelId,
+          type: DownloadOperationType.update,
+          taskId: '$modelId-update',
+          phase: DownloadOperationPhase.downloading,
+          startedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ));
+      }
+
       final models = load();
       final index = models.indexWhere((model) => model.id == modelId);
       if (index < 0) {
@@ -1322,6 +1355,14 @@ class ImportedGgufModelRepository {
       }
       final model = models[index];
       final originalRevision = model.revision;
+      if (operations != null && operationId != null) {
+        await operations!.enrich(
+          operationId,
+          taskId: '$modelId-update',
+          baseRevision: model.revision,
+          targetRevision: model.latestRevision,
+        );
+      }
       if (model.sourceUrl == null || model.sourceUrl!.isEmpty) {
         throw const FormatException('Imported GGUF model has no source URL.');
       }
@@ -1375,11 +1416,17 @@ class ImportedGgufModelRepository {
       if (result.status == TaskStatus.canceled) {
         _activeGgufTasks.remove(modelId);
         await FileDownloader().database.deleteRecordWithId('$modelId-update');
+        if (operations != null && operationId != null) {
+          await operations!.fail(operationId);
+        }
         throw const HttpException('GGUF update canceled.');
       }
       if (result.status != TaskStatus.complete) {
         _activeGgufTasks.remove(modelId);
         await FileDownloader().database.deleteRecordWithId('$modelId-update');
+        if (operations != null && operationId != null) {
+          await operations!.fail(operationId);
+        }
         // Clean up temp file.
         try {
           final tempPath = await task.filePath();
@@ -1432,6 +1479,9 @@ class ImportedGgufModelRepository {
         }
       });
 
+      if (operations != null && operationId != null) {
+        await operations!.complete(operationId);
+      }
       _activeGgufTasks.remove(modelId);
       await FileDownloader().database.deleteRecordWithId('$modelId-update');
       return TaskStatus.complete;

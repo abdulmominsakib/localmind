@@ -12,6 +12,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../core/providers/review_prompt_providers.dart';
 import '../../../core/providers/storage_providers.dart';
 import '../data/models/download_progress_info.dart';
+import '../data/download_operation_store.dart';
 import '../data/models/download_status.dart';
 import '../data/models/on_device_model.dart';
 import '../utils/on_device_error_formatter.dart';
@@ -43,12 +44,15 @@ class ForegroundDownloadNotifier
   final Map<String, Future<String?>> _inFlightDownloads = {};
   final Set<String> _updateInProgress = {};
   Timer? _hydrationPollTimer;
+  DownloadOperationStore? _operations;
   bool _isHydrating = false;
   static const _storageKey = 'model_downloads_state';
 
   @override
   Map<String, DownloadProgressInfo> build() {
     ref.onDispose(() => _hydrationPollTimer?.cancel());
+    _operations = ref.read(downloadOperationStoreProvider);
+    _operations!.loadSync();
     ref.listen(settingsProvider.select((s) => s.huggingFaceToken), (prev, next) {
       if (prev == next) return;
       // Scrub persisted downloader task records so a cleared/replaced
@@ -114,7 +118,11 @@ class ForegroundDownloadNotifier
       final next = Map<String, DownloadProgressInfo>.from(state);
 
       for (final r in byKey.values) {
-        final modelId = r.task.taskId;
+        final rawTaskId = r.task.taskId;
+        final isUpdate = rawTaskId.endsWith('-update');
+        final modelId = isUpdate
+            ? rawTaskId.substring(0, rawTaskId.length - '-update'.length)
+            : rawTaskId;
         final model = models.where((m) => m.id == modelId).firstOrNull;
         if (model == null) continue; // model removed from list
 
@@ -177,13 +185,14 @@ class ForegroundDownloadNotifier
           progress: progress ?? 0.0,
           receivedBytes: received,
           totalBytes: total,
-          taskId: modelId,
+          taskId: rawTaskId,
           isResumed: isBg,
         );
 
         if (isBg) {
           _activeDownloads[modelId] = true;
           _downloadStartTimes[modelId] = DateTime.now();
+          if (isUpdate) _updateInProgress.add(modelId);
         }
       }
 
@@ -234,7 +243,7 @@ class ForegroundDownloadNotifier
       for (final id in activeIds) {
         // Skip if cancelled or removed from state while we awaited.
         if (_cancelled.contains(id) || !state.containsKey(id)) continue;
-        final r = byId[id];
+        final r = byId[state[id]?.taskId ?? id];
         if (r == null) continue;
         if (r.status == TaskStatus.complete ||
             r.status == TaskStatus.failed ||
@@ -427,6 +436,7 @@ class ForegroundDownloadNotifier
         status = await repository.downloadUpdate(
           modelId,
           token: token,
+          operationId: opId,
           onProgress: (received, total) {
             if (!ref.mounted) return;
             if (!_isActiveOp(modelId, opId)) return;
@@ -450,6 +460,7 @@ class ForegroundDownloadNotifier
         status = await repository.downloadUpdate(
           modelId,
           token: token,
+          operationId: opId,
           onProgress: (received, total) {
             if (!ref.mounted) return;
             if (!_isActiveOp(modelId, opId)) return;

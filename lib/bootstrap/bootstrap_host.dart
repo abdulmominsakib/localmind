@@ -15,6 +15,7 @@ import '../core/providers/storage_providers.dart';
 import '../core/storage/objectbox_store.dart';
 import '../features/on_device/data/on_device_gemma_service.dart';
 import '../features/on_device/providers/foreground_download_providers.dart';
+import '../features/on_device/data/download_operation_store.dart';
 import '../features/on_device/providers/on_device_providers.dart';
 import '../core/models/enums.dart';
 import '../features/personas/providers/personas_providers.dart';
@@ -95,6 +96,7 @@ class _BootstrapHostState extends State<BootstrapHost> {
       final container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          downloadOperationStoreProvider.overrideWithValue(DownloadOperationStore(prefs)),
           databaseProvider.overrideWithValue(database),
           localInferenceProvider.overrideWith(
             (ref) => ref.watch(externalInferenceProvider),

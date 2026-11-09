@@ -10,6 +10,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/utils/async_mutex.dart';
+import 'download_operation_store.dart';
+import 'models/download_operation.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/utils/hugging_face_url.dart';
 import 'package:background_downloader/background_downloader.dart';
@@ -327,7 +329,9 @@ class ImportedLitertModelRepository {
   final Dio _dio;
   final Random _random;
   final Future<Directory> Function()? modelsDirectoryProvider;
+  final DownloadOperationStore? operations;
   final AsyncMutex _mutex = AsyncMutex();
+  Future<void>? _reconcileFuture;
   final Set<String> _registeredLocalModels = <String>{};
   final Map<String, Task> _activeLitertTasks = <String, Task>{};
 
@@ -336,6 +340,7 @@ class ImportedLitertModelRepository {
     this._dio, {
     Random? random,
     this.modelsDirectoryProvider,
+    this.operations,
   }) : _random = random ?? Random.secure();
 
   List<ImportedLitertModelMetadata> load() {
@@ -471,6 +476,18 @@ class ImportedLitertModelRepository {
   }
 
   Future<void> reconcileCompletedDownloads() async {
+    final pending = _reconcileFuture;
+    if (pending != null) return pending;
+    final future = _reconcileOnce();
+    _reconcileFuture = future;
+    try {
+      await future;
+    } finally {
+      _reconcileFuture = null;
+    }
+  }
+
+  Future<void> _reconcileOnce() async {
     List<TaskRecord> records;
     try {
       records = await FileDownloader().database.allRecords(
@@ -525,9 +542,15 @@ class ImportedLitertModelRepository {
         } catch (_) {
           continue;
         }
-        if (filePath == null || filePath.isEmpty) continue;
+        if (filePath == null || filePath.isEmpty) {
+          try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+          continue;
+        }
         final file = File(filePath);
-        if (!await file.exists() || await file.length() <= 0) continue;
+        if (!await file.exists() || await file.length() <= 0) {
+          try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+          continue;
+        }
 
         try {
           final previousSpec = FlutterGemma.activeModelSpec;
@@ -542,6 +565,13 @@ class ImportedLitertModelRepository {
             await FlutterGemma.clearActiveInferenceIdentity();
           }
         } catch (_) {
+          // Quarantine: delete record and temp file.
+          try { await FileDownloader().database.deleteRecordWithId(rawId); } catch (_) {}
+          try {
+            final tp = await record.task.filePath();
+            final tf = File(tp);
+            if (await tf.exists()) await tf.delete();
+          } catch (_) {}
           continue;
         }
 
@@ -551,14 +581,7 @@ class ImportedLitertModelRepository {
           if (i >= 0) {
             final oldInstallName = fresh[i].installFileName ?? fresh[i].fileName;
             final oldPath = fresh[i].filePath;
-            if (oldInstallName != record.task.filename) {
-              try {
-                await FlutterGemma.uninstallModel(oldInstallName);
-              } catch (_) {}
-            }
-            if (oldPath != null && oldPath != filePath && await File(oldPath).exists()) {
-              try { await File(oldPath).delete(); } catch (_) {}
-            }
+            // Save metadata FIRST (crash-safe).
             fresh[i] = fresh[i].copyWith(
               filePath: filePath,
               installFileName: record.task.filename,
@@ -569,6 +592,15 @@ class ImportedLitertModelRepository {
               lastCheckedAt: DateTime.now(),
             );
             await _saveAllUnlocked(fresh);
+            // THEN uninstall/delete old (best-effort).
+            if (oldInstallName != record.task.filename) {
+              try {
+                await FlutterGemma.uninstallModel(oldInstallName);
+              } catch (_) {}
+            }
+            if (oldPath != null && oldPath != filePath && await File(oldPath).exists()) {
+              try { await File(oldPath).delete(); } catch (_) {}
+            }
           }
         });
 
@@ -1012,8 +1044,22 @@ class ImportedLitertModelRepository {
   Future<TaskStatus> downloadUpdate(
     String modelId, {
     String? token,
+    String? operationId,
     void Function(int receivedBytes, int totalBytes)? onProgress,
   }) async {
+    // Write-ahead intent.
+    if (operations != null && operationId != null) {
+      await operations!.begin(DownloadOperation(
+        operationId: operationId,
+        modelId: modelId,
+        type: DownloadOperationType.update,
+        taskId: '$modelId-update',
+        phase: DownloadOperationPhase.downloading,
+        startedAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+    }
+
     final model = await _mutex.run(() async {
       final models = load();
       final index = models.indexWhere((m) => m.id == modelId);
@@ -1025,6 +1071,15 @@ class ImportedLitertModelRepository {
 
     if (model.sourceUrl == null || model.sourceUrl!.isEmpty) {
       throw const FormatException('Imported LiteRT model has no source URL.');
+    }
+
+    if (operations != null && operationId != null) {
+      await operations!.enrich(
+        operationId,
+        taskId: '$modelId-update',
+        baseRevision: model.revision,
+        targetRevision: model.latestRevision,
+      );
     }
 
     final updateTaskId = '$modelId-update';
@@ -1087,11 +1142,17 @@ class ImportedLitertModelRepository {
     if (result.status == TaskStatus.canceled) {
       _activeLitertTasks.remove(modelId);
       await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      if (operations != null && operationId != null) {
+        await operations!.fail(operationId);
+      }
       throw const HttpException('LiteRT update canceled.');
     }
     if (result.status != TaskStatus.complete) {
       _activeLitertTasks.remove(modelId);
       await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      if (operations != null && operationId != null) {
+        await operations!.fail(operationId);
+      }
       // Clean up temp file.
       try {
         final tempPath = await task.filePath();
@@ -1104,6 +1165,9 @@ class ImportedLitertModelRepository {
     }
 
     // Finalize: register new install, swap metadata, clean up old.
+    if (operations != null && operationId != null) {
+      await operations!.markPhase(operationId, DownloadOperationPhase.finalizing);
+    }
     try {
       final status = await _finalizeLitertUpdate(
         modelId,
@@ -1114,10 +1178,16 @@ class ImportedLitertModelRepository {
         oldInstallName,
       );
       await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      if (operations != null && operationId != null) {
+        await operations!.complete(operationId);
+      }
       return status;
     } catch (e) {
       _activeLitertTasks.remove(modelId);
       await FileDownloader().database.deleteRecordWithId(updateTaskId);
+      if (operations != null && operationId != null) {
+        await operations!.fail(operationId);
+      }
       // Clean up temp file.
       try {
         final tempPath = await task.filePath();
