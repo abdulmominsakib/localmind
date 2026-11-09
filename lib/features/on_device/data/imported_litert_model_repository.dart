@@ -40,6 +40,8 @@ class ImportedLitertModelMetadata {
   final String? revision;
   final String? fileOid;
   final DateTime? lastModified;
+  final String? latestFileOid;
+  final DateTime? latestLastModified;
   final DateTime? lastCheckedAt;
   final String? pipelineTag;
   final String? libraryName;
@@ -70,6 +72,8 @@ class ImportedLitertModelMetadata {
     this.revision,
     this.fileOid,
     this.lastModified,
+    this.latestFileOid,
+    this.latestLastModified,
     this.lastCheckedAt,
     this.pipelineTag,
     this.libraryName,
@@ -130,6 +134,8 @@ class ImportedLitertModelMetadata {
     Object? revision = _unset,
     Object? fileOid = _unset,
     Object? lastModified = _unset,
+    Object? latestFileOid = _unset,
+    Object? latestLastModified = _unset,
     Object? lastCheckedAt = _unset,
     Object? pipelineTag = _unset,
     Object? libraryName = _unset,
@@ -170,6 +176,12 @@ class ImportedLitertModelMetadata {
       lastModified: identical(lastModified, _unset)
           ? this.lastModified
           : lastModified as DateTime?,
+      latestFileOid: identical(latestFileOid, _unset)
+          ? this.latestFileOid
+          : latestFileOid as String?,
+      latestLastModified: identical(latestLastModified, _unset)
+          ? this.latestLastModified
+          : latestLastModified as DateTime?,
       lastCheckedAt: identical(lastCheckedAt, _unset)
           ? this.lastCheckedAt
           : lastCheckedAt as DateTime?,
@@ -251,6 +263,8 @@ class ImportedLitertModelMetadata {
       'revision': revision,
       'fileOid': fileOid,
       'lastModified': lastModified?.toIso8601String(),
+      'latestFileOid': latestFileOid,
+      'latestLastModified': latestLastModified?.toIso8601String(),
       'lastCheckedAt': lastCheckedAt?.toIso8601String(),
       'pipelineTag': pipelineTag,
       'libraryName': libraryName,
@@ -287,6 +301,10 @@ class ImportedLitertModelMetadata {
       fileOid: json['fileOid'] as String?,
       lastModified: json['lastModified'] != null
           ? DateTime.tryParse(json['lastModified'] as String)
+          : null,
+      latestFileOid: json['latestFileOid'] as String?,
+      latestLastModified: json['latestLastModified'] != null
+          ? DateTime.tryParse(json['latestLastModified'] as String)
           : null,
       lastCheckedAt: json['lastCheckedAt'] != null
           ? DateTime.tryParse(json['lastCheckedAt'] as String)
@@ -731,7 +749,9 @@ class ImportedLitertModelRepository {
         );
         if (info == null) continue;
         bool changed = false;
-        if (model.fileOid != null && info.fileOid != null) {
+        if (model.latestFileOid != null && info.fileOid != null) {
+          changed = model.latestFileOid != info.fileOid;
+        } else if (model.fileOid != null && info.fileOid != null) {
           changed = model.fileOid != info.fileOid;
         } else if (model.revision != null && info.sha != null) {
           changed = model.revision != info.sha;
@@ -744,8 +764,8 @@ class ImportedLitertModelRepository {
             lastCheckedAt: DateTime.now(),
             updateAvailable: changed ? true : fresh[idx].updateAvailable,
             latestRevision: changed ? info.sha : fresh[idx].latestRevision,
-            fileOid: info.fileOid ?? fresh[idx].fileOid,
-            lastModified: info.lastModified ?? fresh[idx].lastModified,
+            latestFileOid: info.fileOid ?? fresh[idx].latestFileOid,
+            latestLastModified: info.lastModified ?? fresh[idx].latestLastModified,
             pipelineTag: info.pipelineTag ?? fresh[idx].pipelineTag,
             libraryName: info.libraryName ?? fresh[idx].libraryName,
             license: info.license ?? fresh[idx].license,
@@ -1269,8 +1289,10 @@ class ImportedLitertModelRepository {
         installFileName: installName,
         fileSizeBytes: await file.length(),
         revision: oldModel.latestRevision ?? oldModel.revision,
-        fileOid: oldModel.fileOid,
-        lastModified: oldModel.lastModified,
+        fileOid: oldModel.latestFileOid ?? oldModel.fileOid,
+        lastModified: oldModel.latestLastModified ?? oldModel.lastModified,
+        latestFileOid: null,
+        latestLastModified: null,
         updateAvailable: false,
         latestRevision: null,
         lastCheckedAt: DateTime.now(),
