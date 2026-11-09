@@ -3388,6 +3388,59 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get localApiCopied => 'Copied to clipboard';
+
+  @override
+  String get image_generation => '图像生成';
+
+  @override
+  String get image_model_ids => '图像模型 ID';
+
+  @override
+  String get image_model_ids_hint => '输入自定义 ID，以逗号或换行分隔。';
+
+  @override
+  String get image_generation_prompt => '描述你想生成的图像';
+
+  @override
+  String get image_generation_temporary => '图像生成仅适用于会保存记录的聊天。请开启会保存记录的聊天来生成图像。';
+
+  @override
+  String get image_generation_remove_attachments => '请先移除附件，再生成图像。';
+
+  @override
+  String get image_generation_unavailable =>
+      'This server or model does not expose a compatible Images API. Check the server URL and model ID.';
+
+  @override
+  String get image_generation_auth =>
+      'Check the API key and whether it can access this image model.';
+
+  @override
+  String get image_generation_quota =>
+      'The provider reached its rate limit or quota. Check your account before retrying.';
+
+  @override
+  String get image_generation_rejected =>
+      'The provider rejected the image request. Check the prompt and try again.';
+
+  @override
+  String get image_generation_timeout =>
+      'Image generation timed out. Try again when the provider is available.';
+
+  @override
+  String get image_generation_invalid =>
+      'The provider returned an invalid or unsupported image.';
+
+  @override
+  String get image_generation_failed =>
+      'Could not generate an image. Check the connection and try again.';
+
+  @override
+  String get image_generation_save_failed =>
+      'Could not save the generated image. Check available storage and try again.';
+
+  @override
+  String get image_generation_share => '分享图像';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6543,4 +6596,25 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get model_still_stopping => '模型仍在停止中，請稍後再試。';
+
+  @override
+  String get image_generation => '圖片生成';
+
+  @override
+  String get image_model_ids => '圖片模型 ID';
+
+  @override
+  String get image_model_ids_hint => '輸入自訂 ID，以逗號或換行分隔。';
+
+  @override
+  String get image_generation_prompt => '描述你想生成的圖片';
+
+  @override
+  String get image_generation_temporary => '圖片生成僅適用於會儲存記錄的聊天。請開啟會儲存記錄的聊天來生成圖片。';
+
+  @override
+  String get image_generation_remove_attachments => '請先移除附件，再生成圖片。';
+
+  @override
+  String get image_generation_share => '分享圖片';
 }

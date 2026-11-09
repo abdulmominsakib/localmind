@@ -998,5 +998,12 @@
   "sidebar_section_chats": "Chats",
   "sidebar_section_models": "Modelos",
   "sidebar_section_app": "App",
-  "model_still_stopping": "O modelo ainda está parando. Aguarde antes de tentar novamente."
+  "model_still_stopping": "O modelo ainda está parando. Aguarde antes de tentar novamente.",
+  "image_generation": "Geração de imagens",
+  "image_model_ids": "IDs de modelos de imagem",
+  "image_model_ids_hint": "Separe os IDs personalizados por vírgulas ou quebras de linha.",
+  "image_generation_prompt": "Descreva a imagem que você quer criar",
+  "image_generation_temporary": "Você pode gerar imagens em conversas salvas. Inicie uma conversa salva para criar uma imagem.",
+  "image_generation_remove_attachments": "Remova os anexos antes de gerar uma imagem.",
+  "image_generation_share": "Compartilhar imagem"
 }

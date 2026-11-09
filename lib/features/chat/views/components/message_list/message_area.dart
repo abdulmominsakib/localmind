@@ -57,6 +57,7 @@ class MessageArea extends ConsumerWidget {
           ? NewChatReadiness.ready
           : NewChatReadiness.noModel;
     }
+    if (target.isImageGeneration) return NewChatReadiness.ready;
     final status = ref.watch(connectionStatusProvider);
     if (status == ConnectionStatus.disconnected ||
         status == ConnectionStatus.error) {
@@ -70,6 +71,9 @@ class MessageArea extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final imageMode = ref.watch(
+      activeChatTargetProvider.select((t) => t.isImageGeneration),
+    );
 
     if (isLoading) {
       return const Center(child: CircularProgressIndicator(strokeWidth: 2));
@@ -113,24 +117,26 @@ class MessageArea extends ConsumerWidget {
           }
           ref.read(chatProvider.notifier).sendMessage(prompt);
         },
-        quickPrompts: [
-          QuickPrompt(
-            icon: HugeIcons.strokeRoundedSourceCode,
-            text: l10n.quick_write,
-          ),
-          QuickPrompt(
-            icon: HugeIcons.strokeRoundedCode,
-            text: l10n.quick_explain,
-          ),
-          QuickPrompt(
-            icon: HugeIcons.strokeRoundedBug01,
-            text: l10n.quick_debug,
-          ),
-          QuickPrompt(
-            icon: HugeIcons.strokeRoundedIdea01,
-            text: l10n.quick_async,
-          ),
-        ],
+        quickPrompts: imageMode
+            ? const []
+            : [
+                QuickPrompt(
+                  icon: HugeIcons.strokeRoundedSourceCode,
+                  text: l10n.quick_write,
+                ),
+                QuickPrompt(
+                  icon: HugeIcons.strokeRoundedCode,
+                  text: l10n.quick_explain,
+                ),
+                QuickPrompt(
+                  icon: HugeIcons.strokeRoundedBug01,
+                  text: l10n.quick_debug,
+                ),
+                QuickPrompt(
+                  icon: HugeIcons.strokeRoundedIdea01,
+                  text: l10n.quick_async,
+                ),
+              ],
         bottomInset: effectiveBottomInset,
         keyboardOpen: keyboardBottomInset > 0,
       );
@@ -192,12 +198,25 @@ class MessageArea extends ConsumerWidget {
         message,
         isTemporaryChat: ref.read(chatProvider.select((s) => s.isTemporary)),
       ),
-      onShare: (message) => ShareService.shareText(message.content),
+      onShare: (message) {
+        if (message.role == MessageRole.assistant &&
+            message.content.trim().isEmpty) {
+          final paths = message.attachmentPaths ?? const [];
+          final box = context.findRenderObject();
+          final origin = box is RenderBox && box.hasSize
+              ? box.localToGlobal(Offset.zero) & box.size
+              : null;
+          if (paths.isNotEmpty) ShareService.shareFiles(paths, origin: origin);
+          return;
+        }
+        ShareService.shareText(message.content);
+      },
       onGenerateResponse: () =>
           ref.read(chatProvider.notifier).generateResponseForLastUser(),
       onModelPicker: onModelPicker,
       onModelLongPress: (modelId) => showModelInfoSheet(context, ref, modelId),
       hasSmartReplies:
+          !imageMode &&
           !isStreaming &&
           keyboardBottomInset == 0 &&
           (ref.watch(smartRepliesProvider).asData?.value.isNotEmpty ?? false),

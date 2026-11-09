@@ -30,6 +30,46 @@ void main() {
     );
   }
 
+  testWidgets('an image-only reply shows preview and share controls', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final message = Message(
+      id: 'image',
+      conversationId: 'conv-1',
+      role: MessageRole.assistant,
+      content: '',
+      attachmentPaths: ['/missing/generated-image-abcdef.png'],
+      createdAt: DateTime.now(),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: AssistantBubble(
+              message: message,
+              onShare: () {},
+              onRetry: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(Image), findsOneWidget);
+    expect(find.text('No response'), findsNothing);
+    expect(find.byKey(const ValueKey('message_action_copy')), findsNothing);
+    expect(find.byKey(const ValueKey('message_action_speak')), findsNothing);
+    expect(find.byKey(const ValueKey('message_action_retry')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('message_action_more')));
+    await tester.pumpAndSettle();
+    expect(find.text('Share image'), findsOneWidget);
+  });
+
   testWidgets(
     'AssistantBubble streaming content disables SelectionArea to prevent concurrent modification crash',
     (tester) async {

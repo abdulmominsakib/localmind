@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+
 import 'package:localmind/features/servers/data/models/server.dart';
 
 import '../data/chat_service.dart';
@@ -28,6 +30,7 @@ class GenerationSession {
     required this.server,
     required this.chatService,
     required this.persisted,
+    this.imageCancelToken,
   });
 
   static const _checkpointChunkThreshold = 20;
@@ -42,6 +45,8 @@ class GenerationSession {
 
   /// False for temporary chats, whose messages are never written to disk.
   final bool persisted;
+  final CancelToken? imageCancelToken;
+  bool get isImageGeneration => imageCancelToken != null;
 
   bool get isOnDevice => server.isOnDevice;
 
@@ -111,6 +116,7 @@ class GenerationSession {
   /// stream subscription. Does not cancel the underlying request.
   Future<void> detach() async {
     cancelled = true;
+    imageCancelToken?.cancel();
     cancelUiTimer();
     final sub = subscription;
     subscription = null;

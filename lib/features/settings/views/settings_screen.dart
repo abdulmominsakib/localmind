@@ -99,7 +99,10 @@ class _SettingsViewsState extends ConsumerState<SettingsViews> {
                   const <dynamic>[])
               .cast<ModelInfo>()
         : <ModelInfo>[];
-    final models = availableModels.map((m) => (m.id, m.displayName)).toList();
+    final models = availableModels
+        .where((model) => !model.isImageGeneration)
+        .map((model) => (model.id, model.displayName))
+        .toList();
     final isDefaultModelForServer =
         settings.defaultModelServerId != null &&
         settings.defaultModelServerId == defaultServerId;

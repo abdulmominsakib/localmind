@@ -3474,4 +3474,60 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get localApiCopied => 'Copied to clipboard';
+
+  @override
+  String get image_generation => 'إنشاء الصور';
+
+  @override
+  String get image_model_ids => 'معرّفات نماذج الصور';
+
+  @override
+  String get image_model_ids_hint =>
+      'أدخل المعرّفات المخصصة مفصولة بفواصل أو أسطر جديدة.';
+
+  @override
+  String get image_generation_prompt => 'صِف الصورة التي تريد إنشاءها';
+
+  @override
+  String get image_generation_temporary =>
+      'يمكن إنشاء الصور في المحادثات المحفوظة. ابدأ محادثة محفوظة لإنشاء صورة.';
+
+  @override
+  String get image_generation_remove_attachments =>
+      'أزل المرفقات قبل إنشاء صورة.';
+
+  @override
+  String get image_generation_unavailable =>
+      'This server or model does not expose a compatible Images API. Check the server URL and model ID.';
+
+  @override
+  String get image_generation_auth =>
+      'Check the API key and whether it can access this image model.';
+
+  @override
+  String get image_generation_quota =>
+      'The provider reached its rate limit or quota. Check your account before retrying.';
+
+  @override
+  String get image_generation_rejected =>
+      'The provider rejected the image request. Check the prompt and try again.';
+
+  @override
+  String get image_generation_timeout =>
+      'Image generation timed out. Try again when the provider is available.';
+
+  @override
+  String get image_generation_invalid =>
+      'The provider returned an invalid or unsupported image.';
+
+  @override
+  String get image_generation_failed =>
+      'Could not generate an image. Check the connection and try again.';
+
+  @override
+  String get image_generation_save_failed =>
+      'Could not save the generated image. Check available storage and try again.';
+
+  @override
+  String get image_generation_share => 'مشاركة الصورة';
 }

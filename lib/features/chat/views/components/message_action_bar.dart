@@ -24,12 +24,13 @@ class MessageActionBar extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        MessageActionButton(
-          key: const ValueKey('message_action_copy'),
-          icon: HugeIcons.strokeRoundedCopy01,
-          label: l10n.copy,
-          onTap: () => copyMessageText(context, actions),
-        ),
+        if (actions.content.isNotEmpty)
+          MessageActionButton(
+            key: const ValueKey('message_action_copy'),
+            icon: HugeIcons.strokeRoundedCopy01,
+            label: l10n.copy,
+            onTap: () => copyMessageText(context, actions),
+          ),
         if (actions.onRetry != null)
           MessageActionButton(
             key: const ValueKey('message_action_retry'),
@@ -37,21 +38,24 @@ class MessageActionBar extends ConsumerWidget {
             label: l10n.retry,
             onTap: actions.onRetry,
           ),
-        MessageActionButton(
-          key: const ValueKey('message_action_speak'),
-          icon: speaking
-              ? (playing
-                    ? HugeIcons.strokeRoundedPauseCircle
-                    : HugeIcons.strokeRoundedPlayCircle)
-              : (initializing
-                    ? HugeIcons.strokeRoundedClock01
-                    : HugeIcons.strokeRoundedVolumeUp),
-          label: speaking
-              ? (playing ? l10n.pause : l10n.resume)
-              : (initializing ? l10n.initializing : l10n.read_aloud),
-          isActive: speaking,
-          onTap: initializing ? null : () => toggleMessageSpeech(ref, actions),
-        ),
+        if (actions.content.isNotEmpty)
+          MessageActionButton(
+            key: const ValueKey('message_action_speak'),
+            icon: speaking
+                ? (playing
+                      ? HugeIcons.strokeRoundedPauseCircle
+                      : HugeIcons.strokeRoundedPlayCircle)
+                : (initializing
+                      ? HugeIcons.strokeRoundedClock01
+                      : HugeIcons.strokeRoundedVolumeUp),
+            label: speaking
+                ? (playing ? l10n.pause : l10n.resume)
+                : (initializing ? l10n.initializing : l10n.read_aloud),
+            isActive: speaking,
+            onTap: initializing
+                ? null
+                : () => toggleMessageSpeech(ref, actions),
+          ),
         MessageActionButton(
           key: const ValueKey('message_action_more'),
           icon: HugeIcons.strokeRoundedMoreHorizontal,

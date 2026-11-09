@@ -121,6 +121,32 @@ class ServerApiService {
     }
   }
 
+  Future<List<ModelInfo>> fetchOpenRouterImageModels(Server server) async {
+    final response = await _dio.get(
+      '${server.baseUrl}/images/models',
+      options: Options(headers: server.authHeaders),
+    );
+    final data = response.data;
+    final items = data is Map ? data['data'] : null;
+    if (items is! List) {
+      throw const FormatException('Invalid image model catalog');
+    }
+    final models = <String, ModelInfo>{};
+    for (final item in items.whereType<Map>()) {
+      final id = item['id'];
+      if (id is! String || id.trim().isEmpty) continue;
+      models[id] = ModelInfo(
+        id: id,
+        name: item['name']?.toString() ?? '',
+        description: item['description']?.toString(),
+        serverType: server.type,
+        serverId: server.id,
+        isImageGeneration: true,
+      );
+    }
+    return models.values.toList();
+  }
+
   Future<Set<String>> fetchRunningModels(Server server) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
@@ -416,6 +442,34 @@ class ServerApiService {
             item['id']?.toString() ??
             '';
         if (id.isEmpty) continue;
+
+        if (server.type == ServerType.openAICompatible) {
+          final architecture = item['architecture'];
+          final output =
+              item['output_modalities'] ??
+              (architecture is Map ? architecture['output_modalities'] : null);
+          final modalities = output is List
+              ? output
+                    .map((value) => value.toString().trim().toLowerCase())
+                    .toSet()
+              : const <String>{};
+          final officialImage =
+              Uri.parse(server.baseUrl).host == 'api.openai.com' &&
+              (id.startsWith('gpt-image-') || id == 'chatgpt-image-latest');
+          if (officialImage || modalities.contains('image')) {
+            models.add(
+              ModelInfo(
+                id: id,
+                name: item['display_name']?.toString() ?? _formatModelName(id),
+                description: item['description']?.toString(),
+                serverType: server.type,
+                serverId: server.id,
+                isImageGeneration: true,
+              ),
+            );
+            if (officialImage || !modalities.contains('text')) continue;
+          }
+        }
 
         final displayName = item['display_name']?.toString();
         final quantization = item['quantization'];

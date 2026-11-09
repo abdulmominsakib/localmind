@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/providers/storage_providers.dart';
 import '../../../core/services/data_backup_service.dart';
+import '../../../core/services/generated_image_files.dart';
 import '../../conversations/providers/conversation_providers.dart';
 import '../../personas/providers/personas_providers.dart';
 import '../../saved_messages/providers/saved_message_providers.dart';
@@ -428,7 +429,8 @@ class CloudSyncController extends Notifier<CloudSyncStatus> {
     int generation,
   ) async {
     final appDir = await getApplicationDocumentsDirectory();
-    final attachmentsDir = p.normalize(p.join(appDir.path, 'attachments'));
+    final generatedFiles = GeneratedImageFiles(appDir);
+    final attachmentsDir = p.normalize(generatedFiles.directory.path);
     final messages = payload['messages'];
     if (messages is! List) return;
     for (final raw in messages.whereType<Map>()) {
@@ -452,7 +454,7 @@ class CloudSyncController extends Notifier<CloudSyncStatus> {
           refs.add(value);
           continue;
         }
-        final normalized = p.normalize(value);
+        final normalized = p.normalize(generatedFiles.resolvePath(value));
         if (!p.isWithin(attachmentsDir, normalized)) {
           _preserveUnavailableAttachment(
             refs,

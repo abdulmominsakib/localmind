@@ -987,5 +987,12 @@
   "sidebar_section_chats": "チャット",
   "sidebar_section_models": "モデル",
   "sidebar_section_app": "アプリ",
-  "model_still_stopping": "モデルを停止しています。しばらく待ってからもう一度お試しください。"
+  "model_still_stopping": "モデルを停止しています。しばらく待ってからもう一度お試しください。",
+  "image_generation": "画像生成",
+  "image_model_ids": "画像モデルID",
+  "image_model_ids_hint": "カスタムIDをカンマまたは改行で区切って入力してください。",
+  "image_generation_prompt": "作成したい画像を説明してください",
+  "image_generation_temporary": "画像生成は履歴に保存されるチャットで利用できます。画像を作成するには、保存されるチャットを開始してください。",
+  "image_generation_remove_attachments": "画像を生成する前に添付ファイルを削除してください。",
+  "image_generation_share": "画像を共有"
 }

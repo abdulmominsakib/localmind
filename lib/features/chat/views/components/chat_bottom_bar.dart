@@ -26,6 +26,9 @@ class ChatBottomBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final imageMode = ref.watch(
+      activeChatTargetProvider.select((t) => t.isImageGeneration),
+    );
     final isTemporary = ref.watch(chatProvider.select((s) => s.isTemporary));
     final keyboardIncognito =
         isTemporary &&
@@ -96,7 +99,7 @@ class ChatBottomBar extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!isStreaming && keyboardBottomInset == 0) ...[
+            if (!imageMode && !isStreaming && keyboardBottomInset == 0) ...[
               const SizedBox(height: 4),
               const SmartReplyChipsWrapper(),
             ],

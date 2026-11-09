@@ -20,7 +20,7 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
   final chatService = ref.watch(chatServiceProvider);
 
   // The setting hides every suggestion, including cached and fallback ones.
-  if (!settings.smartReplyEnabled) return [];
+  if (!settings.smartReplyEnabled || target.isImageGeneration) return [];
   if (isStreaming) return [];
   if (voiceState.isActive || voiceState.phase != VoiceModePhase.idle) return [];
 
@@ -29,7 +29,8 @@ final smartRepliesProvider = FutureProvider<List<String>>((ref) async {
 
   final lastMessage = messages.last;
   if (lastMessage.role != MessageRole.assistant ||
-      lastMessage.status != MessageStatus.complete) {
+      lastMessage.status != MessageStatus.complete ||
+      !shouldIncludeMessageInChatContext(lastMessage)) {
     return [];
   }
 

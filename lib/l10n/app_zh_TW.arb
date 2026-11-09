@@ -987,5 +987,12 @@
   "sidebar_section_chats": "聊天",
   "sidebar_section_models": "模型",
   "sidebar_section_app": "應用程式",
-  "model_still_stopping": "模型仍在停止中，請稍後再試。"
+  "model_still_stopping": "模型仍在停止中，請稍後再試。",
+  "image_generation": "圖片生成",
+  "image_model_ids": "圖片模型 ID",
+  "image_model_ids_hint": "輸入自訂 ID，以逗號或換行分隔。",
+  "image_generation_prompt": "描述你想生成的圖片",
+  "image_generation_temporary": "圖片生成僅適用於會儲存記錄的聊天。請開啟會儲存記錄的聊天來生成圖片。",
+  "image_generation_remove_attachments": "請先移除附件，再生成圖片。",
+  "image_generation_share": "分享圖片"
 }

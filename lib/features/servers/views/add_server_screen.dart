@@ -33,6 +33,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   late TextEditingController _apiKeyController;
   late TextEditingController _ramGbController;
   late TextEditingController _vramGbController;
+  late TextEditingController _imageModelIdsController;
 
   late ServerType _selectedType;
   String? _selectedIconName;
@@ -111,6 +112,11 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       text: server?.availableVramGb?.toString() ?? '',
     );
     _lastHostScheme = isHttpsAddressInput(initialHost) ? 'https' : 'http';
+    _imageModelIdsController = TextEditingController(
+      text: server?.type != ServerType.openAICompatible
+          ? ''
+          : ref.read(manualImageModelIdsProvider(server!.id)).join('\n'),
+    );
     _hostController.addListener(_onHostChanged);
   }
 
@@ -124,6 +130,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     _apiKeyController.dispose();
     _ramGbController.dispose();
     _vramGbController.dispose();
+    _imageModelIdsController.dispose();
     super.dispose();
   }
 
@@ -292,6 +299,13 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       // Guard every ref-touching statement post-await — the user can pop
       // this screen after the provider mutation succeeds.
       if (!mounted) return;
+      if (server.type == ServerType.openAICompatible) {
+        await ref
+            .read(manualImageModelIdsProvider(server.id).notifier)
+            .setIds(_imageModelIdsController.text);
+        if (!mounted) return;
+      }
+      ref.invalidate(availableModelsProvider(server.id));
       final apiService = ref.read(serverApiServiceProvider);
       await ref
           .read(serversProvider.notifier)
@@ -587,6 +601,25 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                 ),
               ),
             ],
+            if (_selectedType == ServerType.openAICompatible)
+              ExpansionTile(
+                title: Text(l10n.image_generation),
+                children: [
+                  TextFormField(
+                    controller: _imageModelIdsController,
+                    minLines: 1,
+                    maxLines: 4,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    smartDashesType: SmartDashesType.disabled,
+                    decoration: InputDecoration(
+                      labelText: l10n.image_model_ids,
+                      helperText: l10n.image_model_ids_hint,
+                      helperMaxLines: 2,
+                    ),
+                  ),
+                ],
+              ),
             if (_selectedType == ServerType.lmStudio) ...[
               const SizedBox(height: 12),
               _buildSectionCard(

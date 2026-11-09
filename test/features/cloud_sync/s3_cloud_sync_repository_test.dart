@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/features/cloud_sync/data/models/cloud_sync_models.dart';
 import 'package:localmind/features/cloud_sync/data/repositories/s3_cloud_sync_repository.dart';
+import 'package:localmind/features/cloud_sync/services/cloud_sync_crypto_service.dart';
 
 void main() {
   test('connection test uses signed path-style conditional requests', () async {
@@ -73,10 +75,26 @@ void main() {
     );
 
     await repository.testConnection();
-    final attachmentKey = repository.attachmentKey('attachment');
+    final crypto = CloudSyncCryptoService();
+    final png = base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+    );
+    final salt = crypto.newSalt();
+    final key = List<int>.filled(32, 7);
+    final attachmentKey = repository.attachmentKey(
+      await crypto.attachmentIdentifier(png, key),
+    );
+    final encrypted = await crypto.encryptAttachment(
+      png,
+      masterKey: key,
+      salt: salt,
+    );
     expect(await repository.objectExists(attachmentKey), isFalse);
-    await repository.writeObject(attachmentKey, const [1, 2, 3]);
+    await repository.writeObject(attachmentKey, encrypted);
     expect(await repository.objectExists(attachmentKey), isTrue);
+    final downloaded = await repository.readObject(attachmentKey);
+    expect(downloaded!.bytes, isNot(png));
+    expect(await crypto.decryptAttachment(downloaded.bytes, key), png);
     await repository.deleteObject(attachmentKey);
 
     expect(paths, isNotEmpty);

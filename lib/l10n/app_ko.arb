@@ -998,5 +998,12 @@
   "sidebar_section_chats": "채팅",
   "sidebar_section_models": "모델",
   "sidebar_section_app": "앱",
-  "model_still_stopping": "모델을 중지하는 중입니다. 잠시 기다린 후 다시 시도해 주세요."
+  "model_still_stopping": "모델을 중지하는 중입니다. 잠시 기다린 후 다시 시도해 주세요.",
+  "image_generation": "이미지 생성",
+  "image_model_ids": "이미지 모델 ID",
+  "image_model_ids_hint": "맞춤 ID를 쉼표 또는 줄바꿈으로 구분하여 입력하세요.",
+  "image_generation_prompt": "만들고 싶은 이미지를 설명하세요",
+  "image_generation_temporary": "이미지 생성은 저장되는 채팅에서 사용할 수 있습니다. 이미지를 만들려면 저장되는 채팅을 시작하세요.",
+  "image_generation_remove_attachments": "이미지를 생성하기 전에 첨부 파일을 제거하세요.",
+  "image_generation_share": "이미지 공유"
 }

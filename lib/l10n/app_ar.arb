@@ -991,5 +991,12 @@
   "sidebar_section_chats": "المحادثات",
   "sidebar_section_models": "النماذج",
   "sidebar_section_app": "التطبيق",
-  "model_still_stopping": "لا يزال النموذج يتوقف. يُرجى الانتظار قبل المحاولة مرة أخرى."
+  "model_still_stopping": "لا يزال النموذج يتوقف. يُرجى الانتظار قبل المحاولة مرة أخرى.",
+  "image_generation": "إنشاء الصور",
+  "image_model_ids": "معرّفات نماذج الصور",
+  "image_model_ids_hint": "أدخل المعرّفات المخصصة مفصولة بفواصل أو أسطر جديدة.",
+  "image_generation_prompt": "صِف الصورة التي تريد إنشاءها",
+  "image_generation_temporary": "يمكن إنشاء الصور في المحادثات المحفوظة. ابدأ محادثة محفوظة لإنشاء صورة.",
+  "image_generation_remove_attachments": "أزل المرفقات قبل إنشاء صورة.",
+  "image_generation_share": "مشاركة الصورة"
 }

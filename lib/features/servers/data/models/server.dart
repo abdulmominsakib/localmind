@@ -223,6 +223,12 @@ class Server {
     }
   }
 
+  String? get imageGenerationEndpoint => switch (type) {
+    ServerType.openRouter => '$baseUrl/images',
+    ServerType.openAICompatible => '$baseUrl$_openAiPrefix/images/generations',
+    _ => null,
+  };
+
   String get modelsEndpoint {
     switch (type) {
       case ServerType.lmStudio:

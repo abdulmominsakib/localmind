@@ -363,9 +363,10 @@ class ChatTitleBlock extends ConsumerWidget {
     final isConnected = connectionStatus == ConnectionStatus.connected;
     // Once a model is chosen its name is enough; the server stays visible
     // in the drawer. Before that, name the server the picker will list.
-    final modelLabel =
-        selectedModel?.displayName ??
-        [l10n.select_model_prompt, ?activeServer?.name].join(' · ');
+    final modelLabel = selectedModel?.isImageGeneration == true
+        ? '${selectedModel!.displayName} · ${l10n.image_generation}'
+        : selectedModel?.displayName ??
+              [l10n.select_model_prompt, ?activeServer?.name].join(' · ');
 
     return InkWell(
       key: const ValueKey('chat_model_selector'),

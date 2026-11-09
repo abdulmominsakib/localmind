@@ -534,6 +534,13 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
   void _handleSubmit() {
     final text = _controller.text.trim();
+    final isImageGeneration = ref
+        .read(activeChatTargetProvider)
+        .isImageGeneration;
+    if (isImageGeneration &&
+        (ref.read(chatProvider).isTemporary || _attachedFiles.isNotEmpty)) {
+      return;
+    }
 
     if (text.isEmpty && _attachedFiles.isEmpty) return;
     // Keep the draft instead of clearing it for a send that can't start.
@@ -543,7 +550,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     ref.read(appHapticsProvider).medium();
 
-    if (_sendAsAssistant) {
+    if (_sendAsAssistant && !isImageGeneration) {
       ref
           .read(chatProvider.notifier)
           .insertMessageWithoutGenerating(
@@ -650,6 +657,9 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     final connectionStatus = ref.watch(connectionStatusProvider);
     final isConnected = connectionStatus == ConnectionStatus.connected;
     final aiUserHoldEnabled =
+        !ref.watch(
+          activeChatTargetProvider.select((target) => target.isImageGeneration),
+        ) &&
         ref.watch(settingsProvider.select((s) => s.aiUserResponseEnabled)) &&
         isConnected &&
         widget.enabled;
@@ -803,7 +813,18 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
     final connectionStatus = ref.watch(connectionStatusProvider);
 
-    final isConnected = connectionStatus == ConnectionStatus.connected;
+    final isImageGeneration = ref.watch(
+      activeChatTargetProvider.select((target) => target.isImageGeneration),
+    );
+    final imageNotice = isImageGeneration
+        ? ref.watch(chatProvider.select((state) => state.isTemporary))
+              ? l10n.image_generation_temporary
+              : _attachedFiles.isNotEmpty
+              ? l10n.image_generation_remove_attachments
+              : null
+        : null;
+    final isConnected =
+        connectionStatus == ConnectionStatus.connected || isImageGeneration;
     final showRoleSwapButton = ref
         .watch(settingsProvider)
         .roleSwapButtonEnabled;
@@ -814,8 +835,11 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         (selectedModel?.supportsReasoning ?? false) &&
         !(selectedModel?.reasoningMandatory ?? false) &&
         reasoning.enabled;
-    final sendingAsAssistant = showRoleSwapButton && _sendAsAssistant;
-    final hint = sendingAsAssistant
+    final sendingAsAssistant =
+        !isImageGeneration && showRoleSwapButton && _sendAsAssistant;
+    final hint = isImageGeneration
+        ? l10n.image_generation_prompt
+        : sendingAsAssistant
         ? l10n.chat_input_hint_assistant
         : l10n.chat_input_hint;
 
@@ -927,6 +951,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
       settingsProvider.select((s) => s.aiUserResponseEnabled),
     );
     final showVoiceModeInSendSlot =
+        !isImageGeneration &&
         !widget.isStreaming &&
         !_isGeneratingAiUser &&
         !aiUserHoldEnabled &&
@@ -938,7 +963,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         isConnected &&
         (_controller.text.trim().isNotEmpty || _attachedFiles.isNotEmpty) &&
         !widget.isStreaming &&
-        (!widget.sendBlocked || _sendAsAssistant);
+        imageNotice == null &&
+        (!widget.sendBlocked || sendingAsAssistant);
 
     return SafeArea(
       top: false,
@@ -978,6 +1004,11 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
           crossAxisAlignment: CrossAxisAlignment.stretch,
 
           children: [
+            if (imageNotice != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),
+                child: Text(imageNotice, style: theme.textTheme.bodySmall),
+              ),
             if (_attachedFiles.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.only(left: 8, right: 8, top: 4),
@@ -1090,11 +1121,12 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
             Row(
               crossAxisAlignment: .end,
               children: [
-                _buildAddButton(
-                  isConnected,
-                  theme,
-                  optionActive: thinkingToggledOn || sendingAsAssistant,
-                ),
+                if (!isImageGeneration)
+                  _buildAddButton(
+                    isConnected,
+                    theme,
+                    optionActive: thinkingToggledOn || sendingAsAssistant,
+                  ),
                 Expanded(
                   child: Stack(
                     children: [
@@ -1214,7 +1246,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                           ),
                         ),
                       ),
-                      if (_controller.text.isEmpty)
+                      if (!isImageGeneration && _controller.text.isEmpty)
                         Positioned(
                           right: 4,
                           top: 0,
@@ -1228,7 +1260,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                     ],
                   ),
                 ),
-                _buildMicButton(isListening, theme),
+                if (!isImageGeneration) _buildMicButton(isListening, theme),
                 const SizedBox(width: 6),
                 // An empty composer offers voice mode where send would be,
                 // unless holding send is set to draft the user's reply with

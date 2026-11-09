@@ -984,5 +984,12 @@
   "sidebar_section_chats": "Sohbetler",
   "sidebar_section_models": "Modeller",
   "sidebar_section_app": "Uygulama",
-  "model_still_stopping": "Model hâlâ durduruluyor. Tekrar denemeden önce lütfen bekleyin."
+  "model_still_stopping": "Model hâlâ durduruluyor. Tekrar denemeden önce lütfen bekleyin.",
+  "image_generation": "Görsel oluşturma",
+  "image_model_ids": "Görsel modeli kimlikleri",
+  "image_model_ids_hint": "Özel kimlikleri virgülle ayırın veya ayrı satırlara yazın.",
+  "image_generation_prompt": "Oluşturmak istediğiniz görseli tarif edin",
+  "image_generation_temporary": "Görsel oluşturma kayıtlı sohbetlerde kullanılabilir. Görsel oluşturmak için kaydedilen bir sohbet başlatın.",
+  "image_generation_remove_attachments": "Görsel oluşturmadan önce ekleri kaldırın.",
+  "image_generation_share": "Görseli paylaş"
 }

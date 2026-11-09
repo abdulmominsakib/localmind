@@ -339,8 +339,9 @@ class _ChatBody extends ConsumerWidget {
           onClear: () => _clearPersonas(ref),
         ),
         const NotificationPermissionBanner(),
-        if (connectionStatus == ConnectionStatus.disconnected ||
-            connectionStatus == ConnectionStatus.error)
+        if (selectedModel?.isImageGeneration != true &&
+            (connectionStatus == ConnectionStatus.disconnected ||
+                connectionStatus == ConnectionStatus.error))
           ConnectionBanner(status: connectionStatus),
         const TtsPlayerBar(),
         Expanded(

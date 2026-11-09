@@ -987,5 +987,12 @@
   "sidebar_section_chats": "চ্যাট",
   "sidebar_section_models": "মডেল",
   "sidebar_section_app": "অ্যাপ",
-  "model_still_stopping": "মডেলটি এখনও বন্ধ হচ্ছে। আবার চেষ্টা করার আগে অপেক্ষা করুন।"
+  "model_still_stopping": "মডেলটি এখনও বন্ধ হচ্ছে। আবার চেষ্টা করার আগে অপেক্ষা করুন।",
+  "image_generation": "ছবি তৈরি",
+  "image_model_ids": "ছবির মডেল আইডি",
+  "image_model_ids_hint": "কাস্টম আইডিগুলো কমা দিয়ে বা আলাদা লাইনে লিখুন।",
+  "image_generation_prompt": "যে ছবিটি তৈরি করতে চান, তার বর্ণনা দিন",
+  "image_generation_temporary": "সংরক্ষিত চ্যাটে ছবি তৈরি করা যায়। ছবি তৈরি করতে একটি সংরক্ষিত চ্যাট শুরু করুন।",
+  "image_generation_remove_attachments": "ছবি তৈরির আগে সংযুক্তিগুলো সরান।",
+  "image_generation_share": "ছবি শেয়ার করুন"
 }

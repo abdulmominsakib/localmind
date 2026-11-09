@@ -987,5 +987,12 @@
   "sidebar_section_chats": "Chat",
   "sidebar_section_models": "Modelli",
   "sidebar_section_app": "App",
-  "model_still_stopping": "Il modello si sta ancora arrestando. Attendi prima di riprovare."
+  "model_still_stopping": "Il modello si sta ancora arrestando. Attendi prima di riprovare.",
+  "image_generation": "Generazione di immagini",
+  "image_model_ids": "ID dei modelli per immagini",
+  "image_model_ids_hint": "Separa gli ID personalizzati con virgole o righe nuove.",
+  "image_generation_prompt": "Descrivi l’immagine che vuoi creare",
+  "image_generation_temporary": "Puoi generare immagini nelle chat salvate. Avvia una chat salvata per creare un’immagine.",
+  "image_generation_remove_attachments": "Rimuovi gli allegati prima di generare un’immagine.",
+  "image_generation_share": "Condividi immagine"
 }

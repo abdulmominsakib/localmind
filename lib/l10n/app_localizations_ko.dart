@@ -3399,4 +3399,59 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get localApiCopied => 'Copied to clipboard';
+
+  @override
+  String get image_generation => '이미지 생성';
+
+  @override
+  String get image_model_ids => '이미지 모델 ID';
+
+  @override
+  String get image_model_ids_hint => '맞춤 ID를 쉼표 또는 줄바꿈으로 구분하여 입력하세요.';
+
+  @override
+  String get image_generation_prompt => '만들고 싶은 이미지를 설명하세요';
+
+  @override
+  String get image_generation_temporary =>
+      '이미지 생성은 저장되는 채팅에서 사용할 수 있습니다. 이미지를 만들려면 저장되는 채팅을 시작하세요.';
+
+  @override
+  String get image_generation_remove_attachments =>
+      '이미지를 생성하기 전에 첨부 파일을 제거하세요.';
+
+  @override
+  String get image_generation_unavailable =>
+      'This server or model does not expose a compatible Images API. Check the server URL and model ID.';
+
+  @override
+  String get image_generation_auth =>
+      'Check the API key and whether it can access this image model.';
+
+  @override
+  String get image_generation_quota =>
+      'The provider reached its rate limit or quota. Check your account before retrying.';
+
+  @override
+  String get image_generation_rejected =>
+      'The provider rejected the image request. Check the prompt and try again.';
+
+  @override
+  String get image_generation_timeout =>
+      'Image generation timed out. Try again when the provider is available.';
+
+  @override
+  String get image_generation_invalid =>
+      'The provider returned an invalid or unsupported image.';
+
+  @override
+  String get image_generation_failed =>
+      'Could not generate an image. Check the connection and try again.';
+
+  @override
+  String get image_generation_save_failed =>
+      'Could not save the generated image. Check available storage and try again.';
+
+  @override
+  String get image_generation_share => '이미지 공유';
 }

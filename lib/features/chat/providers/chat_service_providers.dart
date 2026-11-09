@@ -13,8 +13,15 @@ import 'package:localmind/features/on_device/data/on_device_llama_service.dart';
 import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:localmind/features/on_device/data/on_device_mlx_service.dart';
 import '../data/chat_service.dart';
+import '../data/image_generation_service.dart';
 import '../data/smart_reply_service.dart';
 import '../data/title_generation_service.dart';
+
+final imageGenerationServiceProvider = Provider<ImageGenerationService>((ref) {
+  final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 15)));
+  ref.onDispose(() => dio.close(force: true));
+  return ImageGenerationService(dio);
+});
 
 final chatServiceProvider = Provider<ChatService?>((ref) {
   final server = ref.watch(activeServerProvider);

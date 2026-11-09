@@ -6428,6 +6428,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copied to clipboard'**
   String get localApiCopied;
+
+  /// No description provided for @image_generation.
+  ///
+  /// In en, this message translates to:
+  /// **'Image generation'**
+  String get image_generation;
+
+  /// No description provided for @image_model_ids.
+  ///
+  /// In en, this message translates to:
+  /// **'Image model IDs'**
+  String get image_model_ids;
+
+  /// No description provided for @image_model_ids_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter custom IDs separated by commas or new lines.'**
+  String get image_model_ids_hint;
+
+  /// No description provided for @image_generation_prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the image you want to create'**
+  String get image_generation_prompt;
+
+  /// No description provided for @image_generation_temporary.
+  ///
+  /// In en, this message translates to:
+  /// **'Image generation is available in saved chats. Start a saved chat to create an image.'**
+  String get image_generation_temporary;
+
+  /// No description provided for @image_generation_remove_attachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove attachments before generating an image.'**
+  String get image_generation_remove_attachments;
+
+  /// No description provided for @image_generation_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This server or model does not expose a compatible Images API. Check the server URL and model ID.'**
+  String get image_generation_unavailable;
+
+  /// No description provided for @image_generation_auth.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the API key and whether it can access this image model.'**
+  String get image_generation_auth;
+
+  /// No description provided for @image_generation_quota.
+  ///
+  /// In en, this message translates to:
+  /// **'The provider reached its rate limit or quota. Check your account before retrying.'**
+  String get image_generation_quota;
+
+  /// No description provided for @image_generation_rejected.
+  ///
+  /// In en, this message translates to:
+  /// **'The provider rejected the image request. Check the prompt and try again.'**
+  String get image_generation_rejected;
+
+  /// No description provided for @image_generation_timeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Image generation timed out. Try again when the provider is available.'**
+  String get image_generation_timeout;
+
+  /// No description provided for @image_generation_invalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The provider returned an invalid or unsupported image.'**
+  String get image_generation_invalid;
+
+  /// No description provided for @image_generation_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not generate an image. Check the connection and try again.'**
+  String get image_generation_failed;
+
+  /// No description provided for @image_generation_save_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the generated image. Check available storage and try again.'**
+  String get image_generation_save_failed;
+
+  /// No description provided for @image_generation_share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share image'**
+  String get image_generation_share;
 }
 
 class _AppLocalizationsDelegate

@@ -13,6 +13,8 @@ import 'package:localmind/features/chat/views/components/message_variant_navigat
 import 'markdown/themed_gpt_markdown.dart';
 import 'tool_bubble/tool_timeline.dart';
 import 'chat_error_display.dart';
+import 'attachment_list.dart';
+import '../../../data/image_generation_service.dart';
 
 class AssistantBubble extends StatelessWidget {
   const AssistantBubble({
@@ -52,6 +54,10 @@ class AssistantBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final attachments = message.attachmentPaths ?? const <String>[];
+    final imageOnly = message.content.trim().isEmpty && attachments.isNotEmpty;
+    final imageError =
+        ImageGenerationFailure.fromCode(message.errorMessage) != null;
     final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
 
     return Container(
@@ -74,6 +80,8 @@ class AssistantBubble extends StatelessWidget {
           else if (isStreaming)
             _StreamingContent(content: message.content, isDark: isDark)
           else if (message.content.isEmpty &&
+              !imageOnly &&
+              !imageError &&
               (message.reasoningContent?.isEmpty ?? true) &&
               (message.toolEvents?.isEmpty ?? true))
             Text(
@@ -86,6 +94,8 @@ class AssistantBubble extends StatelessWidget {
             )
           else if (message.content.trim().isNotEmpty)
             MarkdownContent(content: message.content, isDark: isDark),
+          if (attachments.isNotEmpty)
+            AttachmentList(paths: attachments, isUser: false),
           if (message.status == MessageStatus.error &&
               message.errorMessage != null &&
               message.errorMessage!.isNotEmpty)
@@ -122,7 +132,9 @@ class AssistantBubble extends StatelessWidget {
                     offset: const Offset(-10, 0),
                     child: MessageActionBar(
                       actions: MessageActions(
-                        content: message.content.isEmpty
+                        content: imageOnly || imageError
+                            ? ''
+                            : message.content.isEmpty
                             ? AppLocalizations.of(context)!.no_response
                             : message.content,
                         messageId: message.id,
@@ -138,12 +150,16 @@ class AssistantBubble extends StatelessWidget {
                         onCopy: onCopy,
                         onRetry: onRetry,
                         onDelete: onDelete,
-                        onEdit: onEdit,
+                        onEdit: imageOnly || imageError ? null : onEdit,
                         onBranch: onBranch,
-                        onContinue: onContinue,
-                        onSave: onSave == null ? null : () => onSave!(message),
-                        onShare: onShare,
-                        onModelInfo: onModelLongPress,
+                        onContinue: imageOnly || imageError ? null : onContinue,
+                        onSave: imageOnly || imageError || onSave == null
+                            ? null
+                            : () => onSave!(message),
+                        onShare: imageError ? null : onShare,
+                        onModelInfo: imageOnly || imageError
+                            ? null
+                            : onModelLongPress,
                       ),
                     ),
                   ),

@@ -3489,4 +3489,60 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get localApiCopied => 'Copied to clipboard';
+
+  @override
+  String get image_generation => 'इमेज बनाना';
+
+  @override
+  String get image_model_ids => 'इमेज मॉडल आईडी';
+
+  @override
+  String get image_model_ids_hint =>
+      'कस्टम आईडी को कॉमा से अलग करें या अलग-अलग पंक्तियों में लिखें।';
+
+  @override
+  String get image_generation_prompt => 'बताएँ कि आप कैसी इमेज बनाना चाहते हैं';
+
+  @override
+  String get image_generation_temporary =>
+      'सेव की गई चैट में इमेज बनाई जा सकती हैं। इमेज बनाने के लिए ऐसी चैट शुरू करें जिसे सेव किया जाएगा।';
+
+  @override
+  String get image_generation_remove_attachments =>
+      'इमेज बनाने से पहले अटैचमेंट हटाएँ।';
+
+  @override
+  String get image_generation_unavailable =>
+      'This server or model does not expose a compatible Images API. Check the server URL and model ID.';
+
+  @override
+  String get image_generation_auth =>
+      'Check the API key and whether it can access this image model.';
+
+  @override
+  String get image_generation_quota =>
+      'The provider reached its rate limit or quota. Check your account before retrying.';
+
+  @override
+  String get image_generation_rejected =>
+      'The provider rejected the image request. Check the prompt and try again.';
+
+  @override
+  String get image_generation_timeout =>
+      'Image generation timed out. Try again when the provider is available.';
+
+  @override
+  String get image_generation_invalid =>
+      'The provider returned an invalid or unsupported image.';
+
+  @override
+  String get image_generation_failed =>
+      'Could not generate an image. Check the connection and try again.';
+
+  @override
+  String get image_generation_save_failed =>
+      'Could not save the generated image. Check available storage and try again.';
+
+  @override
+  String get image_generation_share => 'इमेज शेयर करें';
 }

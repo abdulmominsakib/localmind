@@ -21,7 +21,7 @@ Future<void> showModelInfoSheet(
     try {
       final models = await ref.read(availableModelsProvider(server.id).future);
       for (final m in models) {
-        if (m is ModelInfo && m.id == modelId) {
+        if (m is ModelInfo && m.id == modelId && !m.isImageGeneration) {
           model = m;
           break;
         }

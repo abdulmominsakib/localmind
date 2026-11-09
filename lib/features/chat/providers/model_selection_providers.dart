@@ -33,6 +33,8 @@ class ActiveChatTarget {
     required this.modelLabel,
   });
 
+  bool get isImageGeneration => selectedModel?.isImageGeneration ?? false;
+
   bool get isReady => server != null && effectiveModelId != null;
 }
 
@@ -229,7 +231,10 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
     );
     if (!ref.mounted) return;
 
-    final typedModels = availableModels.cast<ModelInfo>();
+    final typedModels = availableModels
+        .cast<ModelInfo>()
+        .where((model) => !model.isImageGeneration)
+        .toList();
     if (typedModels.isEmpty) return;
 
     if (hasDefaultForServer) {

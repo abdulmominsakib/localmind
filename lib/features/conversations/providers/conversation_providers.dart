@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/storage_providers.dart';
 import '../../../core/storage/entities.dart';
+import '../../../core/services/generated_image_files.dart';
 import '../../../objectbox.g.dart';
 import '../../chat/utils/message_variants.dart';
 import '../data/message_search_service.dart';
@@ -227,8 +228,15 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     final msgQuery = db.messageBox
         .query(MessageEntity_.conversationUid.equals(id))
         .build();
+    final paths = msgQuery
+        .find()
+        .expand(
+          (entity) => entity.toDomain().attachmentPaths ?? const <String>[],
+        )
+        .toList();
     db.messageBox.removeMany(msgQuery.findIds());
     msgQuery.close();
+    unawaited(GeneratedImageFiles.prune(db.messageBox, paths));
 
     // Delete conversation
     final convQuery = db.conversationBox
@@ -517,8 +525,19 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
 
   Future<void> deleteAll() async {
     final db = ref.read(databaseProvider);
+    final attachmentQuery = db.messageBox
+        .query(MessageEntity_.attachmentPathsJson.notNull())
+        .build();
+    final paths = attachmentQuery
+        .find()
+        .expand(
+          (entity) => entity.toDomain().attachmentPaths ?? const <String>[],
+        )
+        .toList();
+    attachmentQuery.close();
     db.messageBox.removeAll();
     db.conversationBox.removeAll();
+    unawaited(GeneratedImageFiles.prune(db.messageBox, paths));
     await _updateState();
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:localmind/features/chat/data/chat_api_error.dart';
+import 'package:localmind/features/chat/data/image_generation_service.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
 class ChatErrorDisplay extends StatelessWidget {
@@ -9,10 +10,22 @@ class ChatErrorDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final imageError = switch (ImageGenerationFailure.fromCode(errorMessage)) {
+      ImageGenerationFailure.unavailable => l10n.image_generation_unavailable,
+      ImageGenerationFailure.auth => l10n.image_generation_auth,
+      ImageGenerationFailure.quota => l10n.image_generation_quota,
+      ImageGenerationFailure.rejected => l10n.image_generation_rejected,
+      ImageGenerationFailure.timeout => l10n.image_generation_timeout,
+      ImageGenerationFailure.invalid => l10n.image_generation_invalid,
+      ImageGenerationFailure.failed => l10n.image_generation_failed,
+      ImageGenerationFailure.saveFailed => l10n.image_generation_save_failed,
+      null => null,
+    };
     final parsed = ChatApiError.tryParse(errorMessage);
     if (parsed == null) {
       return Text(
-        errorMessage,
+        imageError ?? errorMessage,
         style: TextStyle(
           color: Colors.red[400],
           fontSize: 12,
@@ -21,7 +34,6 @@ class ChatErrorDisplay extends StatelessWidget {
       );
     }
 
-    final l10n = AppLocalizations.of(context)!;
     final displayMessage = switch (parsed.code) {
       ChatApiError.onDeviceVisionNotSupportedCode =>
         l10n.gguf_vision_not_supported_error,

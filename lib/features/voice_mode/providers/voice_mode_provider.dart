@@ -117,7 +117,10 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
           state.phase == VoiceModePhase.error &&
           (state.error == modelSelectionRequiredMessage ||
               state.error == 'No server connected');
-      if (_active && waitingForTarget && next.isReady) {
+      if (_active &&
+          waitingForTarget &&
+          next.isReady &&
+          !next.isImageGeneration) {
         unawaited(startListening());
       }
     });
@@ -439,7 +442,7 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
 
   bool _ensureChatTarget() {
     final target = ref.read(activeChatTargetProvider);
-    if (target.isReady) return true;
+    if (target.isReady && !target.isImageGeneration) return true;
 
     _isSendingTranscript = false;
     state = state.copyWith(

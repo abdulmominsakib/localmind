@@ -115,6 +115,95 @@ class RoutingInterceptor extends Interceptor {
 }
 
 void main() {
+  group('image model discovery', () {
+    Server server(ServerType type, String host) => Server(
+      id: 'images',
+      name: 'Images',
+      type: type,
+      host: host,
+      port: 443,
+      createdAt: DateTime.utc(2026),
+      lastConnectedAt: DateTime.utc(2026),
+    );
+
+    test(
+      'preserves separate chat and image entries for a dual-output model',
+      () async {
+        final dio = Dio()
+          ..interceptors.add(
+            TestInterceptor({
+              'data': [
+                {
+                  'id': 'dual',
+                  'architecture': {
+                    'output_modalities': ['text', 'image'],
+                  },
+                },
+                {
+                  'id': 'image-only',
+                  'output_modalities': ['image'],
+                },
+                {
+                  'id': 'vision',
+                  'architecture': {
+                    'input_modalities': ['text', 'image'],
+                  },
+                },
+                {'id': 'gpt-image-custom'},
+              ],
+            }),
+          );
+        final models = await ServerApiService(dio).fetchModels(
+          server(ServerType.openAICompatible, 'https://example.com'),
+        );
+        expect(models.map((m) => (m.id, m.isImageGeneration)), [
+          ('dual', true),
+          ('dual', false),
+          ('image-only', true),
+          ('vision', false),
+          ('gpt-image-custom', false),
+        ]);
+      },
+    );
+
+    test('recognizes official image model IDs on the OpenAI host', () async {
+      final dio = Dio()
+        ..interceptors.add(
+          TestInterceptor({
+            'data': [
+              {'id': 'gpt-image-2'},
+              {'id': 'gpt-5'},
+            ],
+          }),
+        );
+      final models = await ServerApiService(dio).fetchModels(
+        server(ServerType.openAICompatible, 'https://api.openai.com'),
+      );
+      expect(models.map((m) => (m.id, m.isImageGeneration)), [
+        ('gpt-image-2', true),
+        ('gpt-5', false),
+      ]);
+    });
+
+    test('OpenRouter image catalog uses the dedicated endpoint', () async {
+      final dio = Dio()
+        ..interceptors.add(
+          RoutingInterceptor({
+            'GET /api/v1/images/models': {
+              'data': [
+                {'id': 'provider/image', 'name': 'Image model'},
+              ],
+            },
+          }),
+        );
+      final models = await ServerApiService(
+        dio,
+      ).fetchOpenRouterImageModels(server(ServerType.openRouter, ''));
+      expect(models.single.id, 'provider/image');
+      expect(models.single.isImageGeneration, isTrue);
+    });
+  });
+
   group('ServerApiService - OpenAI/llama.cpp model list parsing', () {
     late Server testServer;
 

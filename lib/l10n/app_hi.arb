@@ -987,5 +987,12 @@
   "sidebar_section_chats": "चैट",
   "sidebar_section_models": "मॉडल",
   "sidebar_section_app": "ऐप",
-  "model_still_stopping": "मॉडल अभी बंद हो रहा है। दोबारा कोशिश करने से पहले कृपया प्रतीक्षा करें।"
+  "model_still_stopping": "मॉडल अभी बंद हो रहा है। दोबारा कोशिश करने से पहले कृपया प्रतीक्षा करें।",
+  "image_generation": "इमेज बनाना",
+  "image_model_ids": "इमेज मॉडल आईडी",
+  "image_model_ids_hint": "कस्टम आईडी को कॉमा से अलग करें या अलग-अलग पंक्तियों में लिखें।",
+  "image_generation_prompt": "बताएँ कि आप कैसी इमेज बनाना चाहते हैं",
+  "image_generation_temporary": "सेव की गई चैट में इमेज बनाई जा सकती हैं। इमेज बनाने के लिए ऐसी चैट शुरू करें जिसे सेव किया जाएगा।",
+  "image_generation_remove_attachments": "इमेज बनाने से पहले अटैचमेंट हटाएँ।",
+  "image_generation_share": "इमेज शेयर करें"
 }

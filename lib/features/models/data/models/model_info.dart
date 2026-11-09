@@ -17,6 +17,9 @@ class ModelInfo {
   final OnDeviceModelRuntime? onDeviceRuntime;
   final OnDeviceModelFormat? onDeviceFormat;
   final String? localPath;
+
+  /// This picker entry routes prompts to the provider's Images API.
+  final bool isImageGeneration;
   final bool supportsVision;
   final bool supportsReasoning;
   final bool supportsToolUse;
@@ -59,6 +62,7 @@ class ModelInfo {
     this.onDeviceRuntime,
     this.onDeviceFormat,
     this.localPath,
+    this.isImageGeneration = false,
     this.supportsVision = false,
     this.supportsReasoning = false,
     this.supportsToolUse = false,
@@ -159,6 +163,7 @@ class ModelInfo {
     OnDeviceModelRuntime? onDeviceRuntime,
     OnDeviceModelFormat? onDeviceFormat,
     String? localPath,
+    bool? isImageGeneration,
     bool? supportsVision,
     bool? supportsReasoning,
     bool? supportsToolUse,
@@ -184,6 +189,7 @@ class ModelInfo {
       onDeviceRuntime: onDeviceRuntime ?? this.onDeviceRuntime,
       onDeviceFormat: onDeviceFormat ?? this.onDeviceFormat,
       localPath: localPath ?? this.localPath,
+      isImageGeneration: isImageGeneration ?? this.isImageGeneration,
       supportsVision: supportsVision ?? this.supportsVision,
       supportsReasoning: supportsReasoning ?? this.supportsReasoning,
       supportsToolUse: supportsToolUse ?? this.supportsToolUse,

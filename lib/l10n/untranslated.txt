@@ -61,7 +61,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "bn": [
@@ -130,7 +138,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "de": [
@@ -199,7 +215,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "es": [
@@ -268,7 +292,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "fr": [
@@ -337,7 +369,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "hi": [
@@ -406,7 +446,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "it": [
@@ -475,7 +523,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "ja": [
@@ -544,7 +600,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "ko": [
@@ -599,7 +663,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "pt": [
@@ -654,7 +726,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "ru": [
@@ -723,7 +803,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "tr": [
@@ -792,7 +880,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "zh": [
@@ -861,7 +957,15 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ],
 
   "zh_TW": [
@@ -930,6 +1034,14 @@
     "localApiRotateKey",
     "localApiRotateHint",
     "localApiCopy",
-    "localApiCopied"
+    "localApiCopied",
+    "image_generation_unavailable",
+    "image_generation_auth",
+    "image_generation_quota",
+    "image_generation_rejected",
+    "image_generation_timeout",
+    "image_generation_invalid",
+    "image_generation_failed",
+    "image_generation_save_failed"
   ]
 }

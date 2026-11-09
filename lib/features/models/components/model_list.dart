@@ -24,6 +24,8 @@ class ModelList extends ConsumerStatefulWidget {
     required this.isDark,
     this.scrollController,
     this.closeOnSelect = true,
+    this.includeImageModels = false,
+    this.selectedImageModel = false,
   });
 
   final String serverId;
@@ -31,6 +33,8 @@ class ModelList extends ConsumerStatefulWidget {
   final bool isDark;
   final ScrollController? scrollController;
   final bool closeOnSelect;
+  final bool includeImageModels;
+  final bool selectedImageModel;
 
   @override
   ConsumerState<ModelList> createState() => _ModelListState();
@@ -52,6 +56,10 @@ class _ModelListState extends ConsumerState<ModelList> {
       ref.read(modelMetadataProvider.notifier).loadForServer(widget.serverId);
     }
   }
+
+  bool _isSelected(ModelInfo model) =>
+      model.id == widget.selectedModelId &&
+      model.isImageGeneration == widget.selectedImageModel;
 
   List<ModelInfo> _sortedModels(List<ModelInfo> models) {
     final metadata = ref.watch(modelMetadataProvider);
@@ -90,7 +98,7 @@ class _ModelListState extends ConsumerState<ModelList> {
 
     final selectedId = widget.selectedModelId;
     if (selectedId != null) {
-      final selectedIndex = sorted.indexWhere((m) => m.id == selectedId);
+      final selectedIndex = sorted.indexWhere(_isSelected);
       if (selectedIndex > 0) {
         final selected = sorted.removeAt(selectedIndex);
         sorted.insert(0, selected);
@@ -223,7 +231,14 @@ class _ModelListState extends ConsumerState<ModelList> {
 
     final connectionStatus = ref.watch(connectionStatusProvider);
 
-    if (connectionStatus == ConnectionStatus.error) {
+    final additionalImages = widget.includeImageModels
+        ? ref.watch(additionalImageModelsProvider(widget.serverId))
+        : const AsyncData<List<ModelInfo>>([]);
+    final images = additionalImages.value ?? [];
+
+    if (connectionStatus == ConnectionStatus.error &&
+        images.isEmpty &&
+        !additionalImages.isLoading) {
       return Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -270,11 +285,14 @@ class _ModelListState extends ConsumerState<ModelList> {
       );
     }
 
-    if (connectionStatus == ConnectionStatus.checking) {
+    if (connectionStatus == ConnectionStatus.checking && images.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final modelsAsync = ref.watch(availableModelsProvider(widget.serverId));
+    final catalog = ref.watch(availableModelsProvider(widget.serverId));
+    final modelsAsync = images.isNotEmpty
+        ? AsyncData<List<dynamic>>(catalog.value ?? const [])
+        : catalog;
 
     return modelsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -332,7 +350,18 @@ class _ModelListState extends ConsumerState<ModelList> {
           orElse: () => <String>{},
         );
 
-        final modelList = models.cast<ModelInfo>();
+        final catalogModels = models.cast<ModelInfo>();
+        final modelList = [
+          ...catalogModels.where((model) => !model.isImageGeneration),
+          if (widget.includeImageModels)
+            ...{
+              for (final model in images) model.id: model,
+              for (final model in catalogModels.where(
+                (m) => m.isImageGeneration,
+              ))
+                model.id: model,
+            }.values,
+        ];
         final modelLoading = ref.watch(modelLoadingProvider);
         final filtered = searchQuery.isEmpty
             ? modelList
@@ -347,8 +376,14 @@ class _ModelListState extends ConsumerState<ModelList> {
                   .toList();
 
         final sorted = _sortedModels(filtered);
+        final chatModels = sorted.where((m) => !m.isImageGeneration).toList();
+        final imageModels = sorted.where((m) => m.isImageGeneration).toList();
+        final showImageSection =
+            imageModels.isNotEmpty ||
+            additionalImages.isLoading ||
+            additionalImages.hasError;
 
-        if (sorted.isEmpty) {
+        if (sorted.isEmpty && !showImageSection) {
           return Center(
             child: Text(
               searchQuery.isEmpty
@@ -366,10 +401,33 @@ class _ModelListState extends ConsumerState<ModelList> {
 
         return ListView.builder(
           controller: widget.scrollController,
-          itemCount: sorted.length,
+          itemCount: sorted.length + (showImageSection ? 1 : 0),
           itemBuilder: (context, index) {
-            final model = sorted[index];
-            final isSelected = model.id == widget.selectedModelId;
+            if (showImageSection && index == chatModels.length) {
+              return ListTile(
+                title: Text(l10n.image_generation),
+                trailing: additionalImages.isLoading
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : additionalImages.hasError
+                    ? IconButton(
+                        tooltip: l10n.retry,
+                        onPressed: () => ref.invalidate(
+                          additionalImageModelsProvider(widget.serverId),
+                        ),
+                        icon: const HugeIcon(
+                          icon: HugeIcons.strokeRoundedRefresh,
+                        ),
+                      )
+                    : null,
+              );
+            }
+            final model = index < chatModels.length
+                ? chatModels[index]
+                : imageModels[index - chatModels.length - 1];
+            final isSelected = _isSelected(model);
             final isLoaded = isModelKeyLoaded(loadedInstances, model.id);
             final modelMeta = metadata[model.id];
 
@@ -381,15 +439,19 @@ class _ModelListState extends ConsumerState<ModelList> {
               isLoading:
                   modelLoading.isLoading && modelLoading.modelId == model.id,
               isFavorite: modelMeta?.isFavorite ?? false,
-              isDefault: ref.watch(
-                settingsProvider.select(
-                  (s) =>
-                      s.defaultModelServerId == widget.serverId &&
-                      s.defaultModelId == model.id,
-                ),
-              ),
+              isDefault:
+                  !model.isImageGeneration &&
+                  ref.watch(
+                    settingsProvider.select(
+                      (s) =>
+                          s.defaultModelServerId == widget.serverId &&
+                          s.defaultModelId == model.id,
+                    ),
+                  ),
               note: modelMeta?.note,
-              onLongPress: () => _showModelOptions(context, model),
+              onLongPress: model.isImageGeneration
+                  ? null
+                  : () => _showModelOptions(context, model),
               onTap: () async {
                 final activeServer = ref.read(activeServerProvider);
                 if (activeServer == null) return;

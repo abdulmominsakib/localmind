@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/logger/app_logger.dart';
@@ -12,6 +13,7 @@ import 'package:localmind/core/providers/service_providers.dart';
 import 'package:localmind/core/providers/chat_background_service_provider.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
 import 'package:localmind/core/services/app_haptics.dart';
+import 'package:localmind/core/services/generated_image_files.dart';
 import 'package:localmind/core/services/message_save_service.dart';
 import 'package:localmind/core/storage/entities.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
@@ -25,6 +27,7 @@ import 'package:localmind/features/servers/data/models/server.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/objectbox.g.dart';
 import '../data/chat_service.dart';
+import '../data/image_generation_service.dart';
 import '../data/models/message.dart' hide ToolCallData;
 import '../data/models/message.dart' as msg_model show ToolCallData;
 import '../data/title_generation_service.dart';
@@ -56,8 +59,10 @@ class PendingToolApproval {
 
 bool shouldIncludeMessageInChatContext(Message message) {
   if (message.role == MessageRole.assistant &&
-      message.status == MessageStatus.error &&
-      message.content.trim().isEmpty) {
+      message.content.trim().isEmpty &&
+      (message.status == MessageStatus.error ||
+          message.attachmentPaths?.any(AttachmentHelpers.isImagePath) ==
+              true)) {
     return false;
   }
   return true;
@@ -161,14 +166,16 @@ class ChatNotifier extends Notifier<ChatState> {
   GenerationSession _beginSession(
     String conversationId,
     Server server,
-    ChatService chatService,
-  ) {
+    ChatService chatService, {
+    bool isImageGeneration = false,
+  }) {
     final previous = _sessions[conversationId];
     final session = GenerationSession(
       conversationId: conversationId,
       server: server,
       chatService: chatService,
       persisted: previous?.persisted ?? !_isInMemoryChat,
+      imageCancelToken: isImageGeneration ? CancelToken() : null,
     );
     _sessions[conversationId] = session;
     if (previous != null) unawaited(previous.detach());
@@ -229,6 +236,7 @@ class ChatNotifier extends Notifier<ChatState> {
   bool _canContinueInBackground() {
     if (!state.isStreaming || _isInMemoryChat) return false;
     if (_activeSession == null) return false;
+    if (_activeSession!.isImageGeneration) return true;
     if (_pendingToolApproval != null) return false;
     if (ref.read(chatMcpConfigProvider).enabled) return false;
     return ref.read(voiceModeProvider).phase == VoiceModePhase.idle;
@@ -349,6 +357,7 @@ class ChatNotifier extends Notifier<ChatState> {
     String conversationId,
     Message finalMessage, {
     required bool isCurrentContext,
+    String? imagePrompt,
   }) async {
     if (!ref.mounted) return;
     final timeline = isCurrentContext
@@ -358,9 +367,10 @@ class ChatNotifier extends Notifier<ChatState> {
           );
 
     if (!ref.mounted) return;
-    final preview = finalMessage.content.length > 100
-        ? '${finalMessage.content.substring(0, 100)}...'
-        : finalMessage.content;
+    final previewText = imagePrompt ?? finalMessage.content;
+    final preview = previewText.length > 100
+        ? '${previewText.substring(0, 100)}...'
+        : previewText;
     final totalChars = timeline.fold<int>(
       0,
       (sum, message) => sum + message.content.length,
@@ -380,7 +390,7 @@ class ChatNotifier extends Notifier<ChatState> {
     final lastUserMessage = timeline
         .where((m) => m.role == MessageRole.user)
         .firstOrNull;
-    if (lastUserMessage != null) {
+    if (lastUserMessage != null && imagePrompt == null) {
       // Also covers a first reply that finished in the background (#94).
       _maybeAutoGenerateTitleAfterFirstReply(
         conversationId: conversationId,
@@ -416,6 +426,7 @@ class ChatNotifier extends Notifier<ChatState> {
     ref.onDispose(() {
       for (final session in _sessions.values) {
         session.cancelled = true;
+        session.imageCancelToken?.cancel();
         session.cancelUiTimer();
         session.subscription?.cancel();
         session.subscription = null;
@@ -491,9 +502,15 @@ class ChatNotifier extends Notifier<ChatState> {
     );
 
     try {
-      final messages = await loadConversationMessages(conversation.id);
-
-      if (!ref.mounted) return;
+      final imageSession = _sessions[conversation.id];
+      var messages = await loadConversationMessages(conversation.id);
+      if (!ref.mounted || _currentConversationId != conversation.id) return;
+      if (imageSession?.isImageGeneration == true &&
+          !identical(_sessions[conversation.id], imageSession)) {
+        // The read may have started before the image transaction committed.
+        messages = await loadConversationMessages(conversation.id);
+        if (!ref.mounted || _currentConversationId != conversation.id) return;
+      }
 
       // Reattach to a reply that kept generating while this chat was closed.
       final liveMessage = _sessions[conversation.id]?.latestMessage;
@@ -712,7 +729,9 @@ class ChatNotifier extends Notifier<ChatState> {
   Future<void> checkpointStreamingMessage({bool flush = false}) async {
     for (final session in _sessions.values) {
       final latest = session.latestMessage;
-      if (!session.persisted || latest == null) continue;
+      if (!session.persisted || session.isImageGeneration || latest == null) {
+        continue;
+      }
       _saveService?.enqueue(latest);
       session.updateSavedMetrics(latest);
       session.resetCheckpointMetrics();
@@ -732,12 +751,16 @@ class ChatNotifier extends Notifier<ChatState> {
   /// has always done on the first message of a chat. Shared with
   /// [insertMessageWithoutGenerating] so manually-inserted messages can also
   /// start a brand new conversation.
-  Future<void> _ensureConversationExists(String titleSource) async {
+  Future<void> _ensureConversationExists(
+    String titleSource, {
+    ActiveChatTarget? sendTarget,
+  }) async {
     if (_currentConversationId != null || _ephemeralConversationId != null) {
       return;
     }
 
-    final target = ref.read(activeChatTargetProvider);
+    final ActiveChatTarget target =
+        sendTarget ?? ref.read(activeChatTargetProvider);
     final server = target.server;
     final settings = ref.read(settingsProvider);
     if (server == null) return;
@@ -751,7 +774,7 @@ class ChatNotifier extends Notifier<ChatState> {
     }
 
     final titleService = ref.read(titleGenerationServiceProvider);
-    final initialTitle = settings.autoGenerateTitle
+    final initialTitle = settings.autoGenerateTitle && !target.isImageGeneration
         ? 'New Chat'
         : titleService.truncateFirstMessageTitle(titleSource);
     final preselected = ref.read(selectedPersonasProvider);
@@ -797,6 +820,125 @@ class ChatNotifier extends Notifier<ChatState> {
     }
   }
 
+  bool _canGenerateImage(String prompt, {required bool hasAttachments}) {
+    return !_isInMemoryChat &&
+        !_pendingTemporaryChat &&
+        !hasAttachments &&
+        prompt.trim().isNotEmpty;
+  }
+
+  Future<void> _runImageGeneration(
+    GenerationSession session,
+    Message assistant,
+    String modelId,
+    String prompt, {
+    Message? newUser,
+  }) async {
+    if (session.cancelled) return;
+    session.resetStreamMetrics();
+    final pending = assistant.copyWith(isProcessing: true);
+    session.latestMessage = pending;
+    state = state.copyWith(streamingMessage: pending);
+    File? file;
+    var started = false;
+    var committed = false;
+    var failure = ImageGenerationFailure.saveFailed;
+    var finalMessage = assistant;
+    try {
+      persistImageTurn(assistant, user: newUser);
+      started = true;
+      failure = ImageGenerationFailure.failed;
+      final server = session.server;
+      final endpoint = server.imageGenerationEndpoint;
+      if (endpoint == null) throw ImageGenerationFailure.unavailable;
+      final image = await ref
+          .read(imageGenerationServiceProvider)
+          .generate(
+            endpoint: Uri.parse(endpoint),
+            authHeaders: server.authHeaders,
+            allowsUrlResults: server.type == ServerType.openAICompatible,
+            modelId: modelId,
+            prompt: prompt.trim(),
+            cancelToken: session.imageCancelToken!,
+          );
+      if (!ref.mounted || session.cancelled) return;
+      failure = ImageGenerationFailure.saveFailed;
+      final directory = await ref.read(storageDirectoryProvider.future);
+      file = await GeneratedImageFiles(directory).write(
+        messageId: assistant.id,
+        bytes: image.bytes,
+        extension: image.extension,
+        isCancelled: () => session.cancelled || !ref.mounted,
+      );
+      if (file == null || !ref.mounted || session.cancelled) return;
+      finalMessage = _finalizeStreamMessage(
+        assistant.copyWith(
+          status: MessageStatus.complete,
+          attachmentPaths: [file.path],
+          isProcessing: false,
+        ),
+        session: session,
+      );
+      // Commit without yielding so Stop or Delete cannot race the transition
+      // between the finalized file and the message that owns it.
+      persistImageTurn(finalMessage);
+      committed = true;
+    } catch (error) {
+      if (!ref.mounted || session.cancelled) return;
+      if (error is ImageGenerationFailure) failure = error;
+      finalMessage = assistant.copyWith(
+        status: MessageStatus.error,
+        isProcessing: false,
+        errorMessage: failure.code,
+      );
+      if (started) {
+        try {
+          persistImageTurn(finalMessage);
+        } catch (_) {
+          Log.warning('Could not persist the image generation error');
+        }
+      }
+    } finally {
+      if (ref.mounted && !session.cancelled) {
+        final isCurrent =
+            _activeConversationId == session.conversationId && !state.isLoading;
+        if (isCurrent) {
+          _replaceMessageInState(finalMessage, clearStreaming: true);
+          state = state.copyWith(isStreaming: false);
+        }
+        session.latestMessage = null;
+        _endSession(session);
+      }
+      if (file != null && !committed) await GeneratedImageFiles.discard(file);
+    }
+
+    if (ref.mounted && !session.cancelled) {
+      try {
+        await _syncConversationStatsAfterGeneration(
+          session.conversationId,
+          finalMessage,
+          isCurrentContext:
+              _activeConversationId == session.conversationId &&
+              !state.isLoading,
+          imagePrompt: prompt,
+        );
+      } catch (_) {
+        Log.warning('Could not update image conversation stats');
+      }
+    }
+  }
+
+  /// Writes an image reply and, for a new turn, its prompt in one transaction.
+  @protected
+  @visibleForTesting
+  void persistImageTurn(Message message, {Message? user}) {
+    final store = ref.read(databaseProvider).store;
+    store.runInTransaction(TxMode.write, () {
+      if (user != null) _saveMessageInBackground(store, user);
+      _saveMessageInBackground(store, message);
+    });
+  }
+
   Future<void> sendMessage(String content, {List<File>? attachments}) async {
     if (_blockIfOnDeviceBusy()) return;
     final target = ref.read(activeChatTargetProvider);
@@ -816,6 +958,14 @@ class ChatNotifier extends Notifier<ChatState> {
 
     if (content.trim().isEmpty &&
         (attachments == null || attachments.isEmpty)) {
+      return;
+    }
+
+    if (target.isImageGeneration &&
+        !_canGenerateImage(
+          content,
+          hasAttachments: attachments?.isNotEmpty == true,
+        )) {
       return;
     }
 
@@ -844,14 +994,9 @@ class ChatNotifier extends Notifier<ChatState> {
         : (attachments?.isNotEmpty == true
               ? attachments!.first.path.split(Platform.pathSeparator).last
               : 'New Chat');
-    await _ensureConversationExists(titleSource);
-
-    // Read after the conversation (and its persona system prompt) is
-    // created above — chatParamsProvider derives systemPrompt from
-    // activeConversationProvider, which doesn't have it yet if read at the
-    // top of this function, causing the very first message's request to
-    // go out with no persona system prompt.
-    final chatParams = ref.read(chatParamsProvider);
+    await _ensureConversationExists(titleSource, sendTarget: target);
+    if (!ref.mounted) return;
+    if (target.isImageGeneration && _isInMemoryChat) return;
 
     final convId = _activeConversationId;
     if (convId == null) return;
@@ -920,7 +1065,31 @@ class ChatNotifier extends Notifier<ChatState> {
       streamingMessage: assistantMessage,
       clearError: true,
     );
-    final session = _beginSession(convId, server, chatService);
+    final session = _beginSession(
+      convId,
+      server,
+      chatService,
+      isImageGeneration: target.isImageGeneration,
+    );
+    if (session.isImageGeneration) {
+      unawaited(
+        _runImageGeneration(
+          session,
+          assistantMessage,
+          effectiveModelId,
+          trimmedContent,
+          newUser: userMessage,
+        ),
+      );
+      return;
+    }
+
+    // Read after the conversation (and its persona system prompt) is
+    // created above — chatParamsProvider derives systemPrompt from
+    // activeConversationProvider, which doesn't have it yet if read at the
+    // top of this function, causing the very first message's request to
+    // go out with no persona system prompt.
+    final chatParams = ref.read(chatParamsProvider);
 
     await _saveMessage(userMessage, persist: session.persisted);
     await _saveMessage(assistantMessage, persist: session.persisted);
@@ -1818,6 +1987,12 @@ class ChatNotifier extends Notifier<ChatState> {
       query.close();
     }
 
+    unawaited(
+      GeneratedImageFiles.prune(
+        db.messageBox,
+        messagesToRemove.expand((m) => m.attachmentPaths ?? const <String>[]),
+      ),
+    );
     final removedIds = messagesToRemove.map((m) => m.id).toSet();
     final updatedAll = state.allMessages
         .where((m) => !removedIds.contains(m.id))
@@ -1839,10 +2014,15 @@ class ChatNotifier extends Notifier<ChatState> {
     final messages = state.messages;
     if (messages.isEmpty || messages.last.id != messageId) return;
     final assistant = messages.last;
-    if (assistant.role != MessageRole.assistant) return;
+    if (assistant.role != MessageRole.assistant ||
+        assistant.attachmentPaths?.any(AttachmentHelpers.isImagePath) == true ||
+        ImageGenerationFailure.fromCode(assistant.errorMessage) != null) {
+      return;
+    }
     if (state.isStreaming) return;
 
     final target = ref.read(activeChatTargetProvider);
+    if (target.isImageGeneration) return;
     final server = target.server;
     final effectiveModelId = target.effectiveModelId;
     if (server == null || effectiveModelId == null) return;
@@ -1943,6 +2123,13 @@ class ChatNotifier extends Notifier<ChatState> {
       if (turnIndex > 0 &&
           state.messages[turnIndex - 1].role == MessageRole.user) {
         final userMessage = state.messages[turnIndex - 1];
+        if (ref.read(activeChatTargetProvider).isImageGeneration &&
+            !_canGenerateImage(
+              userMessage.content,
+              hasAttachments: userMessage.attachmentPaths?.isNotEmpty == true,
+            )) {
+          return;
+        }
 
         final deactivated = state.allMessages.map((m) {
           if (MessageVariants.groupId(m) != groupId) return m;
@@ -1981,6 +2168,14 @@ class ChatNotifier extends Notifier<ChatState> {
     if (server == null ||
         effectiveModelId == null ||
         _activeConversationId == null) {
+      return;
+    }
+
+    if (target.isImageGeneration &&
+        !_canGenerateImage(
+          userMessage.content,
+          hasAttachments: userMessage.attachmentPaths?.isNotEmpty == true,
+        )) {
       return;
     }
 
@@ -2023,8 +2218,21 @@ class ChatNotifier extends Notifier<ChatState> {
       assistantMessage.conversationId,
       server,
       chatService,
+      isImageGeneration: target.isImageGeneration,
     );
+    if (session.isImageGeneration) {
+      unawaited(
+        _runImageGeneration(
+          session,
+          assistantMessage,
+          effectiveModelId,
+          userMessage.content,
+        ),
+      );
+      return;
+    }
     await _saveMessage(assistantMessage, persist: session.persisted);
+    if (!ref.mounted) return;
 
     session.resetCheckpointMetrics();
     session.updateSavedMetrics(assistantMessage);
@@ -2676,12 +2884,21 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> deleteMessage(String messageId) async {
+    final session = _activeSession;
+    if (session?.isImageGeneration == true &&
+        session?.latestMessage?.id == messageId) {
+      await cancelGenerationFor(session!.conversationId);
+      if (!ref.mounted) return;
+    }
     final db = ref.read(databaseProvider);
     final query = db.messageBox
         .query(MessageEntity_.id.equals(messageId))
         .build();
+    final paths =
+        query.findFirst()?.toDomain().attachmentPaths ?? const <String>[];
     db.messageBox.removeMany(query.findIds());
     query.close();
+    unawaited(GeneratedImageFiles.prune(db.messageBox, paths));
 
     final updatedAll = state.allMessages
         .where((m) => m.id != messageId)
@@ -2736,6 +2953,7 @@ class ChatNotifier extends Notifier<ChatState> {
     if (state.messages.isEmpty) return;
 
     final target = ref.read(activeChatTargetProvider);
+    if (target.isImageGeneration) return;
     final server = target.server;
     final modelId = target.effectiveModelId;
     final chatService = ref.read(chatServiceProvider);
@@ -2821,6 +3039,14 @@ class ChatNotifier extends Notifier<ChatState> {
     if (newContent.trim().isEmpty) return;
     if (newContent == message.content) return;
 
+    if (ref.read(activeChatTargetProvider).isImageGeneration &&
+        !_canGenerateImage(
+          newContent,
+          hasAttachments: message.attachmentPaths?.isNotEmpty == true,
+        )) {
+      return;
+    }
+
     final groupId = MessageVariants.groupId(message);
     final deactivated = state.allMessages.map((m) {
       if (MessageVariants.groupId(m) != groupId) return m;
@@ -2869,13 +3095,35 @@ class ChatNotifier extends Notifier<ChatState> {
   /// Reads a conversation's messages from ObjectBox. Overridden in tests.
   @protected
   @visibleForTesting
-  Future<List<Message>> loadConversationMessages(String conversationId) {
+  Future<List<Message>> loadConversationMessages(String conversationId) async {
     final db = ref.read(databaseProvider);
-    return db.store.runInTransactionAsync(
+    final messages = await db.store.runInTransactionAsync(
       TxMode.read,
       _loadMessagesInBackground,
       conversationId,
     );
+    bool hasGeneratedImage(Message message) =>
+        message.attachmentPaths?.any(GeneratedImageFiles.isStoredPath) ?? false;
+
+    if (!ref.mounted || !messages.any(hasGeneratedImage)) return messages;
+    try {
+      final files = GeneratedImageFiles(
+        await ref.read(storageDirectoryProvider.future),
+      );
+      return [
+        for (final message in messages)
+          if (hasGeneratedImage(message))
+            message.copyWith(
+              attachmentPaths: message.attachmentPaths!
+                  .map(files.resolvePath)
+                  .toList(),
+            )
+          else
+            message,
+      ];
+    } catch (_) {
+      return messages;
+    }
   }
 
   /// Writes a message to ObjectBox. Overridden in tests.
@@ -2926,6 +3174,10 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   Future<void> clearConversation() async {
+    if (_activeSession?.isImageGeneration == true) {
+      await cancelStream();
+      if (!ref.mounted) return;
+    }
     await _saveService?.flush();
     if (!ref.mounted) return;
     final db = ref.read(databaseProvider);
@@ -2933,8 +3185,15 @@ class ChatNotifier extends Notifier<ChatState> {
       final query = db.messageBox
           .query(MessageEntity_.conversationUid.equals(_currentConversationId!))
           .build();
+      final paths = query
+          .find()
+          .expand(
+            (entity) => entity.toDomain().attachmentPaths ?? const <String>[],
+          )
+          .toList();
       db.messageBox.removeMany(query.findIds());
       query.close();
+      unawaited(GeneratedImageFiles.prune(db.messageBox, paths));
     }
     _currentConversationId = null;
     _ephemeralConversationId = null;

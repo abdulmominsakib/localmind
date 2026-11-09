@@ -135,6 +135,66 @@ final loadedModelsProvider = FutureProvider.family<Set<String>, Server>((
   }
 });
 
+String _imageModelIdsKey(String serverId) => 'imageModelIds.$serverId';
+
+final manualImageModelIdsProvider =
+    NotifierProvider.family<ManualImageModelIdsNotifier, List<String>, String>(
+      ManualImageModelIdsNotifier.new,
+    );
+
+class ManualImageModelIdsNotifier extends Notifier<List<String>> {
+  ManualImageModelIdsNotifier(this.serverId);
+
+  final String serverId;
+
+  @override
+  List<String> build() =>
+      ref
+          .watch(sharedPreferencesProvider)
+          .getStringList(_imageModelIdsKey(serverId)) ??
+      const [];
+
+  Future<void> setIds(String input) async {
+    final ids = input
+        .split(RegExp(r'[,\n]'))
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    final prefs = ref.read(sharedPreferencesProvider);
+    final key = _imageModelIdsKey(serverId);
+    final saved = ids.isEmpty
+        ? await prefs.remove(key)
+        : await prefs.setStringList(key, ids);
+    if (!saved) throw StateError('Could not save image model IDs');
+    if (ref.mounted) state = ids;
+  }
+}
+
+final additionalImageModelsProvider = FutureProvider.autoDispose
+    .family<List<ModelInfo>, String>((ref, serverId) async {
+      final server = (ref.watch(serversProvider).value ?? [])
+          .where((server) => server.id == serverId)
+          .firstOrNull;
+      if (server == null) return [];
+      if (server.type == ServerType.openRouter) {
+        return ref
+            .watch(serverApiServiceProvider)
+            .fetchOpenRouterImageModels(server);
+      }
+      if (server.type != ServerType.openAICompatible) return [];
+      return [
+        for (final id in ref.watch(manualImageModelIdsProvider(serverId)))
+          ModelInfo(
+            id: id,
+            name: id,
+            serverType: server.type,
+            serverId: serverId,
+            isImageGeneration: true,
+          ),
+      ];
+    });
+
 final availableModelsProvider = FutureProvider.family<List<dynamic>, String>((
   ref,
   serverId,
@@ -303,6 +363,11 @@ class ServersNotifier extends AsyncNotifier<List<Server>> {
     db.serverBox.removeMany(query.findIds());
     query.close();
     invalidateAvailableModelsCache(serverId);
+    final prefs = ref.read(sharedPreferencesProvider);
+    final imageKey = _imageModelIdsKey(serverId);
+    if (prefs.containsKey(imageKey)) await prefs.remove(imageKey);
+    if (!ref.mounted) return;
+    ref.invalidate(manualImageModelIdsProvider(serverId));
     final data = await _loadAll();
     if (ref.mounted) {
       state = AsyncData(data);

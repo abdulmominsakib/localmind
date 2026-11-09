@@ -156,6 +156,9 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
                           ref.invalidate(
                             availableModelsProvider(activeServer.id),
                           );
+                          ref.invalidate(
+                            additionalImageModelsProvider(activeServer.id),
+                          );
                           ref.invalidate(loadedModelsProvider(activeServer));
                         }
                       : null,
@@ -183,7 +186,13 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
                         )
                       : ModelList(
                           serverId: activeServer.id,
-                          selectedModelId: selectedModel?.id,
+                          includeImageModels: true,
+                          selectedImageModel:
+                              selectedModel?.isImageGeneration ?? false,
+                          selectedModelId:
+                              selectedModel?.serverId == activeServer.id
+                              ? selectedModel?.id
+                              : null,
                           isDark: isDark,
                           scrollController: scrollController,
                         ),

@@ -151,16 +151,17 @@ class MessageActionsSheet extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Expanded(
-                child: MessageQuickAction(
-                  icon: HugeIcons.strokeRoundedCopy01,
-                  label: l10n.copy,
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    copyMessageText(context, actions);
-                  },
+              if (actions.content.isNotEmpty)
+                Expanded(
+                  child: MessageQuickAction(
+                    icon: HugeIcons.strokeRoundedCopy01,
+                    label: l10n.copy,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      copyMessageText(context, actions);
+                    },
+                  ),
                 ),
-              ),
               if (actions.onRetry != null) ...[
                 const SizedBox(width: 8),
                 Expanded(
@@ -171,29 +172,33 @@ class MessageActionsSheet extends ConsumerWidget {
                   ),
                 ),
               ],
-              const SizedBox(width: 8),
-              Expanded(
-                child: MessageQuickAction(
-                  icon: speaking
-                      ? (playing
-                            ? HugeIcons.strokeRoundedPauseCircle
-                            : HugeIcons.strokeRoundedPlayCircle)
-                      : HugeIcons.strokeRoundedVolumeUp,
-                  label: speaking
-                      ? (playing ? l10n.pause : l10n.resume)
-                      : l10n.read_aloud,
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    toggleMessageSpeech(ref, actions);
-                  },
+              if (actions.content.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: MessageQuickAction(
+                    icon: speaking
+                        ? (playing
+                              ? HugeIcons.strokeRoundedPauseCircle
+                              : HugeIcons.strokeRoundedPlayCircle)
+                        : HugeIcons.strokeRoundedVolumeUp,
+                    label: speaking
+                        ? (playing ? l10n.pause : l10n.resume)
+                        : l10n.read_aloud,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      toggleMessageSpeech(ref, actions);
+                    },
+                  ),
                 ),
-              ),
+              ],
               if (actions.onShare != null) ...[
                 const SizedBox(width: 8),
                 Expanded(
                   child: MessageQuickAction(
                     icon: HugeIcons.strokeRoundedShare01,
-                    label: l10n.share,
+                    label: actions.content.isEmpty
+                        ? l10n.image_generation_share
+                        : l10n.share,
                     onTap: () => run(actions.onShare!),
                   ),
                 ),
@@ -229,18 +234,19 @@ class MessageActionsSheet extends ConsumerWidget {
                   label: l10n.branch_chat,
                   onTap: () => run(actions.onBranch!),
                 ),
-              ActionSheetTile(
-                icon: HugeIcons.strokeRoundedCode,
-                label: l10n.copy_markdown,
-                onTap: () {
-                  final messenger = ScaffoldMessenger.maybeOf(context);
-                  Navigator.of(context).pop();
-                  Clipboard.setData(ClipboardData(text: actions.content));
-                  messenger?.showSnackBar(
-                    SnackBar(content: Text(l10n.copied_markdown)),
-                  );
-                },
-              ),
+              if (actions.content.isNotEmpty)
+                ActionSheetTile(
+                  icon: HugeIcons.strokeRoundedCode,
+                  label: l10n.copy_markdown,
+                  onTap: () {
+                    final messenger = ScaffoldMessenger.maybeOf(context);
+                    Navigator.of(context).pop();
+                    Clipboard.setData(ClipboardData(text: actions.content));
+                    messenger?.showSnackBar(
+                      SnackBar(content: Text(l10n.copied_markdown)),
+                    );
+                  },
+                ),
               if (actions.messageId != null)
                 ActionSheetTile(
                   icon: HugeIcons.strokeRoundedCheckList,

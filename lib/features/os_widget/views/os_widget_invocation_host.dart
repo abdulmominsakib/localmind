@@ -250,7 +250,9 @@ class _OsWidgetInvocationHostState
         return;
       }
       final targetModel =
-          available.where((m) => m.id == defaultModelId).firstOrNull ??
+          available
+              .where((m) => m.id == defaultModelId && !m.isImageGeneration)
+              .firstOrNull ??
           ModelInfo(
             id: defaultModelId,
             name: modelDisplayName,

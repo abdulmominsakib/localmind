@@ -984,5 +984,12 @@
   "sidebar_section_chats": "Conversations",
   "sidebar_section_models": "Modèles",
   "sidebar_section_app": "App",
-  "model_still_stopping": "Le modèle est en cours d’arrêt. Veuillez patienter avant de réessayer."
+  "model_still_stopping": "Le modèle est en cours d’arrêt. Veuillez patienter avant de réessayer.",
+  "image_generation": "Génération d’images",
+  "image_model_ids": "Identifiants des modèles d’image",
+  "image_model_ids_hint": "Séparez les identifiants personnalisés par des virgules ou des sauts de ligne.",
+  "image_generation_prompt": "Décrivez l’image à créer",
+  "image_generation_temporary": "La génération d’images est disponible dans les discussions enregistrées. Démarrez une discussion enregistrée pour créer une image.",
+  "image_generation_remove_attachments": "Retirez les pièces jointes avant de générer une image.",
+  "image_generation_share": "Partager l’image"
 }
