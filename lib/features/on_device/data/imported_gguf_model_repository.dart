@@ -1285,23 +1285,29 @@ class ImportedGgufModelRepository {
 
       await _modelsDirectory();
 
-      final originalName = _fileNameFromUri(Uri.parse(model.sourceUrl!));
-      final task = DownloadTask(
-        taskId: modelId,
-        url: model.sourceUrl!,
-        filename: '$modelId-${_sanitizeFileName(originalName)}',
-        directory: _storageDirName,
-        baseDirectory: BaseDirectory.applicationSupport,
-        headers: {
-          if (token != null && token.isNotEmpty)
-            HttpHeaders.authorizationHeader: 'Bearer $token',
-        },
-        allowPause: true,
-        retries: 3,
-        updates: Updates.statusAndProgress,
-        group: 'localmind_gguf_downloads',
-        displayName: model.name,
-      );
+      // Reuse an existing native task if present (avoids duplicate downloads
+      // on retry after pause/cancel/process-death). Fall back to creating a
+      // fresh task otherwise.
+      DownloadTask? task = await FileDownloader().taskForId(modelId) as DownloadTask?;
+      if (task == null) {
+        final originalName = _fileNameFromUri(Uri.parse(model.sourceUrl!));
+        task = DownloadTask(
+          taskId: modelId,
+          url: model.sourceUrl!,
+          filename: '$modelId-${_sanitizeFileName(originalName)}',
+          directory: _storageDirName,
+          baseDirectory: BaseDirectory.applicationSupport,
+          headers: {
+            if (token != null && token.isNotEmpty)
+              HttpHeaders.authorizationHeader: 'Bearer $token',
+          },
+          allowPause: true,
+          retries: 3,
+          updates: Updates.statusAndProgress,
+          group: 'localmind_gguf_downloads',
+          displayName: model.name,
+        );
+      }
 
       _activeGgufTasks[modelId] = task;
 
@@ -1327,7 +1333,7 @@ class ImportedGgufModelRepository {
       );
 
       if (result.status == TaskStatus.paused) {
-        _activeGgufTasks[modelId] = task as DownloadTask;
+        _activeGgufTasks[modelId] = task;
         return TaskStatus.paused;
       }
       if (result.status == TaskStatus.canceled) {
@@ -1429,22 +1435,25 @@ class ImportedGgufModelRepository {
       // publishes a new projector alongside the model, re-download it separately.
       // See audit G-12.
       final originalName = _fileNameFromUri(Uri.parse(model.sourceUrl!));
-      final task = DownloadTask(
-        taskId: '$modelId-update',
-        url: model.sourceUrl!,
-        filename: '$modelId-update-${_sanitizeFileName(originalName)}',
-        directory: _storageDirName,
-        baseDirectory: BaseDirectory.applicationSupport,
-        headers: {
-          if (token != null && token.isNotEmpty)
-            HttpHeaders.authorizationHeader: 'Bearer $token',
-        },
-        allowPause: true,
-        retries: 3,
-        updates: Updates.statusAndProgress,
-        group: 'localmind_gguf_downloads',
-        displayName: '${model.name} (update)',
-      );
+      DownloadTask? task = await FileDownloader().taskForId('$modelId-update') as DownloadTask?;
+      if (task == null) {
+        task = DownloadTask(
+          taskId: '$modelId-update',
+          url: model.sourceUrl!,
+          filename: '$modelId-update-${_sanitizeFileName(originalName)}',
+          directory: _storageDirName,
+          baseDirectory: BaseDirectory.applicationSupport,
+          headers: {
+            if (token != null && token.isNotEmpty)
+              HttpHeaders.authorizationHeader: 'Bearer $token',
+          },
+          allowPause: true,
+          retries: 3,
+          updates: Updates.statusAndProgress,
+          group: 'localmind_gguf_downloads',
+          displayName: '${model.name} (update)',
+        );
+      }
 
       _activeGgufTasks[modelId] = task;
 
@@ -1470,7 +1479,7 @@ class ImportedGgufModelRepository {
       );
 
       if (result.status == TaskStatus.paused) {
-        _activeGgufTasks[modelId] = task as DownloadTask;
+        _activeGgufTasks[modelId] = task;
         return TaskStatus.paused;
       }
       if (result.status == TaskStatus.canceled) {
@@ -1568,7 +1577,7 @@ class ImportedGgufModelRepository {
     for (final t in tasks) {
       _activeGgufTasks[modelId] = t as DownloadTask;
       try {
-        final ok = await FileDownloader().pause(t as DownloadTask);
+        final ok = await FileDownloader().pause(t);
         if (ok) any = true;
       } catch (_) {}
     }
@@ -1701,17 +1710,29 @@ class ImportedGgufModelRepository {
 
   Future<void> cancelDownload(String modelId) async {
     for (final taskId in [modelId, '$modelId-update']) {
-      final tasks = (await FileDownloader().allTasks(allGroups: true))
-          .where((t) => t.taskId == taskId)
-          .toList();
-      for (final t in tasks) {
-        try { await FileDownloader().cancel(t); } catch (_) {}
-      }
-      await FileDownloader().cancelTaskWithId(taskId);
+      try {
+        final tasks = (await FileDownloader()
+                .allTasks(allGroups: true)
+                .timeout(const Duration(seconds: 2)))
+            .where((t) => t.taskId == taskId)
+            .toList();
+        for (final t in tasks) {
+          try {
+            await FileDownloader().cancel(t).timeout(const Duration(seconds: 2));
+          } catch (_) {}
+        }
+      } catch (_) {}
+      try {
+        await FileDownloader()
+            .cancelTaskWithId(taskId)
+            .timeout(const Duration(seconds: 2));
+      } catch (_) {}
     }
     _activeGgufTasks.remove(modelId);
     try {
-      final t = await FileDownloader().taskForId('$modelId-update');
+      final t = await FileDownloader()
+          .taskForId('$modelId-update')
+          .timeout(const Duration(seconds: 2));
       if (t != null) {
         final tp = await t.filePath();
         final tf = File(tp);
@@ -1723,6 +1744,7 @@ class ImportedGgufModelRepository {
   Future<void> deleteFile(String modelId) async {
     final attempt = _ggufAttempts.remove(modelId);
     attempt?.cancelToken.cancel('Deleted by user');
+    await cancelDownload(modelId);
 
     await _mutex.run(() async {
       final models = load();
@@ -1758,7 +1780,8 @@ class ImportedGgufModelRepository {
     });
   }
 
-  Future<void> delete(String id) {
+  Future<void> delete(String id) async {
+    await cancelDownload(id);
     return _mutex.run(() async {
       final current = load();
       final kept = <ImportedGgufModelMetadata>[];

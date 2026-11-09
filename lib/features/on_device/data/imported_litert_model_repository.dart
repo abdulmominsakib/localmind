@@ -1519,22 +1519,35 @@ class ImportedLitertModelRepository {
   Future<void> cancelDownload(String modelId) async {
     // Cancel both normal and update tasks.
     for (final taskId in [modelId, '$modelId-update']) {
-      final tasks = (await FileDownloader().allTasks(allGroups: true))
-          .where((t) => t.taskId == taskId)
-          .toList();
-      if (tasks.isEmpty) {
-        final t = _activeLitertTasks[modelId] ?? await FileDownloader().taskForId(taskId);
-        if (t != null) tasks.add(t);
-      }
-      for (final t in tasks) {
-        try { await FileDownloader().cancel(t); } catch (_) {}
-      }
-      await FileDownloader().cancelTaskWithId(taskId);
+      try {
+        final tasks = (await FileDownloader()
+                .allTasks(allGroups: true)
+                .timeout(const Duration(seconds: 2)))
+            .where((t) => t.taskId == taskId)
+            .toList();
+        if (tasks.isEmpty) {
+          final t = _activeLitertTasks[modelId] ??
+              await FileDownloader().taskForId(taskId).timeout(const Duration(seconds: 2));
+          if (t != null) tasks.add(t);
+        }
+        for (final t in tasks) {
+          try {
+            await FileDownloader().cancel(t).timeout(const Duration(seconds: 2));
+          } catch (_) {}
+        }
+      } catch (_) {}
+      try {
+        await FileDownloader()
+            .cancelTaskWithId(taskId)
+            .timeout(const Duration(seconds: 2));
+      } catch (_) {}
     }
     _activeLitertTasks.remove(modelId);
     // Clean up partial update temp file (best-effort).
     try {
-      final t = await FileDownloader().taskForId('$modelId-update');
+      final t = await FileDownloader()
+          .taskForId('$modelId-update')
+          .timeout(const Duration(seconds: 2));
       if (t != null) {
         final tp = await t.filePath();
         final tf = File(tp);

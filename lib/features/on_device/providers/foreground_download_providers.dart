@@ -335,14 +335,16 @@ class ForegroundDownloadNotifier
     return {};
   }
 
-  void _saveState() {
+  Future<void> _saveState() async {
     try {
       final prefs = ref.read(sharedPreferencesProvider);
       final data = state.map((k, v) => MapEntry(k, v.toJson()));
-      // ignore: unawaited_futures
-      prefs.setString(_storageKey, json.encode(data));
+      final ok = await prefs.setString(_storageKey, json.encode(data));
+      if (!ok) {
+        Log.warning('Failed to persist download state');
+      }
     } catch (e) {
-      // Ignore errors saving state
+      Log.warning('Failed to persist download state: $e');
     }
   }
 
