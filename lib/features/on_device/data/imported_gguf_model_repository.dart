@@ -1425,6 +1425,9 @@ class ImportedGgufModelRepository {
       }
 
       final oldFilePath = model.filePath;
+      // NOTE: projector files (mmproj) are not updated here. If the repository
+      // publishes a new projector alongside the model, re-download it separately.
+      // See audit G-12.
       final originalName = _fileNameFromUri(Uri.parse(model.sourceUrl!));
       final task = DownloadTask(
         taskId: '$modelId-update',
