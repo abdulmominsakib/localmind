@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/utils/async_mutex.dart';
 import 'download_operation_store.dart';
+import 'download_task_gateway.dart';
 import 'models/download_operation.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/utils/hugging_face_url.dart';
@@ -348,6 +349,7 @@ class ImportedLitertModelRepository {
   final Random _random;
   final Future<Directory> Function()? modelsDirectoryProvider;
   final DownloadOperationStore? operations;
+  final DownloadTaskGateway? gateway;
   final AsyncMutex _mutex = AsyncMutex();
   Future<void>? _reconcileFuture;
   final Set<String> _registeredLocalModels = <String>{};
@@ -359,6 +361,7 @@ class ImportedLitertModelRepository {
     Random? random,
     this.modelsDirectoryProvider,
     this.operations,
+    this.gateway,
   }) : _random = random ?? Random.secure();
 
   List<ImportedLitertModelMetadata> load() {

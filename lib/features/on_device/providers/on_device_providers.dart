@@ -20,6 +20,7 @@ import '../../../core/providers/storage_providers.dart';
 import '../data/imported_gguf_model_repository.dart';
 import '../data/imported_litert_model_repository.dart';
 import '../data/download_operation_store.dart';
+import '../data/download_task_gateway.dart';
 import '../data/models/on_device_model.dart';
 import '../data/notification_permission_service.dart';
 import '../data/on_device_gemma_service.dart';
@@ -75,6 +76,7 @@ final importedGgufModelRepositoryProvider =
         ref.read(sharedPreferencesProvider),
         ref.read(dioProvider),
         operations: ref.read(downloadOperationStoreProvider),
+        gateway: FileDownloaderGateway(),
       );
     });
 
@@ -84,6 +86,7 @@ final importedLitertModelRepositoryProvider =
         ref.read(sharedPreferencesProvider),
         ref.read(dioProvider),
         operations: ref.read(downloadOperationStoreProvider),
+        gateway: FileDownloaderGateway(),
       );
     });
 
