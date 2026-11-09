@@ -247,6 +247,22 @@ class _OnboardingServerTypeScreenState
                                     ),
                                     theme: theme,
                                   ),
+                                  _buildServerCard(
+                                    type: ServerType.standardCompute,
+                                    title: l10n.server_type_standard_compute,
+                                    subtitle:
+                                        l10n.server_type_standard_compute_sub,
+                                    iconWidget: ServerLogo(
+                                      type: ServerType.standardCompute,
+                                      size: 20,
+                                      iconColor:
+                                          _selectedType ==
+                                              ServerType.standardCompute
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                    ),
+                                    theme: theme,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 12),

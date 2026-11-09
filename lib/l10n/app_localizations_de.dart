@@ -1127,6 +1127,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Connect through Requesty with a valid API key and keep this profile ready for model routing.';
 
   @override
+  String get add_server_standard_compute_subtitle =>
+      'Connect through Standard Compute with a valid API key and keep this profile ready for model routing.';
+
+  @override
   String get add_server_endpoint_subtitle =>
       'Configure a local or self-hosted endpoint, then verify the connection before saving.';
 
@@ -1137,10 +1141,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get server_type_requesty => 'Requesty';
 
   @override
+  String get server_type_standard_compute => 'Standard Compute';
+
+  @override
   String get server_type_openrouter_sub => 'UNIFIED CLOUD';
 
   @override
   String get server_type_requesty_sub => 'UNIFIED CLOUD';
+
+  @override
+  String get server_type_standard_compute_sub => 'UNIFIED CLOUD';
 
   @override
   String get ready_continue => 'BEREIT ZUM FORTFAHREN';
@@ -1196,6 +1206,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get api_key_required_requesty => 'API Key required for Requesty';
 
   @override
+  String get api_key_required_standard_compute =>
+      'API Key required for Standard Compute';
+
+  @override
   String get api_key_format => 'OpenRouter API keys start with sk-';
 
   @override
@@ -1212,6 +1226,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get api_key_hint_requesty => 'rqsty-...';
+
+  @override
+  String get api_key_hint_standard_compute => 'sk_live_...';
 
   @override
   String get api_key_hint_generic => 'For authenticated servers';
@@ -1404,6 +1421,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get server_type_requesty_display => 'Requesty';
 
   @override
+  String get server_type_standard_compute_display => 'Standard Compute';
+
+  @override
   String get server_type_on_device_display => 'On-Device';
 
   @override
@@ -1411,6 +1431,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get server_address_requesty => 'router.requesty.ai';
+
+  @override
+  String get server_address_standard_compute => 'api.stdcmpt.com';
 
   @override
   String get server_address_on_device => 'Local inference';
@@ -2323,6 +2346,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Requesty requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_standard_compute =>
+      'Standard Compute requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -2979,6 +3006,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get requesty_disclosure =>
+      'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.';
+
+  @override
+  String get standard_compute_disclosure =>
       'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.';
 
   @override

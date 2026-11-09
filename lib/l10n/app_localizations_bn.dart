@@ -1138,6 +1138,10 @@ class AppLocalizationsBn extends AppLocalizations {
       'একটি বৈধ API Key দিয়ে Requesty-এর মাধ্যমে সংযোগ করুন এবং মডেল রাউটিংয়ের জন্য এই প্রোফাইলটি প্রস্তুত রাখুন।';
 
   @override
+  String get add_server_standard_compute_subtitle =>
+      'একটি বৈধ API Key দিয়ে Standard Compute-এর মাধ্যমে সংযোগ করুন এবং মডেল রাউটিংয়ের জন্য এই প্রোফাইলটি প্রস্তুত রাখুন।';
+
+  @override
   String get add_server_endpoint_subtitle =>
       'একটি স্থানীয় বা স্ব-হোস্ট করা এন্ডপয়েন্ট কনফিগার করুন, তারপর সংরক্ষণ করার আগে সংযোগ যাচাই করুন।';
 
@@ -1148,10 +1152,16 @@ class AppLocalizationsBn extends AppLocalizations {
   String get server_type_requesty => 'Requesty';
 
   @override
+  String get server_type_standard_compute => 'Standard Compute';
+
+  @override
   String get server_type_openrouter_sub => 'ইউনিফাইড ক্লাউড';
 
   @override
   String get server_type_requesty_sub => 'ইউনিফাইড ক্লাউড';
+
+  @override
+  String get server_type_standard_compute_sub => 'ইউনিফাইড ক্লাউড';
 
   @override
   String get ready_continue => 'এগিয়ে যাওয়ার জন্য প্রস্তুত';
@@ -1208,6 +1218,10 @@ class AppLocalizationsBn extends AppLocalizations {
   String get api_key_required_requesty => 'Requesty-এর জন্য এপিআই কি প্রয়োজন';
 
   @override
+  String get api_key_required_standard_compute =>
+      'Standard Compute-এর জন্য এপিআই কি প্রয়োজন';
+
+  @override
   String get api_key_format => 'OpenRouter API কি sk- দিয়ে শুরু হয়';
 
   @override
@@ -1225,6 +1239,9 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get api_key_hint_requesty => 'rqsty-...';
+
+  @override
+  String get api_key_hint_standard_compute => 'sk_live_...';
 
   @override
   String get api_key_hint_generic => 'প্রমাণিত সার্ভারের জন্য';
@@ -1417,6 +1434,9 @@ class AppLocalizationsBn extends AppLocalizations {
   String get server_type_requesty_display => 'Requesty';
 
   @override
+  String get server_type_standard_compute_display => 'Standard Compute';
+
+  @override
   String get server_type_on_device_display => 'অন-ডিভাইস (On-Device)';
 
   @override
@@ -1424,6 +1444,9 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get server_address_requesty => 'router.requesty.ai';
+
+  @override
+  String get server_address_standard_compute => 'api.stdcmpt.com';
 
   @override
   String get server_address_on_device => 'স্থানীয় ইনফারেন্স (Local Inference)';
@@ -2337,6 +2360,10 @@ class AppLocalizationsBn extends AppLocalizations {
       'Requesty requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_standard_compute =>
+      'Standard Compute requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -2990,6 +3017,10 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get requesty_disclosure =>
+      'এই প্রদানকারীকে সংযুক্ত করার মাধ্যমে, আপনার চ্যাট বার্তা এবং ইনপুট তাদের সার্ভারে পাঠানো হবে। LocalMind আপনার কথোপকথন ট্র্যাক বা সংরক্ষণ করে না।';
+
+  @override
+  String get standard_compute_disclosure =>
       'এই প্রদানকারীকে সংযুক্ত করার মাধ্যমে, আপনার চ্যাট বার্তা এবং ইনপুট তাদের সার্ভারে পাঠানো হবে। LocalMind আপনার কথোপকথন ট্র্যাক বা সংরক্ষণ করে না।';
 
   @override
