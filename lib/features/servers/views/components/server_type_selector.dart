@@ -57,6 +57,12 @@ class ServerTypeSelector extends StatelessWidget {
         HugeIcons.strokeRoundedAiNetwork,
         Colors.teal,
       ),
+      (
+        ServerType.uberllm,
+        l10n.server_type_uberllm,
+        HugeIcons.strokeRoundedCloudServer,
+        Colors.indigo,
+      ),
     ];
 
     return LayoutBuilder(

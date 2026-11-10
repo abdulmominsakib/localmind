@@ -49,7 +49,8 @@ class ModelTile extends StatelessWidget {
     final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
     final isPaidCloud =
         (model.serverType == ServerType.openRouter ||
-            model.serverType == ServerType.requesty) &&
+            model.serverType == ServerType.requesty ||
+            model.serverType == ServerType.uberllm) &&
         model.pricingLabel != null;
     final showLoadedState =
         (model.serverType == ServerType.lmStudio ||

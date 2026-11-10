@@ -105,6 +105,9 @@ class ServerApiService {
         case ServerType.requesty:
           models = await _fetchRequestyModels(response.data, server);
           break;
+        case ServerType.uberllm:
+          models = _parseUberLlmModels(response.data, server);
+          break;
         case ServerType.onDevice:
           models = [];
           break;
@@ -150,6 +153,7 @@ class ServerApiService {
   Future<Set<String>> fetchRunningModels(Server server) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
+        server.type == ServerType.uberllm ||
         server.type == ServerType.openAICompatible ||
         server.isOnDevice) {
       return {};
@@ -173,6 +177,7 @@ class ServerApiService {
   Future<void> loadModel(Server server, String modelId) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
+        server.type == ServerType.uberllm ||
         server.isOnDevice) {
       return;
     }
@@ -199,6 +204,7 @@ class ServerApiService {
         return;
       case ServerType.openRouter:
       case ServerType.requesty:
+      case ServerType.uberllm:
       case ServerType.onDevice:
         break;
     }
@@ -211,6 +217,7 @@ class ServerApiService {
   }) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
+        server.type == ServerType.uberllm ||
         server.isOnDevice) {
       return null;
     }
@@ -260,6 +267,7 @@ class ServerApiService {
         return null;
       case ServerType.openRouter:
       case ServerType.requesty:
+      case ServerType.uberllm:
       case ServerType.onDevice:
         return null;
     }
@@ -294,6 +302,7 @@ class ServerApiService {
   }) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
+        server.type == ServerType.uberllm ||
         server.isOnDevice) {
       return;
     }
@@ -324,6 +333,7 @@ class ServerApiService {
         return;
       case ServerType.openRouter:
       case ServerType.requesty:
+      case ServerType.uberllm:
       case ServerType.onDevice:
         break;
     }
@@ -963,6 +973,37 @@ class ServerApiService {
           outputPricePerMillion: _openRouterPricePerMillion(
             item['output_price'],
           ),
+        ),
+      );
+    }
+    return models;
+  }
+
+  /// UberLLM's `/models` lists its chat models with OpenRouter-style
+  /// per-token `pricing`, plus `supports_*` flags and an `available` flag.
+  /// Models marked unavailable are skipped.
+  List<ModelInfo> _parseUberLlmModels(dynamic data, Server server) {
+    final List<ModelInfo> models = [];
+    if (data is! Map) return models;
+    final items = data['data'];
+    if (items is! List) return models;
+    for (final item in items) {
+      if (item is! Map) continue;
+      final id = item['id']?.toString() ?? '';
+      if (id.isEmpty || item['available'] == false) continue;
+      final pricing = _parseOpenRouterPricing(item['pricing']);
+      models.add(
+        ModelInfo(
+          id: id,
+          name: item['display_name']?.toString() ?? id,
+          contextLength: _toInt(item['context_length']),
+          serverType: server.type,
+          serverId: server.id,
+          supportsVision: item['supports_vision'] == true,
+          supportsReasoning: item['supports_reasoning'] == true,
+          supportsToolUse: item['supports_tools'] == true,
+          inputPricePerMillion: pricing.inputPricePerMillion,
+          outputPricePerMillion: pricing.outputPricePerMillion,
         ),
       );
     }

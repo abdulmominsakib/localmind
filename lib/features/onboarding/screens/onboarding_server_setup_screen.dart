@@ -76,6 +76,11 @@ class _OnboardingServerSetupScreenState
         defaultName = 'Requesty';
         defaultPort = '443';
         break;
+      case ServerType.uberllm:
+        defaultName = 'UberLLM';
+        defaultHost = AppConstants.uberllmBaseUrl;
+        defaultPort = '443';
+        break;
       case ServerType.onDevice:
         defaultName = 'On-Device';
         defaultPort = '0';
@@ -100,6 +105,7 @@ class _OnboardingServerSetupScreenState
       ServerType.ollamaCloud => AppConstants.ollamaCloudDefaultPort,
       ServerType.openRouter => 443,
       ServerType.requesty => 443,
+      ServerType.uberllm => 443,
       ServerType.onDevice => 0,
     };
   }
@@ -147,6 +153,9 @@ class _OnboardingServerSetupScreenState
     if (requiresCloudConfig) {
       host = AppConstants.ollamaCloudBaseUrl;
       port = AppConstants.ollamaCloudDefaultPort;
+    } else if (widget.selectedType == ServerType.uberllm) {
+      host = AppConstants.uberllmBaseUrl;
+      port = 443;
     } else {
       final rawHost = _hostController.text.trim();
       final parsed = parseServerAddressInput(rawHost);
@@ -189,6 +198,7 @@ class _OnboardingServerSetupScreenState
   bool get _isCloudProvider =>
       widget.selectedType == ServerType.openRouter ||
       widget.selectedType == ServerType.requesty ||
+      widget.selectedType == ServerType.uberllm ||
       widget.selectedType == ServerType.ollamaCloud;
 
   String? _validateHost(String? value) {
@@ -321,6 +331,8 @@ class _OnboardingServerSetupScreenState
         return l10n.server_type_openrouter;
       case ServerType.requesty:
         return l10n.server_type_requesty;
+      case ServerType.uberllm:
+        return l10n.server_type_uberllm;
       case ServerType.onDevice:
         return l10n.server_type_on_device;
     }
@@ -333,6 +345,7 @@ class _OnboardingServerSetupScreenState
     final isCloud = _isCloudProvider;
     final isOllamaCloud = widget.selectedType == ServerType.ollamaCloud;
     final isRequesty = widget.selectedType == ServerType.requesty;
+    final isUberLlm = widget.selectedType == ServerType.uberllm;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.setup_connection)),
@@ -466,6 +479,8 @@ class _OnboardingServerSetupScreenState
                                     ? l10n.api_key_hint_ollama_cloud
                                     : isRequesty
                                     ? l10n.api_key_hint_requesty
+                                    : isUberLlm
+                                    ? l10n.api_key_hint_uberllm
                                     : l10n.api_key_hint_openrouter)
                               : null,
                         ),
@@ -475,6 +490,8 @@ class _OnboardingServerSetupScreenState
                                 ? l10n.api_key_required_ollama_cloud
                                 : isRequesty
                                 ? l10n.api_key_required_requesty
+                                : isUberLlm
+                                ? l10n.api_key_required_uberllm
                                 : l10n.api_key_required_openrouter;
                           }
                           if (isCloud &&
@@ -517,6 +534,8 @@ class _OnboardingServerSetupScreenState
                                       ? l10n.ollama_cloud_disclosure
                                       : isRequesty
                                       ? l10n.requesty_disclosure
+                                      : isUberLlm
+                                      ? l10n.uberllm_disclosure
                                       : l10n.openrouter_disclosure,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurface

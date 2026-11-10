@@ -17,7 +17,7 @@ enum NewChatReach {
   /// the screen makes no privacy claim either way.
   endpoint,
 
-  /// A hosted service such as OpenRouter, Requesty or Ollama Cloud.
+  /// A hosted service such as OpenRouter, Requesty, UberLLM or Ollama Cloud.
   cloud,
 }
 
@@ -50,6 +50,7 @@ class NewChatPresence {
       ServerType.ollamaCloud => (NewChatReach.cloud, AsciiLogo.ollama),
       ServerType.openRouter => (NewChatReach.cloud, AsciiLogo.openRouter),
       ServerType.requesty => (NewChatReach.cloud, AsciiLogo.requesty),
+      ServerType.uberllm => (NewChatReach.cloud, AsciiLogo.server),
     };
     return NewChatPresence(reach: reach, logo: logo, serverType: serverType);
   }
