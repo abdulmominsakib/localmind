@@ -4,17 +4,11 @@ import 'package:llamadart/src/core/models/chat/chat_message.dart';
 import 'package:llamadart/src/core/models/chat/chat_role.dart';
 import 'package:llamadart/src/core/models/tools/tool_definition.dart';
 import 'package:llamadart/src/core/models/tools/tool_param.dart';
-import 'package:llamadart/src/core/template/chat_format.dart';
 import 'package:llamadart/src/core/template/handlers/gemma_handler.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('GemmaHandler', () {
-    test('exposes chat format', () {
-      final handler = GemmaHandler();
-      expect(handler.format, isA<ChatFormat>());
-    });
-
     test('parses args from alias keys', () {
       final handler = GemmaHandler();
       final parsed = handler.parse(

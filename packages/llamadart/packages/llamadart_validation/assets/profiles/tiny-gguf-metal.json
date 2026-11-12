@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "tiny-gguf-metal",
+  "runtime": "gguf",
+  "backend": "metal",
+  "model": {
+    "id": "tiny-gguf",
+    "revision": "99dd1a73db5a37100bd4ae633f4cfce6560e1567",
+    "filename": "stories15M.gguf",
+    "sha256": "61b50d457809a5194818fd22e6724b456cd7bb9a6264c52c8110684c53f3704a",
+    "bytes": 98357920,
+    "kind": "raw",
+    "url": "https://huggingface.co/ggml-org/tiny-llamas/resolve/99dd1a73db5a37100bd4ae633f4cfce6560e1567/stories15M.gguf"
+  },
+  "selection": "quick",
+  "context_size": 1024,
+  "threads": 4,
+  "max_tokens": 32,
+  "fixtures": {
+    "hello": {
+      "prompt": "Reply with one short sentence saying hello.",
+      "regex": "\\bhello\\b"
+    },
+    "arithmetic": {
+      "prompt": "What is 2 + 2? Reply with only the number.",
+      "regex": "^4[.!]?$"
+    },
+    "unicode": {
+      "expected_prefix": " "
+    }
+  }
+}

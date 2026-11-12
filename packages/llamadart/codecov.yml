@@ -13,6 +13,7 @@ coverage:
         threshold: 1%
 
 ignore:
-  - "lib/src/generated/**/*"
+  - "lib/src/backends/llama_cpp/bindings.dart"
+  - "lib/src/backends/llama_cpp/bindings_stub.dart"
   - "example/**/*"
   - "test/**/*"

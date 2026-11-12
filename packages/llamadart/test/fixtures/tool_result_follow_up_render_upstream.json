@@ -1,0 +1,99 @@
+{
+  "upstream_ref": "b10549",
+  "upstream_sha": "b2e5e9b28b2484fbf94b543432ece638996a8b97",
+  "command": "test-chat-template --no-common --json INPUT --output OUTPUT TEMPLATE",
+  "original_messages": [
+    {
+      "role": "user",
+      "content": "What is the weather in Paris and Rome?"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "id": "call00001",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "name": "get_weather",
+      "tool_call_id": "call00001",
+      "content": "{\"city\":\"Paris\",\"temperature_c\":21}"
+    },
+    {
+      "role": "user",
+      "content": "And Rome? Keep the units in Celsius."
+    }
+  ],
+  "merged_messages": [
+    {
+      "role": "user",
+      "content": "What is the weather in Paris and Rome?"
+    },
+    {
+      "role": "assistant",
+      "content": "{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}"
+    },
+    {
+      "role": "user",
+      "content": "{\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n}\nAnd Rome? Keep the units in Celsius."
+    }
+  ],
+  "template_globals": {
+    "tools": [],
+    "bos_token": "",
+    "eos_token": "</s>",
+    "add_generation_prompt": true
+  },
+  "renders": [
+    {
+      "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+      "original_exit": -6,
+      "unmerged_exit": -6,
+      "merged_exit": 0,
+      "prompt": "<start_of_turn>user\nWhat is the weather in Paris and Rome?<end_of_turn>\n<start_of_turn>model\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}<end_of_turn>\n<start_of_turn>user\n{\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n}\nAnd Rome? Keep the units in Celsius.<end_of_turn>\n<start_of_turn>model\n"
+    },
+    {
+      "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+      "original_exit": -6,
+      "unmerged_exit": -6,
+      "merged_exit": 0,
+      "prompt": "<start_of_turn>user\nWhat is the weather in Paris and Rome?<end_of_turn>\n<start_of_turn>model\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}<end_of_turn>\n<start_of_turn>user\n{\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n}\nAnd Rome? Keep the units in Celsius.<end_of_turn>\n<start_of_turn>model\n"
+    },
+    {
+      "template": "test/fixtures/templates/Mistral-7B-Instruct-v0_2.jinja",
+      "original_exit": -6,
+      "unmerged_exit": -6,
+      "merged_exit": 0,
+      "prompt": "[INST] What is the weather in Paris and Rome? [/INST]{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}</s>[INST] {\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n}\nAnd Rome? Keep the units in Celsius. [/INST]"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/google-gemma-2-2b-it.jinja",
+      "original_exit": -6,
+      "unmerged_exit": -6,
+      "merged_exit": 0,
+      "prompt": "<start_of_turn>user\nWhat is the weather in Paris and Rome?<end_of_turn>\n<start_of_turn>model\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}<end_of_turn>\n<start_of_turn>user\n{\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n}\nAnd Rome? Keep the units in Celsius.<end_of_turn>\n<start_of_turn>model\n"
+    },
+    {
+      "template": "tool/litert_lm_templates/gemma.jinja",
+      "original_exit": -6,
+      "unmerged_exit": -6,
+      "merged_exit": 0,
+      "prompt": "<start_of_turn>user\nWhat is the weather in Paris and Rome?<end_of_turn>\n<start_of_turn>model\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}<end_of_turn>\n<start_of_turn>user\n{\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n}\nAnd Rome? Keep the units in Celsius.<end_of_turn>\n<start_of_turn>model\n"
+    },
+    {
+      "template": "tool/litert_lm_templates/gemma3n.jinja",
+      "original_exit": -6,
+      "unmerged_exit": -6,
+      "merged_exit": 0,
+      "prompt": "<start_of_turn>user\nWhat is the weather in Paris and Rome?<end_of_turn>\n<start_of_turn>model\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}<end_of_turn>\n<start_of_turn>user\n{\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n}\nAnd Rome? Keep the units in Celsius.<end_of_turn>\n<start_of_turn>model\n"
+    }
+  ]
+}

@@ -94,19 +94,23 @@ def append_console_log(
     return record
 
 
-def enter_chat_prompt(page, prompt: str, *, timeout_ms: int = 30000) -> None:
+def enter_chat_prompt(
+    page, prompt: str, *, timeout_ms: int = 30000, button_name: str = "Send message"
+) -> None:
     textbox = page.get_by_role("textbox").last
     textbox.click()
     modifier = "Meta" if platform.system() == "Darwin" else "Control"
     page.keyboard.press(f"{modifier}+A")
     page.keyboard.press("Backspace")
     page.keyboard.type(prompt)
-    wait_for_send_enabled(page, timeout_ms=timeout_ms)
+    wait_for_send_enabled(page, timeout_ms=timeout_ms, button_name=button_name)
 
 
-def wait_for_send_enabled(page, *, timeout_ms: int = 30000) -> None:
+def wait_for_send_enabled(
+    page, *, timeout_ms: int = 30000, button_name: str = "Send message"
+) -> None:
     deadline = time.monotonic() + (timeout_ms / 1000)
-    button = page.get_by_role("button", name="Send message")
+    button = page.get_by_role("button", name=button_name)
     while time.monotonic() < deadline:
         try:
             if button.is_enabled(timeout=250):
@@ -114,4 +118,4 @@ def wait_for_send_enabled(page, *, timeout_ms: int = 30000) -> None:
         except PlaywrightTimeoutError:
             pass
         time.sleep(0.05)
-    raise TimeoutError("Timed out waiting for Send message button to enable")
+    raise TimeoutError(f"Timed out waiting for {button_name} button to enable")

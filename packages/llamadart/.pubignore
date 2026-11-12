@@ -1,0 +1,72 @@
+# Dart / Flutter local artifacts
+.dart_tool/
+build/
+coverage/
+.pub/
+.metadata
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Companion overrides point at this checkout and resolve nowhere else.
+packages/*/pubspec_overrides.yaml
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Local logs / scratch outputs
+*.log
+full_log.txt
+firebase-debug.log
+test_output.txt
+test_output_*.txt
+test_failure_details.txt
+a.out.js
+a.out.wasm
+__pycache__/
+*.pyc
+
+# Large local model/test assets
+*.gguf
+/models/
+example/basic_app/models/
+test_assets/
+
+# Native local build outputs / vendored sources
+third_party/bin/
+third_party/build-*/
+third_party/llama_cpp/
+third_party/Vulkan-Headers/
+darwin/llamadart/Artifacts/
+
+# Local bridge build/fetch outputs
+webgpu_bridge/
+example/chat_app/web/webgpu_bridge/
+
+# Removed legacy backend paths (avoid local empty-dir leakage)
+lib/src/backends/wllama/
+test/integration/backends/wllama/
+test/unit/backends/wllama/
+
+# Root-only: scratch docs output and the docs site source. Anchored so
+# nested docs/ directories (tool/docs, example .../presentation/docs) still ship.
+/docs/
+/website/
+
+# Contributor/maintainer docs: GitHub-only. Packaged Markdown and Dartdoc link
+# to them by absolute URL; tool scripts still read them by path from a checkout.
+/doc/
+
+# Agent-only maintainer notes
+AGENTS.md
+
+# Independently published packages and their dependency graphs.
+/packages/genkit_llamadart/
+/packages/llamadart_model_store/
+
+# The chat app imports the private validation harness. Keep both checkout-only
+# rather than shipping an example whose local dependency cannot resolve.
+/packages/llamadart_validation/
+/example/chat_app/

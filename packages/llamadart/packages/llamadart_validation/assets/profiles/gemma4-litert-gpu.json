@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "gemma4-litert-gpu",
+  "runtime": "litert",
+  "backend": "gpu",
+  "model": {
+    "kind": "chat",
+    "filename": "gemma-4-E2B-it.litertlm",
+    "revision": "6b78abd019e61a1ca4cbe3b212d2c9ce8ff38a94",
+    "url": "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/6b78abd019e61a1ca4cbe3b212d2c9ce8ff38a94/gemma-4-E2B-it.litertlm",
+    "sha256": "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c",
+    "bytes": 2588147712
+  },
+  "selection": "quick",
+  "context_size": 1024,
+  "threads": 4,
+  "max_tokens": 32,
+  "fixtures": {
+    "hello": {
+      "prompt": "Reply with one short sentence saying hello.",
+      "regex": "\\bhello\\b"
+    },
+    "arithmetic": {
+      "prompt": "What is 2 + 2? Reply with only the number.",
+      "regex": "^4[.!]?$"
+    }
+  },
+  "enable_thinking": false
+}

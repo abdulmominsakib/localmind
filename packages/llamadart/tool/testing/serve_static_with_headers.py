@@ -7,10 +7,14 @@ import socketserver
 
 class CoiStaticHandler(http.server.SimpleHTTPRequestHandler):
     _range: tuple[int, int] | None = None
+    coep = "credentialless"
+    cors_origin = None
 
     def end_headers(self) -> None:
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
-        self.send_header("Cross-Origin-Embedder-Policy", "credentialless")
+        self.send_header("Cross-Origin-Embedder-Policy", self.coep)
+        if self.cors_origin:
+            self.send_header("Access-Control-Allow-Origin", self.cors_origin)
         self.send_header("Cross-Origin-Resource-Policy", "cross-origin")
         super().end_headers()
 
@@ -117,7 +121,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=7357)
     parser.add_argument("--directory", type=str, required=True)
+    parser.add_argument("--coep", choices=["credentialless", "require-corp"], default="credentialless")
+    parser.add_argument("--cors-origin")
     args = parser.parse_args()
+    CoiStaticHandler.coep = args.coep
+    CoiStaticHandler.cors_origin = args.cors_origin
 
     handler = lambda *h_args, **h_kwargs: CoiStaticHandler(
         *h_args,

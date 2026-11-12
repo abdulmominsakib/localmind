@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "id": "qwen35-litert-cpu",
+  "runtime": "litert",
+  "backend": "cpu",
+  "model": {
+    "kind": "chat",
+    "filename": "Qwen3.5-0.8B_int8.litertlm",
+    "revision": "c23b16e43ada6ead533b12593fe500bbe268014f",
+    "url": "https://huggingface.co/litert-community/Qwen3.5-0.8B/resolve/c23b16e43ada6ead533b12593fe500bbe268014f/Qwen3.5-0.8B_int8.litertlm",
+    "sha256": "684d4d34adf7176eb47f6026ff65c33d42584737254e5524a8d1ad62edc21b98",
+    "bytes": 963184864
+  },
+  "selection": "quick",
+  "context_size": 1024,
+  "threads": 4,
+  "max_tokens": 32,
+  "engine_create_case_timeout_ms": 180000,
+  "fixtures": {
+    "hello": {
+      "prompt": "Reply with one short sentence saying hello.",
+      "regex": "\\bhello\\b"
+    },
+    "arithmetic": {
+      "prompt": "What is 2 + 2? Reply with only the number.",
+      "regex": "^4[.!]?$"
+    }
+  },
+  "enable_thinking": false
+}

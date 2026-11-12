@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:test/test.dart';
 import 'package:llamadart/src/core/models/chat/chat_message.dart';
 import 'package:llamadart/src/core/models/chat/chat_role.dart';
@@ -51,6 +53,37 @@ void main() {
         'role': 'user',
         'content': [
           {'type': 'text', 'text': 'Part 1Part 2'},
+        ],
+      });
+    });
+
+    test('normalizes template-facing audio without changing wire JSON', () {
+      final message = LlamaChatMessage.withContent(
+        role: LlamaChatRole.user,
+        content: <LlamaContentPart>[
+          LlamaAudioContent(bytes: Uint8List.fromList(<int>[82, 73, 70, 70])),
+          const LlamaTextContent('answer the recording'),
+        ],
+      );
+
+      expect(message.toJson(), <String, dynamic>{
+        'role': 'user',
+        'content': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'type': 'input_audio',
+            'input_audio': <String, dynamic>{
+              'data': 'UklGRg==',
+              'format': 'audio',
+            },
+          },
+          <String, dynamic>{'type': 'text', 'text': 'answer the recording'},
+        ],
+      });
+      expect(message.toJsonMultimodal(), <String, dynamic>{
+        'role': 'user',
+        'content': <Map<String, dynamic>>[
+          <String, dynamic>{'type': 'audio'},
+          <String, dynamic>{'type': 'text', 'text': 'answer the recording'},
         ],
       });
     });
@@ -157,6 +190,71 @@ void main() {
         'tool_call_id': 'call_1',
         'name': 'get_weather',
         'content': 'Sunny, 20°C',
+      });
+    });
+
+    test('tool result with content is llama-server array content', () {
+      // The tool message of the upstream `two_results` request in
+      // test/fixtures/qwen3_vl_tool_media_upstream.json, with a file image.
+      const msg = LlamaChatMessage.withContent(
+        role: LlamaChatRole.tool,
+        content: [
+          LlamaToolResultContent(
+            id: 'call_0',
+            name: 'take_photo',
+            result: '{"ok":true}',
+            content: [
+              LlamaTextContent('front camera'),
+              LlamaImageContent(path: '/red.png'),
+            ],
+          ),
+        ],
+      );
+      expect(msg.toJson(), {
+        'role': 'tool',
+        'tool_call_id': 'call_0',
+        'name': 'take_photo',
+        'content': [
+          {'type': 'text', 'text': '{"ok":true}'},
+          {'type': 'text', 'text': 'front camera'},
+          {
+            'type': 'image_url',
+            'image_url': {'url': 'file:///red.png'},
+          },
+        ],
+      });
+      expect(msg.content, '{"ok":true}front camera');
+    });
+
+    test('tool message with several results lists every result', () {
+      const msg = LlamaChatMessage.withContent(
+        role: LlamaChatRole.tool,
+        content: [
+          LlamaToolResultContent(
+            id: 'call_1',
+            name: 'get_weather',
+            result: 'RESULT_ONE',
+          ),
+          LlamaToolResultContent(
+            name: 'get_time',
+            result: {'value': 'RESULT_TWO'},
+          ),
+        ],
+      );
+      expect(msg.toJson(), {
+        'role': 'tool',
+        'content': [
+          {
+            'tool_call_id': 'call_1',
+            'name': 'get_weather',
+            'content': 'RESULT_ONE',
+          },
+          {
+            'tool_call_id': null,
+            'name': 'get_time',
+            'content': {'value': 'RESULT_TWO'},
+          },
+        ],
       });
     });
   });

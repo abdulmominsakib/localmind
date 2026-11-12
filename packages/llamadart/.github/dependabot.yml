@@ -1,0 +1,44 @@
+# Dependabot version updates.
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Root package.
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Federated companion plugins, versioned and published separately.
+  - package-ecosystem: "pub"
+    directory: "/packages/llamadart_llama_cpp_flutter"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "pub"
+    directory: "/packages/llamadart_litert_lm_flutter"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "pub"
+    directory: "/packages/llamadart_stable_diffusion_flutter"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Independently versioned shared model store.
+  - package-ecosystem: "pub"
+    directory: "/packages/llamadart_model_store"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Action pins in the workflows CODEOWNERS already protects.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

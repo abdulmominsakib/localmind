@@ -1,0 +1,1389 @@
+{
+  "upstream_commit": "7fe450e19",
+  "endpoint": "POST /apply-template",
+  "model": "stories15M.gguf",
+  "model_sha256": "61b50d457809a5194818fd22e6724b456cd7bb9a6264c52c8110684c53f3704a",
+  "conversations": {
+    "tool_call_only": [
+      {
+        "role": "user",
+        "text": "Weather in Paris?"
+      },
+      {
+        "role": "assistant",
+        "calls": [
+          {
+            "id": "call_0",
+            "name": "get_weather",
+            "raw": "{\"city\": \"Paris\"}"
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "results": [
+          {
+            "id": "call_0",
+            "name": "get_weather",
+            "result": "sunny"
+          }
+        ]
+      }
+    ],
+    "reasoning_only": [
+      {
+        "role": "user",
+        "text": "Q1"
+      },
+      {
+        "role": "assistant",
+        "thinking": "Let me think."
+      },
+      {
+        "role": "user",
+        "text": "Q2"
+      }
+    ],
+    "map_result": [
+      {
+        "role": "user",
+        "text": "Weather in Paris?"
+      },
+      {
+        "role": "assistant",
+        "text": "Checking.",
+        "calls": [
+          {
+            "id": "call_0",
+            "name": "get_weather",
+            "raw": "{\"city\": \"Paris\"}"
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "results": [
+          {
+            "id": "call_0",
+            "name": "get_weather",
+            "result": {
+              "temp": 21.5,
+              "sky": "clear",
+              "note": "it's"
+            }
+          }
+        ]
+      }
+    ],
+    "list_result": [
+      {
+        "role": "user",
+        "text": "Weather in Paris?"
+      },
+      {
+        "role": "assistant",
+        "text": "Checking.",
+        "calls": [
+          {
+            "id": "call_0",
+            "name": "get_weather",
+            "raw": "{\"city\": \"Paris\"}"
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "results": [
+          {
+            "id": "call_0",
+            "name": "get_weather",
+            "result": [
+              1,
+              "a",
+              {
+                "k": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "compact_arguments": [
+      {
+        "role": "user",
+        "text": "Search cafes"
+      },
+      {
+        "role": "assistant",
+        "text": "Searching.",
+        "calls": [
+          {
+            "id": "call_1",
+            "name": "search",
+            "raw": "{\"query\":\"cafes\",\"filters\":{\"limit\":3,\"tags\":[\"x\",\"y\"]},\"flag\":true}"
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "results": [
+          {
+            "id": "call_1",
+            "name": "search",
+            "result": "two results"
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "text": "Found two."
+      },
+      {
+        "role": "user",
+        "text": "More?"
+      }
+    ],
+    "media_tool_call_only": [
+      {
+        "role": "user",
+        "image": true,
+        "text": "Where is this?"
+      },
+      {
+        "role": "assistant",
+        "calls": [
+          {
+            "id": "call_0",
+            "name": "get_weather",
+            "raw": "{\"city\":\"Paris\"}"
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "results": [
+          {
+            "id": "call_0",
+            "name": "get_weather",
+            "result": "sunny"
+          }
+        ]
+      }
+    ],
+    "media_reasoning_only": [
+      {
+        "role": "user",
+        "image": true,
+        "text": "Describe"
+      },
+      {
+        "role": "assistant",
+        "thinking": "Let me look."
+      },
+      {
+        "role": "user",
+        "text": "More?"
+      }
+    ],
+    "tools_question": [
+      {
+        "role": "user",
+        "text": "Weather in Paris?"
+      }
+    ],
+    "media_empty_assistant": [
+      {
+        "role": "user",
+        "image": true,
+        "text": "Describe"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "user",
+        "text": "More?"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "issue": 715,
+      "template": "test/fixtures/llama_cpp_templates/unsloth-mistral-Devstral-Small-2507.jinja",
+      "template_sha256": "039a4710e2aabaa79e85a233fa3daa4fbc030a4a8dc218cb7f34fb0c4b8c13b1",
+      "supports_object_arguments": true,
+      "conversation": "tool_call_only",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "sunny"
+          }
+        ]
+      },
+      "prompt": "[SYSTEM_PROMPT]You are Devstral, a helpful agentic model trained by Mistral AI and using the OpenHands scaffold. You can interact with a computer to solve tasks.\n\n<ROLE>\nYour primary role is to assist users by executing commands, modifying code, and solving technical problems effectively. You should be thorough, methodical, and prioritize quality over speed.\n* If the user asks a question, like \"why is X happening\", don't try to fix the problem. Just give an answer to the question.\n</ROLE>\n\n<EFFICIENCY>\n* Each action you take is somewhat expensive. Wherever possible, combine multiple actions into a single action, e.g. combine multiple bash commands into one, using sed and grep to edit/view multiple files at once.\n* When exploring the codebase, use efficient tools like find, grep, and git commands with appropriate filters to minimize unnecessary operations.\n</EFFICIENCY>\n\n<FILE_SYSTEM_GUIDELINES>\n* When a user provides a file path, do NOT assume it's relative to the current working directory. First explore the file system to locate the file before working on it.\n* If asked to edit a file, edit the file directly, rather than creating a new file with a different filename.\n* For global search-and-replace operations, consider using `sed` instead of opening file editors multiple times.\n</FILE_SYSTEM_GUIDELINES>\n\n<CODE_QUALITY>\n* Write clean, efficient code with minimal comments. Avoid redundancy in comments: Do not repeat information that can be easily inferred from the code itself.\n* When implementing solutions, focus on making the minimal changes needed to solve the problem.\n* Before implementing any changes, first thoroughly understand the codebase through exploration.\n* If you are adding a lot of code to a function or file, consider splitting the function or file into smaller pieces when appropriate.\n</CODE_QUALITY>\n\n<VERSION_CONTROL>\n* When configuring git credentials, use \"openhands\" as the user.name and \"openhands@all-hands.dev\" as the user.email by default, unless explicitly instructed otherwise.\n* Exercise caution with git operations. Do NOT make potentially dangerous changes (e.g., pushing to main, deleting repositories) unless explicitly asked to do so.\n* When committing changes, use `git status` to see all modified files, and stage all files necessary for the commit. Use `git commit -a` whenever possible.\n* Do NOT commit files that typically shouldn't go into version control (e.g., node_modules/, .env files, build directories, cache files, large binaries) unless explicitly instructed by the user.\n* If unsure about committing certain files, check for the presence of .gitignore files or ask the user for clarification.\n</VERSION_CONTROL>\n\n<PULL_REQUESTS>\n* When creating pull requests, create only ONE per session/issue unless explicitly instructed otherwise.\n* When working with an existing PR, update it with new commits rather than creating additional PRs for the same issue.\n* When updating a PR, preserve the original PR title and purpose, updating description only when necessary.\n</PULL_REQUESTS>\n\n<PROBLEM_SOLVING_WORKFLOW>\n1. EXPLORATION: Thoroughly explore relevant files and understand the context before proposing solutions\n2. ANALYSIS: Consider multiple approaches and select the most promising one\n3. TESTING:\n   * For bug fixes: Create tests to verify issues before implementing fixes\n   * For new features: Consider test-driven development when appropriate\n   * If the repository lacks testing infrastructure and implementing tests would require extensive setup, consult with the user before investing time in building testing infrastructure\n   * If the environment is not set up to run tests, consult with the user first before investing time to install all dependencies\n4. IMPLEMENTATION: Make focused, minimal changes to address the problem\n5. VERIFICATION: If the environment is set up to run tests, test your implementation thoroughly, including edge cases. If the environment is not set up to run tests, consult with the user first before investing time to run tests.\n</PROBLEM_SOLVING_WORKFLOW>\n\n<SECURITY>\n* Only use GITHUB_TOKEN and other credentials in ways the user has explicitly requested and would expect.\n* Use APIs to work with GitHub or other platforms, unless the user asks otherwise or your task requires browsing.\n</SECURITY>\n\n<ENVIRONMENT_SETUP>\n* When user asks you to run an application, don't stop if the application is not installed. Instead, please install the application and run the command again.\n* If you encounter missing dependencies:\n  1. First, look around in the repository for existing dependency files (requirements.txt, pyproject.toml, package.json, Gemfile, etc.)\n  2. If dependency files exist, use them to install all dependencies at once (e.g., `pip install -r requirements.txt`, `npm install`, etc.)\n  3. Only install individual packages directly if no dependency files are found or if only specific packages are needed\n* Similarly, if you encounter missing dependencies for essential tools requested by the user, install them when possible.\n</ENVIRONMENT_SETUP>\n\n<TROUBLESHOOTING>\n* If you've made repeated attempts to solve a problem but tests still fail or the user reports it's still broken:\n  1. Step back and reflect on 5-7 different possible sources of the problem\n  2. Assess the likelihood of each possible cause\n  3. Methodically address the most likely causes, starting with the highest probability\n  4. Document your reasoning process\n* When you run into any major issue while executing a plan from the user, please don't try to directly work around it. Instead, propose a new plan and confirm with the user before proceeding.\n</TROUBLESHOOTING>[/SYSTEM_PROMPT][INST]Weather in Paris?[/INST][TOOL_CALLS]get_weather[ARGS]{\"city\": \"Paris\"}</s>[TOOL_RESULTS]sunny[/TOOL_RESULTS]"
+    },
+    {
+      "issue": 715,
+      "template": "test/fixtures/llama_cpp_templates/LFM2-8B-A1B.jinja",
+      "template_sha256": "2294f49b51a0b9a1b0194add3f124237b5bd986599f43180eec49bba4de01365",
+      "supports_object_arguments": false,
+      "conversation": "tool_call_only",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "sunny"
+          }
+        ]
+      },
+      "prompt": "<|im_start|>user\nWeather in Paris?<|im_end|>\n<|im_start|>assistant\n<|im_end|>\n<|im_start|>tool\n<|tool_response_start|>sunny<|tool_response_end|><|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "issue": 715,
+      "template": "test/fixtures/llama_cpp_templates/Qwen-QwQ-32B.jinja",
+      "template_sha256": "5ed15374ce53e19a7798710736a2c9fe41c79f7385e8421a2080d6575a80ef1b",
+      "supports_object_arguments": true,
+      "conversation": "tool_call_only",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "sunny"
+          }
+        ]
+      },
+      "prompt": "<|im_start|>user\nWeather in Paris?<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nsunny\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n"
+    },
+    {
+      "issue": 715,
+      "template": "test/fixtures/llama_cpp_templates/Qwen-QwQ-32B.jinja",
+      "template_sha256": "5ed15374ce53e19a7798710736a2c9fe41c79f7385e8421a2080d6575a80ef1b",
+      "supports_object_arguments": true,
+      "conversation": "reasoning_only",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Q1"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "reasoning_content": "Let me think."
+          },
+          {
+            "role": "user",
+            "content": "Q2"
+          }
+        ]
+      },
+      "prompt": "<|im_start|>user\nQ1<|im_end|>\n<|im_start|>assistant\n<|im_end|>\n<|im_start|>user\nQ2<|im_end|>\n<|im_start|>assistant\n<think>\n"
+    },
+    {
+      "issue": 717,
+      "template": "test/fixtures/templates/Ministral-3-3B-Reasoning.jinja",
+      "template_sha256": "87989798313de539b55bdeb19c98214e1a7bdd8c3a62b7d7cf4138d58ffdbeb5",
+      "supports_object_arguments": true,
+      "conversation": "map_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": "Checking.",
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "{\"temp\":21.5,\"sky\":\"clear\",\"note\":\"it's\"}"
+          }
+        ]
+      },
+      "prompt": "[SYSTEM_PROMPT]# HOW YOU SHOULD THINK AND ANSWER\n\nFirst draft your thinking process (inner monologue) until you arrive at a response. Format your response using Markdown, and use LaTeX for any mathematical equations. Write both your thoughts and the response in the same language as the input.\n\nYour thinking process must follow the template below:[THINK]Your thoughts or/and draft, like working through an exercise on scratch paper. Be as casual and as long as you want until you are confident to generate the response to the user.[/THINK]Here, provide a self-contained response.[/SYSTEM_PROMPT][INST]Weather in Paris?[/INST]Checking.[TOOL_CALLS]get_weather[ARGS]{\"city\": \"Paris\"}</s>[TOOL_RESULTS]{\"temp\":21.5,\"sky\":\"clear\",\"note\":\"it's\"}[/TOOL_RESULTS]"
+    },
+    {
+      "issue": 717,
+      "template": "test/fixtures/templates/Ministral-3-3B-Reasoning.jinja",
+      "template_sha256": "87989798313de539b55bdeb19c98214e1a7bdd8c3a62b7d7cf4138d58ffdbeb5",
+      "supports_object_arguments": true,
+      "conversation": "list_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": "Checking.",
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "[1,\"a\",{\"k\":true}]"
+          }
+        ]
+      },
+      "prompt": "[SYSTEM_PROMPT]# HOW YOU SHOULD THINK AND ANSWER\n\nFirst draft your thinking process (inner monologue) until you arrive at a response. Format your response using Markdown, and use LaTeX for any mathematical equations. Write both your thoughts and the response in the same language as the input.\n\nYour thinking process must follow the template below:[THINK]Your thoughts or/and draft, like working through an exercise on scratch paper. Be as casual and as long as you want until you are confident to generate the response to the user.[/THINK]Here, provide a self-contained response.[/SYSTEM_PROMPT][INST]Weather in Paris?[/INST]Checking.[TOOL_CALLS]get_weather[ARGS]{\"city\": \"Paris\"}</s>[TOOL_RESULTS][1,\"a\",{\"k\":true}][/TOOL_RESULTS]"
+    },
+    {
+      "issue": 717,
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-V3.1.jinja",
+      "template_sha256": "d9f5f351b276cf9e81d009db08830db7d38e94927aecd09a7beb43e2aafee94e",
+      "supports_object_arguments": true,
+      "conversation": "map_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": "Checking.",
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "{\"temp\":21.5,\"sky\":\"clear\",\"note\":\"it's\"}"
+          }
+        ]
+      },
+      "prompt": "<｜User｜>Weather in Paris?<｜Assistant｜><think></think>Checking.<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{\"city\": \"Paris\"}<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜end▁of▁sentence｜><｜tool▁output▁begin｜>{\"temp\":21.5,\"sky\":\"clear\",\"note\":\"it's\"}<｜tool▁output▁end｜>"
+    },
+    {
+      "issue": 717,
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-V3.1.jinja",
+      "template_sha256": "d9f5f351b276cf9e81d009db08830db7d38e94927aecd09a7beb43e2aafee94e",
+      "supports_object_arguments": true,
+      "conversation": "list_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": "Checking.",
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "[1,\"a\",{\"k\":true}]"
+          }
+        ]
+      },
+      "prompt": "<｜User｜>Weather in Paris?<｜Assistant｜><think></think>Checking.<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{\"city\": \"Paris\"}<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜end▁of▁sentence｜><｜tool▁output▁begin｜>[1,\"a\",{\"k\":true}]<｜tool▁output▁end｜>"
+    },
+    {
+      "issue": 717,
+      "template": "test/fixtures/llama_cpp_templates/upstage-Solar-Open-100B.jinja",
+      "template_sha256": "4618a1ec1a3442b9723d661d72bb1776d1bf8ebd7281a3bf3edd8bfd80e5ad4e",
+      "supports_object_arguments": true,
+      "conversation": "map_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": "Checking.",
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "{\"temp\":21.5,\"sky\":\"clear\",\"note\":\"it's\"}"
+          }
+        ]
+      },
+      "prompt": "<|begin|>system<|content|>## Provider System Prompt\n\nYou are Solar Open 100B, a large language model trained by Upstage AI, a Korean startup. Your knowledge cutoff is 2025-07. The current date is 2026-09-25.<|end|><|begin|>user<|content|>Weather in Paris?<|end|><|begin|>assistant<|tool_calls|><|tool_call:begin|>call_0<|tool_call:name|>get_weather<|tool_call:args|>{\"city\": \"Paris\"}<|tool_call:end|><|calls|><|begin|>tool<|tool_response|><|tool_response:begin|>call_0<|tool_response:name|>get_weather<|tool_response:result|>{\"temp\":21.5,\"sky\":\"clear\",\"note\":\"it's\"}<|tool_response:end|><|end|><|begin|>assistant"
+    },
+    {
+      "issue": 717,
+      "template": "test/fixtures/llama_cpp_templates/upstage-Solar-Open-100B.jinja",
+      "template_sha256": "4618a1ec1a3442b9723d661d72bb1776d1bf8ebd7281a3bf3edd8bfd80e5ad4e",
+      "supports_object_arguments": true,
+      "conversation": "list_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": "Checking.",
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "[1,\"a\",{\"k\":true}]"
+          }
+        ]
+      },
+      "prompt": "<|begin|>system<|content|>## Provider System Prompt\n\nYou are Solar Open 100B, a large language model trained by Upstage AI, a Korean startup. Your knowledge cutoff is 2025-07. The current date is 2026-09-25.<|end|><|begin|>user<|content|>Weather in Paris?<|end|><|begin|>assistant<|tool_calls|><|tool_call:begin|>call_0<|tool_call:name|>get_weather<|tool_call:args|>{\"city\": \"Paris\"}<|tool_call:end|><|calls|><|begin|>tool<|tool_response|><|tool_response:begin|>call_0<|tool_response:name|>get_weather<|tool_response:result|>[1,\"a\",{\"k\":true}]<|tool_response:end|><|end|><|begin|>assistant"
+    },
+    {
+      "issue": 717,
+      "template": "test/fixtures/llama_cpp_templates/LFM2-8B-A1B.jinja",
+      "template_sha256": "2294f49b51a0b9a1b0194add3f124237b5bd986599f43180eec49bba4de01365",
+      "supports_object_arguments": false,
+      "conversation": "map_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": "Checking.",
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "{\"temp\":21.5,\"sky\":\"clear\",\"note\":\"it's\"}"
+          }
+        ]
+      },
+      "prompt": "<|im_start|>user\nWeather in Paris?<|im_end|>\n<|im_start|>assistant\nChecking.<|im_end|>\n<|im_start|>tool\n<|tool_response_start|>{\"temp\":21.5,\"sky\":\"clear\",\"note\":\"it's\"}<|tool_response_end|><|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "issue": 717,
+      "template": "test/fixtures/llama_cpp_templates/LFM2-8B-A1B.jinja",
+      "template_sha256": "2294f49b51a0b9a1b0194add3f124237b5bd986599f43180eec49bba4de01365",
+      "supports_object_arguments": false,
+      "conversation": "list_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": "Checking.",
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "[1,\"a\",{\"k\":true}]"
+          }
+        ]
+      },
+      "prompt": "<|im_start|>user\nWeather in Paris?<|im_end|>\n<|im_start|>assistant\nChecking.<|im_end|>\n<|im_start|>tool\n<|tool_response_start|>[1,\"a\",{\"k\":true}]<|tool_response_end|><|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "issue": 717,
+      "template": "test/fixtures/llama_cpp_templates/openai-gpt-oss-120b.jinja",
+      "template_sha256": "a4c9919cbbd4acdd51ccffe22da049264b1b73e59055fa58811a99efbd7c8146",
+      "supports_object_arguments": true,
+      "conversation": "map_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": "Checking.",
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "{\"temp\":21.5,\"sky\":\"clear\",\"note\":\"it's\"}"
+          }
+        ]
+      },
+      "prompt": "<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: 2024-06\nCurrent date: 2026-09-25\n\nReasoning: medium\n\n# Valid channels: analysis, commentary, final. Channel must be included for every message.<|end|><|start|>user<|message|>Weather in Paris?<|end|><|start|>assistant<|channel|>analysis<|message|>Checking.<|end|><|start|>assistant to=functions.get_weather<|channel|>commentary json<|message|>{\"city\": \"Paris\"}<|call|><|start|>functions.get_weather to=assistant<|channel|>commentary<|message|>\"{\\\"temp\\\":21.5,\\\"sky\\\":\\\"clear\\\",\\\"note\\\":\\\"it's\\\"}\"<|end|><|start|>assistant"
+    },
+    {
+      "issue": 717,
+      "template": "test/fixtures/llama_cpp_templates/openai-gpt-oss-120b.jinja",
+      "template_sha256": "a4c9919cbbd4acdd51ccffe22da049264b1b73e59055fa58811a99efbd7c8146",
+      "supports_object_arguments": true,
+      "conversation": "list_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": "Checking.",
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "[1,\"a\",{\"k\":true}]"
+          }
+        ]
+      },
+      "prompt": "<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: 2024-06\nCurrent date: 2026-09-25\n\nReasoning: medium\n\n# Valid channels: analysis, commentary, final. Channel must be included for every message.<|end|><|start|>user<|message|>Weather in Paris?<|end|><|start|>assistant<|channel|>analysis<|message|>Checking.<|end|><|start|>assistant to=functions.get_weather<|channel|>commentary json<|message|>{\"city\": \"Paris\"}<|call|><|start|>functions.get_weather to=assistant<|channel|>commentary<|message|>\"[1,\\\"a\\\",{\\\"k\\\":true}]\"<|end|><|start|>assistant"
+    },
+    {
+      "issue": 702,
+      "template": "test/fixtures/templates/Qwen3-4B.jinja",
+      "template_sha256": "5da44855ab7e0641774d5ed0ff0b4f89671d01df7d316e54d06557a962211cb4",
+      "supports_object_arguments": true,
+      "conversation": "compact_arguments",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Search cafes"
+          },
+          {
+            "role": "assistant",
+            "content": "Searching.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "search",
+                  "arguments": "{\"query\":\"cafes\",\"filters\":{\"limit\":3,\"tags\":[\"x\",\"y\"]},\"flag\":true}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "name": "search",
+            "content": "two results"
+          },
+          {
+            "role": "assistant",
+            "content": "Found two."
+          },
+          {
+            "role": "user",
+            "content": "More?"
+          }
+        ]
+      },
+      "prompt": "<|im_start|>user\nSearch cafes<|im_end|>\n<|im_start|>assistant\nSearching.\n<tool_call>\n{\"name\": \"search\", \"arguments\": {\"query\": \"cafes\", \"filters\": {\"limit\": 3, \"tags\": [\"x\", \"y\"]}, \"flag\": true}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\ntwo results\n</tool_response><|im_end|>\n<|im_start|>assistant\nFound two.<|im_end|>\n<|im_start|>user\nMore?<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "issue": 702,
+      "template": "test/fixtures/templates/Ministral-3-3B-Reasoning.jinja",
+      "template_sha256": "87989798313de539b55bdeb19c98214e1a7bdd8c3a62b7d7cf4138d58ffdbeb5",
+      "supports_object_arguments": true,
+      "conversation": "compact_arguments",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Search cafes"
+          },
+          {
+            "role": "assistant",
+            "content": "Searching.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "search",
+                  "arguments": "{\"query\":\"cafes\",\"filters\":{\"limit\":3,\"tags\":[\"x\",\"y\"]},\"flag\":true}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "name": "search",
+            "content": "two results"
+          },
+          {
+            "role": "assistant",
+            "content": "Found two."
+          },
+          {
+            "role": "user",
+            "content": "More?"
+          }
+        ]
+      },
+      "prompt": "[SYSTEM_PROMPT]# HOW YOU SHOULD THINK AND ANSWER\n\nFirst draft your thinking process (inner monologue) until you arrive at a response. Format your response using Markdown, and use LaTeX for any mathematical equations. Write both your thoughts and the response in the same language as the input.\n\nYour thinking process must follow the template below:[THINK]Your thoughts or/and draft, like working through an exercise on scratch paper. Be as casual and as long as you want until you are confident to generate the response to the user.[/THINK]Here, provide a self-contained response.[/SYSTEM_PROMPT][INST]Search cafes[/INST]Searching.[TOOL_CALLS]search[ARGS]{\"query\": \"cafes\", \"filters\": {\"limit\": 3, \"tags\": [\"x\", \"y\"]}, \"flag\": true}</s>[TOOL_RESULTS]two results[/TOOL_RESULTS]Found two.</s>[INST]More?[/INST]"
+    },
+    {
+      "issue": 702,
+      "template": "test/fixtures/llama_cpp_templates/openai-gpt-oss-120b.jinja",
+      "template_sha256": "a4c9919cbbd4acdd51ccffe22da049264b1b73e59055fa58811a99efbd7c8146",
+      "supports_object_arguments": true,
+      "conversation": "compact_arguments",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Search cafes"
+          },
+          {
+            "role": "assistant",
+            "content": "Searching.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "search",
+                  "arguments": "{\"query\":\"cafes\",\"filters\":{\"limit\":3,\"tags\":[\"x\",\"y\"]},\"flag\":true}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "name": "search",
+            "content": "two results"
+          },
+          {
+            "role": "assistant",
+            "content": "Found two."
+          },
+          {
+            "role": "user",
+            "content": "More?"
+          }
+        ]
+      },
+      "prompt": "<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: 2024-06\nCurrent date: 2026-09-25\n\nReasoning: medium\n\n# Valid channels: analysis, commentary, final. Channel must be included for every message.<|end|><|start|>user<|message|>Search cafes<|end|><|start|>assistant to=functions.search<|channel|>commentary json<|message|>{\"query\": \"cafes\", \"filters\": {\"limit\": 3, \"tags\": [\"x\", \"y\"]}, \"flag\": true}<|call|><|start|>functions.search to=assistant<|channel|>commentary<|message|>\"two results\"<|end|><|start|>assistant<|channel|>final<|message|>Found two.<|end|><|start|>user<|message|>More?<|end|><|start|>assistant"
+    },
+    {
+      "issue": 702,
+      "template": "test/fixtures/llama_cpp_templates/meetkai-functionary-medium-v3.2.jinja",
+      "template_sha256": "5c7c96c27cfecf3418411d1ebd0d11d691ab6bd2155bb38dacc62250fe47c3c8",
+      "supports_object_arguments": false,
+      "conversation": "compact_arguments",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Search cafes"
+          },
+          {
+            "role": "assistant",
+            "content": "Searching.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "search",
+                  "arguments": "{\"query\":\"cafes\",\"filters\":{\"limit\":3,\"tags\":[\"x\",\"y\"]},\"flag\":true}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "name": "search",
+            "content": "two results"
+          },
+          {
+            "role": "assistant",
+            "content": "Found two."
+          },
+          {
+            "role": "user",
+            "content": "More?"
+          }
+        ]
+      },
+      "prompt": "<|start_header_id|>system<|end_header_id|>\n\nYou are capable of executing available function(s) if required.\nOnly execute function(s) when absolutely necessary.\nAsk for the required input to:recipient==all\nUse JSON for function arguments.\nRespond in this format:\n>>>${recipient}\n${content}\nAvailable functions:\n// Supported function definitions that should be called when necessary.\nnamespace functions {\n\n} // namespace functions<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nSearch cafes<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n>>>all\nSearching.>>>search\n{\"query\":\"cafes\",\"filters\":{\"limit\":3,\"tags\":[\"x\",\"y\"]},\"flag\":true}<|eot_id|><|start_header_id|>tool<|end_header_id|>\n\ntwo results<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n>>>all\nFound two.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nMore?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n>>>"
+    },
+    {
+      "issue": 715,
+      "template": "tool/litert_lm_templates/gemma4.jinja",
+      "template_sha256": "85a08664d16d8f3be4416c92427b3ac10df1024ac566cc0b4bc3bab409393f98",
+      "supports_object_arguments": true,
+      "conversation": "media_tool_call_only",
+      "tools": true,
+      "checks": [
+        {
+          "same_after": "Where is this?"
+        }
+      ],
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC"
+                }
+              },
+              {
+                "type": "text",
+                "text": "Where is this?"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\":\"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "sunny"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Get the weather for a city.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string",
+                    "description": "City name"
+                  }
+                },
+                "required": [
+                  "city"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "prompt": "<|turn>system\n<|think|>\n<|tool>declaration:get_weather{description:<|\"|>Get the weather for a city.<|\"|>,parameters:{properties:{city:{description:<|\"|>City name<|\"|>,type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><turn|>\n<|turn>user\n<__media_r1Dm7BHezbJ2qAbG2PJzpsG1oFD5U2z1__>Where is this?<turn|>\n<|turn>model\n<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|><|tool_response>response:get_weather{value:<|\"|>sunny<|\"|>}<tool_response|>"
+    },
+    {
+      "issue": 715,
+      "template": "test/fixtures/llama_cpp_templates/moonshotai-Kimi-K2.jinja",
+      "template_sha256": "9fcc72b7c248a72020c81f70bb652f3094d18a750c93ca35dfcb3cf5fe23ff53",
+      "supports_object_arguments": true,
+      "conversation": "media_tool_call_only",
+      "tools": true,
+      "checks": [
+        {
+          "same_after": "Where is this?"
+        }
+      ],
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC"
+                }
+              },
+              {
+                "type": "text",
+                "text": "Where is this?"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\":\"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "sunny"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Get the weather for a city.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string",
+                    "description": "City name"
+                  }
+                },
+                "required": [
+                  "city"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "prompt": "<|im_system|>tool_declare<|im_middle|>[{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get the weather for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\", \"description\": \"City name\"}}, \"required\": [\"city\"]}}}]<|im_end|><|im_system|>system<|im_middle|>You are a helpful assistant<|im_end|><|im_user|>user<|im_middle|><__media_AthlrYU1GlaKc7T1NdD9aweX33jNDAtf__>Where is this?<|im_end|><|im_assistant|>assistant<|im_middle|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|><|im_end|><|im_system|>tool<|im_middle|>## Return of call_0\\nsunny<|im_end|><|im_assistant|>assistant<|im_middle|>"
+    },
+    {
+      "issue": 715,
+      "template": "test/fixtures/llama_cpp_templates/Apriel-1.6-15b-Thinker-fixed.jinja",
+      "template_sha256": "2f5ce4b3c1e0ab30fc5f204a151aba5ee584615b0aa641afc2d58bcccfe33bdb",
+      "supports_object_arguments": true,
+      "conversation": "media_tool_call_only",
+      "tools": true,
+      "checks": [
+        {
+          "same_after": "<|begin_tool_result|>"
+        },
+        {
+          "contains_between": [
+            "Where is this?",
+            "<|end|>"
+          ],
+          "values": [
+            "get_weather",
+            "\"city\": \"Paris\""
+          ]
+        }
+      ],
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC"
+                }
+              },
+              {
+                "type": "text",
+                "text": "Where is this?"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\":\"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "sunny"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Get the weather for a city.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string",
+                    "description": "City name"
+                  }
+                },
+                "required": [
+                  "city"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "prompt": "<|begin_system|>\nYou are a thoughtful, systematic AI assistant from ServiceNow Language Models (SLAM) lab.\n    Analyze each question carefully, present your reasoning step-by-step, then provide the final\n    response after the marker [BEGIN FINAL RESPONSE].\nYou are provided with function signatures within <available_tools></available_tools> XML tags.\n        You may call one or more functions to assist with the user query.\n        Don't make assumptions about the arguments. You should infer the argument values from previous\n        user responses and the system message.\n        Here are the available tools: \n        <available_tools>\n{'type': 'function', 'function': {'name': 'get_weather', 'description': 'Get the weather for a city.', 'parameters': {'type': 'object', 'properties': {'city': {'type': 'string', 'description': 'City name'}}, 'required': ['city']}}}        \n        </available_tools>.\n\n        Return all function calls as a list of JSON objects within <tool_calls></tool_calls> XML tags.\n        Each JSON object should contain a function name and arguments as follows:\n        <tool_calls>[\n            {\"name\": <function-name-1>, \"arguments\": <args-dict-1>},\n            {\"name\": <function-name-2>, \"arguments\": <args-dict-2>},\n            ...\n        ]</tool_calls>\n<|begin_user|>\n<__media_ihJZ7GoG895HAZPATv8jqCJjwlLH1Q0F__>Where is this?\n<|begin_assistant|>\n\n<tool_calls>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}, \"id\": \"call_0\"}]</tool_calls>\n<|end|>\n<|begin_tool_result|>\nsunny\n\n\n\n<|begin_assistant|>\nHere are my reasoning steps:\n"
+    },
+    {
+      "issue": 720,
+      "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+      "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+      "supports_object_arguments": false,
+      "chat_template_caps": {
+        "supports_object_arguments": false,
+        "supports_parallel_tool_calls": false,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": false,
+        "supports_system_role": true,
+        "supports_tool_calls": false,
+        "supports_tools": false,
+        "supports_typed_content": true
+      },
+      "conversation": "map_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          },
+          {
+            "role": "assistant",
+            "content": "Checking.",
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "{\"temp\":21.5,\"sky\":\"clear\",\"note\":\"it's\"}"
+          }
+        ]
+      },
+      "prompt": "<|im_start|>User: Weather in Paris?<end_of_utterance>\nAssistant: Checking.<end_of_utterance>\nTool: {\"temp\":21.5,\"sky\":\"clear\",\"note\":\"it's\"}<end_of_utterance>\nAssistant:"
+    },
+    {
+      "issue": 720,
+      "template": "test/fixtures/templates/Ministral-3-3B-Reasoning.jinja",
+      "template_sha256": "87989798313de539b55bdeb19c98214e1a7bdd8c3a62b7d7cf4138d58ffdbeb5",
+      "supports_object_arguments": true,
+      "chat_template_caps": {
+        "supports_object_arguments": true,
+        "supports_parallel_tool_calls": true,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": true,
+        "supports_system_role": true,
+        "supports_tool_calls": true,
+        "supports_tools": true,
+        "supports_typed_content": false
+      },
+      "conversation": "media_reasoning_only",
+      "media": true,
+      "eos_token": "<|im_end|>",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC"
+                }
+              },
+              {
+                "type": "text",
+                "text": "Describe"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "reasoning_content": "Let me look."
+          },
+          {
+            "role": "user",
+            "content": "More?"
+          }
+        ]
+      },
+      "prompt": "[SYSTEM_PROMPT]# HOW YOU SHOULD THINK AND ANSWER\n\nFirst draft your thinking process (inner monologue) until you arrive at a response. Format your response using Markdown, and use LaTeX for any mathematical equations. Write both your thoughts and the response in the same language as the input.\n\nYour thinking process must follow the template below:[THINK]Your thoughts or/and draft, like working through an exercise on scratch paper. Be as casual and as long as you want until you are confident to generate the response to the user.[/THINK]Here, provide a self-contained response.[/SYSTEM_PROMPT][INST]<__media_qdNZdiJBFgQqfw0VXPJIQfcO03t35eJC__>Describe[/INST][THINK]Let me look.[/THINK]<|im_end|>[INST]More?[/INST]"
+    },
+    {
+      "issue": 720,
+      "template": "test/fixtures/templates/TranslateGemma-2B-it.jinja",
+      "template_sha256": "7877c1d1e7bf0d763f5d2f43ad0b631ea93daf42b9d4b630d94ed4edb317a34a",
+      "supports_object_arguments": false,
+      "chat_template_caps": {
+        "supports_object_arguments": false,
+        "supports_parallel_tool_calls": false,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": false,
+        "supports_system_role": false,
+        "supports_tool_calls": false,
+        "supports_tools": false,
+        "supports_typed_content": true
+      },
+      "conversation": "media_reasoning_only",
+      "media": true,
+      "checks": [
+        {
+          "same_between": [
+            "<__media__>Describe",
+            "[source_lang_code]"
+          ]
+        }
+      ],
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC"
+                }
+              },
+              {
+                "type": "text",
+                "text": "Describe"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "reasoning_content": "Let me look."
+          },
+          {
+            "role": "user",
+            "content": "More?"
+          }
+        ]
+      },
+      "prompt": "[source_lang_code][/source_lang_code]\n    [target_lang_code][/target_lang_code]\n    <__media_CKXMJlRZwMtrR2l0Q2DZ4uJ0gRyJATtd__>Describe[source_lang_code][/source_lang_code]\n    [target_lang_code][/target_lang_code]\n    More?<start_of_turn>model"
+    },
+    {
+      "issue": 716,
+      "template": "test/fixtures/templates/LFM2_5-1_2B-Thinking.jinja",
+      "template_sha256": "f05bf4b967dc993bdc7a2fe6e43759ee218eb0eb340d68b063e1c4f8ad148176",
+      "supports_object_arguments": false,
+      "chat_template_caps": {
+        "supports_object_arguments": false,
+        "supports_parallel_tool_calls": false,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": true,
+        "supports_system_role": true,
+        "supports_tool_calls": false,
+        "supports_tools": true,
+        "supports_typed_content": false
+      },
+      "conversation": "tools_question",
+      "tools": true,
+      "lfm2_flat_tool_list": true,
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather in Paris?"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Get the weather for a city.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string",
+                    "description": "City name"
+                  }
+                },
+                "required": [
+                  "city"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "prompt": "<|im_start|>system\nList of tools: [{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get the weather for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\", \"description\": \"City name\"}}, \"required\": [\"city\"]}}}]<|im_end|>\n<|im_start|>user\nWeather in Paris?<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "issue": 720,
+      "template": "test/fixtures/llama_cpp_templates/mistralai-Ministral-3-14B-Reasoning-2512.jinja",
+      "template_sha256": "39f03c383413f531fd302c06c7e982ad98c83f0657a8339ae25478ccb81fdcda",
+      "supports_object_arguments": true,
+      "chat_template_caps": {
+        "supports_object_arguments": true,
+        "supports_parallel_tool_calls": true,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": true,
+        "supports_system_role": true,
+        "supports_tool_calls": true,
+        "supports_tools": true,
+        "supports_typed_content": false
+      },
+      "conversation": "media_empty_assistant",
+      "media": true,
+      "eos_token": "<|im_end|>",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC"
+                }
+              },
+              {
+                "type": "text",
+                "text": "Describe"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": ""
+          },
+          {
+            "role": "user",
+            "content": "More?"
+          }
+        ]
+      },
+      "prompt": "[SYSTEM_PROMPT]# HOW YOU SHOULD THINK AND ANSWER\n\nFirst draft your thinking process (inner monologue) until you arrive at a response. Format your response using Markdown, and use LaTeX for any mathematical equations. Write both your thoughts and the response in the same language as the input.\n\nYour thinking process must follow the template below:[THINK]Your thoughts or/and draft, like working through an exercise on scratch paper. Be as casual and as long as you want until you are confident to generate the response to the user.[/THINK]Here, provide a self-contained response.[/SYSTEM_PROMPT][INST]<__media_RQmw7BpXLyl1Mc2uTw3Kkx2HwbgAowQq__>Describe[/INST]<|im_end|>[INST]More?[/INST]"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the weather for a city.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string",
+              "description": "City name"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    }
+  ],
+  "image_png_base64": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC",
+  "media_model": "LFM2-VL-450M-Q4_0.gguf",
+  "media_model_sha256": "1fbf4797e8669cdeabd97fa1d31ab046907cb1fc78b1c3d4bda1ba879574e5d7",
+  "media_mmproj": "mmproj-LFM2-VL-450M-Q8_0.gguf",
+  "media_mmproj_sha256": "a6a813fae4ba3f90852a990fdd4786a017dba0e80e599a366853ba539ee2b5ef"
+}

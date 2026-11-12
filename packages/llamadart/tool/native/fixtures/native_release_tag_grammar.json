@@ -1,0 +1,558 @@
+{
+  "schema_version": 1,
+  "description": "Canonical llamadart-native release tag grammar: pattern inventory, form semantics, consumer policy, and verification corpus.",
+  "patterns": {
+    "stable_pattern": "^v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+    "stable_wrapper_pattern": "^v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)-([1-9][0-9]*)$",
+    "nightly_pattern": "^b(0|[1-9][0-9]*)$",
+    "nightly_wrapper_pattern": "^b(0|[1-9][0-9]*)-([1-9][0-9]*)$",
+    "legacy_wrapper_pattern": "^b(0|[1-9][0-9]*)-llamadart\\.([1-9][0-9]*)$",
+    "combined_pattern": "^(?:v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?:-[1-9][0-9]*)?|b(?:0|[1-9][0-9]*)(?:-[1-9][0-9]*|-llamadart\\.[1-9][0-9]*)?)$",
+    "doc_tag_pattern": "(?:v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?:-[1-9][0-9]*)?|b(?:0|[1-9][0-9]*)(?:-[1-9][0-9]*|-llamadart\\.[1-9][0-9]*)?)"
+  },
+  "forms": {
+    "stable": {
+      "syntax": "vMAJOR.MINOR.PATCH",
+      "channel": "stable",
+      "is_wrapper": false,
+      "is_legacy": false,
+      "is_latest_eligible": true,
+      "is_stable_upstream": true
+    },
+    "stable_wrapper": {
+      "syntax": "vMAJOR.MINOR.PATCH-N",
+      "channel": "stable",
+      "is_wrapper": true,
+      "is_legacy": false,
+      "is_latest_eligible": false,
+      "is_stable_upstream": true
+    },
+    "nightly": {
+      "syntax": "bNNNN",
+      "channel": "nightly",
+      "is_wrapper": false,
+      "is_legacy": true,
+      "is_latest_eligible": false,
+      "is_stable_upstream": false
+    },
+    "nightly_wrapper": {
+      "syntax": "bNNNN-N",
+      "channel": "nightly",
+      "is_wrapper": true,
+      "is_legacy": true,
+      "is_latest_eligible": false,
+      "is_stable_upstream": false
+    },
+    "legacy_wrapper": {
+      "syntax": "bNNNN-llamadart.N",
+      "channel": "nightly",
+      "is_wrapper": true,
+      "is_legacy": true,
+      "is_latest_eligible": false,
+      "is_stable_upstream": false
+    }
+  },
+  "reserved_inputs": [
+    {
+      "value": "latest",
+      "python_sync": true,
+      "bash_header_sync": true,
+      "dart_build_hook": false,
+      "release_docs_pin": false
+    },
+    {
+      "value": "keep",
+      "python_sync": true,
+      "bash_header_sync": false,
+      "dart_build_hook": false,
+      "release_docs_pin": false
+    }
+  ],
+  "documentation_contract": {
+    "workflow": {
+      "path": ".github/workflows/sync_native_bindings.yml",
+      "input": "native_tag",
+      "required_text": "description: 'vM.m.p; explicit vM.m.p-N, bNNNN[-N], or legacy bNNNN-llamadart.N; latest is unsuffixed v only'"
+    },
+    "docs": {
+      "AGENTS.md": [
+        "`bNNNN-N`",
+        "`bNNNN-llamadart.N`",
+        "canonical decimal spelling",
+        "start at 1 without leading zeros",
+        "`latest` accepts only unsuffixed `vMAJOR.MINOR.PATCH`"
+      ],
+      "README.md": [
+        "vMAJOR.MINOR.PATCH",
+        "bNNNN",
+        "bNNNN-N",
+        "bNNNN-llamadart.N",
+        "without leading zeros",
+        "start at 1"
+      ],
+      "website/docs/platforms/native-build-hooks.md": [
+        "vMAJOR.MINOR.PATCH",
+        "bNNNN",
+        "bNNNN-N",
+        "bNNNN-llamadart.N",
+        "without leading zeros",
+        "start at 1"
+      ],
+      "website/docs/maintainers/native-and-web-sync.md": [
+        "`vMAJOR.MINOR.PATCH`",
+        "`bNNNN`",
+        "`bNNNN-N`",
+        "`bNNNN-llamadart.N`",
+        "`b0`",
+        "without leading zeros",
+        "start at 1",
+        "`latest` accepts only an unsuffixed `vMAJOR.MINOR.PATCH`"
+      ]
+    }
+  },
+  "positive_cases": [
+    {
+      "tag": "v0.0.0",
+      "form": "stable",
+      "version": [
+        0,
+        0,
+        0
+      ],
+      "wrapper_revision": 0,
+      "upstream_tag": "v0.0.0"
+    },
+    {
+      "tag": "v0.3.0",
+      "form": "stable",
+      "version": [
+        0,
+        3,
+        0
+      ],
+      "wrapper_revision": 0,
+      "upstream_tag": "v0.3.0"
+    },
+    {
+      "tag": "v1.2.3",
+      "form": "stable",
+      "version": [
+        1,
+        2,
+        3
+      ],
+      "wrapper_revision": 0,
+      "upstream_tag": "v1.2.3"
+    },
+    {
+      "tag": "v10.20.300",
+      "form": "stable",
+      "version": [
+        10,
+        20,
+        300
+      ],
+      "wrapper_revision": 0,
+      "upstream_tag": "v10.20.300"
+    },
+    {
+      "tag": "v9999999999999999999.2.3",
+      "form": "stable",
+      "version": [
+        9999999999999999999,
+        2,
+        3
+      ],
+      "wrapper_revision": 0,
+      "upstream_tag": "v9999999999999999999.2.3"
+    },
+    {
+      "tag": "v0.0.0-1",
+      "form": "stable_wrapper",
+      "version": [
+        0,
+        0,
+        0
+      ],
+      "wrapper_revision": 1,
+      "upstream_tag": "v0.0.0"
+    },
+    {
+      "tag": "v0.2.0-2",
+      "form": "stable_wrapper",
+      "version": [
+        0,
+        2,
+        0
+      ],
+      "wrapper_revision": 2,
+      "upstream_tag": "v0.2.0"
+    },
+    {
+      "tag": "v1.2.3-45",
+      "form": "stable_wrapper",
+      "version": [
+        1,
+        2,
+        3
+      ],
+      "wrapper_revision": 45,
+      "upstream_tag": "v1.2.3"
+    },
+    {
+      "tag": "b0",
+      "form": "nightly",
+      "version": [
+        0
+      ],
+      "wrapper_revision": 0,
+      "upstream_tag": "b0"
+    },
+    {
+      "tag": "b1",
+      "form": "nightly",
+      "version": [
+        1
+      ],
+      "wrapper_revision": 0,
+      "upstream_tag": "b1"
+    },
+    {
+      "tag": "b10514",
+      "form": "nightly",
+      "version": [
+        10514
+      ],
+      "wrapper_revision": 0,
+      "upstream_tag": "b10514"
+    },
+    {
+      "tag": "b0-1",
+      "form": "nightly_wrapper",
+      "version": [
+        0
+      ],
+      "wrapper_revision": 1,
+      "upstream_tag": "b0"
+    },
+    {
+      "tag": "b10514-2",
+      "form": "nightly_wrapper",
+      "version": [
+        10514
+      ],
+      "wrapper_revision": 2,
+      "upstream_tag": "b10514"
+    },
+    {
+      "tag": "b9999999999999999999-9999999999999999999",
+      "form": "nightly_wrapper",
+      "version": [
+        9999999999999999999
+      ],
+      "wrapper_revision": 9999999999999999999,
+      "upstream_tag": "b9999999999999999999"
+    },
+    {
+      "tag": "b0-llamadart.1",
+      "form": "legacy_wrapper",
+      "version": [
+        0
+      ],
+      "wrapper_revision": 1,
+      "upstream_tag": "b0"
+    },
+    {
+      "tag": "b10514-llamadart.42",
+      "form": "legacy_wrapper",
+      "version": [
+        10514
+      ],
+      "wrapper_revision": 42,
+      "upstream_tag": "b10514"
+    },
+    {
+      "tag": "b1-llamadart.9999999999999999999",
+      "form": "legacy_wrapper",
+      "version": [
+        1
+      ],
+      "wrapper_revision": 9999999999999999999,
+      "upstream_tag": "b1"
+    }
+  ],
+  "negative_cases": [
+    {
+      "tag": "v01.2.3",
+      "reason": "leading zero in major version component"
+    },
+    {
+      "tag": "v1.02.3",
+      "reason": "leading zero in minor version component"
+    },
+    {
+      "tag": "v1.2.03",
+      "reason": "leading zero in patch version component"
+    },
+    {
+      "tag": "b00",
+      "reason": "redundant zero in nightly build number"
+    },
+    {
+      "tag": "b0123",
+      "reason": "leading zero in nightly build number"
+    },
+    {
+      "tag": "v0.2.0-0",
+      "reason": "wrapper rebuild revision must be at least 1"
+    },
+    {
+      "tag": "b1-0",
+      "reason": "nightly wrapper rebuild revision must be at least 1"
+    },
+    {
+      "tag": "b1-llamadart.0",
+      "reason": "legacy wrapper rebuild revision must be at least 1"
+    },
+    {
+      "tag": "v0.2.0-01",
+      "reason": "leading zero in wrapper rebuild revision"
+    },
+    {
+      "tag": "b1-01",
+      "reason": "leading zero in nightly wrapper rebuild revision"
+    },
+    {
+      "tag": "b1-llamadart.01",
+      "reason": "leading zero in legacy wrapper rebuild revision"
+    },
+    {
+      "tag": "b0001-1",
+      "reason": "leading zeros in nightly build with wrapper"
+    },
+    {
+      "tag": "1.2.3",
+      "reason": "missing v prefix"
+    },
+    {
+      "tag": "10514",
+      "reason": "missing b prefix"
+    },
+    {
+      "tag": "V1.2.3",
+      "reason": "stable prefix is case-sensitive"
+    },
+    {
+      "tag": "B10514",
+      "reason": "nightly prefix is case-sensitive"
+    },
+    {
+      "tag": "x1.2.3",
+      "reason": "wrong stable prefix"
+    },
+    {
+      "tag": "v",
+      "reason": "missing version numbers"
+    },
+    {
+      "tag": "b",
+      "reason": "missing build number"
+    },
+    {
+      "tag": "v.",
+      "reason": "incomplete version"
+    },
+    {
+      "tag": "v1.2",
+      "reason": "incomplete major.minor version"
+    },
+    {
+      "tag": "v1.2.3.",
+      "reason": "trailing dot in version"
+    },
+    {
+      "tag": "v1.2.3.4",
+      "reason": "too many version components"
+    },
+    {
+      "tag": "v0.2.0-",
+      "reason": "trailing hyphen in wrapper revision"
+    },
+    {
+      "tag": "b10514-",
+      "reason": "trailing hyphen in nightly wrapper revision"
+    },
+    {
+      "tag": "b-1",
+      "reason": "missing build number before hyphen"
+    },
+    {
+      "tag": "b-llamadart.1",
+      "reason": "missing build number before legacy suffix"
+    },
+    {
+      "tag": "b10514-llamadart",
+      "reason": "missing revision number in legacy suffix"
+    },
+    {
+      "tag": "b10514-llamadart.",
+      "reason": "trailing dot in legacy suffix"
+    },
+    {
+      "tag": "v0.2.0-beta",
+      "reason": "unsupported SemVer prerelease identifier"
+    },
+    {
+      "tag": "v0.2.0-custom.1",
+      "reason": "unsupported custom wrapper suffix"
+    },
+    {
+      "tag": "v0.2.0-llamadart.1",
+      "reason": "legacy llamadart suffix is only accepted on historical nightly tags"
+    },
+    {
+      "tag": "v0.2.0+build.1",
+      "reason": "unsupported SemVer build metadata"
+    },
+    {
+      "tag": "v0.2.0-1+build.1",
+      "reason": "unsupported wrapper build metadata"
+    },
+    {
+      "tag": "b10514-beta",
+      "reason": "unsupported nightly prerelease identifier"
+    },
+    {
+      "tag": "b10514-custom",
+      "reason": "unsupported custom nightly suffix"
+    },
+    {
+      "tag": "b10514-llamadart-1",
+      "reason": "hyphen instead of dot in legacy wrapper suffix"
+    },
+    {
+      "tag": "b10514-Llamadart.1",
+      "reason": "legacy wrapper suffix is case-sensitive"
+    },
+    {
+      "tag": "b10514+build.1",
+      "reason": "unsupported nightly build metadata"
+    },
+    {
+      "tag": "b10514.1",
+      "reason": "dot instead of hyphen in rebuild revision"
+    },
+    {
+      "tag": "b10514_1",
+      "reason": "underscore instead of hyphen in rebuild revision"
+    },
+    {
+      "tag": "../v0.2.0",
+      "reason": "directory traversal path"
+    },
+    {
+      "tag": "v0.2.0/..",
+      "reason": "directory traversal path"
+    },
+    {
+      "tag": "/v0.2.0",
+      "reason": "absolute path prefix"
+    },
+    {
+      "tag": "\\v0.2.0",
+      "reason": "backslash path separator"
+    },
+    {
+      "tag": "..\\v0.2.0",
+      "reason": "backslash directory traversal"
+    },
+    {
+      "tag": "v0.2.0/",
+      "reason": "trailing slash"
+    },
+    {
+      "tag": "v0.2.0/subdir",
+      "reason": "nested directory path"
+    },
+    {
+      "tag": "b1; touch \"$RUNNER_TEMP/llamadart-pwned\"",
+      "reason": "semicolon shell metacharacter"
+    },
+    {
+      "tag": "b1$(touch \"$RUNNER_TEMP/llamadart-pwned\")",
+      "reason": "command substitution shell metacharacter"
+    },
+    {
+      "tag": "b1`touch pwned`",
+      "reason": "backtick command substitution"
+    },
+    {
+      "tag": "v0.2.0&&echo pwned",
+      "reason": "command chaining shell metacharacter"
+    },
+    {
+      "tag": "v0.2.0|echo pwned",
+      "reason": "pipe shell metacharacter"
+    },
+    {
+      "tag": "v0.2.0>out",
+      "reason": "redirect shell metacharacter"
+    },
+    {
+      "tag": "v0.2.0#comment",
+      "reason": "comment shell metacharacter"
+    },
+    {
+      "tag": "v0.2.0*",
+      "reason": "glob shell metacharacter"
+    },
+    {
+      "tag": "v0.2.0?query=1",
+      "reason": "URL query character"
+    },
+    {
+      "tag": "",
+      "reason": "empty string"
+    },
+    {
+      "tag": " ",
+      "reason": "whitespace only"
+    },
+    {
+      "tag": "\t",
+      "reason": "tab character"
+    },
+    {
+      "tag": "\n",
+      "reason": "newline character"
+    },
+    {
+      "tag": "\r\n",
+      "reason": "CRLF characters"
+    },
+    {
+      "tag": "v0.2.0\n",
+      "reason": "trailing newline"
+    },
+    {
+      "tag": "b10514\r\n",
+      "reason": "trailing CRLF"
+    },
+    {
+      "tag": "v0.2.0 ",
+      "reason": "trailing whitespace"
+    },
+    {
+      "tag": " v0.2.0",
+      "reason": "leading whitespace"
+    },
+    {
+      "tag": "v0. 2.0",
+      "reason": "embedded whitespace"
+    },
+    {
+      "tag": "v0.2.0\u0000",
+      "reason": "embedded null byte"
+    }
+  ]
+}

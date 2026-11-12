@@ -4,6 +4,7 @@ import '../../models/chat/chat_message.dart';
 import '../../models/chat/chat_template_result.dart';
 import '../../models/tools/tool_definition.dart';
 import '../chat_format.dart';
+import '../thinking_utils.dart';
 import '../chat_parse_result.dart';
 import '../chat_template_handler.dart';
 import '../xml_tool_call_format.dart';
@@ -44,7 +45,7 @@ class MiniCpm5Handler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'bos_token': metadata['tokenizer.ggml.bos_token'] ?? '<s>',
@@ -55,19 +56,25 @@ class MiniCpm5Handler extends ChatTemplateHandler {
     );
 
     var thinkingForcedOpen = false;
-    if (prompt.endsWith('<think>\n')) {
+    var thoughtClosed = false;
+    if (isThinkingForcedOpen(prompt)) {
       if (!enableThinking) {
         prompt = '$prompt</think>\n\n';
+        thoughtClosed = true;
       } else {
         thinkingForcedOpen = true;
       }
     }
 
     final hasTools = tools != null && tools.isNotEmpty;
-    return LlamaChatTemplateResult(
+    final rendered = LlamaChatTemplateResult(
       prompt: prompt,
       format: format.index,
-      grammar: buildGrammar(tools),
+      grammar: requiredGrammarAfterThought(
+        buildGrammar(tools),
+        metadata: metadata,
+        thinkingForcedOpen: thinkingForcedOpen,
+      ),
       grammarLazy: hasTools,
       thinkingForcedOpen: thinkingForcedOpen,
       additionalStops: getStops(
@@ -79,6 +86,7 @@ class MiniCpm5Handler extends ChatTemplateHandler {
           ? [const GrammarTrigger(type: 0, value: '<function name="')]
           : const [],
     );
+    return withThoughtClosedForThinkingOff(rendered, closed: thoughtClosed);
   }
 
   @override

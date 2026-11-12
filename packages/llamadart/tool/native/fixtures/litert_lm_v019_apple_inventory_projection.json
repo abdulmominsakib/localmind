@@ -1,0 +1,222 @@
+{
+  "sourceManifestSha256": "edaa60e0da05345d982a602cdc816ae3faf387b65697b2f88b7252750020d8cb",
+  "ownerCommit": "7ea10d0cce10dfddbae273bb69e253d9ea97e1d2",
+  "upstreamCommit": "83ce6067f2e2a3fb697556928f93936693ded971",
+  "compatibilityTag": "v0.19.0",
+  "releaseTag": "v0.19.0",
+  "platforms": [
+    {
+      "accelerators": [
+        "metal"
+      ],
+      "arch": "arm64",
+      "artifactPaths": [
+        "bin/ios/arm64/CLiteRTLM.framework/CLiteRTLM",
+        "bin/ios/arm64/CLiteRTLM.framework/Info.plist",
+        "bin/ios/arm64/LiteRtLm.framework/Info.plist",
+        "bin/ios/arm64/LiteRtLm.framework/LiteRtLm",
+        "bin/ios/arm64/LiteRtMetalAccelerator.framework/Info.plist",
+        "bin/ios/arm64/LiteRtMetalAccelerator.framework/LiteRtMetalAccelerator",
+        "bin/ios/arm64/libLiteRt.dylib",
+        "bin/ios/arm64/libLiteRtLm.dylib",
+        "bin/ios/arm64/libLiteRtMetalAccelerator.dylib"
+      ],
+      "platform": "ios",
+      "releaseAsset": "litert-lm-native-runtime-ios-arm64-v0.19.0.tar.gz"
+    },
+    {
+      "accelerators": [
+        "metal"
+      ],
+      "arch": "arm64-sim",
+      "artifactPaths": [
+        "bin/ios/arm64-sim/CLiteRTLM.framework/CLiteRTLM",
+        "bin/ios/arm64-sim/CLiteRTLM.framework/Info.plist",
+        "bin/ios/arm64-sim/LiteRtLm.framework/Info.plist",
+        "bin/ios/arm64-sim/LiteRtLm.framework/LiteRtLm",
+        "bin/ios/arm64-sim/LiteRtMetalAccelerator.framework/Info.plist",
+        "bin/ios/arm64-sim/LiteRtMetalAccelerator.framework/LiteRtMetalAccelerator",
+        "bin/ios/arm64-sim/libLiteRt.dylib",
+        "bin/ios/arm64-sim/libLiteRtLm.dylib",
+        "bin/ios/arm64-sim/libLiteRtMetalAccelerator.dylib"
+      ],
+      "platform": "ios",
+      "releaseAsset": "litert-lm-native-runtime-ios-arm64-sim-v0.19.0.tar.gz"
+    },
+    {
+      "accelerators": [
+        "webgpu"
+      ],
+      "arch": "arm64",
+      "artifactPaths": [
+        "bin/linux/arm64/libGemmaModelConstraintProvider.so",
+        "bin/linux/arm64/libLiteRt.so",
+        "bin/linux/arm64/libLiteRtLm.so",
+        "bin/linux/arm64/libLiteRtWebGpuAccelerator.so",
+        "bin/linux/arm64/libwebgpu_dawn.so"
+      ],
+      "platform": "linux",
+      "releaseAsset": "litert-lm-native-runtime-linux-arm64-v0.19.0.tar.gz"
+    },
+    {
+      "accelerators": [
+        "webgpu"
+      ],
+      "arch": "x64",
+      "artifactPaths": [
+        "bin/linux/x64/libGemmaModelConstraintProvider.so",
+        "bin/linux/x64/libLiteRt.so",
+        "bin/linux/x64/libLiteRtLm.so",
+        "bin/linux/x64/libLiteRtWebGpuAccelerator.so",
+        "bin/linux/x64/libwebgpu_dawn.so"
+      ],
+      "platform": "linux",
+      "releaseAsset": "litert-lm-native-runtime-linux-x64-v0.19.0.tar.gz"
+    },
+    {
+      "accelerators": [
+        "metal",
+        "webgpu"
+      ],
+      "arch": "arm64",
+      "artifactPaths": [
+        "bin/macos/arm64/libCLiteRTLM_mac.dylib",
+        "bin/macos/arm64/libGemmaModelConstraintProvider.dylib",
+        "bin/macos/arm64/libLiteRt.dylib",
+        "bin/macos/arm64/libLiteRtLm.dylib",
+        "bin/macos/arm64/libLiteRtMetalAccelerator.dylib",
+        "bin/macos/arm64/libLiteRtWebGpuAccelerator.dylib",
+        "bin/macos/arm64/libwebgpu_dawn.dylib"
+      ],
+      "platform": "macos",
+      "releaseAsset": "litert-lm-native-runtime-macos-arm64-v0.19.0.tar.gz"
+    },
+    {
+      "accelerators": [
+        "webgpu"
+      ],
+      "arch": "x64",
+      "artifactPaths": [
+        "bin/windows/x64/LiteRtLm.dll",
+        "bin/windows/x64/dxcompiler.dll",
+        "bin/windows/x64/dxil.dll",
+        "bin/windows/x64/libGemmaModelConstraintProvider.dll",
+        "bin/windows/x64/libGemmaModelConstraintProvider.lib",
+        "bin/windows/x64/libLiteRt.dll",
+        "bin/windows/x64/libLiteRtWebGpuAccelerator.dll",
+        "bin/windows/x64/libwebgpu_dawn.dll",
+        "bin/windows/x64/msvcp140.dll",
+        "bin/windows/x64/vcruntime140.dll",
+        "bin/windows/x64/vcruntime140_1.dll",
+        "bin/windows/x64/vcruntime140_threads.dll",
+        "bin/windows/x64/webgpu_dawn.dll"
+      ],
+      "platform": "windows",
+      "releaseAsset": "litert-lm-native-runtime-windows-x64-v0.19.0.tar.gz"
+    }
+  ],
+  "spmArtifacts": [
+    {
+      "accelerators": [],
+      "arch": null,
+      "fileName": "litert-lm-native-apple-CLiteRTLM-xcframework-v0.19.0.zip",
+      "path": "dist/spm/v0.19.0/litert-lm-native-apple-CLiteRTLM-xcframework-v0.19.0.zip",
+      "platform": null,
+      "releaseTag": "v0.19.0",
+      "runtime": "archive",
+      "sha256": "378bb22eee8853220ff4203d103e59b7c06734b8639d0b7d609637a0b3abf1d7",
+      "upstreamCommit": "83ce6067f2e2a3fb697556928f93936693ded971",
+      "upstreamTag": "v0.19.0"
+    },
+    {
+      "accelerators": [],
+      "arch": null,
+      "fileName": "litert-lm-native-apple-CLiteRTLMMac-xcframework-v0.19.0.zip",
+      "path": "dist/spm/v0.19.0/litert-lm-native-apple-CLiteRTLMMac-xcframework-v0.19.0.zip",
+      "platform": null,
+      "releaseTag": "v0.19.0",
+      "runtime": "archive",
+      "sha256": "68631261364861554af2a8f12bdd7859f514f542acac3264449b4462cff48fd4",
+      "upstreamCommit": "83ce6067f2e2a3fb697556928f93936693ded971",
+      "upstreamTag": "v0.19.0"
+    },
+    {
+      "accelerators": [],
+      "arch": null,
+      "fileName": "litert-lm-native-apple-GemmaModelConstraintProvider-xcframework-v0.19.0.zip",
+      "path": "dist/spm/v0.19.0/litert-lm-native-apple-GemmaModelConstraintProvider-xcframework-v0.19.0.zip",
+      "platform": null,
+      "releaseTag": "v0.19.0",
+      "runtime": "archive",
+      "sha256": "2de0b619ddc45ce314708bad1e4617e738cb5685f93fcf2c7aa14e54b493b310",
+      "upstreamCommit": "83ce6067f2e2a3fb697556928f93936693ded971",
+      "upstreamTag": "v0.19.0"
+    },
+    {
+      "accelerators": [],
+      "arch": null,
+      "fileName": "litert-lm-native-apple-LiteRt-xcframework-v0.19.0.zip",
+      "path": "dist/spm/v0.19.0/litert-lm-native-apple-LiteRt-xcframework-v0.19.0.zip",
+      "platform": null,
+      "releaseTag": "v0.19.0",
+      "runtime": "archive",
+      "sha256": "61bbe36b715bde6088599c12aa4f42ccfc5fed729b4b45e366c42ec31cfb1c0b",
+      "upstreamCommit": "83ce6067f2e2a3fb697556928f93936693ded971",
+      "upstreamTag": "v0.19.0"
+    },
+    {
+      "accelerators": [],
+      "arch": null,
+      "fileName": "litert-lm-native-apple-LiteRtLm-xcframework-v0.19.0.zip",
+      "path": "dist/spm/v0.19.0/litert-lm-native-apple-LiteRtLm-xcframework-v0.19.0.zip",
+      "platform": null,
+      "releaseTag": "v0.19.0",
+      "runtime": "archive",
+      "sha256": "11b3eb278aab2c1f979973de3a68b87e813e9e0d248557d014e992fa0ed6ee84",
+      "upstreamCommit": "83ce6067f2e2a3fb697556928f93936693ded971",
+      "upstreamTag": "v0.19.0"
+    },
+    {
+      "accelerators": [
+        "metal"
+      ],
+      "arch": null,
+      "fileName": "litert-lm-native-apple-LiteRtMetalAccelerator-xcframework-v0.19.0.zip",
+      "path": "dist/spm/v0.19.0/litert-lm-native-apple-LiteRtMetalAccelerator-xcframework-v0.19.0.zip",
+      "platform": null,
+      "releaseTag": "v0.19.0",
+      "runtime": "archive",
+      "sha256": "1b20160a3932dd7dedbf2e230d20417eb92fae23ebe0644e576774b76793d538",
+      "upstreamCommit": "83ce6067f2e2a3fb697556928f93936693ded971",
+      "upstreamTag": "v0.19.0"
+    },
+    {
+      "accelerators": [
+        "webgpu"
+      ],
+      "arch": null,
+      "fileName": "litert-lm-native-apple-LiteRtWebGpuAccelerator-xcframework-v0.19.0.zip",
+      "path": "dist/spm/v0.19.0/litert-lm-native-apple-LiteRtWebGpuAccelerator-xcframework-v0.19.0.zip",
+      "platform": null,
+      "releaseTag": "v0.19.0",
+      "runtime": "archive",
+      "sha256": "dd5bf911b93d62e255b43aab9e8654776c72f03ac82bc86cf2a50a5fb657752a",
+      "upstreamCommit": "83ce6067f2e2a3fb697556928f93936693ded971",
+      "upstreamTag": "v0.19.0"
+    },
+    {
+      "accelerators": [
+        "webgpu"
+      ],
+      "arch": null,
+      "fileName": "litert-lm-native-apple-WebgpuDawn-xcframework-v0.19.0.zip",
+      "path": "dist/spm/v0.19.0/litert-lm-native-apple-WebgpuDawn-xcframework-v0.19.0.zip",
+      "platform": null,
+      "releaseTag": "v0.19.0",
+      "runtime": "archive",
+      "sha256": "646df41ad3328aeef743eb7670ffc62809e5976eef9ebf60afabc5e5a735718f",
+      "upstreamCommit": "83ce6067f2e2a3fb697556928f93936693ded971",
+      "upstreamTag": "v0.19.0"
+    }
+  ]
+}

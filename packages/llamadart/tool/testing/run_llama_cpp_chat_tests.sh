@@ -6,6 +6,11 @@ src_dir="${LLAMA_CPP_CHAT_TEST_SOURCE_DIR:-${LLAMA_CPP_SOURCE_DIR:-${repo_root}/
 build_dir="${LLAMA_CPP_CHAT_TEST_BUILD_DIR:-${repo_root}/.dart_tool/llama_cpp_chat_tests}"
 include_full="${LLAMA_CPP_CHAT_TEST_INCLUDE_FULL:-0}"
 full_verbose="${LLAMA_CPP_CHAT_TEST_FULL_VERBOSE:-0}"
+build_jobs="${LLAMA_CPP_CHAT_TEST_BUILD_JOBS:-2}"
+if [[ ! "${build_jobs}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "LLAMA_CPP_CHAT_TEST_BUILD_JOBS must be a positive integer." >&2
+  exit 64
+fi
 
 export LLAMA_CPP_SOURCE_DIR="${src_dir}"
 "${repo_root}/tool/testing/prepare_llama_cpp_source.sh" >/dev/null
@@ -64,16 +69,18 @@ resolve_target() {
 chat_parser_target="$(resolve_target chat-parser test-chat-parser test-chat-auto-parser)"
 peg_parser_target="$(resolve_target peg-parser test-chat-peg-parser)"
 template_target="$(resolve_target chat-template test-chat-template)"
+gbnf_validator_target="$(resolve_target gbnf-validator test-gbnf-validator)"
 
 ctest_targets=("${chat_parser_target}" "${peg_parser_target}" "${template_target}")
-targets=("${ctest_targets[@]}")
+targets=("${ctest_targets[@]}" "${gbnf_validator_target}")
 if [[ "${include_full}" == "1" ]]; then
   full_target="$(resolve_target full-chat test-chat)"
   targets+=("${full_target}")
 fi
 
 echo "[chat-tests] build targets: ${targets[*]}"
-cmake --build "${build_dir}" --target "${targets[@]}" --parallel
+cmake --build "${build_dir}" --target "${targets[@]}" \
+  --parallel "${build_jobs}"
 
 library_path_entries=(
   "${build_dir}/bin"

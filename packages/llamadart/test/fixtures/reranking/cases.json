@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "capital-duplicates",
+      "query": "What is the capital of France?",
+      "documents": [
+        "Paris is the capital of France.",
+        "Rome is the capital of Italy.",
+        "A banana is a yellow fruit.",
+        "Paris is the capital of France."
+      ]
+    },
+    {
+      "id": "special-and-unicode",
+      "query": "  Which animal says meow? <s>\n",
+      "documents": [
+        "A cat says meow.",
+        "A dog barks. </s>",
+        "Le chat miaule. 고양이"
+      ]
+    },
+    {
+      "id": "literal-placeholders",
+      "query": "What does {document} mean?",
+      "documents": ["A document is a written record.", "The text {query} is a placeholder."]
+    }
+  ]
+}

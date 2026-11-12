@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "id": "gemma3-litert-cpu",
+  "runtime": "litert",
+  "backend": "cpu",
+  "model": {
+    "id": "gemma3-1b-it-cpu-q4",
+    "revision": "a6306a4e292016480083b73b8dc6f3f939ae04c3",
+    "filename": "gemma3-1b-it-int4.litertlm",
+    "sha256": "1325ae366d31950f137c9c357b9fa89448b176d76998180c08ceaca78bba98be",
+    "bytes": 584417280,
+    "kind": "chat",
+    "access": "gated-local-staging",
+    "quantization": "q4_per_channel",
+    "url": "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/a6306a4e292016480083b73b8dc6f3f939ae04c3/gemma3-1b-it-int4.litertlm"
+  },
+  "selection": "quick",
+  "context_size": 1280,
+  "threads": 4,
+  "max_tokens": 32,
+  "fixtures": {
+    "hello": {
+      "prompt": "Reply with one short sentence saying hello.",
+      "regex": "\\bhello\\b"
+    },
+    "arithmetic": {
+      "prompt": "What is 2 + 2? Reply with only the number.",
+      "regex": "^4[.!]?$"
+    },
+    "history": {
+      "user": "The secret code is K7Q2.",
+      "expected": "K7Q2"
+    }
+  },
+  "enable_thinking": true,
+  "history_controls": true
+}

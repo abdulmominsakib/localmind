@@ -1,0 +1,270 @@
+--------- beginning of main
+10-13 03:44:22.052 27418 27441 I TestRunner: run started: 1 tests
+10-13 03:44:22.446 27418 27461 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+10-13 03:44:22.723 27418 27418 I flutter : 00:00 +0: shared validation: gemma4-litert-gpu
+10-13 03:44:22.917  2123  4890 D ActivityManager: freezer override set to true
+10-13 03:53:10.832 27418 27418 I flutter : [2026-10-13T03:53:10.831617] [INFO] Loading model: gemma-4-E2B-it.litertlm
+10-13 03:53:10.865 27418 27418 I flutter : [2026-10-13T03:53:10.865641] [INFO] Model gemma-4-E2B-it.litertlm loaded from /data/user/0/com.example.llamadart_chat_example/files/validation/models/181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c/gemma-4-E2B-it.litertlm; native engine creation is deferred until the first generation or tokenizer call
+10-13 03:53:10.963 27418 32285 W native  : W0000 00:00:1791888790.963038   32285 engine.cc:565] Failed to get CpuConfig to set num threads: INVALID_ARGUMENT: Backend config is not valid.
+10-13 03:53:10.963 27418 32285 W native  : === Source Location Trace: ===
+10-13 03:53:10.963 27418 32285 W native  : ./runtime/executor/llm_executor_settings.h:396
+10-13 03:53:10.963 27418 32285 W native  : 
+10-13 03:53:10.968 27418 32288 W native  : W0000 00:00:1791888790.967960   32288 litert_lm_loader.cc:391] Section not found: SP_Tokenizer
+10-13 03:53:10.969 27418 32285 I litert  : [environment.cc:36] Creating LiteRT environment with options
+10-13 03:53:10.969 27418 32285 W litert  : [npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorNotFound.
+10-13 03:53:10.969 27418 32285 I litert  : [gpu_registry.cc:128] Attempting to load GPU accelerator(libLiteRtGpuAccelerator.so).
+10-13 03:53:10.978 27418 32285 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007d28e417f0, name=LiteRT GPU
+10-13 03:53:10.978 27418 32285 I litert  : [gpu_registry.cc:136] Dynamically loaded GPU accelerator(libLiteRtGpuAccelerator.so) registered.
+10-13 03:53:10.978 27418 32285 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007d28e43150, name=CpuAccelerator
+10-13 03:53:10.978 27418 32285 I litert  : [cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+10-13 03:53:11.057 27418 32285 I litert  : [environment.cc:36] Creating LiteRT environment with options
+10-13 03:53:11.057 27418 32285 W litert  : [npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorNotFound.
+10-13 03:53:11.057 27418 32285 I litert  : [gpu_registry.cc:128] Attempting to load GPU accelerator(libLiteRtGpuAccelerator.so).
+10-13 03:53:11.057 27418 32285 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007d28e2a250, name=LiteRT GPU
+10-13 03:53:11.057 27418 32285 I litert  : [gpu_registry.cc:136] Dynamically loaded GPU accelerator(libLiteRtGpuAccelerator.so) registered.
+10-13 03:53:11.057 27418 32285 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007d28e0fd70, name=CpuAccelerator
+10-13 03:53:11.057 27418 32285 I litert  : [cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+10-13 03:53:11.057 27418 32285 W native  : W0000 00:00:1791888791.057863   32285 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:53:11.057 27418 32285 W native  : W0000 00:00:1791888791.057950   32285 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:53:11.058 27418 32285 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=976, num_signatures=4
+10-13 03:53:11.058 27418 32285 I litert  : [magic_number_utils.cc:109]   signature=decode, subgraph_index=0, num_tensors=2703, num_inputs=35, num_outputs=32, num_ops=2068
+10-13 03:53:11.058 27418 32285 I litert  : [magic_number_utils.cc:109]   signature=prefill_1024, subgraph_index=1, num_tensors=1454, num_inputs=35, num_outputs=30, num_ops=1107
+10-13 03:53:11.058 27418 32285 I litert  : [magic_number_utils.cc:109]   signature=prefill_128, subgraph_index=2, num_tensors=1454, num_inputs=35, num_outputs=30, num_ops=1107
+10-13 03:53:11.058 27418 32285 I litert  : [magic_number_utils.cc:109]   signature=verify, subgraph_index=3, num_tensors=2887, num_inputs=35, num_outputs=32, num_ops=2243
+10-13 03:53:11.058 27418 32285 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:11.058 27418 32285 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:11.059 27418 32285 I litert  : [magic_number_utils.cc:536] 439 tensors of signature decode have been updated for magic number  32003 to target number 1024
+10-13 03:53:11.060 27418 32285 I litert  : [magic_number_utils.cc:536] 271 tensors of signature prefill_1024 have been updated for magic number  32003 to target number 1024
+10-13 03:53:11.060 27418 32285 I litert  : [magic_number_utils.cc:536] 270 tensors of signature prefill_128 have been updated for magic number  32003 to target number 1024
+10-13 03:53:11.061 27418 32285 I litert  : [magic_number_utils.cc:536] 444 tensors of signature verify have been updated for magic number  32003 to target number 1024
+10-13 03:53:11.061 27418 32285 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:11.068 27418 32285 I tflite  : Initialized TensorFlow Lite runtime.
+10-13 03:53:11.157 27418 32285 I litert  : [ml_drift_gpu_accelerator.cc:184] OpenCL not supported on this platform. Using WebGPU instead.
+10-13 03:53:11.161 27418 32285 I litert  : [delegate_webgpu.cc:342] Create WebGPU environment (use_low_power=0, enable_host_mapped_pointer=1)
+10-13 03:53:11.172 27418 32285 W Dawn    : Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 32 to 16 to fit dynamic offset allocation limit.
+10-13 03:53:11.173 27418 32285 I native  : I0000 00:00:1791888791.172866   32285 environment.cc:532] Selected adapter: Adreno (TM) 750, arch=adreno-7xx, vendor=qualcomm, backend=Vulkan, adapterType=Integrated GPU
+10-13 03:53:11.185 27418 32285 I litert  : [delegate_webgpu.cc:363] Created a WebGPU environment.
+10-13 03:53:11.185 27418 32285 I litert  : [environment.cc:47] Adding options to the existing LiteRT environment
+10-13 03:53:11.188 27418 32285 I tflite  : Failed to load OpenCL library with dlopen: dlopen failed: library "libvndksupport.so" not found. Trying ICD loader.
+10-13 03:53:11.191 27418 32285 I litert  : [gpu_environment.h:155] Created LiteRT GpuEnvironment.
+10-13 03:53:11.191 27418 32285 I litert  : [environment.cc:47] Adding options to the existing LiteRT environment
+10-13 03:53:11.191 27418 32285 I native  : I0000 00:00:1791888791.191775   32285 delegate_webgpu.cc:751] # of threads to upload weights = 2
+10-13 03:53:11.192 27418 32285 I native  : I0000 00:00:1791888791.192074   32285 delegate_webgpu.cc:759] # of threads to compile kernels = 1
+10-13 03:53:16.909 27418 32285 I native  : I0000 00:00:1791888796.908994   32285 delegate_kernel.cc:329] Total 32 external tensors are used for delegate inputs and outputs
+10-13 03:53:16.909 27418 32285 I native  : I0000 00:00:1791888796.909175   32285 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:17.255 27418 32285 I native  : I0000 00:00:1791888797.255900   32285 delegate_kernel.cc:329] Total 31 external tensors are used for delegate inputs and outputs
+10-13 03:53:17.256 27418 32285 I native  : I0000 00:00:1791888797.256038   32285 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:18.042 27418 32285 I native  : I0000 00:00:1791888798.042654   32285 delegate_kernel.cc:329] Total 31 external tensors are used for delegate inputs and outputs
+10-13 03:53:18.042 27418 32285 I native  : I0000 00:00:1791888798.042819   32285 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:18.481 27418 32285 I native  : I0000 00:00:1791888798.481161   32285 delegate_kernel.cc:329] Total 32 external tensors are used for delegate inputs and outputs
+10-13 03:53:18.481 27418 32285 I native  : I0000 00:00:1791888798.481274   32285 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:19.061 27418 32285 I litert  : [environment.cc:36] Creating LiteRT environment with options
+10-13 03:53:19.061 27418 32285 W litert  : [npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorNotFound.
+10-13 03:53:19.061 27418 32285 I litert  : [gpu_registry.cc:128] Attempting to load GPU accelerator(libLiteRtGpuAccelerator.so).
+10-13 03:53:19.062 27418 32285 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007d28eb94a0, name=LiteRT GPU
+10-13 03:53:19.062 27418 32285 I litert  : [gpu_registry.cc:136] Dynamically loaded GPU accelerator(libLiteRtGpuAccelerator.so) registered.
+10-13 03:53:19.062 27418 32285 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007d28e75dc0, name=CpuAccelerator
+10-13 03:53:19.062 27418 32285 I litert  : [cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+10-13 03:53:19.075 27418 32285 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:19.075 27418 32285 I litert  : [magic_number_utils.cc:109]   signature=embedder, subgraph_index=0, num_tensors=16, num_inputs=1, num_outputs=1, num_ops=8
+10-13 03:53:19.075 27418 32285 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:19.075 27418 32285 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:19.075 27418 32285 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:19.079 27418 32285 I tflite  : Created TensorFlow Lite XNNPACK delegate for CPU.
+10-13 03:53:19.081 27418 32285 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:19.081 27418 32285 I litert  : [magic_number_utils.cc:109]   signature=eoi, subgraph_index=0, num_tensors=1, num_inputs=0, num_outputs=1, num_ops=0
+10-13 03:53:19.081 27418 32285 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:19.081 27418 32285 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:19.081 27418 32285 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:19.081 27418 32285 I litert  : [compiled_model.cc:1856] Tracked constant output tensor eoi_embedding with locked address
+10-13 03:53:19.081 27418 32285 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:19.081 27418 32285 I litert  : [magic_number_utils.cc:109]   signature=eoa, subgraph_index=0, num_tensors=1, num_inputs=0, num_outputs=1, num_ops=0
+10-13 03:53:19.081 27418 32285 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:19.081 27418 32285 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:19.081 27418 32285 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:19.082 27418 32285 I litert  : [compiled_model.cc:1856] Tracked constant output tensor eoa_embedding with locked address
+10-13 03:53:19.110 27418 32285 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:19.110 27418 32285 I litert  : [magic_number_utils.cc:109]   signature=per_layer_embedder, subgraph_index=0, num_tensors=83, num_inputs=1, num_outputs=1, num_ops=42
+10-13 03:53:19.110 27418 32285 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:19.110 27418 32285 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:19.110 27418 32285 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:19.326 27418 32358 W native  : W0000 00:00:1791888799.326459   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:19.332 27418 32358 W native  : W0000 00:00:1791888799.332096   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:21.936 27418 32358 W native  : W0000 00:00:1791888801.936306   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:22.342 27418 32358 W native  : W0000 00:00:1791888802.342911   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:22.665 27418 32358 W native  : W0000 00:00:1791888802.665029   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:23.102 27418 32358 W native  : W0000 00:00:1791888803.102665   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:33.300 27418 32358 W native  : W0000 00:00:1791888813.300151   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:33.744 27418 32358 W native  : W0000 00:00:1791888813.744139   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:34.134 27418 32358 W native  : W0000 00:00:1791888814.134081   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:34.480 27418 27418 I flutter : [2026-10-13T03:53:34.480561] [INFO] Unloading model...
+10-13 03:53:34.749 27418 32358 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb400007d28e0fd70, name=CpuAccelerator
+10-13 03:53:34.749 27418 32358 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb400007d28e2a250, name=LiteRT GPU
+10-13 03:53:34.814 27418 27418 I flutter : [2026-10-13T03:53:34.813929] [INFO] Model unloaded.
+10-13 03:53:34.822 27418 27418 I flutter : [2026-10-13T03:53:34.822141] [INFO] Loading model: gemma-4-E2B-it.litertlm
+10-13 03:53:34.825 27418 27418 I flutter : [2026-10-13T03:53:34.825050] [INFO] Model gemma-4-E2B-it.litertlm loaded from /data/user/0/com.example.llamadart_chat_example/files/validation/models/181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c/gemma-4-E2B-it.litertlm; native engine creation is deferred until the first generation or tokenizer call
+10-13 03:53:34.839 27418   418 W native  : W0000 00:00:1791888814.839394     418 engine.cc:565] Failed to get CpuConfig to set num threads: INVALID_ARGUMENT: Backend config is not valid.
+10-13 03:53:34.839 27418   418 W native  : === Source Location Trace: ===
+10-13 03:53:34.839 27418   418 W native  : ./runtime/executor/llm_executor_settings.h:396
+10-13 03:53:34.839 27418   418 W native  : 
+10-13 03:53:34.849 27418   420 W native  : W0000 00:00:1791888814.849535     420 litert_lm_loader.cc:391] Section not found: SP_Tokenizer
+10-13 03:53:34.963 27418   418 I litert  : [environment.cc:36] Creating LiteRT environment with options
+10-13 03:53:34.963 27418   418 W litert  : [npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorNotFound.
+10-13 03:53:34.963 27418   418 I litert  : [gpu_registry.cc:128] Attempting to load GPU accelerator(libLiteRtGpuAccelerator.so).
+10-13 03:53:34.964 27418   418 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007d28e407c0, name=LiteRT GPU
+10-13 03:53:34.964 27418   418 I litert  : [gpu_registry.cc:136] Dynamically loaded GPU accelerator(libLiteRtGpuAccelerator.so) registered.
+10-13 03:53:34.964 27418   418 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007d28e34510, name=CpuAccelerator
+10-13 03:53:34.964 27418   418 I litert  : [cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+10-13 03:53:34.964 27418   418 W native  : W0000 00:00:1791888814.964354     418 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:53:34.964 27418   418 W native  : W0000 00:00:1791888814.964447     418 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:53:34.964 27418   418 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=976, num_signatures=4
+10-13 03:53:34.964 27418   418 I litert  : [magic_number_utils.cc:109]   signature=decode, subgraph_index=0, num_tensors=2703, num_inputs=35, num_outputs=32, num_ops=2068
+10-13 03:53:34.964 27418   418 I litert  : [magic_number_utils.cc:109]   signature=prefill_1024, subgraph_index=1, num_tensors=1454, num_inputs=35, num_outputs=30, num_ops=1107
+10-13 03:53:34.964 27418   418 I litert  : [magic_number_utils.cc:109]   signature=prefill_128, subgraph_index=2, num_tensors=1454, num_inputs=35, num_outputs=30, num_ops=1107
+10-13 03:53:34.964 27418   418 I litert  : [magic_number_utils.cc:109]   signature=verify, subgraph_index=3, num_tensors=2887, num_inputs=35, num_outputs=32, num_ops=2243
+10-13 03:53:34.964 27418   418 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:34.964 27418   418 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:34.965 27418   418 I litert  : [magic_number_utils.cc:536] 439 tensors of signature decode have been updated for magic number  32003 to target number 1024
+10-13 03:53:34.966 27418   418 I litert  : [magic_number_utils.cc:536] 271 tensors of signature prefill_1024 have been updated for magic number  32003 to target number 1024
+10-13 03:53:34.966 27418   418 I litert  : [magic_number_utils.cc:536] 270 tensors of signature prefill_128 have been updated for magic number  32003 to target number 1024
+10-13 03:53:34.967 27418   418 I litert  : [magic_number_utils.cc:536] 444 tensors of signature verify have been updated for magic number  32003 to target number 1024
+10-13 03:53:34.967 27418   418 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:35.009 27418   418 I litert  : [ml_drift_gpu_accelerator.cc:184] OpenCL not supported on this platform. Using WebGPU instead.
+10-13 03:53:35.009 27418   418 I litert  : [delegate_webgpu.cc:342] Create WebGPU environment (use_low_power=0, enable_host_mapped_pointer=1)
+10-13 03:53:35.010 27418   418 I native  : I0000 00:00:1791888815.010018     418 environment.cc:532] Selected adapter: Adreno (TM) 750, arch=adreno-7xx, vendor=qualcomm, backend=Vulkan, adapterType=Integrated GPU
+10-13 03:53:35.017 27418   418 I litert  : [delegate_webgpu.cc:363] Created a WebGPU environment.
+10-13 03:53:35.017 27418   418 I litert  : [environment.cc:47] Adding options to the existing LiteRT environment
+10-13 03:53:35.017 27418   418 I litert  : [gpu_environment.h:155] Created LiteRT GpuEnvironment.
+10-13 03:53:35.017 27418   418 I litert  : [environment.cc:47] Adding options to the existing LiteRT environment
+10-13 03:53:35.017 27418   418 I native  : I0000 00:00:1791888815.017684     418 delegate_webgpu.cc:751] # of threads to upload weights = 2
+10-13 03:53:35.017 27418   418 I native  : I0000 00:00:1791888815.017820     418 delegate_webgpu.cc:759] # of threads to compile kernels = 1
+10-13 03:53:36.997 27418   418 I native  : I0000 00:00:1791888816.997109     418 delegate_kernel.cc:329] Total 32 external tensors are used for delegate inputs and outputs
+10-13 03:53:36.997 27418   418 I native  : I0000 00:00:1791888816.997295     418 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:37.140 27418   418 I native  : I0000 00:00:1791888817.140170     418 delegate_kernel.cc:866] Initialized InferenceContext from serialized data.
+10-13 03:53:37.168 27418   418 I native  : I0000 00:00:1791888817.168473     418 delegate_kernel.cc:329] Total 31 external tensors are used for delegate inputs and outputs
+10-13 03:53:37.168 27418   418 I native  : I0000 00:00:1791888817.168657     418 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:37.880 27418   418 I native  : I0000 00:00:1791888817.880792     418 delegate_kernel.cc:866] Initialized InferenceContext from serialized data.
+10-13 03:53:37.912 27418   418 I native  : I0000 00:00:1791888817.911466     418 delegate_kernel.cc:329] Total 31 external tensors are used for delegate inputs and outputs
+10-13 03:53:37.912 27418   418 I native  : I0000 00:00:1791888817.912176     418 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:38.084 27418   418 I native  : I0000 00:00:1791888818.084780     418 delegate_kernel.cc:866] Initialized InferenceContext from serialized data.
+10-13 03:53:38.130  2123  2168 D ActivityManager: freezer override set to true
+10-13 03:53:38.159 27418   418 I native  : I0000 00:00:1791888818.159078     418 delegate_kernel.cc:329] Total 32 external tensors are used for delegate inputs and outputs
+10-13 03:53:38.159 27418   418 I native  : I0000 00:00:1791888818.159255     418 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:38.190  2123  2168 D ActivityManager: freezer override set to false
+10-13 03:53:38.336 27418   418 I native  : I0000 00:00:1791888818.336164     418 delegate_kernel.cc:866] Initialized InferenceContext from serialized data.
+10-13 03:53:38.386 27418   418 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:38.386 27418   418 I litert  : [magic_number_utils.cc:109]   signature=embedder, subgraph_index=0, num_tensors=16, num_inputs=1, num_outputs=1, num_ops=8
+10-13 03:53:38.386 27418   418 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:38.386 27418   418 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:38.386 27418   418 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:38.389 27418   418 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:38.389 27418   418 I litert  : [magic_number_utils.cc:109]   signature=eoa, subgraph_index=0, num_tensors=1, num_inputs=0, num_outputs=1, num_ops=0
+10-13 03:53:38.389 27418   418 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:38.389 27418   418 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:38.389 27418   418 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:38.390 27418   418 I litert  : [compiled_model.cc:1856] Tracked constant output tensor eoa_embedding with locked address
+10-13 03:53:38.390 27418   418 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:38.390 27418   418 I litert  : [magic_number_utils.cc:109]   signature=eoi, subgraph_index=0, num_tensors=1, num_inputs=0, num_outputs=1, num_ops=0
+10-13 03:53:38.390 27418   418 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:38.390 27418   418 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:38.390 27418   418 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:38.390 27418   418 I litert  : [compiled_model.cc:1856] Tracked constant output tensor eoi_embedding with locked address
+10-13 03:53:38.391 27418   418 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:38.392 27418   418 I litert  : [magic_number_utils.cc:109]   signature=per_layer_embedder, subgraph_index=0, num_tensors=83, num_inputs=1, num_outputs=1, num_ops=42
+10-13 03:53:38.392 27418   418 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:38.392 27418   418 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:38.392 27418   418 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:38.507 27418 32358 W native  : W0000 00:00:1791888818.507401   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:38.510 27418 32358 W native  : W0000 00:00:1791888818.510238   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:40.637 27418 32358 W native  : W0000 00:00:1791888820.637055   32358 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:41.130 27418 27418 I flutter : [2026-10-13T03:53:41.130203] [INFO] Unloading model...
+10-13 03:53:41.393 27418 32358 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb400007d28e34510, name=CpuAccelerator
+10-13 03:53:41.393 27418 32358 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb400007d28e407c0, name=LiteRT GPU
+10-13 03:53:41.465 27418 27418 I flutter : [2026-10-13T03:53:41.465043] [INFO] Model unloaded.
+10-13 03:53:41.485 27418 27418 I flutter : [2026-10-13T03:53:41.485786] [INFO] Loading model: gemma-4-E2B-it.litertlm
+10-13 03:53:41.488 27418 27418 I flutter : [2026-10-13T03:53:41.488792] [INFO] Model gemma-4-E2B-it.litertlm loaded from /data/user/0/com.example.llamadart_chat_example/files/validation/models/181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c/gemma-4-E2B-it.litertlm; native engine creation is deferred until the first generation or tokenizer call
+10-13 03:53:41.515 27418 32358 W native  : W0000 00:00:1791888821.515384   32358 engine.cc:565] Failed to get CpuConfig to set num threads: INVALID_ARGUMENT: Backend config is not valid.
+10-13 03:53:41.515 27418 32358 W native  : === Source Location Trace: ===
+10-13 03:53:41.515 27418 32358 W native  : ./runtime/executor/llm_executor_settings.h:396
+10-13 03:53:41.515 27418 32358 W native  : 
+10-13 03:53:41.519 27418   529 W native  : W0000 00:00:1791888821.519421     529 litert_lm_loader.cc:391] Section not found: SP_Tokenizer
+10-13 03:53:41.619 27418 32358 I litert  : [environment.cc:36] Creating LiteRT environment with options
+10-13 03:53:41.619 27418 32358 W litert  : [npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorNotFound.
+10-13 03:53:41.619 27418 32358 I litert  : [gpu_registry.cc:128] Attempting to load GPU accelerator(libLiteRtGpuAccelerator.so).
+10-13 03:53:41.619 27418 32358 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007d28eca370, name=LiteRT GPU
+10-13 03:53:41.619 27418 32358 I litert  : [gpu_registry.cc:136] Dynamically loaded GPU accelerator(libLiteRtGpuAccelerator.so) registered.
+10-13 03:53:41.619 27418 32358 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007d28e5ba30, name=CpuAccelerator
+10-13 03:53:41.619 27418 32358 I litert  : [cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+10-13 03:53:41.619 27418 32358 W native  : W0000 00:00:1791888821.619788   32358 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:53:41.619 27418 32358 W native  : W0000 00:00:1791888821.619882   32358 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:53:41.620 27418 32358 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=976, num_signatures=4
+10-13 03:53:41.620 27418 32358 I litert  : [magic_number_utils.cc:109]   signature=decode, subgraph_index=0, num_tensors=2703, num_inputs=35, num_outputs=32, num_ops=2068
+10-13 03:53:41.620 27418 32358 I litert  : [magic_number_utils.cc:109]   signature=prefill_1024, subgraph_index=1, num_tensors=1454, num_inputs=35, num_outputs=30, num_ops=1107
+10-13 03:53:41.620 27418 32358 I litert  : [magic_number_utils.cc:109]   signature=prefill_128, subgraph_index=2, num_tensors=1454, num_inputs=35, num_outputs=30, num_ops=1107
+10-13 03:53:41.620 27418 32358 I litert  : [magic_number_utils.cc:109]   signature=verify, subgraph_index=3, num_tensors=2887, num_inputs=35, num_outputs=32, num_ops=2243
+10-13 03:53:41.620 27418 32358 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:41.620 27418 32358 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:41.621 27418 32358 I litert  : [magic_number_utils.cc:536] 439 tensors of signature decode have been updated for magic number  32003 to target number 1024
+10-13 03:53:41.622 27418 32358 I litert  : [magic_number_utils.cc:536] 271 tensors of signature prefill_1024 have been updated for magic number  32003 to target number 1024
+10-13 03:53:41.623 27418 32358 I litert  : [magic_number_utils.cc:536] 270 tensors of signature prefill_128 have been updated for magic number  32003 to target number 1024
+10-13 03:53:41.624 27418 32358 I litert  : [magic_number_utils.cc:536] 444 tensors of signature verify have been updated for magic number  32003 to target number 1024
+10-13 03:53:41.624 27418 32358 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:41.699 27418 32358 I litert  : [ml_drift_gpu_accelerator.cc:184] OpenCL not supported on this platform. Using WebGPU instead.
+10-13 03:53:41.699 27418 32358 I litert  : [delegate_webgpu.cc:342] Create WebGPU environment (use_low_power=0, enable_host_mapped_pointer=1)
+10-13 03:53:41.699 27418 32358 I native  : I0000 00:00:1791888821.699627   32358 environment.cc:532] Selected adapter: Adreno (TM) 750, arch=adreno-7xx, vendor=qualcomm, backend=Vulkan, adapterType=Integrated GPU
+10-13 03:53:41.708 27418 32358 I litert  : [delegate_webgpu.cc:363] Created a WebGPU environment.
+10-13 03:53:41.708 27418 32358 I litert  : [environment.cc:47] Adding options to the existing LiteRT environment
+10-13 03:53:41.708 27418 32358 I litert  : [gpu_environment.h:155] Created LiteRT GpuEnvironment.
+10-13 03:53:41.708 27418 32358 I litert  : [environment.cc:47] Adding options to the existing LiteRT environment
+10-13 03:53:41.708 27418 32358 I native  : I0000 00:00:1791888821.708495   32358 delegate_webgpu.cc:751] # of threads to upload weights = 2
+10-13 03:53:41.708 27418 32358 I native  : I0000 00:00:1791888821.708727   32358 delegate_webgpu.cc:759] # of threads to compile kernels = 1
+10-13 03:53:44.084 27418 32358 I native  : I0000 00:00:1791888824.084021   32358 delegate_kernel.cc:329] Total 32 external tensors are used for delegate inputs and outputs
+10-13 03:53:44.084 27418 32358 I native  : I0000 00:00:1791888824.084250   32358 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:44.212 27418 32358 I native  : I0000 00:00:1791888824.212860   32358 delegate_kernel.cc:866] Initialized InferenceContext from serialized data.
+10-13 03:53:44.240 27418 32358 I native  : I0000 00:00:1791888824.240046   32358 delegate_kernel.cc:329] Total 31 external tensors are used for delegate inputs and outputs
+10-13 03:53:44.240 27418 32358 I native  : I0000 00:00:1791888824.240118   32358 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:44.775 27418 32358 I native  : I0000 00:00:1791888824.775591   32358 delegate_kernel.cc:866] Initialized InferenceContext from serialized data.
+10-13 03:53:44.807 27418 32358 I native  : I0000 00:00:1791888824.806948   32358 delegate_kernel.cc:329] Total 31 external tensors are used for delegate inputs and outputs
+10-13 03:53:44.807 27418 32358 I native  : I0000 00:00:1791888824.807092   32358 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:44.984 27418 32358 I native  : I0000 00:00:1791888824.984894   32358 delegate_kernel.cc:866] Initialized InferenceContext from serialized data.
+10-13 03:53:45.048 27418 32358 I native  : I0000 00:00:1791888825.048056   32358 delegate_kernel.cc:329] Total 32 external tensors are used for delegate inputs and outputs
+10-13 03:53:45.048 27418 32358 I native  : I0000 00:00:1791888825.048187   32358 delegate_kernel.cc:979] Initializing WebGPU-based API from serialized data.
+10-13 03:53:45.232 27418 32358 I native  : I0000 00:00:1791888825.232170   32358 delegate_kernel.cc:866] Initialized InferenceContext from serialized data.
+10-13 03:53:45.302 27418 32358 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:45.302 27418 32358 I litert  : [magic_number_utils.cc:109]   signature=embedder, subgraph_index=0, num_tensors=16, num_inputs=1, num_outputs=1, num_ops=8
+10-13 03:53:45.302 27418 32358 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:45.302 27418 32358 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:45.302 27418 32358 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:45.304 27418 32358 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:45.305 27418 32358 I litert  : [magic_number_utils.cc:109]   signature=eoi, subgraph_index=0, num_tensors=1, num_inputs=0, num_outputs=1, num_ops=0
+10-13 03:53:45.305 27418 32358 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:45.305 27418 32358 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:45.305 27418 32358 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:45.305 27418 32358 I litert  : [compiled_model.cc:1856] Tracked constant output tensor eoi_embedding with locked address
+10-13 03:53:45.305 27418 32358 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:45.305 27418 32358 I litert  : [magic_number_utils.cc:109]   signature=eoa, subgraph_index=0, num_tensors=1, num_inputs=0, num_outputs=1, num_ops=0
+10-13 03:53:45.305 27418 32358 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:45.305 27418 32358 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:45.305 27418 32358 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:45.305 27418 32358 I litert  : [compiled_model.cc:1856] Tracked constant output tensor eoa_embedding with locked address
+10-13 03:53:45.307 27418 32358 I litert  : [magic_number_utils.cc:101] Loaded: num_subgraphs=1, num_signatures=1
+10-13 03:53:45.307 27418 32358 I litert  : [magic_number_utils.cc:109]   signature=per_layer_embedder, subgraph_index=0, num_tensors=83, num_inputs=1, num_outputs=1, num_ops=42
+10-13 03:53:45.307 27418 32358 I litert  : [magic_number_utils.cc:113] Magic number configs: num_configs=1
+10-13 03:53:45.307 27418 32358 I litert  : [magic_number_utils.cc:120]   config[0]: magic_number=32003, target_number=1024, signature_prefix=null
+10-13 03:53:45.307 27418 32358 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:53:45.410 27418   418 W native  : W0000 00:00:1791888825.410222     418 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:45.413 27418   418 W native  : W0000 00:00:1791888825.413332     418 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:47.718 27418   418 W native  : W0000 00:00:1791888827.718738     418 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:50.715 27418   418 W native  : W0000 00:00:1791888830.714959     418 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:53.703 27418   418 W native  : W0000 00:00:1791888833.703430     418 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:56.516 27418   418 W native  : W0000 00:00:1791888836.516538     418 mel_filterbank.cc:137] Missing 10 bands  starting at 0 in mel-frequency design. Perhaps too many channels or not enough frequency resolution in spectrum. (fft_length: 257 sample_rate: 16000 mel_channel_count: 128 lower_frequency_limit: 0 upper_frequency_limit: 8000
+10-13 03:53:57.769 27418 27418 I flutter : [2026-10-13T03:53:57.769735] [INFO] Unloading model...
+10-13 03:53:58.013 27418   418 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb400007d28e5ba30, name=CpuAccelerator
+10-13 03:53:58.013 27418   418 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb400007d28eca370, name=LiteRT GPU
+10-13 03:53:58.075 27418 27418 I flutter : [2026-10-13T03:53:58.075425] [INFO] Model unloaded.
+10-13 03:53:58.301 27418 27418 I flutter : 09:35 +1: (tearDownAll)
+10-13 03:53:58.349 27418 27418 I flutter : 09:35 +2: All tests passed!
+10-13 03:53:58.350 27418 27441 I TestRunner: started: shared validation: gemma4-litert-gpu(com.example.llamadart_chat_example.MainActivityTest)
+10-13 03:53:58.640 27418 27441 I TestRunner: finished: shared validation: gemma4-litert-gpu(com.example.llamadart_chat_example.MainActivityTest)
+10-13 03:53:58.733 27418 27441 I TestRunner: run finished: 1 tests, 0 failed, 0 ignored
+10-13 03:54:08.826  2123  7314 I ActivityManager: Killing 25256:com.samsung.android.fmm/1000 (adj 955): empty #33

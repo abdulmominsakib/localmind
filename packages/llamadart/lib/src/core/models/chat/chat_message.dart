@@ -1,7 +1,8 @@
-// ignore_for_file: deprecated_member_use_from_same_package
 import 'dart:convert';
+
 import 'chat_role.dart';
 import 'content_part.dart';
+import 'tool_result_parts.dart';
 
 /// A message in a chat conversation history.
 ///
@@ -72,6 +73,9 @@ class LlamaChatMessage {
 
   /// Backward-compatible content getter (concatenates all text-like parts).
   ///
+  /// A tool result contributes its result, then the text parts of its
+  /// [LlamaToolResultContent.content]; media parts contribute nothing.
+  ///
   /// Note: This excludes [LlamaThinkingContent] (reasoning) by default to ensure
   /// the main response text is returned without internal monologue.
   String get content {
@@ -92,6 +96,9 @@ class LlamaChatMessage {
           } catch (_) {
             buffer.write(res.toString());
           }
+        }
+        for (final nested in part.content.whereType<LlamaTextContent>()) {
+          buffer.write(nested.text);
         }
       }
     }
@@ -152,9 +159,20 @@ class LlamaChatMessage {
 
   /// Serializes the message to JSON.
   ///
-  /// This implementation follows OpenAI's Chat Completions format while
-  /// supporting extensions like `reasoning_content` for reasoning models
-  /// (e.g. DeepSeek R1).
+  /// Messages follow OpenAI's Chat Completions format, with extensions like
+  /// `reasoning_content` for reasoning models (e.g. DeepSeek R1), except a
+  /// message with several [LlamaToolResultContent] parts.
+  ///
+  /// A message with one tool result becomes an OpenAI-style `tool` message
+  /// with top-level `tool_call_id`, `name` and `content`. A result with
+  /// [LlamaToolResultContent.content] has an array `content`, as
+  /// llama-server takes it: the result as a text part unless it is `null`,
+  /// then each of those parts. With several
+  /// results, `content` is a list of one such `tool_call_id`/`name`/`content`
+  /// map per result, in order. That shape is not valid Chat Completions input
+  /// (llama-server rejects it), so send one `tool` message per result to an
+  /// OpenAI-compatible endpoint. Chat templates already receive one `tool`
+  /// message per result.
   Map<String, dynamic> toJson() {
     final partsList = parts;
     final json = <String, dynamic>{'role': role.name};
@@ -177,13 +195,15 @@ class LlamaChatMessage {
 
     // 3. Extract Tool Results (Tool)
     final toolResults = partsList.whereType<LlamaToolResultContent>().toList();
+    if (toolResults.length == 1) {
+      json['role'] = 'tool';
+      json.addAll(_toolResultJson(toolResults.single));
+      // Tool messages are usually flat in OpenAI format
+      return json;
+    }
     if (toolResults.isNotEmpty) {
       json['role'] = 'tool';
-      final res = toolResults.first;
-      json['tool_call_id'] = res.id;
-      json['name'] = res.name;
-      json['content'] = res.result;
-      // Tool messages are usually flat in OpenAI format
+      json['content'] = toolResults.map(_toolResultJson).toList();
       return json;
     }
 
@@ -220,12 +240,21 @@ class LlamaChatMessage {
     return json;
   }
 
+  static Map<String, dynamic> _toolResultJson(LlamaToolResultContent result) =>
+      {
+        'tool_call_id': result.id,
+        'name': result.name,
+        'content': result.content.isEmpty
+            ? result.result
+            : toolResultContentJson(result),
+      };
+
   /// Serializes the message to JSON, always keeping content as a list of parts.
   ///
   /// Some templates (e.g. SmolVLM) require `content` to be a list of
   /// `{type: 'text', text: '...'}` or `{type: 'image'}` objects.
-  /// This method also normalizes OpenAI's `image_url` type to `image`
-  /// for HuggingFace Jinja template compatibility.
+  /// This method also normalizes OpenAI's `image_url` and `input_audio` types
+  /// to the `image` and `audio` shapes used by HuggingFace Jinja templates.
   Map<String, dynamic> toJsonMultimodal() {
     final json = toJson();
     final content = json['content'];
@@ -236,10 +265,15 @@ class LlamaChatMessage {
         {'type': 'text', 'text': content},
       ];
     } else if (content is List) {
-      // Normalize image_url → image for template compatibility
+      // Normalize OpenAI media types for HuggingFace template compatibility.
       json['content'] = content.map((part) {
-        if (part is Map<String, dynamic> && part['type'] == 'image_url') {
-          return {'type': 'image'};
+        if (part is Map<String, dynamic>) {
+          switch (part['type']) {
+            case 'image_url':
+              return {'type': 'image'};
+            case 'input_audio':
+              return {'type': 'audio'};
+          }
         }
         return part;
       }).toList();

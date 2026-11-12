@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "image-settings-cpu-vae",
+  "runtime": "stable_diffusion",
+  "backend": "cpu",
+  "suite": "settings-comparison",
+  "variants": [
+    "sd_turbo_vae"
+  ],
+  "models": [
+    {
+      "filename": "sdxs-512-tinySDdistilled_Q8_0.gguf",
+      "sha256": "409ab23582ee074c6b9d5395784fc0741b0599fb9d138686c69087c71678eb6a",
+      "bytes": 682847200,
+      "revision": "3144d898d61492f8382ffcabec055733fc5b2a0e",
+      "url": "https://huggingface.co/concedo/sdxs-512-tinySDdistilled-GGUF/resolve/3144d898d61492f8382ffcabec055733fc5b2a0e/sdxs-512-tinySDdistilled_Q8_0.gguf?download=true",
+      "kind": "image"
+    },
+    {
+      "filename": "sd_turbo-f16-q8_0.gguf",
+      "sha256": "d50be7655f0a554cf8041c145d88b210bd5f3c545423119dee62ae08cae51580",
+      "bytes": 2023745376,
+      "revision": "19a31586d02d64a73b4419bc193b3ecfaf38e1f0",
+      "url": "https://huggingface.co/Green-Sky/SD-Turbo-GGUF/resolve/19a31586d02d64a73b4419bc193b3ecfaf38e1f0/sd_turbo-f16-q8_0.gguf?download=true",
+      "kind": "image"
+    },
+    {
+      "filename": "taesd.safetensors",
+      "sha256": "db169d69145ec4ff064e49d99c95fa05d3eb04ee453de35824a6d0f325513549",
+      "bytes": 9793292,
+      "revision": "614f76814bbe30edbe2e627ace1c2234c81a2c0e",
+      "url": "https://huggingface.co/madebyollin/taesd/resolve/614f76814bbe30edbe2e627ace1c2234c81a2c0e/diffusion_pytorch_model.safetensors?download=true",
+      "kind": "image"
+    }
+  ]
+}

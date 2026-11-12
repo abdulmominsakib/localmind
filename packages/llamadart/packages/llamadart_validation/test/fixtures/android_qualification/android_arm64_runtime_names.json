@@ -1,0 +1,20 @@
+{
+  "native_archive_sha256": "a40669ffb3ab20a62028fbe65c0d217e5a36f71e4beef36447a6a630d5953a76",
+  "libraries": [
+    "libggml-base.so",
+    "libggml-cpu-android_armv8.0_1.so",
+    "libggml-cpu-android_armv8.2_1.so",
+    "libggml-cpu-android_armv8.2_2.so",
+    "libggml-cpu-android_armv8.6_1.so",
+    "libggml-cpu-android_armv9.0_1.so",
+    "libggml-cpu-android_armv9.2_1.so",
+    "libggml-cpu-android_armv9.2_2.so",
+    "libggml-opencl.so",
+    "libggml-vulkan.so",
+    "libggml.so",
+    "libllama-common.so",
+    "libllama.so",
+    "libllamadart.so",
+    "libmtmd.so"
+  ]
+}

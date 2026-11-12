@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:llamadart/src/core/models/chat/chat_message.dart';
 import 'package:llamadart/src/core/models/chat/chat_role.dart';
+import 'package:llamadart/src/core/models/inference/tool_choice.dart';
 import 'package:llamadart/src/core/models/tools/tool_definition.dart';
 import 'package:llamadart/src/core/models/tools/tool_param.dart';
 import 'package:llamadart/src/core/template/chat_format.dart';
@@ -14,7 +15,6 @@ import 'package:test/test.dart';
 
 void main() {
   final templatesDir = _resolveTemplatesDir();
-  final hasLlamaCppTemplates = templatesDir.existsSync();
 
   group('FirefunctionV2Handler', () {
     test('parses prefixed tool-call array', () {
@@ -106,37 +106,63 @@ void main() {
       expect(result.format, equals(ChatFormat.contentOnly.index));
     });
 
-    test(
-      'renders llama.cpp firefunction template with tool context',
-      () {
-        final source = File(
+    test('renders llama.cpp firefunction template with tool context', () {
+      final source = File(
+        '${templatesDir.path}/fireworks-ai-llama-3-firefunction-v2.jinja',
+      ).readAsStringSync();
+
+      final result = ChatTemplateEngine.render(
+        templateSource: source,
+        messages: const [
+          LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'hi'),
+        ],
+        metadata: const {},
+        tools: [
+          ToolDefinition(
+            name: 'get_weather',
+            description: 'Get weather',
+            parameters: [ToolParam.string('city')],
+            handler: _noopHandler,
+          ),
+        ],
+      );
+
+      expect(result.format, equals(ChatFormat.firefunctionV2.index));
+      expect(result.prompt, contains('functools'));
+      expect(result.prompt, contains('Today is'));
+    });
+
+    test('required tool grammar leaves the call id undeclared', () {
+      final result = ChatTemplateEngine.render(
+        templateSource: File(
           '${templatesDir.path}/fireworks-ai-llama-3-firefunction-v2.jinja',
-        ).readAsStringSync();
+        ).readAsStringSync(),
+        messages: const [
+          LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'hi'),
+        ],
+        metadata: const {},
+        tools: [
+          ToolDefinition(
+            name: 'get_weather',
+            description: 'Get weather',
+            parameters: [ToolParam.string('city')],
+            handler: _noopHandler,
+          ),
+        ],
+        toolChoice: ToolChoice.required,
+      );
 
-        final result = ChatTemplateEngine.render(
-          templateSource: source,
-          messages: const [
-            LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'hi'),
-          ],
-          metadata: const {},
-          tools: [
-            ToolDefinition(
-              name: 'get_weather',
-              description: 'Get weather',
-              parameters: [ToolParam.string('city')],
-              handler: _noopHandler,
-            ),
-          ],
-        );
-
-        expect(result.format, equals(ChatFormat.firefunctionV2.index));
-        expect(result.prompt, contains('functools'));
-        expect(result.prompt, contains('Today is'));
-      },
-      skip: hasLlamaCppTemplates
-          ? false
-          : 'Requires llama.cpp template fixtures (run tool/testing/prepare_llama_cpp_source.sh).',
-    );
+      expect(result.format, equals(ChatFormat.firefunctionV2.index));
+      expect(result.grammarLazy, isFalse);
+      expect(
+        result.grammar,
+        contains(
+          'root-item ::= "{" space root-item-name-kv "," space '
+          'root-item-arguments-kv "}" space',
+        ),
+      );
+      expect(result.grammar, isNot(contains('"\\"id\\""')));
+    });
   });
 
   group('FunctionaryV32Handler', () {
@@ -187,36 +213,30 @@ void main() {
       );
     });
 
-    test(
-      'renders llama.cpp functionary v3.2 template',
-      () {
-        final source = File(
-          '${templatesDir.path}/meetkai-functionary-medium-v3.2.jinja',
-        ).readAsStringSync();
+    test('renders llama.cpp functionary v3.2 template', () {
+      final source = File(
+        '${templatesDir.path}/meetkai-functionary-medium-v3.2.jinja',
+      ).readAsStringSync();
 
-        final result = ChatTemplateEngine.render(
-          templateSource: source,
-          messages: const [
-            LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'hi'),
-          ],
-          metadata: const {},
-          tools: [
-            ToolDefinition(
-              name: 'special_function',
-              description: 'Call me',
-              parameters: [ToolParam.integer('arg1')],
-              handler: _noopHandler,
-            ),
-          ],
-        );
+      final result = ChatTemplateEngine.render(
+        templateSource: source,
+        messages: const [
+          LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'hi'),
+        ],
+        metadata: const {},
+        tools: [
+          ToolDefinition(
+            name: 'special_function',
+            description: 'Call me',
+            parameters: [ToolParam.integer('arg1')],
+            handler: _noopHandler,
+          ),
+        ],
+      );
 
-        expect(result.format, equals(ChatFormat.functionaryV32.index));
-        expect(result.prompt, contains('>>>'));
-      },
-      skip: hasLlamaCppTemplates
-          ? false
-          : 'Requires llama.cpp template fixtures (run tool/testing/prepare_llama_cpp_source.sh).',
-    );
+      expect(result.format, equals(ChatFormat.functionaryV32.index));
+      expect(result.prompt, contains('>>>'));
+    });
   });
 
   group('FunctionaryV31Llama31Handler', () {
@@ -254,36 +274,30 @@ void main() {
       );
     });
 
-    test(
-      'renders llama.cpp functionary v3.1 template',
-      () {
-        final source = File(
-          '${templatesDir.path}/meetkai-functionary-medium-v3.1.jinja',
-        ).readAsStringSync();
+    test('renders llama.cpp functionary v3.1 template', () {
+      final source = File(
+        '${templatesDir.path}/meetkai-functionary-medium-v3.1.jinja',
+      ).readAsStringSync();
 
-        final result = ChatTemplateEngine.render(
-          templateSource: source,
-          messages: const [
-            LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'hi'),
-          ],
-          metadata: const {},
-          tools: [
-            ToolDefinition(
-              name: 'special_function',
-              description: 'Call me',
-              parameters: [ToolParam.integer('arg1')],
-              handler: _noopHandler,
-            ),
-          ],
-        );
+      final result = ChatTemplateEngine.render(
+        templateSource: source,
+        messages: const [
+          LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'hi'),
+        ],
+        metadata: const {},
+        tools: [
+          ToolDefinition(
+            name: 'special_function',
+            description: 'Call me',
+            parameters: [ToolParam.integer('arg1')],
+            handler: _noopHandler,
+          ),
+        ],
+      );
 
-        expect(result.format, equals(ChatFormat.functionaryV31Llama31.index));
-        expect(result.prompt, contains('<function='));
-      },
-      skip: hasLlamaCppTemplates
-          ? false
-          : 'Requires llama.cpp template fixtures (run tool/testing/prepare_llama_cpp_source.sh).',
-    );
+      expect(result.format, equals(ChatFormat.functionaryV31Llama31.index));
+      expect(result.prompt, contains('<function='));
+    });
   });
 
   group('Llama3Handler builtin python tag', () {
@@ -308,10 +322,7 @@ Future<Object?> _noopHandler(_) async {
   return 'ok';
 }
 
-Directory _resolveTemplatesDir() {
-  final envPath = Platform.environment['LLAMA_CPP_TEMPLATES_DIR'];
-  if (envPath != null && envPath.trim().isNotEmpty) {
-    return Directory(envPath);
-  }
-  return Directory('.dart_tool/llama_cpp/models/templates');
-}
+/// Vendored fixtures, deliberately not overridable: this is a unit test and
+/// must not depend on a fetched llama.cpp checkout.
+Directory _resolveTemplatesDir() =>
+    Directory('test/fixtures/llama_cpp_templates');

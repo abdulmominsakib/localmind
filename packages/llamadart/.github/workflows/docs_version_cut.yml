@@ -1,0 +1,78 @@
+name: Docs Version Cut
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  cut-version:
+    name: Cut docs version from release tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: 'stable'
+          cache: true
+
+      - name: Install website dependencies
+        run: (cd website && dart pub get)
+
+      - name: Cut docs version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Target docs version: ${VERSION}"
+
+          if [[ -f website/versions.json ]] && grep -q "\"${VERSION}\"" website/versions.json; then
+            echo "Version ${VERSION} already exists; skipping."
+            exit 0
+          fi
+
+          (cd website && dart run tool/cut_version.dart "${VERSION}")
+
+      - name: Commit versioned docs and reopen Unreleased
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add website/versions.json website/versioned_docs website/versioned_sidebars
+          git fetch origin main
+          if git diff --cached --quiet; then
+            echo "No versioned docs changes to commit."
+            git checkout --detach origin/main
+          else
+            git commit -m "docs: cut version ${VERSION}"
+            git rebase origin/main
+          fi
+
+          # After the rebase, so a heading main gained since the tag is kept
+          # rather than duplicated.
+          dart tool/release/reopen_unreleased_changelog.dart
+          git add CHANGELOG.md website/docs/changelog/recent-releases.md
+          if ! git diff --cached --quiet; then
+            if [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]]; then
+              git commit -m "docs: reopen Unreleased after ${VERSION}"
+            else
+              git commit --amend --no-edit
+            fi
+          fi
+
+          if [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]]; then
+            echo "Nothing to push."
+            exit 0
+          fi
+          git push origin HEAD:main

@@ -1,0 +1,1 @@
+The demo shop ships orders within two business days. Standard shipping takes five business days. Tracking is sent by email.

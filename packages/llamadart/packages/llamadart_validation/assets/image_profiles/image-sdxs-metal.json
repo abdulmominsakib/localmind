@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "image-sdxs-metal",
+  "runtime": "stable_diffusion",
+  "backend": "metal",
+  "model": {
+    "id": "sdxs-512-q8_0",
+    "revision": "3144d898d61492f8382ffcabec055733fc5b2a0e",
+    "filename": "sdxs-512-tinySDdistilled_Q8_0.gguf",
+    "sha256": "409ab23582ee074c6b9d5395784fc0741b0599fb9d138686c69087c71678eb6a",
+    "bytes": 682847200,
+    "kind": "image",
+    "url": "https://huggingface.co/concedo/sdxs-512-tinySDdistilled-GGUF/resolve/3144d898d61492f8382ffcabec055733fc5b2a0e/sdxs-512-tinySDdistilled_Q8_0.gguf?download=true"
+  }
+}

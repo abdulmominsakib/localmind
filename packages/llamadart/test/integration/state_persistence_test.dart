@@ -3,6 +3,7 @@
 library;
 
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:test/test.dart';
 import 'package:llamadart/llamadart.dart';
 import '../test_helper.dart';
@@ -26,7 +27,11 @@ void main() async {
     engine = LlamaEngine(backend);
     await engine.loadModel(
       modelFile.path,
-      modelParams: const ModelParams(contextSize: 256),
+      modelParams: const ModelParams(
+        numberOfThreads: 2,
+        numberOfThreadsBatch: 2,
+        contextSize: 256,
+      ),
     );
     tmpDir = Directory.systemTemp.createTempSync('llamadart_state_test_');
   });
@@ -80,13 +85,173 @@ void main() async {
     );
   });
 
+  test('rejects the session version of llama.cpp v0.5.0 by name and can '
+      'reload a valid state', () async {
+    final tokens = await engine.tokenize('Once upon a time');
+    await engine
+        .generate(
+          'Once upon a time',
+          params: const GenerationParams(maxTokens: 2),
+        )
+        .drain<void>();
+    final validPath = '${tmpDir.path}/current-version.bin';
+    expect(await engine.stateSaveFile(validPath, tokens: tokens), isTrue);
+    final bytes = File(validPath).readAsBytesSync();
+    final header = ByteData.sublistView(bytes);
+    expect(header.getUint32(4, Endian.host), 11);
+    // llamadart 0.11.x wrote version 10 with llama.cpp v0.5.0.
+    header.setUint32(4, 10, Endian.host);
+    final oldPath = '${tmpDir.path}/old-version.bin';
+    File(oldPath).writeAsBytesSync(bytes);
+    await expectLater(
+      engine.stateLoadFile(oldPath, tokenCapacity: 256),
+      throwsA(
+        isA<LlamaStateException>().having(
+          (e) => e.message,
+          'message',
+          allOf(
+            contains('has llama.cpp session version 10'),
+            contains('this runtime reads version 11'),
+          ),
+        ),
+      ),
+    );
+    final restored = await engine.stateLoadFile(validPath, tokenCapacity: 256);
+    expect(restored.tokens, tokens);
+  });
+
+  test(
+    'a failed load stops prefix reuse of the cleared cache (#1491)',
+    () async {
+      final longPrompt = List.filled(
+        20,
+        'Lily lived in a red house beside a forest with a small brown rabbit.',
+      ).join(' ');
+      const prompt = 'Once upon a time there was a';
+      const suffix = ' little girl';
+      final large = LlamaEngine(LlamaBackend());
+      addTearDown(large.dispose);
+      await large.loadModel(
+        modelFile.path,
+        modelParams: const ModelParams(
+          numberOfThreads: 2,
+          numberOfThreadsBatch: 2,
+          contextSize: 1024,
+        ),
+      );
+      // More cells than the 256-token context holds: llama.cpp accepts the
+      // empty token list, clears the KV cache, then rejects the file.
+      expect(await large.tokenize(longPrompt), hasLength(greaterThan(256)));
+      await large.scoreNextToken(longPrompt, topK: 1, reusePromptPrefix: false);
+      final oversizedPath = '${tmpDir.path}/oversized-cells.bin';
+      expect(
+        await large.stateSaveFile(oversizedPath, tokens: const []),
+        isTrue,
+      );
+
+      await engine.scoreNextToken(prompt, topK: 1, reusePromptPrefix: false);
+      await expectLater(
+        engine.stateLoadFile(oversizedPath, tokenCapacity: 256),
+        throwsA(isA<LlamaStateException>()),
+      );
+      final afterFailure = await engine.scoreNextToken(
+        prompt + suffix,
+        topK: 4,
+        reusePromptPrefix: true,
+      );
+      final fresh = await engine.scoreNextToken(
+        prompt + suffix,
+        candidates: [for (final token in afterFailure.top) token.token],
+        reusePromptPrefix: false,
+      );
+      for (var i = 0; i < afterFailure.top.length; i++) {
+        expect(
+          afterFailure.top[i].logprob,
+          closeTo(fresh.candidates[i].logprob, 0.01),
+          reason: 'token ${afterFailure.top[i].token}',
+        );
+      }
+    },
+  );
   test('rejects token capacity larger than context size', () async {
     final unusedPath = '${tmpDir.path}/oversized-capacity.bin';
     expect(
       () => engine.stateLoadFile(unusedPath, tokenCapacity: 257),
-      throwsA(isA<Exception>()),
+      throwsA(
+        isA<LlamaArgumentException>().having(
+          (error) => error.message,
+          'message',
+          allOf(contains('tokenCapacity'), contains('context size (256)')),
+        ),
+      ),
     );
   });
+
+  for (final capacity in [0, -1, 257]) {
+    test('invalid token capacity $capacity stays typed through the worker '
+        'and permits a valid restore', () async {
+      final guarded = await LlamaEngine.load(
+        LlamaModel(ModelSource.path(modelFile.path)),
+        params: const LlamaCppModelParams(
+          numberOfThreads: 2,
+          numberOfThreadsBatch: 2,
+          contextSize: 256,
+          batchSize: 8,
+          microBatchSize: 8,
+          gpuLayers: 0,
+          preferredBackend: GpuBackend.cpu,
+        ),
+      );
+      try {
+        const prompt = 'Once upon a time in a quiet land';
+        const continued = '$prompt and they';
+        final tokens = await guarded.tokenize(prompt);
+        await guarded.scoreNextToken(prompt, topK: 1, reusePromptPrefix: false);
+        final statePath = '${tmpDir.path}/capacity-$capacity.bin';
+        expect(await guarded.stateSaveFile(statePath, tokens: tokens), isTrue);
+
+        await expectLater(
+          guarded.stateLoadFile(statePath, tokenCapacity: capacity),
+          throwsA(
+            isA<LlamaArgumentException>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('tokenCapacity'),
+                contains(capacity > 256 ? 'context size (256)' : 'positive'),
+              ),
+            ),
+          ),
+        );
+
+        final restored = await guarded.stateLoadFile(
+          statePath,
+          tokenCapacity: 256,
+        );
+        expect(restored.tokens, tokens);
+        final continuedTokens = await guarded.tokenize(continued);
+        await guarded
+            .generate(
+              continued,
+              params: const GenerationParams(
+                maxTokens: 1,
+                temp: 0,
+                reusePromptPrefix: true,
+              ),
+            )
+            .drain<void>();
+        final performance = await guarded.getPerformanceContext();
+        expect(performance, isNotNull);
+        expect(
+          performance!.promptEvalTokens,
+          inInclusiveRange(1, continuedTokens.length - 1),
+          reason: 'the rejected capacity must not poison restored KV reuse',
+        );
+      } finally {
+        await guarded.dispose();
+      }
+    });
+  }
 
   test('round-trips an empty token sequence', () async {
     final savePath = '${tmpDir.path}/empty.bin';
@@ -108,7 +273,11 @@ void main() async {
       try {
         await engineA.loadModel(
           modelFile.path,
-          modelParams: const ModelParams(contextSize: 256),
+          modelParams: const ModelParams(
+            numberOfThreads: 2,
+            numberOfThreadsBatch: 2,
+            contextSize: 256,
+          ),
         );
 
         final tokens = await engineA.tokenize(prompt);
@@ -141,7 +310,11 @@ void main() async {
         engineB = LlamaEngine(LlamaBackend());
         await engineB.loadModel(
           modelFile.path,
-          modelParams: const ModelParams(contextSize: 256),
+          modelParams: const ModelParams(
+            numberOfThreads: 2,
+            numberOfThreadsBatch: 2,
+            contextSize: 256,
+          ),
         );
 
         final loadResult = await engineB.stateLoadFile(
@@ -206,7 +379,11 @@ void main() async {
       try {
         await engineA.loadModel(
           modelFile.path,
-          modelParams: const ModelParams(contextSize: 256),
+          modelParams: const ModelParams(
+            numberOfThreads: 2,
+            numberOfThreadsBatch: 2,
+            contextSize: 256,
+          ),
         );
 
         final tokens = await engineA.tokenize(prompt);
@@ -228,7 +405,11 @@ void main() async {
         engineB = LlamaEngine(LlamaBackend());
         await engineB.loadModel(
           modelFile.path,
-          modelParams: const ModelParams(contextSize: 256),
+          modelParams: const ModelParams(
+            numberOfThreads: 2,
+            numberOfThreadsBatch: 2,
+            contextSize: 256,
+          ),
         );
 
         await engineB.stateLoadFile(savePath, tokenCapacity: 256);

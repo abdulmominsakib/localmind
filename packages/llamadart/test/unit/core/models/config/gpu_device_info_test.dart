@@ -3,14 +3,6 @@ import 'package:llamadart/src/core/models/config/gpu_device_info.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('GpuDeviceType enum contains expected values', () {
-    expect(GpuDeviceType.values, contains(GpuDeviceType.cpu));
-    expect(GpuDeviceType.values, contains(GpuDeviceType.discreteGpu));
-    expect(GpuDeviceType.values, contains(GpuDeviceType.integratedGpu));
-    expect(GpuDeviceType.values, contains(GpuDeviceType.accelerator));
-    expect(GpuDeviceType.values, contains(GpuDeviceType.unknown));
-  });
-
   test('GpuDeviceInfo exposes its fields', () {
     const device = GpuDeviceInfo(
       backend: GpuBackend.vulkan,

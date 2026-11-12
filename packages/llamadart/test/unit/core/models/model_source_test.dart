@@ -2,6 +2,108 @@ import 'package:llamadart/llamadart.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('invalid direct URL source errors redact credentials', () {
+    for (final value in [
+      'ftp://alice:ConstructorSecret@example.com/m.gguf?token=ConstructorToken',
+      'https:alice:ConstructorSecret@example.com/m.gguf?token=ConstructorToken',
+      'https://alice:ConstructorSecret@host/ConstructorSecret%2F?token=ConstructorToken',
+      'https://alice:ConstructorSecret@host/?token=ConstructorToken',
+    ]) {
+      expect(
+        () => ModelSource.url(Uri.parse(value)),
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => '${error.invalidValue} $error',
+            'safe error',
+            allOf(
+              isNot(contains('ConstructorSecret')),
+              isNot(contains('ConstructorToken')),
+            ),
+          ),
+        ),
+      );
+    }
+  });
+
+  for (final source in [
+    's3://user:ParsePassword@bucket/m.gguf?X-Amz-Signature=ParseSignature',
+    's3://host/ParseSignature/m.gguf?token=ParseSignature',
+    'gs://user:ParsePassword@bucket/m.gguf',
+    'hf://owner/repo/m.gguf?token=ParseSignature',
+    'hf://owner/repo/m%2Ffile.gguf?revision=main#ParseSignature',
+    'https:user:ParsePassword@host/m.gguf?token=ParseSignature',
+  ]) {
+    test('invalid source errors redact credential-bearing input', () {
+      expect(
+        () => ModelSource.parse(source),
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => '${error.invalidValue} $error',
+            'safe error',
+            allOf(
+              isNot(contains('ParsePassword')),
+              isNot(contains('ParseSignature')),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  for (final value in const [
+    'https://PathUser:PathPassword@example.com/model.gguf?token=PathSignature',
+    '//PathUser:PathPassword@example.com/model.gguf?token=PathSignature',
+    'https:PathUser:PathPassword@example.com/model.gguf?token=PathSignature',
+    'models/model.gguf?X-Amz-Signature=PathSignature',
+    'models/model.gguf?%74oken=PathSignature',
+    'models/model.gguf#token=PathSignature',
+    'https://PathUser:PathPassword@example.com/PathPassword.gguf?token=PathSignature',
+    'models/model.gguf?token=PathSignature.repeated',
+  ]) {
+    test('URL-valued path diagnostics redact secrets: $value', () {
+      final source = ModelSource.path(value);
+      final equivalent = ModelSource.path(
+        value.replaceAll('PathSignature', 'OtherSignature'),
+      );
+
+      expect(source.path, value);
+      expect(source.canonicalKey, 'path:$value');
+      expect(source.cacheKey, isNot(equivalent.cacheKey));
+      for (final diagnostic in [
+        source.metadataSourceKey,
+        source.toString(),
+        source.displayName,
+        source.cacheDirectoryName,
+      ]) {
+        expect(
+          diagnostic,
+          allOf(
+            isNot(contains('PathUser')),
+            isNot(contains('PathPassword')),
+            isNot(contains('PathSignature')),
+          ),
+        );
+      }
+      expect(source.metadataSourceKey, contains(source.cacheKey));
+      expect(source.cacheDirectoryName, isNot(equivalent.cacheDirectoryName));
+    });
+  }
+
+  test('native filename diagnostics stay literal without URL query syntax', () {
+    for (final value in const [
+      '/models/a?literal#native.gguf',
+      r'C:\models\a?literal#native.gguf',
+      '/models/literal name%2F.gguf',
+    ]) {
+      final source = ModelSource.path(value);
+      expect(source.path, value);
+      expect(source.canonicalKey, 'path:$value');
+      expect(source.metadataSourceKey, source.canonicalKey);
+      expect(source.toString(), source.canonicalKey);
+      expect(source.displayName, source.fileName);
+    }
+  });
+
   group('ModelSource', () {
     test('path remains local and does not attempt network resolution', () {
       final source = ModelSource.path('/local/model.gguf');
@@ -367,6 +469,30 @@ void main() {
       expect(source.resolvedUri, isNull);
     });
 
+    test('parse keeps %, # and ? in local paths literal', () {
+      for (final (value, fileName) in const [
+        (r'C:\models\qwen 100%.gguf', 'qwen 100%.gguf'),
+        ('C:/models/a#b/qwen%zz.gguf', 'qwen%zz.gguf'),
+        (r'C:\models\x%2Fy%3F.gguf', 'x%2Fy%3F.gguf'),
+        (r'\\server\share\100%\qwen#1.gguf', 'qwen#1.gguf'),
+        ('/Users/alice/a#b?c%zz/qwen 100%.gguf', 'qwen 100%.gguf'),
+        ('models/%C3?.gguf', '%C3?.gguf'),
+      ]) {
+        final source = ModelSource.parse(value);
+
+        expect(source.kind, ModelSourceKind.path, reason: value);
+        expect(source.path, value, reason: value);
+        expect(source.fileName, fileName, reason: value);
+        expect(source.canonicalKey, 'path:$value', reason: value);
+        expect(source.metadataSourceKey, 'path:$value', reason: value);
+        expect(
+          source.cacheDirectoryName,
+          matches(RegExp(r'^[A-Za-z0-9._-]+-[0-9a-f]{12}$')),
+          reason: value,
+        );
+      }
+    });
+
     test('parse rejects invalid schemes', () {
       expect(
         () => ModelSource.parse('ftp://host/model.gguf'),
@@ -439,6 +565,40 @@ void main() {
       expect(resolved.canonicalKey, source.canonicalKey);
       expect(resolved.cacheKey, source.cacheKey);
       expect(resolved.cacheDirectoryName, source.cacheDirectoryName);
+    });
+
+    test('carries an explicit format without changing the cache key', () {
+      final url = Uri.parse('https://host/download?id=42');
+      final plain = ModelSource.url(url);
+      final declared = ModelSource.url(url, format: ModelFormat.liteRtLm);
+
+      expect(plain.format, isNull);
+      expect(declared.format, ModelFormat.liteRtLm);
+      expect(declared.fileName, 'download');
+      expect(declared.cacheKey, plain.cacheKey);
+      expect(
+        declared.withResolvedUri(Uri.parse('https://cdn/x')).format,
+        ModelFormat.liteRtLm,
+      );
+      expect(
+        ModelSource.path('/m/blob', format: ModelFormat.gguf).format,
+        ModelFormat.gguf,
+      );
+      expect(
+        ModelSource.huggingFace(
+          repoId: 'o/r',
+          filePath: 'model',
+          format: ModelFormat.liteRtLm,
+        ).format,
+        ModelFormat.liteRtLm,
+      );
+      for (final value in ['/m/blob', 'https://host/download', 'hf://o/r/m']) {
+        expect(
+          ModelSource.parse(value, format: ModelFormat.liteRtLm).format,
+          ModelFormat.liteRtLm,
+          reason: value,
+        );
+      }
     });
   });
 }

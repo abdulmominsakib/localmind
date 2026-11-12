@@ -1,0 +1,49 @@
+name: Native Release Digests
+
+# Network check: compares the pinned llama.cpp, stable_diffusion and LiteRT-LM
+# archive digests with what each pinned release publishes, so it runs only when
+# the pins or the check change.
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - lib/src/hook/native_release_pins.dart
+      - lib/src/hook/native_archive_digest.dart
+      - tool/testing/check_native_release_digests.dart
+      - .github/workflows/native_release_digests.yml
+  push:
+    branches: [ main ]
+    paths:
+      - lib/src/hook/native_release_pins.dart
+      - lib/src/hook/native_archive_digest.dart
+      - tool/testing/check_native_release_digests.dart
+      - .github/workflows/native_release_digests.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Pinned digests match release SHA256SUMS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+      - run: dart pub get
+      - run: dart run tool/testing/check_native_release_digests.dart
+        env:
+          # Read-only token for the LiteRT-LM release API call; unauthenticated
+          # calls share the runner IP's rate limit.
+          GH_TOKEN: ${{ github.token }}

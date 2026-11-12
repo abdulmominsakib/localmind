@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "llamadart validation journal events v1 and v2",
+  "type": "object",
+  "required": [
+    "type"
+  ],
+  "properties": {
+    "type": {
+      "enum": [
+        "manifest",
+        "case_start",
+        "case",
+        "cleanup",
+        "run_end",
+        "preparation_error"
+      ]
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "ERROR",
+        "UNSUPPORTED",
+        "NOT_RUN"
+      ]
+    },
+    "case_id": {
+      "type": "string"
+    },
+    "schema_version": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "case_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "fixture_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "feature_id": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "manifest"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "schema_version",
+          "run_id",
+          "profile",
+          "profile_hash",
+          "effective_config",
+          "config_hash",
+          "environment",
+          "preparation",
+          "case_ids"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "case"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "case_id",
+          "status",
+          "sequence"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "run_end"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "sequence",
+          "cancelled"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "type",
+          "schema_version"
+        ],
+        "properties": {
+          "type": {
+            "const": "manifest"
+          },
+          "schema_version": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "catalog",
+          "catalog_hash"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "type",
+          "case_id"
+        ],
+        "properties": {
+          "type": {
+            "const": "case"
+          },
+          "case_id": {
+            "pattern": "^E[0-9]"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "feature_id",
+          "case_version",
+          "fixture_hash"
+        ],
+        "properties": {
+          "feature_id": {
+            "const": "embeddings"
+          }
+        }
+      }
+    }
+  ]
+}

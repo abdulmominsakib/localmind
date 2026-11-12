@@ -166,7 +166,7 @@ void main() {
   });
 
   group('selectNativeRuntimesForBundle', () {
-    test('defaults to all runtime families', () {
+    test('defaults to the two default runtime families', () {
       for (final bundle in [
         'android-arm64',
         'ios-arm64',
@@ -197,17 +197,26 @@ void main() {
       expect(selected, [nativeRuntimeLlamaCpp, nativeRuntimeLiteRtLm]);
     });
 
-    test('parses all as both runtime families on non-Android targets', () {
-      final selected = selectNativeRuntimesForBundle(
-        bundle: 'linux-x64',
-        rawUserConfig: 'all',
-        warn: (_) {},
-      );
+    test('parses both as the two default runtime families', () {
+      for (final rawUserConfig in const <Object>[
+        'both',
+        ' Both ',
+        ['both'],
+      ]) {
+        final selected = selectNativeRuntimesForBundle(
+          bundle: 'linux-x64',
+          rawUserConfig: rawUserConfig,
+          warn: (_) {},
+        );
 
-      expect(selected, [nativeRuntimeLlamaCpp, nativeRuntimeLiteRtLm]);
+        expect(selected, [
+          nativeRuntimeLlamaCpp,
+          nativeRuntimeLiteRtLm,
+        ], reason: '$rawUserConfig');
+      }
     });
 
-    test('parses empty runtime list as all runtime families', () {
+    test('parses empty runtime list as the two default families', () {
       for (final rawUserConfig in const [
         <String>[],
         '',
@@ -407,6 +416,147 @@ void main() {
           runtime: nativeRuntimeLiteRtLm,
         ),
         isTrue,
+      );
+    });
+
+    test('macOS x64 LiteRT-LM is explicit only for its exact bundle key', () {
+      bool namedForMacOsX64(Object? rawUserConfig) =>
+          nativeRuntimeNamedForExactBundle(
+            bundle: 'macos-x86_64',
+            rawUserConfig: rawUserConfig,
+            runtime: nativeRuntimeLiteRtLm,
+          );
+
+      for (final key in ['macos-x86_64', 'macos-x64']) {
+        expect(
+          namedForMacOsX64({
+            'platforms': {
+              key: ['llama_cpp', 'litert_lm'],
+            },
+          }),
+          isTrue,
+          reason: key,
+        );
+      }
+      for (final rawUserConfig in <Object?>[
+        ['litert_lm'],
+        {
+          'runtimes': ['litert_lm'],
+        },
+        {
+          'platforms': {
+            'macos': ['litert_lm'],
+          },
+        },
+        {
+          'platforms': {
+            'macos-arm64': ['litert_lm'],
+          },
+        },
+        {
+          'platforms': {
+            'macos-x86_64': ['all'],
+          },
+        },
+      ]) {
+        expect(
+          namedForMacOsX64(rawUserConfig),
+          isFalse,
+          reason: '$rawUserConfig',
+        );
+      }
+    });
+  });
+
+  group('selectNativeRuntimesForBundle explicit none', () {
+    List<String> select(Object? rawUserConfig, List<String> warnings) =>
+        selectNativeRuntimesForBundle(
+          bundle: 'linux-x64',
+          rawUserConfig: rawUserConfig,
+          warn: warnings.add,
+        );
+
+    test('explicit none tokens select nothing without warning', () {
+      for (final rawUserConfig in const <Object?>[
+        'none',
+        'off',
+        'false',
+        false,
+        ['none'],
+        [false],
+        ['llama_cpp', 'none'],
+        ['llama_cpp', false],
+        {'runtimes': 'none'},
+        {'runtimes': false},
+        {
+          'runtimes': ['llama_cpp'],
+          'platforms': {'linux-x64': 'none'},
+        },
+      ]) {
+        final warnings = <String>[];
+
+        expect(
+          select(rawUserConfig, warnings),
+          isEmpty,
+          reason: rawUserConfig.toString(),
+        );
+        expect(warnings, isEmpty, reason: rawUserConfig.toString());
+      }
+    });
+
+    test('a runtime named after none still selects', () {
+      final warnings = <String>[];
+
+      expect(select(const ['none', 'llama_cpp'], warnings), [
+        nativeRuntimeLlamaCpp,
+      ]);
+      expect(warnings, isEmpty);
+    });
+
+    test('unset, empty, and unsupported root scalars stay all', () {
+      for (final rawUserConfig in const <Object?>[null, '', <String>[]]) {
+        final warnings = <String>[];
+
+        expect(select(rawUserConfig, warnings), [
+          nativeRuntimeLlamaCpp,
+          nativeRuntimeLiteRtLm,
+        ], reason: rawUserConfig.toString());
+        expect(warnings, isEmpty, reason: rawUserConfig.toString());
+      }
+
+      final warnings = <String>[];
+      expect(select(true, warnings), [
+        nativeRuntimeLlamaCpp,
+        nativeRuntimeLiteRtLm,
+      ]);
+      expect(warnings, hasLength(1));
+      expect(warnings.single, contains('true'));
+    });
+
+    test('all-unrecognised list warns and stays the two default families', () {
+      final warnings = <String>[];
+
+      expect(select(const ['tflite', 'onnx'], warnings), [
+        nativeRuntimeLlamaCpp,
+        nativeRuntimeLiteRtLm,
+      ]);
+      expect(warnings, hasLength(1));
+      expect(warnings.single, contains('tflite, onnx'));
+
+      warnings.clear();
+      expect(select(const ['none', 'tflite'], warnings), isEmpty);
+      expect(warnings, hasLength(1));
+      expect(warnings.single, contains('tflite'));
+    });
+
+    test('none clears explicit runtime tracking', () {
+      expect(
+        nativeRuntimeExplicitlySelectedForBundle(
+          bundle: 'linux-x64',
+          rawUserConfig: const ['llama_cpp', 'none'],
+          runtime: nativeRuntimeLlamaCpp,
+        ),
+        isFalse,
       );
     });
   });
@@ -802,6 +952,493 @@ void main() {
         codeAssetNameForLibrary(spec: spec, library: library),
         'llamadart',
       );
+    });
+  });
+
+  group('stable_diffusion runtime selection', () {
+    List<String> select(Object? rawUserConfig, List<String> warnings) =>
+        selectNativeRuntimesForBundle(
+          bundle: 'linux-x64',
+          rawUserConfig: rawUserConfig,
+          warn: warnings.add,
+        );
+
+    test('is never selected by default, an empty or unrecognised value, or '
+        'both', () {
+      for (final rawUserConfig in const <Object?>[
+        null,
+        '',
+        <String>[],
+        'both',
+        ['both'],
+        ['tflite'],
+        true,
+        {'runtimes': <String>[]},
+        {'runtimes': 'both'},
+        {
+          'platforms': {
+            'android': ['all'],
+          },
+        },
+      ]) {
+        final warnings = <String>[];
+        expect(select(rawUserConfig, warnings), [
+          nativeRuntimeLlamaCpp,
+          nativeRuntimeLiteRtLm,
+        ], reason: rawUserConfig.toString());
+      }
+      expect(defaultNativeRuntimes, [
+        nativeRuntimeLlamaCpp,
+        nativeRuntimeLiteRtLm,
+      ]);
+    });
+
+    test('is selected by all, after the two default families', () {
+      for (final rawUserConfig in const <Object?>[
+        'all',
+        ' ALL ',
+        ['all'],
+        ['both', 'all'],
+        ['all', 'stable_diffusion'],
+        ['llama_cpp', 'all'],
+        {'runtimes': 'all'},
+        {
+          'runtimes': ['llama_cpp'],
+          'platforms': {'linux': 'all'},
+        },
+      ]) {
+        final warnings = <String>[];
+        expect(select(rawUserConfig, warnings), [
+          nativeRuntimeLlamaCpp,
+          nativeRuntimeLiteRtLm,
+          nativeRuntimeStableDiffusion,
+        ], reason: rawUserConfig.toString());
+        expect(warnings, isEmpty, reason: rawUserConfig.toString());
+      }
+      expect(select(const ['stable_diffusion', 'all'], []), [
+        nativeRuntimeStableDiffusion,
+        nativeRuntimeLlamaCpp,
+        nativeRuntimeLiteRtLm,
+      ]);
+      expect(select(const ['all', 'none'], []), isEmpty);
+    });
+
+    test('is selected when named, including the stable-diffusion alias', () {
+      for (final rawUserConfig in const <Object?>[
+        ['stable_diffusion'],
+        'stable-diffusion',
+        ' Stable_Diffusion ',
+        {'runtimes': 'stable_diffusion'},
+      ]) {
+        final warnings = <String>[];
+        expect(select(rawUserConfig, warnings), [
+          nativeRuntimeStableDiffusion,
+        ], reason: rawUserConfig.toString());
+        expect(warnings, isEmpty, reason: rawUserConfig.toString());
+      }
+
+      final warnings = <String>[];
+      expect(select(const ['llama_cpp', 'stable_diffusion'], warnings), [
+        nativeRuntimeLlamaCpp,
+        nativeRuntimeStableDiffusion,
+      ]);
+      expect(select(const ['stable_diffusion', 'none'], warnings), isEmpty);
+      expect(warnings, isEmpty);
+    });
+
+    test('all implies every runtime on every bundle and names none', () {
+      for (final bundle in const [
+        'android-arm64',
+        'android-x64',
+        'ios-arm64',
+        'ios-arm64-sim',
+        'ios-x86_64-sim',
+        'linux-arm64',
+        'linux-x64',
+        'macos-arm64',
+        'macos-x86_64',
+        'windows-arm64',
+        'windows-x64',
+      ]) {
+        for (final rawUserConfig in const <Object>[
+          'all',
+          ['all'],
+          ['all', 'stable_diffusion'],
+        ]) {
+          final reason = '$bundle $rawUserConfig';
+          final warnings = <String>[];
+          expect(
+            selectNativeRuntimesForBundle(
+              bundle: bundle,
+              rawUserConfig: rawUserConfig,
+              warn: warnings.add,
+            ),
+            [
+              nativeRuntimeLlamaCpp,
+              nativeRuntimeLiteRtLm,
+              nativeRuntimeStableDiffusion,
+            ],
+            reason: reason,
+          );
+          expect(warnings, isEmpty, reason: reason);
+          // What lets `hook/build.dart` skip a runtime `all` implies with a
+          // warning instead of failing the build.
+          expect(
+            nativeRuntimeExplicitlySelectedForBundle(
+              bundle: bundle,
+              rawUserConfig: rawUserConfig,
+              runtime: nativeRuntimeLiteRtLm,
+            ),
+            isFalse,
+            reason: reason,
+          );
+          expect(
+            nativeRuntimeExplicitlySelectedForBundle(
+              bundle: bundle,
+              rawUserConfig: rawUserConfig,
+              runtime: nativeRuntimeStableDiffusion,
+            ),
+            rawUserConfig is List && rawUserConfig.length == 2,
+            reason: reason,
+          );
+          expect(
+            nativeRuntimeNamedForExactBundle(
+              bundle: bundle,
+              rawUserConfig: rawUserConfig,
+              runtime: nativeRuntimeStableDiffusion,
+            ),
+            isFalse,
+            reason: reason,
+          );
+        }
+      }
+    });
+
+    test('all and both never count as an explicitly selected runtime', () {
+      for (final runtime in const ['all', 'both', 'none']) {
+        expect(
+          nativeRuntimeExplicitlySelectedForBundle(
+            bundle: 'linux-x64',
+            rawUserConfig: const ['all', 'both', 'llama_cpp'],
+            runtime: runtime,
+          ),
+          isFalse,
+          reason: runtime,
+        );
+      }
+    });
+
+    test('unknown-runtime warning lists stable_diffusion as supported', () {
+      final warnings = <String>[];
+      select(const ['onnx'], warnings);
+      expect(
+        warnings.single,
+        contains('Supported runtimes: llama_cpp, litert_lm, stable_diffusion.'),
+      );
+    });
+
+    test('bundle-scoped naming is detected only for the exact bundle', () {
+      bool named(Object? rawUserConfig, {String bundle = 'android-x64'}) =>
+          nativeRuntimeNamedForExactBundle(
+            bundle: bundle,
+            rawUserConfig: rawUserConfig,
+            runtime: nativeRuntimeStableDiffusion,
+          );
+
+      expect(
+        named({
+          'platforms': {
+            'android-x64': ['stable_diffusion'],
+          },
+        }),
+        isTrue,
+      );
+      expect(
+        named({
+          'platforms': {
+            'android_x86_64': {'runtimes': 'llama_cpp,stable-diffusion'},
+          },
+        }),
+        isTrue,
+      );
+      expect(
+        named({
+          'android-x64': ['stable_diffusion'],
+        }),
+        isTrue,
+      );
+      for (final rawUserConfig in const <Object?>[
+        null,
+        ['stable_diffusion'],
+        {'runtimes': 'stable_diffusion'},
+        {
+          'platforms': {
+            'android': ['stable_diffusion'],
+          },
+        },
+        {
+          'platforms': {
+            'android-arm64': ['stable_diffusion'],
+          },
+        },
+        {
+          'platforms': {
+            'android-x64': ['stable_diffusion', 'none'],
+          },
+        },
+        {
+          'platforms': {
+            'android-x64': ['all'],
+          },
+        },
+      ]) {
+        expect(named(rawUserConfig), isFalse, reason: rawUserConfig.toString());
+      }
+    });
+  });
+
+  group('stableDiffusionBundleForNativeBundle', () {
+    NativeBundleSpec spec(OS os, Architecture arch, {bool sim = false}) =>
+        resolveNativeBundleSpec(os: os, arch: arch, isIosSimulator: sim)!;
+
+    test('maps Apple and Android bundles to their single archive', () {
+      final expected = {
+        spec(OS.android, Architecture.arm64): 'android-arm64',
+        spec(OS.iOS, Architecture.arm64): 'ios-arm64',
+        spec(OS.iOS, Architecture.arm64, sim: true): 'ios-arm64-sim',
+        spec(OS.iOS, Architecture.x64, sim: true): 'ios-x64-sim',
+        spec(OS.macOS, Architecture.arm64): 'macos-arm64',
+        spec(OS.macOS, Architecture.x64): 'macos-x64',
+      };
+      for (final MapEntry(key: nativeSpec, value: bundle) in expected.entries) {
+        for (final rawBackendConfig in const <Object?>[
+          null,
+          {
+            'platforms': {'android': 'cpu,vulkan', 'macos': 'vulkan'},
+          },
+        ]) {
+          expect(
+            stableDiffusionBundleForNativeBundle(
+              spec: nativeSpec,
+              rawBackendConfig: rawBackendConfig,
+            ),
+            bundle,
+            reason: '${nativeSpec.bundle} $rawBackendConfig',
+          );
+        }
+      }
+    });
+
+    test('returns null where no archive is published', () {
+      for (final nativeSpec in [
+        spec(OS.android, Architecture.x64),
+        spec(OS.windows, Architecture.arm64),
+      ]) {
+        expect(
+          stableDiffusionBundleForNativeBundle(
+            spec: nativeSpec,
+            rawBackendConfig: null,
+          ),
+          isNull,
+          reason: nativeSpec.bundle,
+        );
+      }
+    });
+
+    test('follows the llama.cpp Vulkan selection on Linux and Windows', () {
+      for (final (os, arch, base) in [
+        (OS.linux, Architecture.x64, 'linux-x64'),
+        (OS.linux, Architecture.arm64, 'linux-arm64'),
+        (OS.windows, Architecture.x64, 'windows-x64'),
+      ]) {
+        final nativeSpec = spec(os, arch);
+        String? select(Object? rawBackendConfig) =>
+            stableDiffusionBundleForNativeBundle(
+              spec: nativeSpec,
+              rawBackendConfig: rawBackendConfig,
+            );
+
+        expect(select(null), '$base-vulkan', reason: 'defaults include vulkan');
+        expect(
+          select({
+            'platforms': {nativeSpec.bundle: <String>[]},
+          }),
+          '$base-vulkan',
+        );
+        expect(
+          select({
+            'platforms': {nativeSpec.bundle: 'cpu'},
+          }),
+          base,
+        );
+        expect(
+          select({
+            'platforms': {
+              os.name: {
+                'backends': ['cpu', 'vk'],
+              },
+            },
+          }),
+          '$base-vulkan',
+        );
+        expect(
+          select({
+            'platforms': {'android': 'cpu'},
+          }),
+          '$base-vulkan',
+          reason: 'another platform entry leaves the defaults',
+        );
+      }
+    });
+
+    test('llamadart_stable_diffusion_backends overrides the llama.cpp choice '
+        'on Linux and Windows', () {
+      for (final (os, arch, base) in [
+        (OS.linux, Architecture.x64, 'linux-x64'),
+        (OS.linux, Architecture.arm64, 'linux-arm64'),
+        (OS.windows, Architecture.x64, 'windows-x64'),
+      ]) {
+        final nativeSpec = spec(os, arch);
+        final warnings = <String>[];
+        String? select(Object? llamaCpp, Object? stableDiffusion) =>
+            stableDiffusionBundleForNativeBundle(
+              spec: nativeSpec,
+              rawBackendConfig: llamaCpp,
+              rawStableDiffusionBackendConfig: stableDiffusion,
+              warn: warnings.add,
+            );
+
+        expect(select(null, ['cpu']), base, reason: 'CPU beside Vulkan text');
+        expect(
+          select({
+            'platforms': {os.name: 'cpu'},
+          }, 'vulkan'),
+          '$base-vulkan',
+          reason: 'Vulkan images beside CPU-only text',
+        );
+        expect(
+          select(null, {
+            'platforms': {
+              nativeSpec.bundle: {
+                'backends': ['cpu'],
+              },
+            },
+          }),
+          base,
+        );
+        expect(
+          select(null, {
+            'platforms': {'android': 'cpu'},
+          }),
+          '$base-vulkan',
+          reason: 'an entry for another platform leaves the llama.cpp choice',
+        );
+        expect(warnings, isEmpty);
+
+        expect(select(null, 'cuda'), '$base-vulkan');
+        expect(
+          warnings.single,
+          allOf(
+            contains('llamadart_stable_diffusion_backends'),
+            contains(nativeSpec.bundle),
+            contains('cuda'),
+          ),
+        );
+      }
+    });
+
+    test('llamadart_stable_diffusion_backends picks Vulkan over CPU in a '
+        'mixed list', () {
+      for (final (os, arch, base) in [
+        (OS.linux, Architecture.x64, 'linux-x64'),
+        (OS.windows, Architecture.x64, 'windows-x64'),
+      ]) {
+        final nativeSpec = spec(os, arch);
+        final warnings = <String>[];
+        for (final mixed in <Object>[
+          ['cpu', 'vulkan'],
+          ['vulkan', 'cpu'],
+          'cpu, vk',
+          {
+            'platforms': {
+              os.name: ['cpu', 'vulkan'],
+            },
+          },
+        ]) {
+          expect(
+            stableDiffusionBundleForNativeBundle(
+              spec: nativeSpec,
+              rawBackendConfig: {
+                'platforms': {os.name: 'cpu'},
+              },
+              rawStableDiffusionBackendConfig: mixed,
+              warn: warnings.add,
+            ),
+            '$base-vulkan',
+            reason: '$mixed',
+          );
+        }
+        expect(warnings, isEmpty);
+      }
+    });
+
+    test('an empty llamadart_stable_diffusion_backends neither warns nor '
+        'overrides the llama.cpp choice', () {
+      for (final (os, arch, base) in [
+        (OS.linux, Architecture.x64, 'linux-x64'),
+        (OS.windows, Architecture.x64, 'windows-x64'),
+      ]) {
+        final nativeSpec = spec(os, arch);
+        for (final empty in <Object>[
+          <String>[],
+          '',
+          {
+            'platforms': {os.name: <String>[]},
+          },
+          {
+            'platforms': {
+              os.name: {'backends': <String>[]},
+            },
+          },
+        ]) {
+          final warnings = <String>[];
+          String? select(Object? llamaCpp) =>
+              stableDiffusionBundleForNativeBundle(
+                spec: nativeSpec,
+                rawBackendConfig: llamaCpp,
+                rawStableDiffusionBackendConfig: empty,
+                warn: warnings.add,
+              );
+
+          expect(select(null), '$base-vulkan', reason: '$empty');
+          expect(
+            select({
+              'platforms': {os.name: 'cpu'},
+            }),
+            base,
+            reason: '$empty',
+          );
+          expect(warnings, isEmpty, reason: '$empty');
+        }
+      }
+    });
+
+    test('llamadart_stable_diffusion_backends does not change Apple or '
+        'Android archives', () {
+      for (final (nativeSpec, bundle) in [
+        (spec(OS.android, Architecture.arm64), 'android-arm64'),
+        (spec(OS.macOS, Architecture.arm64), 'macos-arm64'),
+        (spec(OS.iOS, Architecture.arm64), 'ios-arm64'),
+      ]) {
+        expect(
+          stableDiffusionBundleForNativeBundle(
+            spec: nativeSpec,
+            rawBackendConfig: null,
+            rawStableDiffusionBackendConfig: 'vulkan',
+          ),
+          bundle,
+        );
+      }
     });
   });
 }

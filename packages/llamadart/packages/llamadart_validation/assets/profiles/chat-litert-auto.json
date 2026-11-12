@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "chat-litert-auto",
+  "runtime": "litert",
+  "backend": "auto",
+  "model": {
+    "id": "chat-litert",
+    "revision": "8414150f2e9dcc82449bcc9c5abc404b399a4d06",
+    "filename": "Qwen3-0.6B.litertlm",
+    "sha256": "555579ff2f4fd13379abe69c1c3ab5200f7338bc92471557f1d6614a6e5ab0b4",
+    "bytes": 614236160,
+    "kind": "chat",
+    "url": "https://huggingface.co/litert-community/Qwen3-0.6B/resolve/8414150f2e9dcc82449bcc9c5abc404b399a4d06/Qwen3-0.6B.litertlm"
+  },
+  "selection": "quick",
+  "context_size": 1024,
+  "threads": 4,
+  "max_tokens": 32,
+  "fixtures": {
+    "hello": {
+      "prompt": "Reply with one short sentence saying hello.",
+      "regex": "\\bhello\\b"
+    },
+    "arithmetic": {
+      "prompt": "What is 3 + 4? Reply with only the number.",
+      "regex": "^(?:3 \\+ 4 = )?7[.!]?$"
+    }
+  }
+}

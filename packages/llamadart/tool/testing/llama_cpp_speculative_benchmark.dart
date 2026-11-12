@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:llamadart/backend.dart';
 import 'package:llamadart/llamadart.dart';
 import 'package:path/path.dart' as path;
 
@@ -26,7 +27,7 @@ Future<void> main(List<String> arguments) async {
     loadMtp: loadBundledMtp,
   );
   final speculativeModelParams = baselineModelParams.copyWith(
-    speculativeRollbackTokenMax: options.maxSpeculativeDraftCapacity,
+    speculativeRollbackTokenMax: _maxRollbackCapacity(benchmarkCases),
   );
 
   final backend = LlamaBackend();
@@ -112,6 +113,7 @@ Future<void> main(List<String> arguments) async {
         'options': options.toJson(),
         'results': results.map((result) => result.toJson()).toList(),
         'summary': _summarize(results),
+        'maxRssBytes': ProcessInfo.maxRss,
       }),
     );
   } finally {
@@ -382,8 +384,35 @@ List<String> debugBuildBenchmarkCaseNamesForTesting(List<String> arguments) {
 ///
 /// Intended for unit tests of option semantics.
 int debugResolveSpeculativeRollbackCapacityForTesting(List<String> arguments) {
-  return _BenchmarkOptions.parse(arguments).maxSpeculativeDraftCapacity;
+  return _maxRollbackCapacity(
+    _buildBenchmarkCases(_BenchmarkOptions.parse(arguments)),
+  );
 }
+
+int _maxRollbackCapacity(List<_BenchmarkCase> cases) => cases.fold<int>(0, (
+  max,
+  benchmarkCase,
+) {
+  final config = benchmarkCase.speculativeDecodingConfig;
+  if (config == null) return max;
+  final strategies = config.strategies.isEmpty
+      ? [config.strategy]
+      : config.strategies;
+  for (final strategy in strategies) {
+    final capacity = switch (strategy) {
+      SpeculativeDecodingStrategy.ngramSimple ||
+      SpeculativeDecodingStrategy.ngramMapK ||
+      SpeculativeDecodingStrategy.ngramMapK4v => config.ngramSizeM ?? 48,
+      SpeculativeDecodingStrategy.ngramMod =>
+        config.ngramTokenMax ?? config.draftTokenMax ?? 64,
+      SpeculativeDecodingStrategy.ngramCache => config.draftTokenMax ?? 8,
+      SpeculativeDecodingStrategy.backendDefault => config.draftTokenMax ?? 64,
+      _ => config.draftTokenMax ?? 3,
+    };
+    if (capacity > max) max = capacity;
+  }
+  return max;
+});
 
 /// Resolves whether the target model must load bundled MTP tensors.
 ///
@@ -608,6 +637,7 @@ class _BenchmarkCase {
             draftTokenMin: options.draftTokenMin,
             minProbability: options.minProbability,
             draftSplitProbability: options.draftSplitProbability,
+            draftMicroBatchSize: options.draftMicroBatchSize,
           ),
         );
       case 'draft-eagle3':
@@ -621,6 +651,7 @@ class _BenchmarkCase {
             draftTokenMin: options.draftTokenMin,
             minProbability: options.minProbability,
             draftSplitProbability: options.draftSplitProbability,
+            draftMicroBatchSize: options.draftMicroBatchSize,
           ),
         );
       case 'draft-mtp':
@@ -634,6 +665,7 @@ class _BenchmarkCase {
             draftTokenMin: options.draftTokenMin,
             minProbability: options.minProbability,
             draftSplitProbability: options.draftSplitProbability,
+            draftMicroBatchSize: options.draftMicroBatchSize,
           ),
         );
       case 'draft-dflash':
@@ -647,6 +679,21 @@ class _BenchmarkCase {
             draftTokenMin: options.draftTokenMin,
             minProbability: options.minProbability,
             draftSplitProbability: options.draftSplitProbability,
+            draftMicroBatchSize: options.draftMicroBatchSize,
+          ),
+        );
+      case 'draft-dspark':
+        return _BenchmarkCase._(
+          name: 'draft-dspark_draft_$draftTokenMax',
+          caseType: requestedCase,
+          strategies: const <String>['draft-dspark'],
+          speculativeDecodingConfig: SpeculativeDecodingConfig.draftDspark(
+            draftModelPath: options.requiredDraftModelPath(requestedCase),
+            draftTokenMax: draftTokenMax,
+            draftTokenMin: options.draftTokenMin,
+            minProbability: options.minProbability,
+            draftSplitProbability: options.draftSplitProbability,
+            draftMicroBatchSize: options.draftMicroBatchSize,
           ),
         );
       case 'ngram-simple':
@@ -739,6 +786,7 @@ class _BenchmarkCase {
             draftTokenMin: options.draftTokenMin,
             minProbability: options.minProbability,
             draftSplitProbability: options.draftSplitProbability,
+            draftMicroBatchSize: options.draftMicroBatchSize,
             ngramMatch: options.ngramMatch,
             ngramTokenMin: options.ngramTokenMin,
             ngramTokenMax: options.ngramTokenMax,
@@ -759,6 +807,7 @@ class _BenchmarkCase {
             draftTokenMin: options.draftTokenMin,
             minProbability: options.minProbability,
             draftSplitProbability: options.draftSplitProbability,
+            draftMicroBatchSize: options.draftMicroBatchSize,
             ngramMatch: options.ngramMatch,
             ngramTokenMin: options.ngramTokenMin,
             ngramTokenMax: options.ngramTokenMax,
@@ -901,6 +950,7 @@ class _BenchmarkOptions {
     required this.draftTokenMin,
     required this.minProbability,
     required this.draftSplitProbability,
+    required this.draftMicroBatchSize,
     required this.ngramSizeN,
     required this.ngramSizeMValues,
     required this.ngramMinHits,
@@ -946,6 +996,13 @@ class _BenchmarkOptions {
     );
     if (ngramSizeMValues.any((value) => value <= 0)) {
       stderr.writeln('--ngram-size-m values must be greater than zero.');
+      exit(64);
+    }
+    final draftMicroBatchSize = _parseOptionalInt(
+      map['draft-micro-batch-size'],
+    );
+    if (draftMicroBatchSize != null && draftMicroBatchSize <= 0) {
+      stderr.writeln('--draft-micro-batch-size must be greater than zero.');
       exit(64);
     }
     final ngramTokenMax = _parseOptionalInt(map['ngram-token-max']);
@@ -1020,6 +1077,7 @@ class _BenchmarkOptions {
       draftSplitProbability: _parseOptionalDouble(
         map['draft-split-probability'],
       ),
+      draftMicroBatchSize: draftMicroBatchSize,
       ngramSizeN: _parseOptionalInt(map['ngram-size-n'] ?? map['ngram-size']),
       ngramSizeMValues: ngramSizeMValues,
       ngramMinHits: _parseOptionalInt(map['ngram-min-hits']),
@@ -1081,6 +1139,7 @@ class _BenchmarkOptions {
   final int? draftTokenMin;
   final double? minProbability;
   final double? draftSplitProbability;
+  final int? draftMicroBatchSize;
   final int? ngramSizeN;
   final List<int> ngramSizeMValues;
   final int? ngramMinHits;
@@ -1101,19 +1160,6 @@ class _BenchmarkOptions {
     1,
     (max, value) => value > max ? value : max,
   );
-
-  int get maxNgramSizeM =>
-      ngramSizeMValues.fold<int>(1, (max, value) => value > max ? value : max);
-
-  int get maxSpeculativeDraftCapacity {
-    final draftMax = maxDraftTokenMax;
-    final ngramMax = maxNgramSizeM;
-    final ngramTokenMax = this.ngramTokenMax;
-    final ngramEffectiveMax = ngramTokenMax != null && ngramTokenMax > ngramMax
-        ? ngramTokenMax
-        : ngramMax;
-    return draftMax > ngramEffectiveMax ? draftMax : ngramEffectiveMax;
-  }
 
   String requiredDraftModelPath(String requestedCase) {
     final path = draftModelPath;
@@ -1148,6 +1194,7 @@ class _BenchmarkOptions {
       'draftTokenMin': draftTokenMin,
       'minProbability': minProbability,
       'draftSplitProbability': draftSplitProbability,
+      'draftMicroBatchSize': draftMicroBatchSize,
       'ngramSizeN': ngramSizeN,
       'ngramSizeM': ngramSizeMValues.length == 1
           ? ngramSizeMValues.single
@@ -1196,6 +1243,7 @@ const _allRequestedCases = <String>[
   'draft-eagle3',
   'draft-mtp',
   'draft-dflash',
+  'draft-dspark',
   'ngram-simple',
   'ngram-map-k',
   'ngram-map-k4v',
@@ -1221,6 +1269,7 @@ const _draftModelRequiredCases = <String>{
   'draft-simple',
   'draft-eagle3',
   'draft-dflash',
+  'draft-dspark',
   'mixed-ngram-draft-simple',
 };
 
@@ -1333,6 +1382,10 @@ String _canonicalCase(String value) {
     case 'dflash':
     case 'draft_dflash':
       return 'draft-dflash';
+    case 'draft-dspark':
+    case 'dspark':
+    case 'draft_dspark':
+      return 'draft-dspark';
     case 'mixed-ngram':
     case 'mixed_ngram':
       return 'mixed-ngram';
@@ -1541,8 +1594,9 @@ Case selection:
   --cases all                          Every supported case; draft-model cases
                                        require --draft-model.
   --draft-model <draft.gguf>           Draft model for draft-simple, eagle3,
-                                       dflash, external MTP, and mixed
+                                       dflash, dspark, external MTP, and mixed
                                        draft-model cases. Omit for bundled MTP.
+                                       DSpark is experimental and opt-in.
   --draft-token-max <list>             Comma-separated draft-token depths for
                                        draft-model, ngram-mod, and ngram-cache
                                        cases. Default: 1,2.
@@ -1576,6 +1630,8 @@ Speculative knobs:
   --draft-token-min <n>
   --min-probability <n>
   --draft-split-probability <n>
+  --draft-micro-batch-size <n>         Draft context n_ubatch for draft-model
+                                       and MTP cases. Default: target's.
   --ngram-size-n <n>                   Also accepts --ngram-size.
   --ngram-size-m <list>                Comma-separated effective draft lengths
                                        for ngram-simple/map-k/map-k4v.

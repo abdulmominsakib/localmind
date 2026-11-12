@@ -21,6 +21,34 @@ class FunctionaryV32Handler extends ChatTemplateHandler {
   static final RegExp _functionRegexStartOnly = RegExp(
     r'([A-Za-z0-9_]+\n\{|python\n|all\n)',
   );
+  static final RegExp _possibleStartCall = RegExp(r'^[A-Za-z0-9_]*\n?$');
+  static final RegExp _leadingContentChannel = RegExp(r'^(?:>>>)?all\n');
+  static final RegExp _possibleMarkerRest = RegExp(r'^[A-Za-z0-9_]*\n?$');
+
+  /// The start of a trailing `>>>` marker in [text] that may still become a
+  /// function marker, or `text.length`.
+  static int _possibleMarker(String text) {
+    // A marker still arriving has no whitespace before a final newline, so
+    // it starts within the trailing token.
+    final body = text.endsWith('\n')
+        ? text.substring(0, text.length - 1)
+        : text;
+    var tokenStart = body.length;
+    while (tokenStart > 0 && body[tokenStart - 1].trim().isNotEmpty) {
+      tokenStart--;
+    }
+    for (var start = tokenStart; start < text.length; start++) {
+      final rest = text.substring(start);
+      if (rest.length < 3) {
+        if ('>>>'.startsWith(rest)) return start;
+      } else if (rest.startsWith('>>>') &&
+          _possibleMarkerRest.hasMatch(rest.substring(3))) {
+        return start;
+      }
+    }
+    return text.length;
+  }
+
   static final RegExp _functionRegex = RegExp(
     r'>>>([A-Za-z0-9_]+\n\{|python\n|all\n)',
   );
@@ -48,7 +76,7 @@ class FunctionaryV32Handler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'bos_token':
@@ -120,6 +148,7 @@ class FunctionaryV32Handler extends ChatTemplateHandler {
     var searchFrom = 0;
     var first = true;
     var parseFailed = false;
+    int? contentBeforeFirstCall;
 
     while (true) {
       _FunctionMarker? marker;
@@ -168,13 +197,17 @@ class FunctionaryV32Handler extends ChatTemplateHandler {
       if (atJsonStart || !allowRawPython) {
         final jsonRange = _extractJsonObjectRange(output, cursor);
         if (jsonRange == null) {
-          if (!isPartial) {
+          if (isPartial) {
+            // The arguments may still be arriving.
+            cursor = output.length;
+          } else {
             parseFailed = true;
           }
           break;
         }
 
         final jsonText = output.substring(cursor, jsonRange.end);
+        contentBeforeFirstCall ??= content.length;
         toolCalls.add(
           ToolCallParsingUtils.createFunctionToolCall(
             index: toolCalls.length,
@@ -193,6 +226,7 @@ class FunctionaryV32Handler extends ChatTemplateHandler {
       }
 
       final rawCode = output.substring(cursor);
+      contentBeforeFirstCall ??= content.length;
       toolCalls.add(
         ToolCallParsingUtils.createFunctionToolCall(
           index: toolCalls.length,
@@ -206,17 +240,36 @@ class FunctionaryV32Handler extends ChatTemplateHandler {
     }
 
     if (parseFailed && !isPartial) {
-      return ChatParseResult(content: output.trim(), toolCalls: const []);
+      // The leading `all` channel header is never content.
+      return ChatParseResult(
+        content: output.replaceFirst(_leadingContentChannel, '').trim(),
+        toolCalls: const [],
+      );
     }
 
-    if (cursor < output.length) {
+    final endsAtOutput = cursor < output.length;
+    if (endsAtOutput) {
       content.write(output.substring(cursor));
     }
 
-    return ChatParseResult(
-      content: content.toString().trim(),
-      toolCalls: toolCalls,
-    );
+    var text = content.toString();
+    if (isPartial) {
+      // Output that is still a bare start-of-output function name, and a
+      // `>>>` marker, may yet become a call.
+      if (_possibleStartCall.hasMatch(output)) {
+        text = '';
+      } else if (endsAtOutput) {
+        text = text.substring(0, _possibleMarker(text));
+      }
+      // A later malformed call makes the final parse fall back to the raw
+      // output, so only text before the first call is safe to stream.
+      if (contentBeforeFirstCall != null &&
+          contentBeforeFirstCall < text.length) {
+        text = text.substring(0, contentBeforeFirstCall);
+      }
+    }
+
+    return ChatParseResult(content: text.trim(), toolCalls: toolCalls);
   }
 
   _FunctionMarker? _findNextFunctionMarker(String text, int from) {
@@ -275,7 +328,7 @@ class FunctionaryV32Handler extends ChatTemplateHandler {
       final ruleName = 'tool-$i-call';
 
       converter.rules[ruleName] =
-          '${ToolCallGrammarUtils.literal('${tool.name}\\n')} $argsRule';
+          '${ToolCallGrammarUtils.literal('${tool.name}\n')} $argsRule';
       firstToolRules.add(ruleName);
 
       if (parallelToolCalls) {

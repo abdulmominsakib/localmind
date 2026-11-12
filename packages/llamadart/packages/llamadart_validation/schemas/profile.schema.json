@@ -1,0 +1,703 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "llamadart validation profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "runtime",
+    "backend",
+    "model"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,63}$"
+    },
+    "runtime": {
+      "enum": [
+        "gguf",
+        "litert"
+      ]
+    },
+    "backend": {
+      "type": "string"
+    },
+    "selection": {
+      "enum": [
+        "quick",
+        "focused",
+        "release"
+      ]
+    },
+    "execution_path": {
+      "enum": [
+        "public_api",
+        "native_c_api"
+      ]
+    },
+    "enable_thinking": {
+      "type": "boolean"
+    },
+    "history_controls": {
+      "type": "boolean"
+    },
+    "context_size": {
+      "type": "integer",
+      "minimum": 128,
+      "maximum": 8192
+    },
+    "threads": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 32
+    },
+    "engine_create_case_timeout_ms": {
+      "type": "integer",
+      "minimum": 60000,
+      "maximum": 180000
+    },
+    "max_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 512
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "filename",
+        "sha256",
+        "bytes",
+        "kind",
+        "url"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "filename": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_.-]+$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kind": {
+          "enum": [
+            "raw",
+            "chat",
+            "decision",
+            "embedding"
+          ]
+        },
+        "access": {
+          "type": "string"
+        },
+        "quantization": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://"
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "head"
+      ],
+      "properties": {
+        "head": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "filename",
+            "revision",
+            "sha256",
+            "bytes",
+            "url"
+          ],
+          "properties": {
+            "filename": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_.-]+\\.safetensors$"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "url": {
+              "type": "string",
+              "pattern": "^https://"
+            }
+          }
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "filename",
+            "revision",
+            "sha256",
+            "bytes",
+            "url"
+          ],
+          "properties": {
+            "filename": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_.-]+\\.json$"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "url": {
+              "type": "string",
+              "pattern": "^https://"
+            }
+          }
+        }
+      }
+    },
+    "focus_features": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "text",
+          "unicode",
+          "thinking",
+          "history",
+          "tools",
+          "streaming",
+          "batching",
+          "lifecycle",
+          "guards",
+          "performance",
+          "structured_output",
+          "tokenization",
+          "state_persistence",
+          "tool_result_media",
+          "next_token_scoring",
+          "sampler_controls"
+        ]
+      }
+    },
+    "fixtures": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "unicode": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "input": {
+              "type": "string"
+            },
+            "expected_prefix": {
+              "type": "string"
+            }
+          }
+        },
+        "unicode_generation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "prompt": {
+              "type": "string"
+            },
+            "expected": {
+              "type": "string"
+            },
+            "qualification": {
+              "type": "string"
+            }
+          }
+        },
+        "raw": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "prompt": {
+              "type": "string"
+            }
+          }
+        },
+        "hello": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "prompt": {
+              "type": "string"
+            },
+            "regex": {
+              "type": "string"
+            }
+          }
+        },
+        "arithmetic": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "prompt": {
+              "type": "string"
+            },
+            "regex": {
+              "type": "string"
+            }
+          }
+        },
+        "history": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "system": {
+              "type": "string"
+            },
+            "user": {
+              "type": "string"
+            },
+            "assistant": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "expected": {
+              "type": "string"
+            }
+          }
+        },
+        "tools": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "prompt": {
+              "type": "string"
+            }
+          }
+        },
+        "cancel": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "chat_prompt": {
+              "type": "string"
+            }
+          }
+        },
+        "inflight": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "batching": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "stop": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "prompt": {
+              "type": "string"
+            },
+            "marker": {
+              "type": "string"
+            }
+          }
+        },
+        "limit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "invalid_grammar": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "grammar": {
+              "type": "string"
+            },
+            "native_message": {
+              "type": "string"
+            },
+            "web_details_marker": {
+              "type": "string"
+            }
+          }
+        },
+        "benchmark": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "chat_prompt": {
+              "type": "string"
+            }
+          }
+        },
+        "tokenization": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "expected_prefix": {
+              "type": "string"
+            }
+          }
+        },
+        "structured_output": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "native_json_schema_capability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "state_persistence": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "tool_result_media": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "next_token_scoring": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "sampler_controls": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "projector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "filename",
+        "revision",
+        "sha256",
+        "bytes",
+        "url"
+      ],
+      "properties": {
+        "filename": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_.-]+\\.gguf$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://"
+        }
+      }
+    },
+    "npu_target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "soc",
+        "abi",
+        "minimum_android_api",
+        "libraries",
+        "device_soc_models"
+      ],
+      "properties": {
+        "soc": {
+          "type": "string"
+        },
+        "abi": {
+          "type": "string"
+        },
+        "minimum_android_api": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "qairt_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "libraries": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "elf_machine",
+              "elf_class"
+            ],
+            "properties": {
+              "elf_machine": {
+                "type": "integer"
+              },
+              "elf_class": {
+                "type": "integer"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "device_soc_models": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "firebase_model": {
+          "type": "string"
+        }
+      }
+    },
+    "embedding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projector",
+        "case_timeout_ms"
+      ],
+      "properties": {
+        "projector": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "filename",
+            "revision",
+            "sha256",
+            "bytes",
+            "url"
+          ],
+          "properties": {
+            "filename": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_.-]+\\.gguf$"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "url": {
+              "type": "string",
+              "pattern": "^https://"
+            }
+          }
+        },
+        "case_timeout_ms": {
+          "type": "integer",
+          "const": 300000
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "engine_create_case_timeout_ms"
+        ]
+      },
+      "then": {
+        "properties": {
+          "runtime": {
+            "const": "litert"
+          },
+          "backend": {
+            "enum": [
+              "cpu",
+              "gpu"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "selection"
+        ],
+        "properties": {
+          "selection": {
+            "const": "focused"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "focus_features"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "focus_features"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "backend": {
+            "const": "npu"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "npu_target"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "model"
+        ],
+        "properties": {
+          "model": {
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "const": "decision"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "runtime": {
+            "const": "gguf"
+          },
+          "selection": {
+            "const": "quick"
+          }
+        }
+      },
+      "else": {
+        "not": {
+          "required": [
+            "decision"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "model": {
+            "properties": {
+              "kind": {
+                "const": "embedding"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "embedding"
+        ],
+        "properties": {
+          "runtime": {
+            "const": "gguf"
+          },
+          "backend": {
+            "enum": [
+              "cpu",
+              "metal"
+            ]
+          },
+          "selection": {
+            "const": "quick"
+          },
+          "context_size": {
+            "const": 2048
+          },
+          "threads": {
+            "const": 4
+          }
+        }
+      },
+      "else": {
+        "not": {
+          "required": [
+            "embedding"
+          ]
+        }
+      }
+    }
+  ]
+}

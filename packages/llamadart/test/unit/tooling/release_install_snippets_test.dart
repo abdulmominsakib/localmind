@@ -70,6 +70,10 @@ final _installSnippetTargets = <_InstallSnippetTarget>[
     'packages/llamadart_litert_lm_flutter/README.md',
     expectedCoreDependencySnippets: 1,
   ),
+  _InstallSnippetTarget(
+    'packages/llamadart_stable_diffusion_flutter/README.md',
+    expectedCoreDependencySnippets: 1,
+  ),
 ];
 
 String _readCorePackageVersion() {

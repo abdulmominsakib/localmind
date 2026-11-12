@@ -1,0 +1,80 @@
+{
+  "assets": [
+    {
+      "digest": "sha256:476eeee7891eea7d7ef8fb8eca86b76437e4c3febd0397010eda505d910b73d9",
+      "name": "SHA256SUMS"
+    },
+    {
+      "digest": "sha256:66dbeeeb6c33cd44b0eaa8cc04614db9e5d007a842be9293be83335c0b8bab5f",
+      "name": "litert-lm-native-apple-CLiteRTLM-xcframework-v0.16.0-3.zip"
+    },
+    {
+      "digest": "sha256:2cc2b417adc645bcf76677faf1bbfcd8731c50714fbfbe4fef58537797ab1374",
+      "name": "litert-lm-native-apple-CLiteRTLMMac-xcframework-v0.16.0-3.zip"
+    },
+    {
+      "digest": "sha256:538bb769bb8223f302d452d750ce57d99e61046a16d3c1d220191097b76e417e",
+      "name": "litert-lm-native-apple-LiteRtLm-xcframework-v0.16.0-3.zip"
+    },
+    {
+      "digest": "sha256:3b9b1226a4d30797bedeac1d578b468466fbd739d23732d93e534146a432483f",
+      "name": "litert-lm-native-apple-LiteRtMetalAccelerator-xcframework-v0.16.0-3.zip"
+    },
+    {
+      "digest": "sha256:a66333eba52051de76df7b5e66b67fe5d3cd21a9972fd13465567a13f6869442",
+      "name": "litert-lm-native-apple-LiteRtTopKMetalSampler-xcframework-v0.16.0-3.zip"
+    },
+    {
+      "digest": "sha256:f29db992cfbb83c487d74ce12a416497b7f35e0d6936f7faa6255d1b72308ed6",
+      "name": "litert-lm-native-official-assets-v0.16.0-3.tar.gz"
+    },
+    {
+      "digest": "sha256:d39a1cc28cc6b01f7066befd92ed936ff6142a30d357617af9000b293b7cae5f",
+      "name": "litert-lm-native-prebuilts-v0.16.0-3.tar.gz"
+    },
+    {
+      "digest": "sha256:104baede1df965483002f2c8b608068bbb1945e7c3b7e8dcbf2a901ac91e0a25",
+      "name": "litert-lm-native-runtime-android-arm64-v0.16.0-3.tar.gz"
+    },
+    {
+      "digest": "sha256:6d79f12afecbe903875af584fbdbea21524fa3de55b24b153d794c3126861270",
+      "name": "litert-lm-native-runtime-android-x64-v0.16.0-3.tar.gz"
+    },
+    {
+      "digest": "sha256:9eeb25ebd67f6d051a7f7636a15091218fa8a4097dfab5e8b18f523a44fd8aee",
+      "name": "litert-lm-native-runtime-ios-arm64-sim-v0.16.0-3.tar.gz"
+    },
+    {
+      "digest": "sha256:d4e658dba42fe9402a9672dc8287b75c8f835f0724db13d8b08e130472ab1352",
+      "name": "litert-lm-native-runtime-ios-arm64-v0.16.0-3.tar.gz"
+    },
+    {
+      "digest": "sha256:06125a617a41bea28559ab5d09468e00038654fd3657bf9745b9e6506ecaba19",
+      "name": "litert-lm-native-runtime-linux-arm64-v0.16.0-3.tar.gz"
+    },
+    {
+      "digest": "sha256:7c99644de1a55deb50fc312951718cce2441c0ba39838124fea8ec50addad69f",
+      "name": "litert-lm-native-runtime-linux-x64-v0.16.0-3.tar.gz"
+    },
+    {
+      "digest": "sha256:e93ada88b34776b7269a374b5356cdbab240b40740a9573405377c2b10e7bbb6",
+      "name": "litert-lm-native-runtime-macos-arm64-v0.16.0-3.tar.gz"
+    },
+    {
+      "digest": "sha256:f075db63dcb0d045f8d0296adbe0c1a84ab352d0aa3e2e4369603d40b461997d",
+      "name": "litert-lm-native-runtime-windows-x64-v0.16.0-3.tar.gz"
+    },
+    {
+      "digest": "sha256:a0d29aa83dc11a565703a395accfbd4a5ca686305c6607dc3807d417a4952bed",
+      "name": "manifest.json"
+    },
+    {
+      "digest": "sha256:9448afa72c3398c2cccc8f6e3a3ea64f6ad9c357ac69400da7f8819280d53d62",
+      "name": "release-result.json"
+    }
+  ],
+  "draft": false,
+  "prerelease": true,
+  "tag_name": "v0.16.0-3",
+  "target_commitish": "451ba0ce7c366972b4dc0e58f08ffe590958f943"
+}

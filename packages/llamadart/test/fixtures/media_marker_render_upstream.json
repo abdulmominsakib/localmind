@@ -1,0 +1,1483 @@
+{
+ "upstream_commit": "d81235049",
+ "endpoint": "POST /apply-template",
+ "vision_model": "LFM2-VL-450M-Q4_0.gguf",
+ "vision_model_sha256": "1fbf4797e8669cdeabd97fa1d31ab046907cb1fc78b1c3d4bda1ba879574e5d7",
+ "vision_mmproj": "mmproj-LFM2-VL-450M-Q8_0.gguf",
+ "vision_mmproj_sha256": "a6a813fae4ba3f90852a990fdd4786a017dba0e80e599a366853ba539ee2b5ef",
+ "audio_model": "Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+ "audio_model_sha256": "6f85a640a97cf2bf5b8e764087b1e83da0fdb51d7c9fab7d0fece9385611df83",
+ "audio_mmproj": "mmproj-ultravox-v0_5-llama-3_2-1b-f16.gguf",
+ "audio_mmproj_sha256": "b34dde1835752949d6b960528269af93c92fec91c61ea0534fcc73f96c1ed8b2",
+ "image_png_base64": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC",
+ "audio_wav_base64": "UklGRqQMAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YYAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+ "conversations": {
+  "image_then_text": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "image": true
+     },
+     {
+      "text": "What color is this image? Answer with one word."
+     }
+    ]
+   }
+  ],
+  "text_then_image": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "text": "What color is this image? Answer with one word."
+     },
+     {
+      "image": true
+     }
+    ]
+   }
+  ],
+  "two_images_then_text": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "image": true
+     },
+     {
+      "image": true
+     },
+     {
+      "text": "What are the colors of the first and second image? Answer with two words."
+     }
+    ]
+   }
+  ],
+  "interleaved_two_images": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "text": "First:"
+     },
+     {
+      "image": true
+     },
+     {
+      "text": "Second:"
+     },
+     {
+      "image": true
+     },
+     {
+      "text": "What are the colors of the first and second image? Answer with two words."
+     }
+    ]
+   }
+  ],
+  "image_only": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "image": true
+     }
+    ]
+   }
+  ],
+  "image_in_later_turn": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "text": "Hello."
+     }
+    ]
+   },
+   {
+    "role": "assistant",
+    "parts": [
+     {
+      "text": "Hi! How can I help?"
+     }
+    ]
+   },
+   {
+    "role": "user",
+    "parts": [
+     {
+      "image": true
+     },
+     {
+      "text": "What color is this image? Answer with one word."
+     }
+    ]
+   }
+  ],
+  "system_and_image": [
+   {
+    "role": "system",
+    "parts": [
+     {
+      "text": "You are a concise assistant."
+     }
+    ]
+   },
+   {
+    "role": "user",
+    "parts": [
+     {
+      "image": true
+     },
+     {
+      "text": "What color is this image? Answer with one word."
+     }
+    ]
+   }
+  ],
+  "literal_img_in_user_text": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "image": true
+     },
+     {
+      "text": "Why is my <img> tag not rendering? Also, what color is this image? Answer with one word."
+     }
+    ]
+   }
+  ],
+  "literal_image_in_system": [
+   {
+    "role": "system",
+    "parts": [
+     {
+      "text": "You are a concise assistant. Never write an <image> tag."
+     }
+    ]
+   },
+   {
+    "role": "user",
+    "parts": [
+     {
+      "image": true
+     },
+     {
+      "text": "What color is this image? Answer with one word."
+     }
+    ]
+   }
+  ],
+  "literal_img_in_assistant_turn": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "text": "How do I mark an image in Mistral prompts?"
+     }
+    ]
+   },
+   {
+    "role": "assistant",
+    "parts": [
+     {
+      "text": "Write [IMG] where the image goes."
+     }
+    ]
+   },
+   {
+    "role": "user",
+    "parts": [
+     {
+      "image": true
+     },
+     {
+      "text": "What color is this image? Answer with one word."
+     }
+    ]
+   }
+  ],
+  "literal_marker_in_user_text": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "image": true
+     },
+     {
+      "text": "What does <__media__> mean in llama.cpp? Also, what color is this image? Answer with one word."
+     }
+    ]
+   }
+  ],
+  "literal_img_with_two_images": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "image": true
+     },
+     {
+      "image": true
+     },
+     {
+      "text": "Why is my <img> tag not rendering? Also, what are the colors of the first and second image? Answer with two words."
+     }
+    ]
+   }
+  ],
+  "two_literals_one_image": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "image": true
+     },
+     {
+      "text": "Is <img> or <image> the HTML tag? Also, what color is this image? Answer with one word."
+     }
+    ]
+   }
+  ],
+  "audio_then_text": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "audio": true
+     },
+     {
+      "text": "What do you hear? Answer with one word."
+     }
+    ]
+   }
+  ],
+  "text_then_audio": [
+   {
+    "role": "user",
+    "parts": [
+     {
+      "text": "What do you hear? Answer with one word."
+     },
+     {
+      "audio": true
+     }
+    ]
+   }
+  ]
+ },
+ "cases": [
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "image_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "text_then_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\nWhat color is this image? Answer with one word.<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__><|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "two_images_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__><__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>What are the colors of the first and second image? Answer with two words.<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "interleaved_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\nFirst:<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>Second:<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>What are the colors of the first and second image? Answer with two words.<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "image_only",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__><|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "image_in_later_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\nHello.<|im_end|>\n<|im_start|>assistant\nHi! How can I help?<|im_end|>\n<|im_start|>user\n<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "system_and_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a concise assistant.<|im_end|>\n<|im_start|>user\n<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "literal_img_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>Why is my <img> tag not rendering? Also, what color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "literal_image_in_system",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a concise assistant. Never write an <image> tag.<|im_end|>\n<|im_start|>user\n<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "literal_img_in_assistant_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\nHow do I mark an image in Mistral prompts?<|im_end|>\n<|im_start|>assistant\nWrite [IMG] where the image goes.<|im_end|>\n<|im_start|>user\n<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "literal_marker_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>What does <__media__> mean in llama.cpp? Also, what color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "literal_img_with_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__><__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>Why is my <img> tag not rendering? Also, what are the colors of the first and second image? Answer with two words.<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+   "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+   "conversation": "two_literals_one_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_vlEIh6FOGVDCQUzWJqsxNXWQsxik36BC__>Is <img> or <image> the HTML tag? Also, what color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "image_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>What color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "text_then_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nWhat color is this image? Answer with one word.<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__><end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "two_images_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__><__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>What are the colors of the first and second image? Answer with two words.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "interleaved_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nFirst:<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>Second:<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>What are the colors of the first and second image? Answer with two words.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "image_only",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__><end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "image_in_later_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nHello.<end_of_turn>\n<start_of_turn>model\nHi! How can I help?<end_of_turn>\n<start_of_turn>user\n<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>What color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "system_and_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nYou are a concise assistant.\n\n<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>What color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "literal_img_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>Why is my <img> tag not rendering? Also, what color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "literal_image_in_system",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nYou are a concise assistant. Never write an <image> tag.\n\n<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>What color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "literal_img_in_assistant_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nHow do I mark an image in Mistral prompts?<end_of_turn>\n<start_of_turn>model\nWrite [IMG] where the image goes.<end_of_turn>\n<start_of_turn>user\n<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>What color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "literal_marker_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>What does <__media__> mean in llama.cpp? Also, what color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "literal_img_with_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__><__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>Why is my <img> tag not rendering? Also, what are the colors of the first and second image? Answer with two words.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+   "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+   "conversation": "two_literals_one_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_mmHhHzFN5Ge6iDWBIYUbmSLtTIjmHo0F__>Is <img> or <image> the HTML tag? Also, what color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "image_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>What color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "text_then_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nWhat color is this image? Answer with one word.<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__><end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "two_images_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__><__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>What are the colors of the first and second image? Answer with two words.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "interleaved_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nFirst:<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>Second:<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>What are the colors of the first and second image? Answer with two words.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "image_only",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__><end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "image_in_later_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nHello.<end_of_turn>\n<start_of_turn>model\nHi! How can I help?<end_of_turn>\n<start_of_turn>user\n<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>What color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "system_and_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nYou are a concise assistant.\n\n<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>What color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "literal_img_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>Why is my <img> tag not rendering? Also, what color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "literal_image_in_system",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nYou are a concise assistant. Never write an <image> tag.\n\n<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>What color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "literal_img_in_assistant_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nHow do I mark an image in Mistral prompts?<end_of_turn>\n<start_of_turn>model\nWrite [IMG] where the image goes.<end_of_turn>\n<start_of_turn>user\n<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>What color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "literal_marker_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>What does <__media__> mean in llama.cpp? Also, what color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "literal_img_with_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__><__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>Why is my <img> tag not rendering? Also, what are the colors of the first and second image? Answer with two words.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "two_literals_one_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_pcwz90MoX2aHi3LKrU7Pgn5hN3xGrjUr__>Is <img> or <image> the HTML tag? Also, what color is this image? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "audio_then_text",
+   "media_model": "audio",
+   "eos_token": "<|eot_id|>",
+   "media_marker": "<__media_MKiuWuSMv50i2icx1uQGUwCl5wQaq1z2__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\n<__media_MKiuWuSMv50i2icx1uQGUwCl5wQaq1z2__>What do you hear? Answer with one word.<end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-3n-E4B-it.jinja",
+   "template_sha256": "ac03dcb3b09726f1e50ac55ae58fc8d5930eadc3b3a12cb04286dc1d82ac8001",
+   "conversation": "text_then_audio",
+   "media_model": "audio",
+   "eos_token": "<|eot_id|>",
+   "media_marker": "<__media_MKiuWuSMv50i2icx1uQGUwCl5wQaq1z2__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<start_of_turn>user\nWhat do you hear? Answer with one word.<__media_MKiuWuSMv50i2icx1uQGUwCl5wQaq1z2__><end_of_turn>\n<start_of_turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "image_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\n<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>What color is this image? Answer with one word.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "text_then_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\nWhat color is this image? Answer with one word.<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__><turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "two_images_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\n<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__><__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>What are the colors of the first and second image? Answer with two words.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "interleaved_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\nFirst:<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>Second:<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>What are the colors of the first and second image? Answer with two words.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "image_only",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\n<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__><turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "image_in_later_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\nHello.<turn|>\n<|turn>model\nHi! How can I help?<turn|>\n<|turn>user\n<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>What color is this image? Answer with one word.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "system_and_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\nYou are a concise assistant.<turn|>\n<|turn>user\n<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>What color is this image? Answer with one word.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "literal_img_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\n<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>Why is my <img> tag not rendering? Also, what color is this image? Answer with one word.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "literal_image_in_system",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\nYou are a concise assistant. Never write an <image> tag.<turn|>\n<|turn>user\n<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>What color is this image? Answer with one word.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "literal_img_in_assistant_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\nHow do I mark an image in Mistral prompts?<turn|>\n<|turn>model\nWrite [IMG] where the image goes.<turn|>\n<|turn>user\n<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>What color is this image? Answer with one word.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "literal_marker_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\n<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>What does <__media__> mean in llama.cpp? Also, what color is this image? Answer with one word.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "literal_img_with_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\n<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__><__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>Why is my <img> tag not rendering? Also, what are the colors of the first and second image? Answer with two words.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "two_literals_one_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\n<__media_qgpo3V5KpIRdbjrBMkEYQPUQgPH4X14y__>Is <img> or <image> the HTML tag? Also, what color is this image? Answer with one word.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "audio_then_text",
+   "media_model": "audio",
+   "eos_token": "<|eot_id|>",
+   "media_marker": "<__media_mmEOZ61tze1uhFeBl7CMphOz0j3pRol5__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\n<__media_mmEOZ61tze1uhFeBl7CMphOz0j3pRol5__>What do you hear? Answer with one word.<turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/gemma-4-E2B-it.jinja",
+   "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+   "conversation": "text_then_audio",
+   "media_model": "audio",
+   "eos_token": "<|eot_id|>",
+   "media_marker": "<__media_mmEOZ61tze1uhFeBl7CMphOz0j3pRol5__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|turn>system\n<|think|>\n<turn|>\n<|turn>user\nWhat do you hear? Answer with one word.<__media_mmEOZ61tze1uhFeBl7CMphOz0j3pRol5__><turn|>\n<|turn>model\n"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "image_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>User: <__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>What color is this image? Answer with one word.<end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "text_then_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>User: What color is this image? Answer with one word.<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__><end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "two_images_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>User: <__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__><__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>What are the colors of the first and second image? Answer with two words.<end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "interleaved_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>User: First:<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>Second:<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>What are the colors of the first and second image? Answer with two words.<end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "image_only",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>User: <__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__><end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "image_in_later_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>User: Hello.<end_of_utterance>\nAssistant: Hi! How can I help?<end_of_utterance>\nUser: <__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>What color is this image? Answer with one word.<end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "system_and_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>System: You are a concise assistant.<end_of_utterance>\nUser: <__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>What color is this image? Answer with one word.<end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "literal_img_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>User: <__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>Why is my <img> tag not rendering? Also, what color is this image? Answer with one word.<end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "literal_image_in_system",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>System: You are a concise assistant. Never write an <image> tag.<end_of_utterance>\nUser: <__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>What color is this image? Answer with one word.<end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "literal_img_in_assistant_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>User: How do I mark an image in Mistral prompts?<end_of_utterance>\nAssistant: Write [IMG] where the image goes.<end_of_utterance>\nUser: <__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>What color is this image? Answer with one word.<end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "literal_marker_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>User: <__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>What does <__media__> mean in llama.cpp? Also, what color is this image? Answer with one word.<end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "literal_img_with_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>User: <__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__><__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>Why is my <img> tag not rendering? Also, what are the colors of the first and second image? Answer with two words.<end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/templates/SmolVLM-500M-Instruct.jinja",
+   "template_sha256": "830005085ddd94cec605b6e21b885b28ffad6e3f82ee6a212c523533e8f04f01",
+   "conversation": "two_literals_one_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>",
+   "supports_string_content": false,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>User: <__media_zrDogH3YQzwVfAgcEDwCR8qABgr60Pd1__>Is <img> or <image> the HTML tag? Also, what color is this image? Answer with one word.<end_of_utterance>\nAssistant:"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "image_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "text_then_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nWhat color is this image? Answer with one word.<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__><|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "two_images_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__><__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>What are the colors of the first and second image? Answer with two words.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "interleaved_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nFirst:<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>Second:<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>What are the colors of the first and second image? Answer with two words.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "image_only",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__><|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "image_in_later_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHello.<|im_end|>\n<|im_start|>assistant\nHi! How can I help?<|im_end|>\n<|im_start|>user\n<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "system_and_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a concise assistant.<|im_end|>\n<|im_start|>user\n<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "literal_img_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>Why is my <img> tag not rendering? Also, what color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "literal_image_in_system",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a concise assistant. Never write an <image> tag.<|im_end|>\n<|im_start|>user\n<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "literal_img_in_assistant_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHow do I mark an image in Mistral prompts?<|im_end|>\n<|im_start|>assistant\nWrite [IMG] where the image goes.<|im_end|>\n<|im_start|>user\n<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "literal_marker_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>What does <__media__> mean in llama.cpp? Also, what color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "literal_img_with_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__><__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>Why is my <img> tag not rendering? Also, what are the colors of the first and second image? Answer with two words.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "two_literals_one_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n<__media_YknxKhWsBl8CLTzn0QNUr8UMKOhlqieL__>Is <img> or <image> the HTML tag? Also, what color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "audio_then_text",
+   "media_model": "audio",
+   "eos_token": "<|eot_id|>",
+   "media_marker": "<__media_taLuD1uu7FpL29l92RS9e6yLxO8SjFpB__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n<__media_taLuD1uu7FpL29l92RS9e6yLxO8SjFpB__>What do you hear? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/Qwen2_5-Omni-3B.jinja",
+   "template_sha256": "d027e14db2e64eb2c23597240d42ea747b4fd5efd6e6a7604a990949c610f79c",
+   "conversation": "text_then_audio",
+   "media_model": "audio",
+   "eos_token": "<|eot_id|>",
+   "media_marker": "<__media_taLuD1uu7FpL29l92RS9e6yLxO8SjFpB__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nWhat do you hear? Answer with one word.<__media_taLuD1uu7FpL29l92RS9e6yLxO8SjFpB__><|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "image_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "text_then_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\nWhat color is this image? Answer with one word.<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__><|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "two_images_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__><__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>What are the colors of the first and second image? Answer with two words.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "interleaved_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\nFirst:<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>Second:<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>What are the colors of the first and second image? Answer with two words.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "image_only",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__><|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "image_in_later_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\nHello.<|im_end|>\n<|im_start|>assistant\nHi! How can I help?<|im_end|>\n<|im_start|>user\n<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "system_and_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a concise assistant.<|im_end|>\n<|im_start|>user\n<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "literal_img_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>Why is my <img> tag not rendering? Also, what color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "literal_image_in_system",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>system\nYou are a concise assistant. Never write an <image> tag.<|im_end|>\n<|im_start|>user\n<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "literal_img_in_assistant_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\nHow do I mark an image in Mistral prompts?<|im_end|>\n<|im_start|>assistant\nWrite [IMG] where the image goes.<|im_end|>\n<|im_start|>user\n<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>What color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "literal_marker_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>What does <__media__> mean in llama.cpp? Also, what color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "literal_img_with_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__><__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>Why is my <img> tag not rendering? Also, what are the colors of the first and second image? Answer with two words.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/LFM2-VL-450M.jinja",
+   "template_sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+   "conversation": "two_literals_one_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "<|im_start|>user\n<__media_F6NriYkwKe1HbIdawbxLr2dIVbCl5uSr__>Is <img> or <image> the HTML tag? Also, what color is this image? Answer with one word.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "image_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|user|>\n<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>What color is this image? Answer with one word.<|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "text_then_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|user|>\nWhat color is this image? Answer with one word.<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__><|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "two_images_then_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|user|>\n<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__><__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>What are the colors of the first and second image? Answer with two words.<|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "interleaved_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|user|>\nFirst:<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>Second:<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>What are the colors of the first and second image? Answer with two words.<|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "image_only",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|user|>\n<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__><|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "image_in_later_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|user|>\nHello.<|assistant|>\n<think></think>\nHi! How can I help?<|user|>\n<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>What color is this image? Answer with one word.<|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "system_and_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|system|>\nYou are a concise assistant.<|user|>\n<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>What color is this image? Answer with one word.<|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "literal_img_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|user|>\n<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>Why is my <img> tag not rendering? Also, what color is this image? Answer with one word.<|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "literal_image_in_system",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|system|>\nYou are a concise assistant. Never write an <image> tag.<|user|>\n<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>What color is this image? Answer with one word.<|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "literal_img_in_assistant_turn",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|user|>\nHow do I mark an image in Mistral prompts?<|assistant|>\n<think></think>\nWrite [IMG] where the image goes.<|user|>\n<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>What color is this image? Answer with one word.<|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "literal_marker_in_user_text",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|user|>\n<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>What does <__media__> mean in llama.cpp? Also, what color is this image? Answer with one word.<|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "literal_img_with_two_images",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|user|>\n<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__><__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>Why is my <img> tag not rendering? Also, what are the colors of the first and second image? Answer with two words.<|assistant|>\n"
+  },
+  {
+   "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+   "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+   "conversation": "two_literals_one_image",
+   "media_model": "vision",
+   "eos_token": "<|im_end|>",
+   "media_marker": "<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>",
+   "supports_string_content": true,
+   "supports_typed_content": true,
+   "prompt": "[gMASK]<sop><|user|>\n<__media_2WsstjW5h7fv4FWw1MS898YdQHzPmzzH__>Is <img> or <image> the HTML tag? Also, what color is this image? Answer with one word.<|assistant|>\n"
+  }
+ ]
+}

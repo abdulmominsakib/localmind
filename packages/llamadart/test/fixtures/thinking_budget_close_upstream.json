@@ -1,0 +1,111 @@
+{
+  "upstream_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+  "templates": [
+    {
+      "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+      "thinking_start_tag": "<think>",
+      "thinking_end_tags": [
+        "\n</think>",
+        "</think>",
+        "<tool_call>"
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16.jinja",
+      "thinking_start_tag": "<think>",
+      "thinking_end_tags": [
+        "\n</think>",
+        "</think>",
+        "<tool_call>"
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/StepFun3.5-Flash.jinja",
+      "thinking_start_tag": "<think>",
+      "thinking_end_tags": [
+        "\n</think>",
+        "</think>",
+        "<tool_call>"
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Qwen-QwQ-32B.jinja",
+      "thinking_start_tag": "<think>",
+      "thinking_end_tags": [
+        "</think>"
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/MiniMax-M2.jinja",
+      "thinking_start_tag": "<think>",
+      "thinking_end_tags": [
+        "</think>"
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-V3.1.jinja",
+      "thinking_start_tag": "<think>",
+      "thinking_end_tags": [
+        "</think>"
+      ]
+    }
+  ],
+  "server_emissions": {
+    "model": "unsloth/Qwen3.5-2B-GGUF Qwen3.5-2B-Q4_K_M.gguf",
+    "model_sha256": "aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223",
+    "tool_choice": "required",
+    "temperature": 0,
+    "seed": 1,
+    "max_tokens": 160,
+    "cases": [
+      {
+        "thinking_budget_tokens": null,
+        "raw": "The user is asking me to call get_weather with location Seoul. I need to use the get_weather function with the location parameter set to \"Seoul\".\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=location>\nSeoul\n</parameter>\n</function>\n</tool_call>",
+        "reasoning_content": "The user is asking me to call get_weather with location Seoul. I need to use the get_weather function with the location parameter set to \"Seoul\".",
+        "content": "",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": "{\"location\":\"Seoul\"}"
+          }
+        ]
+      },
+      {
+        "thinking_budget_tokens": 0,
+        "raw": "</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=location>\nSeoul\n</parameter>\n</function>\n</tool_call>",
+        "reasoning_content": "",
+        "content": "",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": "{\"location\":\"Seoul\"}"
+          }
+        ]
+      },
+      {
+        "thinking_budget_tokens": 4,
+        "raw": "The user is\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=location>\nSeoul\n</parameter>\n</function>\n</tool_call>",
+        "reasoning_content": "The user is",
+        "content": "",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": "{\"location\":\"Seoul\"}"
+          }
+        ]
+      },
+      {
+        "thinking_budget_tokens": 16,
+        "raw": "The user is asking me to call get_weather with location Seoul. I need\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=location>\nSeoul\n</parameter>\n</function>\n</tool_call>",
+        "reasoning_content": "The user is asking me to call get_weather with location Seoul. I need",
+        "content": "",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": "{\"location\":\"Seoul\"}"
+          }
+        ]
+      }
+    ]
+  }
+}

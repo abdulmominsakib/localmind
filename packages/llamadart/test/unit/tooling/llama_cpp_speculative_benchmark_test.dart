@@ -9,13 +9,21 @@ import 'package:test/test.dart';
 
 import '../../../tool/testing/llama_cpp_speculative_benchmark.dart'
     as speculative_benchmark;
+import '../../support/dart_script_snapshot.dart';
 
 void main() {
   group('llama_cpp_speculative_benchmark', () {
+    late String benchmark;
+    setUpAll(
+      () async => benchmark = await compileDartScript(
+        'tool/testing/llama_cpp_speculative_benchmark.dart',
+      ),
+    );
+
     test('documents flash-attention runtime option', () async {
       final result = await Process.run(Platform.resolvedExecutable, [
         '--disable-dart-dev',
-        'tool/testing/llama_cpp_speculative_benchmark.dart',
+        benchmark,
         '--help',
       ]);
 
@@ -27,6 +35,23 @@ void main() {
       expect(result.stdout, contains('--raw-prompt'));
       expect(result.stdout, contains('intentional raw-prompt comparisons'));
       expect(result.stdout, contains('--include-output'));
+      expect(result.stdout, contains('draft-dspark'));
+      expect(result.stdout, contains('DSpark is experimental and opt-in'));
+      expect(result.stdout, contains('--draft-micro-batch-size <n>'));
+    });
+
+    test('rejects a draft micro-batch size below one', () async {
+      final result = await Process.run(Platform.resolvedExecutable, [
+        '--disable-dart-dev',
+        benchmark,
+        '--model',
+        'missing.gguf',
+        '--draft-micro-batch-size',
+        '0',
+      ]);
+
+      expect(result.exitCode, 64);
+      expect(result.stderr, contains('--draft-micro-batch-size'));
     });
 
     test('builds llama.cpp static ngram cache bytes', () {
@@ -77,7 +102,7 @@ void main() {
     test('lists all case aliases in invalid cases errors', () async {
       final result = await Process.run(Platform.resolvedExecutable, [
         '--disable-dart-dev',
-        'tool/testing/llama_cpp_speculative_benchmark.dart',
+        benchmark,
         '--model',
         'missing.gguf',
         '--cases',
@@ -143,6 +168,63 @@ void main() {
       expect(capacity, 64);
     });
 
+    for (final (cases, expected) in <(String, int)>[
+      ('baseline', 0),
+      ('baseline,draft-dspark', 2),
+      ('draft-simple', 2),
+      ('draft-eagle3', 2),
+      ('draft-mtp', 2),
+      ('draft-dflash', 2),
+      ('backend-default', 2),
+      ('ngram-cache', 2),
+      ('ngram-mod', 7),
+      ('ngram-simple', 48),
+      ('ngram-map-k', 48),
+      ('ngram-map-k4v', 48),
+      ('mixed-ngram', 48),
+      ('mixed-ngram-mtp', 7),
+      ('mixed-ngram-draft-simple', 7),
+    ]) {
+      test('rollback capacity uses only selected $cases strategies', () {
+        final capacity = speculative_benchmark
+            .debugResolveSpeculativeRollbackCapacityForTesting([
+              '--model',
+              'target.gguf',
+              '--draft-model',
+              'draft.gguf',
+              '--cases',
+              cases,
+              '--draft-token-max',
+              '1,2',
+              '--ngram-token-max',
+              '7',
+              '--ngram-cache-build-static-path',
+              'unused-cache.bin',
+            ]);
+        expect(capacity, expected);
+      });
+    }
+
+    test(
+      'unused draft and ngram-mod capacities do not inflate an m-gram sweep',
+      () {
+        final capacity = speculative_benchmark
+            .debugResolveSpeculativeRollbackCapacityForTesting([
+              '--model',
+              'target.gguf',
+              '--cases',
+              'ngram-simple',
+              '--draft-token-max',
+              '128',
+              '--ngram-token-max',
+              '256',
+              '--ngram-size-m',
+              '8,16',
+            ]);
+        expect(capacity, 16);
+      },
+    );
+
     test('loads bundled MTP only when no external draft is supplied', () {
       expect(
         speculative_benchmark.debugShouldLoadBundledMtpForTesting(const [
@@ -166,10 +248,45 @@ void main() {
       );
     });
 
+    test('maps DSpark aliases to the upstream benchmark case', () {
+      for (final alias in ['draft-dspark', 'dspark', 'draft_dspark']) {
+        final names = speculative_benchmark
+            .debugBuildBenchmarkCaseNamesForTesting([
+              '--model',
+              'target.gguf',
+              '--draft-model',
+              'draft.gguf',
+              '--cases',
+              alias,
+              '--draft-token-max',
+              '7',
+            ]);
+
+        expect(names, ['draft-dspark_draft_7'], reason: 'alias=$alias');
+      }
+    });
+
+    test('requires an external draft model for DSpark', () async {
+      final result = await Process.run(Platform.resolvedExecutable, [
+        '--disable-dart-dev',
+        benchmark,
+        '--model',
+        'target.gguf',
+        '--cases',
+        'draft-dspark',
+      ]);
+
+      expect(result.exitCode, isNot(0));
+      expect(
+        result.stderr,
+        contains('draft-dspark requires --draft-model <draft.gguf>.'),
+      );
+    });
+
     test('rejects non-positive ngram token max', () async {
       final result = await Process.run(Platform.resolvedExecutable, [
         '--disable-dart-dev',
-        'tool/testing/llama_cpp_speculative_benchmark.dart',
+        benchmark,
         '--model',
         'missing.gguf',
         '--ngram-token-max',
@@ -186,7 +303,7 @@ void main() {
     test('rejects invalid flash-attention values', () async {
       final result = await Process.run(Platform.resolvedExecutable, [
         '--disable-dart-dev',
-        'tool/testing/llama_cpp_speculative_benchmark.dart',
+        benchmark,
         '--model',
         'missing.gguf',
         '--flash-attention',
@@ -201,7 +318,7 @@ void main() {
     test('rejects ngram cache build text without output path', () async {
       final result = await Process.run(Platform.resolvedExecutable, [
         '--disable-dart-dev',
-        'tool/testing/llama_cpp_speculative_benchmark.dart',
+        benchmark,
         '--model',
         'missing.gguf',
         '--cases',
@@ -234,7 +351,7 @@ void main() {
 
         final result = await Process.run(Platform.resolvedExecutable, [
           '--disable-dart-dev',
-          'tool/testing/llama_cpp_speculative_benchmark.dart',
+          benchmark,
           '--model',
           'missing.gguf',
           '--cases',

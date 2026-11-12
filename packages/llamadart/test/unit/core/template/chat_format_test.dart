@@ -1,17 +1,29 @@
 @TestOn('vm')
 library;
 
+import 'dart:convert';
 import 'dart:io';
+
 import 'package:llamadart/src/core/template/chat_format.dart';
 import 'package:test/test.dart';
 
+import '../../../support/chat_format_triggers.dart';
+
 void main() {
   group('ChatFormat Detection', () {
-    test('treats non-strict LFM 2.5 fixture as content-only', () {
+    test('detects LFM2 from the LFM 2.5 plain tool list', () {
       final file = File('test/fixtures/templates/LFM2_5-1_2B-Thinking.jinja');
       final source = file.readAsStringSync();
       final format = detectChatFormat(source);
-      expect(format, equals(ChatFormat.contentOnly));
+      expect(format, equals(ChatFormat.lfm2));
+    });
+
+    test('does not detect LFM2 from a plain tool list with an unclosed '
+        'tool list marker', () {
+      const source =
+          'List of tools: [{"name":"search"}]<|tool_list_start|><|im_end|>';
+      final format = detectChatFormat(source);
+      expect(format, isNot(ChatFormat.lfm2));
     });
 
     test('does not detect LFM2 from keep_past_thinking marker alone', () {
@@ -36,6 +48,17 @@ void main() {
       expect(format, equals(ChatFormat.lfm2));
     });
 
+    test('requires the space before the Firefunction v2 functools marker', () {
+      expect(
+        detectChatFormat('functools[{"name": "search"}]'),
+        ChatFormat.contentOnly,
+      );
+    });
+
+    test('requires the Kimi K3 end-of-message marker', () {
+      expect(detectChatFormat('<|open|><|close|>'), ChatFormat.contentOnly);
+    });
+
     test('falls back to content-only for standard ChatML', () {
       const source = '<|im_start|>user\nhi<|im_end|>';
       final format = detectChatFormat(source);
@@ -48,18 +71,25 @@ void main() {
       expect(format, equals(ChatFormat.contentOnly));
     });
 
-    test(
-      'keeps DeepSeek V4 DSML tool_calls template content-only in b9860',
-      () {
-        const source =
-            "{%- set dsml_token = '｜DSML｜' -%}"
-            "<' + dsml_token + 'tool_calls>"
-            "<' + dsml_token + 'invoke name=\"\$TOOL_NAME\">"
-            "</' + dsml_token + 'tool_calls>";
-        final format = detectChatFormat(source);
-        expect(format, equals(ChatFormat.contentOnly));
-      },
-    );
+    test('detects DeepSeek V4 DSML tool_calls template', () {
+      const source =
+          "{%- set dsml_token = '｜DSML｜' -%}"
+          "<' + dsml_token + 'tool_calls>"
+          "<' + dsml_token + 'invoke name=\"\$TOOL_NAME\">"
+          "</' + dsml_token + 'tool_calls>";
+      final format = detectChatFormat(source);
+      expect(format, equals(ChatFormat.deepseekV4));
+    });
+
+    test('detects DeepSeek V3.2 DSML function_calls template', () {
+      const source =
+          "{%- set dsml_token = '｜DSML｜' -%}"
+          "<' + dsml_token + 'function_calls>"
+          "<' + dsml_token + 'invoke name=\"\$FUNCTION_NAME\">"
+          "</' + dsml_token + 'function_calls>";
+      final format = detectChatFormat(source);
+      expect(format, equals(ChatFormat.deepseekV32));
+    });
 
     test('detects Cohere2 MoE / North Code before older Command-R', () {
       const source =
@@ -253,4 +283,85 @@ void main() {
       expect(format, equals(ChatFormat.functionGemma));
     });
   });
+
+  group('ChatFormat detection precedence', () {
+    final golden =
+        jsonDecode(File(_detectionGoldenPath).readAsStringSync())
+            as Map<String, dynamic>;
+
+    test('each trigger alone detects its own format', () {
+      for (final MapEntry(key: name, value: trigger)
+          in chatFormatTriggers.entries) {
+        expect(
+          detectChatFormat(trigger.source).name,
+          trigger.format.name,
+          reason: name,
+        );
+      }
+    });
+
+    test('every detectable format has a trigger', () {
+      expect(
+        chatFormatTriggers.values.map((trigger) => trigger.format).toSet(),
+        ChatFormat.values.toSet().difference(_undetectedFormats)
+          ..add(ChatFormat.contentOnly),
+      );
+    });
+
+    test('trigger pairs keep the pinned winner', () {
+      _expectPinned(_detectPairs(), golden['pairs'] as Map<String, dynamic>);
+    });
+
+    test('template corpus keeps its pinned formats', () {
+      final pinned = golden['templates'] as Map<String, dynamic>;
+      _expectPinned({
+        for (final path in pinned.keys)
+          path: detectChatFormat(File(path).readAsStringSync()).name,
+      }, pinned);
+    });
+  });
+}
+
+const String _detectionGoldenPath = 'test/fixtures/chat_format_detection.json';
+
+/// Formats the engine selects itself; no template source detects them.
+const Set<ChatFormat> _undetectedFormats = {
+  ChatFormat.contentOnly,
+  ChatFormat.generic,
+  ChatFormat.llama3BuiltinTools,
+  ChatFormat.pegSimple,
+  ChatFormat.pegNative,
+  ChatFormat.pegConstructed,
+};
+
+/// Detects every ordered pair of distinct triggers joined by a newline.
+Map<String, String> _detectPairs() => {
+  for (final first in chatFormatTriggers.keys)
+    for (final second in chatFormatTriggers.keys)
+      if (first != second)
+        '$first+$second': detectChatFormat(
+          '${chatFormatTriggers[first]!.source}\n${chatFormatTriggers[second]!.source}',
+        ).name,
+};
+
+/// Fails with each changed winner and, for a new trigger, the golden lines
+/// to add.
+void _expectPinned(Map<String, String> actual, Map<String, dynamic> pinned) {
+  final changed = [
+    for (final MapEntry(:key, :value) in actual.entries)
+      if (pinned.containsKey(key) && pinned[key] != value)
+        '$key: ${pinned[key]} -> $value',
+  ];
+  final unpinned = [
+    for (final MapEntry(:key, :value) in actual.entries)
+      if (!pinned.containsKey(key)) '${jsonEncode(key)}: ${jsonEncode(value)},',
+  ];
+  final stale = pinned.keys.where((key) => !actual.containsKey(key)).toList();
+  expect(
+    [...changed, ...unpinned, ...stale],
+    isEmpty,
+    reason:
+        'Changed: $changed\nAdd to $_detectionGoldenPath:\n'
+        '${unpinned.join('\n')}\nStale: $stale',
+  );
 }

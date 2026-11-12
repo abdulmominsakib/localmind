@@ -1,0 +1,24 @@
+load_tensors: offloaded 29/29 layers to GPU
+llama_context: constructing llama_context
+sched_reserve:       MTL0 compute buffer size =   372.77 MiB
+sched_reserve:        CPU compute buffer size =    44.03 MiB
+clip_ctx: CLIP using MTL0 backend
+load_hparams: projector:          qwen3vl_merger
+reserve_compute_meta:       MTL0 compute buffer size =   459.11 MiB
+reserve_compute_meta:        CPU compute buffer size =    24.93 MiB
+load_tensors: offloaded 29/29 layers to GPU
+llama_context: constructing llama_context
+sched_reserve:       MTL0 compute buffer size =   372.77 MiB
+sched_reserve:        CPU compute buffer size =    44.03 MiB
+clip_ctx: CLIP using MTL0 backend
+load_hparams: projector:          qwen3vl_merger
+reserve_compute_meta:       MTL0 compute buffer size =   459.11 MiB
+reserve_compute_meta:        CPU compute buffer size =    24.93 MiB
+load_tensors: offloaded 29/29 layers to GPU
+llama_context: constructing llama_context
+sched_reserve:       MTL0 compute buffer size =   372.77 MiB
+sched_reserve:        CPU compute buffer size =    44.03 MiB
+clip_ctx: CLIP using MTL0 backend
+load_hparams: projector:          qwen3vl_merger
+reserve_compute_meta:       MTL0 compute buffer size =   459.11 MiB
+reserve_compute_meta:        CPU compute buffer size =    24.93 MiB

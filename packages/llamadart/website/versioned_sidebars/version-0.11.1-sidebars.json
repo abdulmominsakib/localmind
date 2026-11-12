@@ -1,0 +1,116 @@
+{
+  "docsSidebar": [
+    {
+      "type": "category",
+      "label": "Get started",
+      "items": [
+        "intro",
+        "getting-started/installation",
+        "getting-started/quickstart",
+        "getting-started/finding-models",
+        "getting-started/model-families",
+        "getting-started/first-chat-session"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Tutorials",
+      "items": [
+        "tutorials/flutter-chat-app",
+        "tutorials/rag"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Concepts",
+      "items": [
+        "guides/architecture",
+        "guides/api-levels",
+        "guides/backend-selection",
+        "guides/model-lifecycle",
+        "guides/model-downloads",
+        "guides/generation-and-streaming",
+        "guides/chat-template-and-parsing"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Features",
+      "items": [
+        "guides/tool-calling",
+        "guides/embeddings",
+        "guides/multimodal",
+        "guides/speech-to-text",
+        "guides/text-to-speech",
+        "guides/image-generation",
+        "guides/decision-models",
+        "guides/lora-adapters"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Platforms",
+      "items": [
+        "platforms/support-matrix",
+        "platforms/native-build-hooks",
+        "platforms/linux-prerequisites",
+        "platforms/webgpu-bridge"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Performance & configuration",
+      "items": [
+        "configuration/runtime-parameters",
+        "guides/performance-tuning",
+        "guides/backend-benchmarks",
+        "configuration/logging",
+        "guides/observability"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Examples",
+      "items": [
+        "examples/overview",
+        "examples/basic-app",
+        "examples/chat-app",
+        "examples/llamadart-cli",
+        "examples/llamadart-server",
+        "examples/tui-coding-agent",
+        "examples/laya-tetris",
+        "examples/laya-command-bar"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Help & upgrades",
+      "items": [
+        "troubleshooting/common-issues",
+        "migration/upgrade-checklist",
+        "migration/0-5-to-0-6",
+        "migration/0-4-to-0-5",
+        "changelog/recent-releases"
+      ]
+    }
+  ],
+  "maintainersSidebar": [
+    {
+      "type": "category",
+      "label": "Maintainers",
+      "items": [
+        "maintainers/docs-site",
+        "maintainers/runtime-ownership",
+        "maintainers/native-and-web-sync",
+        "maintainers/release-workflow"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Internals",
+      "items": [
+        "guides/template-engine-internals"
+      ]
+    }
+  ]
+}

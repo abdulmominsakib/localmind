@@ -17,6 +17,24 @@ void main() {
       );
     });
 
+    test('keeps globalCacheDirectory but still throws', () async {
+      DefaultModelDownloadManager.globalCacheDirectory = '/app/models';
+      addTearDown(
+        () => DefaultModelDownloadManager.globalCacheDirectory = null,
+      );
+      const manager = DefaultModelDownloadManager();
+
+      expect(DefaultModelDownloadManager.globalCacheDirectory, '/app/models');
+      expect(
+        () => manager.defaultCacheDirectory,
+        throwsA(isA<LlamaUnsupportedException>()),
+      );
+      await expectLater(
+        manager.ensureModel(ModelSource.path('/models/model.gguf')),
+        throwsA(isA<LlamaUnsupportedException>()),
+      );
+    });
+
     test('auto constructor compiles on non-IO platforms', () async {
       const manager = DefaultModelDownloadManager.auto(
         appPrivateCacheDirectory: '/app/models',

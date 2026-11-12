@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../../exceptions.dart';
+import '../../url_redaction.dart';
 import '../model_load_options.dart';
 import '../model_source.dart';
 import 'model_download_manager_base.dart';
@@ -132,7 +133,8 @@ class ModelDownloadController {
 
   /// Starts resolving [source] with [options].
   ///
-  /// Throws [StateError] when another task is already running. The returned
+  /// Throws [LlamaArgumentException] when [options] carries a cancel token and
+  /// [LlamaStateException] when another task is already running. The returned
   /// future completes with the ready [ModelCacheEntry] or rethrows the manager's
   /// failure after emitting a failed/cancelled snapshot.
   Future<ModelCacheEntry> start(
@@ -141,14 +143,15 @@ class ModelDownloadController {
   }) {
     _throwIfDisposed();
     if (options.cancelToken != null) {
-      throw ArgumentError.value(
-        options.cancelToken,
-        'options.cancelToken',
-        'ModelDownloadController owns cancellation; call cancel() on the controller instead.',
+      throw LlamaArgumentException(
+        'ModelDownloadController owns cancellation; call cancel() on the '
+        'controller instead of passing options.cancelToken.',
+        name: 'options.cancelToken',
+        invalidValue: options.cancelToken,
       );
     }
     if (_snapshot.isRunning) {
-      throw StateError('A model download task is already running.');
+      throw LlamaStateException('A model download task is already running.');
     }
     _lastSource = source;
     _lastOptions = options;
@@ -164,7 +167,9 @@ class ModelDownloadController {
   Future<ModelCacheEntry> retry() {
     final source = _lastSource;
     if (source == null) {
-      throw StateError('No model download task is available to retry.');
+      throw LlamaStateException(
+        'No model download task is available to retry. Call start() first.',
+      );
     }
     return start(source, options: _lastOptions);
   }
@@ -292,7 +297,10 @@ class ModelDownloadController {
             stage: ModelDownloadTaskStage.cancelled,
             source: source,
             progress: latestProgress,
-            errorMessage: 'Download cancelled for ${source.displayName}.',
+            errorMessage: _redactedErrorMessage(
+              'Download cancelled for ${source.displayName}.',
+              source,
+            ),
           ),
         );
       } else {
@@ -302,7 +310,7 @@ class ModelDownloadController {
             stage: ModelDownloadTaskStage.failed,
             source: source,
             progress: latestProgress,
-            errorMessage: _redactedErrorMessage(error),
+            errorMessage: _redactedErrorMessage(error, source),
           ),
         );
       }
@@ -324,7 +332,7 @@ class ModelDownloadController {
 
   void _throwIfDisposed() {
     if (_isDisposed) {
-      throw StateError('ModelDownloadController has been disposed.');
+      throw LlamaStateException('ModelDownloadController has been disposed.');
     }
   }
 }
@@ -355,26 +363,11 @@ bool _isCancelledError(ModelDownloadCancelToken cancelToken) {
   return cancelToken.isCancelled;
 }
 
-String _redactedErrorMessage(Object error) {
-  return error.toString().replaceAllMapped(_urlPattern, (match) {
-    final value = match.group(0)!;
-    final trailing = _trailingPunctuation.firstMatch(value)?.group(0) ?? '';
-    final candidate = trailing.isEmpty
-        ? value
-        : value.substring(0, value.length - trailing.length);
-    final uri = Uri.tryParse(candidate);
-    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
-      return '<redacted-url>$trailing';
-    }
-    final redacted = Uri(
-      scheme: uri.scheme,
-      host: uri.host,
-      port: uri.hasPort ? uri.port : null,
-      path: uri.path,
+String _redactedErrorMessage(Object error, ModelSource source) =>
+    redactUrlSecrets(
+      '$error',
+      sourceUrls: <String>[
+        source.canonicalKey,
+        if (source.resolvedUri case final uri?) uri.toString(),
+      ],
     );
-    return '${redacted.toString()}$trailing';
-  });
-}
-
-final RegExp _urlPattern = RegExp(r'https?:\/\/\S+');
-final RegExp _trailingPunctuation = RegExp(r'[.?!:\)\]\}>]+$');

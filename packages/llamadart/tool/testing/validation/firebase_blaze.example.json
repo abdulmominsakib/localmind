@@ -1,0 +1,31 @@
+{
+  "account": "your-account@example.com",
+  "project": "your-approved-billed-project",
+  "settings": {
+    "billing_mode": "blaze",
+    "billing_account": "REPLACE_WITH_APPROVED_BILLING_ACCOUNT_ID",
+    "device_model": "REPLACE_FROM_CURRENT_CATALOG",
+    "device_version": "REPLACE_FROM_CURRENT_CATALOG",
+    "quota": {
+      "verified_at": "REPLACE_WITH_CURRENT_UTC_TIME",
+      "remaining_physical": 0,
+      "evidence": "REPLACE_WITH_CHECKED_FIREBASE_QUOTA_SOURCE"
+    },
+    "budget": {
+      "verified_at": "REPLACE_WITH_CURRENT_UTC_TIME",
+      "window_start": "REPLACE_WITH_FIXED_AUTHORIZED_WINDOW_START",
+      "expires_at": "REPLACE_WITH_AUTHORIZED_END_WITHIN_24_HOURS",
+      "maximum_run_usd": 0,
+      "maximum_total_usd": 0,
+      "funding": "credit",
+      "evidence": "REPLACE_WITH_AUTHORIZATION_AND_CURRENT_GROSS_COST_CALCULATION"
+    },
+    "credit": {
+      "verified_at": "REPLACE_WITH_CURRENT_UTC_TIME",
+      "expires_at": "REPLACE_WITH_ACTUAL_CREDIT_EXPIRY",
+      "applicable": false,
+      "available_usd": 0,
+      "evidence": "REPLACE_WITH_VERIFIED_TEST_LAB_ELIGIBILITY_BALANCE_AND_CURRENCY_CONVERSION"
+    }
+  }
+}

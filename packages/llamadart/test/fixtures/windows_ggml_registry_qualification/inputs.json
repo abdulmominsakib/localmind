@@ -1,0 +1,35 @@
+{
+  "baselineCommit": "41ae95e41122f21d2b02e35fae6821ead513b65a",
+  "flutterVersion": "3.47.1",
+  "dartVersion": "3.13.1",
+  "assets": [
+    {
+      "name": "flutter.zip",
+      "url": "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.47.1-stable.zip",
+      "sha256": "4cbf94fde1f5f8d6b9fc50b2483b57cf2077f61712282c2f4cf92560168f442b"
+    },
+    {
+      "name": "git.zip",
+      "url": "https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.4/MinGit-2.56.0.4-64-bit.zip",
+      "sha256": "e3bf78351fe777fba47ddee5950082f8a98bb0f02604fdc7ba3ee2cb68ffa877"
+    },
+    {
+      "name": "qwen.gguf",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/91cad51170dc346986eccefdc2dd33a9da36ead9/qwen2.5-1.5b-instruct-q4_k_m.gguf",
+      "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+      "bytes": 1117320736
+    },
+    {
+      "name": "candidate-core.tgz",
+      "url": "https://github.com/leehack/llamadart-native/releases/download/v0.8.0-1/llamadart-native-windows-x64-v0.8.0-1.tar.gz",
+      "sha256": "e7bbc544cfc65780569b62823157f91e1bff45b79332b61fa1da87ff8fd62121",
+      "bytes": 16277395
+    },
+    {
+      "name": "candidate-cuda12.tgz",
+      "url": "https://github.com/leehack/llamadart-native/releases/download/v0.8.0-1/llamadart-native-windows-x64-cuda12-v0.8.0-1.tar.gz",
+      "sha256": "04a7aa2fce3df4766f97da12b9a4834e2229152620b6706365a92268e8f967f6",
+      "bytes": 726680193
+    }
+  ]
+}

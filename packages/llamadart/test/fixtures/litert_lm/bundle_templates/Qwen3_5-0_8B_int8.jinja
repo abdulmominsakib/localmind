@@ -1,0 +1,31 @@
+{%- macro format_content(content) -%}
+    {%- if content is string -%}
+        {{- content -}}
+    {%- elif content is sequence -%}
+        {%- for item in content -%}
+            {%- if item['type'] == 'text' -%}
+                {{- item['text'] -}}
+            {%- endif -%}
+        {%- endfor -%}
+    {%- endif -%}
+{%- endmacro -%}
+{%- for message in messages -%}
+{%- if message.role == 'assistant' -%}
+<|im_start|>assistant
+<think>
+
+</think>
+
+{{ format_content(message.content) }}<|im_end|>
+{% else -%}
+<|im_start|>{{ message.role }}
+{{ format_content(message.content) }}<|im_end|>
+{% endif -%}
+{%- endfor -%}
+{%- if add_generation_prompt -%}
+<|im_start|>assistant
+<think>
+
+</think>
+
+{% endif -%}

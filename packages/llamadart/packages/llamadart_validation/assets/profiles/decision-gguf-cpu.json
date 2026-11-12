@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "id": "decision-gguf-cpu",
+  "runtime": "gguf",
+  "backend": "cpu",
+  "model": {
+    "id": "laya-f16",
+    "kind": "decision",
+    "filename": "laya-F16.gguf",
+    "revision": "ce2afdc0a8766af56a29a22dcf4a781e1f5c7d3c",
+    "url": "https://huggingface.co/fr0stbit3/laya-gguf/resolve/ce2afdc0a8766af56a29a22dcf4a781e1f5c7d3c/laya-F16.gguf",
+    "sha256": "f10551bbe259518d7b00f2b9e5d101a1d6ac557e3f977322bfa875149dd5ddc9",
+    "bytes": 791461088,
+    "quantization": "F16"
+  },
+  "decision": {
+    "head": {
+      "filename": "laya-head.safetensors",
+      "revision": "ce2afdc0a8766af56a29a22dcf4a781e1f5c7d3c",
+      "url": "https://huggingface.co/fr0stbit3/laya-gguf/resolve/ce2afdc0a8766af56a29a22dcf4a781e1f5c7d3c/laya-head.safetensors",
+      "sha256": "c1ec428e034614c9373ebcf3fdc255d8eafcc04be9b2f0c2ffeef92bb1361b83",
+      "bytes": 106052840
+    }
+  },
+  "selection": "quick",
+  "context_size": 512,
+  "threads": 4
+}

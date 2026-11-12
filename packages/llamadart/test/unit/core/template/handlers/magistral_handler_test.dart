@@ -9,6 +9,15 @@ import 'package:llamadart/src/core/template/handlers/magistral_handler.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('MagistralHandler.toolCallOpening finds a whole or partial opening', () {
+    expect(
+      MagistralHandler.toolCallOpening('Let me check. [TOOL_CALLS]...'),
+      14,
+    );
+    expect(MagistralHandler.toolCallOpening('Let me check. [TOOL_'), 14);
+    expect(MagistralHandler.toolCallOpening('Use [TOOLS] or [x].'), 19);
+  });
+
   test('MagistralHandler renders and parses TOOL_CALLS payload', () {
     final handler = MagistralHandler();
     final tools = [
@@ -68,6 +77,23 @@ void main() {
       parsed.content,
       equals('[{"name":"get_weather","arguments":{"city":"Seoul"}}]'),
     );
+  });
+
+  test('grammar constrains the tool-call id to 9 alphanumerics', () {
+    final grammar = MagistralHandler().buildGrammar([
+      ToolDefinition(
+        name: 'search',
+        description: 'Search docs',
+        parameters: [ToolParam.string('query', required: true)],
+        handler: _noop,
+      ),
+    ]);
+
+    expect(
+      grammar,
+      contains('root-item-id ::= "\\"" (root-item-id-1{9,9}) "\\"" space'),
+    );
+    expect(grammar, contains('root-item-id-1 ::= [a-zA-Z0-9]'));
   });
 }
 

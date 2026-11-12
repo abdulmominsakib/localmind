@@ -1,0 +1,5755 @@
+{
+  "upstream_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+  "user_prompt": "Weather in Paris?",
+  "tool": {
+    "name": "weather",
+    "parameters": {
+      "city": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "templates": [
+    {
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-V3.1.jinja",
+      "format": "deepseekV3",
+      "generation_prompt": "<｜Assistant｜><think></think>",
+      "cases": [
+        {
+          "name": "thought",
+          "output": "<think>Plan</think>Sunny.",
+          "upstream": {
+            "content": "<think>Plan</think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan \\n x.</think>Sunny.",
+          "upstream": {
+            "content": "Plan \\n x.</think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "later-thought",
+          "output": "Plan.</think>A<think>B</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>B</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-inside-text",
+          "output": "Hello <think>think</think> world",
+          "upstream": {
+            "content": "Hello <think>think</think> world",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unended-thought",
+          "output": "<think>Plan it </thin",
+          "upstream": {
+            "content": "<think>Plan it </thin",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-after-thought",
+          "output": "<think>Plan.</think><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>weather<｜tool▁sep｜>{\"city\": \"Paris\"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>",
+          "upstream": {
+            "content": "<think>Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call",
+          "output": "<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>weather<｜tool▁sep｜>{\"city\": \"Paris\"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escaped-newline",
+          "output": "Sunny \\n there.",
+          "upstream": {
+            "content": "Sunny \\n there.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-tag-at-end",
+          "output": "Use 3 <",
+          "upstream": {
+            "content": "Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-call-opening-at-end",
+          "output": "See <｜tool▁calls",
+          "upstream": {
+            "content": "See <｜tool▁calls",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/templates/Qwen3-4B.jinja",
+      "format": "hermes",
+      "generation_prompt": "<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "cases": [
+        {
+          "name": "thought",
+          "output": "<think>Plan</think>Sunny.",
+          "upstream": {
+            "content": "<think>Plan</think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan \\n x.</think>Sunny.",
+          "upstream": {
+            "content": "Plan \\n x.</think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "later-thought",
+          "output": "Plan.</think>A<think>B</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>B</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-inside-text",
+          "output": "Hello <think>think</think> world",
+          "upstream": {
+            "content": "Hello <think>think</think> world",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unended-thought",
+          "output": "<think>Plan it </thin",
+          "upstream": {
+            "content": "<think>Plan it </thin",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-after-thought",
+          "output": "<think>Plan.</think><tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "<think>Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call",
+          "output": "<tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escaped-newline",
+          "output": "Sunny \\n there.",
+          "upstream": {
+            "content": "Sunny \\n there.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-tag-at-end",
+          "output": "Use 3 <",
+          "upstream": {
+            "content": "Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-call-opening-at-end",
+          "output": "See <tool_",
+          "upstream": {
+            "content": "See <tool_",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Qwen-QwQ-32B.jinja",
+      "format": "hermes",
+      "generation_prompt": "<|im_start|>assistant\n<think>\n</think>",
+      "cases": [
+        {
+          "name": "thought",
+          "output": "<think>Plan</think>Sunny.",
+          "upstream": {
+            "content": "<think>Plan</think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan \\n x.</think>Sunny.",
+          "upstream": {
+            "content": "Plan \\n x.</think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "later-thought",
+          "output": "Plan.</think>A<think>B</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>B</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-inside-text",
+          "output": "Hello <think>think</think> world",
+          "upstream": {
+            "content": "Hello <think>think</think> world",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unended-thought",
+          "output": "<think>Plan it </thin",
+          "upstream": {
+            "content": "<think>Plan it </thin",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-after-thought",
+          "output": "<think>Plan.</think><tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "<think>Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call",
+          "output": "<tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escaped-newline",
+          "output": "Sunny \\n there.",
+          "upstream": {
+            "content": "Sunny \\n there.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-tag-at-end",
+          "output": "Use 3 <",
+          "upstream": {
+            "content": "Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-call-opening-at-end",
+          "output": "See <tool_",
+          "upstream": {
+            "content": "See <tool_",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+      "format": "qwen3CoderXml",
+      "generation_prompt": "<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "cases": [
+        {
+          "name": "thought",
+          "output": "<think>Plan</think>Sunny.",
+          "upstream": {
+            "content": "<think>Plan</think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan \\n x.</think>Sunny.",
+          "upstream": {
+            "content": "Plan \\n x.</think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "later-thought",
+          "output": "Plan.</think>A<think>B</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>B</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-inside-text",
+          "output": "Hello <think>think</think> world",
+          "upstream": {
+            "content": "Hello <think>think</think> world",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unended-thought",
+          "output": "<think>Plan it </thin",
+          "upstream": {
+            "content": "<think>Plan it </thin",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-after-thought",
+          "output": "<think>Plan.</think><tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "<think>Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escaped-newline",
+          "output": "Sunny \\n there.",
+          "upstream": {
+            "content": "Sunny \\n there.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-tag-at-end",
+          "output": "Use 3 <",
+          "upstream": {
+            "content": "Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-call-opening-at-end",
+          "output": "See <tool_",
+          "upstream": {
+            "content": "See <tool_",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    }
+  ],
+  "open_thought_templates": [
+    {
+      "template": "test/fixtures/llama_cpp_templates/StepFun3.5-Flash.jinja",
+      "format": "qwen3CoderXml",
+      "generation_prompt": "<|im_start|>assistant\n<think>\n",
+      "closed_prompt_suffix": "</think>\n",
+      "cases": [
+        {
+          "name": "thought",
+          "output": "Plan\n</think>\n\nSunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "</think>\n\nSunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-then-call",
+          "output": "Plan\n</think>\n\n<tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "<tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-text-call",
+          "output": "Plan\n</think>\n\nSunny.\n\n<tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.\n\n<tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "<tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Cohere2MoE.jinja",
+      "format": "cohere2Moe",
+      "generation_prompt": "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_THINKING|>",
+      "closed_prompt_suffix": "<|END_THINKING|>",
+      "cases": [
+        {
+          "name": "thought",
+          "output": "Plan<|END_THINKING|><|START_TEXT|>Sunny.<|END_TEXT|>",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "<|END_THINKING|><|START_TEXT|>Sunny.<|END_TEXT|>",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-then-call",
+          "output": "Plan<|END_THINKING|><|START_ACTION|>[{\"tool_call_id\": \"0\", \"tool_name\": \"weather\", \"parameters\": {\"city\": \"Paris\"}}]<|END_ACTION|>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "output": "<|START_TEXT|>Sunny.<|END_TEXT|>",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call",
+          "output": "<|START_ACTION|>[{\"tool_call_id\": \"0\", \"tool_name\": \"weather\", \"parameters\": {\"city\": \"Paris\"}}]<|END_ACTION|>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-text",
+          "output": "Plan<|START_TEXT|>Sunny.<|END_TEXT|>",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-in-text",
+          "output": "<|START_TEXT|>Use <|END_THINKING|> tag.<|END_TEXT|>",
+          "upstream": {
+            "content": "Use <|END_THINKING|> tag.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Use <|END_THINKING|> tag.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-thought",
+          "output": "<|START_THINKING|>Plan<|END_THINKING|><|START_TEXT|>Sunny.<|END_TEXT|>",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "<|START_THINKING|>Plan",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "<|START_THINKING|>Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-then-action",
+          "output": "Plan<|START_ACTION|>[{\"tool_call_id\": \"0\", \"tool_name\": \"weather\", \"parameters\": {\"city\": \"Paris\"}}]<|END_ACTION|>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "no_thought_templates": [
+    {
+      "template": "test/fixtures/llama_cpp_templates/ByteDance-Seed-OSS.jinja",
+      "format": "seedOss",
+      "chat_template_kwargs": {},
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan</seed:think>Sunny.",
+          "upstream": {
+            "content": "Plan</seed:think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan</seed:think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought",
+          "output": "<seed:think>Plan</seed:think>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-whitespace",
+          "output": "\n<seed:think>Plan</seed:think>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Hello <seed:think>x</seed:think> world",
+          "upstream": {
+            "content": "Hello <seed:think>x</seed:think> world",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hello <seed:think>x</seed:think> world",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "tags-after-thought",
+          "output": "<seed:think>Plan</seed:think>A<seed:think>B</seed:think>C",
+          "upstream": {
+            "content": "A<seed:think>B</seed:think>C",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A<seed:think>B</seed:think>C",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-start-tag",
+          "output": "<seed:think><seed:think>Plan</seed:think>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "<seed:think>Plan",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "<seed:think>Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "escape-in-thought",
+          "output": "<seed:think>Plan \\n x.</seed:think>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan \\n x.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan \\n x.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-in-thought",
+          "output": "<seed:think>Plan <seed:tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</seed:tool_call></seed:think>Done.",
+          "upstream": {
+            "content": "Done.",
+            "reasoning_content": "Plan <seed:tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Done.",
+            "reasoning_content": "Plan <seed:tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan</seed:think><seed:tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+          "upstream": {
+            "content": "Plan</seed:think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"\\nParis\\n\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan</seed:think><seed:tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-then-call",
+          "output": "<seed:think>Plan</seed:think><seed:tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"\\nParis\\n\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "<seed:tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought",
+          "output": "<seed:think>Plan",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "<seed:think>Plan</seed:thi",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan</seed:thi",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "",
+            "reasoning_content": "Plan</seed:thi",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-start-tag",
+          "output": "<seed:think>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-unicode-space",
+          "output": " <seed:think>Plan</seed:think>Sunny.",
+          "upstream": {
+            "content": " <seed:think>Plan</seed:think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": " <seed:think>Plan</seed:think>Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-ascii-spaces",
+          "output": " \t\r\u000b\f\n<seed:think>Plan</seed:think>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Plan <seed:tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+          "upstream": {
+            "content": "Plan ",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"\\nParis\\n\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan <seed:tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Cohere2MoE.jinja",
+      "format": "cohere2Moe",
+      "chat_template_kwargs": {
+        "reasoning_effort": "none"
+      },
+      "cases": [
+        {
+          "name": "end-tag-in-text",
+          "output": "<|START_TEXT|>Use <|END_THINKING|> tag.<|END_TEXT|>",
+          "upstream": {
+            "content": "Use <|END_THINKING|> tag.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Use <|END_THINKING|> tag.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-in-text",
+          "output": "<|START_TEXT|>Use <|START_THINKING|>x<|END_THINKING|> tag.<|END_TEXT|>",
+          "upstream": {
+            "content": "Use <|START_THINKING|>x<|END_THINKING|> tag.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Use <|START_THINKING|>x<|END_THINKING|> tag.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "text",
+          "output": "<|START_TEXT|>Sunny.<|END_TEXT|>",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Sunny.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/NousResearch-Hermes-2-Pro-Llama-3-8B-tool_use.jinja",
+      "format": "hermes",
+      "chat_template_kwargs": {},
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think><tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-call",
+          "output": "Plan.</think>Let me check.<tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Let me check.<tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/templates/Qwen3-4B.jinja",
+      "format": "hermes",
+      "chat_template_kwargs": {},
+      "enable_thinking": true,
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think><tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-call",
+          "output": "Plan.</think>Let me check.<tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Let me check.<tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought",
+          "output": "<think>Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-thought",
+          "output": "<think>Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought-and-newlines",
+          "output": "\n<think>\nPlan.\n</think>\n\nA</think> B",
+          "upstream": {
+            "content": "A</think> B",
+            "reasoning_content": "Plan.\n",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A</think> B",
+            "reasoning_content": "Plan.\n",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end-after-thought",
+          "output": "<think>Plan.</think>A <think>",
+          "upstream": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought-then-call",
+          "output": "<think>Plan.</think>A</think><tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "A</think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "A</think><tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Qwen3-Coder.jinja",
+      "format": "qwen3CoderXml",
+      "chat_template_kwargs": {},
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think><tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think><tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-call",
+          "output": "Plan.</think>Let me check.<tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Let me check.<tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/google-gemma-2-2b-it.jinja",
+      "format": "generic",
+      "chat_template_kwargs": {},
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/HuggingFaceTB-SmolLM3-3B.jinja",
+      "format": "generic",
+      "chat_template_kwargs": {},
+      "enable_thinking": true,
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought",
+          "output": "<think>Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-thought",
+          "output": "<think>Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought-and-newlines",
+          "output": "\n<think>\nPlan.\n</think>\n\nA</think> B",
+          "upstream": {
+            "content": "\n\nA</think> B",
+            "reasoning_content": "\nPlan.\n",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "\n\nA</think> B",
+            "reasoning_content": "\nPlan.\n",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end-after-thought",
+          "output": "<think>Plan.</think>A <think>",
+          "upstream": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/templates/Llama-3_2-3B-Instruct.jinja",
+      "format": "llama3",
+      "chat_template_kwargs": {},
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/GLM-4.6.jinja",
+      "format": "glm45",
+      "chat_template_kwargs": {},
+      "enable_thinking": true,
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought",
+          "output": "<think>Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-thought",
+          "output": "<think>Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought-and-newlines",
+          "output": "\n<think>\nPlan.\n</think>\n\nA</think> B",
+          "upstream": {
+            "content": "\nA</think> B",
+            "reasoning_content": "\nPlan.\n",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "\nA</think> B",
+            "reasoning_content": "\nPlan.\n",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end-after-thought",
+          "output": "<think>Plan.</think>A <think>",
+          "upstream": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/poolside-Laguna-XS.2.jinja",
+      "format": "laguna",
+      "chat_template_kwargs": {},
+      "enable_thinking": false,
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought",
+          "output": "<think>Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-thought",
+          "output": "<think>Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought-and-newlines",
+          "output": "\n<think>\nPlan.\n</think>\n\nA</think> B",
+          "upstream": {
+            "content": "\n\nA</think> B",
+            "reasoning_content": "\nPlan.\n",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "\n\nA</think> B",
+            "reasoning_content": "\nPlan.\n",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end-after-thought",
+          "output": "<think>Plan.</think>A <think>",
+          "upstream": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/LFM2-8B-A1B.jinja",
+      "format": "lfm2",
+      "chat_template_kwargs": {},
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/moonshotai-Kimi-K2.jinja",
+      "format": "kimiK2",
+      "chat_template_kwargs": {},
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought",
+          "output": "<think>Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-thought",
+          "output": "<think>Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end-after-thought",
+          "output": "<think>Plan.</think>A <think>",
+          "upstream": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-R1-Distill-Qwen-32B.jinja",
+      "format": "deepseekR1",
+      "chat_template_kwargs": {},
+      "enable_thinking": false,
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-V3.2.jinja",
+      "format": "deepseekV32",
+      "chat_template_kwargs": {},
+      "enable_thinking": false,
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-V4.jinja",
+      "format": "deepseekV4",
+      "chat_template_kwargs": {},
+      "enable_thinking": false,
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/ibm-granite-granite-3.3-2B-Instruct.jinja",
+      "format": "granite",
+      "chat_template_kwargs": {},
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought",
+          "output": "<think>Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-thought",
+          "output": "<think>Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought-and-newlines",
+          "output": "\n<think>\nPlan.\n</think>\n\nA</think> B",
+          "upstream": {
+            "content": "\n\nA</think> B",
+            "reasoning_content": "\nPlan.\n",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "\n\nA</think> B",
+            "reasoning_content": "\nPlan.\n",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end-after-thought",
+          "output": "<think>Plan.</think>A <think>",
+          "upstream": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A <think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/openbmb-MiniCPM5-1B.jinja",
+      "format": "minicpm5",
+      "chat_template_kwargs": {},
+      "enable_thinking": false,
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/mistralai-Mistral-Nemo-Instruct-2407.jinja",
+      "format": "mistralNemo",
+      "chat_template_kwargs": {},
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think>Answer.",
+          "upstream": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think>Answer.",
+          "upstream": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think>x </thi",
+          "upstream": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>x </thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think>A<think>X</think>C",
+          "upstream": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think>A<think>X</think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</thi",
+          "upstream": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</thi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think>X</think> more.",
+          "upstream": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X</think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think>X",
+          "upstream": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think>",
+          "upstream": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Apertus-8B-Instruct.jinja",
+      "format": "apertus",
+      "chat_template_kwargs": {},
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.<|inner_suffix|>Answer.",
+          "upstream": {
+            "content": "Plan.<|inner_suffix|>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.<|inner_suffix|>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.<|inner_suffix|>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "<|inner_suffix|>Answer.",
+          "upstream": {
+            "content": "<|inner_suffix|>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "<|inner_suffix|>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n<|inner_suffix|>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n<|inner_suffix|>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n<|inner_suffix|>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.<|inner_suffix|>Use 3 <",
+          "upstream": {
+            "content": "Plan.<|inner_suffix|>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.<|inner_suffix|>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.<|inner_suffix|>x <|inner_suffi",
+          "upstream": {
+            "content": "Plan.<|inner_suffix|>x <|inner_suffi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.<|inner_suffix|>x <|inner_suffi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.<|inner_suffix|>x <|inner_suffi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.<|inner_suffix|>A<|inner_suffix|>B",
+          "upstream": {
+            "content": "Plan.<|inner_suffix|>A<|inner_suffix|>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.<|inner_suffix|>A<|inner_suffix|>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.<|inner_suffix|>A<|inner_prefix|>X<|inner_suffix|>C",
+          "upstream": {
+            "content": "Plan.<|inner_suffix|>A<|inner_prefix|>X<|inner_suffix|>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.<|inner_suffix|>A<|inner_prefix|>X<|inner_suffix|>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.<|inner_suffi",
+          "upstream": {
+            "content": "Plan.<|inner_suffi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.<|inner_suffi",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.<|inner_suffi",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <|inner_prefix|>X<|inner_suffix|> more.",
+          "upstream": {
+            "content": "Answer <|inner_prefix|>X<|inner_suffix|> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <|inner_prefix|>X<|inner_suffix|> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <|inner_prefix|>X",
+          "upstream": {
+            "content": "Answer <|inner_prefix|>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <|inner_prefix|>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <|inner_prefix|>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <|inner_prefix|>",
+          "upstream": {
+            "content": "Hi <|inner_prefix|>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <|inner_prefix|>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <|inner_prefix|>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/tencent-Hy3.jinja",
+      "format": "hunyuanV3",
+      "chat_template_kwargs": {},
+      "enable_thinking": false,
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</think:opensource>Answer.",
+          "upstream": {
+            "content": "Plan.</think:opensource>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think:opensource>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think:opensource>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</think:opensource>Answer.",
+          "upstream": {
+            "content": "</think:opensource>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "</think:opensource>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</think:opensource>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</think:opensource>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</think:opensource>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</think:opensource>Use 3 <",
+          "upstream": {
+            "content": "Plan.</think:opensource>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think:opensource>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-unfinished-end-tag",
+          "output": "Plan.</think:opensource>x </think:opensour",
+          "upstream": {
+            "content": "Plan.</think:opensource>x </think:opensour",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think:opensource>x </think:opensour",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think:opensource>x </think:opensour",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</think:opensource>A</think:opensource>B",
+          "upstream": {
+            "content": "Plan.</think:opensource>A</think:opensource>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think:opensource>A</think:opensource>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</think:opensource>A<think:opensource>X</think:opensource>C",
+          "upstream": {
+            "content": "Plan.</think:opensource>A<think:opensource>X</think:opensource>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think:opensource>A<think:opensource>X</think:opensource>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-end-tag",
+          "output": "Plan.</think:opensour",
+          "upstream": {
+            "content": "Plan.</think:opensour",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</think:opensour",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think:opensour",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <think:opensource>X</think:opensource> more.",
+          "upstream": {
+            "content": "Answer <think:opensource>X</think:opensource> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think:opensource>X</think:opensource> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <think:opensource>X",
+          "upstream": {
+            "content": "Answer <think:opensource>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <think:opensource>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <think:opensource>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <think:opensource>",
+          "upstream": {
+            "content": "Hi <think:opensource>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <think:opensource>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <think:opensource>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/MiniMax-M3.jinja",
+      "format": "minimaxM3",
+      "chat_template_kwargs": {},
+      "enable_thinking": false,
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</mm:think>Answer.",
+          "upstream": {
+            "content": "Plan.</mm:think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</mm:think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</mm:think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first-then-thought-after-text",
+          "output": "</mm:think>Hello <mm:think>X</mm:think> more.",
+          "upstream": {
+            "content": "Hello <mm:think>X</mm:think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hello <mm:think>X</mm:think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first-then-thought",
+          "output": "</mm:think><mm:think>X</mm:think>Answer.",
+          "upstream": {
+            "content": "<mm:think>X</mm:think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "<mm:think>X</mm:think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-space",
+          "output": " </mm:think> Answer.",
+          "upstream": {
+            "content": " </mm:think> Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": " </mm:think> Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</mm:think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</mm:think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</mm:think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</mm:think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</mm:think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</mm:think>A</mm:think>B",
+          "upstream": {
+            "content": "Plan.</mm:think>A</mm:think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>A</mm:think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</mm:think>A<mm:think>X</mm:think>C",
+          "upstream": {
+            "content": "Plan.</mm:think>A<mm:think>X</mm:think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>A<mm:think>X</mm:think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "Plan.</mm:think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-call",
+          "output": "Plan.</mm:think>Let me check.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "Plan.</mm:think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>Let me check.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first-then-call",
+          "output": "</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <mm:think>X</mm:think> more.",
+          "upstream": {
+            "content": "Answer <mm:think>X</mm:think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <mm:think>X</mm:think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text-then-call",
+          "output": "Answer <mm:think>X</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "Answer <mm:think>X</mm:think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Answer <mm:think>X</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <mm:think>X",
+          "upstream": {
+            "content": "Answer <mm:think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <mm:think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <mm:think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <mm:think>",
+          "upstream": {
+            "content": "Hi <mm:think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <mm:think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <mm:think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-space",
+          "output": " <mm:think>Plan.</mm:think>A</mm:think> B",
+          "upstream": {
+            "content": " <mm:think>Plan.</mm:think>A</mm:think> B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": " <mm:think>Plan.</mm:think>A</mm:think> B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-newlines",
+          "output": "\n<mm:think>\nPlan.\n</mm:think>\n\nA</mm:think> B",
+          "upstream": {
+            "content": "\n<mm:think>\nPlan.\n</mm:think>\n\nA</mm:think> B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "\n<mm:think>\nPlan.\n</mm:think>\n\nA</mm:think> B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-only",
+          "output": "</mm:think>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-space-then-call",
+          "output": " <mm:think>Plan.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": " <mm:think>Plan.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": " <mm:think>Plan.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-end-tag-then-call",
+          "output": "</mm:think><mm:think>Plan.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "<mm:think>Plan.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "<mm:think>Plan.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ],
+      "dropped_thought_cases": [
+        {
+          "name": "thought",
+          "output": "<mm:think>Plan.</mm:think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought",
+          "output": "<mm:think>Plan.</mm:think>A</mm:think>B",
+          "upstream": {
+            "content": "A</mm:think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A</mm:think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-thought",
+          "output": "<mm:think>Plan.</mm:think>A<mm:think>X</mm:think>C",
+          "upstream": {
+            "content": "A<mm:think>X</mm:think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A<mm:think>X</mm:think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end-after-thought",
+          "output": "<mm:think>Plan.</mm:think>A <mm:think>",
+          "upstream": {
+            "content": "A <mm:think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A <mm:think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A <mm:think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought-then-call",
+          "output": "<mm:think>Plan.</mm:think>A</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "A</mm:think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "A</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/MiniMax-M3.jinja",
+      "format": "minimaxM3",
+      "chat_template_kwargs": {
+        "thinking_mode": "adaptive"
+      },
+      "enable_thinking": true,
+      "cases": [
+        {
+          "name": "end-tag-without-start-tag",
+          "output": "Plan.</mm:think>Answer.",
+          "upstream": {
+            "content": "Plan.</mm:think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</mm:think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first",
+          "output": "</mm:think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first-then-thought-after-text",
+          "output": "</mm:think>Hello <mm:think>X</mm:think> more.",
+          "upstream": {
+            "content": "Hello <mm:think>X</mm:think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hello <mm:think>X</mm:think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first-then-thought",
+          "output": "</mm:think><mm:think>X</mm:think>Answer.",
+          "upstream": {
+            "content": "<mm:think>X</mm:think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "<mm:think>X</mm:think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-space",
+          "output": " </mm:think> Answer.",
+          "upstream": {
+            "content": " </mm:think> Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": " </mm:think> Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-around-newlines",
+          "output": "Plan\n</mm:think>\n\nAnswer.",
+          "upstream": {
+            "content": "Plan\n</mm:think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan\n</mm:think>\n\nAnswer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-partial-tag",
+          "output": "Plan.</mm:think>Use 3 <",
+          "upstream": {
+            "content": "Plan.</mm:think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>Use 3 <",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-end-tag",
+          "output": "Plan.</mm:think>A</mm:think>B",
+          "upstream": {
+            "content": "Plan.</mm:think>A</mm:think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>A</mm:think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-thought",
+          "output": "Plan.</mm:think>A<mm:think>X</mm:think>C",
+          "upstream": {
+            "content": "Plan.</mm:think>A<mm:think>X</mm:think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>A<mm:think>X</mm:think>C",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "Plan.</mm:think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-call",
+          "output": "Plan.</mm:think>Let me check.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "Plan.</mm:think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Plan.</mm:think>Let me check.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-first-then-call",
+          "output": "</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text",
+          "output": "Answer <mm:think>X</mm:think> more.",
+          "upstream": {
+            "content": "Answer <mm:think>X</mm:think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <mm:think>X</mm:think> more.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-text-then-call",
+          "output": "Answer <mm:think>X</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "Answer <mm:think>X</mm:think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "Answer <mm:think>X</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-text",
+          "output": "Answer <mm:think>X",
+          "upstream": {
+            "content": "Answer <mm:think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer <mm:think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer <mm:think>X",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end",
+          "output": "Hi <mm:think>",
+          "upstream": {
+            "content": "Hi <mm:think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Hi <mm:think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Hi <mm:think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-space",
+          "output": " <mm:think>Plan.</mm:think>A</mm:think> B",
+          "upstream": {
+            "content": " <mm:think>Plan.</mm:think>A</mm:think> B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": " <mm:think>Plan.</mm:think>A</mm:think> B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-newlines",
+          "output": "\n<mm:think>\nPlan.\n</mm:think>\n\nA</mm:think> B",
+          "upstream": {
+            "content": "\n<mm:think>\nPlan.\n</mm:think>\n\nA</mm:think> B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "\n<mm:think>\nPlan.\n</mm:think>\n\nA</mm:think> B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-only",
+          "output": "</mm:think>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-space-then-call",
+          "output": " <mm:think>Plan.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": " <mm:think>Plan.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": " <mm:think>Plan.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unfinished-thought-after-end-tag-then-call",
+          "output": "</mm:think><mm:think>Plan.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "<mm:think>Plan.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "<mm:think>Plan.]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought",
+          "output": "<mm:think>Plan.</mm:think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "Answer.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought",
+          "output": "<mm:think>Plan.</mm:think>A</mm:think>B",
+          "upstream": {
+            "content": "A</mm:think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A</mm:think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "thought-after-thought",
+          "output": "<mm:think>Plan.</mm:think>A<mm:think>X</mm:think>C",
+          "upstream": {
+            "content": "A<mm:think>X</mm:think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A<mm:think>X</mm:think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-at-end-after-thought",
+          "output": "<mm:think>Plan.</mm:think>A <mm:think>",
+          "upstream": {
+            "content": "A <mm:think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_without_tools": {
+            "content": "A <mm:think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A <mm:think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-after-thought-then-call",
+          "output": "<mm:think>Plan.</mm:think>A</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+          "upstream": {
+            "content": "A</mm:think>",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_without_tools": {
+            "content": "A</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">\n]<]minimax[>[<city>Paris]<]minimax[>[</city>\n]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        }
+      ]
+    }
+  ]
+}

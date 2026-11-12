@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "gemma4-gguf-cuda",
+  "runtime": "gguf",
+  "backend": "cuda",
+  "model": {
+    "kind": "chat",
+    "filename": "gemma-4-E2B-it-Q4_K_S.gguf",
+    "revision": "90f9618340396838ee7ff5b0ba2da27da62953d3",
+    "url": "https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/90f9618340396838ee7ff5b0ba2da27da62953d3/gemma-4-E2B-it-Q4_K_S.gguf",
+    "sha256": "0a2fac16f388b4839f075dedb681357aec3e73a96bd66b413e462b6853550c99",
+    "bytes": 3043932288
+  },
+  "selection": "focused",
+  "focus_features": [
+    "tools"
+  ],
+  "context_size": 1024,
+  "threads": 4,
+  "max_tokens": 32,
+  "fixtures": {
+    "hello": {
+      "prompt": "Reply with one short sentence saying hello.",
+      "regex": "\\bhello\\b"
+    },
+    "arithmetic": {
+      "prompt": "What is 2 + 2? Reply with only the number.",
+      "regex": "^4[.!]?$"
+    }
+  },
+  "enable_thinking": false
+}

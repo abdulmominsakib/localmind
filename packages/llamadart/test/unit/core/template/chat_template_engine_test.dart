@@ -4,12 +4,14 @@ import 'dart:typed_data';
 import 'package:llamadart/src/core/exceptions.dart';
 import 'package:llamadart/src/core/models/chat/chat_message.dart';
 import 'package:llamadart/src/core/models/chat/chat_role.dart';
+import 'package:llamadart/src/core/models/chat/chat_template_result.dart';
 import 'package:llamadart/src/core/models/chat/content_part.dart';
 import 'package:llamadart/src/core/models/inference/tool_choice.dart';
 import 'package:llamadart/src/core/models/tools/tool_definition.dart';
 import 'package:llamadart/src/core/models/tools/tool_param.dart';
 import 'package:llamadart/src/core/template/chat_format.dart';
 import 'package:llamadart/src/core/template/chat_template_engine.dart';
+import 'package:llamadart/src/core/template/template_caps.dart';
 import 'package:llamadart/src/core/template/template_render_context.dart';
 import 'package:test/test.dart';
 
@@ -18,6 +20,120 @@ void main() {
   const customTemplate = '{{ "CUSTOM:" ~ messages[0]["content"] }}';
 
   final messages = [const LlamaChatMessage(role: 'user', content: 'hello')];
+
+  group('Ministral terminal reasoning', () {
+    const template = '[SYSTEM_PROMPT]x[/SYSTEM_PROMPT][TOOL_CALLS][ARGS]';
+    final tool = ToolDefinition(
+      name: 'weather',
+      description: 'Weather',
+      parameters: [],
+    );
+
+    for (final choice in ToolChoice.values) {
+      final rendered = ChatTemplateEngine.render(
+        templateSource: template,
+        messages: messages,
+        metadata: const {},
+        tools: [tool],
+        toolChoice: choice,
+      );
+
+      for (final suffix in ['', '[/TH']) {
+        test('${choice.name} preserves terminal thought policy $suffix', () {
+          if (choice == ToolChoice.required) {
+            expect(
+              () => ChatTemplateEngine.parse(
+                rendered.format,
+                '[THINK]Check the city.$suffix',
+                parser: rendered.parser,
+              ),
+              throwsA(isA<LlamaInferenceException>()),
+            );
+            return;
+          }
+          final parsed = ChatTemplateEngine.parse(
+            rendered.format,
+            '[THINK]Check the city.$suffix',
+            parser: rendered.parser,
+          );
+          expect(parsed.reasoningContent, 'Check the city.');
+          expect(parsed.content, isEmpty);
+          expect(parsed.toolCalls, isEmpty);
+        });
+      }
+
+      if (choice != ToolChoice.none) {
+        test('${choice.name} preserves a call after an unclosed thought', () {
+          final parsed = ChatTemplateEngine.parse(
+            rendered.format,
+            '[THINK]a[TOOL_CALLS]weather[ARGS]{"city":"x"}',
+            parser: rendered.parser,
+          );
+          expect(parsed.content, '[THINK]a');
+          expect(parsed.reasoningContent, isNull);
+          final call = parsed.toolCalls.single;
+          expect(call.function?.name, 'weather');
+          expect(call.function?.arguments, '{"city":"x"}');
+        });
+      }
+
+      if (choice != ToolChoice.required) {
+        test('${choice.name} keeps a leading-space thought as content', () {
+          final parsed = ChatTemplateEngine.parse(
+            rendered.format,
+            ' [THINK]a',
+            parser: rendered.parser,
+          );
+          expect(parsed.content, ' [THINK]a');
+          expect(parsed.reasoningContent, isNull);
+          expect(parsed.toolCalls, isEmpty);
+        });
+
+        test('${choice.name} preserves a completed thought and answer', () {
+          final parsed = ChatTemplateEngine.parse(
+            rendered.format,
+            '[THINK]Check.[/THINK]Answer [THINK]literally. \n',
+            parser: rendered.parser,
+          );
+          expect(parsed.reasoningContent, 'Check.');
+          expect(parsed.content, 'Answer [THINK]literally. \n');
+          expect(parsed.toolCalls, isEmpty);
+        });
+      } else {
+        for (final output in [
+          'Answer [THINK]literally.',
+          '[THINK]a[/THINK]',
+          '[THINK]Check.[/THINK][TOOL_CALLS]weather[ARGS]{',
+        ]) {
+          test('required still rejects malformed completed output $output', () {
+            expect(
+              () => ChatTemplateEngine.parse(
+                rendered.format,
+                output,
+                parser: rendered.parser,
+              ),
+              throwsA(isA<LlamaInferenceException>()),
+            );
+          });
+        }
+      }
+    }
+
+    test('other PEG formats retain their terminal parsing policy', () {
+      final rendered = ChatTemplateEngine.render(
+        templateSource: template,
+        messages: messages,
+        metadata: const {},
+      );
+      final parsed = ChatTemplateEngine.parse(
+        ChatFormat.pegNative.index,
+        '[THINK]Check.',
+        parser: rendered.parser,
+      );
+      expect(parsed.content, '[THINK]Check.');
+      expect(parsed.reasoningContent, isNull);
+    });
+  });
 
   group('ChatTemplateEngine template routing', () {
     test('supports per-call custom template override', () {
@@ -113,10 +229,7 @@ void main() {
           enableThinking: true,
         );
 
-        expect(
-          enabled.prompt,
-          contains('look<|vision_start|><|image_pad|><|vision_end|>'),
-        );
+        expect(enabled.prompt, contains('look<__media__><|im_end|>'));
         expect(enabled.prompt, endsWith('<|im_start|>assistant\n<think>\n'));
         expect(enabled.thinkingForcedOpen, isTrue);
 
@@ -131,6 +244,127 @@ void main() {
         expect(disabled.thinkingForcedOpen, isFalse);
       },
     );
+
+    test('every template gets the resolved enable_thinking', () {
+      const template =
+          '{{ enable_thinking | tojson }}{{ thinking | default("-") }}';
+      String render(bool enableThinking, [Map<String, dynamic>? kwargs]) =>
+          ChatTemplateEngine.render(
+            templateSource: template,
+            messages: messages,
+            metadata: const {},
+            enableThinking: enableThinking,
+            chatTemplateKwargs: kwargs,
+          ).prompt;
+
+      expect(render(true), 'true-');
+      expect(render(false), 'false-');
+      expect(render(true, {'enable_thinking': false}), 'false-');
+      expect(render(true, {'thinking': false}), 'falseFalse');
+      expect(render(false, {'enable_thinking': 'yes'}), 'false-');
+    });
+
+    group('a thought the template opens', () {
+      const template =
+          '{%- for message in messages -%}'
+          '{%- for part in message.content -%}{{ part.text }}{%- endfor -%}'
+          '{%- endfor -%}'
+          '<think>';
+      const schema = {
+        'type': 'json_schema',
+        'json_schema': {
+          'schema': {
+            'type': 'object',
+            'properties': {
+              'answer': {'type': 'integer'},
+            },
+            'required': ['answer'],
+          },
+        },
+      };
+      final tool = ToolDefinition(
+        name: 'get_weather',
+        description: 'Weather',
+        parameters: [ToolParam.string('location', required: true)],
+      );
+      List<LlamaChatMessage> request({required bool media}) => [
+        LlamaChatMessage.withContent(
+          role: LlamaChatRole.user,
+          content: [
+            if (media) const LlamaImageContent(path: '/tmp/photo.png'),
+            const LlamaTextContent('look'),
+          ],
+        ),
+      ];
+
+      for (final media in [false, true]) {
+        final kind = media ? 'media' : 'text';
+        for (final enableThinking in [true, false]) {
+          test('stays open and forced open in a $kind request with '
+              'enableThinking: $enableThinking', () {
+            final result = ChatTemplateEngine.render(
+              templateSource: template,
+              messages: request(media: media),
+              metadata: const {},
+              enableThinking: enableThinking,
+            );
+            expect(result.prompt, '${media ? '<__media__>' : ''}look<think>');
+            expect(result.thinkingForcedOpen, isTrue);
+          });
+        }
+
+        test('finishes before the response format in a $kind request', () {
+          final result = ChatTemplateEngine.render(
+            templateSource: template,
+            messages: request(media: media),
+            metadata: const {},
+            responseFormat: schema,
+          );
+          expect(result.thinkingForcedOpen, isTrue);
+          expect(result.grammarLazy, isFalse);
+          expect(
+            result.grammar,
+            startsWith('root ::= think-body "</think>" think-space ('),
+          );
+
+          final parsed = ChatTemplateEngine.parse(
+            result.format,
+            'plan</think>{"answer": 4}',
+            thinkingForcedOpen: result.thinkingForcedOpen,
+          );
+          expect(parsed.reasoningContent, 'plan');
+          expect(parsed.content, '{"answer": 4}');
+        });
+
+        test('finishes before a generic tool call in a $kind request', () {
+          final result = ChatTemplateEngine.render(
+            templateSource: template,
+            messages: request(media: media),
+            metadata: const {},
+            tools: [tool],
+          );
+          expect(result.format, ChatFormat.generic.index);
+          expect(result.thinkingForcedOpen, isTrue);
+          expect(result.grammarLazy, isFalse);
+          expect(
+            result.grammar,
+            startsWith('root ::= think-body "</think>" think-space ('),
+          );
+
+          final parsed = ChatTemplateEngine.parse(
+            result.format,
+            'plan</think>{"tool_call": {"name": "get_weather", '
+            '"arguments": {"location": "Paris"}}}',
+            thinkingForcedOpen: result.thinkingForcedOpen,
+            tools: [tool],
+          );
+          expect(parsed.reasoningContent, 'plan');
+          expect(parsed.toolCalls.map((call) => call.function?.name), [
+            'get_weather',
+          ]);
+        });
+      }
+    });
 
     test('multimodal thinking uses handler-specific reasoning tags', () {
       const template = '''
@@ -215,6 +449,15 @@ void main() {
         ChatFormat.minicpm5: TemplateToolCallSerialization.normalizeOnly,
         ChatFormat.qwen3CoderXml: TemplateToolCallSerialization.normalizeOnly,
         ChatFormat.seedOss: TemplateToolCallSerialization.normalizeOnly,
+        ChatFormat.kimiK3: TemplateToolCallSerialization.normalizeOnly,
+        ChatFormat.minimaxM1: TemplateToolCallSerialization.normalizeOnly,
+        ChatFormat.minimaxM3: TemplateToolCallSerialization.normalizeOnly,
+        ChatFormat.deepseekV4: TemplateToolCallSerialization.normalizeOnly,
+        ChatFormat.deepseekV32: TemplateToolCallSerialization.normalizeOnly,
+        ChatFormat.museGlimmer: TemplateToolCallSerialization.normalizeOnly,
+        ChatFormat.laguna: TemplateToolCallSerialization.normalizeOnly,
+        ChatFormat.ling3: TemplateToolCallSerialization.normalizeOnly,
+        ChatFormat.gemma4: TemplateToolCallSerialization.normalizeOnly,
       };
 
       for (final MapEntry(key: format, value: expected)
@@ -230,16 +473,92 @@ void main() {
       }
     });
 
+    group('every handler renders one tool message per tool result', () {
+      // The comment keeps Gemma 4 on OpenAI-style tool messages.
+      const template =
+          '{#- OpenAI Chat Completions: #}{% for m in messages %}'
+          '<{{ m.role }}>{{ m.content }}</{{ m.role }}>{% endfor %}';
+      const history = [
+        LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'Paris?'),
+        LlamaChatMessage.withContent(
+          role: LlamaChatRole.assistant,
+          content: [
+            LlamaToolCallContent(
+              id: 'call_0',
+              name: 'get_weather',
+              arguments: {'city': 'Paris'},
+              rawJson: '{"city":"Paris"}',
+            ),
+            LlamaToolCallContent(
+              id: 'call_1',
+              name: 'get_time',
+              arguments: {'city': 'Paris'},
+              rawJson: '{"city":"Paris"}',
+            ),
+          ],
+        ),
+        LlamaChatMessage.withContent(
+          role: LlamaChatRole.tool,
+          content: [
+            LlamaToolResultContent(
+              id: 'call_0',
+              name: 'get_weather',
+              result: 'RESULT_ONE',
+            ),
+            LlamaToolResultContent(
+              id: 'call_1',
+              name: 'get_time',
+              result: {'value': 'RESULT_TWO'},
+            ),
+          ],
+        ),
+      ];
+
+      for (final format in ChatFormat.values) {
+        test('$format', () {
+          final handler = ChatTemplateEngine.handlerFor(format);
+          final prompts = {
+            'render': handler
+                .render(
+                  templateSource: template,
+                  messages: history,
+                  metadata: const {},
+                )
+                .prompt,
+            'renderWithMultimodalContent': handler
+                .renderWithMultimodalContent(
+                  templateSource: template,
+                  messages: history,
+                  metadata: const {},
+                )
+                .prompt,
+          };
+          for (final MapEntry(key: path, value: prompt) in prompts.entries) {
+            expect(
+              prompt,
+              matches(
+                '<tool>[^<]*RESULT_ONE[^<]*</tool>'
+                '<tool>[^<]*RESULT_TWO[^<]*</tool>',
+              ),
+              reason: path,
+            );
+          }
+        });
+      }
+    });
+
     test(
-      'preserves GLM-OCR image markers through render-context serialization',
+      'renders a GLM-OCR image as the marker without the template wrappers',
       () {
         const template = '''[gMASK]<sop>
 {# GLM detection marker: <arg_key>name</arg_key><arg_value>value</arg_value> #}
 {% for m in messages %}
 {% if m.role == 'user' %}<|user|>
+{% if m.content is string %}{{ m.content }}{% else %}
 {% for item in m.content %}
 {% if item.type == 'image' %}<|begin_of_image|><|image|><|end_of_image|>{% elif item.type == 'text' %}{{ item.text }}{% endif %}
 {% endfor %}
+{% endif %}
 {% endif %}
 {% endfor %}
 {% if add_generation_prompt %}<|assistant|>{% endif %}''';
@@ -260,11 +579,8 @@ void main() {
         );
 
         expect(result.format, equals(ChatFormat.glm45.index));
-        expect(
-          result.prompt,
-          contains('<|begin_of_image|><__media__><|end_of_image|>'),
-        );
-        expect(result.prompt, contains('Extract text.'));
+        expect(result.prompt, contains('<__media__>Extract text.'));
+        expect(result.prompt, isNot(contains('<|begin_of_image|>')));
       },
     );
 
@@ -298,6 +614,352 @@ void main() {
         expect(result.prompt, isNot(contains('data:image')));
       },
     );
+
+    test('gives a template the media marker where each image was, whatever '
+        'placeholder the template writes for a typed image part', () {
+      const template =
+          '{% for message in messages %}<{{ message.role }}>'
+          '{% if message.content is string %}{{ message.content }}'
+          '{% else %}{% for part in message.content %}'
+          "{% if part.type == 'image' %}"
+          'Picture {{ loop.index }}: [own image placeholder]'
+          '{% else %}{{ part.text }}{% endif %}'
+          '{% endfor %}{% endif %}'
+          '{% endfor %}';
+      const image = LlamaImageContent(path: '/tmp/page.png');
+
+      String prompt(List<LlamaChatMessage> messages) =>
+          ChatTemplateEngine.render(
+            templateSource: template,
+            messages: messages,
+            metadata: const {},
+            addAssistant: false,
+          ).prompt;
+
+      expect(
+        prompt(const [
+          LlamaChatMessage.fromText(role: LlamaChatRole.system, text: 'sys'),
+          LlamaChatMessage.withContent(
+            role: LlamaChatRole.user,
+            content: [image, LlamaTextContent('What is this?')],
+          ),
+        ]),
+        '<system>sys<user><__media__>What is this?',
+      );
+      expect(
+        prompt(const [
+          LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'Hi'),
+          LlamaChatMessage.fromText(
+            role: LlamaChatRole.assistant,
+            text: 'Yes?',
+          ),
+          LlamaChatMessage.withContent(
+            role: LlamaChatRole.user,
+            content: [
+              LlamaTextContent('First:'),
+              image,
+              LlamaTextContent('Second:'),
+              image,
+            ],
+          ),
+        ]),
+        '<user>Hi<assistant>Yes?<user>First:<__media__>Second:<__media__>',
+      );
+    });
+
+    for (final (name, template) in const [
+      (
+        'a string or a part list',
+        '{% for message in messages %}'
+            '{% if message.content is string %}{{ message.content }}'
+            '{% else %}{% for part in message.content %}{{ part.text }}'
+            '{% endfor %}{% endif %}{% endfor %}',
+      ),
+      (
+        'a string',
+        '{% for message in messages %}{{ message.content }}{% endfor %}',
+      ),
+    ]) {
+      test('leaves a placeholder a message quotes as text for a template '
+          'that reads content as $name', () {
+        const quoted =
+            'Is <img>, <image>, [IMG], <|image_1|> or <start_of_image> a '
+            'tag, and what is <__media__>?';
+        String prompt([String? marker]) => ChatTemplateEngine.render(
+          templateSource: template,
+          messages: const [
+            LlamaChatMessage.withContent(
+              role: LlamaChatRole.user,
+              content: [
+                LlamaImageContent(path: '/tmp/page.png'),
+                LlamaTextContent(quoted),
+              ],
+            ),
+          ],
+          metadata: const {},
+          addAssistant: false,
+          mediaMarker: marker ?? '<__media__>',
+        ).prompt;
+
+        expect(prompt(), '<__media__>$quoted');
+        expect(prompt('<__media_x__>'), '<__media_x__>$quoted');
+      });
+    }
+
+    test('renders a video part as the media marker without leaking its '
+        'source', () {
+      final result = ChatTemplateEngine.render(
+        templateSource:
+            '{% for message in messages %}'
+            '{{ message.role }}: {{ message.content }}\n'
+            '{% endfor %}',
+        messages: [
+          LlamaChatMessage.withContent(
+            role: LlamaChatRole.user,
+            content: [
+              const LlamaTextContent('Describe:'),
+              LlamaVideoContent(path: '/tmp/clip.mp4'),
+            ],
+          ),
+        ],
+        metadata: const {},
+      );
+
+      expect(result.prompt, 'user: Describe:<__media__>\n');
+    });
+
+    test('gives the media marker in text to a template that reads part '
+        'lists but rejects media parts', () {
+      const textParts =
+          '{% for message in messages %}'
+          '{% if message.content is string %}{{ message.content }}'
+          '{% else %}{% for part in message.content %}'
+          "{% if part.type == 'text' %}{{ part.text }}"
+          "{% else %}{{ raise_exception('text parts only') }}{% endif %}"
+          '{% endfor %}{% endif %}'
+          '{% endfor %}';
+
+      for (final media in <LlamaContentPart>[
+        const LlamaImageContent(path: '/tmp/page.png'),
+        const LlamaAudioContent(path: '/tmp/clip.wav'),
+      ]) {
+        final result = ChatTemplateEngine.render(
+          templateSource: textParts,
+          messages: [
+            LlamaChatMessage.withContent(
+              role: LlamaChatRole.user,
+              content: [const LlamaTextContent('Describe:'), media],
+            ),
+          ],
+          metadata: const {},
+        );
+
+        expect(result.prompt, 'Describe:<__media__>');
+      }
+    });
+
+    group('a chat template that fails to render', () {
+      const mustAlternate =
+          '{% for message in messages %}'
+          '{% if loop.index0 > 0 and '
+          'message.role == messages[loop.index0 - 1].role %}'
+          "{{ raise_exception('Conversation roles must alternate') }}"
+          '{% endif %}{{ message.content }}'
+          '{% endfor %}';
+      const twoUserTurns = [
+        LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'a'),
+        LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'b'),
+      ];
+
+      Matcher throwsRenderFailure(Object message) => throwsA(
+        isA<LlamaInferenceException>().having(
+          (e) => e.message,
+          'message',
+          message,
+        ),
+      );
+
+      test('throws a typed exception carrying what the template raised', () {
+        expect(
+          () => ChatTemplateEngine.render(
+            templateSource: mustAlternate,
+            messages: twoUserTurns,
+            metadata: const {},
+          ),
+          throwsRenderFailure(
+            'The chat template from templateSource failed to render: '
+            'Conversation roles must alternate',
+          ),
+        );
+      });
+
+      test('throws a typed exception when it raises in a request with '
+          'media', () {
+        // Reads strings and part lists, so a request with media takes the
+        // other handler call.
+        const alternatingPartLists =
+            '{% for message in messages %}'
+            '{% if loop.index0 > 0 and '
+            'message.role == messages[loop.index0 - 1].role %}'
+            "{{ raise_exception('Conversation roles must alternate') }}"
+            '{% endif %}'
+            '{% if message.content is string %}{{ message.content }}'
+            '{% else %}{% for part in message.content %}{{ part.text }}'
+            '{% endfor %}{% endif %}'
+            '{% endfor %}';
+        const image = LlamaChatMessage.withContent(
+          role: LlamaChatRole.user,
+          content: [
+            LlamaTextContent('Describe:'),
+            LlamaImageContent(path: '/tmp/page.png'),
+          ],
+        );
+
+        expect(
+          ChatTemplateEngine.render(
+            templateSource: alternatingPartLists,
+            messages: const [image],
+            metadata: const {},
+          ).prompt,
+          'Describe:<__media__>',
+        );
+        expect(
+          () => ChatTemplateEngine.render(
+            templateSource: alternatingPartLists,
+            messages: const [image, image],
+            metadata: const {},
+          ),
+          throwsRenderFailure(
+            'The chat template from templateSource failed to render: '
+            'Conversation roles must alternate',
+          ),
+        );
+      });
+
+      test('throws a typed exception for invalid template syntax', () {
+        expect(
+          () => ChatTemplateEngine.render(
+            templateSource: '{% for message in messages %}{{ message.content',
+            messages: twoUserTurns,
+            metadata: const {},
+          ),
+          throwsRenderFailure(
+            startsWith(
+              'The chat template from templateSource failed to render: '
+              'ParserException',
+            ),
+          ),
+        );
+      });
+
+      const recursiveTemplate =
+          '{% macro recurse() %}{{ recurse() }}{% endmacro %}'
+          '{% if messages[0].content == "overflow" %}{{ recurse() }}'
+          '{% else %}{{ messages[0].content }}{% endif %}';
+
+      // Stack overflow cannot be caught on dart2wasm.
+      test('wraps render stack overflow and preserves its original stack', () {
+        try {
+          ChatTemplateEngine.render(
+            templateSource: recursiveTemplate,
+            messages: const [
+              LlamaChatMessage.fromText(
+                role: LlamaChatRole.user,
+                text: 'overflow',
+              ),
+            ],
+            metadata: const {},
+          );
+          fail('The recursive template must fail to render');
+        } on LlamaInferenceException catch (error, stackTrace) {
+          expect(error.message, contains('templateSource failed to render'));
+          expect(error.message, contains('Stack Overflow'));
+          expect(stackTrace.toString(), contains('MacroStatement'));
+        }
+      }, testOn: '!dart2wasm');
+
+      // Stack overflow cannot be caught on dart2wasm.
+      test('does not retry a tool-role stack overflow as a user turn', () {
+        const template =
+            '{% macro recurse() %}{{ recurse() }}{% endmacro %}'
+            '{% for message in messages %}'
+            '{% if message.role == "tool" %}{{ recurse() }}'
+            '{% else %}{{ message.content }}{% endif %}'
+            '{% endfor %}';
+
+        // A user-turn retry would succeed and hide the original overflow.
+        expect(
+          ChatTemplateEngine.render(
+            templateSource: template,
+            messages: const [
+              LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'ok'),
+            ],
+            metadata: const {},
+          ).prompt,
+          'ok',
+        );
+        expect(
+          () => ChatTemplateEngine.render(
+            templateSource: template,
+            messages: const [
+              LlamaChatMessage.withContent(
+                role: LlamaChatRole.tool,
+                content: [
+                  LlamaToolResultContent(
+                    id: 'call1',
+                    name: 'inspect',
+                    result: 'ok',
+                  ),
+                ],
+              ),
+            ],
+            metadata: const {},
+          ),
+          throwsA(
+            isA<LlamaInferenceException>().having(
+              (error) => error.message,
+              'message',
+              allOf(contains('templateSource'), contains('Stack Overflow')),
+            ),
+          ),
+        );
+      }, testOn: '!dart2wasm');
+
+      test('keeps successful recursive-template renders unchanged', () {
+        expect(
+          ChatTemplateEngine.render(
+            templateSource: recursiveTemplate,
+            messages: messages,
+            metadata: const {},
+          ).prompt,
+          'hello',
+        );
+      });
+
+      test('leaves unrelated render errors unchanged', () {
+        expect(
+          () => ChatTemplateEngine.render(
+            templateSource: '{{ 1 // 0 }}',
+            messages: messages,
+            metadata: const {},
+          ),
+          throwsA(isA<UnsupportedError>()),
+        );
+      });
+
+      test('renders the conversation it accepts', () {
+        final result = ChatTemplateEngine.render(
+          templateSource: mustAlternate,
+          messages: const [
+            LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'a'),
+            LlamaChatMessage.fromText(role: LlamaChatRole.assistant, text: 'b'),
+          ],
+          metadata: const {},
+        );
+
+        expect(result.prompt, 'ab');
+      });
+    });
 
     test('keeps GLM-OCR image marker when GLM tool-call policy runs', () {
       const history = [
@@ -550,6 +1212,84 @@ void main() {
       expect(result.grammar!, contains('tool-0-call'));
     });
 
+    test('direct-Jinja auto required and none preserve reasoning prefixes', () {
+      const templates = <ChatFormat, String>{
+        ChatFormat.kimiK3:
+            '{# <|open|> <|close|> <|end_of_msg|> #}'
+            '{{ "<|open|>think<|sep|>" }}',
+        ChatFormat.minimaxM3:
+            '{# ]<]minimax[>[ <tool_call> <invoke name= #}'
+            '{{ "<mm:think>" }}',
+        ChatFormat.deepseekV32:
+            '{# dsml_token DSML function_calls #}{{ "<think>" }}',
+        ChatFormat.deepseekV4:
+            '{# dsml_token DSML tool_calls #}{{ "<think>" }}',
+        ChatFormat.museGlimmer:
+            '{# <atem:function_calls> <|eom|> #}'
+            '{{ "<|start|>assistant" }}',
+        ChatFormat.laguna:
+            '{# <assistant> </assistant> <tool_response> '
+            '<arg_key> <arg_value> #}{{ "<think>" }}',
+      };
+
+      for (final entry in templates.entries) {
+        for (final enableThinking in [true, false]) {
+          final auto = ChatTemplateEngine.render(
+            templateSource: entry.value,
+            messages: grammarMessages,
+            metadata: const {},
+            tools: tools,
+            toolChoice: ToolChoice.auto,
+            enableThinking: enableThinking,
+          );
+          expect(auto.format, entry.key.index, reason: '${entry.key} auto');
+          expect(auto.grammar, isNotNull, reason: '${entry.key} auto');
+          expect(auto.grammarLazy, isTrue, reason: '${entry.key} auto');
+
+          final required = ChatTemplateEngine.render(
+            templateSource: entry.value,
+            messages: grammarMessages,
+            metadata: const {},
+            tools: tools,
+            toolChoice: ToolChoice.required,
+            enableThinking: enableThinking,
+          );
+          expect(
+            required.format,
+            entry.key.index,
+            reason: '${entry.key} required',
+          );
+          expect(required.grammar, isNotNull, reason: '${entry.key} required');
+          expect(
+            required.grammarLazy,
+            isFalse,
+            reason: '${entry.key} required',
+          );
+          expect(
+            required.grammarTriggers,
+            isEmpty,
+            reason: '${entry.key} required',
+          );
+          expect(
+            required.grammar!.split('\n').first,
+            contains('required'),
+            reason: '${entry.key} required',
+          );
+
+          final none = ChatTemplateEngine.render(
+            templateSource: entry.value,
+            messages: grammarMessages,
+            metadata: const {},
+            tools: tools,
+            toolChoice: ToolChoice.none,
+            enableThinking: enableThinking,
+          );
+          expect(none.grammar, isNull, reason: '${entry.key} none');
+          expect(none.grammarLazy, isFalse, reason: '${entry.key} none');
+        }
+      }
+    });
+
     test('uses generic routing for tools + schema requests', () {
       const template =
           '<|END_THINKING|><|START_ACTION|>{{ messages[0]["content"] }}';
@@ -655,6 +1395,43 @@ void main() {
       expect(result.format, equals(ChatFormat.lfm2.index));
       expect(result.grammar, isNotNull);
       expect(result.grammarLazy, isFalse);
+    });
+
+    test('honors parallelToolCalls on LFM2 templates that omit tool_calls', () {
+      const template =
+          'List of tools: <|tool_list_start|>[{"name":"x"}]<|tool_list_end|>'
+          '{% for message in messages %}{{ message["content"] }}{% endfor %}';
+      expect(TemplateCaps.detect(template).supportsParallelToolCalls, isFalse);
+
+      String? grammar({required bool parallel}) => ChatTemplateEngine.render(
+        templateSource: template,
+        messages: grammarMessages,
+        metadata: const {},
+        tools: tools,
+        toolChoice: ToolChoice.required,
+        parallelToolCalls: parallel,
+      ).grammar;
+
+      expect(grammar(parallel: true), isNot(grammar(parallel: false)));
+    });
+
+    test('honors explicit parallelToolCalls when Qwen caps deny it', () {
+      const template =
+          '{# <tool_call> <function= <parameter= '
+          'Function calls MUST follow the specified format #}'
+          '{% for message in messages %}{{ message.content }}{% endfor %}';
+      expect(TemplateCaps.detect(template).supportsParallelToolCalls, isFalse);
+
+      String? grammar({required bool parallel}) => ChatTemplateEngine.render(
+        templateSource: template,
+        messages: grammarMessages,
+        metadata: const {},
+        tools: tools,
+        toolChoice: ToolChoice.required,
+        parallelToolCalls: parallel,
+      ).grammar;
+
+      expect(grammar(parallel: true), isNot(grammar(parallel: false)));
     });
 
     test('keeps lazy grammar for strict LFM2 force-json-schema mode', () {
@@ -935,9 +1712,7 @@ void main() {
         parallelToolCalls: true,
       );
       expect(minCallsFromParser(autoParallel.parser!), equals(0));
-      // Parallel stays disabled unless template capability detection
-      // confirms tool-call list emission support.
-      expect(maxCallsFromParser(autoParallel.parser!), equals(1));
+      expect(maxCallsFromParser(autoParallel.parser!), equals(-1));
 
       final requiredSingle = ChatTemplateEngine.render(
         templateSource: template,
@@ -950,159 +1725,48 @@ void main() {
       expect(maxCallsFromParser(requiredSingle.parser!), equals(1));
     });
 
-    test('routes Nemotron v3 templates to PEG-constructed parser path', () {
+    // llama.cpp (`cd959bae9`) parses Nemotron-3-Nano with its Qwen3-Coder
+    // parser, where `<tool_call>` also ends a forced-open thought.
+    test('routes Nemotron v3 templates to the Qwen3-Coder XML parser', () {
       const template =
-          '{% set truncate_history_thinking = true %}'
-          '<tool_call><function><function=get_weather><parameters>'
-          '<parameter=city><think>';
-
-      final result = ChatTemplateEngine.render(
-        templateSource: template,
-        messages: grammarMessages,
-        metadata: const {},
-        tools: tools,
-        toolChoice: ToolChoice.auto,
-      );
-
-      expect(result.format, equals(ChatFormat.pegConstructed.index));
-      expect(result.parser, isNotNull);
-      expect(result.parser, isNotEmpty);
-      expect(result.grammarTriggers, hasLength(1));
-      expect(result.grammarTriggers.first.value, equals('<tool_call>'));
-
-      final parsed = ChatTemplateEngine.parse(
-        result.format,
-        'I am thinking\n'
-        '</think>\n'
-        '<tool_call>\n'
-        '<function=get_weather>\n'
-        '<parameter=city>\n'
-        'Seoul\n'
-        '</parameter>\n'
-        '</function>\n'
-        '</tool_call>',
-        parser: result.parser,
-        thinkingForcedOpen: result.thinkingForcedOpen,
-      );
-
-      expect(parsed.reasoningContent, equals('I am thinking'));
-      expect(parsed.toolCalls, hasLength(1));
-      expect(parsed.toolCalls.first.function?.name, equals('get_weather'));
-      expect(
-        parsed.toolCalls.first.function?.arguments,
-        equals('{"city":"Seoul"}'),
-      );
-    });
-
-    test('Nemotron v3 tool_choice none uses content-only parser behavior', () {
-      const template =
-          '{% set truncate_history_thinking = true %}'
-          '<tool_call><function><function=get_weather><parameters>'
-          '<parameter=city><think>';
-
-      final result = ChatTemplateEngine.render(
-        templateSource: template,
-        messages: grammarMessages,
-        metadata: const {},
-        tools: tools,
-        toolChoice: ToolChoice.none,
-      );
-
-      expect(result.format, equals(ChatFormat.pegConstructed.index));
-      expect(result.parser, isNotNull);
-      expect(result.parser, isNotEmpty);
-      expect(result.grammar, isNull);
-      expect(result.grammarLazy, isFalse);
-      expect(result.grammarTriggers, isEmpty);
-
-      final parsed = ChatTemplateEngine.parse(
-        result.format,
-        'I am thinking\n'
-        '</think>\n'
-        '<tool_call>\n'
-        '<function=get_weather>\n'
-        '<parameter=city>\n'
-        'Seoul\n'
-        '</parameter>\n'
-        '</function>\n'
-        '</tool_call>',
-        parser: result.parser,
-        thinkingForcedOpen: result.thinkingForcedOpen,
-      );
-
-      expect(parsed.reasoningContent, equals('I am thinking'));
-      expect(parsed.toolCalls, isEmpty);
-      expect(parsed.content, contains('<tool_call>'));
-      expect(parsed.content, contains('<function=get_weather>'));
-    });
-
-    test('Nemotron v3 parser respects required/parallel tool call bounds', () {
-      const template =
-          '{% set truncate_history_thinking = true %}'
-          '<tool_call><function><function=get_weather><parameters>'
-          '<parameter=city><think>';
-      const templateParallel =
           '{% set truncate_history_thinking = true %}'
           '<tool_call><function><function=get_weather><parameters>'
           '<parameter=city><think>'
-          '{% if tools %}{% for tool in tools %}'
-          '{{ tool["function"]["name"] }}'
-          '{% endfor %}{% endif %}';
+          '{% if add_generation_prompt %}<think>\n{% endif %}';
 
-      int maxCallsFromParser(String parser) {
-        final decoded = jsonDecode(parser) as Map<String, dynamic>;
-        final parsers = (decoded['parsers'] as List<dynamic>)
-            .cast<Map<String, dynamic>>();
-        final toolCallRoot = parsers.firstWhere(
-          (node) => node['type'] == 'rule' && node['name'] == 'tool-call-root',
+      for (final toolChoice in [ToolChoice.auto, ToolChoice.required]) {
+        final result = ChatTemplateEngine.render(
+          templateSource: template,
+          messages: grammarMessages,
+          metadata: const {},
+          tools: tools,
+          toolChoice: toolChoice,
         );
-        final repetition = parsers[(toolCallRoot['child'] as num).toInt()];
-        return (repetition['max_count'] as num).toInt();
-      }
 
-      int minCallsFromParser(String parser) {
-        final decoded = jsonDecode(parser) as Map<String, dynamic>;
-        final parsers = (decoded['parsers'] as List<dynamic>)
-            .cast<Map<String, dynamic>>();
-        final toolCallRoot = parsers.firstWhere(
-          (node) => node['type'] == 'rule' && node['name'] == 'tool-call-root',
+        expect(result.format, equals(ChatFormat.qwen3CoderXml.index));
+        expect(result.parser, isNull);
+        expect(result.thinkingForcedOpen, isTrue);
+        final parsed = ChatTemplateEngine.parseRendered(
+          result,
+          'I am thinking\n'
+          '<tool_call>\n'
+          '<function=get_weather>\n'
+          '<parameter=city>\n'
+          'Seoul\n'
+          '</parameter>\n'
+          '</function>\n'
+          '</tool_call>',
+          tools: tools,
         );
-        final repetition = parsers[(toolCallRoot['child'] as num).toInt()];
-        return (repetition['min_count'] as num).toInt();
+
+        expect(parsed.reasoningContent, equals('I am thinking'));
+        expect(parsed.toolCalls, hasLength(1));
+        expect(parsed.toolCalls.first.function?.name, equals('get_weather'));
+        expect(
+          parsed.toolCalls.first.function?.arguments,
+          equals('{"city":"Seoul"}'),
+        );
       }
-
-      final autoSingle = ChatTemplateEngine.render(
-        templateSource: template,
-        messages: grammarMessages,
-        metadata: const {},
-        tools: tools,
-        toolChoice: ToolChoice.auto,
-      );
-      expect(minCallsFromParser(autoSingle.parser!), equals(0));
-      expect(maxCallsFromParser(autoSingle.parser!), equals(1));
-
-      final autoParallel = ChatTemplateEngine.render(
-        templateSource: templateParallel,
-        messages: grammarMessages,
-        metadata: const {},
-        tools: tools,
-        toolChoice: ToolChoice.auto,
-        parallelToolCalls: true,
-      );
-      expect(minCallsFromParser(autoParallel.parser!), equals(0));
-      // Parallel stays disabled unless template capability detection
-      // confirms tool-call list emission support.
-      expect(maxCallsFromParser(autoParallel.parser!), equals(1));
-
-      final requiredSingle = ChatTemplateEngine.render(
-        templateSource: template,
-        messages: grammarMessages,
-        metadata: const {},
-        tools: tools,
-        toolChoice: ToolChoice.required,
-      );
-      expect(minCallsFromParser(requiredSingle.parser!), equals(1));
-      expect(maxCallsFromParser(requiredSingle.parser!), equals(1));
     });
 
     test('keeps Ministral handler but strips grammar for tool_choice none', () {
@@ -1181,6 +1845,347 @@ void main() {
 
       expect(result.format, equals(ChatFormat.generic.index));
       expect(result.grammar, isNotNull);
+    });
+  });
+
+  group('ChatTemplateEngine tool results for a template without the tool '
+      'role', () {
+    // llama.cpp models/templates/google-gemma-2-2b-it.jinja, inline so the
+    // test runs on Chrome as well.
+    const gemma2 =
+        "{{ bos_token }}{% if messages[0]['role'] == 'system' %}"
+        "{{ raise_exception('System role not supported') }}{% endif %}"
+        "{% for message in messages %}"
+        "{% if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}"
+        "{{ raise_exception('Conversation roles must alternate "
+        "user/assistant/user/assistant/...') }}{% endif %}"
+        "{% if (message['role'] == 'assistant') %}{% set role = 'model' %}"
+        "{% else %}{% set role = message['role'] %}{% endif %}"
+        "{{ '<start_of_turn>' + role + '\n' + message['content'] | trim + "
+        "'<end_of_turn>\n' }}{% endfor %}"
+        "{% if add_generation_prompt %}{{'<start_of_turn>model\n'}}{% endif %}";
+    final messages = [
+      const LlamaChatMessage.fromText(
+        role: LlamaChatRole.user,
+        text: 'Weather in Paris?',
+      ),
+      const LlamaChatMessage.withContent(
+        role: LlamaChatRole.assistant,
+        content: [
+          LlamaToolCallContent(
+            id: 'call00001',
+            name: 'get_weather',
+            arguments: {'city': 'Paris'},
+            rawJson: '{"city":"Paris"}',
+          ),
+        ],
+      ),
+      const LlamaChatMessage.withContent(
+        role: LlamaChatRole.tool,
+        content: [
+          LlamaToolResultContent(
+            id: 'call00001',
+            name: 'get_weather',
+            result: 'sunny',
+          ),
+        ],
+      ),
+    ];
+
+    for (final choice in ToolChoice.values) {
+      test('sends the result as a user turn with tool_choice '
+          '${choice.name}', () {
+        final result = ChatTemplateEngine.render(
+          templateSource: gemma2,
+          messages: messages,
+          metadata: const {'tokenizer.ggml.bos_token': ''},
+          tools: [
+            ToolDefinition(
+              name: 'get_weather',
+              description: 'Get weather',
+              parameters: [ToolParam.string('city')],
+              handler: _noopHandler,
+            ),
+          ],
+          toolChoice: choice,
+        );
+
+        expect(
+          result.prompt,
+          endsWith(
+            '<start_of_turn>user\n'
+            '{\n'
+            '  "tool_response": {\n'
+            '    "tool": "get_weather",\n'
+            '    "content": "sunny",\n'
+            '    "tool_call_id": "call00001"\n'
+            '  }\n'
+            '}<end_of_turn>\n'
+            '<start_of_turn>model\n',
+          ),
+        );
+        expect(result.prompt, contains('<start_of_turn>model\n{\n'));
+        expect(
+          result.format,
+          choice == ToolChoice.none
+              ? ChatFormat.contentOnly.index
+              : ChatFormat.generic.index,
+        );
+      });
+    }
+  });
+
+  group('ChatTemplateEngine.parse whitespace after content', () {
+    const hermesCall =
+        '<tool_call>\n'
+        '{"name": "get_weather", "arguments": {"city": "Paris"}}\n'
+        '</tool_call>';
+
+    test('stays when the content ends the output, in every format', () {
+      for (final format in ChatFormat.values) {
+        if (format.name.startsWith('peg')) {
+          continue;
+        }
+        for (final parseToolCalls in const [true, false]) {
+          for (final output in const ['Hi there. \n ', 'alpha ', 'Hi.\n\n']) {
+            expect(
+              ChatTemplateEngine.parse(
+                format.index,
+                output,
+                parseToolCalls: parseToolCalls,
+              ).content,
+              output,
+              reason: '${format.name} parseToolCalls: $parseToolCalls',
+            );
+          }
+        }
+      }
+    });
+
+    test('stays in a PEG parse', () {
+      final result = ChatTemplateEngine.render(
+        templateSource:
+            '[SYSTEM_PROMPT]x[/SYSTEM_PROMPT]'
+            '[TOOL_CALLS]get_weather[ARGS]{}',
+        messages: const [
+          LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'hello'),
+        ],
+        metadata: const {},
+        tools: [
+          ToolDefinition(
+            name: 'get_weather',
+            description: 'Get weather',
+            parameters: [ToolParam.string('city')],
+            handler: _noopHandler,
+          ),
+        ],
+        toolChoice: ToolChoice.auto,
+      );
+      expect(result.format, ChatFormat.ministral.index);
+
+      final parsed = ChatTemplateEngine.parse(
+        result.format,
+        '[THINK]Plan.[/THINK]Sure. \n',
+        parser: result.parser,
+      );
+
+      expect(parsed.reasoningContent, 'Plan.');
+      expect(parsed.content, 'Sure. \n');
+    });
+
+    test('stays after a thought and loses only leading whitespace', () {
+      final parsed = ChatTemplateEngine.parse(
+        ChatFormat.hermes.index,
+        '<think>\nPlan.\n</think>\n\n Sure. \n',
+      );
+
+      expect(parsed.reasoningContent, 'Plan.');
+      expect(parsed.content, 'Sure. \n');
+    });
+
+    test('stays after a tool call, which the parse keeps', () {
+      final parsed = ChatTemplateEngine.parse(
+        ChatFormat.hermes.index,
+        '$hermesCall\nDone.\n',
+      );
+
+      expect(parsed.content, 'Done.\n');
+      final call = parsed.toolCalls.single;
+      expect(call.function?.name, 'get_weather');
+      expect(jsonDecode(call.function!.arguments!), {'city': 'Paris'});
+    });
+
+    test('is dropped when the output does not end with the content', () {
+      final beforeCall = ChatTemplateEngine.parse(
+        ChatFormat.hermes.index,
+        'Let me check. \n$hermesCall\n',
+      );
+      expect(beforeCall.toolCalls, hasLength(1));
+      expect(beforeCall.content, 'Let me check.');
+
+      final callOnly = ChatTemplateEngine.parse(
+        ChatFormat.hermes.index,
+        '$hermesCall \n',
+      );
+      expect(callOnly.toolCalls, hasLength(1));
+      expect(callOnly.content, isEmpty);
+
+      final thoughtOnly = ChatTemplateEngine.parse(
+        ChatFormat.hermes.index,
+        '<think>Plan.</think> \n',
+      );
+      expect(thoughtOnly.reasoningContent, 'Plan.');
+      expect(thoughtOnly.content, isEmpty);
+
+      expect(
+        ChatTemplateEngine.parse(ChatFormat.hermes.index, ' \n ').content,
+        isEmpty,
+      );
+    });
+
+    test('is dropped from a partial parse', () {
+      expect(
+        ChatTemplateEngine.parse(
+          ChatFormat.hermes.index,
+          'Hi there. \n',
+          isPartial: true,
+        ).content,
+        'Hi there.',
+      );
+    });
+  });
+
+  group('ChatTemplateEngine.parseRendered', () {
+    final weatherTool = ToolDefinition(
+      name: 'get_weather',
+      description: 'Get weather',
+      parameters: [ToolParam.string('city')],
+      handler: _noopHandler,
+    );
+    LlamaChatTemplateResult render(
+      String templateSource, {
+      bool enableThinking = true,
+      ToolChoice toolChoice = ToolChoice.auto,
+    }) => ChatTemplateEngine.render(
+      templateSource: templateSource,
+      messages: messages,
+      metadata: const {},
+      tools: [weatherTool],
+      toolChoice: toolChoice,
+      enableThinking: enableThinking,
+    );
+
+    // Values from llama.cpp 620d2225: a Seed-OSS end tag ends a thought only
+    // when the prompt opened one.
+    test('ends a Seed-OSS thought only where the render opened it', () {
+      const stock = '{#- <seed:think> -#}assistant\n';
+      const opened = 'assistant\n<seed:think>';
+      const output = 'Plan</seed:think>Sunny.';
+      for (final (source, enableThinking, reasoning, content) in [
+        (stock, true, null, output),
+        (stock, false, null, output),
+        (opened, true, 'Plan', 'Sunny.'),
+        (opened, false, 'Plan', 'Sunny.'),
+      ]) {
+        final rendered = render(source, enableThinking: enableThinking);
+        expect(rendered.format, ChatFormat.seedOss.index);
+        final parsed = ChatTemplateEngine.parseRendered(rendered, output);
+        final reason = '$source, thinking: $enableThinking';
+        expect(parsed.reasoningContent, reasoning, reason: reason);
+        expect(parsed.content, content, reason: reason);
+        // parse cannot tell the renders apart.
+        expect(
+          ChatTemplateEngine.parse(
+            rendered.format,
+            output,
+            thinkingForcedOpen: rendered.thinkingForcedOpen,
+          ).reasoningContent,
+          'Plan',
+          reason: reason,
+        );
+      }
+    });
+
+    test('passes isPartial, cancelled and parseToolCalls to the parse', () {
+      final hermes = render('<tool_call></tool_call>assistant\n');
+      expect(hermes.format, ChatFormat.hermes.index);
+      expect(
+        ChatTemplateEngine.parseRendered(hermes, 'Hi. \n').content,
+        'Hi. \n',
+      );
+      expect(
+        ChatTemplateEngine.parseRendered(
+          hermes,
+          'Hi. \n',
+          isPartial: true,
+        ).content,
+        'Hi.',
+      );
+
+      const unfinished = 'Checking. <tool_call>{"name":"get_weather","ar';
+      expect(
+        ChatTemplateEngine.parseRendered(hermes, unfinished).content,
+        unfinished,
+      );
+      expect(
+        ChatTemplateEngine.parseRendered(
+          hermes,
+          unfinished,
+          cancelled: true,
+        ).content,
+        'Checking.',
+      );
+
+      const call =
+          '<tool_call>{"name":"get_weather","arguments":{"city":"Paris"}}'
+          '</tool_call>';
+      expect(
+        ChatTemplateEngine.parseRendered(hermes, call).toolCalls,
+        hasLength(1),
+      );
+      final text = ChatTemplateEngine.parseRendered(
+        hermes,
+        call,
+        parseToolCalls: false,
+      );
+      expect(text.toolCalls, isEmpty);
+      expect(text.content, call);
+    });
+
+    test('types arguments from the tools passed', () {
+      final xml = render(
+        '{#- <tool_call> <function= <parameter= '
+        'Function calls MUST follow the specified format -#}assistant\n',
+      );
+      expect(xml.format, ChatFormat.qwen3CoderXml.index);
+      const call =
+          '<tool_call>\n<function=get_weather>\n<parameter=city>\n123\n'
+          '</parameter>\n</function>\n</tool_call>';
+      String arguments(List<ToolDefinition>? tools) =>
+          ChatTemplateEngine.parseRendered(
+            xml,
+            call,
+            tools: tools,
+          ).toolCalls.single.function!.arguments!;
+      expect(jsonDecode(arguments([weatherTool])), {'city': '123'});
+      expect(jsonDecode(arguments(null)), {'city': 123});
+    });
+
+    test("parses with the render's PEG parser", () {
+      final ministral = render(
+        '[SYSTEM_PROMPT]x[/SYSTEM_PROMPT][TOOL_CALLS]get_weather[ARGS]{}',
+        toolChoice: ToolChoice.required,
+      );
+      expect(ministral.format, ChatFormat.ministral.index);
+      expect(ministral.parser, isNotNull);
+      expect(
+        ChatTemplateEngine.parse(ministral.format, 'Sure.').content,
+        'Sure.',
+      );
+      expect(
+        () => ChatTemplateEngine.parseRendered(ministral, 'Sure.'),
+        throwsA(isA<LlamaInferenceException>()),
+      );
     });
   });
 }

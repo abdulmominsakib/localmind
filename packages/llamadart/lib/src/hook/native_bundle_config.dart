@@ -1,22 +1,91 @@
-// ignore_for_file: public_member_api_docs
+/// Decodes the `hooks.user_defines.llamadart` native-bundle configuration for
+/// `hook/build.dart`. Pure decisions over already-discovered paths and
+/// already-decoded config: nothing here downloads, extracts, or emits assets.
+///
+/// [nativeRuntimesUserDefineKey] picks the runtime families to build;
+/// [nativeBackendUserDefineKey] filters the split llama.cpp backend modules
+/// within `llama_cpp`. Both scope by platform through a `platforms` map, or —
+/// kept for backward compatibility — a bare map already keyed by platform.
+///
+/// Entry-point roles, deliberately not a call order `hook/build.dart` may
+/// reorder: [resolveNativeBundleSpec] names the target's release bundle;
+/// [selectNativeRuntimesForBundle] picks the runtime families and
+/// [nativeRuntimeExplicitlySelectedForBundle] and
+/// [nativeRuntimeNamedForExactBundle] say how hard to fail when one is
+/// unpublished, and whether `all` only implied it; [stableDiffusionBundleForNativeBundle] names the opt-in
+/// stable_diffusion archive; [describeNativeLibrary] classifies a discovered
+/// file; [selectLibrariesForBundling] picks which ship;
+/// [codeAssetNameForLibrary] names each as a code asset. A Flutter Apple build
+/// depending on the llama.cpp or LiteRT-LM companion package takes the
+/// llama_cpp and litert_lm families from it, not
+/// [selectNativeRuntimesForBundle]. stable_diffusion is decided on its own: the
+/// stable_diffusion companion selects it, and otherwise it still comes from
+/// [selectNativeRuntimesForBundle], unless `all` only implied it: such a build
+/// skips it.
+///
+/// User-facing docs: `website/docs/platforms/native-build-hooks.md` and
+/// `website/docs/guides/backend-selection.md`.
+library;
 
 import 'package:code_assets/code_assets.dart';
 import 'package:path/path.dart' as path;
 
+export 'native_release_tag.dart';
+
+/// User-define key selecting which llama.cpp backend modules to bundle (`cpu`,
+/// `vulkan`, `cuda`, `blas`, `opencl`, `hip`); also carries the Android arm64
+/// `cpu_profile`/`cpu_variants` policy. [parseRequestedBackends] decodes the
+/// backend list; [selectLibrariesForBundling] decodes the CPU policy.
 const String nativeBackendUserDefineKey = 'llamadart_native_backends';
+
+/// User-define key choosing the stable_diffusion build (`cpu` or `vulkan`) on
+/// Linux and Windows independently of the llama.cpp backends; same shape as
+/// [nativeBackendUserDefineKey]. See [stableDiffusionBundleForNativeBundle].
+const String stableDiffusionBackendUserDefineKey =
+    'llamadart_stable_diffusion_backends';
+
+/// `llamadart-native` release tag to download; resolved in `hook/build.dart`.
 const String nativeTagUserDefineKey = 'llamadart_native_tag';
+
+/// GitHub `owner/repo` slug releases come from; resolved in `hook/build.dart`.
 const String nativeRepositoryUserDefineKey = 'llamadart_native_repository';
+
+/// Local native bundle directory, used instead of a release download;
+/// resolved in `hook/build.dart`.
 const String nativePathUserDefineKey = 'llamadart_native_path';
+
+/// User-define key selecting runtime families. Decoded by
+/// [selectNativeRuntimesForBundle].
 const String nativeRuntimesUserDefineKey = 'llamadart_native_runtimes';
+
+/// The llama.cpp/GGUF runtime family; the only one with configurable backends.
 const String nativeRuntimeLlamaCpp = 'llama_cpp';
+
+/// The LiteRT-LM runtime family; not published for every bundle.
 const String nativeRuntimeLiteRtLm = 'litert_lm';
 
+/// The experimental stable-diffusion.cpp runtime family. Opt-in: it is
+/// bundled when named or through `all`, never by default and never through
+/// `both`, because it adds tens of megabytes per platform. Not published for
+/// every bundle; see [stableDiffusionBundleForNativeBundle].
+const String nativeRuntimeStableDiffusion = 'stable_diffusion';
+
+/// The runtime families `all` expands to, in that order.
 const List<String> allNativeRuntimes = [
   nativeRuntimeLlamaCpp,
   nativeRuntimeLiteRtLm,
+  nativeRuntimeStableDiffusion,
 ];
 
-const List<String> defaultNativeRuntimes = allNativeRuntimes;
+/// Every runtime family a config may name.
+const List<String> supportedNativeRuntimes = allNativeRuntimes;
+
+/// The families `both` expands to, and the fallback for config that names no
+/// runtimes. An explicit `none` selects nothing instead.
+const List<String> defaultNativeRuntimes = [
+  nativeRuntimeLlamaCpp,
+  nativeRuntimeLiteRtLm,
+];
 
 const Set<String> _coreLibraries = {
   'llamadart',
@@ -120,6 +189,7 @@ const Map<String, String> _runtimeAliases = {
   'litert-lm': nativeRuntimeLiteRtLm,
   'litert.lm': nativeRuntimeLiteRtLm,
   '.litertlm': nativeRuntimeLiteRtLm,
+  'stable-diffusion': nativeRuntimeStableDiffusion,
 };
 
 final _cudaRuntimeDependencyNamePattern = RegExp(
@@ -147,11 +217,25 @@ const Map<String, String> _androidCpuVariantAliases = {
   'baseline': 'android_armv8.0_1',
 };
 
+/// What `llamadart-native` publishes for one target.
 class NativeBundleSpec {
+  /// Release bundle key (`linux-x64`, `ios-arm64-sim`), and the key user
+  /// config is matched against. Downstream branches test it by prefix
+  /// (`windows-`) or whole (`android-arm64`).
   final String bundle;
+
+  /// Whether this bundle ships split `ggml-*` backend modules that
+  /// `llamadart_native_backends` can filter. `false` for the consolidated
+  /// Apple runtimes, where [selectBackendsForBundle] selects nothing and
+  /// [selectLibrariesForBundling] passes every library through unchanged.
   final bool configurableBackends;
+
+  /// Backends preferred when the user requests none — listing one here does
+  /// not force it to exist, and [selectBackendsForBundle] may bundle more or
+  /// other modules. Empty whenever [configurableBackends] is `false`.
   final List<String> defaultBackends;
 
+  /// Creates a spec for one release bundle.
   const NativeBundleSpec({
     required this.bundle,
     required this.configurableBackends,
@@ -159,14 +243,44 @@ class NativeBundleSpec {
   });
 }
 
+/// One native library file, classified from its basename alone.
 class NativeLibraryDescriptor {
+  /// Path the file was found at, verbatim.
+  ///
+  /// `hook/build.dart` re-describes every file it copies into the build output
+  /// directory, and on `linux-*` copies each `.so` under its `.so.0` SONAME
+  /// alias too, so each `.so` yields two descriptors sharing one
+  /// [canonicalName]. Overrides pinning a historical `bNNNN` artifact or the
+  /// original `v0.2.0` add a third `libmtmd.so.SOVERSION` descriptor for their
+  /// literal placeholder SONAME, which canonicalises to a non-core
+  /// `mtmd.so.soversion`.
   final String filePath;
+
+  /// Basename of [filePath], with the casing it has on disk.
   final String fileName;
+
+  /// [fileName] lowercased, with the extension (including trailing `.<n>`
+  /// SONAME components), a leading `lib`, and any packed platform suffix such
+  /// as `-windows-x64` removed: `libllama.so.0` and `llama-windows-x64.dll`
+  /// both give `llama`. Every classification decision keys off this name.
   final String canonicalName;
+
+  /// Whether this library is bundled regardless of backend selection:
+  /// `llamadart`, `llama`, `llama-common`, `ggml`, `ggml-base`, `mtmd`. Core
+  /// libraries always report a `null` [backend].
   final bool isCore;
+
+  /// Whether [canonicalName] is `llamadart`. `hook/build.dart` fails the build
+  /// when no discovered library is primary. Not the same as owning the default
+  /// asset name: on Windows [codeAssetNameForLibrary] gives that to `llama`.
   final bool isPrimary;
+
+  /// Backend module this library implements, or `null` — for core libraries,
+  /// for names that imply no backend, and for CUDA/BLAS runtime dependencies,
+  /// which [selectLibrariesForBundling] matches by name instead.
   final String? backend;
 
+  /// Creates a descriptor for one classified library file.
   const NativeLibraryDescriptor({
     required this.filePath,
     required this.fileName,
@@ -177,6 +291,15 @@ class NativeLibraryDescriptor {
   });
 }
 
+/// The `llamadart-native` release bundle for a target OS/architecture, or
+/// `null` when none is published — `hook/build.dart` then warns and emits no
+/// native assets at all.
+///
+/// Apple bundles are not backend-configurable; Android, Linux and Windows
+/// are, and default to `['cpu', 'vulkan']`.
+///
+/// [isIosSimulator] only distinguishes `ios-arm64` from `ios-arm64-sim`; the
+/// x64 iOS bundle is simulator-only regardless of the flag.
 NativeBundleSpec? resolveNativeBundleSpec({
   required OS os,
   required Architecture arch,
@@ -248,6 +371,19 @@ NativeBundleSpec? resolveNativeBundleSpec({
   }
 }
 
+/// Normalises a user-written bundle key so config keys and bundle names
+/// compare equal: spaces are stripped and `_` folds to `-`, then `x86-64` is
+/// respelled `x86_64` to match the published bundle keys. Bundle aliases such
+/// as `android-arm64-v8a` are resolved too. Unrecognised values come back
+/// normalised rather than rejected.
+///
+/// OS aliases (`darwin`, `osx`, `win32`, `iphonesimulator`, ...) are
+/// deliberately not applied here: OS keys are only considered one level up,
+/// after an exact bundle-key match has failed.
+///
+/// `ios-arm64-sim` never collapses to `ios-arm64`: a config entry naming the
+/// device bundle must not silently change what a simulator build bundles. Use
+/// the `ios` OS key to cover both.
 String canonicalizeBundleKey(String value) {
   var normalized = value.trim().toLowerCase().replaceAll(' ', '');
   normalized = normalized.replaceAll('_', '-');
@@ -314,6 +450,17 @@ Map<String, Object?>? _platformConfigMapForBundle({
   return _toStringMap(platformValue);
 }
 
+/// Classifies one library file from its basename; the file is never opened.
+///
+/// A canonical name in the core set reports `isCore: true` and a `null`
+/// backend. Otherwise the backend is the first `-`-separated token after a
+/// `ggml-` prefix, alias-resolved, so `libggml-cpu-android_armv8.2_1.so`
+/// infers `cpu`; bare `ggml` and `ggml-base` infer nothing, and a canonical
+/// name of exactly `opencl` infers `opencl`.
+///
+/// The split runs before the alias lookup, so single-token aliases survive it
+/// (`vk`, `ocl`) and multi-token ones do not: `open-cl` resolves to `opencl`
+/// in user config, but `libggml-open-cl.so` infers `open`.
 NativeLibraryDescriptor describeNativeLibrary(String filePath) {
   final fileName = path.basename(filePath);
   final canonicalName = _canonicalLibraryName(fileName);
@@ -330,12 +477,17 @@ NativeLibraryDescriptor describeNativeLibrary(String filePath) {
   );
 }
 
+/// [describeNativeLibrary] over every path, order preserved.
+/// `hook/build.dart` requires at least one primary entry before going on.
 List<NativeLibraryDescriptor> describeNativeLibraries(
   Iterable<String> filePaths,
 ) {
   return filePaths.map(describeNativeLibrary).toList(growable: false);
 }
 
+/// The distinct non-null backends present in [libraries] — what this bundle
+/// can actually offer. Requested and default backends are validated against
+/// this set, so a bundle shipping no `ggml-cuda` module cannot select `cuda`.
 Set<String> collectAvailableBackends(
   Iterable<NativeLibraryDescriptor> libraries,
 ) {
@@ -348,6 +500,18 @@ Set<String> collectAvailableBackends(
   return backends;
 }
 
+/// The backends requested for [bundle] under `llamadart_native_backends`, or
+/// `null` when the config resolves no value for it: unset, not
+/// platform-scoped, or no matching entry. The lookup takes the first key
+/// canonicalising to [bundle], else the first for its OS. Both `null` and `[]`
+/// leave the bundle defaults in force in [selectBackendsForBundle].
+///
+/// A matched platform entry may be a comma-separated string, a list of
+/// strings, or a map with a `backends` key — the map form also carries
+/// `cpu_profile`/`cpu_variants`; a matched map without `backends` yields `[]`,
+/// not `null`. Tokens are trimmed, lowercased, `_`-to-`-` normalised,
+/// alias-resolved and de-duplicated in first-seen order; non-string list
+/// entries are skipped.
 List<String>? parseRequestedBackends({
   required String bundle,
   required Object? rawUserConfig,
@@ -368,6 +532,37 @@ List<String>? parseRequestedBackends({
   return _parseBackendList(platformValue);
 }
 
+/// The runtime families to build for [bundle], decoded from
+/// `llamadart_native_runtimes`.
+///
+/// Precedence, first match wins: the `platforms` entry canonicalising to
+/// [bundle]; the entry for that bundle's OS; the top-level `runtimes` key; the
+/// top-level `default` key; else [defaultNativeRuntimes]. A
+/// matched platform entry with a `null` value ends the platform search, so the
+/// OS entry is skipped. `runtimes` is consulted by key presence, so an
+/// explicit `runtimes: null` suppresses `default` instead of falling through
+/// to it. A bare string or list at the root is taken as-is, unscoped.
+///
+/// Tokens are trimmed, lowercased and `_`-to-`-` normalised before alias
+/// lookup: `gguf` and `llama.cpp` reach `llama_cpp`; `litert`, `litertlm` and
+/// `.litertlm` reach `litert_lm`; `stable-diffusion` reaches
+/// `stable_diffusion`. `all` expands to [allNativeRuntimes] and `both` to
+/// [defaultNativeRuntimes], which leaves out the opt-in `stable_diffusion`;
+/// the string tokens `none`, `off` and `false` clear what has accumulated. A
+/// bare YAML boolean `false` clears it too, including in a list.
+/// Unrecognised non-empty tokens are dropped and reported once through
+/// [warn]; empty tokens are ignored silently. A string or list that selects
+/// nothing because it was empty or all-unrecognised yields
+/// [defaultNativeRuntimes]. Once a `none` token clears the selection only a later
+/// recognised token refills it, so `['none', 'llama_cpp']` selects `llama_cpp`
+/// while `['none', 'tflite']` stays empty, which `hook/build.dart` throws on.
+///
+/// A map is first unwrapped through its `runtimes` key. At a selected map
+/// entry, values other than a string, list, map, or boolean `false` select
+/// nothing, which `hook/build.dart` throws on. When no level resolves a value
+/// at all — an unsupported scalar at the *root* included — the fallback to
+/// [defaultNativeRuntimes] is silent when the key is unset or the config is
+/// platform-scoped, and a [warn] otherwise.
 List<String> selectNativeRuntimesForBundle({
   required String bundle,
   required Object? rawUserConfig,
@@ -378,20 +573,30 @@ List<String> selectNativeRuntimesForBundle({
     rawUserConfig: rawUserConfig,
   );
   if (parsed == null) {
-    return defaultNativeRuntimesForBundle(bundle);
+    return defaultNativeRuntimes;
   }
 
   final invalid = parsed.invalid;
   if (invalid.isNotEmpty) {
     warn(
       'Ignoring unknown native runtime(s) for $bundle: ${invalid.join(', ')}. '
-      'Supported runtimes: llama_cpp, litert_lm.',
+      'Supported runtimes: ${supportedNativeRuntimes.join(', ')}.',
     );
   }
 
   return parsed.runtimes;
 }
 
+/// Whether [runtime] was named for [bundle], not implied by a default or by
+/// `all`/`both` expansion. `false` for `all`, `both`, `none`, unrecognised
+/// spellings, and for a name a later `none` cleared (`['litert_lm', 'none']`).
+/// Order decides it, so `['none', 'litert_lm']` is explicit.
+///
+/// `hook/build.dart` uses this when LiteRT-LM is selected but the bundle
+/// publishes no LiteRT-LM archive: an explicit request throws, an implied one
+/// is dropped with a warning. It also uses it on Flutter iOS and macOS builds
+/// without the stable_diffusion companion, where a stable_diffusion that
+/// `all` only implied is skipped.
 bool nativeRuntimeExplicitlySelectedForBundle({
   required String bundle,
   required Object? rawUserConfig,
@@ -410,10 +615,128 @@ bool nativeRuntimeExplicitlySelectedForBundle({
   return parsed?.explicit.contains(normalizedRuntime) ?? false;
 }
 
-List<String> defaultNativeRuntimesForBundle(String bundle) {
-  return defaultNativeRuntimes;
+/// Whether [runtime] is named in the `platforms` entry whose key is exactly
+/// [bundle] (after [canonicalizeBundleKey]); an OS key such as `android`, the
+/// top-level `runtimes`/`default` keys and a bare list do not count. Order and
+/// `none` apply as in [nativeRuntimeExplicitlySelectedForBundle].
+///
+/// `hook/build.dart` fails the build only for such a bundle-scoped request
+/// when the bundle publishes no stable_diffusion archive. A broader request,
+/// such as a top-level `runtimes: [llama_cpp, stable_diffusion]`, would
+/// otherwise break Flutter Android builds that also target `android-x64`.
+bool nativeRuntimeNamedForExactBundle({
+  required String bundle,
+  required Object? rawUserConfig,
+  required String runtime,
+}) {
+  final normalizedRuntime = _normalizeRuntime(runtime);
+  final root = _toStringMap(rawUserConfig);
+  if (normalizedRuntime == null || root == null) {
+    return false;
+  }
+  final platformsMap = _extractPlatformsMap(root);
+  if (platformsMap == null) {
+    return false;
+  }
+  final canonicalBundle = canonicalizeBundleKey(bundle);
+  for (final entry in platformsMap.entries) {
+    if (canonicalizeBundleKey(entry.key) != canonicalBundle) {
+      continue;
+    }
+    final value = entry.value;
+    final platformMap = _toStringMap(value);
+    final parsed = _parseRuntimeList(
+      platformMap != null && platformMap.containsKey('runtimes')
+          ? platformMap['runtimes']
+          : value,
+    );
+    return parsed.explicit.contains(normalizedRuntime);
+  }
+  return false;
 }
 
+/// The stable-diffusion-native release bundle for the llama.cpp [spec], or
+/// `null` when none is published (`android-x64`, `windows-arm64`).
+///
+/// Linux and Windows publish a CPU and a `-vulkan` archive; only one is
+/// bundled. [rawStableDiffusionBackendConfig]
+/// (`llamadart_stable_diffusion_backends`: a list or string for every
+/// platform, or a `platforms` map like `llamadart_native_backends`) decides
+/// first: `-vulkan` when it names
+/// `vulkan`, the CPU archive when it names only `cpu`. An entry naming neither
+/// is ignored with a [warn]. Without an entry the choice follows the llama.cpp
+/// selection under `llamadart_native_backends` ([rawBackendConfig]): the
+/// `-vulkan` archive when Vulkan is requested there, or when nothing is
+/// requested and Vulkan is among [NativeBundleSpec.defaultBackends]; the CPU
+/// archive otherwise. Apple bundles are Metal builds and Android arm64 is
+/// CPU-only, whatever either config says.
+String? stableDiffusionBundleForNativeBundle({
+  required NativeBundleSpec spec,
+  required Object? rawBackendConfig,
+  Object? rawStableDiffusionBackendConfig,
+  void Function(String message)? warn,
+}) {
+  final base = switch (spec.bundle) {
+    'android-arm64' => 'android-arm64',
+    'ios-arm64' => 'ios-arm64',
+    'ios-arm64-sim' => 'ios-arm64-sim',
+    'ios-x86_64-sim' => 'ios-x64-sim',
+    'macos-arm64' => 'macos-arm64',
+    'macos-x86_64' => 'macos-x64',
+    'linux-arm64' => 'linux-arm64',
+    'linux-x64' => 'linux-x64',
+    'windows-x64' => 'windows-x64',
+    _ => null,
+  };
+  if (base == null ||
+      !(spec.bundle.startsWith('linux-') ||
+          spec.bundle.startsWith('windows-'))) {
+    return base;
+  }
+  final own =
+      rawStableDiffusionBackendConfig is String ||
+          rawStableDiffusionBackendConfig is List
+      ? _parseBackendList(rawStableDiffusionBackendConfig)
+      : parseRequestedBackends(
+          bundle: spec.bundle,
+          rawUserConfig: rawStableDiffusionBackendConfig,
+        );
+  if (own != null && own.isNotEmpty) {
+    if (own.contains('vulkan')) {
+      return '$base-vulkan';
+    }
+    if (own.contains('cpu')) {
+      return base;
+    }
+    warn?.call(
+      '$stableDiffusionBackendUserDefineKey for ${spec.bundle} names '
+      '${own.join(', ')}; stable_diffusion supports cpu and vulkan there. '
+      'Following $nativeBackendUserDefineKey instead.',
+    );
+  }
+  final requested = parseRequestedBackends(
+    bundle: spec.bundle,
+    rawUserConfig: rawBackendConfig,
+  );
+  final backends = requested == null || requested.isEmpty
+      ? spec.defaultBackends
+      : requested;
+  return backends.contains('vulkan') ? '$base-vulkan' : base;
+}
+
+/// The backend modules to bundle for [spec], constrained to
+/// [availableBackends]. Non-configurable bundles select nothing.
+///
+/// `cpu` is added to the defaults and to an accepted request whenever a `cpu`
+/// module exists, so it cannot be opted out of. The defaults are
+/// [NativeBundleSpec.defaultBackends] restricted to what is available; they
+/// apply when the request is `null` or empty, and also when a request names
+/// any unavailable backend — such a request is rejected whole, not partially,
+/// with a [warn] naming the missing backends. When the defaults resolve to
+/// nothing while the bundle does contain modules, every available module is
+/// bundled in sort order with a [warn] of its own — a second one on the
+/// rejected-request path, which has already warned about the missing
+/// backends.
 List<String> selectBackendsForBundle({
   required NativeBundleSpec spec,
   required Set<String> availableBackends,
@@ -480,14 +803,16 @@ _parseNativeRuntimeConfigForBundle({
     return null;
   }
 
-  if (rawUserConfig is String || rawUserConfig is List<Object?>) {
+  if (rawUserConfig is String ||
+      rawUserConfig is List<Object?> ||
+      rawUserConfig == false) {
     return _parseRuntimeList(rawUserConfig);
   }
 
   final root = _toStringMap(rawUserConfig);
   if (root == null) {
     return (
-      runtimes: defaultNativeRuntimesForBundle(bundle),
+      runtimes: defaultNativeRuntimes,
       invalid: [rawUserConfig.toString()],
       explicit: const <String>{},
     );
@@ -526,7 +851,7 @@ _parseNativeRuntimeConfigForBundle({
   }
 
   return (
-    runtimes: defaultNativeRuntimesForBundle(bundle),
+    runtimes: defaultNativeRuntimes,
     invalid: [rawUserConfig.toString()],
     explicit: const <String>{},
   );
@@ -708,6 +1033,28 @@ String? _androidCpuVariantTagFromCanonicalName(String canonicalName) {
   return canonicalName.substring('ggml-cpu-'.length);
 }
 
+/// Filters [libraries] down to the files the hook should copy and report as
+/// code assets. Non-configurable bundles pass through untouched.
+///
+/// Otherwise the backend set comes from [selectBackendsForBundle] over
+/// [collectAvailableBackends], and a library survives when it is core, when
+/// its inferred backend is selected, or when it infers no backend at all —
+/// unrecognised vendor libraries are kept, not dropped. Two canonical-name
+/// shapes are instead gated on a backend so they leave alongside the module
+/// that needs them: `cudart64`, `cublas64` or `cublaslt64` with an optional
+/// trailing digit run, itself optionally preceded by `_` or `-`, on `cuda`,
+/// and anything starting `openblas` on `blas`.
+///
+/// `android-arm64` then gets a second pass over the per-CPU-variant
+/// `ggml-cpu-*` modules. An explicit `cpu_variants` list wins, minus
+/// unrecognised entries ([warn]); if nothing valid remains a [warn] fires and
+/// resolution falls through to `cpu_profile`, which is `full` (all seven ARM
+/// variants) by default, keeps only `android_armv8.0_1` when `compact`, and
+/// warns and stays `full` when it is unrecognised or a non-string other than
+/// `null`, which takes the default silently. A legacy
+/// unsuffixed `ggml-cpu` module is always kept, and whenever the result holds
+/// no CPU module — a bundle that shipped none included — [warn] fires and the
+/// unfiltered backend selection is returned instead.
 List<NativeLibraryDescriptor> selectLibrariesForBundling({
   required NativeBundleSpec spec,
   required List<NativeLibraryDescriptor> libraries,
@@ -759,7 +1106,6 @@ List<NativeLibraryDescriptor> selectLibrariesForBundling({
           return true;
         }
 
-        // Keep legacy unsuffixed CPU backend modules when present.
         final variant = _androidCpuVariantTagFromCanonicalName(
           library.canonicalName,
         );
@@ -782,13 +1128,19 @@ List<NativeLibraryDescriptor> selectLibrariesForBundling({
   return selectedLibraries;
 }
 
+/// The `package:llamadart/<name>` code-asset name to report [library] under.
+///
+/// The primary `llamadart` library normally takes the bare package name, the
+/// asset the generated FFI bindings resolve. On `windows-*` two independent
+/// renames apply — `llama` takes `llamadart`, `llamadart` takes
+/// `llamadart_wrapper` — because that bundle puts the core llama/ggml symbols
+/// in `llama.dll` and only wrapper helpers in `llamadart.dll`. Every other
+/// library uses its sanitised canonical name; names are not guaranteed unique,
+/// so the caller de-duplicates before emitting assets.
 String codeAssetNameForLibrary({
   required NativeBundleSpec spec,
   required NativeLibraryDescriptor library,
 }) {
-  // Windows split bundle exports core llama/ggml symbols from `llama.dll`,
-  // while `llamadart.dll` only contains wrapper helpers. The Dart bindings
-  // default asset must point at the core symbol provider.
   if (spec.bundle.startsWith('windows-')) {
     if (library.canonicalName == 'llama') {
       return 'llamadart';
@@ -882,6 +1234,9 @@ _parseRuntimeList(Object? value) {
   final result = <String>[];
   final invalid = <String>[];
   final explicit = <String>{};
+  // Distinguishes "the user asked for nothing" from "nothing was recognised",
+  // which resolve to opposite selections below.
+  var explicitNone = false;
 
   void addToken(String token) {
     final normalized = _normalizeRuntime(token);
@@ -891,8 +1246,11 @@ _parseRuntimeList(Object? value) {
       }
       return;
     }
-    if (normalized == 'all') {
-      for (final runtime in allNativeRuntimes) {
+    if (normalized == 'all' || normalized == 'both') {
+      final expansion = normalized == 'all'
+          ? allNativeRuntimes
+          : defaultNativeRuntimes;
+      for (final runtime in expansion) {
         if (!result.contains(runtime)) {
           result.add(runtime);
         }
@@ -902,6 +1260,7 @@ _parseRuntimeList(Object? value) {
     if (normalized == 'none') {
       result.clear();
       explicit.clear();
+      explicitNone = true;
       return;
     }
     if (!result.contains(normalized)) {
@@ -910,12 +1269,19 @@ _parseRuntimeList(Object? value) {
     explicit.add(normalized);
   }
 
+  if (value == false) {
+    addToken('none');
+    return (runtimes: result, invalid: invalid, explicit: explicit);
+  }
+
   if (value is String) {
     for (final token in value.split(',')) {
       addToken(token);
     }
     return (
-      runtimes: result.isEmpty ? allNativeRuntimes : result,
+      runtimes: result.isEmpty && !explicitNone
+          ? defaultNativeRuntimes
+          : result,
       invalid: invalid,
       explicit: explicit,
     );
@@ -925,12 +1291,16 @@ _parseRuntimeList(Object? value) {
     for (final entry in value) {
       if (entry is String) {
         addToken(entry);
+      } else if (entry == false) {
+        addToken('none');
       } else if (entry != null) {
         invalid.add(entry.toString());
       }
     }
     return (
-      runtimes: result.isEmpty ? allNativeRuntimes : result,
+      runtimes: result.isEmpty && !explicitNone
+          ? defaultNativeRuntimes
+          : result,
       invalid: invalid,
       explicit: explicit,
     );
@@ -964,7 +1334,7 @@ String? _normalizeRuntime(String value) {
   }
   normalized = normalized.replaceAll('_', '-');
   if (normalized == 'all' || normalized == 'both') {
-    return 'all';
+    return normalized;
   }
   if (normalized == 'none' || normalized == 'off' || normalized == 'false') {
     return 'none';

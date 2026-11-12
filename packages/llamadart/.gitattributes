@@ -1,0 +1,24 @@
+# Catalog SHA256 locks require exact bytes; -text retains JSON text diffs.
+packages/llamadart_validation/assets/embeddings/v1/** -text
+packages/llamadart_validation/assets/decision/laya_0_3_5_reference.json -text
+
+# Flint captures must match their upstream hashes and browser fixture bytes.
+test/fixtures/flint/Flint.jinja -text
+test/fixtures/flint/render_upstream.json -text
+
+# llama-server parity fixtures hash these templates' exact bytes.
+test/fixtures/llama_cpp_templates/*.jinja -text
+test/fixtures/media_templates/*.jinja -text
+test/fixtures/required_tool_emissions/*.jinja -text
+test/fixtures/templates/LFM2_5-8B-A1B-6d65c8804847.jinja -text
+test/fixtures/templates/LFM2_5-1_2B-Thinking.jinja -text
+test/fixtures/templates/LFM2_5-1_2B-Thinking-ba551d58630a.jinja -text
+
+# Keep both sides' `## Unreleased` bullets in local merges and rebases. Union
+# keeps both sides of any conflicting edit too, so resolve release-prep edits
+# by hand (see website/docs/maintainers/release-workflow.md).
+/CHANGELOG.md merge=union
+/website/docs/changelog/recent-releases.md merge=union
+
+# The qualification input manifests bind exact portable fixture bytes.
+test/fixtures/windows_ggml_registry_qualification/** -text

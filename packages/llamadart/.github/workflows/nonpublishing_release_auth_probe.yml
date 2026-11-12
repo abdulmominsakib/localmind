@@ -1,0 +1,76 @@
+name: Nonpublishing release auth probe
+run-name: ${{ github.event_name == 'push' && format('auth-probe {0}', github.ref_name) || 'auth-probe sender' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Reviewed current main SHA (full lowercase commit)
+        required: true
+        type: string
+  push:
+    tags: ['ci-auth-probe-*']
+
+permissions:
+  contents: read
+  actions: read
+
+# The waiting sender must never lock out its tag-triggered receiver.
+concurrency:
+  group: nonpublishing-auth-probe-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  sender:
+    name: Diagnostic ref sender
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'leehack/llamadart' && github.ref == 'refs/heads/main' && github.run_attempt == 1 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Probe one invocation-owned diagnostic ref
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          PROBE_OWNER_ID: ${{ github.repository_owner_id }}
+          PROBE_REPOSITORY_ID: ${{ github.repository_id }}
+          PROBE_READ_TOKEN: ${{ github.token }}
+          RELEASE_AUTOMATION_TOKEN: ${{ secrets.RELEASE_AUTOMATION_TOKEN }}
+        run: python3 tool/release/nonpublishing_auth_probe.py sender
+      - name: Retain sender intent and outcome, including failures
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: auth-probe-sender-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/auth-probe/
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 7
+
+  receiver:
+    name: Diagnostic push receipt
+    if: ${{ github.event_name == 'push' && github.repository == 'leehack/llamadart' && startsWith(github.ref, 'refs/tags/ci-auth-probe-') && github.event.created == true && github.event.deleted == false && github.event.forced == false && github.run_attempt == 1 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Validate actual push and its waiting parent
+        env:
+          PROBE_OWNER_ID: ${{ github.repository_owner_id }}
+          PROBE_REPOSITORY_ID: ${{ github.repository_id }}
+          PROBE_READ_TOKEN: ${{ github.token }}
+        run: python3 tool/release/nonpublishing_auth_probe.py receiver
+      - name: Retain receiver receipt or failure
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: auth-probe-receiver-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/auth-probe/
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 7

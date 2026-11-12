@@ -1,0 +1,26 @@
+{%- for message in messages -%}{%- if message.content is string -%}{%- if message.role == 'user' %}<|im_start|>user
+{{ message.content }}<|im_end|>
+{% endif -%}{%- if message.role == 'model' or message.role == 'assistant' %}<|im_start|>assistant
+<think>
+
+</think>
+
+{{ message.content }}<|im_end|>
+{% endif -%}{%- if message.role == 'system' %}<|im_start|>system
+{{ message.content }}<|im_end|>
+{% endif -%}{%- else -%}{%- if message.role == 'user' %}<|im_start|>user
+{% elif message.role == 'model' or message.role == 'assistant' %}<|im_start|>assistant
+<think>
+
+</think>
+
+{% elif message.role == 'system' %}<|im_start|>system
+{% endif -%}{%- for item in message.content %}{%- if item.type == 'text' %}{{ item.text }}{%- elif item.type == 'image' -%}{{ '<|vision_start|><image_soft_token><|vision_end|>' }}{%- endif -%}{%- endfor -%}{%- if message.role == 'user' %}<|im_end|>
+{% elif message.role == 'model' or message.role == 'assistant' %}<|im_end|>
+{% elif message.role == 'system' %}<|im_end|>
+{% endif -%}{%- endif -%}{%- endfor -%}{%- if add_generation_prompt %}<|im_start|>assistant
+<think>
+
+</think>
+
+{% endif -%}

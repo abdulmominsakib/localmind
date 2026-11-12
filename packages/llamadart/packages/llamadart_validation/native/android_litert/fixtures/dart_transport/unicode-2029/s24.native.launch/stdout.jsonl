@@ -1,0 +1,2 @@
+{"schema": 1, "binding": "d402e06bac206839539795ac85682aa6a8a0764800567522c372b71aa33f095d", "case_id": "s24.native.launch", "pid": 123, "sequence": 0, "event": "started", "mode": "probe"}
+{"schema": 1, "binding": "d402e06bac206839539795ac85682aa6a8a0764800567522c372b71aa33f095d", "case_id": "s24.native.launch", "pid": 123, "sequence": 1, "event": "finished", "model_free_launch": true}

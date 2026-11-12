@@ -1,0 +1,2798 @@
+{
+ "upstream_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+ "user_prompt": "Weather in Paris?",
+ "tools": [
+  {
+   "type": "function",
+   "function": {
+    "name": "get_weather",
+    "description": "w",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "location": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "location"
+     ]
+    }
+   }
+  }
+ ],
+ "templates": [
+  {
+   "template": "test/fixtures/llama_cpp_templates/ByteDance-Seed-OSS.jinja",
+   "enable_thinking": true,
+   "parallel_tool_calls": false,
+   "cases": [
+    {
+     "name": "call",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-blank-line",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end-short",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "text-then-unclosed",
+     "output": "Let me check.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "Let me check.\n",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-after-name",
+     "output": "Hi <seed:tool_call>\n<function=get_weather>",
+     "upstream": {
+      "content": "Hi ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-at-end",
+     "output": "Hello <seed:tool_call>\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-blank-line",
+     "output": "Hello <seed:tool_call>\n\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-only",
+     "output": "<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-function-prefix",
+     "output": "Hello <seed:tool_call>\n<function=",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "string-number",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n42\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-object",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n{\"a\": 1}\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-quoted",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n\"Paris\"\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-bool",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\ntrue\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-array",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n[1, 2]\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-null",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nnull\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "thought-then-text-and-call",
+     "output": "<seed:think>\nPlan\n</seed:think>\nSure.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "template": "test/fixtures/llama_cpp_templates/ByteDance-Seed-OSS.jinja",
+   "enable_thinking": true,
+   "parallel_tool_calls": false,
+   "tool_choice": "required",
+   "cases": [
+    {
+     "name": "call",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-blank-line",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end-short",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "text-then-unclosed",
+     "output": "Let me check.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "Let me check.\n",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-after-name",
+     "output": "Hi <seed:tool_call>\n<function=get_weather>",
+     "upstream": {
+      "content": "Hi ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-at-end",
+     "output": "Hello <seed:tool_call>\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-blank-line",
+     "output": "Hello <seed:tool_call>\n\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-only",
+     "output": "<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-function-prefix",
+     "output": "Hello <seed:tool_call>\n<function=",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "string-number",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n42\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-object",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n{\"a\": 1}\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-quoted",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n\"Paris\"\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-bool",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\ntrue\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-array",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n[1, 2]\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-null",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nnull\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "thought-then-text-and-call",
+     "output": "<seed:think>\nPlan\n</seed:think>\nSure.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "template": "test/fixtures/llama_cpp_templates/ByteDance-Seed-OSS.jinja",
+   "enable_thinking": true,
+   "parallel_tool_calls": true,
+   "cases": [
+    {
+     "name": "call",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "two-calls",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-blank-line",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end-short",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "text-then-unclosed",
+     "output": "Let me check.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "Let me check.\n",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-second",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-after-name",
+     "output": "Hi <seed:tool_call>\n<function=get_weather>",
+     "upstream": {
+      "content": "Hi ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-at-end",
+     "output": "Hello <seed:tool_call>\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-blank-line",
+     "output": "Hello <seed:tool_call>\n\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-only",
+     "output": "<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "call-then-scope-start",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "scope-start-then-function-prefix",
+     "output": "Hello <seed:tool_call>\n<function=",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "string-number",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n42\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-object",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n{\"a\": 1}\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-quoted",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n\"Paris\"\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-bool",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\ntrue\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-array",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n[1, 2]\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-null",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nnull\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "thought-then-text-and-call",
+     "output": "<seed:think>\nPlan\n</seed:think>\nSure.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "template": "test/fixtures/llama_cpp_templates/ByteDance-Seed-OSS.jinja",
+   "enable_thinking": true,
+   "parallel_tool_calls": true,
+   "tool_choice": "required",
+   "cases": [
+    {
+     "name": "call",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "two-calls",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-blank-line",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end-short",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "text-then-unclosed",
+     "output": "Let me check.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "Let me check.\n",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-second",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-after-name",
+     "output": "Hi <seed:tool_call>\n<function=get_weather>",
+     "upstream": {
+      "content": "Hi ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-at-end",
+     "output": "Hello <seed:tool_call>\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-blank-line",
+     "output": "Hello <seed:tool_call>\n\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-only",
+     "output": "<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "call-then-scope-start",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "scope-start-then-function-prefix",
+     "output": "Hello <seed:tool_call>\n<function=",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "string-number",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n42\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-object",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n{\"a\": 1}\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-quoted",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n\"Paris\"\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-bool",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\ntrue\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-array",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n[1, 2]\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-null",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nnull\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "thought-then-text-and-call",
+     "output": "<seed:think>\nPlan\n</seed:think>\nSure.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "template": "test/fixtures/llama_cpp_templates/ByteDance-Seed-OSS.jinja",
+   "enable_thinking": false,
+   "parallel_tool_calls": false,
+   "cases": [
+    {
+     "name": "call",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-blank-line",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end-short",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "text-then-unclosed",
+     "output": "Let me check.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "Let me check.\n",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-after-name",
+     "output": "Hi <seed:tool_call>\n<function=get_weather>",
+     "upstream": {
+      "content": "Hi ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-at-end",
+     "output": "Hello <seed:tool_call>\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-blank-line",
+     "output": "Hello <seed:tool_call>\n\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-only",
+     "output": "<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-function-prefix",
+     "output": "Hello <seed:tool_call>\n<function=",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "string-number",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n42\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-object",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n{\"a\": 1}\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-quoted",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n\"Paris\"\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-bool",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\ntrue\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-array",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n[1, 2]\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-null",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nnull\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "thought-then-text-and-call",
+     "output": "<seed:think>\nPlan\n</seed:think>\nSure.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "template": "test/fixtures/llama_cpp_templates/ByteDance-Seed-OSS.jinja",
+   "enable_thinking": false,
+   "parallel_tool_calls": false,
+   "tool_choice": "required",
+   "cases": [
+    {
+     "name": "call",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-blank-line",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end-short",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "text-then-unclosed",
+     "output": "Let me check.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "Let me check.\n",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-after-name",
+     "output": "Hi <seed:tool_call>\n<function=get_weather>",
+     "upstream": {
+      "content": "Hi ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-at-end",
+     "output": "Hello <seed:tool_call>\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-blank-line",
+     "output": "Hello <seed:tool_call>\n\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-only",
+     "output": "<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-function-prefix",
+     "output": "Hello <seed:tool_call>\n<function=",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "string-number",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n42\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-object",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n{\"a\": 1}\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-quoted",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n\"Paris\"\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-bool",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\ntrue\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-array",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n[1, 2]\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-null",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nnull\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "thought-then-text-and-call",
+     "output": "<seed:think>\nPlan\n</seed:think>\nSure.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "template": "test/fixtures/llama_cpp_templates/ByteDance-Seed-OSS.jinja",
+   "enable_thinking": false,
+   "parallel_tool_calls": true,
+   "cases": [
+    {
+     "name": "call",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "two-calls",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-blank-line",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end-short",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "text-then-unclosed",
+     "output": "Let me check.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "Let me check.\n",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-second",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-after-name",
+     "output": "Hi <seed:tool_call>\n<function=get_weather>",
+     "upstream": {
+      "content": "Hi ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-at-end",
+     "output": "Hello <seed:tool_call>\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-blank-line",
+     "output": "Hello <seed:tool_call>\n\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-only",
+     "output": "<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "call-then-scope-start",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "scope-start-then-function-prefix",
+     "output": "Hello <seed:tool_call>\n<function=",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "string-number",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n42\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-object",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n{\"a\": 1}\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-quoted",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n\"Paris\"\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-bool",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\ntrue\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-array",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n[1, 2]\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-null",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nnull\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "thought-then-text-and-call",
+     "output": "<seed:think>\nPlan\n</seed:think>\nSure.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "template": "test/fixtures/llama_cpp_templates/ByteDance-Seed-OSS.jinja",
+   "enable_thinking": false,
+   "parallel_tool_calls": true,
+   "tool_choice": "required",
+   "cases": [
+    {
+     "name": "call",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "two-calls",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-blank-line",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-partial-end-short",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "text-then-unclosed",
+     "output": "Let me check.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "Let me check.\n",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-second",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       },
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nRome\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "unclosed-after-name",
+     "output": "Hi <seed:tool_call>\n<function=get_weather>",
+     "upstream": {
+      "content": "Hi ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-at-end",
+     "output": "Hello <seed:tool_call>\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-then-blank-line",
+     "output": "Hello <seed:tool_call>\n\n",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "scope-start-only",
+     "output": "<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "call-then-scope-start",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>\n<seed:tool_call>\n",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "scope-start-then-function-prefix",
+     "output": "Hello <seed:tool_call>\n<function=",
+     "upstream": {
+      "content": "Hello ",
+      "reasoning_content": "",
+      "tool_calls": []
+     }
+    },
+    {
+     "name": "string-number",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n42\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n42\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-object",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n{\"a\": 1}\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n{\\\"a\\\": 1}\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-quoted",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n\"Paris\"\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n\\\"Paris\\\"\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-bool",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\ntrue\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\ntrue\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-array",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\n[1, 2]\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\n[1, 2]\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "string-null",
+     "output": "<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nnull\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "",
+      "reasoning_content": "",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nnull\\n\"}"
+       }
+      ]
+     }
+    },
+    {
+     "name": "thought-then-text-and-call",
+     "output": "<seed:think>\nPlan\n</seed:think>\nSure.\n<seed:tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</seed:tool_call>",
+     "upstream": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     },
+     "upstream_partial": {
+      "content": "Sure.\n",
+      "reasoning_content": "\nPlan\n",
+      "tool_calls": [
+       {
+        "name": "get_weather",
+        "arguments": "{\"location\":\"\\nParis\\n\"}"
+       }
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

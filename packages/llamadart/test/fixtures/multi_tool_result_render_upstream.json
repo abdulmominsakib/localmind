@@ -1,0 +1,187 @@
+{
+  "upstream_commit": "7fe450e19",
+  "endpoint": "POST /apply-template",
+  "request": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What are the weather and the local time in Paris?"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_0",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"Paris\"}"
+            }
+          },
+          {
+            "id": "call_1",
+            "type": "function",
+            "function": {
+              "name": "get_time",
+              "arguments": "{\"city\":\"Paris\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_0",
+        "name": "get_weather",
+        "content": "RESULT_ONE"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_1",
+        "name": "get_time",
+        "content": "RESULT_TWO"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Return the weather for a city.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "get_time",
+          "description": "Return the local time for a city.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          }
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "parallel_tool_calls": true,
+    "chat_template_kwargs": {
+      "enable_thinking": false
+    }
+  },
+  "templates": {
+    "templates/Qwen3-4B.jinja": {
+      "model": "Qwen3-4B-Q4_K_M.gguf",
+      "template_sha256": "5da44855ab7e0641774d5ed0ff0b4f89671d01df7d316e54d06557a962211cb4",
+      "chat_template_caps": {
+        "supports_object_arguments": true,
+        "supports_parallel_tool_calls": true,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": true,
+        "supports_system_role": true,
+        "supports_tool_calls": true,
+        "supports_tools": true,
+        "supports_typed_content": false
+      },
+      "prompt": "<|im_start|>system\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Return the weather for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}}\n{\"type\": \"function\", \"function\": {\"name\": \"get_time\", \"description\": \"Return the local time for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}}\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n<|im_start|>user\nWhat are the weather and the local time in Paris?<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_time\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nRESULT_ONE\n</tool_response>\n<tool_response>\nRESULT_TWO\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
+    },
+    "templates/Qwen3_5-0_8B.jinja": {
+      "model": "Qwen3.5-0.8B-Q4_K_M.gguf",
+      "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+      "chat_template_caps": {
+        "supports_object_arguments": true,
+        "supports_parallel_tool_calls": true,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": true,
+        "supports_system_role": true,
+        "supports_tool_calls": true,
+        "supports_tools": true,
+        "supports_typed_content": true
+      },
+      "prompt": "<|im_start|>system\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Return the weather for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}}\n{\"type\": \"function\", \"function\": {\"name\": \"get_time\", \"description\": \"Return the local time for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat are the weather and the local time in Paris?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_time>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nRESULT_ONE\n</tool_response>\n<tool_response>\nRESULT_TWO\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
+    },
+    "templates/Ministral-3-3B-Reasoning.jinja": {
+      "model": "Ministral-3-3B-Reasoning-2512-Q4_K_M.gguf",
+      "template_sha256": "87989798313de539b55bdeb19c98214e1a7bdd8c3a62b7d7cf4138d58ffdbeb5",
+      "chat_template_caps": {
+        "supports_object_arguments": true,
+        "supports_parallel_tool_calls": true,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": true,
+        "supports_system_role": true,
+        "supports_tool_calls": true,
+        "supports_tools": true,
+        "supports_typed_content": false
+      },
+      "prompt": "[SYSTEM_PROMPT]# HOW YOU SHOULD THINK AND ANSWER\n\nFirst draft your thinking process (inner monologue) until you arrive at a response. Format your response using Markdown, and use LaTeX for any mathematical equations. Write both your thoughts and the response in the same language as the input.\n\nYour thinking process must follow the template below:[THINK]Your thoughts or/and draft, like working through an exercise on scratch paper. Be as casual and as long as you want until you are confident to generate the response to the user.[/THINK]Here, provide a self-contained response.[/SYSTEM_PROMPT][AVAILABLE_TOOLS][{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Return the weather for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}}, {\"type\": \"function\", \"function\": {\"name\": \"get_time\", \"description\": \"Return the local time for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}}][/AVAILABLE_TOOLS][INST]What are the weather and the local time in Paris?[/INST][TOOL_CALLS]get_weather[ARGS]{\"city\": \"Paris\"}[TOOL_CALLS]get_time[ARGS]{\"city\": \"Paris\"}</s>[TOOL_RESULTS]RESULT_ONE[/TOOL_RESULTS][TOOL_RESULTS]RESULT_TWO[/TOOL_RESULTS]"
+    },
+    "templates/functiongemma-270m-it.jinja": {
+      "model": "functiongemma-270m-it-Q4_K_M.gguf",
+      "template_sha256": "0dbaf70819c970c9bacd7125be8e9db46b7bc0e6ed3bc303d92bd58fb9dd604a",
+      "chat_template_caps": {
+        "supports_object_arguments": false,
+        "supports_parallel_tool_calls": false,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": true,
+        "supports_system_role": true,
+        "supports_tool_calls": false,
+        "supports_tools": false,
+        "supports_typed_content": true
+      },
+      "prompt": "<start_of_turn>developer\nYou are a model that can do function calling with the following functions<start_function_declaration>declaration:get_weather{description:<escape>Return the weather for a city.<escape>,parameters:{properties:{city:{description:<escape><escape>,type:<escape>STRING<escape>}},required:[<escape>city<escape>],type:<escape>OBJECT<escape>}}<end_function_declaration><start_function_declaration>declaration:get_time{description:<escape>Return the local time for a city.<escape>,parameters:{properties:{city:{description:<escape><escape>,type:<escape>STRING<escape>}},required:[<escape>city<escape>],type:<escape>OBJECT<escape>}}<end_function_declaration><end_of_turn>\n<start_of_turn>user\nWhat are the weather and the local time in Paris?<end_of_turn>\n<start_of_turn>model\n<start_function_call>call:get_weather{                    {\"city\":\"Paris\"}}<end_function_call><start_function_call>call:get_time{                    {\"city\":\"Paris\"}}<end_function_call><start_function_response>response:get_weather{value:<escape>RESULT_ONE<escape>}<end_function_response><start_function_response>response:get_time{value:<escape>RESULT_TWO<escape>}<end_function_response>"
+    },
+    "templates/Phi-4-mini-instruct-reasoning.jinja": {
+      "model": "Phi-4-mini-instruct-Q4_K_M.gguf",
+      "template_sha256": "46bcd040271c497ee454c7ff577615abf2853ba2971b472e417468ac2bf47f52",
+      "chat_template_caps": {
+        "supports_object_arguments": false,
+        "supports_parallel_tool_calls": false,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": true,
+        "supports_system_role": true,
+        "supports_tool_calls": false,
+        "supports_tools": false,
+        "supports_typed_content": false
+      },
+      "prompt": "<|user|>What are the weather and the local time in Paris?<|end|><|assistant|><|end|><|tool|>RESULT_ONE<|end|><|tool|>RESULT_TWO<|end|><|assistant|>"
+    },
+    "templates/LFM2_5-1_2B-Thinking.jinja": {
+      "model": "LFM2.5-1.2B-Thinking-Q4_K_M.gguf",
+      "template_sha256": "f05bf4b967dc993bdc7a2fe6e43759ee218eb0eb340d68b063e1c4f8ad148176",
+      "chat_template_caps": {
+        "supports_object_arguments": false,
+        "supports_parallel_tool_calls": false,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": true,
+        "supports_system_role": true,
+        "supports_tool_calls": false,
+        "supports_tools": true,
+        "supports_typed_content": false
+      },
+      "prompt": "<|im_start|>system\nList of tools: [{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Return the weather for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}}, {\"type\": \"function\", \"function\": {\"name\": \"get_time\", \"description\": \"Return the local time for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}}]<|im_end|>\n<|im_start|>user\nWhat are the weather and the local time in Paris?<|im_end|>\n<|im_start|>assistant\n<|im_end|>\n<|im_start|>tool\nRESULT_ONE<|im_end|>\n<|im_start|>tool\nRESULT_TWO<|im_end|>\n<|im_start|>assistant\n"
+    }
+  }
+}

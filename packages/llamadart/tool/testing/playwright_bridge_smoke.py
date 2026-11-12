@@ -136,7 +136,10 @@ def main() -> int:
               window.Worker = FakeWorker;
 
               try {
-                const moduleUrl = `/webgpu_bridge/llama_webgpu_bridge.js?v=${Date.now()}`;
+                const moduleUrl = new URL(
+                  `webgpu_bridge/llama_webgpu_bridge.js?v=${Date.now()}`,
+                  document.baseURI,
+                ).href;
                 const mod = await import(moduleUrl);
                 const Bridge = mod.LlamaWebGpuBridge;
                 const bridge = new Bridge({

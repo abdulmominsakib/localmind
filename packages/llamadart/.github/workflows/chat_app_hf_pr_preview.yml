@@ -1,0 +1,103 @@
+name: Chat App HF PR Preview
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, labeled, unlabeled, closed]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Select and build preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+       github.event.label.name == 'preview')
+    outputs:
+      action: ${{ steps.closed.outputs.action || steps.select.outputs.action }}
+      artifact-id: ${{ steps.artifact.outputs.artifact-id }}
+      artifact-digest: ${{ steps.artifact.outputs.artifact-digest }}
+    steps:
+      - id: closed
+        if: github.event.action == 'closed'
+        run: echo 'action=cleanup' >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v7
+        if: github.event.action != 'closed'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - id: select
+        if: github.event.action != 'closed'
+        run: python3 tool/ci/web_deployment.py preview
+      - uses: subosito/flutter-action@v2
+        if: steps.select.outputs.action == 'build'
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+      - name: Build and validate preview
+        if: steps.select.outputs.action == 'build'
+        env:
+          CHAT_APP_BUILD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          (cd example/chat_app && flutter pub get)
+          ./scripts/build_chat_app_web.sh
+      - id: artifact
+        if: steps.select.outputs.action == 'build'
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-app-preview-${{ github.event.pull_request.number }}-${{ github.run_attempt }}
+          path: example/chat_app/build/web/
+          if-no-files-found: error
+          retention-days: 1
+
+  preview:
+    name: Deploy or clean up chat app PR preview
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: >-
+      ${{
+        needs.build.result == 'success' &&
+        (needs.build.outputs.action == 'build' || needs.build.outputs.action == 'cleanup') &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
+      }}
+    # Provider mutations are never cancelled by later events or replaced pending jobs.
+    concurrency:
+      group: chat-app-hf-pr-preview-write-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+      issues: write
+    env:
+      HF_CHAT_APP_SPACE_REPO: ${{ vars.HF_CHAT_APP_SPACE_REPO }}
+      HF_CHAT_APP_PREVIEW_NAMESPACE: ${{ vars.HF_CHAT_APP_PREVIEW_NAMESPACE }}
+      PREVIEW_ACTION: ${{ needs.build.outputs.action }}
+      ARTIFACT_ID: ${{ needs.build.outputs.artifact-id }}
+      ARTIFACT_DIGEST: ${{ needs.build.outputs.artifact-digest }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # All credential-bearing work runs trusted base helpers, including close.
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Hugging Face Hub client
+        run: python3 -m pip install "huggingface_hub>=0.36.0,<0.37.0"
+      - name: Check live PR, verify artifact and apply preview operation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python3 tool/ci/preview_guard.py

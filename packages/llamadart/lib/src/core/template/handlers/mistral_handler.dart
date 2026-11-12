@@ -15,6 +15,16 @@ import '../tool_call_grammar_utils.dart';
 /// Uses `[TOOL_CALLS]` prefix followed by a JSON array of tool calls.
 /// Tool call format: `[TOOL_CALLS] [{"name": "fn", "arguments": {...}, "id": "..."}]`
 class MistralHandler extends ChatTemplateHandler {
+  static const String _toolCallsPrefix = '[TOOL_CALLS]';
+
+  /// Finds where [parse] may find a tool-call opening in [text].
+  ///
+  /// Returns the first index at or after [from] where `[TOOL_CALLS]` starts,
+  /// or where the rest of [text] is the start of it, and `text.length` when
+  /// there is none.
+  static int toolCallOpening(String text, [int from = 0]) =>
+      ToolCallParsingUtils.literalOpening(text, const [_toolCallsPrefix], from);
+
   @override
   ChatFormat get format => ChatFormat.mistralNemo;
 
@@ -47,7 +57,7 @@ class MistralHandler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'bos_token': metadata['tokenizer.ggml.bos_token'] ?? '<s>',
@@ -93,8 +103,7 @@ class MistralHandler extends ChatTemplateHandler {
       );
     }
 
-    const prefix = '[TOOL_CALLS]';
-    final prefixIndex = text.indexOf(prefix);
+    final prefixIndex = text.indexOf(_toolCallsPrefix);
     if (prefixIndex == -1) {
       return ChatParseResult(
         content: trimmed,
@@ -103,7 +112,7 @@ class MistralHandler extends ChatTemplateHandler {
     }
 
     final prelude = text.substring(0, prefixIndex);
-    final payload = text.substring(prefixIndex + prefix.length);
+    final payload = text.substring(prefixIndex + _toolCallsPrefix.length);
 
     var cursor = 0;
     while (cursor < payload.length && payload.codeUnitAt(cursor) <= 0x20) {

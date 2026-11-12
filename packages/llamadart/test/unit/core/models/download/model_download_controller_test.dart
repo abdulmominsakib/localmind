@@ -1,10 +1,37 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:llamadart/llamadart.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('ModelDownloadController', () {
+    test('snapshots redact bare and JSON-escaped source secrets', () async {
+      const url =
+          'https://alice:SnapshotPassword@example.com/model.gguf?token=SnapshotTokenValue';
+      final source = ModelSource.url(Uri.parse(url));
+      final manager = _FakeDownloadManager()
+        ..error = LlamaModelException(
+          '${jsonEncode(url).replaceAll('/', r'\/')} token=SnapshotTokenValue password SnapshotPassword '
+          r'ftp:\/\/bob:RedirectSecret@cdn.example.com/m.gguf?sig=OtherSecret',
+        );
+      final controller = ModelDownloadController(manager: manager);
+      addTearDown(controller.dispose);
+      await expectLater(
+        controller.start(source),
+        throwsA(isA<LlamaModelException>()),
+      );
+      expect(
+        controller.snapshot.errorMessage,
+        allOf(
+          isNot(contains('SnapshotPassword')),
+          isNot(contains('SnapshotTokenValue')),
+          isNot(contains('RedirectSecret')),
+          isNot(contains('OtherSecret')),
+        ),
+      );
+    });
+
     test(
       'returns cached remote entries without reporting a download',
       () async {
@@ -146,9 +173,61 @@ void main() {
         expect(manager.lastOptions?.cancelToken?.isCancelled, isTrue);
         expect(controller.snapshot.stage, ModelDownloadTaskStage.cancelled);
         expect(controller.snapshot.canRetry, isTrue);
+        expect(
+          controller.snapshot.errorMessage,
+          'Download cancelled for model.gguf.',
+        );
         expect(stages, contains(ModelDownloadTaskStage.cancelled));
       },
     );
+
+    for (final url in <String>[
+      'https://alice:CancelPassword@example.com/CancelPassword.gguf?token=CancelSignature',
+      'https://example.com/CancelSignature.gguf?token=CancelSignature',
+      'https://alice:Cancel%20Password@example.com/Cancel%20Password.gguf',
+    ]) {
+      test('cancelled snapshots redact secrets repeated in $url', () async {
+        final source = ModelSource.url(Uri.parse(url));
+        final originalFileName = source.fileName;
+        final originalCanonicalKey = source.canonicalKey;
+        final originalCacheKey = source.cacheKey;
+        final manager = _FakeDownloadManager();
+        final gate = Completer<void>();
+        manager.ensureGate = gate;
+        final controller = ModelDownloadController(manager: manager);
+        addTearDown(controller.dispose);
+        final snapshots = <ModelDownloadTaskSnapshot>[];
+        final sub = controller.snapshots.listen(snapshots.add);
+        addTearDown(sub.cancel);
+
+        final task = controller.start(source);
+        await Future<void>.delayed(Duration.zero);
+        controller.cancel();
+        gate.complete();
+
+        await expectLater(
+          task,
+          throwsA(
+            isA<LlamaStateException>().having(
+              (error) => error.message,
+              'message',
+              'Model download was cancelled.',
+            ),
+          ),
+        );
+        final cancelled = snapshots.singleWhere(
+          (snapshot) => snapshot.stage == ModelDownloadTaskStage.cancelled,
+        );
+        expect(cancelled, same(controller.snapshot));
+        expect(cancelled.errorMessage, 'Download cancelled for .gguf.');
+        expect(cancelled.canRetry, isTrue);
+        expect(cancelled.source, same(source));
+        expect(source.fileName, originalFileName);
+        expect(source.canonicalKey, originalCanonicalKey);
+        expect(source.resolvedUri.toString(), url);
+        expect(source.cacheKey, originalCacheKey);
+      });
+    }
 
     test(
       'manager cancellation-like errors fail unless controller cancelled',
@@ -244,7 +323,69 @@ void main() {
           source,
           options: ModelLoadOptions(cancelToken: ModelDownloadCancelToken()),
         ),
-        throwsA(isA<ArgumentError>()),
+        throwsA(
+          isA<LlamaArgumentException>().having(
+            (e) => e.name,
+            'name',
+            'options.cancelToken',
+          ),
+        ),
+      );
+    });
+
+    test('rejects a second start while a task runs', () async {
+      final source = ModelSource.url(
+        Uri.parse('https://example.com/model.gguf'),
+      );
+      final gate = Completer<void>();
+      final manager = _FakeDownloadManager()..ensureGate = gate;
+      final controller = ModelDownloadController(manager: manager);
+      addTearDown(controller.dispose);
+
+      final first = controller.start(source);
+      expect(
+        () => controller.start(source),
+        throwsA(
+          isA<LlamaStateException>().having(
+            (e) => e.message,
+            'message',
+            'A model download task is already running.',
+          ),
+        ),
+      );
+      gate.complete();
+      await first;
+    });
+
+    test('rejects retry before any start', () {
+      final controller = ModelDownloadController(
+        manager: _FakeDownloadManager(),
+      );
+      addTearDown(controller.dispose);
+
+      expect(
+        controller.retry,
+        throwsA(
+          isA<LlamaStateException>().having(
+            (e) => e.message,
+            'message',
+            contains('Call start() first'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects start after dispose', () async {
+      final controller = ModelDownloadController(
+        manager: _FakeDownloadManager(),
+      );
+      await controller.dispose();
+
+      expect(
+        () => controller.start(
+          ModelSource.url(Uri.parse('https://example.com/model.gguf')),
+        ),
+        throwsA(isA<LlamaStateException>()),
       );
     });
 

@@ -1,0 +1,115 @@
+--------- beginning of main
+10-13 03:16:07.092 26261 26277 I TestRunner: run started: 1 tests
+10-13 03:16:07.484 26261 26298 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+10-13 03:16:07.794 26261 26261 I flutter : 00:00 +0: shared validation: chat-litert-cpu
+10-13 03:17:00.967 26261 26261 E flutter : [ERROR:flutter/lib/ui/window/platform_configuration.cc(475)] Reported frame time is older than the last one; clamping. 23010233181 < 23010233183 ~= 2
+10-13 03:17:38.549 26261 26261 I flutter : [2026-10-13T03:17:38.547207] [INFO] Loading model: Qwen3-0.6B.litertlm
+10-13 03:17:38.584 26261 26261 I flutter : [2026-10-13T03:17:38.584037] [INFO] Model Qwen3-0.6B.litertlm loaded from /data/user/0/com.example.llamadart_chat_example/files/validation/models/555579ff2f4fd13379abe69c1c3ab5200f7338bc92471557f1d6614a6e5ab0b4/Qwen3-0.6B.litertlm; native engine creation is deferred until the first generation or tokenizer call
+10-13 03:17:38.663 26261 27360 W native  : W0000 00:00:1791886658.663204   27360 litert_lm_loader.cc:391] Section not found: SP_Tokenizer
+10-13 03:17:38.746 26261 27360 W native  : W0000 00:00:1791886658.746743   27360 litert_lm_loader.cc:514] TFLite model type: tf_lite_vision_encoder not found for backend constraints. Skipping.
+10-13 03:17:38.746 26261 27360 W native  : W0000 00:00:1791886658.746867   27360 litert_lm_loader.cc:514] TFLite model type: tf_lite_audio_encoder_hw not found for backend constraints. Skipping.
+10-13 03:17:38.746 26261 27360 W native  : W0000 00:00:1791886658.746873   27360 litert_lm_loader.cc:532] TFLite model type: tf_lite_vision_encoder not found for prefer activation type. Use system's default backend activation type. System's default activation type for Text decoder is fp16. Vision encoder and audio encoder default is fp32.
+10-13 03:17:38.746 26261 27360 W native  : W0000 00:00:1791886658.746877   27360 litert_lm_loader.cc:532] TFLite model type: tf_lite_audio_encoder_hw not found for prefer activation type. Use system's default backend activation type. System's default activation type for Text decoder is fp16. Vision encoder and audio encoder default is fp32.
+10-13 03:17:38.747 26261 27360 I litert  : [environment.cc:36] Creating LiteRT environment with options
+10-13 03:17:38.747 26261 27360 W litert  : [npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorNotFound.
+10-13 03:17:38.747 26261 27360 I litert  : [gpu_registry.cc:128] Attempting to load GPU accelerator(libLiteRtGpuAccelerator.so).
+10-13 03:17:38.749 26261 27360 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007663652f10, name=LiteRT GPU
+10-13 03:17:38.749 26261 27360 I litert  : [gpu_registry.cc:136] Dynamically loaded GPU accelerator(libLiteRtGpuAccelerator.so) registered.
+10-13 03:17:38.749 26261 27360 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007663656e80, name=CpuAccelerator
+10-13 03:17:38.749 26261 27360 I litert  : [cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+10-13 03:17:38.768 26261 27360 I litert  : [environment.cc:36] Creating LiteRT environment with options
+10-13 03:17:38.768 26261 27360 W litert  : [npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorNotFound.
+10-13 03:17:38.768 26261 27360 I litert  : [gpu_registry.cc:128] Attempting to load GPU accelerator(libLiteRtGpuAccelerator.so).
+10-13 03:17:38.768 26261 27360 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb400007663654170, name=LiteRT GPU
+10-13 03:17:38.768 26261 27360 I litert  : [gpu_registry.cc:136] Dynamically loaded GPU accelerator(libLiteRtGpuAccelerator.so) registered.
+10-13 03:17:38.768 26261 27360 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb4000076636568d0, name=CpuAccelerator
+10-13 03:17:38.768 26261 27360 I litert  : [cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+10-13 03:17:38.768 26261 27360 W native  : W0000 00:00:1791886658.768404   27360 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:17:38.768 26261 27360 W native  : W0000 00:00:1791886658.768542   27360 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:17:38.768 26261 27360 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:17:38.769 26261 27360 I tflite  : Initialized TensorFlow Lite runtime.
+10-13 03:17:38.781 26261 27360 I tflite  : Created TensorFlow Lite XNNPACK delegate for CPU.
+10-13 03:17:39.781 26261 27360 I litert  : [environment.cc:36] Creating LiteRT environment with options
+10-13 03:17:39.781 26261 27360 W litert  : [npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorNotFound.
+10-13 03:17:39.781 26261 27360 I litert  : [gpu_registry.cc:128] Attempting to load GPU accelerator(libLiteRtGpuAccelerator.so).
+10-13 03:17:39.781 26261 27360 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb4000076636b6100, name=LiteRT GPU
+10-13 03:17:39.781 26261 27360 I litert  : [gpu_registry.cc:136] Dynamically loaded GPU accelerator(libLiteRtGpuAccelerator.so) registered.
+10-13 03:17:39.781 26261 27360 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb4000076636b6560, name=CpuAccelerator
+10-13 03:17:39.781 26261 27360 I litert  : [cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+10-13 03:17:39.977 26261 27360 W native  : W0000 00:00:1791886659.977026   27360 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:17:39.977 26261 27360 W native  : W0000 00:00:1791886659.977092   27360 litert_lm_loader.cc:479] TFLite model for type: tf_lite_end_of_audio not found. Skipping.
+10-13 03:17:39.977 26261 27360 W native  : W0000 00:00:1791886659.977102   27360 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:17:39.977 26261 27360 W native  : W0000 00:00:1791886659.977105   27360 litert_lm_loader.cc:479] TFLite model for type: tf_lite_end_of_vision not found. Skipping.
+10-13 03:17:39.977 26261 27360 W native  : W0000 00:00:1791886659.977109   27360 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:17:39.977 26261 27360 W native  : W0000 00:00:1791886659.977112   27360 litert_lm_loader.cc:479] TFLite model for type: tf_lite_embedder not found. Skipping.
+10-13 03:17:39.977 26261 27360 W native  : W0000 00:00:1791886659.977115   27360 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:17:39.977 26261 27360 W native  : W0000 00:00:1791886659.977117   27360 litert_lm_loader.cc:479] TFLite model for type: tf_lite_per_layer_embedder not found. Skipping.
+10-13 03:18:22.113 26261 26261 E flutter : [ERROR:flutter/lib/ui/window/platform_configuration.cc(475)] Reported frame time is older than the last one; clamping. 23091380662 < 23091380960 ~= 298
+10-13 03:18:26.062 26261 26261 I flutter : [2026-10-13T03:18:26.061685] [INFO] Unloading model...
+10-13 03:18:26.147 26261 27361 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb4000076636568d0, name=CpuAccelerator
+10-13 03:18:26.148 26261 27361 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb400007663654170, name=LiteRT GPU
+10-13 03:18:26.182 26261 26261 I flutter : [2026-10-13T03:18:26.182248] [INFO] Model unloaded.
+10-13 03:18:26.203 26261 26261 I flutter : [2026-10-13T03:18:26.203383] [INFO] Loading model: Qwen3-0.6B.litertlm
+10-13 03:18:26.210 26261 26261 I flutter : [2026-10-13T03:18:26.210169] [INFO] Model Qwen3-0.6B.litertlm loaded from /data/user/0/com.example.llamadart_chat_example/files/validation/models/555579ff2f4fd13379abe69c1c3ab5200f7338bc92471557f1d6614a6e5ab0b4/Qwen3-0.6B.litertlm; native engine creation is deferred until the first generation or tokenizer call
+10-13 03:18:26.237 26261 27361 W native  : W0000 00:00:1791886706.237874   27361 litert_lm_loader.cc:391] Section not found: SP_Tokenizer
+10-13 03:18:26.305 26261 27361 W native  : W0000 00:00:1791886706.305864   27361 litert_lm_loader.cc:514] TFLite model type: tf_lite_vision_encoder not found for backend constraints. Skipping.
+10-13 03:18:26.305 26261 27361 W native  : W0000 00:00:1791886706.305985   27361 litert_lm_loader.cc:514] TFLite model type: tf_lite_audio_encoder_hw not found for backend constraints. Skipping.
+10-13 03:18:26.305 26261 27361 W native  : W0000 00:00:1791886706.305993   27361 litert_lm_loader.cc:532] TFLite model type: tf_lite_vision_encoder not found for prefer activation type. Use system's default backend activation type. System's default activation type for Text decoder is fp16. Vision encoder and audio encoder default is fp32.
+10-13 03:18:26.306 26261 27361 W native  : W0000 00:00:1791886706.305998   27361 litert_lm_loader.cc:532] TFLite model type: tf_lite_audio_encoder_hw not found for prefer activation type. Use system's default backend activation type. System's default activation type for Text decoder is fp16. Vision encoder and audio encoder default is fp32.
+10-13 03:18:26.327 26261 27361 I litert  : [environment.cc:36] Creating LiteRT environment with options
+10-13 03:18:26.327 26261 27361 W litert  : [npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorNotFound.
+10-13 03:18:26.327 26261 27361 I litert  : [gpu_registry.cc:128] Attempting to load GPU accelerator(libLiteRtGpuAccelerator.so).
+10-13 03:18:26.329 26261 27361 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb4000076636c6550, name=LiteRT GPU
+10-13 03:18:26.329 26261 27361 I litert  : [gpu_registry.cc:136] Dynamically loaded GPU accelerator(libLiteRtGpuAccelerator.so) registered.
+10-13 03:18:26.329 26261 27361 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb4000076636c6780, name=CpuAccelerator
+10-13 03:18:26.329 26261 27361 I litert  : [cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+10-13 03:18:26.329 26261 27361 W native  : W0000 00:00:1791886706.329398   27361 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:18:26.329 26261 27361 W native  : W0000 00:00:1791886706.329482   27361 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:18:26.329 26261 27361 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:18:26.581 26261 27361 W native  : W0000 00:00:1791886706.581915   27361 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:18:26.582 26261 27361 W native  : W0000 00:00:1791886706.582016   27361 litert_lm_loader.cc:479] TFLite model for type: tf_lite_end_of_audio not found. Skipping.
+10-13 03:18:26.582 26261 27361 W native  : W0000 00:00:1791886706.582027   27361 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:18:26.582 26261 27361 W native  : W0000 00:00:1791886706.582031   27361 litert_lm_loader.cc:479] TFLite model for type: tf_lite_end_of_vision not found. Skipping.
+10-13 03:18:26.582 26261 27361 W native  : W0000 00:00:1791886706.582035   27361 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:18:26.582 26261 27361 W native  : W0000 00:00:1791886706.582037   27361 litert_lm_loader.cc:479] TFLite model for type: tf_lite_embedder not found. Skipping.
+10-13 03:18:26.582 26261 27361 W native  : W0000 00:00:1791886706.582041   27361 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:18:26.582 26261 27361 W native  : W0000 00:00:1791886706.582044   27361 litert_lm_loader.cc:479] TFLite model for type: tf_lite_per_layer_embedder not found. Skipping.
+10-13 03:18:28.531  1363  7999 D ActivityManager: freezer override set to true
+10-13 03:18:29.630 26261 26261 I flutter : [2026-10-13T03:18:29.630717] [INFO] Unloading model...
+10-13 03:18:29.704 26261 27996 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb4000076636c6780, name=CpuAccelerator
+10-13 03:18:29.704 26261 27996 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb4000076636c6550, name=LiteRT GPU
+10-13 03:18:29.728 26261 26261 I flutter : [2026-10-13T03:18:29.727964] [INFO] Model unloaded.
+10-13 03:18:29.760 26261 26261 I flutter : [2026-10-13T03:18:29.760341] [INFO] Loading model: Qwen3-0.6B.litertlm
+10-13 03:18:29.770 26261 26261 I flutter : [2026-10-13T03:18:29.770214] [INFO] Model Qwen3-0.6B.litertlm loaded from /data/user/0/com.example.llamadart_chat_example/files/validation/models/555579ff2f4fd13379abe69c1c3ab5200f7338bc92471557f1d6614a6e5ab0b4/Qwen3-0.6B.litertlm; native engine creation is deferred until the first generation or tokenizer call
+10-13 03:18:29.814 26261 27361 W native  : W0000 00:00:1791886709.814697   27361 litert_lm_loader.cc:391] Section not found: SP_Tokenizer
+10-13 03:18:29.853 26261 27361 W native  : W0000 00:00:1791886709.853447   27361 litert_lm_loader.cc:514] TFLite model type: tf_lite_vision_encoder not found for backend constraints. Skipping.
+10-13 03:18:29.853 26261 27361 W native  : W0000 00:00:1791886709.853507   27361 litert_lm_loader.cc:514] TFLite model type: tf_lite_audio_encoder_hw not found for backend constraints. Skipping.
+10-13 03:18:29.853 26261 27361 W native  : W0000 00:00:1791886709.853513   27361 litert_lm_loader.cc:532] TFLite model type: tf_lite_vision_encoder not found for prefer activation type. Use system's default backend activation type. System's default activation type for Text decoder is fp16. Vision encoder and audio encoder default is fp32.
+10-13 03:18:29.853 26261 27361 W native  : W0000 00:00:1791886709.853518   27361 litert_lm_loader.cc:532] TFLite model type: tf_lite_audio_encoder_hw not found for prefer activation type. Use system's default backend activation type. System's default activation type for Text decoder is fp16. Vision encoder and audio encoder default is fp32.
+10-13 03:18:29.872 26261 27361 I litert  : [environment.cc:36] Creating LiteRT environment with options
+10-13 03:18:29.872 26261 27361 W litert  : [npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorNotFound.
+10-13 03:18:29.872 26261 27361 I litert  : [gpu_registry.cc:128] Attempting to load GPU accelerator(libLiteRtGpuAccelerator.so).
+10-13 03:18:29.872 26261 27361 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb4000076636b6a30, name=LiteRT GPU
+10-13 03:18:29.872 26261 27361 I litert  : [gpu_registry.cc:136] Dynamically loaded GPU accelerator(libLiteRtGpuAccelerator.so) registered.
+10-13 03:18:29.872 26261 27361 I litert  : [accelerator_registry.cc:54] RegisterAccelerator: ptr=0xb4000076636c6390, name=CpuAccelerator
+10-13 03:18:29.872 26261 27361 I litert  : [cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+10-13 03:18:29.872 26261 27361 W native  : W0000 00:00:1791886709.872328   27361 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:18:29.872 26261 27361 W native  : W0000 00:00:1791886709.872409   27361 litert_lm_loader.cc:391] Section not found: ExecutorMetadataProto
+10-13 03:18:29.872 26261 27361 I litert  : [compiled_model.cc:829] Flatbuffer model initialized directly from incoming litert model.
+10-13 03:18:30.130 26261 27361 W native  : W0000 00:00:1791886710.130207   27361 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:18:30.130 26261 27361 W native  : W0000 00:00:1791886710.130378   27361 litert_lm_loader.cc:479] TFLite model for type: tf_lite_end_of_audio not found. Skipping.
+10-13 03:18:30.130 26261 27361 W native  : W0000 00:00:1791886710.130390   27361 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:18:30.130 26261 27361 W native  : W0000 00:00:1791886710.130393   27361 litert_lm_loader.cc:479] TFLite model for type: tf_lite_end_of_vision not found. Skipping.
+10-13 03:18:30.130 26261 27361 W native  : W0000 00:00:1791886710.130397   27361 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:18:30.130 26261 27361 W native  : W0000 00:00:1791886710.130400   27361 litert_lm_loader.cc:479] TFLite model for type: tf_lite_embedder not found. Skipping.
+10-13 03:18:30.130 26261 27361 W native  : W0000 00:00:1791886710.130403   27361 litert_lm_loader.cc:391] Section not found: TFLiteModel
+10-13 03:18:30.130 26261 27361 W native  : W0000 00:00:1791886710.130408   27361 litert_lm_loader.cc:479] TFLite model for type: tf_lite_per_layer_embedder not found. Skipping.
+10-13 03:18:50.742 26261 26261 I flutter : [2026-10-13T03:18:50.742714] [INFO] Unloading model...
+10-13 03:18:50.809 26261 27361 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb4000076636c6390, name=CpuAccelerator
+10-13 03:18:50.809 26261 27361 I litert  : [accelerator_registry.cc:43] DestroyAccelerator: ptr=0xb4000076636b6a30, name=LiteRT GPU
+10-13 03:18:50.836 26261 26261 I flutter : [2026-10-13T03:18:50.835665] [INFO] Model unloaded.
+10-13 03:18:51.033 26261 26261 I flutter : 02:43 +1: (tearDownAll)
+10-13 03:18:51.041 26261 26277 I TestRunner: started: shared validation: chat-litert-cpu(com.example.llamadart_chat_example.MainActivityTest)
+10-13 03:18:51.042 26261 26261 I flutter : 02:43 +2: All tests passed!
+10-13 03:18:51.229 26261 26277 I TestRunner: finished: shared validation: chat-litert-cpu(com.example.llamadart_chat_example.MainActivityTest)
+10-13 03:18:51.234 26261 26277 I TestRunner: run finished: 1 tests, 0 failed, 0 ignored

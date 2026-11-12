@@ -1,8 +1,34 @@
 import 'dart:convert';
 
+import '../exceptions.dart';
 import '../models/chat/completion_chunk.dart';
 import 'chat_format.dart';
 import 'chat_parse_result.dart';
+import 'peg_parser_builder.dart';
+
+/// The PEG format `ChatTemplateEngine.parse` parses output of [format] with,
+/// given its serialized [parser], or `null` when it uses the format's handler.
+ChatFormat? pegParseFormat(ChatFormat format, String? parser) {
+  final hasPegParser = parser != null && parser.trim().isNotEmpty;
+  return switch (format) {
+    ChatFormat.pegSimple => ChatFormat.pegSimple,
+    ChatFormat.pegNative => ChatFormat.pegNative,
+    ChatFormat.pegConstructed => ChatFormat.pegConstructed,
+    ChatFormat.ministral => hasPegParser ? ChatFormat.pegNative : null,
+    ChatFormat.solarOpen => hasPegParser ? ChatFormat.pegNative : null,
+    ChatFormat.qwen3CoderXml => hasPegParser ? ChatFormat.pegConstructed : null,
+    _ => null,
+  };
+}
+
+// llama.cpp's `common_chat_format_name` spellings, including the historical
+// peg-constructed name removed before b10549, retained for Dart's XML mapper.
+String _formatName(ChatFormat format) => switch (format) {
+  ChatFormat.pegSimple => 'peg-simple',
+  ChatFormat.pegNative => 'peg-native',
+  ChatFormat.pegConstructed => 'peg-constructed',
+  _ => format.name,
+};
 
 /// Runtime PEG parser for llama.cpp `parser.save()` payloads.
 ///
@@ -12,12 +38,18 @@ class PegChatParser {
   static final Map<String, _PegArena> _arenaCache = <String, _PegArena>{};
 
   /// Parses [output] with a serialized [parser] definition.
+  ///
+  /// [accumulateContent] joins native PEG content fragments without discarding
+  /// whitespace. Formats without repeated channels retain their existing mapper.
+  ///
+  /// Throws [LlamaInferenceException] when [output] does not match [parser].
   static ChatParseResult parse({
     required String parser,
     required ChatFormat format,
     required String output,
     bool isPartial = false,
     bool parseToolCalls = true,
+    bool accumulateContent = false,
   }) {
     if (parser.trim().isEmpty) {
       throw StateError('Missing PEG parser definition.');
@@ -31,12 +63,19 @@ class PegChatParser {
     final ctx = _PegParseContext(input: output, isPartial: isPartial);
     final parseResult = arena.parse(ctx);
     if (parseResult.isFail) {
-      throw StateError('Failed to parse input at pos ${parseResult.end}.');
+      throw LlamaInferenceException(
+        'The model output does not match the expected ${_formatName(format)} '
+        'format: the parse failed at character ${parseResult.end} of '
+        '${output.length}.',
+      );
     }
 
     final message = _PegChatMessage();
     final mapper = switch (format) {
-      ChatFormat.pegNative => _PegNativeMapper(message),
+      ChatFormat.pegNative => _PegNativeMapper(
+        message,
+        accumulateContent: accumulateContent,
+      ),
       ChatFormat.pegConstructed => _PegConstructedMapper(message),
       _ => _PegBaseMapper(message),
     };
@@ -83,27 +122,34 @@ class _PegToolCall {
 }
 
 class _PegBaseMapper {
-  _PegBaseMapper(this.message);
+  _PegBaseMapper(this.message, {this.accumulateContent = false});
 
   final _PegChatMessage message;
+  final bool accumulateContent;
 
   void fromAst(_PegAstArena arena, _PegParseResult result) {
     arena.visitResult(result, map);
   }
 
   void map(_PegAstNode node) {
-    if (node.tag == 'reasoning') {
+    if (node.tag == ChatPegBuilder.reasoningTag) {
       message.reasoningContent = _trimTrailingWhitespace(node.text);
       return;
     }
-    if (node.tag == 'content') {
-      message.content = _trimTrailingWhitespace(node.text);
+    if (node.tag == ChatPegBuilder.contentTag) {
+      if (accumulateContent) {
+        // Channel frames interrupt the raw suffix, so the public parser cannot
+        // restore whitespace trimmed from these fragments after they join.
+        message.content += node.text;
+      } else {
+        message.content = _trimTrailingWhitespace(node.text);
+      }
     }
   }
 }
 
 class _PegNativeMapper extends _PegBaseMapper {
-  _PegNativeMapper(super.message);
+  _PegNativeMapper(super.message, {super.accumulateContent});
 
   _PegToolCall? _currentTool;
 
@@ -111,24 +157,24 @@ class _PegNativeMapper extends _PegBaseMapper {
   void map(_PegAstNode node) {
     super.map(node);
 
-    if (node.tag == 'tool-open') {
+    if (node.tag == ChatPegNativeBuilder.toolOpenTag) {
       final tool = _PegToolCall();
       message.toolCalls.add(tool);
       _currentTool = tool;
       return;
     }
 
-    if (node.tag == 'tool-id' && _currentTool != null) {
+    if (node.tag == ChatPegNativeBuilder.toolIdTag && _currentTool != null) {
       _currentTool!.id = _trimTrailingWhitespace(node.text);
       return;
     }
 
-    if (node.tag == 'tool-name' && _currentTool != null) {
+    if (node.tag == ChatPegNativeBuilder.toolNameTag && _currentTool != null) {
       _currentTool!.name = _trimTrailingWhitespace(node.text);
       return;
     }
 
-    if (node.tag == 'tool-args' && _currentTool != null) {
+    if (node.tag == ChatPegNativeBuilder.toolArgsTag && _currentTool != null) {
       _currentTool!.arguments = _trimTrailingWhitespace(node.text);
     }
   }
@@ -145,7 +191,7 @@ class _PegConstructedMapper extends _PegBaseMapper {
   void map(_PegAstNode node) {
     super.map(node);
 
-    if (node.tag == 'tool-open') {
+    if (node.tag == ChatPegNativeBuilder.toolOpenTag) {
       final tool = _PegToolCall();
       message.toolCalls.add(tool);
       _currentTool = tool;
@@ -153,18 +199,19 @@ class _PegConstructedMapper extends _PegBaseMapper {
       return;
     }
 
-    if (node.tag == 'tool-name' && _currentTool != null) {
+    if (node.tag == ChatPegNativeBuilder.toolNameTag && _currentTool != null) {
       _currentTool!.name = node.text;
       _currentTool!.arguments = '{';
       return;
     }
 
-    if (node.tag == 'tool-arg-open') {
+    if (node.tag == ChatPegConstructedBuilder.toolArgOpenTag) {
       _needsClosingQuote = false;
       return;
     }
 
-    if (node.tag == 'tool-arg-name' && _currentTool != null) {
+    if (node.tag == ChatPegConstructedBuilder.toolArgNameTag &&
+        _currentTool != null) {
       if (_argCount > 0) {
         _currentTool!.arguments += ',';
       }
@@ -174,7 +221,8 @@ class _PegConstructedMapper extends _PegBaseMapper {
       return;
     }
 
-    if (node.tag == 'tool-arg-string-value' && _currentTool != null) {
+    if (node.tag == ChatPegConstructedBuilder.toolArgStringValueTag &&
+        _currentTool != null) {
       final dumped = jsonEncode(_trimTrailingWhitespace(node.text));
       if (dumped.isNotEmpty) {
         _currentTool!.arguments += dumped.substring(0, dumped.length - 1);
@@ -183,7 +231,8 @@ class _PegConstructedMapper extends _PegBaseMapper {
       return;
     }
 
-    if (node.tag == 'tool-arg-close' && _currentTool != null) {
+    if (node.tag == ChatPegConstructedBuilder.toolArgCloseTag &&
+        _currentTool != null) {
       if (_needsClosingQuote) {
         _currentTool!.arguments += '"';
         _needsClosingQuote = false;
@@ -191,12 +240,13 @@ class _PegConstructedMapper extends _PegBaseMapper {
       return;
     }
 
-    if (node.tag == 'tool-arg-json-value' && _currentTool != null) {
+    if (node.tag == ChatPegConstructedBuilder.toolArgJsonValueTag &&
+        _currentTool != null) {
       _currentTool!.arguments += _trimTrailingWhitespace(node.text);
       return;
     }
 
-    if (node.tag == 'tool-close' && _currentTool != null) {
+    if (node.tag == ChatPegNativeBuilder.toolCloseTag && _currentTool != null) {
       if (_needsClosingQuote) {
         _currentTool!.arguments += '"';
         _needsClosingQuote = false;

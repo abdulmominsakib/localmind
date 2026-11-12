@@ -59,9 +59,6 @@ class PegParserBuilder {
     });
   }
 
-  /// Creates a one-or-more repetition parser.
-  PegParser oneOrMore(PegParser parser) => repeat(parser, 1, -1);
-
   /// Creates a zero-or-more repetition parser.
   PegParser zeroOrMore(PegParser parser) => repeat(parser, 0, -1);
 
@@ -71,10 +68,6 @@ class PegParserBuilder {
   /// Creates a positive lookahead parser.
   PegParser peek(PegParser parser) =>
       _add(<String, dynamic>{'type': 'and', 'child': parser.id});
-
-  /// Creates a negative lookahead parser.
-  PegParser negate(PegParser parser) =>
-      _add(<String, dynamic>{'type': 'not', 'child': parser.id});
 
   /// Creates a parser that matches any single UTF-8 codepoint.
   PegParser any() => _add(<String, dynamic>{'type': 'any'});
@@ -320,18 +313,6 @@ class PegParserBuilder {
   PegParser jsonStringContent() =>
       _add(<String, dynamic>{'type': 'json_string'});
 
-  /// Returns a parser for a JSON object member with [key].
-  PegParser jsonMember(String key, PegParser parser) {
-    final ws = space();
-    return sequence(<PegParser>[
-      literal('"$key"'),
-      ws,
-      literal(':'),
-      ws,
-      parser,
-    ]);
-  }
-
   /// Serializes the parser arena to llama.cpp-compatible JSON.
   String save() {
     _resolveRefs();
@@ -545,17 +526,11 @@ class PegParser {
 
 /// Base chat parser builder that provides common content/reasoning tags.
 class ChatPegBuilder extends PegParserBuilder {
-  /// AST tag name for reasoning blocks.
-  static const String reasoningBlockTag = 'reasoning-block';
-
   /// AST tag name for extracted reasoning content.
   static const String reasoningTag = 'reasoning';
 
   /// AST tag name for extracted assistant content.
   static const String contentTag = 'content';
-
-  /// Tags [parser] as a reasoning block.
-  PegParser reasoningBlock(PegParser parser) => tag(reasoningBlockTag, parser);
 
   /// Tags [parser] as reasoning content.
   PegParser reasoning(PegParser parser) => tag(reasoningTag, parser);

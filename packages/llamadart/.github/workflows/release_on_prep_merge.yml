@@ -1,0 +1,297 @@
+name: Release on prep merge
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: release-on-prep-merge
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish merged release prep
+    if: ${{ github.event.pull_request.merged == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      GITHUB_RELEASE_WAIT_ATTEMPTS: ${{ vars.RELEASE_AUTOMATION_GITHUB_RELEASE_WAIT_ATTEMPTS || '180' }}
+      GITHUB_RELEASE_WAIT_INTERVAL_SECONDS: ${{ vars.RELEASE_AUTOMATION_GITHUB_RELEASE_WAIT_INTERVAL_SECONDS || '10' }}
+      PUBDEV_WAIT_ATTEMPTS: ${{ vars.RELEASE_AUTOMATION_PUBDEV_WAIT_ATTEMPTS || '180' }}
+      PUBDEV_WAIT_INTERVAL_SECONDS: ${{ vars.RELEASE_AUTOMATION_PUBDEV_WAIT_INTERVAL_SECONDS || '10' }}
+    steps:
+      - name: Check release-prep gate
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          head_ref="$(jq -r '.pull_request.head.ref // ""' "$GITHUB_EVENT_PATH")"
+          head_repo="$(jq -r '.pull_request.head.repo.full_name // ""' "$GITHUB_EVENT_PATH")"
+          labels="$(jq -r '.pull_request.labels[].name // empty' "$GITHUB_EVENT_PATH")"
+
+          should_release=false
+          reason="missing release-prep label or branch pattern"
+          if printf '%s\n' "$labels" | grep -Fxq "release-prep"; then
+            should_release=true
+            reason="release-prep label"
+          elif [[ "$head_ref" =~ ^release/prep-[0-9]+\.[0-9]+\.[0-9]+([-+][A-Za-z0-9._-]+)?$ ||
+            "$head_ref" =~ ^release/[0-9]+\.[0-9]+\.[0-9]+([-+][A-Za-z0-9._-]+)?-prep$ ]]; then
+            should_release=true
+            reason="release-prep branch $head_ref"
+          fi
+
+          # Adapter releases have their own gate and cannot publish core or companions.
+          if [[ "$head_repo" != "$GITHUB_REPOSITORY" || "$head_ref" == release/genkit_llamadart-* ]]; then
+            should_release=false
+            reason="not a same-repository core release prep"
+          fi
+          if [[ "$should_release" == true ]]; then
+            files="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files")"
+            if ! jq -e '
+              [.[][]] as $files |
+              any($files[]; .filename == "pubspec.yaml" and .status == "modified") and
+              all($files[];
+                ([.filename, (.previous_filename // "")] |
+                 all(.[]; startswith("packages/genkit_llamadart/") | not)))
+            ' <<< "$files" >/dev/null; then
+              should_release=false
+              reason="core prep must modify root pubspec and exclude independent Genkit changes"
+            fi
+          fi
+
+          {
+            echo "should_release=$should_release"
+            echo "reason=$reason"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Skip non-release PR
+        if: steps.gate.outputs.should_release != 'true'
+        run: |
+          echo "Skipping release automation: ${{ steps.gate.outputs.reason }}."
+
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.should_release == 'true'
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: dart-lang/setup-dart@v1
+        if: steps.gate.outputs.should_release == 'true'
+
+      - name: Validate release state
+        if: steps.gate.outputs.should_release == 'true'
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="$(awk '/^version:[[:space:]]*/ {print $2; exit}' pubspec.yaml)"
+          if [[ -z "$version" ]]; then
+            echo "pubspec.yaml does not contain a top-level version." >&2
+            exit 1
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][A-Za-z0-9._-]+)?$ ]]; then
+            echo "Unsupported release version: $version" >&2
+            exit 1
+          fi
+          # No companion constraint `>=M.m.0 <M.(m+1).0` admits a prerelease
+          # of M.m.0, and the build hook pairs such a core with the previous
+          # minor's companions, so a prerelease core cannot ship beside them.
+          if [[ "${version%%+*}" == *-* ]]; then
+            echo "Release automation publishes only stable core versions, but pubspec.yaml is the prerelease $version. No tags were pushed; release a stable version from a new release-prep PR." >&2
+            exit 1
+          fi
+
+          first_heading="$(awk '/^## / {print; exit}' CHANGELOG.md)"
+          if [[ "$first_heading" != "## $version" ]]; then
+            echo "CHANGELOG.md must start with ## $version before publishing." >&2
+            echo "Found: ${first_heading:-<none>}" >&2
+            exit 1
+          fi
+
+          # --release-prep also refuses a companion whose SwiftPM pin is still
+          # only in its `## Unreleased` section, which would otherwise publish
+          # the previous tag or be skipped as an already-published version.
+          dart run tool/testing/verify_release_docs_versions.dart --release-prep
+
+          # Automated publishing cannot create a pub.dev package, and skips a
+          # companion version that is already published, so a new companion
+          # or an unbumped constraint change would fail or vanish after the
+          # core shipped. Stop here, before any tag.
+          dart run tool/release/companion_pub_preflight.dart
+
+          core_tag="v$version"
+          release_sha="$(git rev-parse HEAD)"
+          # Companions publish after the core they constrain, so a rerun after
+          # a failed companion finds the core tag it pushed. Resume only at the
+          # same commit.
+          core_tag_sha="$(
+            git ls-remote --tags origin "refs/tags/$core_tag" "refs/tags/$core_tag^{}" |
+              awk 'END {print $1}'
+          )"
+          core_tag_exists=false
+          if [[ -n "$core_tag_sha" ]]; then
+            if [[ "$core_tag_sha" != "$release_sha" ]]; then
+              echo "Release tag $core_tag already exists at $core_tag_sha, not $release_sha. Refusing to publish again." >&2
+              exit 1
+            fi
+            core_tag_exists=true
+            echo "Release tag $core_tag already points at $release_sha; resuming companion publication."
+          fi
+
+          {
+            echo "version=$version"
+            echo "core_tag=$core_tag"
+            echo "core_tag_exists=$core_tag_exists"
+            echo "release_sha=$release_sha"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish core tag and companion packages
+        if: steps.gate.outputs.should_release == 'true'
+        env:
+          CORE_TAG: ${{ steps.release.outputs.core_tag }}
+          CORE_TAG_EXISTS: ${{ steps.release.outputs.core_tag_exists }}
+          CORE_VERSION: ${{ steps.release.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ steps.release.outputs.release_sha }}
+          RELEASE_TOKEN: ${{ secrets.RELEASE_AUTOMATION_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${RELEASE_TOKEN:-}" ]]; then
+            echo "Missing RELEASE_AUTOMATION_TOKEN." >&2
+            echo "Configure a fine-scoped PAT or GitHub App token that can create tag refs and trigger tag workflows." >&2
+            exit 1
+          fi
+
+          require_positive_integer() {
+            local name="$1"
+            local value="$2"
+            if [[ ! "$value" =~ ^[1-9][0-9]*$ ]]; then
+              echo "$name must be a positive integer; got '$value'." >&2
+              exit 1
+            fi
+          }
+
+          require_positive_integer "PUBDEV_WAIT_ATTEMPTS" "$PUBDEV_WAIT_ATTEMPTS"
+          require_positive_integer "PUBDEV_WAIT_INTERVAL_SECONDS" "$PUBDEV_WAIT_INTERVAL_SECONDS"
+          require_positive_integer "GITHUB_RELEASE_WAIT_ATTEMPTS" "$GITHUB_RELEASE_WAIT_ATTEMPTS"
+          require_positive_integer "GITHUB_RELEASE_WAIT_INTERVAL_SECONDS" "$GITHUB_RELEASE_WAIT_INTERVAL_SECONDS"
+
+          push_tag() {
+            local tag="$1"
+            echo "Creating tag $tag at $RELEASE_SHA"
+            GH_TOKEN="$RELEASE_TOKEN" gh api \
+              --method POST \
+              "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f "ref=refs/tags/$tag" \
+              -f "sha=$RELEASE_SHA" \
+              >/dev/null
+          }
+
+          # Wait on the package listing, not the version URL: pub resolves a
+          # companion's llamadart constraint from the listing.
+          wait_for_pub_version() {
+            local package_name="$1"
+            local package_version="$2"
+            local recovery="$3"
+            local package_url="https://pub.dev/api/packages/$package_name"
+            local attempts="$PUBDEV_WAIT_ATTEMPTS"
+            local interval_seconds="$PUBDEV_WAIT_INTERVAL_SECONDS"
+
+            for attempt in $(seq 1 "$attempts"); do
+              if curl -fsSL --max-time 30 "$package_url" |
+                jq -e --arg version "$package_version" 'any(.versions[]; .version == $version)' >/dev/null; then
+                echo "$package_name $package_version is live on pub.dev."
+                return 0
+              fi
+              echo "Waiting for $package_name $package_version on pub.dev ($attempt/$attempts)."
+              sleep "$interval_seconds"
+            done
+
+            echo "$package_name $package_version did not appear on pub.dev." >&2
+            echo "$recovery" >&2
+            exit 1
+          }
+
+          wait_for_github_release() {
+            local tag="$1"
+            local attempts="$GITHUB_RELEASE_WAIT_ATTEMPTS"
+            local interval_seconds="$GITHUB_RELEASE_WAIT_INTERVAL_SECONDS"
+
+            for attempt in $(seq 1 "$attempts"); do
+              if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+                echo "GitHub Release $tag exists."
+                return 0
+              fi
+              echo "Waiting for GitHub Release $tag ($attempt/$attempts)."
+              sleep "$interval_seconds"
+            done
+
+            echo "GitHub Release $tag was not created." >&2
+            exit 1
+          }
+
+          if [[ "$CORE_TAG_EXISTS" == "true" ]]; then
+            echo "$CORE_TAG already points at $RELEASE_SHA."
+          else
+            push_tag "$CORE_TAG"
+          fi
+          wait_for_pub_version "llamadart" "$CORE_VERSION" \
+            "If the publish_pubdev.yml run for $CORE_TAG failed, rerun it, wait for llamadart $CORE_VERSION on pub.dev, then rerun this workflow."
+
+          companion_paths=(
+            packages/llamadart_llama_cpp_flutter
+            packages/llamadart_litert_lm_flutter
+            packages/llamadart_stable_diffusion_flutter
+          )
+
+          for package_path in "${companion_paths[@]}"; do
+            package_name="$(awk '/^name:[[:space:]]*/ {print $2; exit}' "$package_path/pubspec.yaml")"
+            package_version="$(awk '/^version:[[:space:]]*/ {print $2; exit}' "$package_path/pubspec.yaml")"
+            if [[ -z "$package_name" || -z "$package_version" ]]; then
+              echo "$package_path/pubspec.yaml must contain name and version." >&2
+              exit 1
+            fi
+
+            if curl -fsSL --max-time 30 "https://pub.dev/api/packages/$package_name/versions/$package_version" >/dev/null; then
+              echo "$package_name $package_version already exists on pub.dev."
+              continue
+            fi
+
+            companion_tag="$package_name-v$package_version"
+            companion_tag_sha="$(
+              git ls-remote --tags origin "refs/tags/$companion_tag" "refs/tags/$companion_tag^{}" |
+                awk 'END {print $1}'
+            )"
+            if [[ -n "$companion_tag_sha" ]]; then
+              if [[ "$companion_tag_sha" != "$RELEASE_SHA" ]]; then
+                echo "$companion_tag already exists at $companion_tag_sha, not $RELEASE_SHA, and $package_name $package_version is missing on pub.dev." >&2
+                echo "Rerunning that tag's publish_companion_pubdev.yml run would publish the other commit's $package_path, so this commit cannot publish $package_name $package_version: release it from a new release-prep PR that bumps the core version and $package_name's patch version." >&2
+                exit 1
+              fi
+              echo "$companion_tag already exists, but $package_name $package_version is missing on pub.dev." >&2
+              echo "If its publish_companion_pubdev.yml run failed transiently, rerun that run, wait for $package_name $package_version on pub.dev, then rerun this workflow." >&2
+              echo "If the cause is in the repository, this commit cannot publish $package_name $package_version: fix it in a new release-prep PR that bumps the core version and $package_name's patch version." >&2
+              exit 1
+            fi
+
+            push_tag "$companion_tag"
+            wait_for_pub_version "$package_name" "$package_version" \
+              "If the publish_companion_pubdev.yml run for $companion_tag failed, confirm pub.dev automated publishing is enabled for $package_name with tag pattern $package_name-v{{version}}, rerun that run, wait for $package_name $package_version on pub.dev, then rerun this workflow."
+          done
+
+          wait_for_github_release "$CORE_TAG"

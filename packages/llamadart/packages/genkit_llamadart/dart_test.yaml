@@ -1,0 +1,13 @@
+tags:
+  real-model:
+  multimodal-embedding-model:
+  tool-model:
+  inference-controls:
+  speech-model:
+  image-model:
+  decision-model:
+  isolation-model:
+  prompt-cache-model:
+  bidi-model:
+  lora-model:
+  example-model:

@@ -1,0 +1,8 @@
+{
+  "bytes": 65536,
+  "sha256": "f3b293dead3aba27fe6542a3f97893a5e010e4824ca1753d17f153b1b20a470b",
+  "algorithm": "concatSHA256(ASCII:llamadart-windows-transport-selftest-v1+NUL+uint32BEcounter0..2047)",
+  "zlibBytes": 65562,
+  "zlibRatio": 1.000396728515625,
+  "purpose": "public deterministic incompressible transport fixture, no secrets"
+}

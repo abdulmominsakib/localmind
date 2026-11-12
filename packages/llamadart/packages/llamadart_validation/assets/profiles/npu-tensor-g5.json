@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "id": "npu-tensor-g5",
+  "runtime": "litert",
+  "backend": "npu",
+  "model": {
+    "id": "gemma3-1b-it-tensor-g5",
+    "revision": "a6306a4e292016480083b73b8dc6f3f939ae04c3",
+    "filename": "Gemma3-1B-IT_q8_ekv1280_Google_Tensor_G5.litertlm",
+    "sha256": "1ed29548b302764ce32ebf03d7df8fff943218b76d14230e97ee4bd0224cd8d1",
+    "bytes": 1678542365,
+    "kind": "chat",
+    "access": "gated-local-staging",
+    "quantization": "q8_per_channel",
+    "url": "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/a6306a4e292016480083b73b8dc6f3f939ae04c3/Gemma3-1B-IT_q8_ekv1280_Google_Tensor_G5.litertlm"
+  },
+  "selection": "quick",
+  "context_size": 1280,
+  "threads": 4,
+  "max_tokens": 32,
+  "npu_target": {
+    "soc": "Google_Tensor_G5",
+    "abi": "arm64-v8a",
+    "minimum_android_api": 31,
+    "qairt_version": null,
+    "libraries": {
+      "libLiteRtDispatch_GoogleTensor.so": {
+        "elf_machine": 183,
+        "elf_class": 2,
+        "sha256": "b8ff7daf8461265e64d782f267573487aa33e88eab551d04181f38ec84653798"
+      },
+      "libLlamadartVendor_GoogleTensor.so": {
+        "elf_machine": 183,
+        "elf_class": 2,
+        "sha256": "71a3847419d37ea31bf93cf38e6cf4d61562a3f46aded42903fcf03873ef9467"
+      }
+    },
+    "device_soc_models": [
+      "Tensor G5"
+    ],
+    "firebase_model": "frankel"
+  },
+  "fixtures": {
+    "hello": {
+      "prompt": "Reply with one short sentence saying hello.",
+      "regex": "\\bhello\\b"
+    },
+    "arithmetic": {
+      "prompt": "What is 2 + 2? Reply with only the number.",
+      "regex": "^4[.!]?$"
+    }
+  }
+}

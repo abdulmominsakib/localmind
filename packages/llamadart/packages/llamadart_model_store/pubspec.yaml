@@ -1,0 +1,28 @@
+name: llamadart_model_store
+description: Shared model store for llamadart apps that can open the same directory, with model and projector files kept as one entry and deleted only when no app references them.
+version: 0.1.0
+repository: https://github.com/leehack/llamadart/tree/main/packages/llamadart_model_store
+homepage: https://github.com/leehack/llamadart
+issue_tracker: https://github.com/leehack/llamadart/issues
+
+topics:
+  - llm
+  - llama-cpp
+  - flutter
+
+environment:
+  sdk: ^3.10.7
+  flutter: ">=3.38.6"
+
+dependencies:
+  crypto: ^3.0.0
+  flutter:
+    sdk: flutter
+  llamadart: ^0.17.0
+  path: ^1.8.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^6.0.0
+  test: ^1.26.3

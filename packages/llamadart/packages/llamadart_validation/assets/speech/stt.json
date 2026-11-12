@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "pack": "stt",
+  "model": {
+    "kind": "raw",
+    "filename": "Qwen3-ASR-0.6B-Q8_0.gguf",
+    "bytes": 804749248,
+    "sha256": "bca259818b50ca7c4c05e9bdb35a5dc04fa039653a6d6f3f0f331f96f6aa1971",
+    "revision": "928ab958557df9aa2ef1c93e0e83c7ad0933fae2",
+    "url": "https://huggingface.co/ggml-org/Qwen3-ASR-0.6B-GGUF/resolve/928ab958557df9aa2ef1c93e0e83c7ad0933fae2/Qwen3-ASR-0.6B-Q8_0.gguf"
+  },
+  "projector": {
+    "kind": "raw",
+    "filename": "mmproj-Qwen3-ASR-0.6B-Q8_0.gguf",
+    "bytes": 214392480,
+    "sha256": "41a342b5e4c514e968cb756de6cd1b7be39eff43c44c57a2ef5fc6522e36603d",
+    "revision": "928ab958557df9aa2ef1c93e0e83c7ad0933fae2",
+    "url": "https://huggingface.co/ggml-org/Qwen3-ASR-0.6B-GGUF/resolve/928ab958557df9aa2ef1c93e0e83c7ad0933fae2/mmproj-Qwen3-ASR-0.6B-Q8_0.gguf"
+  },
+  "fixture": {
+    "filename": "jfk.wav",
+    "sha256": "59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e",
+    "bytes": 352078,
+    "reference": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country",
+    "wer_threshold": 0
+  }
+}

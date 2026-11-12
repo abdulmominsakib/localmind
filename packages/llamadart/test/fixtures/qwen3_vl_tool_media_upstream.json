@@ -1,0 +1,534 @@
+{
+  "upstream_commit": "620d2225c",
+  "build_info": "b11669-620d2225c",
+  "endpoint": "POST /apply-template",
+  "media_marker": "<__media__>",
+  "template": "templates/Qwen3-VL-2B-Instruct.jinja",
+  "template_sha256": "3636d0f0bd6bef02654cdffdc447b79cb2cef8ab02cc75267345946291a489e4",
+  "model": "Qwen3.5-0.8B-Q4_K_M.gguf",
+  "model_sha256": "bd258782e35f7f458f8aced1adc053e6e92e89bc735ba3be89d38a06121dc517",
+  "mmproj": "Qwen3.5-0.8B-mmproj-F16.gguf",
+  "mmproj_sha256": "56e4c6cfe73b0c82e3e82bc518d7591997e61d81f723fc41a586f4fa69ea2453",
+  "chat_template_caps": {
+    "supports_object_arguments": true,
+    "supports_parallel_tool_calls": true,
+    "supports_preserve_reasoning": false,
+    "supports_reasoning_effort": false,
+    "supports_string_content": true,
+    "supports_system_role": true,
+    "supports_tool_calls": true,
+    "supports_tools": true,
+    "supports_typed_content": true
+  },
+  "cases": {
+    "two_results": {
+      "request": [
+        {
+          "role": "user",
+          "content": "Take a photo with each camera."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "take_photo",
+                "arguments": "{\"camera\": \"front\"}"
+              }
+            },
+            {
+              "id": "call_1",
+              "type": "function",
+              "function": {
+                "name": "take_photo",
+                "arguments": "{\"camera\": \"back\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "take_photo",
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"ok\":true}"
+            },
+            {
+              "type": "text",
+              "text": "front camera"
+            },
+            {
+              "type": "image_url",
+              "image_url": {
+                "url": "RED"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_1",
+          "name": "take_photo",
+          "content": [
+            {
+              "type": "image_url",
+              "image_url": {
+                "url": "BLUE"
+              }
+            }
+          ]
+        }
+      ],
+      "prompt": "<|im_start|>user\nTake a photo with each camera.<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"take_photo\", \"arguments\": {\"camera\": \"front\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"take_photo\", \"arguments\": {\"camera\": \"back\"}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\n{\"ok\":true}\nfront camera<__media__>\n</tool_response>\n<tool_response>\n<__media__>\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+    },
+    "user_image_then_tool_image": {
+      "request": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image_url",
+              "image_url": {
+                "url": "BLUE"
+              }
+            },
+            {
+              "type": "text",
+              "text": "Compare this with a new photo."
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "take_photo",
+                "arguments": "{\"camera\": \"front\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "take_photo",
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"ok\":true}"
+            },
+            {
+              "type": "image_url",
+              "image_url": {
+                "url": "RED"
+              }
+            },
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ]
+        }
+      ],
+      "prompt": "<|im_start|>user\n<__media__>Compare this with a new photo.<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"take_photo\", \"arguments\": {\"camera\": \"front\"}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\n{\"ok\":true}<__media__>done\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+    },
+    "image_empty_text": {
+      "request": [
+        {
+          "role": "user",
+          "content": "Take a photo."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "take_photo",
+                "arguments": "{\"camera\": \"front\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "take_photo",
+          "content": [
+            {
+              "type": "image_url",
+              "image_url": {
+                "url": "RED"
+              }
+            },
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ]
+        }
+      ],
+      "prompt": "<|im_start|>user\nTake a photo.<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"take_photo\", \"arguments\": {\"camera\": \"front\"}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\n<__media__>\nx\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+    },
+    "text_empty_image_empty_text": {
+      "request": [
+        {
+          "role": "user",
+          "content": "Take a photo."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "take_photo",
+                "arguments": "{\"camera\": \"front\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "take_photo",
+          "content": [
+            {
+              "type": "text",
+              "text": "a"
+            },
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "image_url",
+              "image_url": {
+                "url": "RED"
+              }
+            },
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": "b"
+            }
+          ]
+        }
+      ],
+      "prompt": "<|im_start|>user\nTake a photo.<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"take_photo\", \"arguments\": {\"camera\": \"front\"}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\na\n<__media__>\nb\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+    }
+  },
+  "text_only_cases": {
+    "typed_text_parts": {
+      "template": "templates/Qwen3-VL-2B-Instruct.jinja",
+      "template_sha256": "3636d0f0bd6bef02654cdffdc447b79cb2cef8ab02cc75267345946291a489e4",
+      "supports_typed_content": true,
+      "request": [
+        {
+          "role": "user",
+          "content": "Look up the code."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "lookup",
+          "content": [
+            {
+              "type": "text",
+              "text": "abc"
+            },
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ]
+        }
+      ],
+      "prompt": "<|im_start|>user\nLook up the code.<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"lookup\", \"arguments\": {}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nabcx\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+    },
+    "string_only_text_parts": {
+      "template": "templates/Qwen3-4B.jinja",
+      "template_sha256": "5da44855ab7e0641774d5ed0ff0b4f89671d01df7d316e54d06557a962211cb4",
+      "supports_typed_content": false,
+      "request": [
+        {
+          "role": "user",
+          "content": "Look up the code."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "lookup",
+          "content": [
+            {
+              "type": "text",
+              "text": "abc"
+            },
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ]
+        }
+      ],
+      "prompt": "<|im_start|>user\nLook up the code.<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"lookup\", \"arguments\": {}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nabc\nx\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+    },
+    "string_only_leading_empty_result": {
+      "template": "templates/Qwen3-4B.jinja",
+      "template_sha256": "5da44855ab7e0641774d5ed0ff0b4f89671d01df7d316e54d06557a962211cb4",
+      "supports_typed_content": false,
+      "request": [
+        {
+          "role": "user",
+          "content": "Look up the code."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "lookup",
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ]
+        }
+      ],
+      "prompt": "<|im_start|>user\nLook up the code.<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"lookup\", \"arguments\": {}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nx\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+    },
+    "string_only_null_result_leading_empty_part": {
+      "template": "templates/Qwen3-4B.jinja",
+      "template_sha256": "5da44855ab7e0641774d5ed0ff0b4f89671d01df7d316e54d06557a962211cb4",
+      "supports_typed_content": false,
+      "request": [
+        {
+          "role": "user",
+          "content": "Look up the code."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "lookup",
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ]
+        }
+      ],
+      "prompt": "<|im_start|>user\nLook up the code.<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"lookup\", \"arguments\": {}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nx\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+    },
+    "string_only_empty_middle_part": {
+      "template": "templates/Qwen3-4B.jinja",
+      "template_sha256": "5da44855ab7e0641774d5ed0ff0b4f89671d01df7d316e54d06557a962211cb4",
+      "supports_typed_content": false,
+      "request": [
+        {
+          "role": "user",
+          "content": "Look up the code."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "lookup",
+          "content": [
+            {
+              "type": "text",
+              "text": "abc"
+            },
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ]
+        }
+      ],
+      "prompt": "<|im_start|>user\nLook up the code.<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"lookup\", \"arguments\": {}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nabc\n\nx\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+    },
+    "string_only_whitespace_result": {
+      "template": "templates/Qwen3-4B.jinja",
+      "template_sha256": "5da44855ab7e0641774d5ed0ff0b4f89671d01df7d316e54d06557a962211cb4",
+      "supports_typed_content": false,
+      "request": [
+        {
+          "role": "user",
+          "content": "Take a photo."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "take_photo",
+                "arguments": "{\"camera\": \"front\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "take_photo",
+          "content": [
+            {
+              "type": "text",
+              "text": " "
+            },
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ]
+        }
+      ],
+      "prompt": "<|im_start|>user\nTake a photo.<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"take_photo\", \"arguments\": {\"camera\": \"front\"}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\n \nx\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+    },
+    "string_only_newline_part_first": {
+      "template": "templates/Qwen3-4B.jinja",
+      "template_sha256": "5da44855ab7e0641774d5ed0ff0b4f89671d01df7d316e54d06557a962211cb4",
+      "supports_typed_content": false,
+      "request": [
+        {
+          "role": "user",
+          "content": "Take a photo."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "take_photo",
+                "arguments": "{\"camera\": \"front\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "take_photo",
+          "content": [
+            {
+              "type": "text",
+              "text": "\n"
+            },
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ]
+        }
+      ],
+      "prompt": "<|im_start|>user\nTake a photo.<|im_end|>\n<|im_start|>assistant\n<tool_call>\n{\"name\": \"take_photo\", \"arguments\": {\"camera\": \"front\"}}\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\n\n\nx\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+    }
+  }
+}

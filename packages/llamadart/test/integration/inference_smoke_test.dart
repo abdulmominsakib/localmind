@@ -40,43 +40,43 @@ void main() {
         expect(engine.isReady, isTrue);
         print('Model loaded successfully.');
         print('Running 5-token generation check...');
-        try {
-          final stream = engine.create(
-            [
-              LlamaChatMessage.withContent(
-                role: LlamaChatRole.user,
-                content: [
-                  LlamaTextContent('Hello'),
-                  LlamaImageContent(
-                    bytes: Uint8List.fromList([0, 0, 0]),
-                    width: 1,
-                    height: 1,
-                  ),
-                ],
-              ),
-            ],
-            params: const GenerationParams(
-              maxTokens: 5,
-              penalty: 1.2,
-              grammar: 'root ::= "World"',
+        const grammarParams = GenerationParams(
+          maxTokens: 5,
+          penalty: 1.2,
+          grammar: 'root ::= "World"',
+        );
+        final imageMessage = LlamaChatMessage.withContent(
+          role: LlamaChatRole.user,
+          content: [
+            LlamaTextContent('Hello'),
+            LlamaImageContent(
+              bytes: Uint8List.fromList([0, 0, 0]),
+              width: 1,
+              height: 1,
             ),
-          );
+          ],
+        );
+        await expectLater(
+          engine.create([imageMessage], params: grammarParams),
+          emitsError(
+            isA<LlamaUnsupportedException>().having(
+              (e) => e.message,
+              'message',
+              contains('needs a multimodal projector'),
+            ),
+          ),
+        );
 
-          final tokens = <String>[];
-          await for (final chunk in stream.timeout(
-            const Duration(seconds: 60),
-          )) {
-            final token = chunk.choices.first.delta.content ?? '';
-            tokens.add(token);
-          }
-          expect(tokens, isNotEmpty, reason: 'No tokens were generated');
-        } catch (e) {
-          if (e.toString().contains('chat template')) {
-            // WARNING: Skipped generation due to chat template error, expected for some raw models
-          } else {
-            rethrow;
-          }
+        final stream = engine.create([
+          LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'Hello'),
+        ], params: grammarParams);
+
+        final tokens = <String>[];
+        await for (final chunk in stream.timeout(const Duration(seconds: 60))) {
+          final token = chunk.choices.first.delta.content ?? '';
+          tokens.add(token);
         }
+        expect(tokens.join(), 'World');
 
         // 4b. Verify chat with streaming
         final messages = [
@@ -86,25 +86,16 @@ void main() {
           ),
         ];
 
-        // Removed print: Running generation check...
         print('Running generation check...');
         final fullContent = StringBuffer();
-        try {
-          await for (final chunk in engine.create(messages)) {
-            final delta = chunk.choices.first.delta.content;
-            if (delta != null) {
-              fullContent.write(delta);
-            }
-          }
-          print('Generation completed.');
-          expect(fullContent.isNotEmpty, isTrue);
-        } catch (e) {
-          if (e.toString().contains('chat template')) {
-            // WARNING: Skipped generation due to chat template error
-          } else {
-            rethrow;
+        await for (final chunk in engine.create(messages)) {
+          final delta = chunk.choices.first.delta.content;
+          if (delta != null) {
+            fullContent.write(delta);
           }
         }
+        print('Generation completed.');
+        expect(fullContent.isNotEmpty, isTrue);
 
         // 4. Tokenizer test
         final encoded = await engine.tokenize('Hello world');
@@ -122,19 +113,46 @@ void main() {
         expect(ctxSize, greaterThan(0));
 
         // 7. Log level test (Silencer)
-        await engine.setLogLevel(LlamaLogLevel.none);
-        await engine.setLogLevel(LlamaLogLevel.warn);
+        await LlamaLogging.configure();
+        await LlamaLogging.configure(level: LlamaLogLevel.warn);
 
-        // 8. LoRA (should fail gracefully or not crash if path is wrong)
-        try {
-          await engine.setLora('non_existent.bin');
-        } catch (_) {}
+        // 8. LoRA (a missing adapter file must surface as a typed error)
+        await expectLater(
+          engine.setLora('non_existent.bin'),
+          throwsA(
+            isA<LlamaModelException>().having(
+              (e) => e.message,
+              'message',
+              contains('Failed to load LoRA'),
+            ),
+          ),
+        );
         await engine.clearLoras();
 
-        // 9. Multimodal failure test
-        try {
-          await engine.loadMultimodalProjector('non_existent_path.gguf');
-        } catch (_) {}
+        // 9. Projector load failures are typed
+        await expectLater(
+          engine.loadMultimodalProjector('non_existent_path.gguf'),
+          throwsA(
+            isA<LlamaModelException>().having(
+              (e) => e.message,
+              'message',
+              'Multimodal projector file not found.',
+            ),
+          ),
+        );
+        await expectLater(
+          engine.loadMultimodalProjector(modelFile.path),
+          throwsA(
+            isA<LlamaModelException>().having(
+              (e) => e.message,
+              'message',
+              startsWith(
+                'The native runtime could not load the multimodal projector',
+              ),
+            ),
+          ),
+        );
+        expect(engine.hasMultimodalProjector, isFalse);
 
         await engine.dispose();
         print('SMOKE TEST SUCCESS');

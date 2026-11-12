@@ -1,0 +1,23 @@
+{% for message in messages %}
+{% if message['role'] == 'user' or message['role'] == 'system' %}
+{{ '<|start_header_id|>' + message['role'] + '<|end_header_id|>
+
+' + message['content'] + '<|eot_id|>' }}{% elif message['role'] == 'tool' %}
+{{ '<|start_header_id|>' + message['role'] + '<|end_header_id|>
+
+' + message['content'] + '<|eot_id|>' }}{% else %}
+{{ '<|start_header_id|>' + message['role'] + '<|end_header_id|>
+
+'}}{% if message['content'] is not none %}
+{{ '>>>all
+' + message['content'] }}{% endif %}
+{% if 'tool_calls' in message and message['tool_calls'] is not none %}
+{% for tool_call in message['tool_calls'] %}
+{{ '>>>' + tool_call['function']['name'] + '
+' + tool_call['function']['arguments'] }}{% endfor %}
+{% endif %}
+{{ '<|eot_id|>' }}{% endif %}
+{% endfor %}
+{% if add_generation_prompt %}{{ '<|start_header_id|>{role}<|end_header_id|>
+
+' }}{% endif %}

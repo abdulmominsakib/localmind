@@ -4,7 +4,10 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source_dir="${LLAMA_CPP_SOURCE_DIR:-${repo_root}/.dart_tool/llama_cpp}"
 repo_url="${LLAMA_CPP_REPO_URL:-https://github.com/ggml-org/llama.cpp.git}"
-ref_input="${LLAMA_CPP_REF:-latest}"
+# Pinned so the template parity expectations stay in step with the fixtures.
+# Bump the ref file deliberately, then reconcile the expectation map.
+default_ref="$(tr -d '[:space:]' < "${repo_root}/tool/testing/llama_cpp_templates.ref")"
+ref_input="${LLAMA_CPP_REF:-${default_ref}}"
 
 curl_headers=(
   -H "Accept: application/vnd.github+json"

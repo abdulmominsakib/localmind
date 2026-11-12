@@ -1,0 +1,60 @@
+{
+  "upstream": "ggml-org/llama.cpp",
+  "commit": "8642541b255bfb5dc39cd351a178be09013a55d6",
+  "apis": [
+    "common_chat_templates_apply",
+    "common_chat_peg_parse"
+  ],
+  "template": "templates/LFM2_5-1_2B-Thinking-ba551d58630a.jinja",
+  "template_sha256": "ba551d58630afa3190b1be3602e28301f3d2e9bbac978dfc49d6d825171648b6",
+  "scope": "Model-free primary parser emissions; reasoning_format=AUTO, auto tool choice, parallel=true. Modern template containing literal opening thought tag. No original historical raw reconstruction.",
+  "tool": {
+    "name": "get_weather",
+    "parameters": {
+      "city": "string"
+    }
+  },
+  "cases": [
+    {
+      "input": "<think>Plan <|tool_call_start|>[get_weather(city=\"Paris\")]<|tool_call_end|> more.</think>Answer.",
+      "expected": {
+        "role": "assistant",
+        "content": "Answer.",
+        "reasoning_content": "Plan <|tool_call_start|>[get_weather(city=\"Paris\")]<|tool_call_end|> more."
+      }
+    },
+    {
+      "input": "<think>Plan <|tool_call_start|>[get_weather(city=\"Paris\")]<|tool_call_end|> more.</think><|tool_call_start|>[get_weather(city=\"Paris\")]<|tool_call_end|>",
+      "expected": {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "Plan <|tool_call_start|>[get_weather(city=\"Paris\")]<|tool_call_end|> more.",
+        "tool_calls": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"Paris\"}"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": "<|tool_call_start|>[get_weather(city=\"Paris\")]<|tool_call_end|>",
+      "expected": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"Paris\"}"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

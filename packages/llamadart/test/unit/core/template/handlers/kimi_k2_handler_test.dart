@@ -117,6 +117,27 @@ void main() {
       );
     });
 
+    test('preserves nested JSON argument semantics', () {
+      const output =
+          '<|tool_calls_section_begin|>'
+          '<|tool_call_begin|>functions.search:0'
+          '<|tool_call_argument_begin|>'
+          '{"filters":{"tags":["a, b","c"]},"limit":null}'
+          '<|tool_call_end|>'
+          '<|tool_calls_section_end|>';
+
+      final result = ChatTemplateEngine.parse(ChatFormat.kimiK2.index, output);
+
+      expect(result.content, isEmpty);
+      expect(result.toolCalls, hasLength(1));
+      expect(jsonDecode(result.toolCalls.single.function!.arguments!), {
+        'filters': {
+          'tags': ['a, b', 'c'],
+        },
+        'limit': null,
+      });
+    });
+
     test('parses partial stream without call end token', () {
       const output =
           '<|tool_calls_section_begin|><|tool_call_begin|>functions.weather:0<|tool_call_argument_begin|>{"city":"Seoul"}';

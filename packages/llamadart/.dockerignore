@@ -1,0 +1,11 @@
+.git
+**/build-android-*/
+**/build-macos-*/
+**/build-ios-*/
+**/build/
+
+**/bin
+**/*.bin
+**/*.gguf
+node_modules
+.dart_tool

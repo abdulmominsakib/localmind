@@ -1,0 +1,76 @@
+name: Check companion package
+description: Runs a Flutter Apple companion package's static, test, SwiftPM and publish checks.
+inputs:
+  package:
+    description: Package directory, relative to the repository root.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ inputs.package }}
+      run: flutter pub get
+
+    - name: Check formatting
+      shell: bash
+      working-directory: ${{ inputs.package }}
+      run: dart format --output=none --set-exit-if-changed .
+
+    - name: Analyze
+      shell: bash
+      working-directory: ${{ inputs.package }}
+      run: flutter analyze
+
+    - name: Test
+      shell: bash
+      working-directory: ${{ inputs.package }}
+      run: flutter test
+
+    - name: Validate SwiftPM manifest
+      shell: bash
+      working-directory: ${{ inputs.package }}
+      run: |
+        package_name="$(basename "$PWD")"
+        swift package --package-path "darwin/$package_name" dump-package >/dev/null
+
+    # dump-package never downloads binary targets; resolving fetches each
+    # pinned XCFramework and fails if its checksum does not match.
+    - name: Resolve SwiftPM binary targets
+      shell: bash
+      working-directory: ${{ inputs.package }}
+      run: |
+        package_name="$(basename "$PWD")"
+        swift package --package-path "darwin/$package_name" \
+          --scratch-path "$RUNNER_TEMP/$package_name-spm" resolve
+
+    - name: Check the lane leaves the package unchanged
+      shell: bash
+      working-directory: ${{ inputs.package }}
+      run: |
+        changes="$(git status --porcelain --untracked-files=all -- .)"
+        if [ -n "$changes" ]; then
+          printf '%s\n' "$changes"
+          echo "::error::The companion lane modified tracked or untracked files; commit the migration or ignore the output."
+          exit 1
+        fi
+
+    # A release-prep PR constrains companions to a core version that is not
+    # on pub.dev until after merge, so resolve llamadart from this checkout.
+    # The real publish resolves it from pub.dev, after the core publishes.
+    - name: Publish dry-run
+      shell: bash
+      working-directory: ${{ inputs.package }}
+      run: |
+        tmp_package="$RUNNER_TEMP/$(basename "$PWD")-publish"
+        rm -rf "$tmp_package"
+        mkdir -p "$tmp_package"
+        rsync -a --delete \
+          --exclude='.dart_tool' \
+          --exclude='build' \
+          --exclude='pubspec.lock' \
+          --exclude='pubspec_overrides.yaml' \
+          ./ "$tmp_package/"
+        printf 'dependency_overrides:\n  llamadart:\n    path: %s\n' \
+          "$GITHUB_WORKSPACE" > "$tmp_package/pubspec_overrides.yaml"
+        (cd "$tmp_package" && flutter pub publish --dry-run)

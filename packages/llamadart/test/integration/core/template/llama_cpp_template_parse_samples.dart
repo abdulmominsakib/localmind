@@ -38,6 +38,57 @@ const Map<ChatFormat, String> _sampleOutputsByFormat = <ChatFormat, String>{
       '<arg_value:opensource>Seoul</arg_value:opensource>\n'
       '</tool_call:opensource>\n'
       '</tool_calls:opensource>',
+  ChatFormat.kimiK3:
+      '<|open|>response<|sep|><|close|>response<|sep|>'
+      '<|open|>tools<|sep|>'
+      '<|open|>call tool="get_weather" index="1"<|sep|>'
+      '<|open|>argument key="location" type="string"<|sep|>'
+      'Seoul<|close|>argument<|sep|>'
+      '<|close|>call<|sep|><|close|>tools<|sep|>'
+      '<|close|>message<|sep|>',
+  ChatFormat.minimaxM1:
+      '<tool_calls>\n'
+      '{"name":"get_weather","arguments":{"location":"Seoul"}}\n'
+      '</tool_calls>',
+  ChatFormat.minimaxM3:
+      '</mm:think>'
+      ']<]minimax[>[<tool_call>\n'
+      ']<]minimax[>[<invoke name="get_weather">'
+      ']<]minimax[>[<location>Seoul]<]minimax[>[</location>'
+      ']<]minimax[>[</invoke>\n'
+      ']<]minimax[>[</tool_call>',
+  ChatFormat.deepseekV4:
+      '</think>\n\n'
+      '<｜DSML｜tool_calls>\n'
+      '<｜DSML｜invoke name="get_weather">\n'
+      '<｜DSML｜parameter name="location" string="true">Seoul'
+      '</｜DSML｜parameter>\n'
+      '</｜DSML｜invoke>\n'
+      '</｜DSML｜tool_calls>',
+  ChatFormat.deepseekV32:
+      '</think>\n\n'
+      '<｜DSML｜function_calls>\n'
+      '<｜DSML｜invoke name="get_weather">\n'
+      '<｜DSML｜parameter name="location" string="true">Seoul'
+      '</｜DSML｜parameter>\n'
+      '</｜DSML｜invoke>\n'
+      '</｜DSML｜function_calls>',
+  ChatFormat.museGlimmer:
+      ' to=get_weather<|message|><atem:function_calls>\n'
+      '<atem:invoke name="get_weather">\n'
+      '<atem:parameter name="location">Seoul</atem:parameter>\n'
+      '</atem:invoke>\n'
+      '</atem:function_calls>',
+  ChatFormat.laguna:
+      '</think><tool_call>get_weather\n'
+      '<arg_key>location</arg_key>\n'
+      '<arg_value>Seoul</arg_value>\n'
+      '</tool_call>',
+  ChatFormat.ling3:
+      '</think><tool_call>get_weather\n'
+      '<arg_key>location</arg_key>\n'
+      '<arg_value>Seoul</arg_value>\n'
+      '</tool_call>',
 };
 
 String sampleOutputForFormat(ChatFormat format) {

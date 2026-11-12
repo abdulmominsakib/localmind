@@ -1,4 +1,7 @@
+import 'package:llamadart/src/core/exceptions.dart';
 import 'package:llamadart/src/core/models/inference/generation_params.dart';
+import 'package:llamadart/src/core/models/model_load_options.dart';
+import 'package:llamadart/src/core/models/model_source.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -24,7 +27,10 @@ void main() {
       streamBatchTokenThreshold: 4,
       streamBatchByteThreshold: 256,
       grammarTriggers: [
-        const GenerationGrammarTrigger(type: 0, value: '<tool_call>'),
+        const GenerationGrammarTrigger.typed(
+          type: GrammarTriggerType.word,
+          value: '<tool_call>',
+        ),
       ],
       preservedTokens: const ['<tool_call>'],
     );
@@ -160,6 +166,13 @@ void main() {
     const dflash = SpeculativeDecodingConfig.draftDflash(
       draftModelPath: 'dflash.gguf',
     );
+    const dspark = SpeculativeDecodingConfig.draftDspark(
+      draftTokenMax: 7,
+      draftTokenMin: 2,
+      minProbability: 0.25,
+      draftSplitProbability: 0.1,
+      draftModelPath: 'dspark.gguf',
+    );
 
     expect(eagle.strategy, SpeculativeDecodingStrategy.draftEagle3);
     expect(eagle.strategies, [SpeculativeDecodingStrategy.draftEagle3]);
@@ -170,6 +183,107 @@ void main() {
     expect(eagle.draftModelPath, 'eagle.gguf');
     expect(dflash.strategy, SpeculativeDecodingStrategy.draftDflash);
     expect(dflash.draftModelPath, 'dflash.gguf');
+    expect(dspark.strategy, SpeculativeDecodingStrategy.draftDspark);
+    expect(dspark.strategies, [SpeculativeDecodingStrategy.draftDspark]);
+    expect(dspark.draftTokenMax, 7);
+    expect(dspark.draftTokenMin, 2);
+    expect(dspark.minProbability, 0.25);
+    expect(dspark.draftSplitProbability, 0.1);
+    expect(dspark.draftModelPath, 'dspark.gguf');
+  });
+
+  test('SpeculativeDecodingConfig names a draftModel source as the path '
+      'backends load', () {
+    final local = SpeculativeDecodingConfig.draftSimple(
+      draftModel: ModelSource.path('/models/draft.gguf'),
+    );
+    final options = ModelLoadOptions(bearerToken: 'token');
+    final remote = SpeculativeDecodingConfig.draftEagle3(
+      draftModel: ModelSource.parse('hf://owner/repo/eagle.gguf'),
+      draftModelDownload: options,
+    );
+    const legacy = SpeculativeDecodingConfig.mtp(
+      draftModelPath: 'relative/mtp.gguf',
+    );
+
+    expect(local.draftModelPath, '/models/draft.gguf');
+    expect(local.draftModelDownload, same(ModelLoadOptions.defaults));
+    expect(
+      remote.draftModelPath,
+      'https://huggingface.co/owner/repo/resolve/main/eagle.gguf'
+      '?download=true',
+    );
+    expect(remote.draftModelDownload, same(options));
+    expect(legacy.draftModelPath, 'relative/mtp.gguf');
+    expect(legacy.draftModel, isNull);
+    expect(const SpeculativeDecodingConfig.ngramMod().draftModel, isNull);
+    expect(
+      const SpeculativeDecodingConfig.ngramMod().draftModelDownload,
+      same(ModelLoadOptions.defaults),
+    );
+  });
+
+  test('SpeculativeDecodingConfig.withDraftModel replaces only the draft '
+      'model and its download options', () {
+    final options = ModelLoadOptions(cacheDirectory: '/cache');
+    const legacy = SpeculativeDecodingConfig.mixed(
+      strategies: [
+        SpeculativeDecodingStrategy.ngramMod,
+        SpeculativeDecodingStrategy.draftSimple,
+      ],
+      draftTokenMax: 6,
+      draftMicroBatchSize: 16,
+      draftModelPath: 'old.gguf',
+      ngramMatch: 3,
+    );
+    final remote = SpeculativeDecodingConfig.draftSimple(
+      draftModel: ModelSource.parse('hf://owner/repo/draft.gguf'),
+      draftModelDownload: options,
+    );
+    final local = ModelSource.path('/models/new.gguf');
+
+    final fromLegacy = legacy.withDraftModel(local);
+    final fromRemote = remote.withDraftModel(local);
+
+    expect(fromLegacy.draftModel, same(local));
+    expect(fromLegacy.draftModelPath, '/models/new.gguf');
+    expect(fromLegacy.strategies, legacy.strategies);
+    expect(fromLegacy.draftTokenMax, 6);
+    expect(fromLegacy.draftMicroBatchSize, 16);
+    expect(fromLegacy.ngramMatch, 3);
+    expect(fromRemote.draftModelPath, '/models/new.gguf');
+    expect(fromRemote.draftModelDownload, same(ModelLoadOptions.defaults));
+    expect(
+      remote
+          .withDraftModel(local, draftModelDownload: options)
+          .draftModelDownload,
+      same(options),
+    );
+    expect(fromRemote.strategy, SpeculativeDecodingStrategy.draftSimple);
+  });
+
+  test('SpeculativeDecodingConfig.withDraftModelDownload keeps the draft '
+      'model or path', () {
+    final options = ModelLoadOptions(bearerToken: 'token');
+    final source = ModelSource.path('/models/draft.gguf');
+    final withSource = SpeculativeDecodingConfig.draftSimple(
+      draftModel: source,
+      draftModelDownload: options,
+      draftTokenMax: 3,
+      draftMicroBatchSize: 8,
+    ).withDraftModelDownload(ModelLoadOptions.defaults);
+    final withPath = const SpeculativeDecodingConfig.mtp(
+      draftModelPath: 'relative/mtp.gguf',
+    ).withDraftModelDownload(options);
+
+    expect(withSource.draftModel, same(source));
+    expect(withSource.draftModelDownload, same(ModelLoadOptions.defaults));
+    expect(withSource.draftTokenMax, 3);
+    expect(withSource.draftMicroBatchSize, 8);
+    expect(withPath.draftModel, isNull);
+    expect(withPath.draftModelPath, 'relative/mtp.gguf');
+    expect(withPath.draftModelDownload, same(options));
+    expect(withPath.strategy, SpeculativeDecodingStrategy.mtp);
   });
 
   test('SpeculativeDecodingConfig stores ngram-mod and cache controls', () {
@@ -220,5 +334,70 @@ void main() {
 
     expect(updated.speculativeDecodingConfig, isNull);
     expect(updated.isSpeculativeDecodingEnabled, isFalse);
+  });
+
+  group('GrammarTriggerType', () {
+    test('carries the trigger type wire values', () {
+      expect(
+        {for (final type in GrammarTriggerType.values) type: type.wireValue},
+        {
+          GrammarTriggerType.word: 0,
+          GrammarTriggerType.token: 1,
+          GrammarTriggerType.pattern: 2,
+          GrammarTriggerType.patternFull: 3,
+        },
+      );
+      for (final type in GrammarTriggerType.values) {
+        expect(GrammarTriggerType.fromWireValue(type.wireValue), type);
+      }
+    });
+
+    test('rejects an unknown wire value', () {
+      for (final value in [-1, 4, 7]) {
+        expect(
+          () => GrammarTriggerType.fromWireValue(value),
+          throwsA(
+            isA<LlamaUnsupportedException>().having(
+              (e) => e.message,
+              'message',
+              contains('$value'),
+            ),
+          ),
+        );
+      }
+    });
+  });
+
+  group('GenerationGrammarTrigger', () {
+    test('typed carries its type and wire value', () {
+      for (final type in GrammarTriggerType.values) {
+        final trigger = GenerationGrammarTrigger.typed(
+          type: type,
+          value: 'v',
+          token: 5,
+        );
+        expect(trigger.triggerType, type);
+        expect(trigger.type, type.wireValue);
+        expect(trigger.value, 'v');
+        expect(trigger.token, 5);
+      }
+    });
+
+    test('the raw constructor maps a known type', () {
+      const trigger = GenerationGrammarTrigger(type: 3, value: 'x.*');
+
+      expect(trigger.type, 3);
+      expect(trigger.triggerType, GrammarTriggerType.patternFull);
+    });
+
+    test('the raw constructor rejects an unknown type when read', () {
+      const trigger = GenerationGrammarTrigger(type: 7, value: 'x');
+
+      expect(trigger.type, 7);
+      expect(
+        () => trigger.triggerType,
+        throwsA(isA<LlamaUnsupportedException>()),
+      );
+    });
   });
 }

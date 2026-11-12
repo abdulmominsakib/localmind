@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "chat-gguf-webgpu",
+  "runtime": "gguf",
+  "backend": "webgpu",
+  "model": {
+    "kind": "chat",
+    "filename": "Qwen3.5-0.8B-Q4_0.gguf",
+    "revision": "8fea620810c4afa23dd6443f999a48574c1611a3",
+    "url": "https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/resolve/8fea620810c4afa23dd6443f999a48574c1611a3/Qwen3.5-0.8B-Q4_0.gguf",
+    "sha256": "57d1997790d1744fba5b40a7317df71ea5e2acee28c47e78f0cce39c0703f8cf",
+    "bytes": 563036064
+  },
+  "selection": "focused",
+  "focus_features": [
+    "tools"
+  ],
+  "context_size": 1024,
+  "threads": 4,
+  "max_tokens": 32,
+  "fixtures": {
+    "hello": {
+      "prompt": "Reply with one short sentence saying hello.",
+      "regex": "\\bhello\\b"
+    },
+    "arithmetic": {
+      "prompt": "What is 2 + 2? Reply with only the number.",
+      "regex": "^4[.!]?$"
+    }
+  }
+}

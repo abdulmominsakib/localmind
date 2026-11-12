@@ -1,0 +1,216 @@
+{
+  "upstream_commit": "620d2225c",
+  "endpoint": "POST /apply-template",
+  "model": "Qwen3.5-0.8B-Q4_K_M.gguf",
+  "model_sha256": "bd258782e35f7f458f8aced1adc053e6e92e89bc735ba3be89d38a06121dc517",
+  "bos_token": ",",
+  "eos_token": "<|im_end|>",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are helpful."
+    },
+    {
+      "role": "user",
+      "content": "Hi"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello"
+    },
+    {
+      "role": "user",
+      "content": "What is 2+2?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the weather",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "location"
+          ]
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "template": "test/fixtures/llama_cpp_templates/Apertus-8B-Instruct.jinja",
+      "template_sha256": "dea688e9f24a339a0d2504f6840852adbcedb082373172a0b82ca2c55996768d",
+      "enable_thinking": true,
+      "tools": false,
+      "prompt": ",<|system_start|>You are helpful.<|system_end|><|developer_start|>Deliberation: enabled\nTool Capabilities: disabled<|developer_end|><|user_start|>Hi<|user_end|><|assistant_start|>Hello<|assistant_end|><|user_start|>What is 2+2?<|user_end|><|assistant_start|>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Apertus-8B-Instruct.jinja",
+      "template_sha256": "dea688e9f24a339a0d2504f6840852adbcedb082373172a0b82ca2c55996768d",
+      "enable_thinking": true,
+      "tools": true,
+      "prompt": ",<|system_start|>You are helpful.<|system_end|><|developer_start|>Deliberation: enabled\nTool Capabilities:\n// Get the weather\ntype get_weather = (_: {\nlocation: string\n}) => any;<|developer_end|><|user_start|>Hi<|user_end|><|assistant_start|>Hello<|assistant_end|><|user_start|>What is 2+2?<|user_end|><|assistant_start|>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Apertus-8B-Instruct.jinja",
+      "template_sha256": "dea688e9f24a339a0d2504f6840852adbcedb082373172a0b82ca2c55996768d",
+      "enable_thinking": false,
+      "tools": false,
+      "prompt": ",<|system_start|>You are helpful.<|system_end|><|developer_start|>Deliberation: disabled\nTool Capabilities: disabled<|developer_end|><|user_start|>Hi<|user_end|><|assistant_start|>Hello<|assistant_end|><|user_start|>What is 2+2?<|user_end|><|assistant_start|>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Apertus-8B-Instruct.jinja",
+      "template_sha256": "dea688e9f24a339a0d2504f6840852adbcedb082373172a0b82ca2c55996768d",
+      "enable_thinking": false,
+      "tools": true,
+      "prompt": ",<|system_start|>You are helpful.<|system_end|><|developer_start|>Deliberation: disabled\nTool Capabilities:\n// Get the weather\ntype get_weather = (_: {\nlocation: string\n}) => any;<|developer_end|><|user_start|>Hi<|user_end|><|assistant_start|>Hello<|assistant_end|><|user_start|>What is 2+2?<|user_end|><|assistant_start|>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/GLM-4.6.jinja",
+      "template_sha256": "8804f445c761b9f259e3c1126a579d481a22ca09b2a3d32bcc4eb91bc36e0301",
+      "enable_thinking": true,
+      "tools": false,
+      "prompt": "[gMASK]<sop><|system|>\nYou are helpful.<|user|>\nHi<|assistant|>\n<think></think>\nHello<|user|>\nWhat is 2+2?<|assistant|>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/GLM-4.6.jinja",
+      "template_sha256": "8804f445c761b9f259e3c1126a579d481a22ca09b2a3d32bcc4eb91bc36e0301",
+      "enable_thinking": true,
+      "tools": true,
+      "prompt": "[gMASK]<sop><|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get the weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}\n<arg_key>{arg-key-1}</arg_key>\n<arg_value>{arg-value-1}</arg_value>\n<arg_key>{arg-key-2}</arg_key>\n<arg_value>{arg-value-2}</arg_value>\n...\n</tool_call><|system|>\nYou are helpful.<|user|>\nHi<|assistant|>\n<think></think>\nHello<|user|>\nWhat is 2+2?<|assistant|>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/GLM-4.6.jinja",
+      "template_sha256": "8804f445c761b9f259e3c1126a579d481a22ca09b2a3d32bcc4eb91bc36e0301",
+      "enable_thinking": false,
+      "tools": false,
+      "prompt": "[gMASK]<sop><|system|>\nYou are helpful.<|user|>\nHi/nothink<|assistant|>\n<think></think>\nHello<|user|>\nWhat is 2+2?/nothink<|assistant|>\n<think></think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/GLM-4.6.jinja",
+      "template_sha256": "8804f445c761b9f259e3c1126a579d481a22ca09b2a3d32bcc4eb91bc36e0301",
+      "enable_thinking": false,
+      "tools": true,
+      "prompt": "[gMASK]<sop><|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get the weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}\n<arg_key>{arg-key-1}</arg_key>\n<arg_value>{arg-value-1}</arg_value>\n<arg_key>{arg-key-2}</arg_key>\n<arg_value>{arg-value-2}</arg_value>\n...\n</tool_call><|system|>\nYou are helpful.<|user|>\nHi/nothink<|assistant|>\n<think></think>\nHello<|user|>\nWhat is 2+2?/nothink<|assistant|>\n<think></think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/GLM-4.7-Flash.jinja",
+      "template_sha256": "d63ad536c3c81880043e22ec7fd08db42b4d8fb7c89c7138bc562bfa25281375",
+      "enable_thinking": true,
+      "tools": false,
+      "prompt": "[gMASK]<sop><|system|>You are helpful.<|user|>Hi<|assistant|></think>Hello<|user|>What is 2+2?<|assistant|><think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/GLM-4.7-Flash.jinja",
+      "template_sha256": "d63ad536c3c81880043e22ec7fd08db42b4d8fb7c89c7138bc562bfa25281375",
+      "enable_thinking": true,
+      "tools": true,
+      "prompt": "[gMASK]<sop><|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get the weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|system|>You are helpful.<|user|>Hi<|assistant|></think>Hello<|user|>What is 2+2?<|assistant|><think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/GLM-4.7-Flash.jinja",
+      "template_sha256": "d63ad536c3c81880043e22ec7fd08db42b4d8fb7c89c7138bc562bfa25281375",
+      "enable_thinking": false,
+      "tools": false,
+      "prompt": "[gMASK]<sop><|system|>You are helpful.<|user|>Hi<|assistant|></think>Hello<|user|>What is 2+2?<|assistant|></think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/GLM-4.7-Flash.jinja",
+      "template_sha256": "d63ad536c3c81880043e22ec7fd08db42b4d8fb7c89c7138bc562bfa25281375",
+      "enable_thinking": false,
+      "tools": true,
+      "prompt": "[gMASK]<sop><|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get the weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|system|>You are helpful.<|user|>Hi<|assistant|></think>Hello<|user|>What is 2+2?<|assistant|></think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/HuggingFaceTB-SmolLM3-3B.jinja",
+      "template_sha256": "19eacf64569032f07644ea92c8e2a87af06ee7008147557302c31e474912ca97",
+      "enable_thinking": true,
+      "tools": false,
+      "prompt": "<|im_start|>system\n## Metadata\n\nKnowledge Cutoff Date: June 2025\nReasoning Mode: /think\n\n## Custom Instructions\n\nYou are helpful.\n\n<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\nHello<|im_end|>\n<|im_start|>user\nWhat is 2+2?<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/HuggingFaceTB-SmolLM3-3B.jinja",
+      "template_sha256": "19eacf64569032f07644ea92c8e2a87af06ee7008147557302c31e474912ca97",
+      "enable_thinking": false,
+      "tools": false,
+      "prompt": "<|im_start|>system\n## Metadata\n\nKnowledge Cutoff Date: June 2025\nReasoning Mode: /no_think\n\n## Custom Instructions\n\nYou are helpful.\n\n<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\nHello<|im_end|>\n<|im_start|>user\nWhat is 2+2?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-R1-Distill-Qwen-32B.jinja",
+      "template_sha256": "bbe594884b44d740667ee65a70bc8d333a565eab3d63ea59f291ea73ada84ba6",
+      "enable_thinking": true,
+      "tools": false,
+      "prompt": ",You are helpful.<｜User｜>Hi<｜Assistant｜>Hello<｜end▁of▁sentence｜><｜User｜>What is 2+2?<｜Assistant｜><think>\n"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-R1-Distill-Qwen-32B.jinja",
+      "template_sha256": "bbe594884b44d740667ee65a70bc8d333a565eab3d63ea59f291ea73ada84ba6",
+      "enable_thinking": true,
+      "tools": true,
+      "prompt": ",You are helpful.<｜User｜>Hi<｜Assistant｜>Hello<｜end▁of▁sentence｜><｜User｜>What is 2+2?<｜Assistant｜><think>\n"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-R1-Distill-Qwen-32B.jinja",
+      "template_sha256": "bbe594884b44d740667ee65a70bc8d333a565eab3d63ea59f291ea73ada84ba6",
+      "enable_thinking": false,
+      "tools": false,
+      "prompt": ",You are helpful.<｜User｜>Hi<｜Assistant｜>Hello<｜end▁of▁sentence｜><｜User｜>What is 2+2?<｜Assistant｜><think>\n</think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-R1-Distill-Qwen-32B.jinja",
+      "template_sha256": "bbe594884b44d740667ee65a70bc8d333a565eab3d63ea59f291ea73ada84ba6",
+      "enable_thinking": false,
+      "tools": true,
+      "prompt": ",You are helpful.<｜User｜>Hi<｜Assistant｜>Hello<｜end▁of▁sentence｜><｜User｜>What is 2+2?<｜Assistant｜><think>\n</think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/llama-cpp-rwkv-world.jinja",
+      "template_sha256": "e70723034f0928096207d99b2ec4678950361f290f5341c017d957f88b196935",
+      "enable_thinking": true,
+      "tools": false,
+      "prompt": ",System: You are helpful.\n\nUser: Hi\n\nAssistant: Hello\n\nUser: What is 2+2?\n\nAssistant: <think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/llama-cpp-rwkv-world.jinja",
+      "template_sha256": "e70723034f0928096207d99b2ec4678950361f290f5341c017d957f88b196935",
+      "enable_thinking": false,
+      "tools": false,
+      "prompt": ",System: You are helpful.\n\nUser: Hi\n\nAssistant: Hello\n\nUser: What is 2+2?\n\nAssistant: <think>\n</think>"
+    },
+    {
+      "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+      "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+      "enable_thinking": true,
+      "tools": false,
+      "prompt": "[gMASK]<sop><|system|>\nYou are helpful.<|user|>\nHi<|assistant|>\n<think></think>\nHello<|user|>\nWhat is 2+2?<|assistant|>\n"
+    },
+    {
+      "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+      "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+      "enable_thinking": true,
+      "tools": true,
+      "prompt": "[gMASK]<sop><|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get the weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}\n<arg_key>{arg-key-1}</arg_key>\n<arg_value>{arg-value-1}</arg_value>\n<arg_key>{arg-key-2}</arg_key>\n<arg_value>{arg-value-2}</arg_value>\n...\n</tool_call><|system|>\nYou are helpful.<|user|>\nHi<|assistant|>\n<think></think>\nHello<|user|>\nWhat is 2+2?<|assistant|>\n"
+    },
+    {
+      "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+      "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+      "enable_thinking": false,
+      "tools": false,
+      "prompt": "[gMASK]<sop><|system|>\nYou are helpful.<|user|>\nHi/nothink<|assistant|>\n<think></think>\nHello<|user|>\nWhat is 2+2?/nothink<|assistant|>\n<think></think>\n"
+    },
+    {
+      "template": "test/fixtures/media_templates/GLM-OCR.jinja",
+      "template_sha256": "062e7ee4cc8defa88a5938b5d456dc60366ffd80647f918946ee747bf09ddc7c",
+      "enable_thinking": false,
+      "tools": true,
+      "prompt": "[gMASK]<sop><|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get the weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}\n<arg_key>{arg-key-1}</arg_key>\n<arg_value>{arg-value-1}</arg_value>\n<arg_key>{arg-key-2}</arg_key>\n<arg_value>{arg-value-2}</arg_value>\n...\n</tool_call><|system|>\nYou are helpful.<|user|>\nHi/nothink<|assistant|>\n<think></think>\nHello<|user|>\nWhat is 2+2?/nothink<|assistant|>\n<think></think>\n"
+    }
+  ]
+}

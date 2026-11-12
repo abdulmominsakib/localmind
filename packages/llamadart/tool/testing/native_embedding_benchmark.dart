@@ -19,8 +19,10 @@ Future<void> main(List<String> arguments) async {
   final engine = LlamaEngine(LlamaBackend());
 
   try {
-    await engine.setDartLogLevel(LlamaLogLevel.none);
-    await engine.setNativeLogLevel(LlamaLogLevel.warn);
+    await LlamaLogging.configure(
+      level: LlamaLogLevel.none,
+      nativeLevel: LlamaLogLevel.warn,
+    );
 
     final resolvedMaxSeq = options.maxParallelSequences > 0
         ? options.maxParallelSequences

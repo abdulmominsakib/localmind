@@ -1,0 +1,10 @@
+# Contributor automation and local dependency state are not package content.
+/.github/
+/AGENTS.md
+/pubspec_overrides.yaml
+/pubspec.lock
+/.dart_tool/
+/build/
+/coverage/
+*.log
+*.profraw

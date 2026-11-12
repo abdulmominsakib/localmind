@@ -3,8 +3,8 @@
 /// LiteRT-LM `.litertlm` bundles do not expose their chat template through the
 /// native FFI, so the backend must supply `tokenizer.chat_template` itself,
 /// keyed by detecting the model family from the bundle filename. See
-/// `doc/litert_lm_templates.md` for the full rationale and the recipe for
-/// adding a new family.
+/// [`doc/litert_lm_templates.md`](https://github.com/leehack/llamadart/blob/main/doc/litert_lm_templates.md)
+/// for the full rationale and the recipe for adding a new family.
 class LiteRtLmChatTemplate {
   /// Creates a built-in chat template descriptor.
   const LiteRtLmChatTemplate({
@@ -22,9 +22,10 @@ class LiteRtLmChatTemplate {
 
   /// The jinja chat template, rendered by the matching format handler.
   ///
-  /// Copied verbatim from the canonical jinja that llama.cpp ships, minus any
-  /// leading `bos_token` emission: the native LiteRT-LM runtime adds the start
-  /// token itself, so emitting one here would double it.
+  /// Derived from the canonical jinja that llama.cpp ships, minus any leading
+  /// `bos_token` emission: the native LiteRT-LM runtime adds the start token
+  /// itself, so emitting one here would double it. A family may add a
+  /// content-shape adapter that keeps the prompt for equivalent text input.
   final String template;
 
   /// Filename substrings that identify this family.

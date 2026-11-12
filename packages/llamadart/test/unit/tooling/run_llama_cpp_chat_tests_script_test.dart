@@ -44,5 +44,31 @@ void main() {
         );
       },
     );
+
+    test('bounds build parallelism and defaults to two jobs', () {
+      expect(
+        script,
+        contains(r'build_jobs="${LLAMA_CPP_CHAT_TEST_BUILD_JOBS:-2}"'),
+      );
+      expect(script, contains(r'--parallel "${build_jobs}"'));
+      expect(
+        script,
+        isNot(contains(RegExp(r'--parallel\s*$', multiLine: true))),
+      );
+    });
+
+    test('rejects a non-positive job count', () async {
+      final result = await Process.run(
+        'bash',
+        const ['tool/testing/run_llama_cpp_chat_tests.sh'],
+        environment: const {'LLAMA_CPP_CHAT_TEST_BUILD_JOBS': '0'},
+        includeParentEnvironment: true,
+      );
+      expect(result.exitCode, 64);
+      expect(
+        '${result.stdout}\n${result.stderr}',
+        contains('LLAMA_CPP_CHAT_TEST_BUILD_JOBS must be a positive integer.'),
+      );
+    }, skip: Platform.isWindows ? 'requires a POSIX Bash runtime' : false);
   });
 }

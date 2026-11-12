@@ -1,0 +1,5108 @@
+{
+  "upstream_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+  "user_prompt": "Weather in Paris?",
+  "tool": {
+    "name": "get_weather",
+    "parameter": "location"
+  },
+  "templates": [
+    {
+      "template": "test/fixtures/llama_cpp_templates/Qwen3-Coder.jinja",
+      "enable_thinking": true,
+      "parallel_tool_calls": false,
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-after-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call> Done.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls-then-text",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\nDone.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope-then-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "empty-first-scope",
+          "output": "<tool_call>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unknown-tool-between-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=nope>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-without-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-with-partial-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-cut-in-name",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_wea",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "scope-tag-in-text",
+          "output": "Plan <tool_call> is a tag.",
+          "upstream": {
+            "content": "Plan ",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan ",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-json-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-text-and-call",
+          "output": "<think>Plan.</think>Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "<think>Plan.</think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "<think>Plan.</think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-answer",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "<think>Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "<think>Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Qwen3-Coder.jinja",
+      "enable_thinking": true,
+      "parallel_tool_calls": true,
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-after-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call> Done.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls-then-text",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\nDone.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope-then-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "empty-first-scope",
+          "output": "<tool_call>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unknown-tool-between-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=nope>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-without-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-with-partial-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-cut-in-name",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_wea",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "scope-tag-in-text",
+          "output": "Plan <tool_call> is a tag.",
+          "upstream": {
+            "content": "Plan ",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan ",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-json-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-text-and-call",
+          "output": "<think>Plan.</think>Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "<think>Plan.</think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "<think>Plan.</think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-answer",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "<think>Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "<think>Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Qwen3-Coder.jinja",
+      "enable_thinking": true,
+      "parallel_tool_calls": false,
+      "tool_choice": "required",
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bare-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-bare-call",
+          "output": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bare-call-then-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Qwen3-Coder.jinja",
+      "enable_thinking": true,
+      "parallel_tool_calls": true,
+      "tool_choice": "required",
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bare-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-bare-call",
+          "output": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bare-call-then-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+      "enable_thinking": true,
+      "parallel_tool_calls": false,
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-after-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call> Done.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls-then-text",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\nDone.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope-then-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "empty-first-scope",
+          "output": "<tool_call>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unknown-tool-between-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=nope>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-without-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-with-partial-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-cut-in-name",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_wea",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "scope-tag-in-text",
+          "output": "Plan <tool_call> is a tag.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-json-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-text-and-call",
+          "output": "<think>Plan.</think>Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-answer",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "text-then-bare-call",
+          "output": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call-then-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+      "enable_thinking": true,
+      "parallel_tool_calls": true,
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-after-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call> Done.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls-then-text",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\nDone.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope-then-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "empty-first-scope",
+          "output": "<tool_call>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unknown-tool-between-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=nope>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-without-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-with-partial-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-cut-in-name",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_wea",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "scope-tag-in-text",
+          "output": "Plan <tool_call> is a tag.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-json-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-text-and-call",
+          "output": "<think>Plan.</think>Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-answer",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "text-then-bare-call",
+          "output": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call-then-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+      "enable_thinking": false,
+      "parallel_tool_calls": false,
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-after-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call> Done.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls-then-text",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\nDone.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope-then-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "empty-first-scope",
+          "output": "<tool_call>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unknown-tool-between-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=nope>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-without-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-with-partial-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-cut-in-name",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_wea",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "scope-tag-in-text",
+          "output": "Plan <tool_call> is a tag.",
+          "upstream": {
+            "content": "Plan ",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan ",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-json-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-text-and-call",
+          "output": "<think>Plan.</think>Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "<think>Plan.</think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "<think>Plan.</think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-answer",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "<think>Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "<think>Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "text-then-bare-call",
+          "output": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call-then-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+      "enable_thinking": false,
+      "parallel_tool_calls": true,
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-after-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call> Done.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls-then-text",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\nDone.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope-then-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "empty-first-scope",
+          "output": "<tool_call>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unknown-tool-between-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=nope>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-without-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-with-partial-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-cut-in-name",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_wea",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "scope-tag-in-text",
+          "output": "Plan <tool_call> is a tag.",
+          "upstream": {
+            "content": "Plan ",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan ",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-json-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-text-and-call",
+          "output": "<think>Plan.</think>Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "<think>Plan.</think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "<think>Plan.</think>Let me check.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-answer",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "<think>Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "<think>Plan.</think>Answer.",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Plan.</think>A</think>B",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "text-then-bare-call",
+          "output": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call-then-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=unknown> here.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Use <function=get_weathers> now.",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/StepFun3.5-Flash.jinja",
+      "enable_thinking": true,
+      "parallel_tool_calls": false,
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-after-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call> Done.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls-then-text",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\nDone.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope-then-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "empty-first-scope",
+          "output": "<tool_call>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unknown-tool-between-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=nope>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-without-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-with-partial-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-cut-in-name",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_wea",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "scope-tag-in-text",
+          "output": "Plan <tool_call> is a tag.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-json-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-text-and-call",
+          "output": "<think>Plan.</think>Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-answer",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "text-then-bare-call",
+          "output": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call-then-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/StepFun3.5-Flash.jinja",
+      "enable_thinking": true,
+      "parallel_tool_calls": true,
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-after-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call> Done.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls-then-text",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\nDone.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope-then-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "empty-first-scope",
+          "output": "<tool_call>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unknown-tool-between-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=nope>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-without-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-with-partial-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-cut-in-name",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_wea",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "scope-tag-in-text",
+          "output": "Plan <tool_call> is a tag.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-json-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-text-and-call",
+          "output": "<think>Plan.</think>Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-answer",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "text-then-bare-call",
+          "output": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Let me check.\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call-then-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/StepFun3.5-Flash.jinja",
+      "enable_thinking": false,
+      "parallel_tool_calls": false,
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-after-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call> Done.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls-then-text",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\nDone.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope-then-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "empty-first-scope",
+          "output": "<tool_call>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unknown-tool-between-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=nope>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-without-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-with-partial-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-cut-in-name",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_wea",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "scope-tag-in-text",
+          "output": "Plan <tool_call> is a tag.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-json-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-text-and-call",
+          "output": "<think>Plan.</think>Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-answer",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call-then-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/StepFun3.5-Flash.jinja",
+      "enable_thinking": false,
+      "parallel_tool_calls": true,
+      "cases": [
+        {
+          "name": "call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-then-call",
+          "output": "Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Let me check.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "text-after-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call> Done.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-calls-then-text",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\nDone.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "two-functions-in-one-scope-then-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "empty-first-scope",
+          "output": "<tool_call>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "unknown-tool-between-calls",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=nope>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nTokyo\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-without-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-with-partial-end",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              },
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "later-scope-cut-in-name",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_wea",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "scope-tag-in-text",
+          "output": "Plan <tool_call> is a tag.",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-json-call",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-call",
+          "output": "Plan.</think>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-text-and-call",
+          "output": "<think>Plan.</think>Let me check.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "Let me check.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "thought-then-answer",
+          "output": "<think>Plan.</think>Answer.",
+          "upstream": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "Answer.",
+            "reasoning_content": "<think>Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "end-tag-then-text-and-end-tag",
+          "output": "Plan.</think>A</think>B",
+          "upstream": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "A</think>B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "bare-call-then-call",
+          "output": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Rome\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call-then-bare-call",
+          "output": "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>\n<function=get_weather>\n<parameter=location>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unknown-bare-function-in-text",
+          "output": "Use <function=unknown> here.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=unknown> here.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "longer-bare-function-in-text",
+          "output": "Use <function=get_weathers> now.\n<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Use <function=get_weathers> now.\n",
+            "tool_calls": [
+              {
+                "name": "get_weather",
+                "arguments": "{\"location\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

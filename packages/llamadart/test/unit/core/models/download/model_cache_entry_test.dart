@@ -164,18 +164,29 @@ void main() {
       );
     });
 
-    test('normalizes percent-encoded cache file names and paths', () {
-      final entry = ModelCacheEntry(
-        sourceCanonicalKey: 'path:/models/model.gguf',
-        cacheKey: 'abc123',
-        fileName: 'model%2Egguf',
-        filePath: r'C:\cache\model%2Egguf',
-        createdAt: DateTime.utc(2026, 1, 2),
-        updatedAt: DateTime.utc(2026, 1, 2),
-      );
+    test('keeps %, # and ? in cache file names and paths literal', () {
+      for (final (fileName, filePath) in const [
+        ('model%2Egguf', r'C:\cache\model%2Egguf'),
+        ('qwen 100%.gguf', r'C:\Users\100%\models\qwen 100%.gguf'),
+        ('50%25 off.gguf', '/Users/alice/50%25 off/50%25 off.gguf'),
+        ('m%C3#?.gguf', '/Users/alice/a#b?c%zz/m%C3#?.gguf'),
+        ('%', '/cache/%/%'),
+      ]) {
+        final entry = ModelCacheEntry(
+          sourceCanonicalKey: 'path:$filePath',
+          cacheKey: 'abc123',
+          fileName: fileName,
+          filePath: filePath,
+          createdAt: DateTime.utc(2026, 1, 2),
+          updatedAt: DateTime.utc(2026, 1, 2),
+        );
+        final restored = ModelCacheEntry.fromJson(entry.toJson());
 
-      expect(entry.fileName, 'model.gguf');
-      expect(entry.filePath, r'C:\cache\model.gguf');
+        expect(entry.fileName, fileName);
+        expect(entry.filePath, filePath);
+        expect(restored.fileName, fileName);
+        expect(restored.filePath, filePath);
+      }
     });
 
     test('rejects unsafe cache file names and traversal paths', () {
@@ -188,7 +199,8 @@ void main() {
         r'dir\model.gguf',
         '%2e%2e',
         '..%2Fmodel.gguf',
-        '%',
+        '.%2E',
+        r'model%5Cgguf',
       ]) {
         expect(
           () => ModelCacheEntry(
@@ -209,7 +221,7 @@ void main() {
         '/cache/../model.gguf',
         '/cache/%2e%2e/model.gguf',
         '/cache/%2e%2e%2fmodel.gguf',
-        '/cache/%/model.gguf',
+        r'C:\cache\%2E.%5Cmodel.gguf',
         r'C:\cache\..\model.gguf',
       ]) {
         expect(

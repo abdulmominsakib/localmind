@@ -1,0 +1,111 @@
+{
+  "previous_tag": "v0.7.0-3",
+  "current_tag": "v0.8.0-1",
+  "previous_upstream_commit": "620d2225cc436ab0b001e3200e590e3b286ef9ab",
+  "current_upstream_commit": "8642541b255bfb5dc39cd351a178be09013a55d6",
+  "xcframework_checksums": {
+    "v0.7.0-3": "749c9bc9fa846fb2386b3cf20ac1e6754182cd145aaf21affa2634c1f1177192",
+    "v0.8.0-1": "b959e9782f402c8ba72f7cbb68bea24c937ea48fa544e920fdcfc68db198ebf0"
+  },
+  "published_companion_checksums": {
+    "llamadart_llama_cpp_flutter-v0.17.0": "749c9bc9fa846fb2386b3cf20ac1e6754182cd145aaf21affa2634c1f1177192"
+  },
+  "core_symbols_checked": 268,
+  "slices": [
+    {
+      "library": "ios-arm64",
+      "architecture": "arm64",
+      "previous_exported_symbols": 6826,
+      "current_exported_symbols": 7106,
+      "core_symbols_missing_from_previous": [],
+      "core_symbols_missing_from_current": []
+    },
+    {
+      "library": "ios-arm64_x86_64-simulator",
+      "architecture": "arm64",
+      "previous_exported_symbols": 6826,
+      "current_exported_symbols": 7106,
+      "core_symbols_missing_from_previous": [],
+      "core_symbols_missing_from_current": []
+    },
+    {
+      "library": "ios-arm64_x86_64-simulator",
+      "architecture": "x86_64",
+      "previous_exported_symbols": 7732,
+      "current_exported_symbols": 8050,
+      "core_symbols_missing_from_previous": [],
+      "core_symbols_missing_from_current": []
+    },
+    {
+      "library": "macos-arm64_x86_64",
+      "architecture": "arm64",
+      "previous_exported_symbols": 6838,
+      "current_exported_symbols": 7118,
+      "core_symbols_missing_from_previous": [],
+      "core_symbols_missing_from_current": []
+    },
+    {
+      "library": "macos-arm64_x86_64",
+      "architecture": "x86_64",
+      "previous_exported_symbols": 7754,
+      "current_exported_symbols": 8072,
+      "core_symbols_missing_from_previous": [],
+      "core_symbols_missing_from_current": []
+    }
+  ],
+  "current_only_symbols": [
+    "ggml_prec_get_acc",
+    "ggml_prec_get_src",
+    "ggml_top_k_mask",
+    "llama_dart_cancel_flag_abort_callback",
+    "llama_dart_mtmd_encode_chunk_cancellable",
+    "llama_dart_mtmd_eval_callback",
+    "llama_dart_tts_get_info_ext",
+    "llama_dart_tts_init_ext",
+    "llama_dart_tts_start_with_voice",
+    "llama_dart_tts_supported_model_types",
+    "mtmd_audio_stream_flush",
+    "mtmd_audio_stream_free",
+    "mtmd_audio_stream_get_n_rows",
+    "mtmd_audio_stream_get_n_rows_flushed",
+    "mtmd_audio_stream_get_output_embd",
+    "mtmd_audio_stream_init",
+    "mtmd_audio_stream_is_seq_start",
+    "mtmd_audio_stream_params_default",
+    "mtmd_audio_stream_push",
+    "mtmd_audio_stream_step",
+    "mtmd_bitmap_set_is_video",
+    "mtmd_gen_state_free",
+    "mtmd_gen_state_init",
+    "mtmd_gen_state_params_default",
+    "mtmd_gen_state_reset",
+    "mtmd_get_video_config",
+    "mtmd_helper_audio_stream_get_logit_bias",
+    "mtmd_helper_gen_audio_flush",
+    "mtmd_helper_gen_audio_get_logit_bias",
+    "mtmd_helper_gen_audio_inp_default",
+    "mtmd_helper_gen_audio_next_is_text",
+    "mtmd_helper_get_capabilities",
+    "mtmd_support_audio_stream"
+  ],
+  "types_changed_and_unused_by_core": [
+    "ggml_op",
+    "mtmd_caps",
+    "mtmd_gen_audio_type",
+    "mtmd_gen_inp",
+    "mtmd_gen_out",
+    "mtmd_helper_gen_audio_inp",
+    "mtmd_helper_video_init_params"
+  ],
+  "additive_enums_used_by_core": [
+    "llama_dart_tts_capability",
+    "llama_dart_tts_model_type"
+  ],
+  "by_value_struct_growth": {
+    "mtmd_helper_init_opt": {
+      "previous_size": 24,
+      "current_size": 32,
+      "note": "This core allocates 32 bytes for the helper default and passes them by reference to a caller copy on arm64 and on the stack on x86_64, so v0.7.0-3 reads and writes only its first 24. The reverse pair overflows: v0.8.0 writes byte 24 of the 24-byte struct an older core allocates, which is why companion 0.17.1 must exclude older cores."
+    }
+  }
+}

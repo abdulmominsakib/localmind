@@ -2,8 +2,10 @@
 @Timeout(Duration(minutes: 5))
 library;
 
+import 'dart:async';
 import 'dart:io';
 import 'package:test/test.dart';
+import 'package:llamadart/backend.dart';
 import 'package:llamadart/llamadart.dart';
 import '../test_helper.dart';
 
@@ -27,7 +29,11 @@ void main() async {
       // 1. Load Model
       await engine.loadModel(
         modelFile.path,
-        modelParams: const ModelParams(contextSize: 256),
+        modelParams: const ModelParams(
+          numberOfThreads: 2,
+          numberOfThreadsBatch: 2,
+          contextSize: 256,
+        ),
       );
       expect(engine.isReady, isTrue);
       expect(engine.modelHandle, isNotNull);
@@ -91,7 +97,11 @@ void main() async {
       if (!engine.isReady) {
         await engine.loadModel(
           modelFile.path,
-          modelParams: const ModelParams(contextSize: 256),
+          modelParams: const ModelParams(
+            numberOfThreads: 2,
+            numberOfThreadsBatch: 2,
+            contextSize: 256,
+          ),
         );
       }
 
@@ -110,30 +120,72 @@ void main() async {
       if (!engine.isReady) {
         await engine.loadModel(
           modelFile.path,
-          modelParams: const ModelParams(contextSize: 256),
+          modelParams: const ModelParams(
+            numberOfThreads: 2,
+            numberOfThreadsBatch: 2,
+            contextSize: 256,
+          ),
         );
       }
 
-      final stream = engine.create([
-        const LlamaChatMessage.fromText(
-          role: LlamaChatRole.user,
-          text: 'Long story about a cat',
+      // The grammar has no way to end, so only cancellation or the token
+      // limit stops the stream; a model's own end-of-text cannot.
+      const maxTokens = 200;
+      final stream = engine.create(
+        [
+          const LlamaChatMessage.fromText(
+            role: LlamaChatRole.user,
+            text: 'Long story about a cat',
+          ),
+        ],
+        params: const GenerationParams(
+          maxTokens: maxTokens,
+          streamBatchTokenThreshold: 1,
+          grammar: 'root ::= "a" root',
         ),
-      ], params: const GenerationParams(maxTokens: 100));
+      );
 
-      String accumulated = '';
-      final subscription = stream.listen((chunk) {
-        accumulated += chunk.choices.first.delta.content ?? '';
-        if (accumulated.length > 5) {
-          engine.cancelGeneration();
-        }
-      });
+      var deltas = 0;
+      final firstToken = Completer<void>();
+      final streamDone = Completer<void>();
+      final subscription = stream.listen(
+        (chunk) {
+          if ((chunk.choices.first.delta.content ?? '').isNotEmpty) {
+            deltas++;
+          }
+          if (deltas > 0 && !firstToken.isCompleted) {
+            firstToken.complete();
+          }
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          if (!firstToken.isCompleted) {
+            firstToken.completeError(error, stackTrace);
+          }
+          if (!streamDone.isCompleted) {
+            streamDone.completeError(error, stackTrace);
+          }
+        },
+        onDone: () {
+          if (!firstToken.isCompleted) {
+            firstToken.completeError(
+              StateError('Stream closed before the first token'),
+            );
+          }
+          if (!streamDone.isCompleted) {
+            streamDone.complete();
+          }
+        },
+      );
 
-      // Increased timeout to allow generation to start and be cancelled
-      await Future.delayed(const Duration(seconds: 5));
-      await subscription.cancel();
+      try {
+        await firstToken.future.timeout(const Duration(seconds: 60));
+        engine.cancelGeneration();
+        await streamDone.future.timeout(const Duration(seconds: 30));
+      } finally {
+        await subscription.cancel();
+      }
 
-      expect(accumulated, isNotEmpty, reason: 'Generation should have started');
+      expect(deltas, lessThan(maxTokens));
     });
 
     test(
@@ -160,7 +212,11 @@ void main() async {
       try {
         await tempEngine.loadModel(
           modelFile.path,
-          modelParams: const ModelParams(contextSize: 512),
+          modelParams: const ModelParams(
+            numberOfThreads: 2,
+            numberOfThreadsBatch: 2,
+            contextSize: 512,
+          ),
         );
         final size = await tempEngine.getContextSize();
         expect(size, 512);
@@ -172,7 +228,7 @@ void main() async {
     test('Error when not initialized', () async {
       final freshBackend = LlamaBackend();
       final freshEngine = LlamaEngine(freshBackend);
-      expect(
+      await expectLater(
         freshEngine.create([
           const LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'hi'),
         ]),

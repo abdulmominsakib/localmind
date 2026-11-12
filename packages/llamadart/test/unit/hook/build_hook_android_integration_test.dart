@@ -9,60 +9,35 @@ import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 import '../../../hook/build.dart' as build_hook;
+import '../../support/hook_project_root.dart';
+import '../../support/hooks_runner_layout.dart';
+import '../../support/native_bundle_cache.dart';
 
 void main() {
   final nativeTag = _readHookNativeTag();
   final litertVersion = _readHookLiteRtLmVersion();
-  final cacheRelativeDir =
-      '.dart_tool/llamadart/native_bundles/$nativeTag/android-arm64';
-  final bundleRelativePath = '$cacheRelativeDir/extracted';
-  final bundleDir = Directory(bundleRelativePath);
-  final backupDir = Directory('$bundleRelativePath.__hook_test_backup');
+  final project = HookProjectRoot.create();
+  final bundleDir = Directory(
+    project.resolve(
+      '.dart_tool/llamadart/native_bundles_v2/$nativeTag/android-arm64/extracted',
+    ),
+  );
   final litertBundleDir = Directory(
-    '.dart_tool/llamadart/litert_lm/$litertVersion/android/arm64',
+    project.resolve(
+      '.dart_tool/llamadart/litert_lm/$litertVersion/android/arm64',
+    ),
   );
-  final litertBackupDir = Directory(
-    '${litertBundleDir.path}.__hook_test_backup',
-  );
-
-  setUpAll(() async {
-    if (backupDir.existsSync()) {
-      await backupDir.delete(recursive: true);
-    }
-
-    if (bundleDir.existsSync()) {
-      await bundleDir.rename(backupDir.path);
-    }
-    if (litertBackupDir.existsSync()) {
-      await litertBackupDir.delete(recursive: true);
-    }
-    if (litertBundleDir.existsSync()) {
-      await litertBundleDir.rename(litertBackupDir.path);
-    }
-  });
 
   setUp(() async {
     if (bundleDir.existsSync()) {
       await bundleDir.delete(recursive: true);
     }
     await _writeBundleLibraries(bundleDir, _androidArm64Libraries);
+    await markExtractedBundle(bundleDir);
     await _writeBundleLibraries(litertBundleDir, _androidLiteRtLibraries);
   });
 
-  tearDownAll(() async {
-    if (bundleDir.existsSync()) {
-      await bundleDir.delete(recursive: true);
-    }
-    if (backupDir.existsSync()) {
-      await backupDir.rename(bundleDir.path);
-    }
-    if (litertBundleDir.existsSync()) {
-      await litertBundleDir.delete(recursive: true);
-    }
-    if (litertBackupDir.existsSync()) {
-      await litertBackupDir.rename(litertBundleDir.path);
-    }
-  });
+  tearDownAll(project.delete);
 
   test('build hook defaults Android arm64 cpu profile to full', () async {
     final userDefines = PackageUserDefines(
@@ -80,7 +55,7 @@ void main() {
       ),
     );
 
-    await testCodeBuildHook(
+    await project.testCodeBuildHook(
       mainMethod: build_hook.main,
       targetOS: OS.android,
       targetArchitecture: Architecture.arm64,
@@ -133,7 +108,7 @@ void main() {
       ),
     );
 
-    await testCodeBuildHook(
+    await project.testCodeBuildHook(
       mainMethod: build_hook.main,
       targetOS: OS.android,
       targetArchitecture: Architecture.arm64,
@@ -177,7 +152,7 @@ void main() {
       ),
     );
 
-    await testCodeBuildHook(
+    await project.testCodeBuildHook(
       mainMethod: build_hook.main,
       targetOS: OS.android,
       targetArchitecture: Architecture.arm64,
@@ -205,6 +180,17 @@ void main() {
       },
     );
   });
+
+  test(
+    'only LiteRT-LM assets follow the resolved graph',
+    () => expectOnlyLiteRtLmFollowsResolvedGraph(
+      hookMain: build_hook.main,
+      targetOS: OS.android,
+      targetArchitecture: Architecture.arm64,
+      liteRtLmLibraries: _androidLiteRtLibraries,
+      project: project,
+    ),
+  );
 }
 
 const List<String> _androidCpuVariantLibraries = [
@@ -232,8 +218,6 @@ const List<String> _androidLiteRtLibraries = [
   'libLiteRtGpuAccelerator.so',
   'libLiteRtLm.so',
   'libLiteRtOpenClAccelerator.so',
-  'libLiteRtTopKOpenClSampler.so',
-  'libLiteRtTopKWebGpuSampler.so',
   'libLiteRtWebGpuAccelerator.so',
   'libwebgpu_dawn.so',
 ];
@@ -243,28 +227,34 @@ const List<String> _androidLiteRtAssetNames = [
   'litert_lm_LiteRtGpuAccelerator',
   'litert_lm_LiteRtLm',
   'litert_lm_LiteRtOpenClAccelerator',
-  'litert_lm_LiteRtTopKOpenClSampler',
-  'litert_lm_LiteRtTopKWebGpuSampler',
   'litert_lm_LiteRtWebGpuAccelerator',
   'litert_lm_webgpu_dawn',
 ];
 
 String _readHookNativeTag() {
-  final source = File('hook/build.dart').readAsStringSync();
-  final match = RegExp(r"const _llamaCppTag = '([^']+)';").firstMatch(source);
+  final source = File(
+    'lib/src/hook/native_release_pins.dart',
+  ).readAsStringSync();
+  final match = RegExp(r"const llamaCppTag = '([^']+)';").firstMatch(source);
   if (match == null) {
-    throw StateError('Could not locate _llamaCppTag in hook/build.dart');
+    throw StateError(
+      'Could not locate llamaCppTag in lib/src/hook/native_release_pins.dart',
+    );
   }
   return match.group(1)!;
 }
 
 String _readHookLiteRtLmVersion() {
-  final source = File('hook/build.dart').readAsStringSync();
+  final source = File(
+    'lib/src/hook/native_release_pins.dart',
+  ).readAsStringSync();
   final match = RegExp(
-    r"const _litertLmVersion = '([^']+)';",
+    r"const liteRtLmVersion = '([^']+)';",
   ).firstMatch(source);
   if (match == null) {
-    throw StateError('Could not locate _litertLmVersion in hook/build.dart');
+    throw StateError(
+      'Could not locate liteRtLmVersion in lib/src/hook/native_release_pins.dart',
+    );
   }
   return match.group(1)!;
 }

@@ -1,0 +1,17 @@
+# https://dart.dev/guides/libraries/private-files
+# Created by `dart pub`
+.dart_tool/
+.DS_Store
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Avoid committing pubspec.lock for library packages; see
+# https://dart.dev/guides/libraries/private-files#pubspeclock.
+pubspec.lock
+
+# Test coverage and native instrumentation output.
+coverage/
+*.profraw
+
+# Local core qualification only; never published.
+pubspec_overrides.yaml

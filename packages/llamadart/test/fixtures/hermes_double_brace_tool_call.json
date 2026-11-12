@@ -1,0 +1,229 @@
+{
+  "upstream_commit": "7fe450e19305b828c199d602c23a8337aaa1f03b",
+  "template": "test/fixtures/hermes_double_brace_qwen2_5.jinja",
+  "template_sha256": "d5495a1e5db0611132a97e46a65dbb64a642a499421228b9c8b93229097fa9a4",
+  "user_prompt": "What is the weather in Paris right now?",
+  "tool": {
+    "name": "get_weather",
+    "description": "Returns current weather for a city.",
+    "parameters": {
+      "city": {
+        "type": "string",
+        "description": "City name"
+      }
+    }
+  },
+  "cases": [
+    {
+      "name": "webgpu-bridge-v0.1.49",
+      "source": "issue",
+      "prompt": "What is the weather in Paris right now?",
+      "sampling": null,
+      "emission": "<tool_call>\n{{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+      "pieces": null,
+      "upstream_result": {
+        "error": "The model produced output that does not match the expected peg-native format",
+        "tool_calls": []
+      },
+      "base_result": {
+        "content": "<tool_call>\n{</tool_call>",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "Paris"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "content": "",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "Paris"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "native-greedy",
+      "source": "recorded",
+      "prompt": "What is the weather in Paris right now?",
+      "sampling": {
+        "temp": 0.0,
+        "seed": null,
+        "max_tokens": 96
+      },
+      "emission": "<tool_call>\n{{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}}\n</tool_call>",
+      "pieces": [
+        "<tool_call>",
+        "\n{{\"name\": \"get_weather",
+        "\", \"arguments\": {\"city\": \"",
+        "Paris\"}}}\n</tool_call>"
+      ],
+      "upstream_result": {
+        "error": "The model produced output that does not match the expected peg-native format",
+        "tool_calls": []
+      },
+      "base_result": {
+        "content": "<tool_call>\n{}\n</tool_call>",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "Paris"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "content": "",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "Paris"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "native-paris-temp0.7-seed1",
+      "source": "recorded",
+      "prompt": "What is the weather in Paris right now?",
+      "sampling": {
+        "temp": 0.7,
+        "seed": 1,
+        "max_tokens": 160
+      },
+      "emission": "To retrieve the current weather for Paris, I'll use the `get_weather` function. Since Paris is a city name, it will be passed directly to the function without any additional arguments.\n<tool_call>\n{{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}}}\n</tool_call>",
+      "pieces": null,
+      "upstream_result": {
+        "error": "The model produced output that does not match the expected peg-native format",
+        "tool_calls": []
+      },
+      "base_result": {
+        "content": "To retrieve the current weather for Paris, I'll use the `get_weather` function. Since Paris is a city name, it will be passed directly to the function without any additional arguments.\n<tool_call>\n{}}\n</tool_call>",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "Paris"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "content": "To retrieve the current weather for Paris, I'll use the `get_weather` function. Since Paris is a city name, it will be passed directly to the function without any additional arguments.",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "Paris"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "native-tokyo-london-temp1.0-seed18",
+      "source": "recorded",
+      "prompt": "What is the weather in Tokyo and London right now?",
+      "sampling": {
+        "temp": 1.0,
+        "seed": 18,
+        "max_tokens": 160
+      },
+      "emission": "<tool_call>\n{{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Tokyo\"}}\n</tool_call>\nffi\n{{\"name\": \"get_weather\", \"arguments\": {\"city\": \"London\"}}\n</tool_call>",
+      "pieces": null,
+      "upstream_result": {
+        "error": "The model produced output that does not match the expected peg-native format",
+        "tool_calls": []
+      },
+      "base_result": {
+        "content": "<tool_call>\n{</tool_call>\nffi\n{</tool_call>",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "Tokyo"
+            }
+          },
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "London"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "content": "ffi\n{</tool_call>",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "Tokyo"
+            }
+          },
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "London"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "two-calls-extra-closing-brace",
+      "source": "constructed",
+      "prompt": "What is the weather in Tokyo and London right now?",
+      "sampling": null,
+      "emission": "<tool_call>\n{{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Tokyo\"}}}}\n</tool_call>\n<tool_call>\n{{\"name\": \"get_weather\", \"arguments\": {\"city\": \"London\"}}}\n</tool_call>",
+      "pieces": null,
+      "upstream_result": {
+        "error": "The model produced output that does not match the expected peg-native format",
+        "tool_calls": []
+      },
+      "base_result": {
+        "content": "<tool_call>\n{}}\n</tool_call>\n<tool_call>\n{}\n</tool_call>",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "Tokyo"
+            }
+          },
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "London"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "content": "",
+        "tool_calls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "Tokyo"
+            }
+          },
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "London"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

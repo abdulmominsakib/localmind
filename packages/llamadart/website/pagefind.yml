@@ -1,0 +1,7 @@
+# Pagefind indexes only pages marked data-pagefind-body (latest release).
+exclude_selectors:
+  - "[anchor] > a"
+  - ".breadcrumb"
+  - ".mobile-toc"
+  - ".doc-meta"
+  - ".pager"

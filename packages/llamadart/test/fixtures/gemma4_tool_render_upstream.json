@@ -1,0 +1,286 @@
+{
+  "upstream_commit": "7fe450e19",
+  "endpoint": "POST /apply-template",
+  "requests": {
+    "map_result": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Call get_weather for Montréal."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "get_weather",
+                "arguments": "{\"city\":\"Montréal\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "get_weather",
+          "content": "{\"city\":\"Montréal\",\"temperature_celsius\":17}"
+        },
+        {
+          "role": "user",
+          "content": "What is the temperature_celsius from the tool result? Reply with only the number."
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "description": "Return the weather for a city.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "get_time",
+            "description": "Return the local time for a city.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ]
+            }
+          }
+        }
+      ],
+      "tool_choice": "auto",
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    },
+    "string_result": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Call get_weather for Montréal."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "get_weather",
+                "arguments": "{\"city\":\"Montréal\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "get_weather",
+          "content": "Sunny, 17 °C"
+        },
+        {
+          "role": "user",
+          "content": "What is the temperature_celsius from the tool result? Reply with only the number."
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "description": "Return the weather for a city.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "get_time",
+            "description": "Return the local time for a city.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ]
+            }
+          }
+        }
+      ],
+      "tool_choice": "auto",
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    },
+    "parallel_results": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Weather and time in Montréal?"
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "get_weather",
+                "arguments": "{\"city\":\"Montréal\",\"days\":2,\"metric\":true,\"units\":{\"temp\":\"C\"},\"tags\":[\"now\",\"hourly\"]}"
+              }
+            },
+            {
+              "id": "call_1",
+              "type": "function",
+              "function": {
+                "name": "get_time",
+                "arguments": "{\"city\":\"Montréal\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_0",
+          "name": "get_weather",
+          "content": "{\"temperature_celsius\":17}"
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_1",
+          "name": "get_time",
+          "content": "09:30"
+        },
+        {
+          "role": "assistant",
+          "content": "It is 17 °C at 09:30."
+        },
+        {
+          "role": "user",
+          "content": "Thanks."
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "description": "Return the weather for a city.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "get_time",
+            "description": "Return the local time for a city.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ]
+            }
+          }
+        }
+      ],
+      "tool_choice": "auto",
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    }
+  },
+  "templates": {
+    "templates/gemma-4-E2B-it.jinja": {
+      "template_sha256": "33204f1acb5bd0002713e16a593847f24ceeafe711ed88bda2a352dc996a3373",
+      "chat_template_caps": {
+        "supports_object_arguments": true,
+        "supports_parallel_tool_calls": true,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": true,
+        "supports_system_role": true,
+        "supports_tool_calls": true,
+        "supports_tools": true,
+        "supports_typed_content": true
+      },
+      "prompts": {
+        "map_result": "<|turn>system\n<|tool>declaration:get_weather{description:<|\"|>Return the weather for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><|tool>declaration:get_time{description:<|\"|>Return the local time for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><turn|>\n<|turn>user\nCall get_weather for Montréal.<turn|>\n<|turn>model\n<|tool_call>call:get_weather{city:<|\"|>Montréal<|\"|>}<tool_call|><|tool_response>response:get_weather{value:<|\"|>{\"city\":\"Montréal\",\"temperature_celsius\":17}<|\"|>}<tool_response|><|turn>user\nWhat is the temperature_celsius from the tool result? Reply with only the number.<turn|>\n<|turn>model\n",
+        "string_result": "<|turn>system\n<|tool>declaration:get_weather{description:<|\"|>Return the weather for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><|tool>declaration:get_time{description:<|\"|>Return the local time for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><turn|>\n<|turn>user\nCall get_weather for Montréal.<turn|>\n<|turn>model\n<|tool_call>call:get_weather{city:<|\"|>Montréal<|\"|>}<tool_call|><|tool_response>response:get_weather{value:<|\"|>Sunny, 17 °C<|\"|>}<tool_response|><|turn>user\nWhat is the temperature_celsius from the tool result? Reply with only the number.<turn|>\n<|turn>model\n",
+        "parallel_results": "<|turn>system\n<|tool>declaration:get_weather{description:<|\"|>Return the weather for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><|tool>declaration:get_time{description:<|\"|>Return the local time for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><turn|>\n<|turn>user\nWeather and time in Montréal?<turn|>\n<|turn>model\n<|tool_call>call:get_weather{city:<|\"|>Montréal<|\"|>,days:2,metric:true,tags:[<|\"|>now<|\"|>,<|\"|>hourly<|\"|>],units:{temp:<|\"|>C<|\"|>}}<tool_call|><|tool_call>call:get_time{city:<|\"|>Montréal<|\"|>}<tool_call|><|tool_response>response:get_weather{value:<|\"|>{\"temperature_celsius\":17}<|\"|>}<tool_response|><|tool_response>response:get_time{value:<|\"|>09:30<|\"|>}<tool_response|>It is 17 °C at 09:30.<turn|>\n<|turn>user\nThanks.<turn|>\n<|turn>model\n"
+      }
+    },
+    "llama_cpp_templates/google-gemma-4-31B-it-interleaved.jinja": {
+      "template_sha256": "65f93a25708c952457106a30e185ba7beffddd726121c8d7e3f3e08b23c16c67",
+      "chat_template_caps": {
+        "supports_object_arguments": true,
+        "supports_parallel_tool_calls": true,
+        "supports_preserve_reasoning": false,
+        "supports_reasoning_effort": false,
+        "supports_string_content": true,
+        "supports_system_role": true,
+        "supports_tool_calls": true,
+        "supports_tools": true,
+        "supports_typed_content": true
+      },
+      "prompts": {
+        "map_result": "<|turn>system\n<|tool>declaration:get_weather{description:<|\"|>Return the weather for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><|tool>declaration:get_time{description:<|\"|>Return the local time for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><turn|>\n<|turn>user\nCall get_weather for Montréal.<turn|>\n<|turn>model\n<|tool_call>call:get_weather{city:<|\"|>Montréal<|\"|>}<tool_call|><|tool_response>response:get_weather{city:<|\"|>Montréal<|\"|>,temperature_celsius:17}<tool_response|><|turn>user\nWhat is the temperature_celsius from the tool result? Reply with only the number.<turn|>\n<|turn>model\n<|channel>thought\n<channel|>",
+        "string_result": "<|turn>system\n<|tool>declaration:get_weather{description:<|\"|>Return the weather for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><|tool>declaration:get_time{description:<|\"|>Return the local time for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><turn|>\n<|turn>user\nCall get_weather for Montréal.<turn|>\n<|turn>model\n<|tool_call>call:get_weather{city:<|\"|>Montréal<|\"|>}<tool_call|><|tool_response>response:get_weather{value:<|\"|>Sunny, 17 °C<|\"|>}<tool_response|><|turn>user\nWhat is the temperature_celsius from the tool result? Reply with only the number.<turn|>\n<|turn>model\n<|channel>thought\n<channel|>",
+        "parallel_results": "<|turn>system\n<|tool>declaration:get_weather{description:<|\"|>Return the weather for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><|tool>declaration:get_time{description:<|\"|>Return the local time for a city.<|\"|>,parameters:{properties:{city:{type:<|\"|>STRING<|\"|>}},required:[<|\"|>city<|\"|>],type:<|\"|>OBJECT<|\"|>}}<tool|><turn|>\n<|turn>user\nWeather and time in Montréal?<turn|>\n<|turn>model\n<|tool_call>call:get_weather{city:<|\"|>Montréal<|\"|>,days:2,metric:true,tags:[<|\"|>now<|\"|>,<|\"|>hourly<|\"|>],units:{temp:<|\"|>C<|\"|>}}<tool_call|><|tool_call>call:get_time{city:<|\"|>Montréal<|\"|>}<tool_call|><|tool_response>response:get_weather{temperature_celsius:17}<tool_response|><|tool_response>response:get_time{value:<|\"|>09:30<|\"|>}<tool_response|>It is 17 °C at 09:30.<turn|>\n<|turn>user\nThanks.<turn|>\n<|turn>model\n<|channel>thought\n<channel|>"
+      }
+    }
+  }
+}

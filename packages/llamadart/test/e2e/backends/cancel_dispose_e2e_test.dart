@@ -3,6 +3,7 @@
 @Timeout(Duration(minutes: 5))
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:llamadart/llamadart.dart';
@@ -129,5 +130,112 @@ void main() {
       }
       expect(disposed, isTrue);
     });
+
+    test('a load racing dispose throws LlamaStateException and dispose '
+        'frees its model', () async {
+      if (modelPath.isEmpty) {
+        return;
+      }
+      final engine = LlamaEngine(LlamaBackend());
+      const params = ModelParams(
+        contextSize: 512,
+        gpuLayers: 0,
+        numberOfThreads: 2,
+        numberOfThreadsBatch: 2,
+      );
+      final load = engine.loadModel(modelPath, modelParams: params);
+      final disposal = engine.dispose();
+
+      expect(engine.dispose(), same(disposal));
+      await expectLater(load, throwsA(isA<LlamaStateException>()));
+      await disposal.timeout(const Duration(seconds: 30));
+      expect(engine.isDisposed, isTrue);
+      expect(engine.isReady, isFalse);
+      expect(
+        (await engine.capabilities).unsupportedReason,
+        contains('disposed'),
+      );
+      await expectLater(
+        engine.loadModel(modelPath, modelParams: params),
+        throwsA(isA<LlamaStateException>()),
+      );
+    });
+  });
+
+  group('generation right after a cancel (native)', () {
+    const restartModels = <String>[
+      'stories15M.gguf',
+      'qwen2.5-0.5b-instruct-q4_k_m.gguf',
+    ];
+    final cancelPoints =
+        <
+          String,
+          Future<void> Function(
+            LlamaEngine engine,
+            StreamSubscription<String> subscription,
+            Future<void> firstToken,
+          )
+        >{
+          'after the first token': (engine, subscription, firstToken) async {
+            await firstToken;
+            await subscription.cancel();
+          },
+          'before the first token': (engine, subscription, firstToken) async {
+            await Future<void>.delayed(const Duration(milliseconds: 1));
+            await subscription.cancel();
+          },
+          'with cancelGeneration after the first token':
+              (engine, subscription, firstToken) async {
+                await firstToken;
+                engine.cancelGeneration();
+              },
+        };
+    final restartDelays = <String, Future<void> Function()>{
+      'immediately': () async {},
+      'one timer turn later': () => Future<void>.delayed(Duration.zero),
+    };
+
+    for (final modelName in restartModels) {
+      final modelFile = File(path.join('models', modelName));
+      for (final cancelPoint in cancelPoints.entries) {
+        for (final restartDelay in restartDelays.entries) {
+          test(
+            '$modelName: cancel ${cancelPoint.key}, restart '
+            '${restartDelay.key}',
+            () async {
+              final engine = LlamaEngine(LlamaBackend());
+              addTearDown(engine.dispose);
+              await engine.loadModel(
+                modelFile.path,
+                modelParams: const ModelParams(
+                  contextSize: 512,
+                  gpuLayers: 0,
+                  numberOfThreads: 2,
+                  numberOfThreadsBatch: 2,
+                ),
+              );
+              const params = GenerationParams(maxTokens: 64, temp: 0, seed: 1);
+
+              final firstToken = Completer<void>();
+              final subscription = engine
+                  .generate('Once upon a time', params: params)
+                  .listen((_) {
+                    if (!firstToken.isCompleted) firstToken.complete();
+                  });
+              await cancelPoint.value(engine, subscription, firstToken.future);
+              await restartDelay.value();
+              final text = await engine
+                  .generate('Once upon a time', params: params)
+                  .join();
+
+              expect(text, isNotEmpty);
+            },
+            skip: modelFile.existsSync()
+                ? false
+                : 'Put $modelName in models/ to run this test',
+          );
+        }
+      }
+    }
   });
 }

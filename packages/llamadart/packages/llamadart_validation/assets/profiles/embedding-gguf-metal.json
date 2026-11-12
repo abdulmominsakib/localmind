@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "embedding-gguf-metal",
+  "runtime": "gguf",
+  "backend": "metal",
+  "model": {
+    "filename": "embeddinggemma-2-BF16.gguf",
+    "revision": "bfcd298762cc34d0357ece5ebdd31791a3a374d8",
+    "url": "https://huggingface.co/ggml-org/embeddinggemma-2-GGUF/resolve/bfcd298762cc34d0357ece5ebdd31791a3a374d8/embeddinggemma-2-BF16.gguf",
+    "sha256": "68bae29d62fb8c7d23e98d21fd4662753ddd636e6b62b8a70dfe059a9844f216",
+    "bytes": 557950176,
+    "id": "embeddinggemma-2-bf16",
+    "kind": "embedding",
+    "quantization": "BF16"
+  },
+  "embedding": {
+    "projector": {
+      "filename": "mmproj-embeddinggemma-2-BF16.gguf",
+      "revision": "bfcd298762cc34d0357ece5ebdd31791a3a374d8",
+      "url": "https://huggingface.co/ggml-org/embeddinggemma-2-GGUF/resolve/bfcd298762cc34d0357ece5ebdd31791a3a374d8/mmproj-embeddinggemma-2-BF16.gguf",
+      "sha256": "d2033b3cd0223cfb2e7a2b50dc80a664c78c816d375f5b017ec3ef80ee0bc766",
+      "bytes": 982074784
+    },
+    "case_timeout_ms": 300000
+  },
+  "selection": "quick",
+  "context_size": 2048,
+  "threads": 4
+}

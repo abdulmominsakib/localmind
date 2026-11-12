@@ -18,6 +18,27 @@ import '../tool_call_grammar_utils.dart';
 /// Similar to Hermes with `<tool_call>` tags but uses prefix-based thinking
 /// and `<|end_of_sentence|>` stop token.
 class DeepseekV3Handler extends ChatTemplateHandler {
+  static const List<String> _toolCallsOpenings = <String>[
+    '<｜tool▁calls▁begin｜>',
+    '<｜tool_calls_begin｜>',
+    '<｜tool calls begin｜>',
+    r'<｜tool\_calls\_begin｜>',
+    '<｜tool▁calls｜>',
+  ];
+  static final RegExp _toolsBlockRegex = RegExp(
+    '(${_toolCallsOpenings.map(RegExp.escape).join('|')})'
+    '([\\s\\S]*?)<｜tool▁calls▁end｜>',
+    dotAll: true,
+  );
+
+  /// Finds where [parse] may find a tool-call opening in [text].
+  ///
+  /// Returns the first index at or after [from] where a DeepSeek tool-call
+  /// opening starts, or where the rest of [text] is the start of one, and
+  /// `text.length` when there is none.
+  static int toolCallOpening(String text, [int from = 0]) =>
+      ToolCallParsingUtils.literalOpening(text, _toolCallsOpenings, from);
+
   @override
   ChatFormat get format => ChatFormat.deepseekV3;
 
@@ -62,19 +83,26 @@ class DeepseekV3Handler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': modifiedMessages.map((m) => m.toJson()).toList(),
+        'messages': templateMessages(
+          modifiedMessages,
+          templateSource: templateSource,
+        ),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
+        'enable_thinking': enableThinking,
         'bos_token': bosToken,
         'eos_token': eosToken,
       },
     );
 
     // Handle enableThinking post-render logic
+    final thinkingForcedClosed = isThinkingForcedClosed(prompt);
     var thinkingForcedOpen = false;
+    var thoughtClosed = false;
     if (isThinkingForcedOpen(prompt)) {
       if (!enableThinking) {
         prompt = '${prompt.trimRight()}</think>\n';
+        thoughtClosed = true;
       } else {
         thinkingForcedOpen = true;
       }
@@ -84,10 +112,14 @@ class DeepseekV3Handler extends ChatTemplateHandler {
     final triggerPattern = thinkingForcedOpen
         ? r'[\s\S]*?(</think>\s*)(<｜tool▁calls▁begin｜>|<｜tool_calls_begin｜>|<｜tool calls begin｜>|<｜tool\\_calls\\_begin｜>|<｜tool▁calls｜>)[\s\S]*'
         : r'(?:<think>[\s\S]*?</think>\s*)?(<｜tool▁calls▁begin｜>|<｜tool_calls_begin｜>|<｜tool calls begin｜>|<｜tool\\_calls\\_begin｜>|<｜tool▁calls｜>)[\s\S]*';
-    return LlamaChatTemplateResult(
+    final rendered = LlamaChatTemplateResult(
       prompt: prompt,
       format: format.index,
-      grammar: buildGrammar(tools),
+      grammar: requiredGrammarAfterThought(
+        buildGrammar(tools),
+        metadata: metadata,
+        thinkingForcedOpen: thinkingForcedOpen,
+      ),
       grammarLazy: hasTools,
       thinkingForcedOpen: thinkingForcedOpen,
       additionalStops: getStops(
@@ -99,32 +131,29 @@ class DeepseekV3Handler extends ChatTemplateHandler {
           ? [GrammarTrigger(type: 3, value: triggerPattern)]
           : [],
     );
+    return withThoughtClosedForThinkingOff(
+      withThinkingForcedClosed(rendered, closed: thinkingForcedClosed),
+      closed: thoughtClosed,
+    );
   }
 
+  /// With [thoughtTagsAreText], all of [output] is content and tool calls.
   @override
   ChatParseResult parse(
     String output, {
     bool isPartial = false,
     bool parseToolCalls = true,
     bool thinkingForcedOpen = false,
+    bool thoughtTagsAreText = false,
   }) {
-    final hasClosingThink = output.contains('</think>');
-
-    // Match llama.cpp DeepSeek-V3 behavior:
-    // if thinking is forced-open and final output has no closing think tag,
-    // treat output as regular content/tool-call channel (not reasoning).
-    if (thinkingForcedOpen && !isPartial && !hasClosingThink) {
-      return _parseContentAndToolCalls(
-        output,
-        reasoning: null,
-        parseToolCalls: parseToolCalls,
-      );
-    }
-
-    final thinking = extractThinking(
-      output,
-      thinkingForcedOpen: thinkingForcedOpen,
-    );
+    // As in llama.cpp (`620d2225`), a forced-open thought is the text before
+    // the first `</think>`, kept as generated, and the rest is content; a
+    // thought that never closes is reasoning.
+    final ThinkingExtraction thinking = thoughtTagsAreText
+        ? (content: output.trim(), reasoning: null)
+        : thinkingForcedOpen
+        ? extractForcedOpenThoughtVerbatim(output, isPartial: isPartial)
+        : extractThinking(output);
     return _parseContentAndToolCalls(
       thinking.content,
       reasoning: thinking.reasoning,
@@ -143,11 +172,7 @@ class DeepseekV3Handler extends ChatTemplateHandler {
 
     final toolCalls = <LlamaCompletionChunkToolCall>[];
     var contentText = text;
-    final toolsBlockRegex = RegExp(
-      r'(<｜tool▁calls▁begin｜>|<｜tool_calls_begin｜>|<｜tool calls begin｜>|<｜tool\\_calls\\_begin｜>|<｜tool▁calls｜>)([\s\S]*?)<｜tool▁calls▁end｜>',
-      dotAll: true,
-    );
-    final blockMatch = toolsBlockRegex.firstMatch(text);
+    final blockMatch = _toolsBlockRegex.firstMatch(text);
     if (blockMatch != null) {
       final leading = text.substring(0, blockMatch.start).trim();
       final trailing = text.substring(blockMatch.end).trim();

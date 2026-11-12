@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "pack": "litert-asr",
+  "preset": "moonshineTiny",
+  "backend": "cpu",
+  "model": {
+    "filename": "moonshine_tiny_5s_i8.tflite",
+    "sha256": "97abdeea122d579229091659c24c59d988c6419d453a200f6471241a53b9a9b9",
+    "bytes": 51936896,
+    "revision": "beb49ee5028b4fb21eb989bcbd2db30a433373db",
+    "url": "https://huggingface.co/litert-community/moonshine-tiny/resolve/beb49ee5028b4fb21eb989bcbd2db30a433373db/moonshine_tiny_5s_i8.tflite"
+  },
+  "tokenizer": {
+    "filename": "moonshine_tokenizer.json",
+    "sha256": "6579793438bc4fbafffacf699169ff53e3769c5a0a0f5e71cdee8853e8130deb",
+    "bytes": 1985530,
+    "revision": "390624ed33d594443aa4aa221f5b9f283b545b5a",
+    "url": "https://huggingface.co/UsefulSensors/moonshine-tiny/resolve/390624ed33d594443aa4aa221f5b9f283b545b5a/tokenizer.json"
+  },
+  "fixture": {
+    "filename": "jfk.wav",
+    "sha256": "59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e",
+    "bytes": 352078,
+    "reference": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country",
+    "wer_threshold": 0
+  }
+}

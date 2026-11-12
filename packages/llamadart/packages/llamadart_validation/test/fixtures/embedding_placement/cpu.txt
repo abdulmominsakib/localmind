@@ -1,0 +1,74 @@
+load_tensors: offloaded 0/25 layers to GPU
+llama_context: constructing llama_context
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.05 MiB
+sched_reserve: graph: nodes = 1218, splits = 1, input objects = 4, input tensors = 9
+sched_reserve: reserve took 1.61 ms, sched copies = 1
+clip_ctx: CLIP using CPU backend
+load_hparams: projector:          gemma4v
+reserve_compute_meta:        CPU compute buffer size =   101.27 MiB
+reserve_compute_meta: graph splits = 1, nodes = 846
+clip_ctx: CLIP using CPU backend
+load_hparams: projector:          gemma4a
+reserve_compute_meta:        CPU compute buffer size =   101.19 MiB
+reserve_compute_meta: graph splits = 1, nodes = 1388
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.12 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.41 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.22 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.09 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.27 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.04 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.07 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.32 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.04 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.14 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.26 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.17 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.02 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.21 ms, sched copies = 1
+sched_reserve: reserving ...
+sched_reserve:        CPU compute buffer size =   244.06 MiB
+sched_reserve: graph: nodes = 1221, splits = 1, input objects = 5, input tensors = 10
+sched_reserve: reserve took 1.00 ms, sched copies = 1

@@ -1,0 +1,14 @@
+{
+  "documents": [
+    {"title": "Aurora", "text": "The northern lights occur when charged particles from the Sun interact with gases in Earth's upper atmosphere."},
+    {"title": "Baking", "text": "A sourdough starter is a mixture of flour and water that cultures wild yeast and bacteria. Feed it regularly to bake bread."},
+    {"title": null, "text": "Mars appears red because iron minerals in its soil oxidize. The planet has a thin atmosphere and two small moons."},
+    {"title": "Electric cars", "text": "Battery electric vehicles store energy in rechargeable batteries and use electric motors instead of burning petrol."}
+  ],
+  "queries": [
+    {"text": "What makes colorful lights appear in the polar sky?", "document": 0},
+    {"text": "How do I maintain the living culture used for naturally leavened bread?", "document": 1},
+    {"text": "Why does the fourth planet look rusty?", "document": 2},
+    {"text": "How can a car run without a gasoline engine?", "document": 3}
+  ]
+}

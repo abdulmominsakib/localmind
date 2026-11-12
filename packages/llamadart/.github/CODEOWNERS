@@ -1,0 +1,140 @@
+# Release automation and publication-sensitive files require maintainer review.
+.github/CODEOWNERS @leehack
+.github/dependabot.yml @leehack
+.github/pull_request_template.md @leehack
+.github/workflows/ @leehack
+.github/actions/ @leehack
+AGENTS.md @leehack
+CONTRIBUTING.md @leehack
+scripts/build_chat_app_web.sh @leehack
+scripts/validate_chat_app_web_build.sh @leehack
+scripts/verify_chat_app_web_deployment.sh @leehack
+
+# Version, release, and native-runtime publication surfaces.
+/.github/workflows/nonpublishing_release_auth_probe.yml @leehack
+/tool/release/nonpublishing_auth_probe.py @leehack
+/test/ci/test_nonpublishing_auth_probe.py @leehack
+/test/unit/tooling/nonpublishing_auth_probe_workflow_test.dart @leehack
+/.github/workflows/native_default_consumer_qualification.yml @leehack
+/test/fixtures/native_default_consumer_qualification/ @leehack
+/test/unit/tooling/native_default_consumer_qualification_workflow_test.dart @leehack
+/test/unit/tooling/native_default_consumer_qualification_test.dart @leehack
+/test/unit/tooling/run_local_e2e_test.dart @leehack
+/test/unit/tooling/test_matrix_test.dart @leehack
+/test/unit/tooling/ci_workflow_selection_test.dart @leehack
+pubspec.yaml @leehack
+CHANGELOG.md @leehack
+doc/changelog_archive.md @leehack
+/.gitattributes @leehack
+doc/testing_matrix.md @leehack
+doc/pr_branch_writer_inventory.md @leehack
+doc/high_risk_pre_merge_readiness.md @leehack
+hook/build.dart @leehack
+lib/src/hook/native_release_pins.dart @leehack
+tool/testing/test_matrix.dart @leehack
+example/chat_app/integration_test/flutter_shutdown_probe.dart @leehack
+example/chat_app/test/flutter_shutdown_e2e_test.dart @leehack
+example/chat_app/test/fixtures/flutter_shutdown_observer.c @leehack
+tool/testing/classify_high_risk_changes.dart @leehack
+tool/testing/high_risk_readiness.dart @leehack
+tool/testing/release_metadata_readiness.dart @leehack
+tool/testing/high_risk_readiness_evidence.schema.json @leehack
+tool/testing/high_risk_readiness_evidence.v1.schema.json @leehack
+tool/testing/run_template_parity_suites.sh @leehack
+tool/testing/run_llama_cpp_chat_tests.sh @leehack
+tool/testing/prepare_llama_cpp_source.sh @leehack
+tool/testing/build_llama_cpp_runtime_gbnf_validator.sh @leehack
+tool/testing/llama_cpp_templates.ref @leehack
+tool/gen_litert_lm_templates.dart @leehack
+tool/litert_lm_templates/ @leehack
+test/integration/core/grammar/generated_tool_schema_grammar_test.dart @leehack
+test/e2e/template/specialized_tool_grammar_validation_e2e_test.dart @leehack
+test/unit/tooling/high_risk_review_policy_test.dart @leehack
+test/unit/tooling/high_risk_readiness_test.dart @leehack
+tool/git/safe_pr_head_update.dart @leehack
+tool/git/pr_head_update_evidence.schema.json @leehack
+test/unit/tooling/safe_pr_head_update_test.dart @leehack
+tool/testing/verify_release_docs_versions.dart @leehack
+tool/testing/check_released_changelog_sections.dart @leehack
+test/unit/tooling/release_prep_heading_test.dart @leehack
+tool/release/companion_pub_preflight.dart @leehack
+test/unit/tooling/pub_content_limits_test.dart @leehack
+tool/testing/check_webgpu_bridge_tag.dart @leehack
+tool/testing/check_native_release_digests.dart @leehack
+tool/native/sync_native_release_pins.py @leehack
+tool/native/test_sync_native_release_pins.py @leehack
+tool/native/sync_stable_diffusion_bindings.py @leehack
+tool/native/test_sync_stable_diffusion_bindings.py @leehack
+ffigen.yaml @leehack
+ffigen_stable_diffusion.yaml @leehack
+lib/src/backends/stable_diffusion/stable_diffusion_bindings.dart @leehack
+tool/native/fixtures/ @leehack
+scripts/fetch_webgpu_bridge_assets.sh @leehack
+website/docs/changelog/recent-releases.md @leehack
+website/docs/maintainers/native-and-web-sync.md @leehack
+website/docs/maintainers/release-workflow.md @leehack
+website/lib/src/tooling/version_cut.dart @leehack
+website/tool/cut_version.dart @leehack
+packages/*/CHANGELOG.md @leehack
+packages/*/darwin/*/Package.swift @leehack
+packages/*/pubspec.yaml @leehack
+packages/*/pubspec_overrides.yaml @leehack
+
+tool/ci/web_deployment.py @leehack
+tool/ci/preview_guard.py @leehack
+tool/ci/deploy_guard.py @leehack
+tool/ci/hf_space_deploy.py @leehack
+test/ci/test_hf_space_deploy.py @leehack
+test/unit/tooling/hf_space_deploy_test.dart @leehack
+test/ci/test_deploy_guard.py @leehack
+tool/ci/select_jobs.py @leehack
+tool/ci/native_test_timing.dart @leehack
+tool/ci/test_shards.dart @leehack
+tool/ci/test_shard_weights.json @leehack
+tool/ci/litert_lm_temp_canary.sh @leehack
+tool/ci/supervise_chrome_test.py @leehack
+test/ci/test_supervise_chrome_test.py @leehack
+
+example/chat_app/linux/runner/my_application.cc @leehack
+
+/example/chat_app/integration_test/flutter_image_shutdown_probe.dart @leehack
+/example/chat_app/test/flutter_image_shutdown_e2e_test.dart @leehack
+
+/test/fixtures/image_vm_shutdown_probe.dart @leehack
+
+/example/chat_app/integration_test/image_generation_e2e_test.dart @leehack
+/example/chat_app/integration_test/support/image_evidence.dart @leehack
+/tool/testing/verify_image_e2e_evidence.dart @leehack
+
+ffigen_litert_lm_embedding.yaml @leehack
+lib/src/backends/litert_lm/litert_lm_embedding_bindings.dart @leehack
+
+# Independent Genkit publication and archive boundaries.
+/packages/genkit_llamadart/ @leehack
+/.pubignore @leehack
+/tool/release/ @leehack
+/test/ci/test_genkit_release.py @leehack
+
+/tool/ci/check_genkit_package_score.py @leehack
+/tool/ci/markdown_test_suites.txt @leehack
+/test/unit/tooling/markdown_test_suites_test.dart @leehack
+/test/ci/test_genkit_package_score.py @leehack
+
+# Public capability coverage and package-consumer release gates.
+/packages/llamadart_validation/assets/capability_coverage.json @leehack
+/test/unit/tooling/validation_coverage_test.dart @leehack
+/test/unit/tooling/support/validation_coverage.dart @leehack
+/test/ci/test_core_archive.py @leehack
+/test/unit/tooling/core_archive_test.dart @leehack
+
+# Qwen3 CPU tokenizer fixture qualification.
+/tool/litert_lm_tokenizer_fixture.dart @leehack
+/test/unit/tooling/litert_lm_tokenizer_fixture_test.dart @leehack
+
+# Windows registry model-backed qualification and its orchestration.
+/test/fixtures/windows_ggml_registry_qualification/ @leehack
+/test/integration/windows_ggml_registry_qualification_test.dart @leehack
+/tool/testing/run_local_e2e.dart @leehack
+
+# Private Android release-instrumentation class retention.
+/example/chat_app/android/app/consumer-profile-proguard-rules.pro @leehack

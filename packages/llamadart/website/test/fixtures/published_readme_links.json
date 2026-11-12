@@ -1,0 +1,90 @@
+{
+  "release": "0.17.0",
+  "links": [
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/platforms/native-build-hooks#desktop-setup-report",
+      "destination": "platforms/diagnose-setup#desktop-setup-report"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/platforms/native-build-hooks#isolated-native-check",
+      "destination": "platforms/diagnose-setup#isolated-native-check"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/getting-started/installation#fresh-macos-swiftpm-bootstrap",
+      "destination": "platforms/apple-setup#fresh-macos-swiftpm-bootstrap"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/getting-started/installation#flutter-macos-litert-lm-build-phase",
+      "destination": "platforms/apple-setup#flutter-macos-litert-lm-build-phase"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/platforms/native-build-hooks#apple-privacy-manifest",
+      "destination": "platforms/apple-setup#apple-privacy-manifest"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/next/guides/image-generation#vae-tiling",
+      "destination": "guides/image-generation-settings#vae-tiling"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/next/guides/image-generation#conditioning-cache",
+      "destination": "guides/image-generation-settings#conditioning-cache"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/next/guides/image-generation#module-placement-and-gpu-memory",
+      "destination": "guides/image-generation-settings#module-placement-and-gpu-memory"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/next/guides/image-generation#seamless-textures",
+      "destination": "guides/image-generation-advanced#seamless-textures"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/next/guides/image-generation#local-checkpoint-sets",
+      "destination": "guides/image-generation-advanced#local-checkpoint-sets"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/next/guides/image-generation#image-editing",
+      "destination": "guides/image-generation-advanced#image-editing"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/next/guides/image-generation#controlnet",
+      "destination": "guides/image-generation-advanced#controlnet"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/next/guides/image-generation#hires-fix",
+      "destination": "guides/image-generation-advanced#hires-fix"
+    },
+    {
+      "readme": "README.md",
+      "url": "https://llamadart.leehack.com/docs/next/guides/image-generation#reference-image-editing",
+      "destination": "guides/image-generation-advanced#reference-image-editing"
+    },
+    {
+      "readme": "packages/llamadart_llama_cpp_flutter/README.md",
+      "url": "https://llamadart.leehack.com/docs/getting-started/installation#fresh-macos-swiftpm-bootstrap",
+      "destination": "platforms/apple-setup#fresh-macos-swiftpm-bootstrap"
+    },
+    {
+      "readme": "packages/llamadart_litert_lm_flutter/README.md",
+      "url": "https://llamadart.leehack.com/docs/getting-started/installation#fresh-macos-swiftpm-bootstrap",
+      "destination": "platforms/apple-setup#fresh-macos-swiftpm-bootstrap"
+    },
+    {
+      "readme": "packages/llamadart_stable_diffusion_flutter/README.md",
+      "url": "https://llamadart.leehack.com/docs/getting-started/installation#fresh-macos-swiftpm-bootstrap",
+      "destination": "platforms/apple-setup#fresh-macos-swiftpm-bootstrap"
+    }
+  ]
+}

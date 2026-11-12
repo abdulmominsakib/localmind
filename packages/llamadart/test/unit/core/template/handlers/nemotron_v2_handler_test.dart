@@ -9,6 +9,18 @@ import 'package:llamadart/src/core/template/handlers/nemotron_v2_handler.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test(
+    'NemotronV2Handler.toolCallOpening finds a whole or partial opening',
+    () {
+      expect(
+        NemotronV2Handler.toolCallOpening('Let me check. <TOOLCALL>...'),
+        14,
+      );
+      expect(NemotronV2Handler.toolCallOpening('Let me check. <TOOL'), 14);
+      expect(NemotronV2Handler.toolCallOpening('Use <TOOL> or <x>.'), 18);
+    },
+  );
+
   test('NemotronV2Handler renders lazy grammar and parses TOOLCALL blocks', () {
     final handler = NemotronV2Handler();
     final tools = [

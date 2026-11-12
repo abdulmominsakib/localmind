@@ -1,28 +1,75 @@
-import '../backend.dart';
+import '../../core/engine/engine_observer.dart';
+import '../../core/exceptions.dart';
 import '../../core/models/chat/content_part.dart';
+import '../../core/models/chat/chat_message.dart';
+import '../../core/models/chat/completion_chunk.dart';
+import '../../core/models/inference/tool_choice.dart';
+import '../../core/models/tools/tool_definition.dart';
 import '../../core/models/config/log_level.dart';
 import '../../core/models/inference/generation_params.dart';
+import '../../core/models/inference/generation_usage.dart';
 import '../../core/models/inference/model_params.dart';
+import '../../core/models/inference/model_params_runtime_support.dart';
+import '../../core/models/inference/embedding.dart';
+import '../../core/models/inference/next_token_scores.dart';
+import '../../core/models/model_format.dart';
+import '../../core/template/media_placeholders.dart';
+import '../backend.dart';
 import '../litert_lm/litert_lm_backend_web.dart';
 import '../webgpu/webgpu_backend.dart';
 
 /// Creates a web backend that can route between multiple web runtimes.
 LlamaBackend createBackend() => WebAutoBackend();
 
+/// Creates the explicit LiteRT-LM Web text-history router.
+LlamaBackend createTextHistoryBackend() => WebAutoBackend.withTextHistory();
+
 /// Uses the unified web backend implementation.
+///
+/// The runtime fetches a model URL itself, so the URL picks the runtime before
+/// any content is read: an explicit [ModelFormat], then a `.litertlm` path
+/// extension, select LiteRT-LM, and anything else uses the llama.cpp WebGPU
+/// bridge.
 class WebAutoBackend
     implements
+        BackendRuntimeIdentity,
+        BackendModelFormatRouting,
+        BackendLoadCheck,
         LlamaBackend,
         BackendAvailability,
+        BackendLoraSupport,
+        BackendMultimodalSupport,
+        BackendChatScope,
         BackendEmbeddingsSupport,
+        BackendMultimodalEmbeddings,
         BackendBatchEmbeddings,
+        BackendPromptSpeechToTextSupport,
+        BackendGrammarConstraintsSupport,
+        BackendLazyGrammarSupport,
+        BackendDeferredEngineCreation,
+        BackendTextToSpeech,
+        BackendTextToSpeechModelSupport,
+        BackendDecision,
+        BackendGenerationCapabilitiesSupport,
+        BackendGenerationUsageReporting,
+        BackendGenerationLimitReporting,
+        BackendGenerationLimitSupport,
+        BackendRuntimeToolCalls,
+        BackendChatPromptGeneration,
+        BackendNextTokenScoring,
+        BackendNextTokenScoringSupport,
         BackendStatePersistence,
         BackendStatePersistenceSupport {
+  static const String _decisionUnsupportedMessage =
+      'The active Web runtime does not run decision models. Load a '
+      'ModernBERT encoder GGUF, which uses the llama.cpp WebGPU bridge.';
+
   final LlamaBackend Function() _webGpuFactory;
   final LlamaBackend Function() _liteRtLmFactory;
 
   LlamaBackend? _delegate;
-  _WebBackendKind? _delegateKind;
+  int _embeddingCancelEpoch = 0;
+  LlamaRuntime? _delegateKind;
   LlamaLogLevel _currentLogLevel = LlamaLogLevel.warn;
 
   /// Creates a web backend router.
@@ -38,12 +85,34 @@ class WebAutoBackend
        _liteRtLmFactory = liteRtLmFactory ?? (() => LiteRtLmBackend()) {
     if (webBackend != null) {
       _delegate = webBackend;
-      _delegateKind = _WebBackendKind.llamaCpp;
+      _delegateKind = LlamaRuntime.llamaCpp;
     }
   }
 
+  /// Creates an internal Web router with LiteRT-LM text history enabled.
+  ///
+  /// Only a delegate exposing the native chat SPI receives structured chat.
+  /// The original constructor preserves legacy/custom subclass dispatch.
+  factory WebAutoBackend.withTextHistory({
+    LlamaBackend? webBackend,
+    LlamaBackend Function()? webGpuFactory,
+    LlamaBackend Function()? liteRtLmFactory,
+  }) => _TextHistoryWebAutoBackend(
+    webBackend: webBackend,
+    webGpuFactory: webGpuFactory,
+    liteRtLmFactory: liteRtLmFactory,
+  );
+
   @override
   bool get isReady => _delegate?.isReady ?? false;
+
+  @override
+  String? checkLoad(ModelParams params, ModelFormat? format) {
+    if (format == null) return null;
+    checkModelParamsSupportedBy(params, format.runtime, web: true);
+    if (format.runtime == LlamaRuntime.liteRtLm) liteRtLmWebCheckLoad(params);
+    return null;
+  }
 
   @override
   bool get supportsStatePersistence {
@@ -56,6 +125,39 @@ class WebAutoBackend
   }
 
   @override
+  bool get supportsNextTokenScoring {
+    final delegate = _delegate;
+    if (delegate is BackendNextTokenScoringSupport) {
+      return (delegate as BackendNextTokenScoringSupport)
+          .supportsNextTokenScoring;
+    }
+    return delegate is BackendNextTokenScoring;
+  }
+
+  @override
+  Future<LlamaNextTokenScores> scoreNextToken(
+    int contextHandle,
+    String prompt, {
+    required List<int> candidates,
+    required int topK,
+    required bool reusePromptPrefix,
+  }) {
+    final delegate = _requireDelegate();
+    if (delegate is BackendNextTokenScoring) {
+      return (delegate as BackendNextTokenScoring).scoreNextToken(
+        contextHandle,
+        prompt,
+        candidates: candidates,
+        topK: topK,
+        reusePromptPrefix: reusePromptPrefix,
+      );
+    }
+    throw UnsupportedError(
+      'Next-token scoring is not supported by the active web backend.',
+    );
+  }
+
+  @override
   bool get supportsEmbeddings {
     final delegate = _delegate;
     if (delegate is BackendEmbeddingsSupport) {
@@ -65,8 +167,72 @@ class WebAutoBackend
   }
 
   @override
+  bool get supportsGrammarConstraints {
+    final delegate = _delegate;
+    if (delegate is BackendGrammarConstraintsSupport) {
+      return (delegate as BackendGrammarConstraintsSupport)
+          .supportsGrammarConstraints;
+    }
+    return true;
+  }
+
+  @override
+  bool get supportsMultiTurnChat {
+    final delegate = _delegate;
+    return delegate is! BackendChatScope ||
+        (delegate as BackendChatScope).supportsMultiTurnChat;
+  }
+
+  @override
+  bool get supportsToolCalling {
+    final delegate = _delegate;
+    return delegate is! BackendChatScope ||
+        (delegate as BackendChatScope).supportsToolCalling;
+  }
+
+  @override
+  bool get supportsLazyGrammar {
+    final delegate = _delegate;
+    if (delegate is BackendLazyGrammarSupport) {
+      return (delegate as BackendLazyGrammarSupport).supportsLazyGrammar;
+    }
+    return true;
+  }
+
+  @override
+  bool get defersEngineCreation {
+    final delegate = _delegate;
+    if (delegate is BackendDeferredEngineCreation) {
+      return (delegate as BackendDeferredEngineCreation).defersEngineCreation;
+    }
+    return false;
+  }
+
+  @override
+  bool get supportsPromptSpeechToText {
+    final delegate = _delegate;
+    final speechDelegate = delegate is BackendPromptSpeechToTextSupport
+        ? delegate as BackendPromptSpeechToTextSupport
+        : null;
+    return speechDelegate?.supportsPromptSpeechToText ?? false;
+  }
+
+  @override
+  String? get promptSpeechToTextUnsupportedReason {
+    final delegate = _delegate;
+    final speechDelegate = delegate is BackendPromptSpeechToTextSupport
+        ? delegate as BackendPromptSpeechToTextSupport
+        : null;
+    if (speechDelegate != null) {
+      return speechDelegate.promptSpeechToTextUnsupportedReason;
+    }
+    return 'The active Web runtime does not expose validated typed '
+        'speech-to-text support.';
+  }
+
+  @override
   Future<int> modelLoad(String path, ModelParams params) async {
-    final delegate = await _delegateForSource(path);
+    final delegate = await _delegateFor(_runtimeForSource(path));
     return delegate.modelLoad(path, params);
   }
 
@@ -74,9 +240,45 @@ class WebAutoBackend
   Future<int> modelLoadFromUrl(
     String url,
     ModelParams params, {
-    Function(double p1)? onProgress,
+    void Function(double p1)? onProgress,
   }) async {
-    final delegate = await _delegateForSource(url);
+    final delegate = await _delegateFor(_runtimeForSource(url));
+    return delegate.modelLoadFromUrl(url, params, onProgress: onProgress);
+  }
+
+  @override
+  Future<int> modelLoadAs(
+    String path,
+    ModelParams params,
+    ModelFormat format,
+  ) async {
+    final delegate = await _delegateFor(format.runtime);
+    if (delegate is BackendModelFormatRouting) {
+      return (delegate as BackendModelFormatRouting).modelLoadAs(
+        path,
+        params,
+        format,
+      );
+    }
+    return delegate.modelLoad(path, params);
+  }
+
+  @override
+  Future<int> modelLoadFromUrlAs(
+    String url,
+    ModelParams params,
+    ModelFormat format, {
+    void Function(double progress)? onProgress,
+  }) async {
+    final delegate = await _delegateFor(format.runtime);
+    if (delegate is BackendModelFormatRouting) {
+      return (delegate as BackendModelFormatRouting).modelLoadFromUrlAs(
+        url,
+        params,
+        format,
+        onProgress: onProgress,
+      );
+    }
     return delegate.modelLoadFromUrl(url, params, onProgress: onProgress);
   }
 
@@ -116,8 +318,188 @@ class WebAutoBackend
   }
 
   @override
+  Stream<List<int>> generateChatPrompt(
+    int contextHandle,
+    String prompt,
+    GenerationParams params, {
+    required String mediaMarker,
+    List<LlamaContentPart>? parts,
+  }) {
+    final delegate = _requireDelegate();
+    if (delegate is BackendChatPromptGeneration) {
+      return (delegate as BackendChatPromptGeneration).generateChatPrompt(
+        contextHandle,
+        prompt,
+        params,
+        mediaMarker: mediaMarker,
+        parts: parts,
+      );
+    }
+    return delegate.generate(
+      contextHandle,
+      prompt.replaceAll(mediaMarker, mtmdMediaMarker),
+      params,
+      parts: parts,
+    );
+  }
+
+  @override
   void cancelGeneration() {
+    _embeddingCancelEpoch++;
     _delegate?.cancelGeneration();
+  }
+
+  @override
+  Future<String?> textToSpeechModelUnsupportedReason(
+    BackendTextToSpeechModel model,
+  ) async => webTextToSpeechModelUnsupportedReason(model);
+
+  @override
+  Future<BackendTextToSpeechCapabilities> textToSpeechCapabilities(
+    int contextHandle,
+    int mmContextHandle,
+  ) {
+    final delegate = _delegate;
+    if (delegate is BackendTextToSpeech) {
+      return (delegate as BackendTextToSpeech).textToSpeechCapabilities(
+        contextHandle,
+        mmContextHandle,
+      );
+    }
+    return Future<BackendTextToSpeechCapabilities>.value(
+      const BackendTextToSpeechCapabilities(
+        isSupported: false,
+        unsupportedReason:
+            'The active Web runtime does not expose dedicated text-to-speech.',
+      ),
+    );
+  }
+
+  @override
+  Future<BackendTextToSpeechResult> synthesizeTextToSpeech(
+    int contextHandle,
+    int mmContextHandle,
+    BackendTextToSpeechRequest request, {
+    void Function(BackendTextToSpeechProgress progress)? onProgress,
+  }) {
+    final delegate = _delegate;
+    if (delegate is BackendTextToSpeech) {
+      return (delegate as BackendTextToSpeech).synthesizeTextToSpeech(
+        contextHandle,
+        mmContextHandle,
+        request,
+        onProgress: onProgress,
+      );
+    }
+    throw LlamaUnsupportedException(
+      'Text-to-speech is not supported by the active Web runtime.',
+    );
+  }
+
+  @override
+  void cancelTextToSpeech() {
+    final delegate = _delegate;
+    if (delegate is BackendTextToSpeech) {
+      (delegate as BackendTextToSpeech).cancelTextToSpeech();
+    }
+  }
+
+  @override
+  Future<BackendGenerationCapabilities> generationCapabilities() async {
+    final delegate = _delegate;
+    if (delegate is! BackendGenerationCapabilitiesSupport) {
+      return const BackendGenerationCapabilities(
+        presencePenalty: false,
+        minP: false,
+        thinkingBudget: false,
+      );
+    }
+    return (delegate as BackendGenerationCapabilitiesSupport)
+        .generationCapabilities();
+  }
+
+  @override
+  Future<BackendDecisionCapabilities> decisionCapabilities(int modelHandle) {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendDecision) {
+      return Future<BackendDecisionCapabilities>.value(
+        const BackendDecisionCapabilities(
+          isSupported: false,
+          unsupportedReason: _decisionUnsupportedMessage,
+        ),
+      );
+    }
+    return (delegate as BackendDecision).decisionCapabilities(modelHandle);
+  }
+
+  @override
+  Future<BackendDecisionHeadInfo> decisionHeadLoad(
+    int modelHandle,
+    String headPath, {
+    String? configPath,
+  }) {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendDecision) {
+      throw LlamaUnsupportedException(_decisionUnsupportedMessage);
+    }
+    return (delegate as BackendDecision).decisionHeadLoad(
+      modelHandle,
+      headPath,
+      configPath: configPath,
+    );
+  }
+
+  @override
+  Future<List<BackendDecisionOutput>> decisionRun(
+    int headHandle,
+    List<BackendDecisionSequence> sequences,
+  ) {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendDecision) {
+      throw LlamaUnsupportedException(_decisionUnsupportedMessage);
+    }
+    return (delegate as BackendDecision).decisionRun(headHandle, sequences);
+  }
+
+  @override
+  Future<void> decisionHeadFree(int headHandle) {
+    final delegate = _delegate;
+    if (delegate is BackendDecision) {
+      return (delegate as BackendDecision).decisionHeadFree(headHandle);
+    }
+    return Future<void>.value();
+  }
+
+  @override
+  Future<LlamaEmbeddingCapabilities> getEmbeddingCapabilities(
+    int contextHandle,
+  ) async {
+    final delegate = _delegate;
+    if (delegate == null) return const LlamaEmbeddingCapabilities();
+    return delegate.probeEmbeddingCapabilities(contextHandle);
+  }
+
+  @override
+  Future<List<List<double>>> embedContentBatch(
+    int contextHandle,
+    List<LlamaEmbeddingInput> inputs, {
+    bool normalize = true,
+  }) {
+    final cancelEpoch = _embeddingCancelEpoch;
+    return _requireDelegate().embedContentWithFallback(
+      contextHandle,
+      inputs,
+      normalize: normalize,
+      onCompute: (compute) {
+        // Delegate cancellation starts only after the router's own probe.
+        if (cancelEpoch != _embeddingCancelEpoch) {
+          throw LlamaInferenceException(
+            'Content embedding cancelled before dispatch.',
+          );
+        }
+        return compute();
+      },
+    );
   }
 
   @override
@@ -240,17 +622,61 @@ class WebAutoBackend
 
   @override
   Future<void> setLoraAdapter(int contextHandle, String path, double scale) {
-    return _requireDelegate().setLoraAdapter(contextHandle, path, scale);
+    return _requireLora().setLoraAdapter(contextHandle, path, scale);
   }
 
   @override
   Future<void> removeLoraAdapter(int contextHandle, String path) {
-    return _requireDelegate().removeLoraAdapter(contextHandle, path);
+    return _requireLora().removeLoraAdapter(contextHandle, path);
   }
 
   @override
   Future<void> clearLoraAdapters(int contextHandle) {
-    return _requireDelegate().clearLoraAdapters(contextHandle);
+    return _requireLora().clearLoraAdapters(contextHandle);
+  }
+
+  BackendLoraSupport _requireLora() {
+    final delegate = _requireDelegate();
+    if (delegate is BackendLoraSupport) return delegate as BackendLoraSupport;
+    throw LlamaUnsupportedException(
+      'LoRA adapters are not supported by the active Web runtime.',
+    );
+  }
+
+  @override
+  LlamaRuntime? get runtime {
+    final delegate = _delegate;
+    return delegate is BackendRuntimeIdentity
+        ? (delegate as BackendRuntimeIdentity).runtime
+        : null;
+  }
+
+  @override
+  String? get generationLimitUnsupportedReason {
+    final delegate = _delegate;
+    return delegate is BackendGenerationLimitSupport
+        ? (delegate as BackendGenerationLimitSupport)
+              .generationLimitUnsupportedReason
+        : null;
+  }
+
+  @override
+  BackendGenerationLimit? generationLimitOf(Stream<List<int>> generation) =>
+      generationLimitReporterOf(_delegate)?.generationLimitOf(generation);
+
+  @override
+  List<LlamaCompletionChunkToolCall>? runtimeToolCallsOf(
+    Stream<List<int>> generation,
+  ) => runtimeToolCallReporterOf(_delegate)?.runtimeToolCallsOf(generation);
+
+  @override
+  LlamaGenerationUsage? generationUsageOf(Stream<List<int>> generation) {
+    final delegate = _delegate;
+    return delegate is BackendGenerationUsageReporting
+        ? (delegate as BackendGenerationUsageReporting).generationUsageOf(
+            generation,
+          )
+        : null;
   }
 
   @override
@@ -305,22 +731,35 @@ class WebAutoBackend
 
   @override
   Future<int?> multimodalContextCreate(int modelHandle, String mmProjPath) {
-    return _requireDelegate().multimodalContextCreate(modelHandle, mmProjPath);
+    return _requireMultimodal().multimodalContextCreate(
+      modelHandle,
+      mmProjPath,
+    );
   }
 
   @override
   Future<void> multimodalContextFree(int mmContextHandle) {
-    return _requireDelegate().multimodalContextFree(mmContextHandle);
+    return _requireMultimodal().multimodalContextFree(mmContextHandle);
+  }
+
+  BackendMultimodalSupport _requireMultimodal() {
+    final delegate = _requireDelegate();
+    if (delegate is BackendMultimodalSupport) {
+      return delegate as BackendMultimodalSupport;
+    }
+    throw LlamaUnsupportedException(
+      'Multimodal projectors are not supported by the active Web runtime.',
+    );
   }
 
   @override
   Future<bool> supportsVision(int mmContextHandle) {
-    return _requireDelegate().supportsVision(mmContextHandle);
+    return _requireMultimodal().supportsVision(mmContextHandle);
   }
 
   @override
   Future<bool> supportsAudio(int mmContextHandle) {
-    return _requireDelegate().supportsAudio(mmContextHandle);
+    return _requireMultimodal().supportsAudio(mmContextHandle);
   }
 
   @override
@@ -347,8 +786,7 @@ class WebAutoBackend
     );
   }
 
-  Future<LlamaBackend> _delegateForSource(String source) async {
-    final kind = _kindForSource(source);
+  Future<LlamaBackend> _delegateFor(LlamaRuntime kind) async {
     if (_delegate != null && _delegateKind == kind) {
       return _delegate!;
     }
@@ -359,8 +797,8 @@ class WebAutoBackend
     await oldDelegate?.dispose();
 
     final delegate = switch (kind) {
-      _WebBackendKind.liteRtLm => _liteRtLmFactory(),
-      _WebBackendKind.llamaCpp => _webGpuFactory(),
+      LlamaRuntime.liteRtLm => _liteRtLmFactory(),
+      LlamaRuntime.llamaCpp => _webGpuFactory(),
     };
     await delegate.setLogLevel(_currentLogLevel);
     _delegate = delegate;
@@ -368,12 +806,9 @@ class WebAutoBackend
     return delegate;
   }
 
-  _WebBackendKind _kindForSource(String source) {
-    final path = _sourcePath(source).toLowerCase();
-    if (path.endsWith('.litertlm')) {
-      return _WebBackendKind.liteRtLm;
-    }
-    return _WebBackendKind.llamaCpp;
+  LlamaRuntime _runtimeForSource(String source) {
+    return ModelFormat.fromPath(_sourcePath(source))?.runtime ??
+        LlamaRuntime.llamaCpp;
   }
 
   String _sourcePath(String source) {
@@ -388,10 +823,81 @@ class WebAutoBackend
   LlamaBackend _requireDelegate() {
     final delegate = _delegate;
     if (delegate == null) {
-      throw StateError('No web backend has been selected. Load a model first.');
+      throw LlamaStateException(
+        'No web backend has been selected. Load a model with '
+        'LlamaEngine.load or setModel first.',
+      );
     }
     return delegate;
   }
 }
 
-enum _WebBackendKind { llamaCpp, liteRtLm }
+// The explicit text-history factory selects this private subtype without
+// changing the required members or dispatch of the public generative class.
+final class _TextHistoryWebAutoBackend extends WebAutoBackend
+    implements BackendNativeChatGeneration, BackendChatMessageValidation {
+  _TextHistoryWebAutoBackend({
+    super.webBackend,
+    super.webGpuFactory,
+    LlamaBackend Function()? liteRtLmFactory,
+  }) : super(
+         liteRtLmFactory: liteRtLmFactory ?? LiteRtLmBackend.withTextHistory,
+       );
+
+  @override
+  bool get supportsNativeChatGeneration {
+    final delegate = _delegate;
+    return delegate is BackendNativeChatGeneration &&
+        (delegate as BackendNativeChatGeneration).supportsNativeChatGeneration;
+  }
+
+  @override
+  bool get requiresStructuredChatInput {
+    final delegate = _delegate;
+    return delegate is BackendChatMessageValidation &&
+        (delegate as BackendChatMessageValidation).requiresStructuredChatInput;
+  }
+
+  @override
+  void validateChatMessages(List<LlamaChatMessage> messages) {
+    final delegate = _delegate;
+    if (delegate is BackendChatMessageValidation) {
+      (delegate as BackendChatMessageValidation).validateChatMessages(messages);
+    }
+  }
+
+  @override
+  Stream<List<int>> generateChat(
+    int contextHandle,
+    List<LlamaChatMessage> messages,
+    GenerationParams params, {
+    List<ToolDefinition>? tools,
+    ToolChoice toolChoice = ToolChoice.auto,
+    bool parallelToolCalls = false,
+    bool enableThinking = true,
+    Map<String, dynamic>? chatTemplateKwargs,
+    String? sourceLangCode,
+    String? targetLangCode,
+    DateTime? templateNow,
+  }) {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendNativeChatGeneration) {
+      throw LlamaUnsupportedException(
+        'The selected Web runtime has no structured chat API.',
+      );
+    }
+    return (delegate as BackendNativeChatGeneration).generateChat(
+      contextHandle,
+      messages,
+      params,
+      tools: tools,
+      toolChoice: toolChoice,
+      parallelToolCalls: parallelToolCalls,
+      enableThinking: enableThinking,
+      chatTemplateKwargs: chatTemplateKwargs,
+      sourceLangCode: sourceLangCode,
+      targetLangCode: targetLangCode,
+      templateNow: templateNow,
+    );
+  }
+}

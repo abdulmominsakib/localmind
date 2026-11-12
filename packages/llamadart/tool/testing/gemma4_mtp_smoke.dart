@@ -25,8 +25,10 @@ Future<void> main(List<String> args) async {
       'inference matters for private, offline, user-facing AI applications. Do '
       'not use bullets.';
   try {
-    await engine.setDartLogLevel(LlamaLogLevel.warn);
-    await engine.setNativeLogLevel(LlamaLogLevel.warn);
+    await LlamaLogging.configure(
+      level: LlamaLogLevel.warn,
+      nativeLevel: LlamaLogLevel.warn,
+    );
     await engine.loadModel(
       modelPath,
       modelParams: ModelParams(

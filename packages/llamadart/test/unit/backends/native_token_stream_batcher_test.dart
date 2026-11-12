@@ -23,10 +23,23 @@ void main() {
       );
     });
 
-    test('emits first chunk immediately and batches subsequent chunks', () {
+    test('emits first non-empty chunk immediately', () {
+      final batcher = NativeTokenStreamBatcher(
+        tokenThreshold: 8,
+        byteThreshold: 512,
+      );
+
+      final emitted = batcher.add([1, 2, 3]);
+      expect(emitted, [
+        [1, 2, 3],
+      ]);
+      expect(batcher.flush(), isNull);
+    });
+
+    test('flushes buffered chunks by token threshold', () {
       final batcher = NativeTokenStreamBatcher(
         tokenThreshold: 3,
-        byteThreshold: 99,
+        byteThreshold: 512,
       );
 
       expect(batcher.add([1]), [
@@ -39,7 +52,7 @@ void main() {
       ]);
     });
 
-    test('flushes buffered bytes by byte threshold and final flush', () {
+    test('flushes buffered chunks by byte threshold', () {
       final batcher = NativeTokenStreamBatcher(
         tokenThreshold: 99,
         byteThreshold: 4,
@@ -52,8 +65,20 @@ void main() {
       expect(batcher.add([4, 5]), [
         [2, 3, 4, 5],
       ]);
-      expect(batcher.add([6]), isEmpty);
-      expect(batcher.flush(), [6]);
+    });
+
+    test('flush emits remaining buffered bytes at end', () {
+      final batcher = NativeTokenStreamBatcher(
+        tokenThreshold: 99,
+        byteThreshold: 99,
+      );
+
+      expect(batcher.add([1]), [
+        [1],
+      ]);
+      expect(batcher.add([2]), isEmpty);
+      expect(batcher.add([3]), isEmpty);
+      expect(batcher.flush(), [2, 3]);
       expect(batcher.flush(), isNull);
     });
   });

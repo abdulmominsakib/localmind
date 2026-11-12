@@ -1,0 +1,22 @@
+{
+  "account": "your-account@example.com",
+  "project": "your-credit-project",
+  "settings": {
+    "zone": "us-central1-a",
+    "machine_type": "g2-standard-4",
+    "image": "projects/your-project/global/images/your-qualified-gpu-image",
+    "gpu_ready_image": true,
+    "driver_version": "REPLACE_WITH_QUALIFIED_DRIVER",
+    "disk_gb": 40,
+    "network": "your-existing-network",
+    "iap_tag": "your-iap-ssh-tag",
+    "credit": {
+      "verified_at": "REPLACE_WITH_CURRENT_UTC_TIME",
+      "expires_at": "REPLACE_WITH_VERIFIED_CREDIT_EXPIRY",
+      "applicable": false,
+      "available_usd": 0,
+      "maximum_run_usd": 0,
+      "evidence": "REPLACE_WITH_CHECKED_BILLING_CREDIT_SOURCE"
+    }
+  }
+}

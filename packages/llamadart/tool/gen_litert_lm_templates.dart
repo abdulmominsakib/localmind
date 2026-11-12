@@ -3,16 +3,18 @@
 //
 // LiteRT-LM `.litertlm` bundles can't expose their chat template through the
 // native FFI, so the backend supplies one itself keyed by model family. The
-// jinja sources here are copied verbatim from the templates llama.cpp ships
-// (so they stay in lockstep with the llama.cpp backend's rendering/parsing),
-// and this tool embeds them as Dart consts.
+// jinja sources here start from the templates llama.cpp ships (so they stay in
+// lockstep with the llama.cpp backend's rendering/parsing), and this tool
+// embeds them as Dart consts. A source may add a content-shape adapter for the
+// native runtime that keeps the rendered prompt for equivalent text input, as
+// `qwen3.jinja` does.
 //
 // To add a model family:
 //   1. Copy its canonical jinja into `tool/litert_lm_templates/<id>.jinja`.
 //   2. Add an `_Entry` to `_manifest` below (id, family substrings, bos/eos).
 //   3. Run: dart run tool/gen_litert_lm_templates.dart
 //
-// See `doc/litert_lm_templates.md`.
+// See https://github.com/leehack/llamadart/blob/main/doc/litert_lm_templates.md
 
 import 'dart:io';
 
@@ -43,7 +45,7 @@ class _Entry {
 
 // Order matters: the registry matches top-to-bottom and the first hit wins, so
 // more specific families must precede broader ones (gemma-4 and gemma-3n before
-// gemma-3). See `doc/litert_lm_templates.md`.
+// gemma-3).
 const List<_Entry> _manifest = [
   _Entry(
     id: 'gemma4',

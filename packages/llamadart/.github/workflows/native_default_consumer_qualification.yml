@@ -1,0 +1,167 @@
+name: Default native consumer and AOT qualification
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Reviewed selected branch commit (full lowercase SHA)
+        required: true
+        type: string
+      expected_native_tag:
+        description: Verify the checked-in pin; v0.8.0-2 is pipeline-only evidence
+        required: true
+        type: choice
+        options: ['v0.8.0-2', 'v0.8.0-3', 'v0.9.0']
+
+  workflow_call:
+    inputs:
+      expected_sha:
+        required: true
+        type: string
+      expected_native_tag:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-default-aot-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    name: Default consumer and distributed AOT (${{ matrix.platform }})
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'leehack/llamadart' && github.run_attempt == 1 }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            platform: macos
+            arch: arm64
+          - os: windows-2022
+            platform: windows
+            arch: x64
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      QUALIFICATION_PLATFORM: ${{ matrix.platform }}
+      QUALIFICATION_ARCH: ${{ matrix.arch }}
+      LLAMADART_DEFAULT_AOT_EXPECTED_SHA: ${{ inputs.expected_sha }}
+      LLAMADART_DEFAULT_AOT_EXPECTED_NATIVE_TAG: ${{ inputs.expected_native_tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Bind invocation-owned runtime paths
+        id: paths
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / (
+              'native-default-aot-' + os.environ['GITHUB_RUN_ID'] + '-' + os.environ['GITHUB_RUN_ATTEMPT'])
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as stream:
+              stream.write('LLAMADART_DEFAULT_AOT_MODEL_PATH=' + str(root / 'qwen2.5-1.5b-instruct-q4_k_m.gguf') + '\n')
+              stream.write('LLAMADART_DEFAULT_AOT_OUTPUT_ROOT=' + str(root / 'results') + '\n')
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.1'
+          channel: stable
+          cache: false
+      - name: Verify source and download the fixed public fixture once
+        id: inputs
+        shell: python
+        run: |
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import platform
+          import re
+          import sys
+          import subprocess
+          import urllib.request
+
+          output = Path(os.environ['LLAMADART_DEFAULT_AOT_OUTPUT_ROOT'])
+          root = output.parent
+          root.mkdir(parents=True, exist_ok=False)
+          receipt = root / 'preflight.json'
+          record = {'qualified': False, 'status': 'started'}
+          receipt.write_text(json.dumps(record), encoding='utf-8')
+          expected = os.environ['LLAMADART_DEFAULT_AOT_EXPECTED_SHA']
+          tag = os.environ['LLAMADART_DEFAULT_AOT_EXPECTED_NATIVE_TAG']
+          if (not re.fullmatch(r'[0-9a-f]{40}', expected) or expected == '0' * 40
+                  or expected != os.environ['GITHUB_SHA']
+                  or tag not in ('v0.8.0-2', 'v0.8.0-3', 'v0.9.0')):
+              raise SystemExit('qualification input identity rejected')
+          machine = platform.machine().lower()
+          host = (os.environ['QUALIFICATION_PLATFORM'], os.environ['QUALIFICATION_ARCH'])
+          if not ((host == ('macos', 'arm64') and sys.platform == 'darwin' and machine == 'arm64')
+                  or (host == ('windows', 'x64') and sys.platform == 'win32' and machine in ('amd64', 'x86_64'))):
+              raise SystemExit('qualification host platform or architecture mismatch')
+          checkout = subprocess.run(['git', 'rev-parse', 'HEAD'], check=True,
+                                    capture_output=True, text=True).stdout.strip()
+          pin = Path('lib/src/hook/native_release_pins.dart').read_text(encoding='utf-8')
+          match = re.search(r"^const llamaCppTag = '([^']+)';$", pin, re.MULTILINE)
+          if checkout != expected or match is None or match[1] != tag:
+              raise SystemExit('qualification checkout or source pin mismatch')
+          url = 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/91cad51170dc346986eccefdc2dd33a9da36ead9/qwen2.5-1.5b-instruct-q4_k_m.gguf'
+          expected_bytes = 1117320736
+          expected_digest = '6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e'
+          model = Path(os.environ['LLAMADART_DEFAULT_AOT_MODEL_PATH'])
+          digest = hashlib.sha256()
+          size = 0
+          try:
+              opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+              with opener.open(url, timeout=60) as response, model.open('xb') as stream:
+                  while True:
+                      chunk = response.read(1024 * 1024)
+                      if not chunk:
+                          break
+                      size += len(chunk)
+                      if size > expected_bytes:
+                          raise ValueError('fixture size limit')
+                      digest.update(chunk)
+                      stream.write(chunk)
+              if size != expected_bytes or digest.hexdigest() != expected_digest:
+                  raise ValueError('fixture identity')
+          except Exception:
+              # Redirect locations and transport errors can contain signed URLs.
+              raise SystemExit('fixed model download or identity verification failed') from None
+          record.update(status='modelVerified', sourceSha=expected, nativeTag=tag,
+                        modelBytes=size, modelSha256=expected_digest)
+          receipt.write_text(json.dumps(record), encoding='utf-8')
+      - name: Qualify the ordinary default consumer and distributed AOT
+        id: qualification
+        shell: python
+        run: |
+          import os
+          import subprocess
+          import sys
+          command = [sys.executable,
+                     'test/fixtures/native_default_consumer_qualification/qualify.py',
+                     '--core-root', os.environ['GITHUB_WORKSPACE'],
+                     '--expected-core-sha', os.environ['LLAMADART_DEFAULT_AOT_EXPECTED_SHA'],
+                     '--expected-native-tag', os.environ['LLAMADART_DEFAULT_AOT_EXPECTED_NATIVE_TAG'],
+                     '--model', os.environ['LLAMADART_DEFAULT_AOT_MODEL_PATH'],
+                     '--output', os.environ['LLAMADART_DEFAULT_AOT_OUTPUT_ROOT']]
+          raise SystemExit(subprocess.call(command))
+      - name: Retain immutable qualification results, including failures
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-default-aot-${{ matrix.platform }}-${{ github.sha }}-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ env.LLAMADART_DEFAULT_AOT_OUTPUT_ROOT }}
+            ${{ runner.temp }}/native-default-aot-${{ github.run_id }}-${{ github.run_attempt }}/preflight.json
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 7

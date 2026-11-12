@@ -1,0 +1,31 @@
+{
+  "upstream_commit": "b2e5e9b28b2484fbf94b543432ece638996a8b97",
+  "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+  "cases": [
+    {
+      "name": "schema-types",
+      "emission": "<tool_call>\n<function=inspect>\n<parameter=code>\n123\n</parameter>\n<parameter=options>\n{}\n</parameter>\n<parameter=items>\n[]\n</parameter>\n<parameter=count>\n7\n</parameter>\n<parameter=active>\ntrue\n</parameter>\n<parameter=empty>\nnull\n</parameter>\n</function>\n</tool_call>",
+      "upstream_result": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "type": "function",
+            "function": {
+              "name": "inspect",
+              "arguments": "{\"code\":\"123\",\"options\":{},\"items\":[],\"count\":7,\"active\":true,\"empty\":null}"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "undeclared-function",
+      "emission": "<tool_call>\n<function=unknown>\n<parameter=code>\n123\n</parameter>\n<parameter=options>\n{}\n</parameter>\n<parameter=items>\n[]\n</parameter>\n<parameter=count>\n7\n</parameter>\n<parameter=active>\ntrue\n</parameter>\n<parameter=empty>\nnull\n</parameter>\n</function>\n</tool_call>",
+      "upstream_result": {
+        "role": "assistant",
+        "content": ""
+      }
+    }
+  ]
+}

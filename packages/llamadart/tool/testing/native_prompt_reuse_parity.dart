@@ -33,8 +33,10 @@ Future<void> main(List<String> arguments) async {
   );
 
   try {
-    await engine.setDartLogLevel(LlamaLogLevel.none);
-    await engine.setNativeLogLevel(LlamaLogLevel.warn);
+    await LlamaLogging.configure(
+      level: LlamaLogLevel.none,
+      nativeLevel: LlamaLogLevel.warn,
+    );
     await engine.loadModel(
       options.modelPath,
       modelParams: ModelParams(
@@ -47,6 +49,7 @@ Future<void> main(List<String> arguments) async {
 
     final checks = <Map<String, dynamic>>[];
     var mismatchCount = 0;
+    var emptyRunCount = 0;
     var totalChecks = 0;
 
     for (final prompt in effectivePrompts) {
@@ -69,25 +72,29 @@ Future<void> main(List<String> arguments) async {
           params: baseParams.copyWith(reusePromptPrefix: true),
         );
 
-        final exactMatch = baseline.output == reused.output;
+        final baselineText = baseline.output.comparable;
+        final reusedText = reused.output.comparable;
+        final exactMatch = baselineText == reusedText;
         if (!exactMatch) {
           mismatchCount++;
         }
+        final emptyOutput = baseline.output.isEmpty || reused.output.isEmpty;
+        if (emptyOutput) {
+          emptyRunCount++;
+        }
 
-        final diffIndex = _firstDiffIndex(baseline.output, reused.output);
+        final diffIndex = _firstDiffIndex(baselineText, reusedText);
         checks.add({
           'run': run,
           'prompt_preview': _preview(prompt),
           'exact_match': exactMatch,
+          'empty_output': emptyOutput,
           'baseline': baseline.toJson(),
           'reused': reused.toJson(),
-          'shared_prefix_chars': _sharedPrefixLength(
-            baseline.output,
-            reused.output,
-          ),
+          'shared_prefix_chars': _sharedPrefixLength(baselineText, reusedText),
           'first_diff_index': diffIndex,
-          'baseline_diff_excerpt': _excerptAround(baseline.output, diffIndex),
-          'reused_diff_excerpt': _excerptAround(reused.output, diffIndex),
+          'baseline_diff_excerpt': _excerptAround(baselineText, diffIndex),
+          'reused_diff_excerpt': _excerptAround(reusedText, diffIndex),
         });
         totalChecks++;
       }
@@ -105,6 +112,7 @@ Future<void> main(List<String> arguments) async {
       'summary': {
         'total_checks': totalChecks,
         'mismatches': mismatchCount,
+        'empty_runs': emptyRunCount,
         'match_rate': totalChecks == 0
             ? 0.0
             : (totalChecks - mismatchCount) / totalChecks,
@@ -114,9 +122,17 @@ Future<void> main(List<String> arguments) async {
 
     stdout.writeln(const JsonEncoder.withIndent('  ').convert(report));
 
-    if (options.failOnMismatch && mismatchCount > 0) {
-      exitCode = 1;
+    if (emptyRunCount > 0) {
+      stderr.writeln(
+        '$emptyRunCount run(s) produced no content, thinking or tool calls; '
+        'parity is not established.',
+      );
     }
+    exitCode = parityExitCode(
+      mismatches: mismatchCount,
+      emptyRuns: emptyRunCount,
+      failOnMismatch: options.failOnMismatch,
+    );
   } finally {
     await engine.dispose();
   }
@@ -128,26 +144,21 @@ Future<_CreateRun> _runCreate({
   required GenerationParams params,
 }) async {
   final stopwatch = Stopwatch()..start();
-  final output = StringBuffer();
   int? firstTokenLatencyMs;
 
-  await for (final chunk in engine.create([
-    LlamaChatMessage.fromText(role: LlamaChatRole.user, text: prompt),
-  ], params: params)) {
-    final content = chunk.choices.first.delta.content ?? '';
-    if (content.isNotEmpty && firstTokenLatencyMs == null) {
-      firstTokenLatencyMs = stopwatch.elapsedMilliseconds;
-    }
-    output.write(content);
-  }
+  final output = await collectParityOutput(
+    engine.create([
+      LlamaChatMessage.fromText(role: LlamaChatRole.user, text: prompt),
+    ], params: params),
+    onFirstOutput: () => firstTokenLatencyMs = stopwatch.elapsedMilliseconds,
+  );
 
   stopwatch.stop();
-  final outputText = output.toString();
-  final tokenCount = outputText.isEmpty
+  final tokenCount = output.isEmpty
       ? 0
-      : await engine.getTokenCount(outputText);
+      : await engine.getTokenCount(output.comparable);
   return _CreateRun(
-    output: outputText,
+    output: output,
     elapsedMs: stopwatch.elapsedMilliseconds,
     firstTokenLatencyMs: firstTokenLatencyMs,
     outputTokens: tokenCount,
@@ -262,8 +273,89 @@ void _printUsage() {
   stdout.writeln('  --help                   Show this help');
 }
 
+/// Everything a streamed completion emitted that the parity check compares.
+class ParityOutput {
+  /// Concatenated `delta.content`.
+  final String content;
+
+  /// Concatenated `delta.thinking`.
+  final String thinking;
+
+  /// One JSON-encoded entry per streamed tool-call delta.
+  final List<String> toolCalls;
+
+  /// Creates a [ParityOutput].
+  const ParityOutput({
+    required this.content,
+    required this.thinking,
+    required this.toolCalls,
+  });
+
+  /// Whether the run emitted no content, thinking or tool calls.
+  bool get isEmpty => content.isEmpty && thinking.isEmpty && toolCalls.isEmpty;
+
+  /// Text compared between the baseline and the reused run.
+  String get comparable => [
+    content,
+    if (thinking.isNotEmpty) '\n[thinking]\n$thinking',
+    if (toolCalls.isNotEmpty) '\n[tool_calls]\n${toolCalls.join('\n')}',
+  ].join();
+}
+
+/// Collects [chunks] into a [ParityOutput]; [onFirstOutput] fires on the first
+/// non-empty content, thinking or tool-call delta.
+Future<ParityOutput> collectParityOutput(
+  Stream<LlamaCompletionChunk> chunks, {
+  void Function()? onFirstOutput,
+}) async {
+  final content = StringBuffer();
+  final thinking = StringBuffer();
+  final toolCalls = <String>[];
+  var sawOutput = false;
+
+  await for (final chunk in chunks) {
+    for (final choice in chunk.choices) {
+      final delta = choice.delta;
+      final deltaContent = delta.content ?? '';
+      final deltaThinking = delta.thinking ?? '';
+      final deltaToolCalls = delta.toolCalls ?? const [];
+      content.write(deltaContent);
+      thinking.write(deltaThinking);
+      for (final call in deltaToolCalls) {
+        toolCalls.add(jsonEncode(call.toJson()));
+      }
+      if (!sawOutput &&
+          (deltaContent.isNotEmpty ||
+              deltaThinking.isNotEmpty ||
+              deltaToolCalls.isNotEmpty)) {
+        sawOutput = true;
+        onFirstOutput?.call();
+      }
+    }
+  }
+
+  return ParityOutput(
+    content: content.toString(),
+    thinking: thinking.toString(),
+    toolCalls: toolCalls,
+  );
+}
+
+/// Exit code of the parity check. Empty runs fail regardless of
+/// [failOnMismatch] because identical silence proves nothing.
+int parityExitCode({
+  required int mismatches,
+  required int emptyRuns,
+  required bool failOnMismatch,
+}) {
+  if (emptyRuns > 0) {
+    return 1;
+  }
+  return failOnMismatch && mismatches > 0 ? 1 : 0;
+}
+
 class _CreateRun {
-  final String output;
+  final ParityOutput output;
   final int elapsedMs;
   final int? firstTokenLatencyMs;
   final int outputTokens;
@@ -280,7 +372,7 @@ class _CreateRun {
       'elapsed_ms': elapsedMs,
       'first_token_latency_ms': firstTokenLatencyMs,
       'output_tokens': outputTokens,
-      'output_length': output.length,
+      'output_length': output.comparable.length,
       'tokens_per_second': elapsedMs == 0
           ? 0
           : outputTokens * 1000.0 / elapsedMs,

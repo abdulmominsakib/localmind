@@ -1,0 +1,99 @@
+{
+  "upstream": "ggml-org/llama.cpp",
+  "commit": "8642541b255bfb5dc39cd351a178be09013a55d6",
+  "template": "test/fixtures/llama_cpp_templates/upstage-Solar-Open-100B.jinja",
+  "template_sha256": "4618a1ec1a3442b9723d661d72bb1776d1bf8ebd7281a3bf3edd8bfd80e5ad4e",
+  "template_derived": [
+    {
+      "input": "<|think|>Plan.<|end|><|begin|>assistant<|content|>Sunny. <|end|><|begin|>assistant<|content|> more",
+      "error": "The model produced output that does not match the expected peg-native format"
+    },
+    {
+      "input": "<|content|>Sunny. <|end|><|begin|>assistant<|content|> more",
+      "error": "The model produced output that does not match the expected peg-native format"
+    },
+    {
+      "input": "<|think|>Plan.<|end|><|begin|>assistant<|content|>Sunny.",
+      "content": "<|think|>Plan.<|end|><|begin|>assistantSunny.",
+      "reasoning": "",
+      "tool_calls": []
+    },
+    {
+      "input": "<|content|>Sunny.",
+      "content": "Sunny.",
+      "reasoning": "",
+      "tool_calls": []
+    }
+  ],
+  "same_dart_grammar_mapper": {
+    "input": "<|think|>Plan.<|end|><|begin|>assistant<|content|>Sunny. <|end|><|begin|>assistant<|content|> more",
+    "scope": "current primary mapper, Dart Solar no-tools grammar; not upstream template admission",
+    "ast": [
+      {
+        "tag": "reasoning",
+        "text": "Plan."
+      },
+      {
+        "tag": "content",
+        "text": "Sunny. "
+      },
+      {
+        "tag": "content",
+        "text": " more"
+      }
+    ],
+    "content": "Sunny.  more",
+    "reasoning": "Plan."
+  },
+  "scope": "The template-derived parser rejects the repeated-channel case. The unchanged Dart Solar grammar admits it; primary mapping of that grammar concatenates content. No Solar Open 100B weights are available locally.",
+  "trailing_whitespace_mapper": [
+    {
+      "input": "<|content|>A <|end|><|begin|>assistant<|content|>B  ",
+      "scope": "current primary mapper, Dart Solar no-tools grammar; not upstream template admission",
+      "ast": [
+        {
+          "tag": "content",
+          "text": "A "
+        },
+        {
+          "tag": "content",
+          "text": "B  "
+        }
+      ],
+      "content": "A B  ",
+      "reasoning": ""
+    },
+    {
+      "input": "<|content|>  <|end|><|begin|>assistant<|content|> B\t\n",
+      "scope": "current primary mapper, Dart Solar no-tools grammar; not upstream template admission",
+      "ast": [
+        {
+          "tag": "content",
+          "text": "  "
+        },
+        {
+          "tag": "content",
+          "text": " B\t\n"
+        }
+      ],
+      "content": "   B\t\n",
+      "reasoning": ""
+    },
+    {
+      "input": "<|content|>A <|end|><|begin|>assistant<|content|>  ",
+      "scope": "current primary mapper, Dart Solar no-tools grammar; not upstream template admission",
+      "ast": [
+        {
+          "tag": "content",
+          "text": "A "
+        },
+        {
+          "tag": "content",
+          "text": "  "
+        }
+      ],
+      "content": "A   ",
+      "reasoning": ""
+    }
+  ]
+}

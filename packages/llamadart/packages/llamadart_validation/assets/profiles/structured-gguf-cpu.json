@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "structured-gguf-cpu",
+  "runtime": "gguf",
+  "backend": "cpu",
+  "model": {
+    "kind": "chat",
+    "filename": "Qwen3-0.6B-Q8_0.gguf",
+    "revision": "13ac06624948e4d8589cb4b6f90100837342fcb8",
+    "url": "https://huggingface.co/ggml-org/Qwen3-0.6B-GGUF/resolve/13ac06624948e4d8589cb4b6f90100837342fcb8/Qwen3-0.6B-Q8_0.gguf",
+    "sha256": "361cc68159042c36ebff7715dc5a2e4612153e88f3e9c9c234820849d6dc9e1d",
+    "bytes": 804753632
+  },
+  "selection": "focused",
+  "focus_features": [
+    "structured_output"
+  ],
+  "context_size": 1024,
+  "threads": 4,
+  "max_tokens": 32,
+  "fixtures": {
+    "hello": {
+      "prompt": "Reply with one short sentence saying hello.",
+      "regex": "\\bhello\\b"
+    },
+    "arithmetic": {
+      "prompt": "What is 3 + 4? Reply with only the number.",
+      "regex": "^(?:3 \\+ 4 = )?7[.!]?$"
+    }
+  }
+}

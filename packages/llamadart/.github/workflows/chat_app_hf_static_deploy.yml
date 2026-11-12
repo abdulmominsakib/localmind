@@ -1,0 +1,122 @@
+name: Chat App HF Static Deploy
+
+on:
+  workflow_call:
+    inputs:
+      artifact_id:
+        type: string
+        required: true
+      artifact_digest:
+        type: string
+        required: true
+    secrets:
+      HF_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  # Validation can finish out of commit order; stale builds must not cancel
+  # newer deployments before reaching the current-input guard.
+  group: chat-app-hf-static-deploy
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  deploy:
+    name: Deploy tested chat app
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/main' && github.repository == 'leehack/llamadart'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      HF_CHAT_APP_SPACE_REPO: ${{ vars.HF_CHAT_APP_SPACE_REPO }}
+      ARTIFACT_ID: ${{ inputs.artifact_id }}
+      ARTIFACT_DIGEST: ${{ inputs.artifact_digest }}
+      DEPLOY_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download and verify the tested artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" > web-artifact.json
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > web-artifact.zip
+          python3 tool/ci/web_deployment.py verify
+          ./scripts/validate_chat_app_web_build.sh web-artifact
+
+      - name: Resolve Hugging Face target
+        id: target
+        run: |
+          SPACE_REPO="$HF_CHAT_APP_SPACE_REPO"
+
+          if [ -z "$SPACE_REPO" ]; then
+            echo "error: set HF_CHAT_APP_SPACE_REPO repo variable"
+            exit 1
+          fi
+
+          APP_HOST="$(printf '%s' "$SPACE_REPO" | tr '[:upper:]/' '[:lower:]-')"
+          echo "space_repo=$SPACE_REPO" >> "$GITHUB_OUTPUT"
+          echo "app_url=https://${APP_HOST}.static.hf.space" >> "$GITHUB_OUTPUT"
+
+      - name: Install Hugging Face Hub client
+        run: |
+          python3 -m pip install --upgrade "huggingface_hub>=0.36.0,<0.37.0"
+
+      - name: Check that main has not superseded this artifact
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tool/ci/deploy_guard.py chat-app
+
+      - name: Deploy to Hugging Face Space
+        if: steps.current.outputs.deploy == 'true'
+        env:
+          SPACE_REPO: ${{ steps.target.outputs.space_repo }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          rm -rf hf-space-sync
+          mkdir -p hf-space-sync
+
+          rsync -a --delete \
+            "web-artifact/" "hf-space-sync/"
+
+          {
+            printf '%s\n' '---'
+            printf '%s\n' 'title: llamadart chat app'
+            printf '%s\n' 'sdk: static'
+            printf '%s\n' 'app_file: index.html'
+            printf '%s\n' 'custom_headers:'
+            printf '%s\n' '  cross-origin-embedder-policy: require-corp'
+            printf '%s\n' '  cross-origin-opener-policy: same-origin'
+            printf '%s\n' '  cross-origin-resource-policy: cross-origin'
+            printf '%s\n' '---'
+            printf '%s\n' ''
+            printf '%s\n' 'llamadart chat app static deployment.'
+          } > "hf-space-sync/README.md"
+
+          SHORT_SHA="$(printf '%s' "$DEPLOY_SHA" | cut -c1-7)"
+          export SHORT_SHA
+
+          python3 tool/ci/hf_space_deploy.py \
+            --repo "$SPACE_REPO" \
+            --folder hf-space-sync \
+            --commit-message "chore: deploy chat app ${SHORT_SHA}" \
+            --delete-pattern '*' \
+            --delete-pattern '**/*'
+
+      - name: Verify deployed production artifact
+        if: steps.current.outputs.deploy == 'true'
+        env:
+          APP_URL: ${{ steps.target.outputs.app_url }}
+        run: |
+          ./scripts/verify_chat_app_web_deployment.sh \
+            "$APP_URL" "$DEPLOY_SHA"

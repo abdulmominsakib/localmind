@@ -5,9 +5,26 @@ import 'package:llamadart/src/core/models/chat/chat_role.dart';
 import 'package:llamadart/src/core/models/tools/tool_definition.dart';
 import 'package:llamadart/src/core/models/tools/tool_param.dart';
 import 'package:llamadart/src/core/template/handlers/command_r7b_handler.dart';
+import 'package:llamadart/src/core/template/tool_call_grammar_utils.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('CommandR7BHandler.toolCallOpening finds markers and bare arrays', () {
+    for (final opening in const [
+      '<|START_ACTION|>',
+      '<|START_TEXT|>',
+      '<|START_RESPONSE|>',
+      '[{',
+      '[ \n{',
+      '[',
+      '[ ',
+    ]) {
+      expect(CommandR7BHandler.toolCallOpening('Hi $opening'), 3);
+    }
+    expect(CommandR7BHandler.toolCallOpening('Hi <|START_'), 3);
+    expect(CommandR7BHandler.toolCallOpening('Use [x] or [1, {}].'), 19);
+  });
+
   test('CommandR7BHandler renders and parses command-r tool calls', () {
     final handler = CommandR7BHandler();
     final tools = [
@@ -29,7 +46,7 @@ void main() {
       enableThinking: false,
     );
 
-    expect(rendered.prompt, endsWith('<|END_THINKING|>\n'));
+    expect(rendered.prompt, endsWith('<|START_THINKING|><|END_THINKING|>'));
     expect(rendered.grammar, isNotNull);
     expect(rendered.grammarLazy, isTrue);
     expect(rendered.additionalStops, contains('<|END_ACTION|>'));
@@ -135,6 +152,92 @@ void main() {
     });
   });
 
+  test('parses a trailing action array whose strings hold brackets', () {
+    final handler = CommandR7BHandler();
+    final parsed = handler.parse(
+      'See [1] "quoted [" here.'
+      r'[{"tool_name":"echo","parameters":{"text":"a [\"b\"] \\ ]["}}]',
+    );
+
+    expect(parsed.content, equals('See [1] "quoted [" here.'));
+    expect(parsed.toolCalls, hasLength(1));
+    expect(parsed.toolCalls.single.function?.name, equals('echo'));
+    expect(jsonDecode(parsed.toolCalls.single.function!.arguments!), {
+      'text': r'a ["b"] \ ][',
+    });
+  });
+
+  test('scans string and escape state backward in a bare action array', () {
+    final handler = CommandR7BHandler();
+
+    final escapedQuote = handler.parse(
+      r'[{"tool_name":"a","parameters":{"x":"[[[\""}}]',
+    );
+    expect(escapedQuote.toolCalls, hasLength(1));
+    expect(escapedQuote.toolCalls.single.function?.name, equals('a'));
+    expect(jsonDecode(escapedQuote.toolCalls.single.function!.arguments!), {
+      'x': '[[["',
+    });
+
+    final bracketString = handler.parse(
+      '[{"tool_name":"a","parameters":{"x":"["}}]',
+    );
+    expect(bracketString.toolCalls, hasLength(1));
+    expect(bracketString.toolCalls.single.function?.name, equals('a'));
+    expect(jsonDecode(bracketString.toolCalls.single.function!.arguments!), {
+      'x': '[',
+    });
+
+    final leadingQuote = handler.parse(
+      'p " [{"tool_name":"a","parameters":{}}]',
+    );
+    expect(leadingQuote.content, equals('p "'));
+    expect(leadingQuote.toolCalls, hasLength(1));
+    expect(leadingQuote.toolCalls.single.function?.name, equals('a'));
+    expect(
+      jsonDecode(leadingQuote.toolCalls.single.function!.arguments!),
+      isEmpty,
+    );
+  });
+
+  test('keeps trailing bracketed text that is not an action array', () {
+    final handler = CommandR7BHandler();
+    for (final input in const [
+      '[{"tool_name":"echo","parameters":{}}] then [1]',
+      '[{"tool_name":"echo","parameters":{}}] then []',
+      '[{"tool_name":"echo","parameters":{}}]]',
+      '[{"tool_name":"echo","parameters":{"text":"]"}]',
+      '"[{"tool_name":"echo","parameters":{}}]"',
+    ]) {
+      final parsed = handler.parse(input);
+
+      expect(parsed.toolCalls, isEmpty, reason: input);
+      expect(parsed.content, equals(input), reason: input);
+    }
+  });
+
+  test('scans deeply nested bracket output in linear time', () {
+    // Rescanning from every bracket took about 30 s per input at this depth;
+    // one pass takes milliseconds, so the bound leaves a wide margin both ways.
+    // A test timeout cannot interrupt synchronous parsing, hence the stopwatch.
+    const depth = 40000;
+    final handler = CommandR7BHandler();
+    final stopwatch = Stopwatch()..start();
+    for (final input in [
+      '${'[' * depth}${']' * depth}',
+      '${'[' * depth}${']' * depth} done',
+      '[{"tool_name":"echo","parameters":{}}] ${'[' * depth}${']' * depth}',
+    ]) {
+      final parsed = handler.parse(input);
+
+      expect(parsed.toolCalls, isEmpty);
+      expect(parsed.content, equals(input));
+    }
+    stopwatch.stop();
+
+    expect(stopwatch.elapsed, lessThan(const Duration(seconds: 10)));
+  });
+
   test('keeps bare single-object action-like JSON as content', () {
     final handler = CommandR7BHandler();
     const input =
@@ -176,6 +279,44 @@ void main() {
     expect(parsed.toolCalls, isEmpty);
   });
 
+  test('parses START_RESPONSE content with or without tool parsing and with '
+      'its end tag cut by a stop', () {
+    final handler = CommandR7BHandler();
+    for (final output in const [
+      '<|START_THINKING|>plan<|END_THINKING|>'
+          '<|START_RESPONSE|>Hello<|END_RESPONSE|>',
+      '<|START_THINKING|>plan<|END_THINKING|><|START_RESPONSE|>Hello',
+    ]) {
+      for (final parseToolCalls in [true, false]) {
+        final parsed = handler.parse(output, parseToolCalls: parseToolCalls);
+
+        expect(parsed.reasoningContent, 'plan');
+        expect(parsed.content, 'Hello');
+      }
+    }
+  });
+
+  // llama.cpp (`620d2225`) rejects text before the marker; the parse keeps it
+  // rather than lose it.
+  test('keeps text before START_RESPONSE in the content', () {
+    const input = 'Hello <|START_RESPONSE|>Answer<|END_RESPONSE|>';
+    for (final parseToolCalls in [true, false]) {
+      final parsed = CommandR7BHandler().parse(
+        input,
+        parseToolCalls: parseToolCalls,
+      );
+
+      expect(parsed.content, 'Hello Answer', reason: '$parseToolCalls');
+    }
+  });
+
+  test('keeps START_RESPONSE output with trailing text as content', () {
+    const input = '<|START_RESPONSE|>Hello<|END_RESPONSE|>more';
+    final parsed = CommandR7BHandler().parse(input, parseToolCalls: false);
+
+    expect(parsed.content, input);
+  });
+
   test('grammar emits North/Cohere array-shaped action blocks', () {
     final handler = CommandR7BHandler();
     final tools = [
@@ -213,11 +354,36 @@ void main() {
     ];
 
     final grammar = handler.buildGrammar(tools)!;
+    final writeFileRule = ToolCallGrammarUtils.ruleName('write_file');
 
-    expect(grammar, contains('write-file-args ::= "{"'));
+    expect(grammar, contains('$writeFileRule-args ::= "{"'));
     expect(grammar, contains('"\\"path\\": " space string'));
     expect(grammar, contains('"\\"content\\": " space string'));
-    expect(grammar, isNot(contains('write-file-args ::= "{" space "}"')));
+    expect(grammar, isNot(contains('$writeFileRule-args ::= "{" space "}"')));
+  });
+
+  test('collision-free grammar rules preserve Command R wire names', () {
+    final handler = CommandR7BHandler();
+    final tools = [_tool('a b'), _tool('a-b')];
+    final spacedRule = ToolCallGrammarUtils.ruleName('a b');
+    final dashedRule = ToolCallGrammarUtils.ruleName('a-b');
+
+    expect(spacedRule, isNot(dashedRule));
+    final grammar = handler.buildGrammar(tools)!;
+    expect(grammar, contains('$spacedRule-call ::='));
+    expect(grammar, contains('$dashedRule-call ::='));
+    expect(grammar, contains(r'\"tool_name\": \"a b\"'));
+    expect(grammar, contains(r'\"tool_name\": \"a-b\"'));
+
+    const output =
+        'before '
+        '<|START_ACTION|>[{"tool_name":"a b","parameters":{}}]'
+        '<|END_ACTION|>';
+    final parsed = handler.parse(output);
+    expect(parsed.content, 'before');
+    expect(parsed.toolCalls, hasLength(1));
+    expect(parsed.toolCalls.single.function?.name, 'a b');
+    expect(jsonDecode(parsed.toolCalls.single.function!.arguments!), isEmpty);
   });
 
   test('keeps malformed action block as content', () {
@@ -235,3 +401,10 @@ void main() {
 Future<Object?> _noop(_) async {
   return 'ok';
 }
+
+ToolDefinition _tool(String name) => ToolDefinition(
+  name: name,
+  description: 'Collision coverage',
+  parameters: const [],
+  handler: _noop,
+);

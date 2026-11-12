@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "id": "npu-qualcomm-sm8650",
+  "runtime": "litert",
+  "backend": "npu",
+  "model": {
+    "id": "gemma3-1b-it-qualcomm-sm8650",
+    "revision": "a6306a4e292016480083b73b8dc6f3f939ae04c3",
+    "filename": "Gemma3-1B-IT_q4_ekv1280_sm8650.litertlm",
+    "sha256": "85d2ea5199802f913818d53897b3a304bcf983abb993393e6b1749fbdb005552",
+    "bytes": 690094080,
+    "kind": "chat",
+    "access": "gated-local-staging",
+    "quantization": "q4_per_channel",
+    "url": "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/a6306a4e292016480083b73b8dc6f3f939ae04c3/Gemma3-1B-IT_q4_ekv1280_sm8650.litertlm"
+  },
+  "selection": "quick",
+  "context_size": 1280,
+  "threads": 4,
+  "max_tokens": 32,
+  "npu_target": {
+    "soc": "Qualcomm_SM8650",
+    "abi": "arm64-v8a",
+    "minimum_android_api": 31,
+    "qairt_version": "2.47.0.260601",
+    "libraries": {
+      "libLiteRtDispatch_Qualcomm.so": {
+        "elf_machine": 183,
+        "elf_class": 2,
+        "sha256": "d07d3324ad7617719fa613012168870892a221c11bbbd3795e1dcb64026cbcb5"
+      },
+      "libQnnHtp.so": {
+        "elf_machine": 183,
+        "elf_class": 2,
+        "sha256": "c0488f2df87932a42ca0a563883e6fba190896bca439ad0fdaa2428358ab5092"
+      },
+      "libQnnSystem.so": {
+        "elf_machine": 183,
+        "elf_class": 2,
+        "sha256": "077a8b20a53b216d006b85b58dd754a9e958e02f98e9c79d46619db6f8edfec9"
+      },
+      "libQnnHtpPrepare.so": {
+        "elf_machine": 183,
+        "elf_class": 2,
+        "sha256": "9988ce10ffee6813ffd218df308478f44dbc758cc89aed9cb98cfebb030ca72e"
+      },
+      "libQnnHtpV75Stub.so": {
+        "elf_machine": 183,
+        "elf_class": 2,
+        "sha256": "b126a79ebeabf09949656be42326546b03f3216ad671c9c0e4ac935cefa5a631"
+      },
+      "libQnnHtpV75Skel.so": {
+        "elf_machine": 164,
+        "elf_class": 1,
+        "sha256": "607be3d7ec64df053f019438ad6eea59dd3eea5d5f985001709d52d5663479ba"
+      },
+      "libLlamadartVendor_Qualcomm.so": {
+        "elf_machine": 183,
+        "elf_class": 2,
+        "sha256": "0b6c4d3c521047046689cb379eae8b57f1ef996ddd15fdb4090a081b94c4aa70"
+      }
+    },
+    "device_soc_models": [
+      "SM8650"
+    ],
+    "firebase_model": "SC-51E"
+  },
+  "fixtures": {
+    "hello": {
+      "prompt": "Reply with one short sentence saying hello.",
+      "regex": "\\bhello\\b"
+    },
+    "arithmetic": {
+      "prompt": "What is 2 + 2? Reply with only the number.",
+      "regex": "^4[.!]?$"
+    },
+    "history": {
+      "user": "The secret code is K7Q2.",
+      "expected": "K7Q2"
+    }
+  }
+}

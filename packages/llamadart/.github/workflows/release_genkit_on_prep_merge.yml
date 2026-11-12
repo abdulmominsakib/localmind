@@ -1,0 +1,285 @@
+name: Genkit release on prep merge
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: genkit-release-on-prep-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Check merged PR
+    if: ${{ github.event.pull_request.merged == true }}
+    runs-on: ubuntu-latest
+    outputs:
+      branch_version: ${{ steps.gate.outputs.branch_version }}
+      reason: ${{ steps.gate.outputs.reason }}
+      should_release: ${{ steps.gate.outputs.should_release }}
+    steps:
+      - name: Check release-prep gate
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          head_ref="$(jq -r '.pull_request.head.ref // ""' "$GITHUB_EVENT_PATH")"
+          head_repo="$(jq -r '.pull_request.head.repo.full_name // ""' "$GITHUB_EVENT_PATH")"
+          labels="$(jq -r '.pull_request.labels[]?.name // empty' "$GITHUB_EVENT_PATH")"
+
+          branch_version=""
+          if [[ "$head_ref" =~ ^release/genkit_llamadart-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            branch_version="${BASH_REMATCH[1]}"
+          fi
+
+          should_release=false
+          reason="missing Genkit release-prep branch or package label"
+          if [[ "$head_repo" != "$GITHUB_REPOSITORY" ]]; then
+            reason="release prep must originate in $GITHUB_REPOSITORY"
+          elif [[ -n "$branch_version" ]] || printf '%s\n' "$labels" | grep -Fxq 'release-prep:genkit_llamadart'; then
+            should_release=true
+            reason="independent Genkit release prep"
+          fi
+
+          {
+            echo "branch_version=$branch_version"
+            echo "reason=$reason"
+            echo "should_release=$should_release"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Skip non-release PR
+        if: steps.gate.outputs.should_release != 'true'
+        run: echo "Skipping release automation; ${{ steps.gate.outputs.reason }}."
+
+      - name: Validate release-prep scope
+        if: steps.gate.outputs.should_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Capture the API result directly so a failed page cannot be hidden
+          # by process substitution after returning the two expected files.
+          files="$(gh api --paginate --slurp \
+            "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files")"
+          if ! jq -e '
+            [.[][]] as $files |
+            ($files | map(.filename) | sort) == ["packages/genkit_llamadart/CHANGELOG.md", "packages/genkit_llamadart/pubspec.yaml"] and
+            ($files | all(.status == "modified"))
+          ' <<< "$files" >/dev/null; then
+            echo "Genkit release-prep PRs must modify only packages/genkit_llamadart/CHANGELOG.md and pubspec.yaml." >&2
+            exit 1
+          fi
+
+  release:
+    name: Dispatch merged release prep
+    needs:
+      - gate
+    if: needs.gate.outputs.should_release == 'true'
+    permissions:
+      actions: write
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      RELEASE_WAIT_ATTEMPTS: ${{ vars.RELEASE_AUTOMATION_WAIT_ATTEMPTS || '180' }}
+      RELEASE_WAIT_INTERVAL_SECONDS: ${{ vars.RELEASE_AUTOMATION_WAIT_INTERVAL_SECONDS || '10' }}
+    steps:
+      - name: Check out merged release
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+
+      - name: Validate release state
+        id: release
+        env:
+          BRANCH_VERSION: ${{ needs.gate.outputs.branch_version }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          source "$GITHUB_WORKSPACE/tool/release/genkit_release_helpers.sh"
+          release_validate_wait_settings
+
+          cd packages/genkit_llamadart
+          package_name="$(awk '/^name:[[:space:]]*/ {print $2; exit}' pubspec.yaml)"
+          version="$(awk '/^version:[[:space:]]*/ {print $2; exit}' pubspec.yaml)"
+          if [[ ! "$package_name" =~ ^[a-z0-9_]+$ ]]; then
+            echo "Unsupported package name: ${package_name:-<missing>}" >&2
+            exit 1
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unsupported release version: ${version:-<missing>}" >&2
+            exit 1
+          fi
+          if [[ -n "$BRANCH_VERSION" && "$BRANCH_VERSION" != "$version" ]]; then
+            echo "Release branch version $BRANCH_VERSION does not match pubspec version $version." >&2
+            exit 1
+          fi
+
+          first_heading="$(awk '/^## / {print; exit}' CHANGELOG.md)"
+          read -r marker changelog_version separator changelog_date extra <<< "$first_heading"
+          if [[ "$marker" != "##" ||
+            "$changelog_version" != "$version" ||
+            "$separator" != "-" ||
+            ! "$changelog_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ||
+            -n "${extra:-}" ]]; then
+            echo "CHANGELOG.md must start with: ## $version - YYYY-MM-DD" >&2
+            echo "Found: ${first_heading:-<none>}" >&2
+            exit 1
+          fi
+
+          tag="genkit_llamadart-v$version"
+          release_sha="$(git rev-parse HEAD)"
+          tag_sha="$(
+            git ls-remote --tags origin "refs/tags/$tag" "refs/tags/$tag^{}" |
+              awk '$2 ~ /\^\{\}$/ {peeled=$1} $2 !~ /\^\{\}$/ {direct=$1}
+                   END {print (peeled != "" ? peeled : direct)}'
+          )"
+          if [[ -n "$tag_sha" && "$tag_sha" != "$release_sha" ]]; then
+            echo "Release tag $tag already points to $tag_sha, not $release_sha." >&2
+            exit 1
+          fi
+
+          pub_live="$(release_url_exists "https://pub.dev/api/packages/$package_name/versions/$version")"
+          release_live="$(release_url_exists \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$tag" \
+            --header "Authorization: Bearer $GH_TOKEN")"
+
+          if [[ "$pub_live" == true && -z "$tag_sha" ]]; then
+            echo "$package_name $version exists on pub.dev without the expected $tag tag." >&2
+            exit 1
+          fi
+          if [[ "$release_live" == true && "$pub_live" != true ]]; then
+            echo "GitHub Release $tag exists, but $package_name $version is missing on pub.dev." >&2
+            exit 1
+          fi
+
+          should_dispatch=true
+          if [[ "$pub_live" == true ]]; then
+            should_dispatch=false
+          fi
+
+          {
+            echo "package_name=$package_name"
+            echo "pub_live=$pub_live"
+            echo "release_live=$release_live"
+            echo "release_sha=$release_sha"
+            echo "should_dispatch=$should_dispatch"
+            echo "tag=$tag"
+            echo "tag_sha=$tag_sha"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create release tag
+        if: steps.release.outputs.should_dispatch == 'true' && steps.release.outputs.tag_sha == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ steps.release.outputs.release_sha }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          gh api \
+            --method POST \
+            "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f "ref=refs/tags/$TAG" \
+            -f "sha=$RELEASE_SHA" \
+            >/dev/null
+          echo "Created $TAG at $RELEASE_SHA."
+
+      - name: Reuse existing release tag
+        if: steps.release.outputs.should_dispatch == 'true' && steps.release.outputs.tag_sha != ''
+        run: echo "Reusing ${{ steps.release.outputs.tag }} at ${{ steps.release.outputs.tag_sha }}."
+
+      - name: Dispatch publish workflow
+        if: steps.release.outputs.should_dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_SHA: ${{ steps.release.outputs.release_sha }}
+        run: |
+          # A retry must wait for an existing publisher, not enqueue another.
+          runs="$(gh api --paginate --slurp \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/publish_genkit_pubdev.yml/runs?head_sha=$RELEASE_SHA&per_page=100")"
+          active="$(jq --arg tag "$TAG" '[.[] | .workflow_runs[] |
+            select(.head_branch == $tag and .status != "completed")] | length' <<< "$runs")"
+          if [[ "$active" != 0 ]]; then
+            echo "A publish run for $TAG is already active; waiting for its result."
+            exit 0
+          fi
+          gh api \
+            --method POST \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/publish_genkit_pubdev.yml/dispatches" \
+            -f "ref=$TAG" \
+            >/dev/null
+          echo "Dispatched publish_genkit_pubdev.yml for $TAG."
+
+      - name: Repair missing GitHub Release
+        if: steps.release.outputs.pub_live == 'true' && steps.release.outputs.release_live != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "$TAG" \
+            --generate-notes \
+            --latest=false
+
+      - name: Wait for publication
+        if: steps.release.outputs.should_dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_NAME: ${{ steps.release.outputs.package_name }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          source "$GITHUB_WORKSPACE/tool/release/genkit_release_helpers.sh"
+          release_validate_wait_settings
+          version_url="https://pub.dev/api/packages/$PACKAGE_NAME/versions/$VERSION"
+          for attempt in $(seq 1 "$RELEASE_WAIT_ATTEMPTS"); do
+            pub_live="$(release_url_exists "$version_url")"
+            release_live="$(release_url_exists \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$TAG" \
+              --header "Authorization: Bearer $GH_TOKEN")"
+
+            if [[ "$pub_live" == true && "$release_live" == true ]]; then
+              echo "$PACKAGE_NAME $VERSION and GitHub Release $TAG are live."
+              exit 0
+            fi
+
+            echo "Waiting for release surfaces ($attempt/$RELEASE_WAIT_ATTEMPTS): pub.dev=$pub_live GitHub=$release_live"
+            if [[ "$attempt" -lt "$RELEASE_WAIT_ATTEMPTS" ]]; then
+              sleep "$RELEASE_WAIT_INTERVAL_SECONDS"
+            fi
+          done
+
+          echo "$PACKAGE_NAME $VERSION did not finish publishing before the wait limit." >&2
+          exit 1
+
+      - name: Summarize release
+        run: |
+          {
+            echo "### Release automation"
+            echo
+            echo "- Version: ${{ steps.release.outputs.version }}"
+            echo "- Tag: ${{ steps.release.outputs.tag }}"
+            echo "- Commit: ${{ steps.release.outputs.release_sha }}"
+            echo "- pub.dev: https://pub.dev/packages/${{ steps.release.outputs.package_name }}/versions/${{ steps.release.outputs.version }}"
+            echo "- GitHub Release: https://github.com/$GITHUB_REPOSITORY/releases/tag/${{ steps.release.outputs.tag }}"
+          } >> "$GITHUB_STEP_SUMMARY"

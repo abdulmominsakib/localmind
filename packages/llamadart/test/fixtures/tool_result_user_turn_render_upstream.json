@@ -1,0 +1,95 @@
+{
+  "upstream_tag": "b6000",
+  "upstream_commit": "4762ad7316dcdec20016ab5985fb46a27902204d",
+  "api": "common_chat_templates_apply (use_jinja, add_generation_prompt)",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the weather in Paris and Rome?"
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call00001",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call00001",
+      "name": "get_weather",
+      "content": "{\"city\":\"Paris\",\"temperature_c\":21}"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the current weather for a city",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    }
+  ],
+  "renders": [
+    {
+      "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+      "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+      "tools": false,
+      "chat_format": "Content-only",
+      "prompt": "<start_of_turn>user\nWhat is the weather in Paris and Rome?<end_of_turn>\n<start_of_turn>model\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}<end_of_turn>\n<start_of_turn>user\n{\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n}<end_of_turn>\n<start_of_turn>model\n"
+    },
+    {
+      "template": "test/fixtures/templates/gemma-3-4b-it.jinja",
+      "template_sha256": "7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4",
+      "tools": true,
+      "chat_format": "Generic",
+      "prompt": "<start_of_turn>user\nRespond in JSON format, either with `tool_call` (a request to call tools) or with `response` reply to the user's request\n\nYou can call any of the following tools to satisfy the user's requests: [\n  {\n    \"type\": \"function\",\n    \"function\": {\n      \"name\": \"get_weather\",\n      \"description\": \"Get the current weather for a city\",\n      \"parameters\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"city\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\n          \"city\"\n        ]\n      }\n    }\n  }\n]\n\nExample tool call syntax:\n\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"tool_name\",\n      \"arguments\": {\n        \"arg1\": \"some_value\"\n      },\n      \"id\": \"call_1___\"\n    }\n  ]\n}<end_of_turn>\n\n\n\n\nWhat is the weather in Paris and Rome?<end_of_turn>\n<start_of_turn>model\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}<end_of_turn>\n<start_of_turn>user\n{\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n}<end_of_turn>\n<start_of_turn>model\n"
+    },
+    {
+      "template": "test/fixtures/templates/Mistral-7B-Instruct-v0_2.jinja",
+      "template_sha256": "26a59556925c987317ce5291811ba3b7f32ec4c647c400c6cc7e3a9993007ba7",
+      "tools": false,
+      "chat_format": "Content-only",
+      "prompt": "[INST] What is the weather in Paris and Rome? [/INST]{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}</s>[INST] {\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n} [/INST]"
+    },
+    {
+      "template": "test/fixtures/templates/Mistral-7B-Instruct-v0_2.jinja",
+      "template_sha256": "26a59556925c987317ce5291811ba3b7f32ec4c647c400c6cc7e3a9993007ba7",
+      "tools": true,
+      "chat_format": "Generic",
+      "prompt": "[INST] Respond in JSON format, either with `tool_call` (a request to call tools) or with `response` reply to the user's request\n\nYou can call any of the following tools to satisfy the user's requests: [\n  {\n    \"type\": \"function\",\n    \"function\": {\n      \"name\": \"get_weather\",\n      \"description\": \"Get the current weather for a city\",\n      \"parameters\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"city\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\n          \"city\"\n        ]\n      }\n    }\n  }\n]\n\nExample tool call syntax:\n\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"tool_name\",\n      \"arguments\": {\n        \"arg1\": \"some_value\"\n      },\n      \"id\": \"call_1___\"\n    }\n  ]\n}</s>\n\n\nWhat is the weather in Paris and Rome? [/INST]{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}</s>[INST] {\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n} [/INST]"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/google-gemma-2-2b-it.jinja",
+      "template_sha256": "ecd6ae513fe103f0eb62e8ab5bfa8d0fe45c1074fa398b089c93a7e70c15cfd6",
+      "tools": false,
+      "chat_format": "Content-only",
+      "prompt": "<start_of_turn>user\nWhat is the weather in Paris and Rome?<end_of_turn>\n<start_of_turn>model\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}<end_of_turn>\n<start_of_turn>user\n{\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n}<end_of_turn>\n<start_of_turn>model\n"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/google-gemma-2-2b-it.jinja",
+      "template_sha256": "ecd6ae513fe103f0eb62e8ab5bfa8d0fe45c1074fa398b089c93a7e70c15cfd6",
+      "tools": true,
+      "chat_format": "Generic",
+      "prompt": "<start_of_turn>user\nRespond in JSON format, either with `tool_call` (a request to call tools) or with `response` reply to the user's request\n\nYou can call any of the following tools to satisfy the user's requests: [\n  {\n    \"type\": \"function\",\n    \"function\": {\n      \"name\": \"get_weather\",\n      \"description\": \"Get the current weather for a city\",\n      \"parameters\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"city\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\n          \"city\"\n        ]\n      }\n    }\n  }\n]\n\nExample tool call syntax:\n\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"tool_name\",\n      \"arguments\": {\n        \"arg1\": \"some_value\"\n      },\n      \"id\": \"call_1___\"\n    }\n  ]\n}<end_of_turn>\n\n\n\nWhat is the weather in Paris and Rome?<end_of_turn>\n<start_of_turn>model\n{\n  \"tool_calls\": [\n    {\n      \"name\": \"get_weather\",\n      \"arguments\": {\n        \"city\": \"Paris\"\n      },\n      \"id\": \"call00001\"\n    }\n  ]\n}<end_of_turn>\n<start_of_turn>user\n{\n  \"tool_response\": {\n    \"tool\": \"get_weather\",\n    \"content\": \"{\\\"city\\\":\\\"Paris\\\",\\\"temperature_c\\\":21}\",\n    \"tool_call_id\": \"call00001\"\n  }\n}<end_of_turn>\n<start_of_turn>model\n"
+    }
+  ]
+}

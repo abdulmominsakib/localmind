@@ -16,6 +16,12 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+    # Upstream llamadart repo tests/tools (vendored under packages/llamadart)
+    # use dart:mirrors and reference the upstream example/ apps, which are not
+    # shipped in the vendored copy. They run only in the llamadart CI, never
+    # inside this Flutter app. See packages/llamadart/LOCALMIND_PATCHES.md.
+    - packages/llamadart/test/**
+    - packages/llamadart/tool/**
 include: package:flutter_lints/flutter.yaml
 
 linter:

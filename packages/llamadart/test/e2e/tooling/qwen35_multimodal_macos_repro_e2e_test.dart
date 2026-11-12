@@ -10,6 +10,7 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:llamadart/llamadart.dart';
 import 'package:path/path.dart' as path;
@@ -94,8 +95,7 @@ Future<void> _runScenario({
   stdout.writeln('=== Qwen multimodal repro: $backendLabel ===');
 
   try {
-    await engine.setDartLogLevel(LlamaLogLevel.info);
-    await engine.setNativeLogLevel(LlamaLogLevel.info);
+    await LlamaLogging.configure(level: LlamaLogLevel.info);
 
     final int gpuLayers = backend == GpuBackend.cpu
         ? 0
@@ -122,6 +122,9 @@ Future<void> _runScenario({
       isTrue,
       reason: 'Expected Qwen3.5 0.8B + mmproj to report vision support.',
     );
+
+    await _expectAudioRefusedByName(engine, prompt);
+    await _expectImageSentAsAudioAnswered(engine, imageFile, prompt);
 
     final GenerationParams generationParams = GenerationParams(
       maxTokens: maxTokens,
@@ -168,6 +171,98 @@ Future<void> _runScenario({
   } finally {
     await engine.dispose();
   }
+}
+
+/// The Qwen3.5 projector has no audio encoder: audio is refused by name,
+/// from PCM samples at mtmd's tokenize and from an encoded file at its load.
+Future<void> _expectAudioRefusedByName(
+  LlamaEngine engine,
+  String prompt,
+) async {
+  expect(await engine.supportsAudio, isFalse);
+  final File wav = File(
+    path.join(Directory.systemTemp.path, 'llamadart_qwen35_repro_tone.wav'),
+  )..writeAsBytesSync(_silentWav(seconds: 1));
+
+  for (final LlamaAudioContent audio in <LlamaAudioContent>[
+    LlamaAudioContent(samples: Float32List(16000)),
+    LlamaAudioContent(bytes: wav.readAsBytesSync()),
+    LlamaAudioContent(path: wav.path),
+  ]) {
+    stdout.writeln('Sending audio to the vision-only projector...');
+    await expectLater(
+      engine.create(<LlamaChatMessage>[
+        LlamaChatMessage.withContent(
+          role: LlamaChatRole.user,
+          content: <LlamaContentPart>[audio, LlamaTextContent(prompt)],
+        ),
+      ]).drain<void>(),
+      throwsA(
+        isA<LlamaUnsupportedException>().having(
+          (LlamaUnsupportedException error) => error.message,
+          'message',
+          contains('it has no audio encoder'),
+        ),
+      ),
+    );
+  }
+}
+
+/// mtmd reads encoded bytes by content, so an image sent as an audio part is
+/// an image to the projector and is answered.
+Future<void> _expectImageSentAsAudioAnswered(
+  LlamaEngine engine,
+  File imageFile,
+  String prompt,
+) async {
+  stdout.writeln('Sending the image as an audio part...');
+  final String answer = await engine
+      .create(
+        <LlamaChatMessage>[
+          LlamaChatMessage.withContent(
+            role: LlamaChatRole.user,
+            content: <LlamaContentPart>[
+              LlamaAudioContent(bytes: imageFile.readAsBytesSync()),
+              LlamaTextContent(prompt),
+            ],
+          ),
+        ],
+        params: const GenerationParams(maxTokens: 16, temp: 0),
+        enableThinking: false,
+      )
+      .map(
+        (LlamaCompletionChunk chunk) => chunk.choices.first.delta.content ?? '',
+      )
+      .join();
+  stdout.writeln('  imageAsAudio.outputPreview: ${_truncateForLog(answer)}');
+  expect(answer.trim(), isNotEmpty);
+}
+
+/// A mono 16 kHz PCM16 WAV of silence.
+Uint8List _silentWav({required int seconds}) {
+  const int sampleRate = 16000;
+  final int dataBytes = sampleRate * seconds * 2;
+  final ByteData header = ByteData(44)
+    ..setUint32(4, 36 + dataBytes, Endian.little)
+    ..setUint32(16, 16, Endian.little)
+    ..setUint16(20, 1, Endian.little)
+    ..setUint16(22, 1, Endian.little)
+    ..setUint32(24, sampleRate, Endian.little)
+    ..setUint32(28, sampleRate * 2, Endian.little)
+    ..setUint16(32, 2, Endian.little)
+    ..setUint16(34, 16, Endian.little)
+    ..setUint32(40, dataBytes, Endian.little);
+  final Uint8List wav = Uint8List(44 + dataBytes)
+    ..setAll(0, header.buffer.asUint8List());
+  for (final (int offset, String tag) in <(int, String)>[
+    (0, 'RIFF'),
+    (8, 'WAVE'),
+    (12, 'fmt '),
+    (36, 'data'),
+  ]) {
+    wav.setAll(offset, tag.codeUnits);
+  }
+  return wav;
 }
 
 Future<String> _runSessionTurn({

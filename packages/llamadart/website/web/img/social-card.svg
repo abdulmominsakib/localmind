@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" fill="none">
+  <rect width="1200" height="630" fill="#ffffff"/>
+  <rect width="1200" height="12" fill="#0f52ba"/>
+  <rect y="530" width="1200" height="100" fill="#f6f8fb"/>
+  <rect y="530" width="1200" height="1" fill="#e2e8f0"/>
+
+  <g transform="translate(96 150) scale(1.35)">
+    <rect x="0" y="0" width="35" height="160" rx="12" fill="#1d4ed8"/>
+    <rect x="0" y="125" width="90" height="35" rx="12" fill="#1d4ed8"/>
+    <path d="M 70 0 h 20 c 44.18 0 80 35.82 80 80 c 0 44.18 -35.82 80 -80 80 h -20 v -35 h 20 c 24.85 0 45 -20.15 45 -45 c 0 -24.85 -20.15 -45 -45 -45 h -20 v -35 Z" fill="#0ea5e9"/>
+  </g>
+
+  <g font-family="Helvetica, Arial, sans-serif">
+    <text x="410" y="200" fill="#0f52ba" font-size="24" font-weight="700" letter-spacing="0.08em">ON-DEVICE LLM INFERENCE</text>
+    <text x="406" y="288" fill="#0f172a" font-size="88" font-weight="700" letter-spacing="-0.02em">llamadart</text>
+    <text x="410" y="348" fill="#334155" font-size="34" font-weight="400">Run LLMs on the device from Flutter</text>
+    <text x="410" y="392" fill="#334155" font-size="34" font-weight="400">and Dart, with one API.</text>
+    <text x="410" y="448" fill="#64748b" font-size="24" font-weight="400">GGUF (llama.cpp) and LiteRT-LM · private, no inference server</text>
+    <text x="96" y="590" fill="#334155" font-size="24" font-weight="600">Android · iOS · macOS · Linux · Windows · Web</text>
+  </g>
+  <text x="1104" y="590" text-anchor="end" fill="#0f52ba" font-family="Menlo, Monaco, Consolas, monospace" font-size="22">llamadart.leehack.com</text>
+</svg>

@@ -9,6 +9,15 @@ import 'package:llamadart/src/core/template/handlers/apertus_handler.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('ApertusHandler.toolCallOpening finds a whole or partial opening', () {
+    expect(
+      ApertusHandler.toolCallOpening('Let me check. <|tools_prefix|>...'),
+      14,
+    );
+    expect(ApertusHandler.toolCallOpening('Let me check. <|tools_'), 14);
+    expect(ApertusHandler.toolCallOpening('Use <x> or [y] here.'), 20);
+  });
+
   test('ApertusHandler renders lazy wrapped grammar and parses tool calls', () {
     final handler = ApertusHandler();
     final tools = [

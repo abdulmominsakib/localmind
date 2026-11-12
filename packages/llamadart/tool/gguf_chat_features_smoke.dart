@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:llamadart/llamadart.dart';
 
+import 'audio_chat_smoke_support.dart';
+
 Future<void> main(List<String> args) async {
   final modelPath = args.isNotEmpty
       ? args[0]
@@ -11,7 +13,10 @@ Future<void> main(List<String> args) async {
     stderr.writeln(
       'Usage: dart run tool/gguf_chat_features_smoke.dart '
       '<model.gguf> [auto|cpu|metal|vulkan|cuda|opencl|hip|blas] '
-      '[mmproj.gguf] [image-path]',
+      '[mmproj.gguf] [image-path]\n'
+      'Optional env:\n'
+      '  GGUF_AUDIO_PATH=<local encoded WAV file>\n'
+      '  GGUF_AUDIO_EXPECTED_TEXT=<expected answer; required with audio>',
     );
     exitCode = 64;
     return;
@@ -29,10 +34,34 @@ Future<void> main(List<String> args) async {
     exitCode = 64;
     return;
   }
+  final audioPath = optionalAudioChatSmokePath(
+    environmentName: 'GGUF_AUDIO_PATH',
+    smokeName: 'GGUF smoke',
+  );
+  if (audioPath != null && mmprojPath == null) {
+    stderr.writeln('GGUF_AUDIO_PATH requires GGUF_MMPROJ/mmproj path.');
+    exitCode = 64;
+    return;
+  }
+  if (audioPath != null && imagePath != null) {
+    stderr.writeln(
+      'GGUF audio-answer and image variants must be run separately.',
+    );
+    exitCode = 64;
+    return;
+  }
+  final audioExpectedText = optionalAudioChatExpectedText(
+    audioPath: audioPath,
+    environmentName: 'GGUF_AUDIO_EXPECTED_TEXT',
+    audioEnvironmentName: 'GGUF_AUDIO_PATH',
+  );
+  final audioFixture = audioPath == null
+      ? null
+      : await readAudioChatSmokeFixture(audioPath);
 
   final engine = LlamaEngine(LlamaBackend());
   try {
-    engine.setLogLevel(LlamaLogLevel.warn);
+    await LlamaLogging.configure(level: LlamaLogLevel.warn);
     await engine.loadModel(
       modelPath,
       modelParams: ModelParams(
@@ -45,6 +74,48 @@ Future<void> main(List<String> args) async {
     );
     if (mmprojPath != null) {
       await engine.loadMultimodalProjector(mmprojPath);
+    }
+    final backendName = await engine.getBackendName();
+    // Emitted before every semantic assertion so a failing run still records
+    // which backend actually served it.
+    print(
+      'BACKEND gguf_chat_features '
+      '${jsonEncode({'backendName': backendName, 'requestedBackend': backend.name})}',
+    );
+
+    if (audioFixture != null) {
+      final audioChat = await _runScenario(
+        engine: engine,
+        name: 'audioChat',
+        messages: [
+          LlamaChatMessage.withContent(
+            role: LlamaChatRole.user,
+            content: [
+              LlamaAudioContent(bytes: audioFixture.bytes),
+              const LlamaTextContent(audioChatQuestionPrompt),
+            ],
+          ),
+        ],
+        tools: const [],
+        enableThinking: false,
+        maxTokens: 64,
+      );
+      _verifyExactAudioChatAnswer(
+        scenarioName: audioChat.name,
+        actualText: audioChat.content,
+        expectedText: audioExpectedText!,
+      );
+      _verifyNoThinking(audioChat);
+
+      final result = {
+        'backendName': backendName,
+        'requestedBackend': backend.name,
+        'variant': 'audioAnswer',
+        'audioInput': audioFixture.toJson(),
+        'audioChat': audioChat.toJson(),
+      };
+      print('RESULT gguf_chat_features ${jsonEncode(result)}');
+      return;
     }
 
     final template = await engine.chatTemplate(
@@ -195,7 +266,26 @@ Future<void> main(List<String> args) async {
             maxTokens: 120,
           )
         : null;
-
+    final multimodalBytes = mmprojPath != null && imagePath != null
+        ? await _runScenario(
+            engine: engine,
+            name: 'multimodalBytes',
+            messages: [
+              LlamaChatMessage.withContent(
+                role: LlamaChatRole.user,
+                content: [
+                  const LlamaTextContent(
+                    'Describe this image in one short sentence.',
+                  ),
+                  LlamaImageContent(bytes: await File(imagePath).readAsBytes()),
+                ],
+              ),
+            ],
+            tools: const [],
+            enableThinking: false,
+            maxTokens: 120,
+          )
+        : null;
     _verifyNoThinking(noThinking);
     _verifyThinkingSeparation(thinking);
     _verifyNoThinking(toolCallNoThinking);
@@ -210,9 +300,12 @@ Future<void> main(List<String> args) async {
       _verifyHasOutput(multimodal);
       _verifyNoThinking(multimodal);
     }
-
+    if (multimodalBytes != null) {
+      _verifyHasOutput(multimodalBytes);
+      _verifyNoThinking(multimodalBytes);
+    }
     final result = {
-      'backendName': await engine.getBackendName(),
+      'backendName': backendName,
       'requestedBackend': backend.name,
       'format': template.format,
       'noThinking': noThinking.toJson(),
@@ -222,6 +315,7 @@ Future<void> main(List<String> args) async {
       'toolCallWithThinkingBudget': toolCallWithThinkingBudget.toJson(),
       'toolCallWithZeroThinkingBudget': toolCallWithZeroThinkingBudget.toJson(),
       if (multimodal != null) 'multimodal': multimodal.toJson(),
+      if (multimodalBytes != null) 'multimodalBytes': multimodalBytes.toJson(),
     };
     print('RESULT gguf_chat_features ${jsonEncode(result)}');
   } finally {
@@ -303,6 +397,18 @@ void _verifyHasOutput(_ScenarioResult result) {
   }
 }
 
+void _verifyExactAudioChatAnswer({
+  required String scenarioName,
+  required String actualText,
+  required String expectedText,
+}) {
+  final expected = normalizeAudioChatAnswer(expectedText);
+  final actual = normalizeAudioChatAnswer(actualText);
+  if (actual != expected) {
+    throw StateError('$scenarioName answer did not match the expected text.');
+  }
+}
+
 void _verifyNoThinking(_ScenarioResult result) {
   _verifyHasOutput(result);
   if (result.thinking.trim().isNotEmpty) {
@@ -347,12 +453,13 @@ void _verifyToolCall(_ScenarioResult result) {
   if (result.finishReason != 'tool_calls') {
     throw StateError(
       '${result.name} scenario finished with ${result.finishReason}; '
-      'content=${_tail(result.content)}',
+      'contentLength=${result.content.length}',
     );
   }
   if (result.content.trim().isNotEmpty) {
     throw StateError(
-      '${result.name} scenario leaked content: ${_tail(result.content)}',
+      '${result.name} scenario leaked ${result.content.length} content '
+      'characters.',
     );
   }
   if (result.toolCalls.length != 1) {
@@ -363,21 +470,24 @@ void _verifyToolCall(_ScenarioResult result) {
 
   final function = result.toolCalls.first['function'];
   if (function is! Map || function['name'] != 'get_weather') {
-    throw StateError(
-      '${result.name} scenario did not call get_weather: '
-      '${result.toolCalls.first}',
-    );
+    throw StateError('${result.name} scenario did not call get_weather.');
   }
   final arguments = function['arguments'];
   if (arguments is! String) {
+    throw StateError('${result.name} tool call has no string arguments.');
+  }
+  Object? decoded;
+  try {
+    decoded = jsonDecode(arguments);
+  } catch (_) {
     throw StateError(
-      '${result.name} tool call has no string arguments: $function',
+      '${result.name} tool call has invalid JSON arguments '
+      '(${arguments.length} characters).',
     );
   }
-  final decoded = jsonDecode(arguments);
   final location = decoded is Map ? decoded['location'] : null;
   if (location is! String || !location.toLowerCase().contains('seoul')) {
-    throw StateError('${result.name} unexpected tool arguments: $arguments');
+    throw StateError('${result.name} tool arguments did not contain Seoul.');
   }
 }
 
@@ -433,18 +543,8 @@ class _ScenarioResult {
     'chunks': chunks,
     'finishReason': finishReason,
     'contentLength': content.length,
-    'contentTail': _tail(content),
     'thinkingLength': thinking.length,
-    'thinkingTail': _tail(thinking),
     'thinkingObserved': thinking.trim().isNotEmpty,
     'toolCallCount': toolCalls.length,
-    'toolCalls': toolCalls,
   };
-}
-
-String _tail(String value) {
-  if (value.length <= 240) {
-    return value;
-  }
-  return value.substring(value.length - 240);
 }

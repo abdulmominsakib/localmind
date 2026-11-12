@@ -1,0 +1,1283 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      windows_registry_qualification:
+        description: Run the pinned Windows CPU registry qualification separately
+        type: boolean
+        required: false
+        default: false
+      native_default_qualification:
+        description: Run only default native consumer and AOT qualification
+        type: boolean
+        required: false
+        default: false
+      native_default_expected_sha:
+        description: Reviewed selected branch commit for default consumer qualification
+        type: string
+        required: false
+        default: ''
+      native_default_expected_native_tag:
+        description: Verify checked-in v0.8.0-2, v0.8.0-3 or v0.9.0 pin; never override it
+        type: string
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    if: inputs.native_default_qualification != true
+    name: Select affected checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      plan: ${{ steps.select.outputs.plan }}
+      companions: ${{ steps.select.outputs.companions }}
+      analyze: ${{ steps.select.outputs.analyze }}
+      docs-check: ${{ steps.select.outputs.docs-check }}
+      docs-versions: ${{ steps.select.outputs.docs-versions }}
+      validation-harness: ${{ steps.select.outputs.validation-harness }}
+      validation-harness-os: ${{ steps.select.outputs.validation-harness-os }}
+      validation-integration: ${{ steps.select.outputs.validation-integration }}
+      companion-job: ${{ steps.select.outputs.companion-job }}
+      test-linux-coverage: ${{ steps.select.outputs.test-linux-coverage }}
+      coverage: ${{ steps.select.outputs.coverage }}
+      test-web: ${{ steps.select.outputs.test-web }}
+      web-chat-contract: ${{ steps.select.outputs.web-chat-contract }}
+      test-other-os: ${{ steps.select.outputs.test-other-os }}
+      native-prompt-reuse-parity: ${{ steps.select.outputs.native-prompt-reuse-parity }}
+      artifact-contract: ${{ steps.select.outputs.artifact-contract }}
+      genkit: ${{ steps.select.outputs.genkit }}
+      example-packages: ${{ steps.select.outputs.example-packages }}
+      model-store: ${{ steps.select.outputs.model-store }}
+      markdown-tests: ${{ steps.select.outputs.markdown-tests }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Test CI selection
+        run: python3 -m unittest discover -s test/ci -p 'test_*.py'
+      - id: select
+        run: python3 tool/ci/select_jobs.py select
+
+  genkit:
+    needs: changes
+    if: needs.changes.outputs.genkit == 'true'
+    name: Genkit (${{ matrix.part }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [lower bounds and published, local core]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # Before Flutter on purpose: flutter-action puts its own dart first on PATH
+      # and sets FLUTTER_ROOT, which would let a Flutter-only dependency resolve.
+      - uses: dart-lang/setup-dart@v1
+        if: matrix.part == 'lower bounds and published'
+        with:
+          sdk: 3.12.0
+      - name: Resolve independent minimum dependencies
+        if: matrix.part == 'lower bounds and published'
+        working-directory: packages/genkit_llamadart
+        run: |
+          dart --version
+          dart pub add crypto@3.0.7 genkit@1.0.0 http@1.6.0 llamadart@0.19.0 schemantic@1.0.0
+      - name: Analyze and test minimum dependencies
+        if: matrix.part == 'lower bounds and published'
+        working-directory: packages/genkit_llamadart
+        run: |
+          dart analyze --fatal-infos
+          TMPDIR="$(mktemp -d)" dart test -x real-model
+      - name: Restore the package after the minimum dependency check
+        if: ${{ !cancelled() && matrix.part == 'lower bounds and published' }}
+        run: |
+          git restore -- packages/genkit_llamadart
+          git clean -fdxq -- packages/genkit_llamadart
+      - uses: subosito/flutter-action@v2
+        if: ${{ !cancelled() }}
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+      - name: Verify published dependencies, docs and archive
+        if: ${{ !cancelled() && matrix.part == 'lower bounds and published' }}
+        working-directory: packages/genkit_llamadart
+        run: |
+          dart --version
+          dart pub upgrade
+          dart format --output=none --set-exit-if-changed .
+          dart analyze --fatal-infos
+          python3 -B -m unittest discover -s .github -p 'test_*.py'
+          python3 .github/check_docs.py
+          TMPDIR="$(mktemp -d)" dart test -x real-model
+      - name: Verify standalone adapter archive and score
+        if: ${{ !cancelled() && matrix.part == 'lower bounds and published' }}
+        run: |
+          python3 tool/release/stage_genkit_package.py "$RUNNER_TEMP/genkit-package"
+          (cd "$RUNNER_TEMP/genkit-package" && dart pub get && dart pub publish --dry-run)
+          dart pub global activate pana
+          python3 tool/ci/check_genkit_package_score.py "$RUNNER_TEMP/genkit-package"
+      - name: Test adapter against checkout core
+        if: ${{ !cancelled() && matrix.part == 'local core' }}
+        working-directory: packages/genkit_llamadart
+        run: |
+          printf 'dependency_overrides:\n  llamadart:\n    path: ../..\n' > pubspec_overrides.yaml
+          dart pub get
+          dart analyze --fatal-infos
+          TMPDIR="$(mktemp -d)" dart test -x real-model
+      - name: Cache existing real-model fixtures
+        if: ${{ !cancelled() && matrix.part == 'local core' }}
+        uses: actions/cache@v6
+        with:
+          path: packages/genkit_llamadart/.dart_tool/llamadart_test_models
+          key: ${{ runner.os }}-genkit-models-${{ hashFiles('packages/genkit_llamadart/test/integration/genkit/test_support/real_model_test_support.dart') }}
+      - name: Run existing native real-model contracts
+        if: ${{ !cancelled() && matrix.part == 'local core' }}
+        working-directory: packages/genkit_llamadart
+        env:
+          LLAMADART_AUTO_DOWNLOAD_TEST_MODELS: '1'
+        run: TMPDIR="$(mktemp -d)" dart test -t real-model -j 1
+      - name: Verify browser contracts against checkout core
+        if: ${{ !cancelled() && matrix.part == 'local core' }}
+        working-directory: packages/genkit_llamadart
+        run: >-
+          dart test -p chrome
+          test/api/runtime_owner/browser_guard_test.dart
+          test/integration/genkit/plugin/bidi_browser_guard_test.dart
+          test/integration/genkit/plugin/reasoning_history_test.dart
+          test/integration/genkit/converters/constrained_value_validation_test.dart
+          test/integration/genkit/media/browser_guards_test.dart
+          test/integration/genkit/plugin/runtime_capabilities_test.dart
+          test/integration/genkit/actions/model_action/inference_controls_test.dart
+          test/api/generation_config/inference_controls_codec_test.dart
+          test/integration/genkit/actions/scoring_action_test.dart
+          test/core/runtime/llama_engine_runtime_test.dart
+          test/integration/genkit/actions/embedder_action/multimodal_embedding_test.dart
+          test/integration/genkit/actions/embedder_action/multimodal_cancellation_test.dart
+          test/integration/genkit/converters/genkit_to_llama/rich_tool_schemas_test.dart
+          test/integration/genkit/actions/model_action/rich_tool_schemas_test.dart
+          test/integration/genkit/plugin/rich_tool_schema_loop_test.dart
+      - name: Remove local override
+        if: ${{ always() && matrix.part == 'local core' }}
+        working-directory: packages/genkit_llamadart
+        run: rm -f pubspec_overrides.yaml
+
+  model-store:
+    needs: changes
+    if: needs.changes.outputs.model-store == 'true'
+    name: Model Store (checkout core)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+      - name: Analyze and test on VM
+        working-directory: packages/llamadart_model_store
+        run: |
+          flutter pub get
+          dart format --output=none --set-exit-if-changed .
+          flutter analyze --fatal-infos
+          TMPDIR="$(mktemp -d)" flutter test
+      - name: Test on Chrome with bounded shutdown diagnostics
+        working-directory: packages/llamadart_model_store
+        run: >-
+          python3 ../../tool/ci/supervise_chrome_test.py
+          --output-dir "$RUNNER_TEMP/model-store-chrome"
+          --timeout-seconds 180 --
+          dart test -p chrome test/model_store_web_test.dart
+      - name: Upload Chrome process and phase diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: model-store-chrome-diagnostics
+          path: ${{ runner.temp }}/model-store-chrome
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Check the lane leaves the package unchanged
+        working-directory: packages/llamadart_model_store
+        run: |
+          changes="$(git status --porcelain --untracked-files=all -- .)"
+          if [ -n "$changes" ]; then
+            printf '%s\n' "$changes"
+            echo "::error::The model store lane modified tracked or untracked files."
+            exit 1
+          fi
+      # Resolve llamadart from this checkout so the dry-run validates the package
+      # against the unreleased core.
+      - name: Publish dry-run
+        working-directory: packages/llamadart_model_store
+        run: |
+          staged="$RUNNER_TEMP/llamadart_model_store-publish"
+          rm -rf "$staged"
+          mkdir -p "$staged"
+          rsync -a --delete \
+            --exclude='.dart_tool' \
+            --exclude='build' \
+            --exclude='pubspec.lock' \
+            --exclude='pubspec_overrides.yaml' \
+            ./ "$staged/"
+          printf 'dependency_overrides:\n  llamadart:\n    path: %s\n' \
+            "$GITHUB_WORKSPACE" > "$staged/pubspec_overrides.yaml"
+          (cd "$staged" && flutter pub publish --dry-run)
+
+  analyze:
+    needs: changes
+    if: needs.changes.outputs.analyze == 'true'
+    name: Analyze & Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The released-changelog check diffs against the merge base.
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: dart run tool/prepare_workspace.dart
+
+      # A tracked lockfile pub rewrites on every resolve is a real defect, and
+      # nothing else in CI would notice it.
+      - name: Verify dependency preparation leaves tracked files unchanged
+        run: git diff --exit-code
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze project source
+        run: dart analyze
+
+      - name: Verify CI workflow selection contracts
+        run: dart test -p vm test/unit/tooling/ci_workflow_selection_test.dart
+
+      - name: Verify public capability validation coverage
+        run: dart test -p vm test/unit/tooling/validation_coverage_test.dart
+
+      - name: Check platform boundaries
+        run: dart run tool/testing/check_platform_boundaries.dart
+
+      - name: Verify release docs versions
+        run: dart run tool/testing/verify_release_docs_versions.dart
+
+      - name: Check released changelog sections
+        run: dart run tool/testing/check_released_changelog_sections.dart
+
+      - name: Check WebGPU bridge asset tag
+        run: dart run tool/testing/check_webgpu_bridge_tag.dart
+
+      - name: Verify native release pin policy
+        run: python3 tool/native/test_sync_native_release_pins.py
+
+      - name: Verify native header archive staging
+        run: python3 tool/native/test_native_header_archive.py
+
+      - name: Verify native header sync atomicity
+        run: python3 tool/native/test_sync_native_headers_and_bindings.py
+
+      - name: Verify stable_diffusion header sync
+        run: python3 tool/native/test_sync_stable_diffusion_bindings.py
+
+      - name: Pub Publish Dry Run
+        run: python3 tool/release/check_core_archive.py
+
+      - name: Install Pana
+        run: flutter pub global activate pana
+
+      # pana fails when (max - granted) > threshold. Its max is 160, so the
+      # old value of 160 could never trip. Package scores 160/160; 0 keeps it
+      # there, and a tolerance of 5+ would hide a whole scoring bucket.
+      - name: Check Pana Score
+        run: flutter pub global run pana . --exit-code-threshold 0
+
+  # macOS runs process_memory_test in companion-packages. Windows runs it in
+  # Test Native when that job is selected, and in this matrix otherwise.
+  validation-harness:
+    needs: changes
+    if: needs.changes.outputs.validation-harness == 'true'
+    name: Validation harness (model-free, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(needs.changes.outputs.validation-harness-os) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+      - run: dart pub get
+        working-directory: packages/llamadart_validation
+      - if: matrix.os == 'ubuntu-latest'
+        run: dart analyze --fatal-infos
+        working-directory: packages/llamadart_validation
+      - run: dart test ${{ matrix.os == 'windows-latest' && 'test/process_memory_test.dart' || '' }}
+        working-directory: packages/llamadart_validation
+
+  # One macOS job holds every macOS check that does not need Test Native:
+  # GitHub Free allows 5 concurrent macOS jobs across all of the owner's repos.
+  # Every step runs even if an earlier one failed, as separate jobs would.
+  companion-packages:
+    needs: changes
+    if: needs.changes.outputs.companion-job == 'true'
+    name: Companion Packages (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+
+      - name: Check llamadart_llama_cpp_flutter
+        if: ${{ !cancelled() && contains(fromJSON(needs.changes.outputs.companions), 'packages/llamadart_llama_cpp_flutter') }}
+        uses: ./.github/actions/companion-package
+        with:
+          package: packages/llamadart_llama_cpp_flutter
+
+      - name: Check llamadart_litert_lm_flutter
+        if: ${{ !cancelled() && contains(fromJSON(needs.changes.outputs.companions), 'packages/llamadart_litert_lm_flutter') }}
+        uses: ./.github/actions/companion-package
+        with:
+          package: packages/llamadart_litert_lm_flutter
+
+      - name: Check llamadart_stable_diffusion_flutter
+        if: ${{ !cancelled() && contains(fromJSON(needs.changes.outputs.companions), 'packages/llamadart_stable_diffusion_flutter') }}
+        uses: ./.github/actions/companion-package
+        with:
+          package: packages/llamadart_stable_diffusion_flutter
+
+      - name: Test validation process memory
+        if: ${{ !cancelled() && needs.changes.outputs.validation-harness == 'true' }}
+        working-directory: packages/llamadart_validation
+        run: |
+          dart pub get
+          dart test test/process_memory_test.dart
+
+      - name: Install root dependencies for the Apple companion cache check
+        if: ${{ !cancelled() && needs.changes.outputs.test-other-os == 'true' }}
+        run: flutter pub get
+
+      - name: Verify Flutter Apple companion cache transitions
+        if: ${{ !cancelled() && needs.changes.outputs.test-other-os == 'true' }}
+        run: dart test -p vm --run-skipped test/integration/apple_companion_flutter_cache_test.dart
+
+  docs-check:
+    needs: changes
+    if: needs.changes.outputs.docs-check == 'true'
+    name: Docs Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: (cd website && dart pub get)
+
+      - name: Analyze documentation site
+        run: (cd website && dart analyze --fatal-infos)
+
+      - name: Test documentation site
+        run: (cd website && dart test)
+
+      - name: Build documentation site
+        run: ./tool/docs/build_site.sh
+
+  # The root tests that read Markdown, for a change that selects no full Linux
+  # coverage. test/unit/tooling/markdown_test_suites_test.dart keeps the list whole.
+  markdown-tests:
+    needs: changes
+    if: needs.changes.outputs.markdown-tests == 'true'
+    name: Markdown Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Isolate system temp with a LiteRT-LM cache canary
+        shell: bash
+        run: bash tool/ci/litert_lm_temp_canary.sh seed
+
+      - name: Run Markdown tests
+        run: xargs dart test -p vm -j 1 --exclude-tags local-only < tool/ci/markdown_test_suites.txt
+
+      - name: Check the LiteRT-LM cache canary
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: bash tool/ci/litert_lm_temp_canary.sh check
+
+  test-linux-vm:
+    needs: changes
+    if: needs.changes.outputs.test-linux-coverage == 'true'
+    name: Test Linux VM (${{ matrix.shard }}/${{ strategy.job-total }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      # tool/ci/test_shards.dart puts every root test file in exactly one shard,
+      # balanced by measured time; each keeps -j 1. After merge each also
+      # writes raw coverage that test-linux-coverage merges.
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Cache tiny GGUF test model
+        id: tiny-gguf-cache
+        uses: actions/cache@v6
+        with:
+          path: .dart_tool/test_models/stories15M.gguf
+          key: tiny-gguf-stories15M-${{ runner.os }}-v1
+
+      - name: Download tiny GGUF test model
+        if: steps.tiny-gguf-cache.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          mkdir -p .dart_tool/test_models
+          curl_args=(--fail --location --retry 8 --retry-all-errors --retry-delay 10)
+          if [[ -n "${HF_TOKEN:-}" ]]; then
+            curl_args+=(--header "Authorization: Bearer $HF_TOKEN")
+          fi
+          curl "${curl_args[@]}" \
+            "https://huggingface.co/ggml-org/tiny-llamas/resolve/main/stories15M.gguf" \
+            --output .dart_tool/test_models/stories15M.gguf
+
+      - name: Cache llama.cpp chat templates
+        id: llama-cpp-templates-cache
+        uses: actions/cache@v6
+        with:
+          path: .dart_tool/llama_cpp_templates
+          key: llama-cpp-templates-${{ hashFiles('tool/testing/llama_cpp_templates.ref') }}
+
+      - name: Download llama.cpp chat templates
+        if: steps.llama-cpp-templates-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          ref="$(tr -d '[:space:]' < tool/testing/llama_cpp_templates.ref)"
+          mkdir -p .dart_tool/llama_cpp_templates
+          curl --fail --location --retry 8 --retry-all-errors --retry-delay 10 \
+            "https://github.com/ggml-org/llama.cpp/archive/refs/tags/$ref.tar.gz" \
+            | tar -xz -C .dart_tool/llama_cpp_templates --strip-components=3 \
+              "llama.cpp-$ref/models/templates"
+
+      - name: Isolate system temp with a LiteRT-LM cache canary
+        shell: bash
+        run: bash tool/ci/litert_lm_temp_canary.sh seed
+
+      - name: Select shard test files
+        id: shard
+        run: dart tool/ci/test_shards.dart linux-vm ${{ matrix.shard }} ${{ strategy.job-total }}
+
+      # The image's first `node` start pages the binary in from a cold disk
+      # (once past two minutes); tooling fixtures bound each Node harness run
+      # at 60 s, which must not absorb that load.
+      - name: Load Node for tooling fixtures
+        if: contains(steps.shard.outputs.files, 'test/unit/tooling/playwright_chat_app_real_model_smoke_test.dart')
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          command -v node
+          time node -e 'console.log(process.version)'
+
+      # Collecting coverage doubles the VM time, so only post-merge runs do.
+      - name: Run VM tests
+        env:
+          LLAMADART_TEST_MODELS_DIR: ${{ github.workspace }}/.dart_tool/test_models
+          LLAMA_CPP_TEMPLATES_DIR: ${{ github.workspace }}/.dart_tool/llama_cpp_templates
+          REQUIRE_LLAMA_CPP_TEMPLATES: '1'
+        run: dart test -p vm -j 1 --exclude-tags local-only ${{ needs.changes.outputs.coverage == 'true' && '--coverage=coverage' || '' }} --file-reporter=json:.dart_tool/test_events.jsonl ${{ steps.shard.outputs.files }}
+
+      - name: Check the LiteRT-LM cache canary
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: bash tool/ci/litert_lm_temp_canary.sh check
+
+      - name: Summarize test timing
+        if: ${{ !cancelled() && hashFiles('.dart_tool/test_events.jsonl') != '' }}
+        run: dart tool/ci/native_test_timing.dart .dart_tool/test_events.jsonl .dart_tool/test_timing.json
+
+      - name: Upload test timing
+        if: ${{ !cancelled() && hashFiles('.dart_tool/test_timing.json') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-timing-linux-vm-${{ matrix.shard }}-${{ github.run_attempt }}
+          path: .dart_tool/test_timing.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload raw coverage
+        if: needs.changes.outputs.coverage == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-vm-coverage-${{ matrix.shard }}
+          path: coverage/
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
+  # Runs after merge (push and manual runs) only; a failure here fails main.
+  test-linux-coverage:
+    needs: [changes, test-linux-vm]
+    if: needs.changes.outputs.test-linux-coverage == 'true' && needs.changes.outputs.coverage == 'true'
+    name: Test Linux VM (with Coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Download raw coverage of every shard
+        uses: actions/download-artifact@v8
+        with:
+          pattern: linux-vm-coverage-*
+          merge-multiple: true
+          path: coverage/
+
+      - name: Format coverage
+        run: |
+          dart run tool/testing/format_lcov.dart --lcov --in=coverage/test --out=coverage/lcov.info --report-on=lib --check-ignore
+          dart run tool/testing/check_lcov_threshold.dart coverage/lcov.info 70
+
+      - name: Report the failed coverage gate
+        if: failure()
+        run: |
+          message="Post-merge coverage gate failed on $GITHUB_SHA: lib/ line coverage is below 70% or could not be measured. PRs do not run this gate, so fix main before merging more changes."
+          echo "::error title=Coverage gate failed on main::$message"
+          echo "### :x: $message" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Import Codecov uploader verification key
+        run: |
+          curl --fail --location --silent --show-error \
+            https://uploader.codecov.io/verification.gpg \
+            --output codecov-verification.gpg
+          gpg --batch --import codecov-verification.gpg
+          gpg --batch --fingerprint 806BB28AED779869 \
+            | grep -q "2703 4E7F DB85 0E0B BC2C  62FF 806B B28A ED77 9869"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          files: coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  test-web:
+    needs: changes
+    if: needs.changes.outputs.test-web == 'true'
+    name: Test Web (Chrome, ${{ matrix.shard }}/${{ strategy.job-total }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      # Whole files, not `--total-shards`: most of this lane is compiling each
+      # suite with dart2js, which test-level shards would all repeat.
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Select shard test files
+        id: shard
+        run: dart tool/ci/test_shards.dart chrome ${{ matrix.shard }} ${{ strategy.job-total }}
+
+      - name: Run Browser tests
+        run: dart test -p chrome --exclude-tags local-only --file-reporter=json:.dart_tool/test_events.jsonl ${{ steps.shard.outputs.files }}
+
+      - name: Summarize test timing
+        if: ${{ !cancelled() && hashFiles('.dart_tool/test_events.jsonl') != '' }}
+        run: dart tool/ci/native_test_timing.dart .dart_tool/test_events.jsonl .dart_tool/test_timing.json
+
+      - name: Upload test timing
+        if: ${{ !cancelled() && hashFiles('.dart_tool/test_timing.json') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-timing-chrome-${{ matrix.shard }}-${{ github.run_attempt }}
+          path: .dart_tool/test_timing.json
+          if-no-files-found: error
+          retention-days: 14
+
+  # chat_app's tests run in web-chat-contract. Model-backed tests are tagged
+  # local-only, so this job needs no model.
+  example-packages:
+    needs: changes
+    if: needs.changes.outputs.example-packages == 'true'
+    name: Example Package Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: 'stable'
+          cache: true
+
+      - name: Test basic_app
+        if: ${{ !cancelled() }}
+        working-directory: example/basic_app
+        run: |
+          flutter pub get
+          TMPDIR="$(mktemp -d)" dart test --exclude-tags local-only
+
+      - name: Test laya_command_bar
+        if: ${{ !cancelled() }}
+        working-directory: example/laya_command_bar
+        run: |
+          flutter pub get
+          TMPDIR="$(mktemp -d)" flutter test --exclude-tags local-only
+
+      - name: Test laya_tetris
+        if: ${{ !cancelled() }}
+        working-directory: example/laya_tetris
+        run: |
+          flutter pub get
+          TMPDIR="$(mktemp -d)" flutter test --exclude-tags local-only
+
+      - name: Test llamadart_cli
+        if: ${{ !cancelled() }}
+        working-directory: example/llamadart_cli
+        run: |
+          flutter pub get
+          TMPDIR="$(mktemp -d)" dart test --exclude-tags local-only
+
+      - name: Test llamadart_server
+        if: ${{ !cancelled() }}
+        working-directory: example/llamadart_server
+        run: |
+          flutter pub get
+          TMPDIR="$(mktemp -d)" dart test --exclude-tags local-only
+
+      - name: Test tui_coding_agent
+        if: ${{ !cancelled() }}
+        working-directory: example/tui_coding_agent
+        run: |
+          flutter pub get
+          TMPDIR="$(mktemp -d)" dart test --exclude-tags local-only
+
+  web-chat-contract:
+    needs: changes
+    if: needs.changes.outputs.web-chat-contract == 'true'
+    name: Web Chat Contract
+    outputs:
+      artifact-id: ${{ steps.production-artifact.outputs.artifact-id }}
+      artifact-digest: ${{ steps.production-artifact.outputs.artifact-digest }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Skip the stable_diffusion runtime download
+        working-directory: example/chat_app
+        run: |
+          sed -i 's/^\( *llamadart_native_runtimes:\) all$/\1 both/' pubspec.yaml
+          grep -q '^ *llamadart_native_runtimes: both$' pubspec.yaml
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          (cd example/chat_app && flutter pub get)
+
+      - name: Run chat app tests
+        working-directory: example/chat_app
+        run: flutter test test test_vm
+
+      # flutter_tools can wait forever for Chrome's Browser.close reply (#1702);
+      # the supervisor then takes the JSON reporter result.
+      - name: Run chat app Chrome tests with bounded shutdown
+        working-directory: example/chat_app
+        run: >-
+          python3 ../../tool/ci/supervise_chrome_test.py
+          --output-dir "$RUNNER_TEMP/chat-app-chrome"
+          --reporter-file "$RUNNER_TEMP/chat-app-chrome/reporter.jsonl"
+          --timeout-seconds 600 --
+          flutter test --platform chrome
+          --file-reporter "json:$RUNNER_TEMP/chat-app-chrome/reporter.jsonl"
+          test/chat_generation_service_test.dart test/image_generation_screen_test.dart
+          test/unit_test.dart test/conversation_state_service_test.dart
+
+      - name: Upload chat app Chrome diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-app-chrome-diagnostics
+          path: ${{ runner.temp }}/chat-app-chrome
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Restore the chat app pubspec
+        run: git checkout -- example/chat_app/pubspec.yaml
+
+      - name: Build and validate deployable Web artifact
+        env:
+          CHAT_APP_BASE_HREF: /
+          CHAT_APP_BUILD_SHA: ${{ github.sha }}
+        run: ./scripts/build_chat_app_web.sh
+
+      - name: Cache tiny GGUF browser model
+        id: web-tiny-gguf-cache
+        uses: actions/cache@v6
+        with:
+          path: .dart_tool/test_models/stories15M.gguf
+          key: tiny-gguf-stories15M-${{ runner.os }}-v1
+
+      - name: Download tiny GGUF browser model
+        if: steps.web-tiny-gguf-cache.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          mkdir -p .dart_tool/test_models
+          curl_args=(--fail --location --retry 8 --retry-all-errors --retry-delay 10)
+          if [[ -n "${HF_TOKEN:-}" ]]; then
+            curl_args+=(--header "Authorization: Bearer $HF_TOKEN")
+          fi
+          curl "${curl_args[@]}" \
+            "https://huggingface.co/ggml-org/tiny-llamas/resolve/main/stories15M.gguf" \
+            --output .dart_tool/test_models/stories15M.gguf
+
+      - name: Install Playwright Chromium
+        run: |
+          # Hosted images already ship Chromium's libraries; system package installs let mirror outages fail this required job.
+          python -m venv .dart_tool/playwright-python
+          .dart_tool/playwright-python/bin/pip install "playwright==1.61.0"
+          .dart_tool/playwright-python/bin/python -m playwright install chromium
+
+      - name: Smoke-test the production Web artifact
+        run: |
+          dart run tool/testing/run_local_e2e.dart \
+            --scenario chat-app-web-production-smoke \
+            --skip-build
+
+      - name: Keep tested production artifact
+        id: production-artifact
+        if: >-
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+          github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-app-web-${{ github.sha }}-${{ github.run_attempt }}
+          path: example/chat_app/build/web/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Web contract diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-chat-contract-diagnostics
+          path: |
+            example/chat_app/build/web/llamadart-build.json
+            example/chat_app/build/web/webgpu_bridge/manifest.json
+            example/chat_app/build/web/webgpu_bridge/sha256sums.txt
+          if-no-files-found: ignore
+
+  artifact-contract:
+    needs: changes
+    if: needs.changes.outputs.artifact-contract == 'true'
+    name: Web Diagnostics Artifact Contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Prepare diagnostic fixtures and verify production upload contract
+        run: |
+          python3 - <<'PYTHON'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/ci.yml').read_text()
+          production = workflow.split('      - name: Upload Web contract diagnostics\n', 1)[1].split('\n  artifact-contract:', 1)[0]
+          assert 'if: $' + '{{ failure() }}' in production
+          assert 'uses: actions/upload-artifact@v7' in production
+          assert 'name: web-chat-contract-diagnostics' in production
+          assert 'if-no-files-found: ignore' in production
+          assert 'archive: false' not in production
+          paths = [
+              'llamadart-build.json',
+              'webgpu_bridge/manifest.json',
+              'webgpu_bridge/sha256sums.txt',
+          ]
+          for relative in paths:
+              path = Path('example/chat_app/build/web') / relative
+              assert str(path) in production
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_text('diagnostic fixture: ' + relative + '\n')
+          PYTHON
+
+      - name: Upload diagnostic fixture archive
+        id: fixture-upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-chat-contract-fixture
+          path: |
+            example/chat_app/build/web/llamadart-build.json
+            example/chat_app/build/web/webgpu_bridge/manifest.json
+            example/chat_app/build/web/webgpu_bridge/sha256sums.txt
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Download named diagnostic archive
+        uses: actions/download-artifact@v8
+        with:
+          name: web-chat-contract-fixture
+          path: downloaded-diagnostics
+
+      - name: Verify archive paths and exact contents
+        env:
+          ARTIFACT_ID: ${{ steps.fixture-upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.fixture-upload.outputs.artifact-digest }}
+        run: |
+          python3 - <<'PYTHON'
+          import os
+          import re
+          from pathlib import Path
+
+          assert os.environ['ARTIFACT_ID'].isdigit()
+          assert re.fullmatch(r'[0-9a-f]{64}', os.environ['ARTIFACT_DIGEST'])
+          root = Path('downloaded-diagnostics')
+          expected = {'llamadart-build.json', 'webgpu_bridge/manifest.json', 'webgpu_bridge/sha256sums.txt'}
+          actual = {p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}
+          assert actual == expected, (actual, expected)
+          for relative in expected:
+              assert (root / relative).read_text() == 'diagnostic fixture: ' + relative + '\n'
+          PYTHON
+
+      - name: Missing diagnostics do not mask the original failure
+        id: missing-upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-chat-contract-missing-fixture
+          path: absent-diagnostics/*.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Verify missing diagnostics created no artifact
+        env:
+          ARTIFACT_ID: ${{ steps.missing-upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.missing-upload.outputs.artifact-digest }}
+        run: test -z "$ARTIFACT_ID" && test -z "$ARTIFACT_DIGEST"
+
+  test-linux-web:
+    name: Test Linux & Web (with Coverage)
+    if: ${{ always() && inputs.native_default_qualification != true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - changes
+      - analyze
+      - docs-check
+      - docs-versions
+      - validation-harness
+      - validation-integration
+      - companion-packages
+      - test-linux-vm
+      - test-linux-coverage
+      - test-web
+      - web-chat-contract
+      - test-other-os
+      - native-prompt-reuse-parity
+      - artifact-contract
+      - genkit
+      - example-packages
+      - model-store
+      - markdown-tests
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Verify every selected check succeeded
+        env:
+          PLAN: ${{ needs.changes.outputs.plan }}
+          NEEDS: ${{ toJSON(needs) }}
+        run: python3 tool/ci/select_jobs.py aggregate
+
+  test-other-os:
+    needs: changes
+    if: needs.changes.outputs.test-other-os == 'true'
+    name: Test Native (${{ matrix.lane }}, ${{ matrix.shard }}/${{ matrix.shards }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      # tool/ci/test_shards.dart puts every root test file that can behave
+      # differently by host OS (hostReasons there) in exactly one shard of each
+      # OS, balanced by measured time; Linux VM runs every file. Windows keeps
+      # tooling and runtime suites in separate processes (windowsToolingPaths).
+      matrix:
+        include:
+          - {os: macos-latest, lane: macos, shard: 1, shards: 3}
+          - {os: macos-latest, lane: macos, shard: 2, shards: 3}
+          - {os: macos-latest, lane: macos, shard: 3, shards: 3}
+          - {os: windows-latest, lane: windows-tooling, shard: 1, shards: 1}
+          - {os: windows-latest, lane: windows-runtime, shard: 1, shards: 2}
+          - {os: windows-latest, lane: windows-runtime, shard: 2, shards: 2}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Cache tiny GGUF test model
+        id: tiny-gguf-cache
+        uses: actions/cache@v6
+        with:
+          path: .dart_tool/test_models/stories15M.gguf
+          key: tiny-gguf-stories15M-${{ runner.os }}-v1
+
+      - name: Download tiny GGUF test model
+        if: steps.tiny-gguf-cache.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          mkdir -p .dart_tool/test_models
+          curl_args=(--fail --location --retry 8 --retry-all-errors --retry-delay 10)
+          if [[ -n "${HF_TOKEN:-}" ]]; then
+            curl_args+=(--header "Authorization: Bearer $HF_TOKEN")
+          fi
+          curl "${curl_args[@]}" \
+            "https://huggingface.co/ggml-org/tiny-llamas/resolve/main/stories15M.gguf" \
+            --output .dart_tool/test_models/stories15M.gguf
+
+      - name: Isolate system temp with a LiteRT-LM cache canary
+        shell: bash
+        run: bash tool/ci/litert_lm_temp_canary.sh seed
+
+      - name: Select shard test files
+        id: shard
+        run: dart tool/ci/test_shards.dart ${{ matrix.lane }} ${{ matrix.shard }} ${{ matrix.shards }}
+
+      # A Windows runner's first Python start has taken up to 54 s, and any
+      # shard's tooling suites may be the first to start it within a 30 s test.
+      - name: Load Python for tooling fixtures
+        if: runner.os == 'Windows'
+        timeout-minutes: 5
+        run: python -c "import sys; print(sys.version)"
+
+      - name: Run native tests
+        env:
+          GGML_METAL_DEVICES: "0"
+          LLAMADART_TEST_MODELS_DIR: ${{ github.workspace }}/.dart_tool/test_models
+        run: dart test -p vm -j 1 --exclude-tags local-only --file-reporter=json:.dart_tool/test_events.jsonl ${{ steps.shard.outputs.files }}
+
+      - name: Check the LiteRT-LM cache canary
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: bash tool/ci/litert_lm_temp_canary.sh check
+
+      # Two steps: Windows PowerShell would ignore a failing first command.
+      - name: Install validation harness dependencies
+        if: ${{ !cancelled() && matrix.lane == 'windows-runtime' && matrix.shard == 2 && needs.changes.outputs.validation-harness == 'true' }}
+        working-directory: packages/llamadart_validation
+        run: dart pub get
+
+      - name: Test validation process memory
+        if: ${{ !cancelled() && matrix.lane == 'windows-runtime' && matrix.shard == 2 && needs.changes.outputs.validation-harness == 'true' }}
+        working-directory: packages/llamadart_validation
+        run: dart test test/process_memory_test.dart
+
+      - name: Summarize test timing
+        if: ${{ !cancelled() && hashFiles('.dart_tool/test_events.jsonl') != '' }}
+        run: dart tool/ci/native_test_timing.dart .dart_tool/test_events.jsonl .dart_tool/test_timing.json
+
+      - name: Upload test timing
+        if: ${{ !cancelled() && hashFiles('.dart_tool/test_timing.json') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-timing-${{ matrix.lane }}-${{ matrix.shard }}-${{ github.run_attempt }}
+          path: .dart_tool/test_timing.json
+          if-no-files-found: error
+          retention-days: 14
+
+  native-prompt-reuse-parity:
+    needs: changes
+    if: needs.changes.outputs.native-prompt-reuse-parity == 'true'
+    name: Native Prompt Reuse Parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Download parity model
+        shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/models"
+          curl_args=(--fail --location --retry 8 --retry-all-errors --retry-delay 10)
+          if [[ -n "${HF_TOKEN:-}" ]]; then
+            curl_args+=(--header "Authorization: Bearer $HF_TOKEN")
+          fi
+          curl "${curl_args[@]}" \
+            "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf?download=true" \
+            --output "$RUNNER_TEMP/models/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+
+      - name: Run native prompt reuse parity
+        run: |
+          dart run tool/testing/native_prompt_reuse_parity.dart \
+            --model "$RUNNER_TEMP/models/qwen2.5-0.5b-instruct-q4_k_m.gguf" \
+            --prompt-file "tool/testing/prompts/native_prompt_reuse_ci_prompts.txt" \
+            --max-prompts 4 \
+            --runs 1 \
+            --max-tokens 64 \
+            --gpu-layers 0 \
+            --threads 1 \
+            --threads-batch 1 \
+            --temp 0 \
+            --top-k 1 \
+            --top-p 1.0 \
+            --min-p 0.0 \
+            --repeat-penalty 1.0 \
+            --fail-on-mismatch
+
+  docs-versions:
+    name: Documentation version and pin checks
+    needs: changes
+    if: needs.changes.outputs.docs-versions == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The released-changelog check diffs against the merge base.
+          fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+      - run: dart pub get
+      - run: dart run tool/testing/verify_release_docs_versions.dart
+      - run: dart run tool/testing/check_released_changelog_sections.dart
+      - run: dart run tool/testing/check_webgpu_bridge_tag.dart
+
+  validation-integration:
+    name: Validation provider and workspace contracts
+    needs: changes
+    if: needs.changes.outputs.validation-integration == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+      - run: dart pub get
+      - if: needs.changes.outputs.test-linux-coverage != 'true'
+        run: dart test -p vm test/unit/tooling/validation_remote_test.dart test/unit/tooling/validation_image_profile_test.dart test/unit/tooling/validation_npu_test.dart test/unit/tooling/validation_android_java_home_test.dart test/unit/tooling/prepare_workspace_test.dart
+      - run: flutter pub get
+        working-directory: example/chat_app
+      - run: flutter test test/validation_controller_test.dart test/validation_app_test.dart
+        working-directory: example/chat_app
+
+  windows-registry-qualification:
+    name: Windows registry qualification (manual)
+    if: github.event_name == 'workflow_dispatch' && inputs.windows_registry_qualification == true && inputs.native_default_qualification != true
+    runs-on: windows-2022
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare pinned qualification SDK
+        env:
+          LLAMADART_WINDOWS_QUALIFICATION: ${{ runner.temp }}/windows-registry-${{ github.run_id }}-${{ github.run_attempt }}
+        shell: pwsh
+        run: ./test/fixtures/windows_ggml_registry_qualification/qualification.ps1 -Prepare
+      - name: List, inspect and execute the durable scenario
+        env:
+          LLAMADART_WINDOWS_QUALIFICATION: ${{ runner.temp }}/windows-registry-${{ github.run_id }}-${{ github.run_attempt }}
+        shell: pwsh
+        run: |
+          . ./test/fixtures/windows_ggml_registry_qualification/qualification.ps1 -FunctionsOnly
+          $W = $env:LLAMADART_WINDOWS_QUALIFICATION
+          $O = Join-Path $W 'out'
+          $dart = Join-Path $W 'stage/flutter/bin/cache/dart-sdk/bin/dart.exe'
+          $env:Path = (Split-Path $dart) + ';' + $env:Path
+          $cleanPath = $env:Path
+          Must 'launcher-pub-get' $dart 'pub get' 300
+          Must 'launcher-list' $dart 'run tool/testing/run_local_e2e.dart --list' 300
+          Must 'launcher-dry-run' $dart 'run tool/testing/run_local_e2e.dart --scenario windows-native-override-registry --dry-run' 300
+          Must 'launcher-scenario' $dart 'run tool/testing/run_local_e2e.dart --scenario windows-native-override-registry' 3900
+      - name: Seal all qualification evidence
+        if: ${{ always() }}
+        env:
+          LLAMADART_WINDOWS_QUALIFICATION: ${{ runner.temp }}/windows-registry-${{ github.run_id }}-${{ github.run_attempt }}
+        shell: pwsh
+        run: ./test/fixtures/windows_ggml_registry_qualification/qualification.ps1 -Seal
+      - name: Keep immutable qualification evidence
+        id: qualification-artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-registry-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/windows-registry-${{ github.run_id }}-${{ github.run_attempt }}/evidence.zip
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 1
+      - name: Record artifact identity
+        if: ${{ always() }}
+        shell: pwsh
+        env:
+          ARTIFACT_ID: ${{ steps.qualification-artifact.outputs.artifact-id }}
+          ARTIFACT_URL: ${{ steps.qualification-artifact.outputs.artifact-url }}
+          ARTIFACT_DIGEST: ${{ steps.qualification-artifact.outputs.artifact-digest }}
+        run: |
+          "Artifact ID: $env:ARTIFACT_ID`nURL: $env:ARTIFACT_URL`nSHA256: $env:ARTIFACT_DIGEST" >> $env:GITHUB_STEP_SUMMARY
+
+  native-default-consumer-qualification:
+    name: Default native consumer qualification (manual)
+    if: github.event_name == 'workflow_dispatch' && inputs.native_default_qualification == true && github.repository == 'leehack/llamadart' && github.run_attempt == 1
+    permissions:
+      contents: read
+    uses: ./.github/workflows/native_default_consumer_qualification.yml
+    with:
+      expected_sha: ${{ inputs.native_default_expected_sha }}
+      expected_native_tag: ${{ inputs.native_default_expected_native_tag }}
+
+  deploy-chat-app:
+    needs: [test-linux-web, web-chat-contract]
+    if: >-
+      !cancelled() && inputs.windows_registry_qualification != true &&
+      inputs.native_default_qualification != true &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/main' && github.repository == 'leehack/llamadart' &&
+      needs.test-linux-web.result == 'success' && needs.web-chat-contract.result == 'success'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/chat_app_hf_static_deploy.yml
+    with:
+      artifact_id: ${{ needs.web-chat-contract.outputs.artifact-id }}
+      artifact_digest: ${{ needs.web-chat-contract.outputs.artifact-digest }}
+    secrets:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}

@@ -1,0 +1,338 @@
+{
+  "source_base": "5eda9148b48dee0d3066e9fda1152a86ed2283d0",
+  "scope": "Actual new raw emissions. Historical parsed-only rows are not reconstructed as wire output. Unchanged string/reasoning expectations come from unchanged baseline replay; typed fixes have explicit requested JSON values.",
+  "cases": [
+    {
+      "id": "LFM2.5-1.2B-Thinking-Q4_K_M.gguf/winnew",
+      "model": "LFM2.5-1.2B-Thinking-Q4_K_M.gguf",
+      "model_sha256": "251867cddd9e1240ec0d8a733cf705629631fbe36c9170c54b968388fae3ba7e",
+      "raw": "<think> Okay, let's see what the user is asking here. They want me to save a note with the exact text \"C:\\new\\table.txt\". The tool available is save_note, which requires a 'text' parameter. Since the user specified the exact text, I need to make sure that the argument passed to save_note is precisely that string.\n\nWait, but the parameters for save_note expect a 'text' property. So I should structure the tool call with \"text\": \"C:\\new\\table.txt\". The user didn't mention any other parameters, so just pass that single text. I need to ensure that the JSON object for the tool call is correctly formatted. Also, check if there are any constraints, but since the instruction says to return only the tool call, I should just output that. Let me confirm: the function name is save_note, arguments should be {\"text\": \"C:\\new\\table.txt\"}. Yep",
+      "raw_sha256": "6dcafbcce77df96f49ff20a56c6ab2b03eeddfa3cdce7fb627d1f1462ef3316f",
+      "tool": {
+        "name": "save_note",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ]
+        }
+      },
+      "expected": {
+        "content": "",
+        "reasoning": "Okay, let's see what the user is asking here. They want me to save a note with the exact text \"C:\new\\table.txt\". The tool available is save_note, which requires a 'text' parameter. Since the user specified the exact text, I need to make sure that the argument passed to save_note is precisely that string.\n\nWait, but the parameters for save_note expect a 'text' property. So I should structure the tool call with \"text\": \"C:\new\\table.txt\". The user didn't mention any other parameters, so just pass that single text. I need to ensure that the JSON object for the tool call is correctly formatted. Also, check if there are any constraints, but since the instruction says to return only the tool call, I should just output that. Let me confirm: the function name is save_note, arguments should be {\"text\": \"C:\new\\table.txt\"}. Yep",
+        "calls": []
+      },
+      "scope": "baseline-preservation",
+      "provenance": "Actual CPU emission from maintained lfm2_schema_qualification_e2e_test; temp0 seed1 threads2; original model-prompt captures retained in qualification evidence."
+    },
+    {
+      "id": "LFM2.5-1.2B-Thinking-Q4_K_M.gguf/string_false",
+      "model": "LFM2.5-1.2B-Thinking-Q4_K_M.gguf",
+      "model_sha256": "251867cddd9e1240ec0d8a733cf705629631fbe36c9170c54b968388fae3ba7e",
+      "raw": "<think> Okay, let's see what the user is asking here. They want me to fill a field called \"discount\" with the value False. The tool provided is called fill_field, which takes parameters field and value. So I need to use that function.\n\nFirst, check the parameters: field should be \"discount\" and value is \"False\". Since the user specified exactly those parameters, I just have to structure the tool call correctly. The function requires both field and value, so I'll make sure they're included. No other tools are available, so this is the right approach. Just need to return the JSON object inside the tool_call tags as instructed.\n</think>\n<|tool_call_start|>[fill_field(field='discount', value='False')]<|tool_call_end|>",
+      "raw_sha256": "b0eeeebca711aff53cc47c380fd84b810d9592928fc120e5203800ed2ba8a370",
+      "tool": {
+        "name": "fill_field",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "field",
+            "value"
+          ]
+        }
+      },
+      "expected": {
+        "content": "",
+        "reasoning": "Okay, let's see what the user is asking here. They want me to fill a field called \"discount\" with the value False. The tool provided is called fill_field, which takes parameters field and value. So I need to use that function.\n\nFirst, check the parameters: field should be \"discount\" and value is \"False\". Since the user specified exactly those parameters, I just have to structure the tool call correctly. The function requires both field and value, so I'll make sure they're included. No other tools are available, so this is the right approach. Just need to return the JSON object inside the tool_call tags as instructed.",
+        "calls": [
+          {
+            "name": "fill_field",
+            "arguments": {
+              "field": "discount",
+              "value": "False"
+            }
+          }
+        ]
+      },
+      "scope": "baseline-preservation",
+      "provenance": "Actual CPU emission from maintained lfm2_schema_qualification_e2e_test; temp0 seed1 threads2; original model-prompt captures retained in qualification evidence."
+    },
+    {
+      "id": "LFM2-1.2B-Tool-Q4_K_M.gguf/winnew",
+      "model": "LFM2-1.2B-Tool-Q4_K_M.gguf",
+      "model_sha256": "3a942f51f9f3088c0b502b61ee49480a3d8c54de369f9c53ee5668419caf67a7",
+      "raw": "<|tool_call_start|>[save_note(text=\"C:\\new\\table.txt\")]<|tool_call_end|>",
+      "raw_sha256": "128ef40c3926dd886cd24b90085922a671462d2fe11999ef8241dd7d6297a860",
+      "tool": {
+        "name": "save_note",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ]
+        }
+      },
+      "expected": {
+        "content": "",
+        "reasoning": null,
+        "calls": [
+          {
+            "name": "save_note",
+            "arguments": {
+              "text": "C:\\new\\table.txt"
+            }
+          }
+        ]
+      },
+      "scope": "baseline-preservation",
+      "provenance": "Actual CPU emission from maintained lfm2_schema_qualification_e2e_test; temp0 seed1 threads2; original model-prompt captures retained in qualification evidence."
+    },
+    {
+      "id": "LFM2-1.2B-Tool-Q4_K_M.gguf/py_path",
+      "model": "LFM2-1.2B-Tool-Q4_K_M.gguf",
+      "model_sha256": "3a942f51f9f3088c0b502b61ee49480a3d8c54de369f9c53ee5668419caf67a7",
+      "raw": "<|tool_call_start|>[run_python(code=\"print('C:\\\\temp\\\\x.txt')\")]<|tool_call_end|>",
+      "raw_sha256": "85d114b11dce74586e06e54a4f43041627f6f58fcda7ef58f080fb2434861cb5",
+      "tool": {
+        "name": "run_python",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code"
+          ]
+        }
+      },
+      "expected": {
+        "content": "",
+        "reasoning": null,
+        "calls": [
+          {
+            "name": "run_python",
+            "arguments": {
+              "code": "print('C:\\\\temp\\\\x.txt')"
+            }
+          }
+        ]
+      },
+      "scope": "baseline-preservation",
+      "provenance": "Actual CPU emission from maintained lfm2_schema_qualification_e2e_test; temp0 seed1 threads2; original model-prompt captures retained in qualification evidence."
+    },
+    {
+      "id": "LFM2-1.2B-Tool-Q4_K_M.gguf/shell",
+      "model": "LFM2-1.2B-Tool-Q4_K_M.gguf",
+      "model_sha256": "3a942f51f9f3088c0b502b61ee49480a3d8c54de369f9c53ee5668419caf67a7",
+      "raw": "<|tool_call_start|>[save_note(text=\"echo \\\"hi\\\" > out.txt\")]<|tool_call_end|>",
+      "raw_sha256": "a3b99dbbec479c3c62376ad6a3f8867173f4d6230d6943874847caf677f37e82",
+      "tool": {
+        "name": "save_note",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ]
+        }
+      },
+      "expected": {
+        "content": "",
+        "reasoning": null,
+        "calls": [
+          {
+            "name": "save_note",
+            "arguments": {
+              "text": "echo \\\"hi\\\" > out.txt"
+            }
+          }
+        ]
+      },
+      "scope": "baseline-preservation",
+      "provenance": "Actual CPU emission from maintained lfm2_schema_qualification_e2e_test; temp0 seed1 threads2; original model-prompt captures retained in qualification evidence."
+    },
+    {
+      "id": "LFM2-1.2B-Tool-Q4_K_M.gguf/string_false",
+      "model": "LFM2-1.2B-Tool-Q4_K_M.gguf",
+      "model_sha256": "3a942f51f9f3088c0b502b61ee49480a3d8c54de369f9c53ee5668419caf67a7",
+      "raw": "<|tool_call_start|>[fill_field(field=\"discount\", value=False)]<|tool_call_end|>",
+      "raw_sha256": "9c0fbb0305ba012cd7c5988f81f325fefbeda29b4103c7289da94ad7955d7a06",
+      "tool": {
+        "name": "fill_field",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "field",
+            "value"
+          ]
+        }
+      },
+      "expected": {
+        "content": "",
+        "reasoning": null,
+        "calls": [
+          {
+            "name": "fill_field",
+            "arguments": {
+              "field": "discount",
+              "value": "False"
+            }
+          }
+        ]
+      },
+      "scope": "baseline-preservation",
+      "provenance": "Actual CPU emission from maintained lfm2_schema_qualification_e2e_test; temp0 seed1 threads2; original model-prompt captures retained in qualification evidence."
+    },
+    {
+      "id": "LFM2-1.2B-Tool-Q4_K_M.gguf/typed_flag",
+      "model": "LFM2-1.2B-Tool-Q4_K_M.gguf",
+      "model_sha256": "3a942f51f9f3088c0b502b61ee49480a3d8c54de369f9c53ee5668419caf67a7",
+      "raw": "<|tool_call_start|>[set_flag(enabled=True, note=None)]<|tool_call_end|>",
+      "raw_sha256": "151ccd937cf1dfcc387c0532391194ec731f10e362ebfd08b7399bc9d78cc347",
+      "tool": {
+        "name": "set_flag",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "enabled",
+            "note"
+          ]
+        },
+        "origin": "legacy_parameters"
+      },
+      "expected": {
+        "content": "",
+        "reasoning": null,
+        "calls": [
+          {
+            "name": "set_flag",
+            "arguments": {
+              "enabled": true,
+              "note": null
+            }
+          }
+        ]
+      },
+      "scope": "new-schema-fix",
+      "provenance": "Actual CPU emission from maintained lfm2_schema_qualification_e2e_test; temp0 seed1 threads2; original model-prompt captures retained in qualification evidence."
+    },
+    {
+      "id": "LFM2-1.2B-Tool-Q4_K_M.gguf/named_object",
+      "model": "LFM2-1.2B-Tool-Q4_K_M.gguf",
+      "model_sha256": "3a942f51f9f3088c0b502b61ee49480a3d8c54de369f9c53ee5668419caf67a7",
+      "raw": "<|tool_call_start|>[save_config(config={'enabled': True, 'retries': 2})]<|tool_call_end|>",
+      "raw_sha256": "4a703508fadcbc29d59a6b956c79e952624f4ef63dc252899022760008b5f7e8",
+      "tool": {
+        "name": "save_config",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "config": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "retries": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "enabled",
+                "retries"
+              ]
+            }
+          },
+          "required": [
+            "config"
+          ]
+        },
+        "origin": "legacy_parameters"
+      },
+      "expected": {
+        "content": "",
+        "reasoning": null,
+        "calls": [
+          {
+            "name": "save_config",
+            "arguments": {
+              "config": {
+                "enabled": true,
+                "retries": 2
+              }
+            }
+          }
+        ]
+      },
+      "scope": "new-schema-fix",
+      "provenance": "Actual CPU emission from maintained lfm2_schema_qualification_e2e_test; temp0 seed1 threads2; original model-prompt captures retained in qualification evidence."
+    },
+    {
+      "id": "LFM2-1.2B-Tool-Q4_K_M.gguf/noargs",
+      "model": "LFM2-1.2B-Tool-Q4_K_M.gguf",
+      "model_sha256": "3a942f51f9f3088c0b502b61ee49480a3d8c54de369f9c53ee5668419caf67a7",
+      "raw": "<|tool_call_start|>[get_time()]<|tool_call_end|>",
+      "raw_sha256": "1b26caf839fa443d381484d180674d58a8c1847bacf857b1f84c960c2c8f52d0",
+      "tool": {
+        "name": "get_time",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        },
+        "origin": "legacy_parameters"
+      },
+      "expected": {
+        "content": "",
+        "reasoning": null,
+        "calls": [
+          {
+            "name": "get_time",
+            "arguments": {}
+          }
+        ]
+      },
+      "scope": "new-schema-fix",
+      "provenance": "Actual CPU emission from maintained lfm2_schema_qualification_e2e_test; temp0 seed1 threads2; original model-prompt captures retained in qualification evidence."
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import '../models/tools/tool_definition.dart';
+import '../template/response_format.dart';
 import 'json_schema_converter.dart';
 
 /// Result of tool grammar generation.
@@ -66,7 +67,7 @@ class ToolGrammarGenerator {
 
   /// Generate a grammar for a single JSON schema (e.g. `response_format`).
   static String generateForSchema(Map<String, dynamic> schema) {
-    return JsonSchemaConverter.convert(schema);
+    return responseFormatGrammar(schema);
   }
 
   static Map<String, dynamic> _buildGenericToolSchema(

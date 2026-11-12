@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'tool_result_parts.dart';
+
 /// Base class for all content types in a message.
 ///
 /// Multi-modality allows a single message to contain different types of data,
-/// such as text, images, or audio.
+/// such as text, images, audio, or video.
 sealed class LlamaContentPart {
   /// Base constructor for content parts.
   const LlamaContentPart();
@@ -77,7 +79,10 @@ class LlamaImageContent extends LlamaContentPart {
   }
 }
 
-/// A part of a message containing audio data for speech-to-text models.
+/// A part of a message containing generic multimodal audio input.
+///
+/// This routes audio through normal generation. It does not by itself provide
+/// the typed transcript contract of `SpeechToTextEngine`.
 class LlamaAudioContent extends LlamaContentPart {
   /// Raw PCM Float32 audio samples.
   final Float32List? samples;
@@ -102,6 +107,50 @@ class LlamaAudioContent extends LlamaContentPart {
             ? base64Encode(samples!.buffer.asUint8List())
             : (bytes != null ? base64Encode(bytes!) : ''),
         'format': samples != null ? 'pcm' : 'audio',
+      },
+    };
+  }
+}
+
+/// A part of a message containing encoded video input.
+///
+/// Video is represented explicitly so unsupported requests fail with a typed,
+/// actionable error instead of being flattened into text or treated as an
+/// image. The current packaged runtimes do not expose a consumable video-input
+/// pipeline; check [LlamaEngine.supportsVideo] before generation.
+class LlamaVideoContent extends LlamaContentPart {
+  /// Encoded video bytes, such as MP4 or WebM data.
+  final Uint8List? bytes;
+
+  /// Local filesystem path to an encoded video file.
+  final String? path;
+
+  /// Creates a video content part.
+  ///
+  /// At least one of [path] or [bytes] must be provided. Current runtimes reject
+  /// both forms until native video packaging and Dart frame ingestion are
+  /// complete.
+  ///
+  /// Throws [ArgumentError] when neither source is provided.
+  factory LlamaVideoContent({Uint8List? bytes, String? path}) {
+    if (bytes == null && path == null) {
+      throw ArgumentError('LlamaVideoContent requires bytes or a path.');
+    }
+    return LlamaVideoContent._(bytes: bytes, path: path);
+  }
+
+  const LlamaVideoContent._({this.bytes, this.path});
+
+  @override
+  Map<String, dynamic> toJson() {
+    if (bytes == null && path == null) {
+      throw ArgumentError('LlamaVideoContent requires bytes or a path.');
+    }
+    return {
+      'type': 'input_video',
+      'input_video': {
+        'data': bytes == null ? '' : base64Encode(bytes!),
+        if (path != null) 'path': path,
       },
     };
   }
@@ -153,11 +202,31 @@ class LlamaToolResultContent extends LlamaContentPart {
   /// The result of the function execution (e.g., String, Map, List).
   final Object? result;
 
+  /// Text and media the tool returned after [result], in order.
+  ///
+  /// Each part is a [LlamaTextContent], a [LlamaImageContent] with a `path`
+  /// or `bytes`, or a [LlamaAudioContent]. The tool turn holds [result] as
+  /// text (a non-String result as JSON, a `null` result left out), then
+  /// these parts, as llama.cpp's server renders a `tool` message whose
+  /// `content` is an array. With a media part, the turn is one text: text
+  /// parts joined by a newline, and a media marker at each media part.
+  /// Media reach the model in that order. Without one, the template gets
+  /// the text parts as typed parts, or joined by a newline when it reads
+  /// only string content.
+  ///
+  /// Only formats qualified for tool-result content take a non-empty list;
+  /// others throw [LlamaUnsupportedException]. Media also need the engine
+  /// to report the modality in `LlamaEngineCapabilities.toolResultMedia`.
+  /// A video part, a URL-only image, or a nested tool call, tool result or
+  /// thinking part is rejected before rendering.
+  final List<LlamaContentPart> content;
+
   /// Creates a tool result content part.
   const LlamaToolResultContent({
     required this.name,
     required this.result,
     this.id,
+    this.content = const <LlamaContentPart>[],
   });
 
   @override
@@ -165,7 +234,9 @@ class LlamaToolResultContent extends LlamaContentPart {
     return {
       'type': 'tool_result', // Internal use?
       'tool_call_id': id,
-      'content': result.toString(),
+      'content': content.isEmpty
+          ? result.toString()
+          : toolResultContentJson(this),
     };
   }
 }

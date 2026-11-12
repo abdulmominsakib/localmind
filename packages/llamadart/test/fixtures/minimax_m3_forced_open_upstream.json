@@ -1,0 +1,371 @@
+{
+  "upstream_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+  "template": "test/fixtures/llama_cpp_templates/MiniMax-M3.jinja",
+  "kwargs": {
+    "thinking_mode": "enabled"
+  },
+  "user_prompt": "hi",
+  "generation_prompt": "]~b]ai\n<mm:think>",
+  "tool": {
+    "name": "weather",
+    "parameters": {
+      "city": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "cases": [
+    {
+      "name": "repeated-end-then-start",
+      "output": "</mm:think></mm:think><mm:think>",
+      "auto": {
+        "content": "</mm:think><mm:think>",
+        "reasoning_content": "",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "</mm:think><mm:think>",
+        "reasoning_content": "",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "thought-repeated-end-then-start",
+      "output": "a</mm:think></mm:think><mm:think>b",
+      "auto": {
+        "content": "</mm:think><mm:think>b",
+        "reasoning_content": "a",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "</mm:think><mm:think>b",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "end-then-start",
+      "output": "</mm:think><mm:think>",
+      "auto": {
+        "content": "<mm:think>",
+        "reasoning_content": "",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "<mm:think>",
+        "reasoning_content": "",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "thought-repeated-end",
+      "output": "a</mm:think></mm:think>",
+      "auto": {
+        "content": "</mm:think>",
+        "reasoning_content": "a",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "</mm:think>",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "repeated-end",
+      "output": "</mm:think></mm:think>",
+      "auto": {
+        "content": "</mm:think>",
+        "reasoning_content": "",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "</mm:think>",
+        "reasoning_content": "",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "thought-then-start",
+      "output": "a</mm:think><mm:think>",
+      "auto": {
+        "content": "<mm:think>",
+        "reasoning_content": "a",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "<mm:think>",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "repeated-end-then-text",
+      "output": "</mm:think></mm:think>x",
+      "auto": {
+        "content": "</mm:think>x",
+        "reasoning_content": "",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "</mm:think>x",
+        "reasoning_content": "",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "start-in-thought-repeated-end",
+      "output": "<mm:think>a</mm:think></mm:think><mm:think>b",
+      "auto": {
+        "content": "</mm:think><mm:think>b",
+        "reasoning_content": "<mm:think>a",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "</mm:think><mm:think>b",
+        "reasoning_content": "<mm:think>a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "thought-then-block",
+      "output": "a</mm:think><mm:think>b</mm:think>",
+      "auto": {
+        "content": "<mm:think>b</mm:think>",
+        "reasoning_content": "a",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "<mm:think>b</mm:think>",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "thought-then-call",
+      "output": "a</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+      "auto": {
+        "content": "",
+        "reasoning_content": "a",
+        "tool_calls": [
+          {
+            "name": "weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      },
+      "none": {
+        "content": "]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "thought-then-text-and-call",
+      "output": "a</mm:think>x</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+      "auto": {
+        "content": "x</mm:think>",
+        "reasoning_content": "a",
+        "tool_calls": [
+          {
+            "name": "weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      },
+      "none": {
+        "content": "x</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "end-then-call",
+      "output": "</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+      "auto": {
+        "content": "",
+        "reasoning_content": "",
+        "tool_calls": [
+          {
+            "name": "weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      },
+      "none": {
+        "content": "]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+        "reasoning_content": "",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "thought-then-spaced-text",
+      "output": "a</mm:think> b ",
+      "auto": {
+        "content": " b ",
+        "reasoning_content": "a",
+        "tool_calls": []
+      },
+      "none": {
+        "content": " b ",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "unended-thought-tag-prefix",
+      "output": "a</mm:th",
+      "auto": {
+        "content": "",
+        "reasoning_content": "a</mm:th",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "",
+        "reasoning_content": "a</mm:th",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "end-then-start-then-call",
+      "output": "</mm:think><mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+      "auto": {
+        "content": "<mm:think>",
+        "reasoning_content": "",
+        "tool_calls": [
+          {
+            "name": "weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      },
+      "none": {
+        "content": "<mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+        "reasoning_content": "",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "thought-end-start-then-call",
+      "output": "a</mm:think><mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+      "auto": {
+        "content": "<mm:think>",
+        "reasoning_content": "a",
+        "tool_calls": [
+          {
+            "name": "weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      },
+      "none": {
+        "content": "<mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "repeated-end-then-call",
+      "output": "</mm:think></mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+      "auto": {
+        "content": "</mm:think>",
+        "reasoning_content": "",
+        "tool_calls": [
+          {
+            "name": "weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      },
+      "none": {
+        "content": "</mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+        "reasoning_content": "",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "thought-text-start-then-call",
+      "output": "a</mm:think>x<mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+      "auto": {
+        "content": "x<mm:think>",
+        "reasoning_content": "a",
+        "tool_calls": [
+          {
+            "name": "weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      },
+      "none": {
+        "content": "x<mm:think>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "thought-text-end-then-tool-call-tag-and-call",
+      "output": "a</mm:think>x</mm:think><tool_call>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+      "auto": {
+        "content": "x</mm:think><tool_call>",
+        "reasoning_content": "a",
+        "tool_calls": [
+          {
+            "name": "weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      },
+      "none": {
+        "content": "x</mm:think><tool_call>]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"weather\">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>\n]<]minimax[>[</tool_call>",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "partial-unended-thought-tag-prefix",
+      "output": "a</mm:th",
+      "partial": true,
+      "auto": {
+        "content": "",
+        "reasoning_content": "a",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "partial-content-start-prefix",
+      "output": "a</mm:think>x<mm:th",
+      "partial": true,
+      "auto": {
+        "content": "x<mm:th",
+        "reasoning_content": "a",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "x<mm:th",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    },
+    {
+      "name": "partial-content-end-prefix",
+      "output": "a</mm:think>x</mm:th",
+      "partial": true,
+      "auto": {
+        "content": "x</mm:th",
+        "reasoning_content": "a",
+        "tool_calls": []
+      },
+      "none": {
+        "content": "x</mm:th",
+        "reasoning_content": "a",
+        "tool_calls": []
+      }
+    }
+  ]
+}

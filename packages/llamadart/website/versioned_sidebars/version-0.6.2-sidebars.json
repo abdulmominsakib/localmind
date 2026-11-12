@@ -1,0 +1,93 @@
+{
+  "docsSidebar": [
+    "intro",
+    {
+      "type": "category",
+      "label": "Getting Started",
+      "items": [
+        "getting-started/installation",
+        "getting-started/finding-models",
+        "getting-started/quickstart",
+        "getting-started/first-chat-session"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Core Concepts",
+      "items": [
+        "guides/architecture",
+        "guides/api-levels",
+        "guides/model-lifecycle",
+        "guides/generation-and-streaming",
+        "guides/chat-template-and-parsing",
+        "guides/template-engine-internals"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Advanced Features",
+      "items": [
+        "guides/tool-calling",
+        "guides/multimodal",
+        "guides/lora-adapters"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Configuration & Tuning",
+      "items": [
+        "configuration/runtime-parameters",
+        "guides/performance-tuning",
+        "configuration/logging"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Platforms",
+      "items": [
+        "platforms/support-matrix",
+        "platforms/native-build-hooks",
+        "platforms/linux-prerequisites",
+        "platforms/webgpu-bridge"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Examples",
+      "items": [
+        "examples/overview",
+        "examples/basic-app",
+        "examples/chat-app",
+        "examples/llamadart-cli",
+        "examples/llamadart-server"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Help & Reference",
+      "items": [
+        "troubleshooting/common-issues",
+        {
+          "type": "category",
+          "label": "Migration",
+          "items": [
+            "migration/upgrade-checklist",
+            "migration/0-4-to-0-5",
+            "migration/0-5-to-0-6"
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Maintainers",
+          "items": [
+            "maintainers/docs-site",
+            "maintainers/runtime-ownership",
+            "maintainers/native-and-web-sync",
+            "maintainers/release-workflow"
+          ]
+        },
+        "changelog/recent-releases"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+name: Publish Genkit to pub.dev
+
+on:
+  push:
+    tags:
+      - 'genkit_llamadart-v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-genkit-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify package-specific stable tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF_TYPE" == tag ]] || exit 1
+          [[ "$GITHUB_REF_NAME" =~ ^genkit_llamadart-v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          version="$(awk '/^version:/ {print $2; exit}' packages/genkit_llamadart/pubspec.yaml)"
+          [[ "$GITHUB_REF_NAME" == "genkit_llamadart-v$version" ]] || exit 1
+          heading="$(awk '/^## / {print; exit}' packages/genkit_llamadart/CHANGELOG.md)"
+          [[ "$heading" == "## $version - "* ]] || exit 1
+          date="${heading#"## $version - "}"
+          [[ "$date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || exit 1
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+      - name: Verify standalone package
+        working-directory: packages/genkit_llamadart
+        run: |
+          test ! -e pubspec_overrides.yaml
+          dart pub upgrade
+          dart format --output=none --set-exit-if-changed .
+          dart analyze --fatal-infos
+          python3 .github/check_docs.py
+          TMPDIR="$(mktemp -d)" dart test -x real-model
+      - name: Cache existing real-model fixtures
+        uses: actions/cache@v6
+        with:
+          path: packages/genkit_llamadart/.dart_tool/llamadart_test_models
+          key: ${{ runner.os }}-genkit-models-${{ hashFiles('packages/genkit_llamadart/test/integration/genkit/test_support/real_model_test_support.dart') }}
+      - name: Run existing native real-model contracts
+        working-directory: packages/genkit_llamadart
+        env:
+          LLAMADART_AUTO_DOWNLOAD_TEST_MODELS: '1'
+        run: TMPDIR="$(mktemp -d)" dart test -t real-model -j 1
+      - name: Stage standalone package
+        run: python3 tool/release/stage_genkit_package.py "$RUNNER_TEMP/genkit-package"
+      - name: Verify package archive
+        working-directory: ${{ runner.temp }}/genkit-package
+        run: |
+          dart pub get
+          dart pub publish --dry-run
+      - name: Verify package score
+        working-directory: ${{ runner.temp }}/genkit-package
+        run: |
+          dart pub global activate pana
+          dart pub global run pana . --exit-code-threshold 0
+
+  dependency-compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.0
+      - name: Resolve lower-bound runtime dependencies
+        working-directory: packages/genkit_llamadart
+        run: dart pub add crypto@3.0.7 genkit@1.0.0 http@1.6.0 llamadart@0.19.0 schemantic@1.0.0
+      - name: Analyze and test
+        working-directory: packages/genkit_llamadart
+        run: |
+          dart analyze --fatal-infos
+          TMPDIR="$(mktemp -d)" dart test -x real-model
+
+  publish:
+    needs: [verify, dependency-compatibility]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dart-lang/setup-dart@v1
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+      - name: Stage standalone package
+        run: python3 tool/release/stage_genkit_package.py "$RUNNER_TEMP/genkit-package"
+      - name: Resolve hosted dependencies
+        working-directory: ${{ runner.temp }}/genkit-package
+        run: dart pub get
+      - name: Publish dry run
+        working-directory: ${{ runner.temp }}/genkit-package
+        run: dart pub publish --dry-run
+      - name: Publish package
+        working-directory: ${{ runner.temp }}/genkit-package
+        run: dart pub publish --force
+
+  release:
+    needs: [verify, dependency-compatibility, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create package-specific GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME"
+          --repo "$GITHUB_REPOSITORY" --verify-tag
+          --title "$GITHUB_REF_NAME" --generate-notes --latest=false

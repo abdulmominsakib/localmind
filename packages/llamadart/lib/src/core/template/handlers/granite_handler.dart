@@ -14,6 +14,16 @@ import '../tool_call_grammar_utils.dart';
 
 /// Handler for IBM Granite models.
 class GraniteHandler extends ChatTemplateHandler {
+  static const String _toolCallPrefix = '<|tool_call|>';
+
+  /// Finds where [parse] may find a tool-call opening in [text].
+  ///
+  /// Returns the first index at or after [from] where `<|tool_call|>`
+  /// starts, or where the rest of [text] is the start of it, and
+  /// `text.length` when there is none.
+  static int toolCallOpening(String text, [int from = 0]) =>
+      ToolCallParsingUtils.literalOpening(text, const [_toolCallPrefix], from);
+
   static const List<String> _toolPreservedTokens = <String>[
     '<think>',
     '</think>',
@@ -57,7 +67,7 @@ class GraniteHandler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'bos_token':
@@ -67,9 +77,11 @@ class GraniteHandler extends ChatTemplateHandler {
     );
 
     var thinkingForcedOpen = false;
+    var thoughtClosed = false;
     if (isThinkingForcedOpen(prompt)) {
       if (!enableThinking) {
         prompt = '${prompt.trimRight()}</think>\n';
+        thoughtClosed = true;
       } else {
         thinkingForcedOpen = true;
       }
@@ -80,7 +92,7 @@ class GraniteHandler extends ChatTemplateHandler {
     final toolChoiceRequired = toolChoice == ToolChoice.required.name;
     final parallelToolCalls =
         metadata[internalParallelToolCallsMetadataKey] == 'true';
-    return LlamaChatTemplateResult(
+    final rendered = LlamaChatTemplateResult(
       prompt: prompt,
       format: format.index,
       grammar: hasTools
@@ -103,6 +115,7 @@ class GraniteHandler extends ChatTemplateHandler {
           ? [const GrammarTrigger(type: 0, value: '<|tool_call|>')]
           : [],
     );
+    return withThoughtClosedForThinkingOff(rendered, closed: thoughtClosed);
   }
 
   @override
@@ -125,8 +138,7 @@ class GraniteHandler extends ChatTemplateHandler {
       );
     }
 
-    const toolCallPrefix = '<|tool_call|>';
-    final toolCallIndex = text.indexOf(toolCallPrefix);
+    final toolCallIndex = text.indexOf(_toolCallPrefix);
     if (toolCallIndex == -1) {
       return ChatParseResult(
         content: text.trim(),
@@ -135,7 +147,7 @@ class GraniteHandler extends ChatTemplateHandler {
     }
 
     final prelude = text.substring(0, toolCallIndex);
-    final payload = text.substring(toolCallIndex + toolCallPrefix.length);
+    final payload = text.substring(toolCallIndex + _toolCallPrefix.length);
     var payloadOffset = 0;
     while (payloadOffset < payload.length &&
         payload.codeUnitAt(payloadOffset) <= 0x20) {

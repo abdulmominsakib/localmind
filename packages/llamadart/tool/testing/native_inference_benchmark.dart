@@ -25,8 +25,10 @@ Future<void> main(List<String> arguments) async {
   );
 
   try {
-    await engine.setDartLogLevel(LlamaLogLevel.none);
-    await engine.setNativeLogLevel(LlamaLogLevel.warn);
+    await LlamaLogging.configure(
+      level: LlamaLogLevel.none,
+      nativeLevel: LlamaLogLevel.warn,
+    );
     await engine.loadModel(
       options.modelPath,
       modelParams: ModelParams(

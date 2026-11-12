@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import '../models/chat/chat_message.dart';
 import '../models/chat/chat_role.dart';
 import '../models/chat/completion_chunk.dart';
@@ -17,11 +18,18 @@ class ChatParseResult {
   /// Parsed tool calls extracted from format-specific delimiters.
   final List<LlamaCompletionChunkToolCall> toolCalls;
 
+  /// Raw named calls recognized inside an unfinished tool envelope.
+  ///
+  /// Partial LFM parses can populate this list without assigning a finish cause.
+  /// These diagnostics are never executable calls or assistant message parts.
+  final List<LlamaCompletionChunkToolCall> partialToolCalls;
+
   /// Creates a new parse result.
   const ChatParseResult({
     this.content = '',
     this.reasoningContent,
     this.toolCalls = const [],
+    this.partialToolCalls = const [],
   });
 
   /// Whether this result contains any tool calls.

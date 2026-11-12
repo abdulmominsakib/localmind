@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:test/test.dart';
 import 'package:llamadart/src/core/llama_logger.dart';
 import 'package:llamadart/src/core/models/config/log_level.dart';
@@ -58,14 +60,22 @@ void main() {
       expect(logs[1].level, LlamaLogLevel.error);
     });
 
-    test(
-      'default handler uses print (no easy way to test without zones, but coverage is good)',
-      () {
-        logger.setLevel(LlamaLogLevel.info);
-        // This will call print()
-        logger.info('Printing to console');
-      },
-    );
+    test('default handler prints enabled records and drops filtered ones', () {
+      final printed = <String>[];
+      runZoned(
+        () {
+          logger.setLevel(LlamaLogLevel.info);
+          logger.debug('filtered out');
+          logger.info('Printing to console');
+        },
+        zoneSpecification: ZoneSpecification(
+          print: (self, parent, zone, line) => printed.add(line),
+        ),
+      );
+
+      expect(printed, hasLength(1));
+      expect(printed.single, contains('[INFO] Printing to console'));
+    });
 
     test('LlamaLogLevel.none suppresses everything', () {
       final logs = <LlamaLogRecord>[];
@@ -78,6 +88,12 @@ void main() {
 
     test('instance returns same singleton', () {
       expect(LlamaLogger.instance, same(LlamaLogger.instance));
+    });
+
+    test('level reports the configured level', () {
+      expect(logger.level, LlamaLogLevel.none);
+      logger.setLevel(LlamaLogLevel.info);
+      expect(logger.level, LlamaLogLevel.info);
     });
   });
 }

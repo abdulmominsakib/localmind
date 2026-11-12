@@ -3,6 +3,7 @@ FROM nvidia/cuda:12.6.2-runtime-ubuntu24.04
 
 RUN apt-get update -o Acquire::Retries=5 \
     && apt-get install -y --no-install-recommends -o Acquire::Retries=5 \
+    libgomp1 \
     libopenblas0 \
     libvulkan1 \
     libnvidia-compute-580 \

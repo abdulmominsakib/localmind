@@ -1,4 +1,5 @@
 import 'jinja/jinja_analyzer.dart';
+import 'template_caps_cache.dart';
 
 /// Template capabilities detected from Jinja template source analysis.
 ///
@@ -29,6 +30,22 @@ class TemplateCaps {
   /// Whether the template supports thinking/reasoning tags.
   final bool supportsThinking;
 
+  /// Whether the template reads tool-call `arguments` as an object, so
+  /// earlier tool calls are rendered with their arguments parsed from JSON.
+  final bool supportsObjectArguments;
+
+  /// Whether the template renders a `tool` message after an assistant tool
+  /// call.
+  ///
+  /// `false` only when the template raises on that message but renders it
+  /// under the `user` role, as Gemma 2/3/3n and legacy Mistral templates do
+  /// with their role-alternation check. When such a template fails to render
+  /// a request with tool results, `ChatTemplateEngine` retries it with the
+  /// results as user turns, as llama.cpp's minja-based
+  /// `supports_tool_responses` polyfill sent them. Not part of [toMap], which
+  /// matches llama.cpp's current caps.
+  final bool supportsToolResponses;
+
   /// Creates a [TemplateCaps] with the specified capabilities.
   const TemplateCaps({
     this.supportsSystemRole = true,
@@ -38,13 +55,29 @@ class TemplateCaps {
     this.supportsStringContent = true,
     this.supportsTypedContent = false,
     this.supportsThinking = false,
+    this.supportsObjectArguments = false,
+    this.supportsToolResponses = true,
   });
 
-  /// Detects capabilities by scanning the template source string.
+  /// Detects capabilities with llama.cpp's capability probes, as
+  /// [JinjaAnalyzer.analyzeWithOutcome] describes.
   ///
-  /// Uses the same approach as llama.cpp (`src.find()` on raw template text).
+  /// Results are cached in [TemplateCapsCache.shared], a per-isolate LRU keyed
+  /// by exact [templateSource] and bounded at
+  /// [TemplateCapsCache.sharedCapacity] entries. A detection that reports
+  /// `failed` (see [JinjaAnalyzer.analyzeWithOutcome]) is not cached, so it
+  /// runs and logs again on every call.
   factory TemplateCaps.detect(String templateSource) {
-    return JinjaAnalyzer.analyze(templateSource);
+    final cache = TemplateCapsCache.shared;
+    final cached = cache.lookup(templateSource);
+    if (cached != null) {
+      return cached;
+    }
+    final outcome = JinjaAnalyzer.analyzeWithOutcome(templateSource);
+    if (!outcome.failed) {
+      cache.store(templateSource, outcome.caps);
+    }
+    return outcome.caps;
   }
 
   /// Detects capabilities using regex/string matching (fallback method).
@@ -110,6 +143,7 @@ class TemplateCaps {
     'supports_string_content': supportsStringContent,
     'supports_typed_content': supportsTypedContent,
     'supports_thinking': supportsThinking,
+    'supports_object_arguments': supportsObjectArguments,
   };
 
   @override

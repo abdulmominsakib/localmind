@@ -3,670 +3,106 @@ import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:path/path.dart' as path;
 
+import '../backend.dart';
+import '../isolate_shutdown_releases.dart';
+import '../windows_runtime_libraries.dart';
+import '../../core/decision/decision_decoder.dart';
 import '../../core/exceptions.dart';
 import '../../core/llama_logger.dart';
 import '../../core/models/chat/chat_message.dart';
 import '../../core/models/chat/chat_role.dart';
 import '../../core/models/chat/content_part.dart';
+import '../../core/models/config/compute_device.dart';
 import '../../core/models/config/gpu_backend.dart';
 import '../../core/models/config/gpu_device_info.dart';
 import '../../core/models/config/log_level.dart';
 import '../../core/models/diagnostics/model_file_type.dart';
 import '../../core/models/inference/generation_params.dart';
+import '../../core/models/inference/gpu_layer_count.dart';
+import '../../core/template/media_placeholders.dart';
 import '../../core/models/inference/model_params.dart';
+import '../../core/models/inference/embedding.dart';
+import '../../core/models/inference/reranking.dart';
+import '../../core/models/inference/next_token_scores.dart';
+import '../../core/models/inference/state_identity.dart';
 import '../../core/template/chat_template_engine.dart';
+import '../../hook/native_release_pins.dart';
+import '../../platform/io/ios_simulator.dart';
+import 'build_identity.dart';
+import 'decision_head.dart';
+import 'exit_teardown_api.dart';
+import 'ggml_graph_api.dart';
+import 'gpu_device_placement.dart';
+import 'lazy_grammar_triggers.dart';
+import 'load_device_selection.dart';
+import 'reranking_classifier.dart';
 import 'load_param_helpers.dart';
-import 'sampled_token_validation.dart';
+import 'safetensors.dart';
+import 'stop_sequence_buffer.dart';
+import 'token_batch.dart';
 import 'bindings.dart';
 import 'llama_cpp_raw_bindings.dart' as raw_bindings;
+import 'moe_expert_placement.dart';
+import 'mtmd_chunk_eval.dart';
+import 'native_barrier_api.dart';
+import 'native_library_candidates.dart';
+import 'native_owner_api.dart';
+import 'sampled_token_validation.dart';
+import 'vulkan_device_probe.dart';
+
+part 'library_loading.dart';
+part 'multimodal_embedding.dart';
+part 'native_signatures.dart';
+part 'reranking.dart';
+part 'startup_diagnostics.dart';
 
 const _llamadartWrapperAssetId = 'package:llamadart/llamadart_wrapper';
-
-typedef _GgmlBackendLoadNative = ggml_backend_reg_t Function(Pointer<Char>);
-typedef _GgmlBackendLoadDart = ggml_backend_reg_t Function(Pointer<Char>);
-typedef _GgmlBackendInitNative = ggml_backend_reg_t Function();
-typedef _GgmlBackendInitDart = ggml_backend_reg_t Function();
-typedef _GgmlBackendLoadAllNative = Void Function();
-typedef _GgmlBackendLoadAllDart = void Function();
-typedef _GgmlBackendLoadAllFromPathNative = Void Function(Pointer<Char>);
-typedef _GgmlBackendLoadAllFromPathDart = void Function(Pointer<Char>);
-typedef _GgmlBackendScoreNative = Int32 Function();
-typedef _GgmlBackendScoreDart = int Function();
-typedef _GgmlBackendRegisterNative = Void Function(ggml_backend_reg_t);
-typedef _GgmlBackendRegisterDart = void Function(ggml_backend_reg_t);
-typedef _GgmlBackendRegCountNative = Size Function();
-typedef _GgmlBackendRegCountDart = int Function();
-typedef _GgmlBackendRegGetNative = ggml_backend_reg_t Function(Size);
-typedef _GgmlBackendRegGetDart = ggml_backend_reg_t Function(int);
-typedef _GgmlBackendRegNameNative = Pointer<Char> Function(ggml_backend_reg_t);
-typedef _GgmlBackendRegNameDart = Pointer<Char> Function(ggml_backend_reg_t);
-typedef _GgmlBackendRegByNameNative =
-    ggml_backend_reg_t Function(Pointer<Char>);
-typedef _GgmlBackendRegByNameDart = ggml_backend_reg_t Function(Pointer<Char>);
-typedef _GgmlBackendRegDevCountNative = Size Function(ggml_backend_reg_t);
-typedef _GgmlBackendRegDevCountDart = int Function(ggml_backend_reg_t);
-typedef _GgmlBackendRegDevGetNative =
-    ggml_backend_dev_t Function(ggml_backend_reg_t, Size);
-typedef _GgmlBackendRegDevGetDart =
-    ggml_backend_dev_t Function(ggml_backend_reg_t, int);
-typedef _LoadLibraryExWNative =
-    Pointer<Void> Function(Pointer<Utf16>, Pointer<Void>, Uint32);
-typedef _LoadLibraryExWDart =
-    Pointer<Void> Function(Pointer<Utf16>, Pointer<Void>, int);
-typedef _FreeLibraryNative = Int32 Function(Pointer<Void>);
-typedef _FreeLibraryDart = int Function(Pointer<Void>);
-typedef _SetErrorModeNative = Uint32 Function(Uint32);
-typedef _SetErrorModeDart = int Function(int);
-typedef _GgmlBackendDevCountNative = Size Function();
-typedef _GgmlBackendDevCountDart = int Function();
-typedef _GgmlBackendDevGetNative = ggml_backend_dev_t Function(Size);
-typedef _GgmlBackendDevGetDart = ggml_backend_dev_t Function(int);
-typedef _GgmlBackendDevNameNative = Pointer<Char> Function(ggml_backend_dev_t);
-typedef _GgmlBackendDevNameDart = Pointer<Char> Function(ggml_backend_dev_t);
-typedef _GgmlBackendDevBackendRegNative =
-    ggml_backend_reg_t Function(ggml_backend_dev_t);
-typedef _GgmlBackendDevBackendRegDart =
-    ggml_backend_reg_t Function(ggml_backend_dev_t);
-typedef _GgmlBackendDevByTypeNative = ggml_backend_dev_t Function(UnsignedInt);
-typedef _GgmlBackendDevByTypeDart = ggml_backend_dev_t Function(int);
-typedef _GgmlBackendDevTypeNative = UnsignedInt Function(ggml_backend_dev_t);
-typedef _GgmlBackendDevTypeDart = int Function(ggml_backend_dev_t);
-typedef _GgmlBackendDevGetPropsNative =
-    Void Function(ggml_backend_dev_t, Pointer<ggml_backend_dev_props>);
-typedef _GgmlBackendDevGetPropsDart =
-    void Function(ggml_backend_dev_t, Pointer<ggml_backend_dev_props>);
-typedef _GgmlBackendDevMemoryNative =
-    Void Function(ggml_backend_dev_t, Pointer<Size>, Pointer<Size>);
-typedef _GgmlBackendDevMemoryDart =
-    void Function(ggml_backend_dev_t, Pointer<Size>, Pointer<Size>);
-typedef _LlamaDartSetLogLevelNative = Void Function(Int32);
-typedef _LlamaDartSetLogLevelDart = void Function(int);
-typedef _LlamaDartReasoningBudgetInitNative =
-    Pointer<llama_sampler> Function(
-      Pointer<llama_vocab>,
-      Pointer<Char>,
-      Pointer<Char>,
-      Pointer<Char>,
-      Int32,
-      Bool,
-      Pointer<llama_sampler>,
-      Pointer<Int32>,
-      Int32,
-    );
-typedef _LlamaDartReasoningBudgetInitDart =
-    Pointer<llama_sampler> Function(
-      Pointer<llama_vocab>,
-      Pointer<Char>,
-      Pointer<Char>,
-      Pointer<Char>,
-      int,
-      bool,
-      Pointer<llama_sampler>,
-      Pointer<Int32>,
-      int,
-    );
-typedef _LlamaDartSpeculativeInitNative =
-    Pointer<llama_dart_speculative> Function(
-      Pointer<llama_model>,
-      Pointer<llama_model>,
-      Pointer<llama_context>,
-      llama_context_params,
-      Pointer<llama_dart_speculative_params>,
-    );
-typedef _LlamaDartSpeculativeInitDart =
-    Pointer<llama_dart_speculative> Function(
-      Pointer<llama_model>,
-      Pointer<llama_model>,
-      Pointer<llama_context>,
-      llama_context_params,
-      Pointer<llama_dart_speculative_params>,
-    );
-typedef _LlamaDartSpeculativeFreeNative =
-    Void Function(Pointer<llama_dart_speculative>);
-typedef _LlamaDartSpeculativeFreeDart =
-    void Function(Pointer<llama_dart_speculative>);
-typedef _LlamaDartSpeculativeGetDraftContextNative =
-    Pointer<llama_context> Function(Pointer<llama_dart_speculative>);
-typedef _LlamaDartSpeculativeGetDraftContextDart =
-    Pointer<llama_context> Function(Pointer<llama_dart_speculative>);
-typedef _LlamaDartSpeculativeNeedEmbdNative =
-    Bool Function(Pointer<llama_dart_speculative>);
-typedef _LlamaDartSpeculativeNeedEmbdDart =
-    bool Function(Pointer<llama_dart_speculative>);
-typedef _LlamaDartSpeculativeBeginNative =
-    Bool Function(
-      Pointer<llama_dart_speculative>,
-      llama_seq_id,
-      Pointer<Int32>,
-      Int32,
-    );
-typedef _LlamaDartSpeculativeBeginDart =
-    bool Function(Pointer<llama_dart_speculative>, int, Pointer<Int32>, int);
-typedef _LlamaDartSpeculativeProcessBatchNative =
-    Bool Function(Pointer<llama_dart_speculative>, llama_batch);
-typedef _LlamaDartSpeculativeProcessBatchDart =
-    bool Function(Pointer<llama_dart_speculative>, llama_batch);
-typedef _LlamaDartSpeculativeDraftNative =
-    Int32 Function(
-      Pointer<llama_dart_speculative>,
-      llama_seq_id,
-      llama_pos,
-      llama_token,
-      Pointer<Int32>,
-      Int32,
-      Int32,
-      Pointer<Int32>,
-      Int32,
-    );
-typedef _LlamaDartSpeculativeDraftDart =
-    int Function(
-      Pointer<llama_dart_speculative>,
-      int,
-      int,
-      int,
-      Pointer<Int32>,
-      int,
-      int,
-      Pointer<Int32>,
-      int,
-    );
-typedef _LlamaDartSpeculativeAcceptNative =
-    Void Function(Pointer<llama_dart_speculative>, llama_seq_id, Uint16);
-typedef _LlamaDartSpeculativeAcceptDart =
-    void Function(Pointer<llama_dart_speculative>, int, int);
-typedef _MtmdDefaultMarkerNative = Pointer<Char> Function();
-typedef _MtmdDefaultMarkerDart = Pointer<Char> Function();
-typedef _MtmdContextParamsDefaultNative = mtmd_context_params Function();
-typedef _MtmdContextParamsDefaultDart = mtmd_context_params Function();
-typedef _MtmdInitFromFileNative =
-    Pointer<mtmd_context> Function(
-      Pointer<Char>,
-      Pointer<llama_model>,
-      mtmd_context_params,
-    );
-typedef _MtmdInitFromFileDart =
-    Pointer<mtmd_context> Function(
-      Pointer<Char>,
-      Pointer<llama_model>,
-      mtmd_context_params,
-    );
-typedef _MtmdFreeNative = Void Function(Pointer<mtmd_context>);
-typedef _MtmdFreeDart = void Function(Pointer<mtmd_context>);
-typedef _MtmdInputChunksInitNative = Pointer<mtmd_input_chunks> Function();
-typedef _MtmdInputChunksInitDart = Pointer<mtmd_input_chunks> Function();
-typedef _MtmdInputChunksFreeNative = Void Function(Pointer<mtmd_input_chunks>);
-typedef _MtmdInputChunksFreeDart = void Function(Pointer<mtmd_input_chunks>);
-typedef _MtmdHelperBitmapInitFromFileNative =
-    mtmd_helper_bitmap_wrapper Function(
-      Pointer<mtmd_context>,
-      Pointer<Char>,
-      Bool,
-    );
-typedef _MtmdHelperBitmapInitFromFileDart =
-    mtmd_helper_bitmap_wrapper Function(
-      Pointer<mtmd_context>,
-      Pointer<Char>,
-      bool,
-    );
-typedef _MtmdHelperBitmapInitFromBufNative =
-    mtmd_helper_bitmap_wrapper Function(
-      Pointer<mtmd_context>,
-      Pointer<UnsignedChar>,
-      Size,
-      Bool,
-    );
-typedef _MtmdHelperBitmapInitFromBufDart =
-    mtmd_helper_bitmap_wrapper Function(
-      Pointer<mtmd_context>,
-      Pointer<UnsignedChar>,
-      int,
-      bool,
-    );
-typedef _MtmdBitmapInitFromAudioNative =
-    Pointer<mtmd_bitmap> Function(Size, Pointer<Float>);
-typedef _MtmdBitmapInitFromAudioDart =
-    Pointer<mtmd_bitmap> Function(int, Pointer<Float>);
-typedef _MtmdSupportVisionNative = Bool Function(Pointer<mtmd_context>);
-typedef _MtmdSupportVisionDart = bool Function(Pointer<mtmd_context>);
-typedef _MtmdSupportAudioNative = Bool Function(Pointer<mtmd_context>);
-typedef _MtmdSupportAudioDart = bool Function(Pointer<mtmd_context>);
-typedef _MtmdBitmapFreeNative = Void Function(Pointer<mtmd_bitmap>);
-typedef _MtmdBitmapFreeDart = void Function(Pointer<mtmd_bitmap>);
-typedef _MtmdTokenizeNative =
-    Int32 Function(
-      Pointer<mtmd_context>,
-      Pointer<mtmd_input_chunks>,
-      Pointer<mtmd_input_text>,
-      Pointer<Pointer<mtmd_bitmap>>,
-      Size,
-    );
-typedef _MtmdTokenizeDart =
-    int Function(
-      Pointer<mtmd_context>,
-      Pointer<mtmd_input_chunks>,
-      Pointer<mtmd_input_text>,
-      Pointer<Pointer<mtmd_bitmap>>,
-      int,
-    );
-typedef _MtmdHelperEvalChunksNative =
-    Int32 Function(
-      Pointer<mtmd_context>,
-      Pointer<llama_context>,
-      Pointer<mtmd_input_chunks>,
-      llama_pos,
-      llama_seq_id,
-      Int32,
-      Bool,
-      Pointer<llama_pos>,
-    );
-typedef _MtmdHelperEvalChunksDart =
-    int Function(
-      Pointer<mtmd_context>,
-      Pointer<llama_context>,
-      Pointer<mtmd_input_chunks>,
-      int,
-      int,
-      int,
-      bool,
-      Pointer<llama_pos>,
-    );
-typedef _MtmdLogSetNative = Void Function(ggml_log_callback, Pointer<Void>);
-typedef _MtmdLogSetDart = void Function(ggml_log_callback, Pointer<Void>);
-typedef _LlamaDartMtpInitNative =
-    Pointer<llama_dart_mtp> Function(
-      Pointer<llama_model>,
-      Pointer<llama_context>,
-      llama_context_params,
-      Int32,
-      Int32,
-      Float,
-      Bool,
-    );
-typedef _LlamaDartMtpInitDart =
-    Pointer<llama_dart_mtp> Function(
-      Pointer<llama_model>,
-      Pointer<llama_context>,
-      llama_context_params,
-      int,
-      int,
-      double,
-      bool,
-    );
-typedef _LlamaDartMtpFreeNative = Void Function(Pointer<llama_dart_mtp>);
-typedef _LlamaDartMtpFreeDart = void Function(Pointer<llama_dart_mtp>);
-typedef _LlamaDartMtpGetDraftContextNative =
-    Pointer<llama_context> Function(Pointer<llama_dart_mtp>);
-typedef _LlamaDartMtpGetDraftContextDart =
-    Pointer<llama_context> Function(Pointer<llama_dart_mtp>);
-typedef _LlamaDartMtpBeginNative =
-    Bool Function(Pointer<llama_dart_mtp>, llama_seq_id, Pointer<Int32>, Int32);
-typedef _LlamaDartMtpBeginDart =
-    bool Function(Pointer<llama_dart_mtp>, int, Pointer<Int32>, int);
-typedef _LlamaDartMtpProcessBatchNative =
-    Bool Function(Pointer<llama_dart_mtp>, llama_batch);
-typedef _LlamaDartMtpProcessBatchDart =
-    bool Function(Pointer<llama_dart_mtp>, llama_batch);
-typedef _LlamaDartMtpDraftNative =
-    Int32 Function(
-      Pointer<llama_dart_mtp>,
-      llama_seq_id,
-      llama_pos,
-      llama_token,
-      Pointer<Int32>,
-      Int32,
-      Int32,
-      Pointer<Int32>,
-      Int32,
-    );
-typedef _LlamaDartMtpDraftDart =
-    int Function(
-      Pointer<llama_dart_mtp>,
-      int,
-      int,
-      int,
-      Pointer<Int32>,
-      int,
-      int,
-      Pointer<Int32>,
-      int,
-    );
-typedef _LlamaDartMtpAcceptNative =
-    Void Function(Pointer<llama_dart_mtp>, llama_seq_id, Uint16);
-typedef _LlamaDartMtpAcceptDart =
-    void Function(Pointer<llama_dart_mtp>, int, int);
-typedef _LlamaDartNgramSimpleInitNative =
-    Pointer<llama_dart_ngram> Function(Int32, Int32);
-typedef _LlamaDartNgramSimpleInitDart =
-    Pointer<llama_dart_ngram> Function(int, int);
-typedef _LlamaDartNgramFreeNative = Void Function(Pointer<llama_dart_ngram>);
-typedef _LlamaDartNgramFreeDart = void Function(Pointer<llama_dart_ngram>);
-typedef _LlamaDartNgramBeginNative =
-    Bool Function(
-      Pointer<llama_dart_ngram>,
-      llama_seq_id,
-      Pointer<Int32>,
-      Int32,
-    );
-typedef _LlamaDartNgramBeginDart =
-    bool Function(Pointer<llama_dart_ngram>, int, Pointer<Int32>, int);
-typedef _LlamaDartNgramProcessBatchNative =
-    Bool Function(Pointer<llama_dart_ngram>, llama_batch);
-typedef _LlamaDartNgramProcessBatchDart =
-    bool Function(Pointer<llama_dart_ngram>, llama_batch);
-typedef _LlamaDartNgramDraftNative =
-    Int32 Function(
-      Pointer<llama_dart_ngram>,
-      llama_seq_id,
-      llama_pos,
-      llama_token,
-      Pointer<Int32>,
-      Int32,
-      Int32,
-      Pointer<Int32>,
-      Int32,
-    );
-typedef _LlamaDartNgramDraftDart =
-    int Function(
-      Pointer<llama_dart_ngram>,
-      int,
-      int,
-      int,
-      Pointer<Int32>,
-      int,
-      int,
-      Pointer<Int32>,
-      int,
-    );
-typedef _LlamaDartNgramAcceptNative =
-    Void Function(Pointer<llama_dart_ngram>, llama_seq_id, Uint16);
-typedef _LlamaDartNgramAcceptDart =
-    void Function(Pointer<llama_dart_ngram>, int, int);
-typedef _LlamaDartSamplerSampleAndAcceptNNative =
-    Int32 Function(
-      Pointer<llama_sampler>,
-      Pointer<llama_context>,
-      Pointer<Int32>,
-      Int32,
-      Pointer<Int32>,
-      Int32,
-      Pointer<Int32>,
-      Int32,
-    );
-typedef _LlamaDartSamplerSampleAndAcceptNDart =
-    int Function(
-      Pointer<llama_sampler>,
-      Pointer<llama_context>,
-      Pointer<Int32>,
-      int,
-      Pointer<Int32>,
-      int,
-      Pointer<Int32>,
-      int,
-    );
-
-@Native<_LlamaDartSpeculativeInitNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_speculative_init',
-)
-external Pointer<llama_dart_speculative> _llamadartWrapperSpeculativeInit(
-  Pointer<llama_model> targetModel,
-  Pointer<llama_model> draftModel,
-  Pointer<llama_context> targetContext,
-  llama_context_params contextParams,
-  Pointer<llama_dart_speculative_params> params,
-);
-
-@Native<_LlamaDartSpeculativeFreeNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_speculative_free',
-)
-external void _llamadartWrapperSpeculativeFree(
-  Pointer<llama_dart_speculative> speculative,
-);
-
-@Native<_LlamaDartSpeculativeGetDraftContextNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_speculative_get_draft_context',
-)
-external Pointer<llama_context> _llamadartWrapperSpeculativeGetDraftContext(
-  Pointer<llama_dart_speculative> speculative,
-);
-
-@Native<_LlamaDartSpeculativeNeedEmbdNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_speculative_need_embd',
-)
-external bool _llamadartWrapperSpeculativeNeedEmbd(
-  Pointer<llama_dart_speculative> speculative,
-);
-
-@Native<_LlamaDartSpeculativeNeedEmbdNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_speculative_need_embd_nextn',
-)
-external bool _llamadartWrapperSpeculativeNeedEmbdNextn(
-  Pointer<llama_dart_speculative> speculative,
-);
-
-@Native<_LlamaDartSpeculativeBeginNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_speculative_begin',
-)
-external bool _llamadartWrapperSpeculativeBegin(
-  Pointer<llama_dart_speculative> speculative,
-  int seqId,
-  Pointer<Int32> prompt,
-  int promptCount,
-);
-
-@Native<_LlamaDartSpeculativeProcessBatchNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_speculative_process_batch',
-)
-external bool _llamadartWrapperSpeculativeProcessBatch(
-  Pointer<llama_dart_speculative> speculative,
-  llama_batch batch,
-);
-
-@Native<_LlamaDartSpeculativeDraftNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_speculative_draft',
-)
-external int _llamadartWrapperSpeculativeDraft(
-  Pointer<llama_dart_speculative> speculative,
-  int seqId,
-  int nPast,
-  int idLast,
-  Pointer<Int32> prompt,
-  int promptCount,
-  int draftTokenMax,
-  Pointer<Int32> outTokens,
-  int outCapacity,
-);
-
-@Native<_LlamaDartSpeculativeAcceptNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_speculative_accept',
-)
-external void _llamadartWrapperSpeculativeAccept(
-  Pointer<llama_dart_speculative> speculative,
-  int seqId,
-  int acceptedCount,
-);
-
-@Native<_LlamaDartMtpInitNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_mtp_init',
-)
-external Pointer<llama_dart_mtp> _llamadartWrapperMtpInit(
-  Pointer<llama_model> model,
-  Pointer<llama_context> context,
-  llama_context_params contextParams,
-  int draftTokenMax,
-  int draftTokenMin,
-  double minProbability,
-  bool backendSampling,
-);
-
-@Native<_LlamaDartMtpInitNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_mtp_init_with_draft_model',
-)
-external Pointer<llama_dart_mtp> _llamadartWrapperMtpInitWithDraftModel(
-  Pointer<llama_model> draftModel,
-  Pointer<llama_context> context,
-  llama_context_params contextParams,
-  int draftTokenMax,
-  int draftTokenMin,
-  double minProbability,
-  bool backendSampling,
-);
-
-@Native<_LlamaDartMtpFreeNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_mtp_free',
-)
-external void _llamadartWrapperMtpFree(Pointer<llama_dart_mtp> mtp);
-
-@Native<_LlamaDartMtpGetDraftContextNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_mtp_get_draft_context',
-)
-external Pointer<llama_context> _llamadartWrapperMtpGetDraftContext(
-  Pointer<llama_dart_mtp> mtp,
-);
-
-@Native<_LlamaDartMtpBeginNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_mtp_begin',
-)
-external bool _llamadartWrapperMtpBegin(
-  Pointer<llama_dart_mtp> mtp,
-  int seqId,
-  Pointer<Int32> prompt,
-  int promptCount,
-);
-
-@Native<_LlamaDartMtpProcessBatchNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_mtp_process_batch',
-)
-external bool _llamadartWrapperMtpProcessBatch(
-  Pointer<llama_dart_mtp> mtp,
-  llama_batch batch,
-);
-
-@Native<_LlamaDartMtpDraftNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_mtp_draft',
-)
-external int _llamadartWrapperMtpDraft(
-  Pointer<llama_dart_mtp> mtp,
-  int seqId,
-  int nPast,
-  int idLast,
-  Pointer<Int32> prompt,
-  int promptCount,
-  int draftTokenMax,
-  Pointer<Int32> outTokens,
-  int outCapacity,
-);
-
-@Native<_LlamaDartMtpAcceptNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_mtp_accept',
-)
-external void _llamadartWrapperMtpAccept(
-  Pointer<llama_dart_mtp> mtp,
-  int seqId,
-  int acceptedCount,
-);
-
-@Native<_LlamaDartNgramSimpleInitNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_ngram_simple_init',
-)
-external Pointer<llama_dart_ngram> _llamadartWrapperNgramSimpleInit(
-  int ngramSize,
-  int draftTokenMax,
-);
-
-@Native<_LlamaDartNgramFreeNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_ngram_free',
-)
-external void _llamadartWrapperNgramFree(Pointer<llama_dart_ngram> ngram);
-
-@Native<_LlamaDartNgramBeginNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_ngram_begin',
-)
-external bool _llamadartWrapperNgramBegin(
-  Pointer<llama_dart_ngram> ngram,
-  int seqId,
-  Pointer<Int32> prompt,
-  int promptCount,
-);
-
-@Native<_LlamaDartNgramProcessBatchNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_ngram_process_batch',
-)
-external bool _llamadartWrapperNgramProcessBatch(
-  Pointer<llama_dart_ngram> ngram,
-  llama_batch batch,
-);
-
-@Native<_LlamaDartNgramDraftNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_ngram_draft',
-)
-external int _llamadartWrapperNgramDraft(
-  Pointer<llama_dart_ngram> ngram,
-  int seqId,
-  int nPast,
-  int idLast,
-  Pointer<Int32> prompt,
-  int promptCount,
-  int draftTokenMax,
-  Pointer<Int32> outTokens,
-  int outCapacity,
-);
-
-@Native<_LlamaDartNgramAcceptNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_ngram_accept',
-)
-external void _llamadartWrapperNgramAccept(
-  Pointer<llama_dart_ngram> ngram,
-  int seqId,
-  int acceptedCount,
-);
-
-@Native<_LlamaDartSamplerSampleAndAcceptNNative>(
-  assetId: _llamadartWrapperAssetId,
-  symbol: 'llama_dart_sampler_sample_and_accept_n',
-)
-external int _llamadartWrapperSamplerSampleAndAcceptN(
-  Pointer<llama_sampler> sampler,
-  Pointer<llama_context> context,
-  Pointer<Int32> indexes,
-  int indexCount,
-  Pointer<Int32> draftTokens,
-  int draftCount,
-  Pointer<Int32> outTokens,
-  int outCapacity,
-);
+final int _nativeStatusException =
+    llama_dart_status.LLAMA_DART_STATUS_EXCEPTION.value;
+final Pointer<NativeFinalizerFunction> _samplerFreeAddress =
+    Native.addressOf<NativeFunction<Void Function(Pointer<llama_sampler>)>>(
+      llama_sampler_free,
+    ).cast();
 
 final RegExp _linuxLlamadartProcMapsPattern = RegExp(
   r'/libllamadart\.so(?:\.\d+)?$',
 );
 
 const int _maxLlamaCppReasoningBudgetTokens = 0x7fffffff;
+const String _minimumDsparkNativeTag = 'b10356';
+
+/// llama.cpp's DFlash block size when a draft model has no `dflash.block_size`.
+const int _llamaCppDefaultDflashBlockSize = 16;
+
+/// A draft context's micro-batch size, and whether it is inherited from the
+/// target context because `draftMicroBatchSize` is unset.
+typedef _DraftMicroBatch = ({int size, bool inherited});
+
+LlamaArgumentException _draftMicroBatchTooSmall(
+  _DraftMicroBatch microBatch,
+  String requirement,
+) {
+  final size = microBatch.size;
+  return LlamaArgumentException(
+    microBatch.inherited
+        ? 'ModelParams.microBatchSize (resolved to $size; the draft context '
+              'inherits it while SpeculativeDecodingConfig.draftMicroBatchSize '
+              'is unset) must be at least $requirement'
+        : 'SpeculativeDecodingConfig.draftMicroBatchSize ($size) must be at '
+              'least $requirement',
+    name: microBatch.inherited ? 'microBatchSize' : 'draftMicroBatchSize',
+    invalidValue: size,
+  );
+}
+
+const String _draftBlockRequirement =
+    'for llama.cpp draft-dflash and draft-dspark, which decode a whole draft '
+    'block in one micro-batch.';
 
 class _LlamaCppThinkingBudgetConfig {
   const _LlamaCppThinkingBudgetConfig({
@@ -690,6 +126,7 @@ class _LlamaCppSpeculativeConfig {
     required this.draftTokenMin,
     required this.minProbability,
     required this.draftSplitProbability,
+    required this.draftMicroBatchSize,
     required this.draftModelPath,
     required this.ngramSizeN,
     required this.ngramSizeM,
@@ -707,6 +144,7 @@ class _LlamaCppSpeculativeConfig {
   final int draftTokenMin;
   final double? minProbability;
   final double? draftSplitProbability;
+  final int? draftMicroBatchSize;
   final String? draftModelPath;
   final int? ngramSizeN;
   final int? ngramSizeM;
@@ -722,48 +160,48 @@ class _LlamaCppSpeculativeConfig {
         strategy == SpeculativeDecodingStrategy.draftSimple ||
         strategy == SpeculativeDecodingStrategy.draftEagle3 ||
         strategy == SpeculativeDecodingStrategy.mtp ||
-        strategy == SpeculativeDecodingStrategy.draftDflash,
+        strategy == SpeculativeDecodingStrategy.draftDflash ||
+        strategy == SpeculativeDecodingStrategy.draftDspark,
   );
 
   bool get requiresExternalDraftModel => strategies.any(
     (strategy) =>
         strategy == SpeculativeDecodingStrategy.draftSimple ||
         strategy == SpeculativeDecodingStrategy.draftEagle3 ||
-        strategy == SpeculativeDecodingStrategy.draftDflash,
+        strategy == SpeculativeDecodingStrategy.draftDflash ||
+        strategy == SpeculativeDecodingStrategy.draftDspark,
   );
 
   bool get usesMtp => strategies.contains(SpeculativeDecodingStrategy.mtp);
+
+  bool get usesDspark =>
+      strategies.contains(SpeculativeDecodingStrategy.draftDspark);
+
+  bool get usesBlockDraft =>
+      strategies.contains(SpeculativeDecodingStrategy.draftDflash) ||
+      strategies.contains(SpeculativeDecodingStrategy.draftDspark);
 
   bool get suppressDraftProcessLogits => strategies.any(
     (strategy) =>
         strategy == SpeculativeDecodingStrategy.draftSimple ||
         strategy == SpeculativeDecodingStrategy.draftEagle3 ||
-        strategy == SpeculativeDecodingStrategy.draftDflash,
+        strategy == SpeculativeDecodingStrategy.draftDflash ||
+        strategy == SpeculativeDecodingStrategy.draftDspark,
   );
 }
 
-class _LlamaCppMtpConfig {
-  const _LlamaCppMtpConfig({
-    required this.draftTokenMax,
-    required this.draftTokenMin,
-    required this.minProbability,
-    required this.draftModelPath,
-  });
-
-  final int draftTokenMax;
-  final int draftTokenMin;
-  final double minProbability;
-  final String? draftModelPath;
-}
-
-class _LlamaCppNgramSimpleConfig {
-  const _LlamaCppNgramSimpleConfig({
-    required this.draftTokenMax,
-    required this.ngramSize,
-  });
-
-  final int draftTokenMax;
-  final int ngramSize;
+/// Copies [text] to native memory as NUL-terminated UTF-8.
+///
+/// Returns the pointer, which the caller frees with `malloc.free`, and the
+/// byte length without the terminator. The length counts the bytes after an
+/// embedded U+0000, where `Utf8.length` stops.
+(Pointer<Utf8>, int) _toNativeUtf8WithLength(String text) {
+  final bytes = utf8.encode(text);
+  final pointer = malloc<Uint8>(bytes.length + 1);
+  pointer.asTypedList(bytes.length + 1)
+    ..setAll(0, bytes)
+    ..[bytes.length] = 0;
+  return (pointer.cast(), bytes.length);
 }
 
 /// Service responsible for managing Llama.cpp models and contexts.
@@ -783,24 +221,15 @@ class LlamaCppService {
     'LLAMADART_ANDROID_VULKAN_ALLOW_FLASH_ATTN',
     defaultValue: false,
   );
-  static const int _maxStartupDiagnostics = 32;
   static const int _loadWithAlteredSearchPath = 0x00000008;
   static const int _semFailCriticalErrors = 0x0001;
-  static const Map<String, int> _androidCpuVariantPriority = <String, int>{
-    'android_armv9.2_2': 0,
-    'android_armv9.2_1': 1,
-    'android_armv9.0_1': 2,
-    'android_armv8.6_1': 3,
-    'android_armv8.2_2': 4,
-    'android_armv8.2_1': 5,
-    'android_armv8.0_1': 6,
-  };
   static const Map<SpeculativeDecodingStrategy, String>
   _llamaCppSpeculativeTypeNames = <SpeculativeDecodingStrategy, String>{
     SpeculativeDecodingStrategy.draftSimple: 'draft-simple',
     SpeculativeDecodingStrategy.draftEagle3: 'draft-eagle3',
     SpeculativeDecodingStrategy.mtp: 'draft-mtp',
     SpeculativeDecodingStrategy.draftDflash: 'draft-dflash',
+    SpeculativeDecodingStrategy.draftDspark: 'draft-dspark',
     SpeculativeDecodingStrategy.ngramSimple: 'ngram-simple',
     SpeculativeDecodingStrategy.ngramMapK: 'ngram-map-k',
     SpeculativeDecodingStrategy.ngramMapK4v: 'ngram-map-k4v',
@@ -813,8 +242,209 @@ class LlamaCppService {
         SpeculativeDecodingStrategy.draftEagle3,
         SpeculativeDecodingStrategy.mtp,
         SpeculativeDecodingStrategy.draftDflash,
+        SpeculativeDecodingStrategy.draftDspark,
       };
 
+  /// Creates the service; tests replace the runtime's first native call, the
+  /// host probes behind its Windows load diagnostics, the Android check behind
+  /// its backend and context policy, the iOS simulator and macOS x86_64
+  /// checks behind its backend policy, the core count behind its default CPU
+  /// thread counts, the raw `ggml_backend_dev_type` values a
+  /// [ComputeDevice.gpu] load checks for a backend, the calls that create,
+  /// free and run models and contexts, the ggml calls of decision heads, the
+  /// calls that allocate and free per-request token batches and prepared
+  /// embedding resources, the read of the Vulkan device facts, the registered
+  /// ggml devices a load selects from, the devices the registry of an
+  /// explicit GPU backend lists, the probe of whether a device's
+  /// backend has row split buffer types, the allocator of the model paths,
+  /// tensor splits and tensor buffer overrides [loadModel] and draft model
+  /// loads pass to llama.cpp, and the allocator
+  /// of each context's token batch, whose blocks `malloc`'s free must be able
+  /// to free: an isolate exit frees a batch still held with it.
+  LlamaCppService({
+    void Function()? backendInit,
+    Abi? abi,
+    bool? isWindows,
+    bool? isAndroid,
+    bool? isIosSimulator,
+    bool? isMacosX64,
+    int? availableCores,
+    List<String> Function(List<String> names) missingWindowsLibraries =
+        findMissingWindowsLibraries,
+    List<int> Function(GpuBackend backend)? deviceTypes,
+    LlamaCppObjectCalls? objectCalls,
+    GgmlGraphApi? decisionHeadGraphApi,
+    llama_batch Function(int tokens, int embd, int sequences)? batchInit,
+    void Function(llama_batch batch)? batchFree,
+    void Function(Pointer<mtmd_input_chunks>)? embeddingChunksFree,
+    void Function(Pointer<mtmd_bitmap>)? embeddingBitmapFree,
+    void Function(Pointer<llama_batch_ext>)? embeddingBatchFree,
+    VulkanDeviceProbe Function()? vulkanDeviceProbe,
+    List<GgmlDeviceEntry> Function()? registeredDevices,
+    List<ggml_backend_dev_t>? Function(GpuBackend backend)? backendDevices,
+    bool Function(GgmlDeviceEntry device)? splitBufferTypeProbe,
+    Allocator modelLoadAllocator = malloc,
+    Allocator contextBatchAllocator = malloc,
+    String? Function()? buildIdentity,
+    String? Function(Pointer<llama_model> model)? modelArchitecture,
+    String? Function()? ggmlVersion,
+  }) : _backendInit = backendInit ?? (() => llama_backend_init()),
+       _abi = abi ?? Abi.current(),
+       _isWindows = isWindows ?? Platform.isWindows,
+       _isAndroid = isAndroid ?? Platform.isAndroid,
+       _isIosSimulator = isIosSimulator ?? isIosSimulatorProcess(),
+       _isMacosX64 = isMacosX64 ?? Abi.current() == Abi.macosX64,
+       _availableCores = availableCores ?? Platform.numberOfProcessors,
+       _missingWindowsLibraries = missingWindowsLibraries,
+       _deviceTypesOverride = deviceTypes,
+       _objectCallsOverride = objectCalls,
+       _decisionHeadGraphApi = decisionHeadGraphApi,
+       _batchInit = batchInit ?? llama_batch_init,
+       _batchFree = batchFree ?? llama_batch_free,
+       _embeddingChunksFree = embeddingChunksFree,
+       _embeddingBitmapFree = embeddingBitmapFree,
+       _embeddingBatchFree = embeddingBatchFree,
+       _vulkanDeviceProbeOverride = vulkanDeviceProbe,
+       _registeredDevicesOverride = registeredDevices,
+       _backendDevicesOverride = backendDevices,
+       _splitBufferTypeProbeOverride = splitBufferTypeProbe,
+       _modelLoadAllocator = modelLoadAllocator,
+       _contextBatchAllocator = contextBatchAllocator,
+       _readBuildIdentity = buildIdentity,
+       _modelArchitectureOverride = modelArchitecture,
+       _readGgmlVersion = ggmlVersion;
+
+  NativeWorkerOwner? _nativeOwner;
+
+  /// Prepares library resolution and creates an empty parent-owned bootstrap.
+  /// No model, context or optional GPU backend is initialized here.
+  static NativeOwnerBootstrap? createOwnerBootstrap() {
+    final service = LlamaCppService();
+    service._prepareLinuxRuntimeDependenciesBeforeBinding();
+    service._preloadLinuxCoreLibrariesForSonameResolution();
+    if (Platform.isWindows) {
+      try {
+        // Resolve the core image before its optional dependent wrapper, as
+        // worker initialization does, without initializing a backend here.
+        Native.addressOf<NativeFunction<Void Function()>>(llama_backend_init);
+      } on ArgumentError {
+        // Preserve the worker's existing missing-runtime diagnostics.
+        return null;
+      }
+    }
+    return NativeOwnerBootstrap.tryCreate();
+  }
+
+  /// Attaches stable cleanup before activating the worker's native owner.
+  void installWorkerOwner(int? token) {
+    if (token == null) return;
+    final current = _nativeOwner;
+    if (current != null) {
+      if (current.token.address == token) {
+        return;
+      }
+      throw LlamaBackendInitializationException(
+        'The worker already has a different native owner.',
+      );
+    }
+    final api = NativeOwnerApi.tryResolve();
+    if (api == null) {
+      throw LlamaBackendInitializationException(
+        'The worker cannot resolve the native owner API selected by its parent.',
+      );
+    }
+    final owner = NativeWorkerOwner(api, Pointer.fromAddress(token));
+    IsolateShutdownReleases.current.installOwner(owner);
+    if (!api.activate(owner.token)) {
+      throw LlamaBackendInitializationException(
+        'The native worker owner expired before activation.',
+      );
+    }
+    _nativeOwner = owner;
+  }
+
+  Pointer<llama_model> _loadOwnedModel(
+    Pointer<Char> path,
+    llama_model_params params,
+  ) {
+    final owner = _nativeOwner;
+    if (owner == null) return _calls.loadModel(path, params);
+    final model = owner.api.loadModel(owner.token, path, params);
+    if (model == nullptr) {
+      _calls.failures.throwIfCaught(
+        'llama_model_load_from_file',
+        LlamaModelException.new,
+      );
+    }
+    return model;
+  }
+
+  Pointer<llama_context> _createOwnedContext(
+    Pointer<llama_model> model,
+    llama_context_params params,
+  ) {
+    final owner = _nativeOwner;
+    if (owner == null) return _calls.createContext(model, params);
+    final context = owner.api.createContext(owner.token, model, params);
+    if (context == nullptr) {
+      _calls.failures.throwIfCaught(
+        'llama_init_from_model',
+        LlamaContextException.new,
+        windowsFreeOnly: [model],
+      );
+    }
+    return context;
+  }
+
+  final void Function() _backendInit;
+  final Abi _abi;
+  final bool _isWindows;
+  final bool _isAndroid;
+  final bool _isIosSimulator;
+  final bool _isMacosX64;
+  final int _availableCores;
+  final List<String> Function(List<String> names) _missingWindowsLibraries;
+  final List<int> Function(GpuBackend backend)? _deviceTypesOverride;
+  final LlamaCppObjectCalls? _objectCallsOverride;
+  final GgmlGraphApi? _decisionHeadGraphApi;
+  final llama_batch Function(int tokens, int embd, int sequences) _batchInit;
+  final void Function(llama_batch batch) _batchFree;
+  final void Function(Pointer<mtmd_input_chunks>)? _embeddingChunksFree;
+  final void Function(Pointer<mtmd_bitmap>)? _embeddingBitmapFree;
+  final void Function(Pointer<llama_batch_ext>)? _embeddingBatchFree;
+  final VulkanDeviceProbe Function()? _vulkanDeviceProbeOverride;
+  late final LlamaCppObjectCalls _calls =
+      _objectCallsOverride ?? _resolveObjectCalls();
+
+  final List<GgmlDeviceEntry> Function()? _registeredDevicesOverride;
+  final List<ggml_backend_dev_t>? Function(GpuBackend backend)?
+  _backendDevicesOverride;
+  final bool Function(GgmlDeviceEntry device)? _splitBufferTypeProbeOverride;
+  final Allocator _modelLoadAllocator;
+  final Allocator _contextBatchAllocator;
+  final String? Function()? _readBuildIdentity;
+  late final String? _buildIdentity =
+      (_readBuildIdentity ??
+      () => readNativeBuildIdentity(isWindows: _isWindows))();
+  final String? Function()? _readGgmlVersion;
+  late final bool _ggmlHasSmallMatmulTileFix = () {
+    final version = (_readGgmlVersion ?? readGgmlVersion)();
+    final fixed = ggmlHasSmallMatmulTileFix(version);
+    LlamaLogger.instance.debug(
+      'llama_cpp_service: ggml ${version ?? '(no ggml_version)'} '
+      '${fixed ? 'has' : 'lacks'} the Vulkan small matmul tile fix '
+      '(ggml $smallMatmulTileFixGgmlVersion)',
+    );
+    return fixed;
+  }();
+
+  // Reading the facts loads the system's GPU drivers into the process, so
+  // they are read once, and only for a load that selects a registered
+  // ggml-vulkan device or an Android context of a registry that has one:
+  // ggml-vulkan has loaded the drivers by then.
+  late final VulkanDeviceProbe _vulkanDeviceProbe =
+      (_vulkanDeviceProbeOverride ??
+      () => VulkanDeviceInfoApi.probeRuntime(isWindows: _isWindows))();
   int _nextHandle = 1;
   String? _backendModuleDirectory;
   final Set<String> _loadedBackendModules = <String>{};
@@ -833,6 +463,7 @@ class LlamaCppService {
   String? _linuxPreparedLibraryDirectory;
   bool _ggmlFallbackLookupAttempted = false;
   String? _ggmlFallbackLookupSearchKey;
+  String? _ggmlRuntimeProbeOutcome;
   _GgmlBackendLoadDart? _ggmlBackendLoadFallback;
   _GgmlBackendLoadAllDart? _ggmlBackendLoadAllFallback;
   _GgmlBackendLoadAllFromPathDart? _ggmlBackendLoadAllFromPathFallback;
@@ -841,6 +472,11 @@ class LlamaCppService {
   _GgmlBackendRegGetDart? _ggmlBackendRegGetFallback;
   _GgmlBackendRegNameDart? _ggmlBackendRegNameFallback;
   _GgmlBackendRegByNameDart? _ggmlBackendRegByNameFallback;
+  _GgmlBackendRegGetProcAddressDart? _ggmlBackendRegGetProcAddressFallback;
+  // Tests replace this through mirrors to reproduce an absent primary export.
+  // ignore: prefer_final_fields
+  _GgmlBackendRegGetProcAddressDart _ggmlBackendRegGetProcAddressPrimary =
+      ggml_backend_reg_get_proc_address;
   _GgmlBackendRegDevCountDart? _ggmlBackendRegDevCountFallback;
   _GgmlBackendRegDevGetDart? _ggmlBackendRegDevGetFallback;
   _GgmlBackendDevCountDart? _ggmlBackendDevCountFallback;
@@ -848,40 +484,60 @@ class LlamaCppService {
   _GgmlBackendDevNameDart? _ggmlBackendDevNameFallback;
   _GgmlBackendDevBackendRegDart? _ggmlBackendDevBackendRegFallback;
   _GgmlBackendDevByTypeDart? _ggmlBackendDevByTypeFallback;
+  _GgmlBackendDevBufferTypeDart? _ggmlBackendDevBufferTypeFallback;
   _GgmlBackendDevTypeDart? _ggmlBackendDevTypeFallback;
   _GgmlBackendDevGetPropsDart? _ggmlBackendDevGetPropsFallback;
   _GgmlBackendDevMemoryDart? _ggmlBackendDevMemoryFallback;
   bool _logLevelFallbackLookupAttempted = false;
   String? _logLevelFallbackLookupSearchKey;
+  String? _logLevelProbeOutcome;
   _LlamaDartSetLogLevelDart? _llamaDartSetLogLevelFallback;
   LlamaLogLevel _configuredLogLevel = LlamaLogLevel.warn;
   String _activeBackendName = 'CPU';
   int _activeResolvedGpuLayers = 0;
   bool _mtmdFallbackLookupAttempted = false;
+  String? _mtmdFallbackLookupDirectory;
   bool _mtmdPrimarySymbolsUnavailable = false;
+  bool _mtmdVideoPrimarySymbolUnavailable = false;
   _MtmdApi? _mtmdFallbackApi;
   bool _reasoningBudgetApiLookupAttempted = false;
   _ReasoningBudgetApi? _reasoningBudgetApi;
+  final Map<String, int> _reasoningBudgetLoadFailures = <String, int>{};
   bool _speculativeApiLookupAttempted = false;
   _SpeculativeApi? _speculativeApi;
-  bool _mtpApiLookupAttempted = false;
-  _MtpApi? _mtpApi;
-  bool _ngramApiLookupAttempted = false;
-  _NgramApi? _ngramApi;
-  final List<String> _startupDiagnostics = <String>[];
+  bool _ttsApiLookupAttempted = false;
+  _TtsApi? _ttsApi;
+  Pointer<llama_dart_tts> _activeTts = nullptr;
+  bool _ttsCancelPending = false;
+  int? _activeTtsContextHandle;
+  final StartupDiagnosticBuffer _startupDiagnostics = StartupDiagnosticBuffer();
 
   // --- Internal State ---
   final Map<int, _LlamaModelWrapper> _models = {};
   final Map<int, _LlamaContextWrapper> _contexts = {};
   final Map<int, int> _contextToModel = {};
   final Map<int, Pointer<llama_sampler>> _samplers = {};
-  final Map<int, llama_batch> _batches = {};
+  final Map<int, TokenBatch> _batches = {};
   final Map<int, llama_context_params> _contextParams = {};
+
+  /// Called for unit tests with the draft context of each speculative session
+  /// a generation creates, or `nullptr` for a strategy without one.
+  void Function(Pointer<llama_context> draftContext)?
+  debugOnSpeculativeDraftContextForTesting;
+
   final Map<int, Map<String, _LlamaLoraWrapper>> _loraAdapters = {};
   final Map<int, Map<String, double>> _activeLoras = {};
+  final String? Function(Pointer<llama_model>)? _modelArchitectureOverride;
+  final Map<int, String> _modelResolvedBackends = <int, String>{};
+  final Map<int, String?> _modelArchitectures = <int, String?>{};
   final Map<int, String> _modelBackendNames = <int, String>{};
   final Map<int, int> _modelResolvedGpuLayers = <int, int>{};
+  // Retain the raw load layers for auxiliary placement, but report zero and
+  // disable context offload when the load selected no GPU.
+  final Set<int> _modelsOnNoGpu = <int>{};
   final Map<int, ModelParams> _modelLoadParams = <int, ModelParams>{};
+  final Map<int, GpuDevicePlacement> _modelPlacements =
+      <int, GpuDevicePlacement>{};
   final Map<String, _LlamaModelWrapper> _speculativeDraftModels =
       <String, _LlamaModelWrapper>{};
   final Map<int, Set<String>> _modelToSpeculativeDraftModelKeys =
@@ -896,18 +552,71 @@ class LlamaCppService {
   final Map<int, Pointer<mtmd_context>> _mtmdContexts = {};
   final Map<int, bool> _modelToMtmdUseGpu = {};
 
+  final Map<int, _DecisionHead> _decisionHeads = <int, _DecisionHead>{};
+
   int _getHandle() => _nextHandle++;
+
+  /// Maps [ModelParams.device] onto the llama.cpp fields the load reads.
+  ///
+  /// [ComputeDevice.cpu] forces the CPU module (or BLAS when requested) and 0
+  /// GPU layers. [ComputeDevice.gpu] keeps the requested backend, except that
+  /// Android resolves [GpuBackend.auto] to Vulkan and an iOS simulator or
+  /// macOS x86_64 resolves it to Metal, since their `auto` means the CPU.
+  /// [ComputeDevice.npu] has no llama.cpp backend.
+  static ModelParams resolveComputeDeviceParams(
+    ModelParams modelParams, {
+    bool isAndroid = false,
+    bool isIosSimulator = false,
+    bool isMacosX64 = false,
+    String platform = 'this platform',
+  }) {
+    switch (modelParams.device) {
+      case ComputeDevice.auto:
+        return modelParams;
+      case ComputeDevice.cpu:
+        return modelParams.copyWith(
+          preferredBackend: modelParams.preferredBackend == GpuBackend.blas
+              ? GpuBackend.blas
+              : GpuBackend.cpu,
+          gpuLayers: 0,
+        );
+      case ComputeDevice.gpu:
+        if (isAndroid && modelParams.preferredBackend == GpuBackend.auto) {
+          return modelParams.copyWith(preferredBackend: GpuBackend.vulkan);
+        }
+        if ((isIosSimulator || isMacosX64) &&
+            modelParams.preferredBackend == GpuBackend.auto) {
+          return modelParams.copyWith(preferredBackend: GpuBackend.metal);
+        }
+        return modelParams;
+      case ComputeDevice.npu:
+        throw LlamaUnsupportedException(
+          'ComputeDevice.npu is not available for llama.cpp on $platform: '
+          'llama.cpp runs GGUF models on the CPU or a GPU, and only LiteRT-LM '
+          'on Android has an NPU backend. Use ComputeDevice.auto, cpu or gpu.',
+        );
+    }
+  }
 
   /// Resolves the effective backend preference for model loading.
   ///
   /// Android keeps Vulkan bundled, but `auto` currently prefers CPU to avoid
   /// initializing optional GPU backends by default on devices with unstable
-  /// Vulkan stacks.
+  /// Vulkan stacks. An iOS simulator resolves `auto` to CPU as well: its
+  /// Metal device returns incorrect output from llama.cpp
+  /// (https://github.com/leehack/llamadart/issues/950). So does macOS x86_64,
+  /// Rosetta included: Metal returns garbled output on Intel Macs with AMD
+  /// GPUs (https://github.com/leehack/llamadart/issues/1597), and an x86_64
+  /// process cannot tell an Intel Mac from Rosetta. An explicit backend is
+  /// returned as requested.
   static GpuBackend resolvePreferredBackendForLoad(
     ModelParams modelParams, {
     bool isAndroid = false,
+    bool isIosSimulator = false,
+    bool isMacosX64 = false,
   }) {
-    if (isAndroid && modelParams.preferredBackend == GpuBackend.auto) {
+    if ((isAndroid || isIosSimulator || isMacosX64) &&
+        modelParams.preferredBackend == GpuBackend.auto) {
       return GpuBackend.cpu;
     }
     return modelParams.preferredBackend;
@@ -915,15 +624,60 @@ class LlamaCppService {
 
   /// Resolves the effective GPU layer count for model loading.
   ///
-  /// CPU backend preference always forces zero offloaded layers.
+  /// CPU backend preference always forces zero offloaded layers, and a
+  /// negative [ModelParams.gpuLayers] resolves to [ModelParams.maxGpuLayers]:
+  /// llama.cpp offloads every layer for it, so the context offload, backend
+  /// name and reported layer count must treat it as a GPU load.
   static int resolveGpuLayersForLoad(
     ModelParams modelParams, {
     bool isAndroid = false,
+    bool isIosSimulator = false,
+    bool isMacosX64 = false,
   }) {
-    return resolvePreferredBackendForLoad(modelParams, isAndroid: isAndroid) ==
+    return resolvePreferredBackendForLoad(
+              modelParams,
+              isAndroid: isAndroid,
+              isIosSimulator: isIosSimulator,
+              isMacosX64: isMacosX64,
+            ) ==
             GpuBackend.cpu
         ? 0
-        : modelParams.gpuLayers;
+        : resolveGpuLayerCount(modelParams.gpuLayers);
+  }
+
+  /// The warning for a model an iOS simulator loaded with [resolvedGpuLayers]
+  /// GPU layers, or `null` when [isIosSimulator] is false or the model runs
+  /// on the CPU.
+  static String? iosSimulatorMetalWarning({
+    required bool isIosSimulator,
+    required int resolvedGpuLayers,
+  }) {
+    if (!isIosSimulator || resolvedGpuLayers == 0) {
+      return null;
+    }
+    return "llama.cpp's Metal backend is known to return incorrect output on "
+        'the iOS simulator '
+        '(https://github.com/leehack/llamadart/issues/950), and this model '
+        'was loaded with GPU layers there. Use ComputeDevice.auto with '
+        'GpuBackend.auto, or ComputeDevice.cpu, to run it on the CPU.';
+  }
+
+  /// The warning for a model a macOS x86_64 process loaded with
+  /// [resolvedGpuLayers] GPU layers, or `null` when [isMacosX64] is false or
+  /// the model runs on the CPU.
+  static String? macosX64MetalWarning({
+    required bool isMacosX64,
+    required int resolvedGpuLayers,
+  }) {
+    if (!isMacosX64 || resolvedGpuLayers == 0) {
+      return null;
+    }
+    return "llama.cpp's Metal backend is known to return garbled output on "
+        'Intel Macs with AMD GPUs '
+        '(https://github.com/leehack/llamadart/issues/1597), and this model '
+        'was loaded with GPU layers in a macOS x86_64 process. Use '
+        'ComputeDevice.auto with GpuBackend.auto, or ComputeDevice.cpu, to '
+        'run it on the CPU.';
   }
 
   /// Returns whether context-time GPU offload should be disabled.
@@ -960,6 +714,174 @@ class LlamaCppService {
         resolvedGpuLayers ?? resolveGpuLayersForLoad(modelParams);
     return modelParams.preferredBackend == GpuBackend.vulkan &&
         effectiveGpuLayers > 0;
+  }
+
+  /// Returns whether Android Vulkan must keep KQV offload enabled for the
+  /// model architecture to preserve inference correctness.
+  ///
+  /// Qwen3.5 produces incorrect logits when its model layers are offloaded to
+  /// Vulkan while KQV remains on the CPU. Keep the other conservative Android
+  /// Vulkan settings independent so this correctness exception does not also
+  /// enable op offload or Flash Attention.
+  static bool shouldKeepAndroidVulkanKqvOffloadEnabled(
+    String? modelArchitecture,
+  ) {
+    if (modelArchitecture == null || modelArchitecture.isEmpty) {
+      return false;
+    }
+
+    final normalized = modelArchitecture.toLowerCase().replaceAll(
+      RegExp('[^a-z0-9]'),
+      '',
+    );
+    return normalized == 'qwen35';
+  }
+
+  /// Most tokens of a text prompt an Android Vulkan context decodes in one
+  /// micro-batch when [ModelParams.microBatchSize] is unset.
+  static const int androidVulkanPromptMicroBatchSize = 8;
+
+  /// Returns the most tokens of a text prompt one decode call takes on a
+  /// context created with [modelParams], or `null` for the context's own
+  /// micro-batch.
+  ///
+  /// An Android Vulkan context gets [androidVulkanPromptMicroBatchSize]
+  /// unless [ModelParams.microBatchSize] is set or
+  /// [hasSmallMatmulTileDefect] returns false. That is called only when the
+  /// cap would otherwise apply; without it the cap applies.
+  static int? resolvePromptMicroBatchLimit(
+    ModelParams modelParams, {
+    int? resolvedGpuLayers,
+    bool isAndroid = false,
+    bool Function()? hasSmallMatmulTileDefect,
+  }) {
+    // A speed default: on a Pixel 9 Pro (Mali-G715, subgroup 16), 8-token
+    // calls evaluated a prompt at about 44 tok/s against 27-29 for 32 or 512
+    // on ggml 0.29. Before ggml 0.28 it also keeps prompts out of the small
+    // matmul tile defect above 32 tokens
+    // (https://github.com/ggml-org/llama.cpp/issues/28637).
+    // `n_ubatch` is left alone: a non-causal image decode and a one-pass
+    // embedding need their whole input in one micro-batch.
+    if (modelParams.microBatchSize > 0 ||
+        !shouldUseConservativeAndroidVulkanContextConfig(
+          modelParams,
+          resolvedGpuLayers: resolvedGpuLayers,
+          isAndroid: isAndroid,
+        ) ||
+        hasSmallMatmulTileDefect?.call() == false) {
+      return null;
+    }
+    return androidVulkanPromptMicroBatchSize;
+  }
+
+  /// Whether a Vulkan device ggml-vulkan registered may give wrong results
+  /// from its small matmul tile.
+  ///
+  /// True unless [probe] lists exactly [registeredDeviceCount] devices and
+  /// none of them has the defect: a runtime without the probe, a probe that
+  /// failed and a device list that does not match ggml's all count as
+  /// affected.
+  static bool vulkanSmallMatmulTileDefect(
+    VulkanDeviceProbe probe, {
+    required int registeredDeviceCount,
+  }) {
+    final devices = probe.devices;
+    return devices == null ||
+        devices.isEmpty ||
+        devices.length != registeredDeviceCount ||
+        devices.any((device) => device.hasSmallMatmulTileDefect);
+  }
+
+  static const String _qwen35VulkanRestriction =
+      'Qwen3.5 on Android/Vulkan with a llama.cpp runtime older than ggml '
+      '$smallMatmulTileFixGgmlVersion (llamadart-native v0.8.0) and unsafe or '
+      'unproven small-matmul subgroup facts supports ordinary text only, with '
+      'microBatchSize unset or 1..8 '
+      '(https://github.com/leehack/llamadart/issues/948). Use the bundled '
+      'runtime, or ComputeDevice.cpu for larger batches, media, speculation or '
+      'embeddings.';
+
+  // Context preferences cannot move tensors already loaded onto Vulkan.
+  bool _modelUsesAndroidVulkan(int modelHandle) =>
+      _isAndroid &&
+      _modelResolvedBackends[modelHandle] == 'Vulkan' &&
+      (_modelResolvedGpuLayers[modelHandle] ?? 0) > 0 &&
+      !_modelsOnNoGpu.contains(modelHandle);
+
+  bool _requiresQwen35VulkanRestriction(int modelHandle) =>
+      !_ggmlHasSmallMatmulTileFix &&
+      _isQwen35OnSmallTileAndroidVulkan(modelHandle);
+
+  /// The native architecture of [modelHandle] when it is placed on an
+  /// Android Vulkan device with unsafe or unproven small-matmul subgroup
+  /// facts, judged by the actual placement rather than the context's
+  /// preferences; `null` when it is not, and empty when it is unreadable.
+  String? _smallTileAndroidVulkanArchitecture(int modelHandle) {
+    if (!_modelUsesAndroidVulkan(modelHandle) ||
+        !_androidVulkanHasSmallMatmulTileDefect()) {
+      return null;
+    }
+    try {
+      return _modelArchitecture(modelHandle)?.trim() ?? '';
+    } on Object {
+      return '';
+    }
+  }
+
+  static bool _isQwen35Architecture(String architecture) =>
+      architecture.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '') ==
+      'qwen35';
+
+  /// Whether [modelHandle] is Qwen3.5 on small-tile Android Vulkan.
+  bool _isQwen35OnSmallTileAndroidVulkan(int modelHandle) {
+    final architecture = _smallTileAndroidVulkanArchitecture(modelHandle);
+    if (architecture == null) return false;
+    if (architecture.isEmpty) {
+      // Missing runtime metadata cannot establish admission for this GPU path.
+      if (_ggmlHasSmallMatmulTileFix) return false;
+      throw LlamaUnsupportedException(
+        'Cannot establish required model safety for Android/Vulkan with a '
+        'llama.cpp runtime older than ggml $smallMatmulTileFixGgmlVersion '
+        '(llamadart-native v0.8.0) and unsafe or unproven small-matmul '
+        'subgroup facts: native general.architecture is unavailable '
+        '(https://github.com/leehack/llamadart/issues/948). Use the bundled '
+        'runtime or ComputeDevice.cpu.',
+      );
+    }
+    return _isQwen35Architecture(architecture);
+  }
+
+  // The Qwen3.5 image encoder on these GPUs is unvalidated on every runtime,
+  // so it stays on the CPU; an unreadable architecture counts as Qwen3.5.
+  bool _keepsProjectorOnCpu(int modelHandle) {
+    final architecture = _smallTileAndroidVulkanArchitecture(modelHandle);
+    return architecture != null &&
+        (architecture.isEmpty || _isQwen35Architecture(architecture));
+  }
+
+  String? _modelArchitecture(int modelHandle) =>
+      _modelArchitectures.putIfAbsent(
+        modelHandle,
+        () => _modelArchitectureOverride == null
+            ? _getModelMetadataValue(modelHandle, 'general.architecture')
+            : _modelArchitectureOverride(_models[modelHandle]!.pointer),
+      );
+
+  void _checkQwen35VulkanEmbedding(_LlamaContextWrapper context) {
+    if (context.qwen35VulkanRestricted) {
+      throw LlamaUnsupportedException(
+        'Embeddings are unavailable. $_qwen35VulkanRestriction',
+      );
+    }
+  }
+
+  bool _projectorHasQwen35VulkanRestriction(int mmContextHandle) {
+    for (final entry in _modelToMtmd.entries) {
+      if (entry.value == mmContextHandle) {
+        return _requiresQwen35VulkanRestriction(entry.key);
+      }
+    }
+    return false;
   }
 
   /// Resolves effective context batch parameters.
@@ -1020,80 +942,6 @@ class LlamaCppService {
     _applyConfiguredLogLevel();
   }
 
-  void _applyConfiguredLogLevel() {
-    var applied = false;
-    try {
-      llama_dart_set_log_level(_configuredLogLevel.index);
-      applied = true;
-    } on ArgumentError {
-      // Continue with explicit fallback lookup below.
-    }
-
-    // Apply via explicit wrapper lookup as well. On Windows split bundles the
-    // primary @DefaultAsset can resolve to a different loaded copy than the
-    // runtime backend modules, so applying to both keeps log-level state in
-    // sync across module-loading layouts.
-    _resolveLogLevelFallbackFunction();
-    final fallback = _llamaDartSetLogLevelFallback;
-    if (fallback != null) {
-      try {
-        fallback(_configuredLogLevel.index);
-        applied = true;
-      } catch (_) {
-        // Ignore fallback invocation errors and preserve existing behavior.
-      }
-    }
-
-    if (!applied) {
-      // No applicable symbol found for this runtime layout.
-    }
-
-    // mtmd/clip uses its own logger callback chain; mirror llama logger so
-    // multimodal projector logs honor the same configured native log level.
-    _syncMtmdLogCallbackToLlamaLogger();
-  }
-
-  void _syncMtmdLogCallbackToLlamaLogger() {
-    final logCallbackPtr = malloc<ggml_log_callback>();
-    final userDataPtr = malloc<Pointer<Void>>();
-
-    try {
-      try {
-        llama_log_get(logCallbackPtr, userDataPtr);
-      } on ArgumentError {
-        return;
-      }
-
-      final callback = logCallbackPtr.value;
-      final userData = userDataPtr.value;
-      if (callback == nullptr) {
-        return;
-      }
-
-      var applied = false;
-      if (!_mtmdPrimarySymbolsUnavailable) {
-        try {
-          mtmd_log_set(callback, userData);
-          mtmd_helper_log_set(callback, userData);
-          applied = true;
-        } on ArgumentError {
-          _mtmdPrimarySymbolsUnavailable = true;
-        }
-      }
-
-      if (!applied) {
-        final fallback = _resolveMtmdFallbackApi();
-        if (fallback != null) {
-          fallback.logSet?.call(callback, userData);
-          fallback.helperLogSet?.call(callback, userData);
-        }
-      }
-    } finally {
-      malloc.free(logCallbackPtr);
-      malloc.free(userDataPtr);
-    }
-  }
-
   /// Initializes the Llama.cpp backend.
   ///
   /// This must be called before loading any models.
@@ -1107,7 +955,11 @@ class LlamaCppService {
           _resolveLinuxPrimaryLibraryDirectory();
     }
     _applyConfiguredLogLevel();
-    llama_backend_init();
+    runLlamaBackendInit(
+      _backendInit,
+      abi: _abi,
+      missingWindowsLibraries: _missingWindowsLibraries,
+    );
     _refreshBackendModuleDirectoryAfterPrimaryLoad();
     _applyConfiguredLogLevel();
 
@@ -1127,62 +979,6 @@ class LlamaCppService {
     if (_ggmlBackendRegCount() == 0) {
       // Fallback path: attempt to load CPU backend by filename resolution.
       _tryLoadBackendModule('cpu');
-    }
-  }
-
-  void _preloadLinuxCoreLibrariesForSonameResolution() {
-    if (!Platform.isLinux || _linuxCorePreloadAttempted) {
-      return;
-    }
-
-    _linuxCorePreloadAttempted = true;
-
-    // Linux split bundles expose versioned SONAMEs (e.g. libllama.so.0).
-    // Preloading dependency libraries through native-asset URIs ensures their
-    // SONAMEs are already registered before @Native resolves libllamadart.
-    final moduleDir = _resolveLinuxPrimaryLibraryDirectory();
-
-    final preloadCandidates = <List<String>>[
-      <String>[
-        'package:llamadart/ggml-base',
-        if (moduleDir != null) path.join(moduleDir, 'libggml-base.so.0'),
-        if (moduleDir != null) path.join(moduleDir, 'libggml-base.so'),
-      ],
-      <String>[
-        'package:llamadart/ggml',
-        if (moduleDir != null) path.join(moduleDir, 'libggml.so.0'),
-        if (moduleDir != null) path.join(moduleDir, 'libggml.so'),
-      ],
-      <String>[
-        'package:llamadart/llama',
-        if (moduleDir != null) path.join(moduleDir, 'libllama.so.0'),
-        if (moduleDir != null) path.join(moduleDir, 'libllama.so'),
-      ],
-    ];
-
-    for (final candidates in preloadCandidates) {
-      var loaded = false;
-      Object? lastError;
-      String? lastCandidate;
-      for (final candidate in candidates) {
-        try {
-          _preloadedCoreLibraries.add(DynamicLibrary.open(candidate));
-          loaded = true;
-          break;
-        } catch (error) {
-          lastError = error;
-          lastCandidate = candidate;
-          continue;
-        }
-      }
-
-      if (!loaded && lastError != null && lastCandidate != null) {
-        _recordStartupDiagnostic(
-          'Failed to preload Linux core library candidates '
-          '`${candidates.join(', ')}`; last error from `$lastCandidate`: '
-          '$lastError',
-        );
-      }
     }
   }
 
@@ -1269,53 +1065,6 @@ class LlamaCppService {
     }
   }
 
-  List<String> _linuxDependencySourceDirectories(String targetDirectory) {
-    final dirs = <String>{targetDirectory};
-    final bundleNames = _linuxBundleNamesForCurrentAbi();
-    if (bundleNames.isEmpty) {
-      return dirs.toList(growable: false);
-    }
-
-    final cacheRoot = Directory(
-      path.join(
-        Directory.current.path,
-        '.dart_tool',
-        'llamadart',
-        'native_bundles',
-      ),
-    );
-    if (!cacheRoot.existsSync()) {
-      return dirs.toList(growable: false);
-    }
-
-    final tagDirectories = cacheRoot.listSync().whereType<Directory>().toList()
-      ..sort((a, b) => path.basename(b.path).compareTo(path.basename(a.path)));
-
-    for (final tagDir in tagDirectories) {
-      for (final bundleName in bundleNames) {
-        final extractedDir = Directory(
-          path.join(tagDir.path, bundleName, 'extracted'),
-        );
-        if (extractedDir.existsSync()) {
-          dirs.add(extractedDir.path);
-        }
-      }
-    }
-
-    return dirs.toList(growable: false);
-  }
-
-  List<String> _linuxBundleNamesForCurrentAbi() {
-    switch (Abi.current()) {
-      case Abi.linuxArm64:
-        return const <String>['linux-arm64'];
-      case Abi.linuxX64:
-        return const <String>['linux-x64'];
-      default:
-        return const <String>[];
-    }
-  }
-
   /// Copies a missing Linux runtime dependency into the target directory.
   ///
   /// Returns `true` when the dependency already exists or is copied
@@ -1395,55 +1144,6 @@ class LlamaCppService {
     }
   }
 
-  bool _tryLoadAllBackendsBestEffort() {
-    if (_backendLoadAllSymbolUnavailable) {
-      return false;
-    }
-
-    try {
-      ggml_backend_load_all();
-      return true;
-    } on ArgumentError {
-      _resolveGgmlFallbackFunctions();
-      final fallback = _ggmlBackendLoadAllFallback;
-      if (fallback != null) {
-        fallback();
-        return true;
-      }
-
-      // Some split bundles don't expose this symbol on the primary FFI asset.
-      // Continue with explicit backend-module loading fallback.
-      _backendLoadAllSymbolUnavailable = true;
-      return false;
-    }
-  }
-
-  bool _tryLoadAllBackendsFromPathBestEffort(String directoryPath) {
-    if (_backendLoadAllFromPathSymbolUnavailable) {
-      return false;
-    }
-
-    final directoryPathPtr = directoryPath.toNativeUtf8();
-    try {
-      try {
-        ggml_backend_load_all_from_path(directoryPathPtr.cast());
-        return true;
-      } on ArgumentError {
-        _resolveGgmlFallbackFunctions();
-        final fallback = _ggmlBackendLoadAllFromPathFallback;
-        if (fallback != null) {
-          fallback(directoryPathPtr.cast());
-          return true;
-        }
-
-        _backendLoadAllFromPathSymbolUnavailable = true;
-        return false;
-      }
-    } finally {
-      malloc.free(directoryPathPtr);
-    }
-  }
-
   /// Resolves the native backend module directory for dynamic backend loading.
   ///
   /// On Android/Linux we inspect `/proc/self/maps` to find the loaded
@@ -1475,9 +1175,9 @@ class LlamaCppService {
     }
   }
 
-  /// Returns recent best-effort startup diagnostics collected during setup.
+  /// Returns startup diagnostics as retained by [StartupDiagnosticBuffer].
   List<String> getStartupDiagnostics() {
-    return List<String>.unmodifiable(_startupDiagnostics);
+    return _startupDiagnostics.entries;
   }
 
   /// Returns whether a backend score allows a dynamically loaded module.
@@ -1529,14 +1229,18 @@ class LlamaCppService {
         '`ggml_backend_score`=$score.';
   }
 
-  void _recordStartupDiagnostic(String message) {
-    if (message.isEmpty) {
-      return;
-    }
-    if (_startupDiagnostics.length >= _maxStartupDiagnostics) {
-      _startupDiagnostics.removeAt(0);
-    }
-    _startupDiagnostics.add(message);
+  void _recordStartupDiagnostic(
+    String message, {
+    StartupDiagnosticCategory category = StartupDiagnosticCategory.causal,
+  }) {
+    _startupDiagnostics.record(message, category: category);
+  }
+
+  void _recordMissingGgmlSymbol(String symbol) {
+    _recordStartupDiagnostic(
+      '$symbol is unavailable: the primary FFI asset does not export it and '
+      '${_ggmlRuntimeProbeOutcome ?? 'no ggml runtime candidate was probed'}.',
+    );
   }
 
   /// Resolves Windows backend-module directory for dynamic backend loading.
@@ -1545,10 +1249,11 @@ class LlamaCppService {
   /// 1. Explicit environment override (`LLAMADART_NATIVE_LIB_DIR` or
   ///    `LLAMADART_BACKEND_MODULE_DIR`)
   /// 2. Directory of resolved executable (if it looks like a native bundle)
-  /// 3. Current working directory (if it looks like a native bundle)
-  /// 4. Hook cache under `.dart_tool/llamadart/native_bundles`, including
+  /// 3. Standard CLI `bin/../lib` directory (if it looks like a native bundle)
+  /// 4. Current working directory (if it looks like a native bundle)
+  /// 5. Hook cache under `.dart_tool/llamadart/native_bundles_v2`, including
   ///    default, custom GitHub, and local archive cache namespaces.
-  /// 5. Directory of resolved executable (best-effort fallback)
+  /// 6. Directory of resolved executable (best-effort fallback)
   static String? resolveWindowsBackendModuleDirectory({
     required String resolvedExecutablePath,
     required String currentDirectoryPath,
@@ -1570,6 +1275,16 @@ class LlamaCppService {
     final executableDir = path.dirname(resolvedExecutablePath);
     if (_containsWindowsNativeModules(executableDir)) {
       return executableDir;
+    }
+
+    // `dart build cli` places executables in bin/ and native assets in lib/.
+    if (path.basename(executableDir).toLowerCase() == 'bin') {
+      final cliLibraryDir = path.normalize(
+        path.join(executableDir, '..', 'lib'),
+      );
+      if (_containsWindowsNativeModules(cliLibraryDir)) {
+        return cliLibraryDir;
+      }
     }
 
     if (_containsWindowsNativeModules(currentDirectoryPath)) {
@@ -1662,7 +1377,7 @@ class LlamaCppService {
     var cursor = Directory(currentDirectoryPath).absolute;
     while (true) {
       final cacheRoot = Directory(
-        path.join(cursor.path, '.dart_tool', 'llamadart', 'native_bundles'),
+        path.join(cursor.path, '.dart_tool', 'llamadart', 'native_bundles_v2'),
       );
       if (cacheRoot.existsSync()) {
         final found = _selectWindowsBundleDirectoryFromCache(
@@ -1873,27 +1588,95 @@ class LlamaCppService {
     return null;
   }
 
+  LlamaCppObjectCalls _resolveObjectCalls() {
+    final calls = LlamaCppObjectCalls.resolve(
+      isWindows: Platform.isWindows,
+      mixedBatchResolver: () => LlamaCppMixedBatchApi.tryResolve(
+        isWindows: Platform.isWindows,
+        mtmdSymbol: _mixedMtmdSymbol,
+      ),
+    );
+    if (calls.exit == null) {
+      LlamaLogger.instance.warning(
+        'The loaded llama.cpp runtime does not export the exit-teardown '
+        'functions (llama_dart_exit_free and the llama_dart_ calls that go '
+        'with it; llamadart-native ${ExitTeardownApi.minimumNativeRelease} '
+        'or later is needed), so models and contexts are '
+        'created with the upstream llama.cpp functions. The runtime then '
+        'frees nothing at process exit: an Apple process that exits with '
+        'one still allocated on Metal aborts in ggml-metal. Use the '
+        'package-pinned native runtime $llamaCppTag or a newer one.',
+      );
+    } else if (calls.failures.barrier == null) {
+      LlamaLogger.instance.warning(
+        'The loaded llama.cpp runtime does not export the exception barrier '
+        '(llama_dart_last_error and the llama_dart_ wrappers that go with '
+        'it; llamadart-native ${NativeBarrierApi.minimumNativeRelease} or '
+        'later is needed), so a C++ exception llama.cpp throws still ends '
+        'the process. Use the package-pinned native runtime $llamaCppTag or '
+        'a newer one.',
+      );
+    }
+    return calls;
+  }
+
+  /// Throws [LlamaStateException] when an earlier llama.cpp exception left
+  /// [model] free-only.
+  void _ensureModelUsable(_LlamaModelWrapper model) {
+    _calls.failures.ensureUsable(model.pointer, 'This model');
+    _calls.failures.ensureUsable(
+      llama_model_get_vocab(model.pointer),
+      'This model',
+    );
+  }
+
+  /// Throws [LlamaStateException] when an earlier llama.cpp exception left
+  /// the context of [contextHandle] or its model free-only.
+  void _ensureContextUsable(int contextHandle, _LlamaContextWrapper ctx) {
+    _calls.failures.ensureUsable(ctx.pointer, 'This context');
+    final model = _models[_contextToModel[contextHandle]];
+    if (model != null) _ensureModelUsable(model);
+  }
+
+  void _ensureNoActiveTts(int contextHandle, String operation) {
+    if (_activeTtsContextHandle == contextHandle) {
+      throw LlamaStateException(
+        'Cannot $operation while text-to-speech is active on this context.',
+      );
+    }
+  }
+
   /// Loads a model from the specified [modelPath].
   ///
   /// Returns a handle to the loaded model.
   /// Throws an [Exception] if the file does not exist or fails to load.
   int loadModel(String modelPath, ModelParams modelParams) {
+    modelParams = resolveComputeDeviceParams(
+      modelParams,
+      isAndroid: _isAndroid,
+      isIosSimulator: _isIosSimulator,
+      isMacosX64: _isMacosX64,
+      platform: Platform.operatingSystem,
+    );
     final modelFileSize = _validateGgufModelFile(modelPath, 'Model');
 
     _applyConfiguredLogLevel();
     final effectiveBackend = resolvePreferredBackendForLoad(
       modelParams,
-      isAndroid: Platform.isAndroid,
+      isAndroid: _isAndroid,
+      isIosSimulator: _isIosSimulator,
+      isMacosX64: _isMacosX64,
     );
 
     _prepareBackendsForModelLoad(effectiveBackend);
 
-    final modelPathPtr = modelPath.toNativeUtf8();
     final mparams = llama_model_default_params();
     var preferredDevices = _createPreferredDeviceList(effectiveBackend);
     var gpuLayers = resolveGpuLayersForLoad(
       modelParams,
-      isAndroid: Platform.isAndroid,
+      isAndroid: _isAndroid,
+      isIosSimulator: _isIosSimulator,
+      isMacosX64: _isMacosX64,
     );
     var forcedCpuFallback = false;
 
@@ -1909,36 +1692,160 @@ class LlamaCppService {
       gpuLayers = 0;
       forcedCpuFallback = true;
     }
+    if (modelParams.device == ComputeDevice.gpu &&
+        (forcedCpuFallback || !_hasGpuDevice(effectiveBackend))) {
+      if (preferredDevices != null) {
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      throw LlamaUnsupportedException(
+        _noGpuMessage(effectiveBackend, forcedCpuFallback: forcedCpuFallback),
+      );
+    }
+    final loadsOnNoGpu =
+        gpuLayers != 0 &&
+        preferredDevices == null &&
+        _registryShowsNoGpuDevice();
+    final unusableBackendModule =
+        loadsOnNoGpu && explicitGpuBackend && _backendModuleDirectory != null;
+    if (unusableBackendModule) {
+      gpuLayers = 0;
+    }
+    final vulkan = _resolveVulkanLoadDevices(
+      effectiveBackend,
+      gpuLayers: gpuLayers,
+      splitMode: modelParams.splitMode.llamaCppValue,
+      mainGpu: modelParams.mainGpu,
+    );
+    if (vulkan.refused) {
+      if (preferredDevices != null) {
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      if (modelParams.device == ComputeDevice.gpu) {
+        throw LlamaUnsupportedException(
+          'ComputeDevice.gpu is not available for llama.cpp on '
+          '${Platform.operatingSystem}: ${vulkan.unsupported}. Use '
+          'ComputeDevice.auto to run on the CPU instead.',
+        );
+      }
+      preferredDevices = _createPreferredDeviceList(GpuBackend.cpu);
+      gpuLayers = 0;
+    } else if (vulkan.devices case final usable?) {
+      if (preferredDevices != null) {
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      preferredDevices = _createDeviceList(usable);
+    }
+    final ggml_backend_buffer_type_t? cpuMoeBuffer;
+    try {
+      _checkMoeCacheSupported(
+        modelParams,
+        backend: effectiveBackend,
+        gpuLayers: gpuLayers,
+        vulkan: vulkan,
+      );
+      cpuMoeBuffer = _cpuMoeBufferType(modelParams.cpuMoeLayers);
+    } catch (_) {
+      if (preferredDevices != null) {
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      rethrow;
+    }
     final mtmdUseGpu = resolveMtmdUseGpuForLoad(
       modelParams,
       gpuLayers,
       modelPath: modelPath,
-      isAndroid: Platform.isAndroid,
+      isAndroid: _isAndroid,
     );
 
+    final GpuDevicePlacement? placement;
+    try {
+      placement = _resolveGpuDevicePlacement(
+        modelParams,
+        backend: effectiveBackend,
+        gpuLayers: gpuLayers,
+        vulkan: vulkan,
+      );
+    } catch (_) {
+      if (preferredDevices != null) {
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      rethrow;
+    }
+    if (placement != null) {
+      if (preferredDevices != null) {
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      preferredDevices = _createDeviceList(placement.devices);
+    }
+    final Pointer<Float>? tensorSplit;
+    try {
+      _checkRowSplitSupported(modelParams, preferredDevices);
+      tensorSplit = _createTensorSplit(placement);
+    } catch (_) {
+      if (preferredDevices != null) {
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      rethrow;
+    }
+    if (tensorSplit != null) {
+      mparams.tensor_split = tensorSplit;
+    }
+    final cpuMoeOverrides = cpuMoeBuffer == null
+        ? null
+        : allocateTensorBufferOverrides(
+            cpuMoeOverridePatterns(modelParams.cpuMoeLayers),
+            cpuMoeBuffer,
+            allocator: _modelLoadAllocator,
+          );
     mparams.n_gpu_layers = gpuLayers;
     mparams.split_modeAsInt = modelParams.splitMode.llamaCppValue;
     mparams.main_gpu = modelParams.mainGpu;
     applyModelParams(mparams, modelParams);
+    applyMoeCacheModelParams(mparams, modelParams);
     if (preferredDevices != null) {
       mparams.devices = preferredDevices;
     }
+    if (cpuMoeOverrides != null) {
+      mparams.tensor_buft_overrides = cpuMoeOverrides;
+    }
+    // Without a device list llama.cpp offloads to every registered GPU,
+    // whichever backend was requested.
+    final reportedBackend = preferredDevices == null
+        ? GpuBackend.auto
+        : modelParams.preferredBackend;
 
     Pointer<llama_model> modelPtr = nullptr;
+    final modelPathPtr = modelPath.toNativeUtf8(allocator: _modelLoadAllocator);
     try {
-      modelPtr = llama_model_load_from_file(modelPathPtr.cast(), mparams);
+      modelPtr = _loadOwnedModel(modelPathPtr.cast(), mparams);
+      IsolateShutdownReleases.current.hold(
+        ShutdownStage.model,
+        _calls.modelFreeAddress,
+        modelPtr,
+      );
     } finally {
-      malloc.free(modelPathPtr);
+      _modelLoadAllocator.free(modelPathPtr);
+      if (tensorSplit != null) {
+        _modelLoadAllocator.free(tensorSplit);
+      }
       if (preferredDevices != null) {
-        malloc.free(preferredDevices);
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      if (cpuMoeOverrides != null) {
+        freeTensorBufferOverrides(
+          cpuMoeOverrides,
+          allocator: _modelLoadAllocator,
+        );
       }
     }
 
     if (modelPtr == nullptr) {
-      final diagnostics = _backendDiagnostics();
       throw Exception(
-        "Failed to load model (size=$modelFileSize bytes, "
-        "diagnostics=$diagnostics)",
+        describeModelLoadFailure(
+          sizeBytes: modelFileSize,
+          backendDiagnostics: _backendDiagnostics(),
+          startupDiagnostics: getStartupDiagnostics(),
+        ),
       );
     }
 
@@ -1947,31 +1854,481 @@ class LlamaCppService {
     _models[handle] = model;
     _loraAdapters[handle] = {};
     _modelToMtmdUseGpu[handle] = mtmdUseGpu;
+    if (_moeExpertPlacementProblem(model, modelParams, gpuLayers)
+        case final problem?) {
+      freeModel(handle);
+      throw LlamaUnsupportedException(problem);
+    }
     final resolvedBackend = _resolveBackendNameForLoad(
-      requestedBackend: modelParams.preferredBackend,
+      requestedBackend: reportedBackend,
       resolvedGpuLayers: gpuLayers,
       forcedCpuFallback: forcedCpuFallback,
     );
-    _modelBackendNames[handle] = resolvedBackend;
+    _modelResolvedBackends[handle] = resolvedBackend;
+    _modelBackendNames[handle] = placement == null
+        ? resolvedBackend
+        : '$resolvedBackend (${placement.deviceNames})';
     _modelResolvedGpuLayers[handle] = gpuLayers;
     _modelLoadParams[handle] = modelParams;
-    _activeBackendName = resolvedBackend;
-    _activeResolvedGpuLayers = gpuLayers;
+    if (placement != null) {
+      _modelPlacements[handle] = placement;
+    }
+    if (loadsOnNoGpu ||
+        selectsNoGpuDevice(
+          splitMode: modelParams.splitMode.llamaCppValue,
+          mainGpu: modelParams.mainGpu,
+        )) {
+      _modelsOnNoGpu.add(handle);
+    }
+    _activateModelReport(handle);
+    if (vulkan.unsupported case final unsupported?) {
+      LlamaLogger.instance.warning(
+        vulkan.refused
+            ? '$unsupported, so the model loaded on $resolvedBackend with 0 '
+                  'GPU layers.'
+            : '$unsupported, so the model loaded without that device, on '
+                  '${vulkan.devices!.join(', ')}.',
+      );
+    }
+    if (forcedCpuFallback) {
+      final requested = effectiveBackend.name;
+      LlamaLogger.instance.warning(
+        'preferredBackend $requested was requested, but its backend module '
+        'is not bundled for this platform, so the model loaded on '
+        '$resolvedBackend with 0 GPU layers. To bundle it, add $requested to '
+        'the llamadart_native_backends hook user-define in your app '
+        'pubspec.yaml.',
+      );
+    }
+    if (unusableBackendModule) {
+      LlamaLogger.instance.warning(
+        'preferredBackend ${effectiveBackend.name} was requested, but its '
+        'backend module failed to load or found no usable device, so the '
+        'model loaded on $resolvedBackend with 0 GPU layers.',
+      );
+    }
+    final simulatorWarning = iosSimulatorMetalWarning(
+      isIosSimulator: _isIosSimulator,
+      resolvedGpuLayers: _activeResolvedGpuLayers,
+    );
+    if (simulatorWarning != null) {
+      LlamaLogger.instance.warning(simulatorWarning);
+    }
+    final intelWarning = macosX64MetalWarning(
+      isMacosX64: _isMacosX64,
+      resolvedGpuLayers: _activeResolvedGpuLayers,
+    );
+    if (intelWarning != null) {
+      LlamaLogger.instance.warning(intelWarning);
+    }
 
     return handle;
+  }
+
+  void _activateModelReport(int handle) {
+    final params = _modelLoadParams[handle]!;
+    final noGpu = selectsNoGpuDevice(
+      splitMode: params.splitMode.llamaCppValue,
+      mainGpu: params.mainGpu,
+    );
+    // Retain load metadata for auxiliary device selection and apply placement
+    // separately where a consumer must follow the model onto the CPU.
+    _activeBackendName = noGpu
+        ? _backendDisplayName('cpu')
+        : _modelBackendNames[handle]!;
+    _activeResolvedGpuLayers = noGpu || _modelsOnNoGpu.contains(handle)
+        ? 0
+        : _modelResolvedGpuLayers[handle]!;
+  }
+
+  /// What a load on [backend] with [gpuLayers] layers does about Vulkan
+  /// devices below Vulkan 1.2 among the devices llama.cpp would use for it.
+  VulkanLoadDecision _resolveVulkanLoadDevices(
+    GpuBackend backend, {
+    required int gpuLayers,
+    required int splitMode,
+    required int mainGpu,
+  }) => resolveVulkanLoadDecision(
+    usesGpu: gpuLayers != 0 && backend != GpuBackend.cpu,
+    backendRegistry: ggmlGpuRegistryName(backend),
+    splitMode: splitMode,
+    mainGpu: mainGpu,
+    registered: _registeredDevices,
+    probe: () => _vulkanDeviceProbe,
+    isAndroid: _isAndroid,
+  );
+
+  /// Throws [LlamaUnsupportedException] when the MoE expert cache budget of
+  /// [params] cannot run on the devices a load on [backend] with [gpuLayers]
+  /// uses.
+  void _checkMoeCacheSupported(
+    ModelParams params, {
+    required GpuBackend backend,
+    required int gpuLayers,
+    required VulkanLoadDecision vulkan,
+  }) {
+    if (params.moeCacheBytes == 0) return;
+    final splitMode = params.splitMode.llamaCppValue;
+    final List<GgmlDeviceEntry> devices;
+    if (gpuLayers == 0 || backend == GpuBackend.cpu) {
+      devices = const [];
+    } else {
+      final registered = _registeredDevices();
+      final registry = ggmlGpuRegistryName(backend)?.toLowerCase();
+      final listed =
+          vulkan.devices ??
+          [
+            for (final device in registered)
+              if (device.registry.toLowerCase() == registry) device,
+          ];
+      devices = selectModelDevices(
+        registered: registered,
+        listed: listed.isEmpty ? null : listed,
+        splitMode: splitMode,
+        mainGpu: params.mainGpu,
+      );
+    }
+    final unsupported = moeCacheUnsupportedReason(
+      gpuLayers: gpuLayers,
+      splitMode: splitMode,
+      devices: devices,
+    );
+    if (unsupported == null) return;
+    throw LlamaUnsupportedException(
+      'ModelParams.moeCacheBytes, the llama.cpp MoE expert cache, is not '
+      'available for this load on ${Platform.operatingSystem}: $unsupported. '
+      'Set moeCacheBytes to 0.',
+    );
+  }
+
+  /// Throws [LlamaUnsupportedException] when [params] asks for row split and
+  /// a device the load passes in [listed], or llama.cpp selects without a
+  /// list, has no split buffer types, which llama.cpp would only find out
+  /// while it loads the model.
+  void _checkRowSplitSupported(
+    ModelParams params,
+    Pointer<ggml_backend_dev_t>? listed,
+  ) {
+    if (params.splitMode != ModelSplitMode.row) return;
+    final registered = _registeredDevices();
+    final List<GgmlDeviceEntry> devices;
+    if (listed == null) {
+      devices = selectModelDevices(
+        registered: registered,
+        listed: null,
+        splitMode: params.splitMode.llamaCppValue,
+        mainGpu: params.mainGpu,
+      );
+    } else {
+      final props = calloc<ggml_backend_dev_props>();
+      try {
+        devices = [
+          for (var i = 0; listed[i] != nullptr; i++)
+            registered.firstWhere(
+              (entry) => entry.device == listed[i],
+              orElse: () => _describeDevice(listed[i], props),
+            ),
+        ];
+      } finally {
+        calloc.free(props);
+      }
+    }
+    final unsupported = rowSplitUnsupportedReason(
+      splitMode: params.splitMode.llamaCppValue,
+      devices: devices,
+      hasSplitBufferType: _splitBufferTypeProbeOverride ?? _hasSplitBufferType,
+    );
+    if (unsupported == null) return;
+    throw LlamaUnsupportedException(
+      'ModelSplitMode.row, llama.cpp row split, is not available for this '
+      'load on ${Platform.operatingSystem}: $unsupported. Use '
+      'ModelSplitMode.layer, the default, to split the model by layers '
+      'instead.',
+    );
+  }
+
+  /// Whether the backend registry of [entry] exports
+  /// `ggml_backend_split_buffer_type`, as llama.cpp looks it up for row split.
+  /// A device or symbol that cannot be read counts as having it, which leaves
+  /// the decision to llama.cpp.
+  bool _hasSplitBufferType(GgmlDeviceEntry entry) {
+    final device = entry.device;
+    if (device == null || device == nullptr) return true;
+    final registry = _ggmlBackendDevBackendReg(device);
+    if (registry == nullptr) return true;
+    final name = 'ggml_backend_split_buffer_type'.toNativeUtf8();
+    try {
+      final proc = _ggmlBackendRegGetProcAddress(registry, name.cast());
+      return proc == null || proc != nullptr;
+    } finally {
+      malloc.free(name);
+    }
+  }
+
+  /// The CPU buffer type that keeps the experts of [cpuMoeLayers] layers in
+  /// host memory, or `null` for `0`.
+  ggml_backend_buffer_type_t? _cpuMoeBufferType(int cpuMoeLayers) {
+    if (cpuMoeLayers == 0) return null;
+    final cpu = _ggmlBackendDevByType(
+      ggml_backend_dev_type.GGML_BACKEND_DEVICE_TYPE_CPU,
+    );
+    final buft = cpu == nullptr ? nullptr : _ggmlBackendDevBufferType(cpu);
+    if (buft == nullptr) {
+      throw LlamaUnsupportedException(
+        'ModelParams.cpuMoeLayers needs the llama.cpp CPU backend, which '
+        'this runtime does not register on ${Platform.operatingSystem}.',
+      );
+    }
+    return buft;
+  }
+
+  /// Why the MoE fields of [params] do nothing for the loaded [model], or
+  /// `null` when they apply or are unset.
+  String? _moeExpertPlacementProblem(
+    _LlamaModelWrapper model,
+    ModelParams params,
+    int gpuLayers,
+  ) {
+    if (params.cpuMoeLayers == 0) return null;
+    final architecture = _readModelMetadataValue(
+      model.pointer,
+      'general.architecture',
+    );
+    final experts = architecture == null
+        ? null
+        : int.tryParse(
+            _readModelMetadataValue(
+                  model.pointer,
+                  '$architecture.expert_count',
+                ) ??
+                '',
+          );
+    if (experts == null || experts <= 0) {
+      return 'ModelParams.cpuMoeLayers and moeCacheBytes apply to '
+          'Mixture-of-Experts models, and this ${architecture ?? 'model'} '
+          'model has no experts. Leave them at 0.';
+    }
+    if (params.moeCacheBytes == 0) return null;
+    final cacheable = moeCacheableLayerCount(
+      layerCount: llama_model_n_layer(model.pointer),
+      gpuLayers: gpuLayers,
+      cpuMoeLayers: params.cpuMoeLayers,
+    );
+    if (cacheable > 0) return null;
+    return 'ModelParams.moeCacheBytes caches the host experts of offloaded '
+        'layers, and no layer that cpuMoeLayers ${params.cpuMoeLayers} keeps '
+        'in host memory is among the $gpuLayers gpuLayers, which llama.cpp '
+        'takes from the end of the model. Raise gpuLayers or cpuMoeLayers.';
+  }
+
+  /// The registered ggml devices, in registry order.
+  List<GgmlDeviceEntry> _registeredDevices() {
+    final override = _registeredDevicesOverride;
+    if (override != null) return override();
+    final props = calloc<ggml_backend_dev_props>();
+    try {
+      return [
+        for (var i = 0; i < _ggmlBackendDevCount(); i++)
+          if (_ggmlBackendDevGet(i) case final device when device != nullptr)
+            _describeDevice(device, props),
+      ];
+    } finally {
+      calloc.free(props);
+    }
+  }
+
+  GgmlDeviceEntry _describeDevice(
+    ggml_backend_dev_t device,
+    Pointer<ggml_backend_dev_props> props,
+  ) {
+    final hasProps = _ggmlBackendDevGetProps(device, props);
+    return GgmlDeviceEntry(
+      name: _utf8OrEmpty(_ggmlBackendDevName(device)),
+      type: _ggmlBackendDevType(device),
+      registry: _registryNameOf(device),
+      description: hasProps ? _utf8OrEmpty(props.ref.description) : '',
+      deviceId: hasProps && props.ref.device_id != nullptr
+          ? _utf8OrEmpty(props.ref.device_id)
+          : null,
+      device: device,
+    );
+  }
+
+  String _registryNameOf(ggml_backend_dev_t device) {
+    final registry = _ggmlBackendDevBackendReg(device);
+    return registry == nullptr
+        ? ''
+        : _utf8OrEmpty(_ggmlBackendRegName(registry));
+  }
+
+  int _registeredVulkanDeviceCount() =>
+      _registeredDevices().where((device) => device.isVulkan).length;
+
+  Pointer<ggml_backend_dev_t> _createDeviceList(List<GgmlDeviceEntry> devices) {
+    final pointers = [
+      for (final entry in devices)
+        if (entry.device case final device? when device != nullptr) device,
+    ];
+    final list = _modelLoadAllocator<ggml_backend_dev_t>(pointers.length + 1);
+    for (final (index, device) in pointers.indexed) {
+      list[index] = device;
+    }
+    list[pointers.length] = nullptr;
+    return list;
+  }
+
+  /// The devices and tensor split [params] place a load on [backend] with
+  /// [gpuLayers] on, or `null` when it sets neither
+  /// [ModelParams.gpuDevices] nor [ModelParams.tensorSplit].
+  ///
+  /// Throws [LlamaUnsupportedException] instead of loading on other devices:
+  /// when the load fell back to the CPU, and when a listed Vulkan device is
+  /// one ggml-vulkan cannot drive.
+  GpuDevicePlacement? _resolveGpuDevicePlacement(
+    ModelParams params, {
+    required GpuBackend backend,
+    required int gpuLayers,
+    required VulkanLoadDecision vulkan,
+  }) {
+    if (params.gpuDevices == null && params.tensorSplit == null) return null;
+    final field = params.gpuDevices != null ? 'gpuDevices' : 'tensorSplit';
+    final capability =
+        'ModelParams.$field, llama.cpp multi-GPU placement, is not available '
+        'on ${Platform.operatingSystem}';
+    if (gpuLayers == 0) {
+      final autoHint =
+          backend == GpuBackend.cpu &&
+              params.preferredBackend == GpuBackend.auto
+          ? ' GpuBackend.auto loads on the CPU on this platform; set a GPU '
+                'preferredBackend or use ComputeDevice.gpu.'
+          : '';
+      throw LlamaUnsupportedException(
+        '$capability: the ${backend.name} backend has no usable GPU here'
+        '${vulkan.unsupported == null ? '' : ' (${vulkan.unsupported})'}, '
+        'so the load would run on the CPU.$autoHint',
+      );
+    }
+    final placement = resolveGpuDevicePlacement(
+      params,
+      backend: backend,
+      registered: _registeredDevices(),
+      backendOf: gpuBackendFromRegName,
+      maxDevices: llama_max_devices(),
+      platform: Platform.operatingSystem,
+    )!;
+    if (vulkan.unsupported case final unsupported?) {
+      final usable = vulkan.devices ?? const <GgmlDeviceEntry>[];
+      for (final device in placement.devices) {
+        if (device.isVulkan &&
+            !usable.any((entry) => entry.device == device.device)) {
+          throw LlamaUnsupportedException('$capability: $unsupported.');
+        }
+      }
+    }
+    return placement;
+  }
+
+  /// The `llama_model_params.tensor_split` array of [placement], or `null`
+  /// without a split.
+  Pointer<Float>? _createTensorSplit(GpuDevicePlacement? placement) {
+    final split = placement?.tensorSplit;
+    if (split == null) return null;
+    return allocateTensorSplit(
+      split,
+      maxDevices: llama_max_devices(),
+      allocator: _modelLoadAllocator,
+    );
+  }
+
+  /// Whether a GPU device of [backend], or any GPU device for
+  /// [GpuBackend.auto], is registered after the backend modules load.
+  bool _hasGpuDevice(GpuBackend backend) {
+    final types = (_deviceTypesOverride ?? _registeredDeviceTypes)(backend);
+    return types.any((type) {
+      return type == ggml_backend_dev_type.GGML_BACKEND_DEVICE_TYPE_GPU.value ||
+          type == ggml_backend_dev_type.GGML_BACKEND_DEVICE_TYPE_IGPU.value;
+    });
+  }
+
+  /// Whether llama.cpp, given no device list, has no GPU to place layers on.
+  ///
+  /// `false` when the runtime lacks the registry functions: they then read as
+  /// no devices, which says nothing about the GPUs llama.cpp itself sees.
+  bool _registryShowsNoGpuDevice() =>
+      !_hasGpuDevice(GpuBackend.auto) && !_backendRegistrySymbolUnavailable;
+
+  List<int> _registeredDeviceTypes(GpuBackend backend) {
+    final devices = backend == GpuBackend.auto
+        ? [
+            for (var i = 0; i < _ggmlBackendDevCount(); i++)
+              _ggmlBackendDevGet(i),
+          ]
+        : _resolvePreferredDevices(backend) ?? const <ggml_backend_dev_t>[];
+    return [
+      for (final device in devices)
+        if (device != nullptr) _ggmlBackendDevType(device),
+    ];
+  }
+
+  String _noGpuMessage(GpuBackend backend, {required bool forcedCpuFallback}) {
+    final platform = Platform.operatingSystem;
+    final requested = backend == GpuBackend.auto
+        ? 'a GPU'
+        : 'the ${backend.name} backend';
+    final needs =
+        'ComputeDevice.gpu needs $requested for llama.cpp on $platform';
+    const useCpu = 'Use ComputeDevice.auto to run on the CPU instead.';
+    if (forcedCpuFallback) {
+      return '$needs, but its backend module is not bundled. Add '
+          '${backend.name} to the llamadart_native_backends hook user-define '
+          'in your app pubspec.yaml. $useCpu';
+    }
+    final devices = getBackendInfo().join(', ');
+    // Without a device of its explicit backend, a ComputeDevice.auto load
+    // offloads to any other registered GPU, such as Metal on the consolidated
+    // Apple runtime, instead of running on the CPU.
+    final otherGpu = backend == GpuBackend.auto
+        ? null
+        : _registeredGpuBackendOtherThan(backend);
+    if (otherGpu != null) {
+      return '$needs, but no ${backend.name} GPU device is available '
+          '(devices: $devices). Use GpuBackend.${otherGpu.name} to run on the '
+          '${otherGpu.name} GPU, or ComputeDevice.cpu to run on the CPU.';
+    }
+    return '$needs, but no GPU device is available (devices: $devices). '
+        '$useCpu';
+  }
+
+  GpuBackend? _registeredGpuBackendOtherThan(GpuBackend backend) {
+    for (final device in _registeredDevices()) {
+      if (device.type !=
+              ggml_backend_dev_type.GGML_BACKEND_DEVICE_TYPE_GPU.value &&
+          device.type !=
+              ggml_backend_dev_type.GGML_BACKEND_DEVICE_TYPE_IGPU.value) {
+        continue;
+      }
+      final registry = device.registry.toLowerCase();
+      for (final candidate in GpuBackend.values) {
+        if (candidate != backend &&
+            ggmlGpuRegistryName(candidate)?.toLowerCase() == registry) {
+          return candidate;
+        }
+      }
+    }
+    return null;
   }
 
   int _validateGgufModelFile(String modelPath, String label) {
     final modelFile = File(modelPath);
     if (!modelFile.existsSync()) {
-      throw Exception("$label file not found: $modelPath");
+      throw LlamaModelException("$label file not found: $modelPath");
     }
     final modelFileSize = modelFile.lengthSync();
     if (modelFileSize <= 0) {
-      throw Exception("$label file is empty: $modelPath");
+      throw LlamaModelException("$label file is empty: $modelPath");
     }
     if (!_looksLikeGguf(modelFile)) {
-      throw Exception(
+      throw LlamaModelException(
         "$label file does not appear to be GGUF: $modelPath. "
         "Please verify the download completed correctly.",
       );
@@ -1999,20 +2356,32 @@ class LlamaCppService {
     final targetModelParams =
         _modelLoadParams[targetModelHandle] ?? const ModelParams();
     final targetBackendName = _modelBackendNames[targetModelHandle];
-    final effectiveBackend = targetBackendName == _backendDisplayName('cpu')
+    final targetOnCpu = targetBackendName == _backendDisplayName('cpu');
+    final effectiveBackend = targetOnCpu
         ? GpuBackend.cpu
         : resolvePreferredBackendForLoad(
             targetModelParams,
-            isAndroid: Platform.isAndroid,
+            isAndroid: _isAndroid,
+            isIosSimulator: _isIosSimulator,
+            isMacosX64: _isMacosX64,
           );
     final targetResolvedGpuLayers =
         _modelResolvedGpuLayers[targetModelHandle] ??
         resolveGpuLayersForLoad(
           targetModelParams,
-          isAndroid: Platform.isAndroid,
+          isAndroid: _isAndroid,
+          isIosSimulator: _isIosSimulator,
+          isMacosX64: _isMacosX64,
         );
     final draftBackend = effectiveBackend;
     final draftGpuLayers = targetResolvedGpuLayers;
+    // llama.cpp rejects a CPU device list in row mode. Layer mode places the
+    // same on the CPU, and no-list row mode would fail on any GPU registered
+    // since the target loaded.
+    final draftSplitMode =
+        targetOnCpu && targetModelParams.splitMode == ModelSplitMode.row
+        ? ModelSplitMode.layer
+        : targetModelParams.splitMode;
     final cacheKey = _speculativeDraftModelCacheKey(
       targetModelHandle,
       draftModelPath,
@@ -2027,32 +2396,92 @@ class LlamaCppService {
 
     _prepareBackendsForModelLoad(draftBackend);
 
-    final modelPathPtr = draftModelPath.toNativeUtf8();
     final mparams = llama_model_default_params();
-    final preferredDevices = _createPreferredDeviceList(draftBackend);
+    var preferredDevices = _createPreferredDeviceList(draftBackend);
+    // The target load already decided whether the GPU is usable; a draft
+    // only needs the same devices left out.
+    final vulkan = _resolveVulkanLoadDevices(
+      draftBackend,
+      gpuLayers: draftGpuLayers,
+      splitMode: draftSplitMode.llamaCppValue,
+      mainGpu: targetModelParams.mainGpu,
+    );
+    if (vulkan.devices case final usable?) {
+      if (preferredDevices != null) {
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      preferredDevices = _createDeviceList(usable);
+    }
+    final GpuDevicePlacement? placement;
+    try {
+      placement = _resolveGpuDevicePlacement(
+        targetModelParams,
+        backend: draftBackend,
+        gpuLayers: draftGpuLayers,
+        vulkan: vulkan,
+      );
+    } catch (_) {
+      if (preferredDevices != null) {
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      rethrow;
+    }
+    if (placement != null) {
+      if (preferredDevices != null) {
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      preferredDevices = _createDeviceList(placement.devices);
+    }
     mparams.n_gpu_layers = draftGpuLayers;
-    mparams.split_modeAsInt = targetModelParams.splitMode.llamaCppValue;
+    mparams.split_modeAsInt = draftSplitMode.llamaCppValue;
     mparams.main_gpu = targetModelParams.mainGpu;
     applyModelParams(mparams, targetModelParams.copyWith(loadMtp: loadMtp));
     if (preferredDevices != null) {
       mparams.devices = preferredDevices;
     }
+    final Pointer<Float>? tensorSplit;
+    try {
+      tensorSplit = _createTensorSplit(placement);
+    } catch (_) {
+      if (preferredDevices != null) {
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      rethrow;
+    }
+    if (tensorSplit != null) {
+      mparams.tensor_split = tensorSplit;
+    }
 
     Pointer<llama_model> modelPtr = nullptr;
+    final modelPathPtr = draftModelPath.toNativeUtf8(
+      allocator: _modelLoadAllocator,
+    );
     try {
-      modelPtr = llama_model_load_from_file(modelPathPtr.cast(), mparams);
+      modelPtr = _loadOwnedModel(modelPathPtr.cast(), mparams);
+      IsolateShutdownReleases.current.hold(
+        ShutdownStage.model,
+        _calls.modelFreeAddress,
+        modelPtr,
+      );
     } finally {
-      malloc.free(modelPathPtr);
+      _modelLoadAllocator.free(modelPathPtr);
       if (preferredDevices != null) {
-        malloc.free(preferredDevices);
+        _modelLoadAllocator.free(preferredDevices);
+      }
+      if (tensorSplit != null) {
+        _modelLoadAllocator.free(tensorSplit);
       }
     }
 
     if (modelPtr == nullptr) {
-      final diagnostics = _backendDiagnostics();
       throw Exception(
-        "Failed to load $label (size=$modelFileSize bytes, "
-        "path=$draftModelPath, diagnostics=$diagnostics)",
+        describeDraftModelLoadFailure(
+          label: label,
+          path: draftModelPath,
+          sizeBytes: modelFileSize,
+          backendDiagnostics: _backendDiagnostics(),
+          startupDiagnostics: getStartupDiagnostics(),
+        ),
       );
     }
 
@@ -2104,12 +2533,14 @@ class LlamaCppService {
       final vocab = llama_model_get_vocab(modelPointer);
       return _LlamaModelWrapper(
         modelPointer,
+        _calls,
         sourcePath: sourcePath,
         vocabSize: llama_vocab_n_tokens(vocab),
         suppressedTokens: readModelSuppressTokens(vocab),
       );
     } catch (_) {
-      llama_model_free(modelPointer);
+      IsolateShutdownReleases.current.release(modelPointer);
+      _calls.freeModel(modelPointer);
       rethrow;
     }
   }
@@ -2160,22 +2591,18 @@ class LlamaCppService {
   ) {
     final lower = value.toLowerCase();
     switch (backend) {
-      case GpuBackend.metal:
-        return lower.contains('metal') || lower.contains('mtl');
-      case GpuBackend.vulkan:
-        return lower.contains('vulkan');
-      case GpuBackend.opencl:
-        return lower.contains('opencl');
-      case GpuBackend.hip:
-        return lower.contains('hip');
-      case GpuBackend.cuda:
-        return lower.contains('cuda');
-      case GpuBackend.blas:
-        return lower.contains('blas');
       case GpuBackend.cpu:
         return lower.contains('cpu') || lower.contains('llvm');
       case GpuBackend.auto:
         return false;
+      case GpuBackend.metal:
+      case GpuBackend.vulkan:
+      case GpuBackend.opencl:
+      case GpuBackend.hip:
+      case GpuBackend.cuda:
+      case GpuBackend.blas:
+        return lower.contains(backend.name) ||
+            lower.contains(ggmlGpuRegistryName(backend)!.toLowerCase());
     }
   }
 
@@ -2241,33 +2668,6 @@ class LlamaCppService {
     }
   }
 
-  void _tryLoadBackendModuleIfBundled(String backend) {
-    if (_backendModuleDirectory != null && !_isBackendModuleBundled(backend)) {
-      return;
-    }
-    _tryLoadBackendModule(backend);
-  }
-
-  bool _isBackendModuleBundled(String backend) {
-    final backendModuleDirectory = _backendModuleDirectory;
-    if (backendModuleDirectory == null) {
-      return true;
-    }
-
-    final fileNameCandidates = _backendLibraryCandidateFileNames(backend);
-    if (fileNameCandidates.isEmpty) {
-      return false;
-    }
-
-    for (final fileName in fileNameCandidates) {
-      final fullPath = path.join(backendModuleDirectory, fileName);
-      if (File(fullPath).existsSync()) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   bool _tryLoadBackendModule(String backend) {
     if (_backendLoadSymbolUnavailable) {
       return false;
@@ -2280,7 +2680,7 @@ class LlamaCppService {
       return false;
     }
 
-    final fileNameCandidates = _backendLibraryCandidateFileNames(backend);
+    final fileNameCandidates = _libraryCandidates.backend(backend);
     final candidates = <String>{};
     final backendModuleDirectory = _backendModuleDirectory;
     if (backendModuleDirectory != null) {
@@ -2294,8 +2694,13 @@ class LlamaCppService {
 
     _preloadWindowsBackendDependencies(backend);
 
+    final failures = BackendProbeFailures();
+    if (backendModuleDirectory != null && fileNameCandidates.isEmpty) {
+      failures.add(_libraryCandidates.backendFileName(backend), 'file missing');
+    }
     for (final candidate in candidates) {
       if (path.isAbsolute(candidate) && !File(candidate).existsSync()) {
+        failures.add(candidate, 'file missing');
         continue;
       }
 
@@ -2315,12 +2720,14 @@ class LlamaCppService {
             // Optional dynamic-loader symbol can be missing from the primary
             // FFI asset in split bundles. If ggml fallback is unavailable,
             // stop retrying.
+            _recordMissingGgmlSymbol('`ggml_backend_load`');
             _backendLoadSymbolUnavailable = true;
             return false;
           }
           reg = fallback(libraryPathPtr.cast());
         }
         if (reg == nullptr) {
+          failures.add(candidate, '`ggml_backend_load` returned null');
           continue;
         }
 
@@ -2343,31 +2750,21 @@ class LlamaCppService {
       }
     }
 
-    if (_tryRegisterBackendModuleViaAsset(backend)) {
+    if (_tryRegisterBackendModuleViaAsset(backend, failures)) {
       return true;
     }
 
     _failedBackendModules.add(backend);
+    final missingLoader = describeMissingWindowsBackendLoader(
+      backend,
+      isWindows: _isWindows,
+      missingWindowsLibraries: _missingWindowsLibraries,
+    );
+    _recordStartupDiagnostic(
+      'Backend module `$backend` not loaded from any candidate: '
+      '${failures.describe()}.$missingLoader',
+    );
     return false;
-  }
-
-  List<String> _backendAssetUriCandidates(String backend) {
-    final candidates = <String>{
-      'package:llamadart/$backend',
-      'package:llamadart/ggml_$backend',
-      'package:llamadart/ggml-$backend',
-    };
-
-    if (backend == 'cpu' && Platform.isAndroid) {
-      for (final variant in _androidCpuVariantPriority.keys) {
-        candidates.add(
-          'package:llamadart/ggml-cpu-${variant.replaceAll('.', '_')}',
-        );
-      }
-      candidates.add('package:llamadart/ggml-cpu');
-    }
-
-    return candidates.toList(growable: false);
   }
 
   Pointer<Void> _preloadWindowsBackendModule(
@@ -2415,31 +2812,16 @@ class LlamaCppService {
     }
   }
 
-  void _freeWindowsBackendModule(
-    Pointer<Void> handle,
+  void _recordWindowsBackendModuleReleaseFailure(
     String libraryPath,
-    String backend,
-  ) {
-    if (!Platform.isWindows || handle == nullptr) {
-      return;
-    }
-
-    try {
-      final kernel32 = DynamicLibrary.open('kernel32.dll');
-      final freeLibrary = kernel32
-          .lookupFunction<_FreeLibraryNative, _FreeLibraryDart>('FreeLibrary');
-      if (freeLibrary(handle) == 0) {
-        _recordStartupDiagnostic(
-          'Failed to release temporary Windows backend module preload for '
-          '`$libraryPath` (`$backend`).',
-        );
-      }
-    } catch (error) {
-      _recordStartupDiagnostic(
-        'Failed to release temporary Windows backend module preload for '
-        '`$libraryPath` (`$backend`): $error',
-      );
-    }
+    String backend, [
+    Object? error,
+  ]) {
+    _recordStartupDiagnostic(
+      'Failed to release temporary Windows backend module preload for '
+      '`$libraryPath` (`$backend`)${error == null ? '.' : ': $error'}',
+      category: StartupDiagnosticCategory.teardown,
+    );
   }
 
   void _preloadWindowsBackendDependencies(String backend) {
@@ -2564,101 +2946,94 @@ class LlamaCppService {
     return 100;
   }
 
-  bool _tryRegisterBackendModuleViaAsset(String backend) {
-    final assetCandidates = _backendAssetUriCandidates(backend);
+  bool _tryRegisterBackendModuleViaAsset(
+    String backend,
+    BackendProbeFailures failures, {
+    List<String>? candidates,
+    DynamicLibrary Function(String)? open,
+    int? Function(DynamicLibrary)? lookupScore,
+    _GgmlBackendInitDart Function(DynamicLibrary)? lookupInit,
+    bool Function(ggml_backend_reg_t)? register,
+  }) {
+    final assetCandidates =
+        candidates ?? _libraryCandidates.backendAssetUris(backend);
     final recordAssetDiagnostics = backend == 'cpu' && Platform.isAndroid;
 
-    for (final assetUri in assetCandidates) {
-      try {
-        final library = DynamicLibrary.open(assetUri);
-        final score = _lookupBackendAssetScore(library);
-        if (!isBackendCandidateScoreSupported(score)) {
-          if (recordAssetDiagnostics && score != null) {
-            _recordStartupDiagnostic(
-              describeSkippedBackendAssetCandidate(assetUri, score),
-            );
+    final registered = probeLibraryCandidates(
+      assetCandidates,
+      failures: failures,
+      open: open ?? DynamicLibrary.open,
+      accept: (assetUri, library) {
+        try {
+          final score = (lookupScore ?? _lookupBackendAssetScore)(library);
+          if (!isBackendCandidateScoreSupported(score)) {
+            if (recordAssetDiagnostics && score != null) {
+              _recordStartupDiagnostic(
+                describeSkippedBackendAssetCandidate(assetUri, score),
+              );
+            }
+            failures.add(assetUri, '`ggml_backend_score` returned $score');
+            return null;
           }
-          continue;
-        }
 
-        final init = library
-            .lookupFunction<_GgmlBackendInitNative, _GgmlBackendInitDart>(
-              'ggml_backend_init',
-            );
-        final reg = init();
-        if (reg == nullptr) {
+          final _GgmlBackendInitDart init;
+          try {
+            init =
+                lookupInit?.call(library) ??
+                library.lookupFunction<
+                  _GgmlBackendInitNative,
+                  _GgmlBackendInitDart
+                >('ggml_backend_init');
+          } catch (_) {
+            failures.add(assetUri, 'no `ggml_backend_init` export');
+            return null;
+          }
+          final reg = init();
+          if (reg == nullptr) {
+            if (recordAssetDiagnostics) {
+              _recordStartupDiagnostic(
+                'Backend asset `$assetUri` returned null from '
+                '`ggml_backend_init`.',
+              );
+            }
+            failures.add(assetUri, '`ggml_backend_init` returned null');
+            return null;
+          }
+
+          // Asset init path mirrors ggml_backend_load() by honoring
+          // optional backend score gates before initialization, then
+          // explicitly registering the backend because asset loading
+          // bypasses the native dynamic-loader helper.
+          if (!(register ?? _registerBackendRegBestEffort)(reg)) {
+            if (recordAssetDiagnostics) {
+              _recordStartupDiagnostic(
+                'Backend asset `$assetUri` failed explicit backend '
+                'registration.',
+              );
+            }
+            failures.add(assetUri, '`ggml_backend_register` unavailable');
+            return null;
+          }
+          _loadedBackendLibraries[backend] = library;
+          _loadedBackendModules.add(backend);
           if (recordAssetDiagnostics) {
             _recordStartupDiagnostic(
-              'Backend asset `$assetUri` returned null from '
-              '`ggml_backend_init`.',
+              describeLoadedBackendAssetCandidate(assetUri, score),
             );
           }
-          continue;
+          return true;
+        } catch (error) {
+          failures.add(assetUri, 'probe threw ${error.runtimeType}');
+          return null;
         }
-
-        // Asset init path mirrors ggml_backend_load() by honoring optional
-        // backend score gates before initialization, then explicitly
-        // registering the backend because asset loading bypasses the native
-        // dynamic-loader helper.
-        if (!_registerBackendRegBestEffort(reg)) {
-          if (recordAssetDiagnostics) {
-            _recordStartupDiagnostic(
-              'Backend asset `$assetUri` failed explicit backend '
-              'registration.',
-            );
-          }
-          continue;
-        }
-        _loadedBackendLibraries[backend] = library;
-        _loadedBackendModules.add(backend);
-        if (recordAssetDiagnostics) {
-          _recordStartupDiagnostic(
-            describeLoadedBackendAssetCandidate(assetUri, score),
-          );
-        }
-        return true;
-      } catch (_) {
-        continue;
-      }
-    }
-
-    return false;
+      },
+    );
+    return registered ?? false;
   }
 
-  int? _lookupBackendAssetScore(DynamicLibrary library) {
-    try {
-      final score = library
-          .lookupFunction<_GgmlBackendScoreNative, _GgmlBackendScoreDart>(
-            'ggml_backend_score',
-          );
-      return score();
-    } catch (_) {
-      return null;
-    }
-  }
-
-  bool _registerBackendRegBestEffort(ggml_backend_reg_t reg) {
-    try {
-      ggml_backend_register(reg);
-      return true;
-    } on ArgumentError {
-      _resolveGgmlFallbackFunctions();
-      final fallback = _ggmlBackendRegisterFallback;
-      if (fallback == null) {
-        return false;
-      }
-      try {
-        fallback(reg);
-        return true;
-      } catch (_) {
-        return false;
-      }
-    }
-  }
-
-  void _resolveGgmlFallbackFunctions() {
-    final fileNameCandidates = _ggmlLibraryCandidateFileNames();
-    final candidates = <String>[..._ggmlAssetUriCandidates()];
+  List<String> _ggmlFallbackCandidates() {
+    final fileNameCandidates = _libraryCandidates.ggml();
+    final candidates = <String>[..._libraryCandidates.ggmlAssetUris()];
     final filesystemCandidates = <String>{};
     final backendModuleDirectory = _backendModuleDirectory;
     if (backendModuleDirectory != null) {
@@ -2669,6 +3044,38 @@ class LlamaCppService {
     // Keep bare-name fallback last so module-dir resolution wins when present.
     filesystemCandidates.addAll(fileNameCandidates);
     candidates.addAll(filesystemCandidates);
+    return candidates;
+  }
+
+  void _resolveGgmlFallbackFunctions({
+    List<String>? candidates,
+    DynamicLibrary Function(String)? open,
+    Pointer<NativeType> Function(String)? assetSymbol,
+  }) {
+    if (_isWindows && candidates == null && open == null) {
+      if (_ggmlFallbackLookupSearchKey == 'windows-code-assets' &&
+          _ggmlBackendRegCountFallback != null) {
+        return;
+      }
+      _ggmlFallbackLookupAttempted = true;
+      _ggmlFallbackLookupSearchKey = 'windows-code-assets';
+      // Filesystem overrides select backend modules, not a second ggml
+      // registry beside the one imported by the hook's llama.dll.
+      _bindGgmlFallbackFunctions(assetSymbol ?? _windowsGgmlSymbolAddress);
+      _ggmlRuntimeProbeOutcome =
+          'the Windows code assets package:llamadart/ggml and '
+          'package:llamadart/ggml-base do not export it';
+      if (_ggmlBackendRegCountFallback == null) {
+        throw LlamaUnsupportedException(
+          'Windows llama.cpp backend registration requires the ggml code '
+          'asset emitted by the llamadart build hook, including the '
+          'ggml_backend_reg_count export used by llama.dll. Use a complete, '
+          'ABI-compatible native bundle through llamadart_native_path.',
+        );
+      }
+      return;
+    }
+    candidates ??= _ggmlFallbackCandidates();
 
     final searchKey = candidates.map(path.normalize).join('|');
     if (_ggmlFallbackLookupAttempted &&
@@ -2678,266 +3085,234 @@ class LlamaCppService {
     _ggmlFallbackLookupAttempted = true;
     _ggmlFallbackLookupSearchKey = searchKey;
 
-    final seen = <String>{};
-    for (final candidate in candidates) {
-      if (!seen.add(candidate)) {
-        continue;
-      }
+    final failures = BackendProbeFailures();
+    final opened = <String>{};
+    probeLibraryCandidates(
+      candidates,
+      failures: failures,
+      open: open ?? DynamicLibrary.open,
+      accept: (candidate, library) {
+        opened.add(probeCandidateIdentity(candidate));
 
-      DynamicLibrary library;
-      try {
-        library = DynamicLibrary.open(candidate);
-      } catch (_) {
-        continue;
-      }
+        _bindGgmlFallbackFunctions(library.lookup);
 
-      if (_ggmlBackendLoadFallback == null) {
-        try {
-          _ggmlBackendLoadFallback = library
-              .lookupFunction<_GgmlBackendLoadNative, _GgmlBackendLoadDart>(
-                'ggml_backend_load',
-              );
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
+        return _ggmlFallbacksFullyResolved ? true : null;
+      },
+    );
+    _ggmlRuntimeProbeOutcome = opened.isEmpty
+        ? 'no ggml runtime candidate opened (${failures.describe()})'
+        : 'the opened ggml runtime candidates (${opened.join(', ')}) do not '
+              'export it'
+              '${failures.isEmpty ? '' : '; other candidates: ${failures.describe()}'}';
+  }
 
-      if (_ggmlBackendLoadAllFallback == null) {
-        try {
-          _ggmlBackendLoadAllFallback = library
-              .lookupFunction<
-                _GgmlBackendLoadAllNative,
-                _GgmlBackendLoadAllDart
-              >('ggml_backend_load_all');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
+  void _bindGgmlFallbackFunctions(Pointer<NativeType> Function(String) lookup) {
+    _ggmlBackendLoadFallback ??= _tryBind(
+      () => lookup('ggml_backend_load')
+          .cast<NativeFunction<_GgmlBackendLoadNative>>()
+          .asFunction<_GgmlBackendLoadDart>(),
+    );
+    _ggmlBackendLoadAllFallback ??= _tryBind(
+      () => lookup('ggml_backend_load_all')
+          .cast<NativeFunction<_GgmlBackendLoadAllNative>>()
+          .asFunction<_GgmlBackendLoadAllDart>(),
+    );
+    _ggmlBackendLoadAllFromPathFallback ??= _tryBind(
+      () => lookup('ggml_backend_load_all_from_path')
+          .cast<NativeFunction<_GgmlBackendLoadAllFromPathNative>>()
+          .asFunction<_GgmlBackendLoadAllFromPathDart>(),
+    );
+    _ggmlBackendRegisterFallback ??= _tryBind(
+      () => lookup('ggml_backend_register')
+          .cast<NativeFunction<_GgmlBackendRegisterNative>>()
+          .asFunction<_GgmlBackendRegisterDart>(),
+    );
+    _ggmlBackendRegCountFallback ??= _tryBind(
+      () => lookup('ggml_backend_reg_count')
+          .cast<NativeFunction<_GgmlBackendRegCountNative>>()
+          .asFunction<_GgmlBackendRegCountDart>(),
+    );
+    _ggmlBackendRegGetFallback ??= _tryBind(
+      () => lookup('ggml_backend_reg_get')
+          .cast<NativeFunction<_GgmlBackendRegGetNative>>()
+          .asFunction<_GgmlBackendRegGetDart>(),
+    );
+    _ggmlBackendRegNameFallback ??= _tryBind(
+      () => lookup('ggml_backend_reg_name')
+          .cast<NativeFunction<_GgmlBackendRegNameNative>>()
+          .asFunction<_GgmlBackendRegNameDart>(),
+    );
+    _ggmlBackendRegByNameFallback ??= _tryBind(
+      () => lookup('ggml_backend_reg_by_name')
+          .cast<NativeFunction<_GgmlBackendRegByNameNative>>()
+          .asFunction<_GgmlBackendRegByNameDart>(),
+    );
+    _ggmlBackendRegGetProcAddressFallback ??= _tryBind(
+      () => lookup('ggml_backend_reg_get_proc_address')
+          .cast<NativeFunction<_GgmlBackendRegGetProcAddressNative>>()
+          .asFunction<_GgmlBackendRegGetProcAddressDart>(),
+    );
+    _ggmlBackendRegDevCountFallback ??= _tryBind(
+      () => lookup('ggml_backend_reg_dev_count')
+          .cast<NativeFunction<_GgmlBackendRegDevCountNative>>()
+          .asFunction<_GgmlBackendRegDevCountDart>(),
+    );
+    _ggmlBackendRegDevGetFallback ??= _tryBind(
+      () => lookup('ggml_backend_reg_dev_get')
+          .cast<NativeFunction<_GgmlBackendRegDevGetNative>>()
+          .asFunction<_GgmlBackendRegDevGetDart>(),
+    );
+    _ggmlBackendDevCountFallback ??= _tryBind(
+      () => lookup('ggml_backend_dev_count')
+          .cast<NativeFunction<_GgmlBackendDevCountNative>>()
+          .asFunction<_GgmlBackendDevCountDart>(),
+    );
+    _ggmlBackendDevGetFallback ??= _tryBind(
+      () => lookup('ggml_backend_dev_get')
+          .cast<NativeFunction<_GgmlBackendDevGetNative>>()
+          .asFunction<_GgmlBackendDevGetDart>(),
+    );
+    _ggmlBackendDevNameFallback ??= _tryBind(
+      () => lookup('ggml_backend_dev_name')
+          .cast<NativeFunction<_GgmlBackendDevNameNative>>()
+          .asFunction<_GgmlBackendDevNameDart>(),
+    );
+    _ggmlBackendDevBackendRegFallback ??= _tryBind(
+      () => lookup('ggml_backend_dev_backend_reg')
+          .cast<NativeFunction<_GgmlBackendDevBackendRegNative>>()
+          .asFunction<_GgmlBackendDevBackendRegDart>(),
+    );
+    _ggmlBackendDevByTypeFallback ??= _tryBind(
+      () => lookup('ggml_backend_dev_by_type')
+          .cast<NativeFunction<_GgmlBackendDevByTypeNative>>()
+          .asFunction<_GgmlBackendDevByTypeDart>(),
+    );
+    _ggmlBackendDevBufferTypeFallback ??= _tryBind(
+      () => lookup('ggml_backend_dev_buffer_type')
+          .cast<NativeFunction<_GgmlBackendDevBufferTypeNative>>()
+          .asFunction<_GgmlBackendDevBufferTypeDart>(),
+    );
+    _ggmlBackendDevTypeFallback ??= _tryBind(
+      () => lookup('ggml_backend_dev_type')
+          .cast<NativeFunction<_GgmlBackendDevTypeNative>>()
+          .asFunction<_GgmlBackendDevTypeDart>(),
+    );
+    _ggmlBackendDevGetPropsFallback ??= _tryBind(
+      () => lookup('ggml_backend_dev_get_props')
+          .cast<NativeFunction<_GgmlBackendDevGetPropsNative>>()
+          .asFunction<_GgmlBackendDevGetPropsDart>(),
+    );
+    _ggmlBackendDevMemoryFallback ??= _tryBind(
+      () => lookup('ggml_backend_dev_memory')
+          .cast<NativeFunction<_GgmlBackendDevMemoryNative>>()
+          .asFunction<_GgmlBackendDevMemoryDart>(),
+    );
+  }
 
-      if (_ggmlBackendLoadAllFromPathFallback == null) {
-        try {
-          _ggmlBackendLoadAllFromPathFallback = library
-              .lookupFunction<
-                _GgmlBackendLoadAllFromPathNative,
-                _GgmlBackendLoadAllFromPathDart
-              >('ggml_backend_load_all_from_path');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
+  static Pointer<NativeType> _windowsGgmlSymbolAddress(String symbol) =>
+      switch (symbol) {
+        'ggml_backend_load' =>
+          Native.addressOf<NativeFunction<_GgmlBackendLoadNative>>(
+            _windowsGgmlBackendLoad,
+          ),
+        'ggml_backend_load_all' =>
+          Native.addressOf<NativeFunction<_GgmlBackendLoadAllNative>>(
+            _windowsGgmlBackendLoadAll,
+          ),
+        'ggml_backend_load_all_from_path' =>
+          Native.addressOf<NativeFunction<_GgmlBackendLoadAllFromPathNative>>(
+            _windowsGgmlBackendLoadAllFromPath,
+          ),
+        'ggml_backend_register' =>
+          Native.addressOf<NativeFunction<_GgmlBackendRegisterNative>>(
+            _windowsGgmlBackendRegister,
+          ),
+        'ggml_backend_reg_count' =>
+          Native.addressOf<NativeFunction<_GgmlBackendRegCountNative>>(
+            _windowsGgmlBackendRegCount,
+          ),
+        'ggml_backend_reg_get' =>
+          Native.addressOf<NativeFunction<_GgmlBackendRegGetNative>>(
+            _windowsGgmlBackendRegGet,
+          ),
+        'ggml_backend_reg_name' =>
+          Native.addressOf<NativeFunction<_GgmlBackendRegNameNative>>(
+            _windowsGgmlBackendRegName,
+          ),
+        'ggml_backend_reg_by_name' =>
+          Native.addressOf<NativeFunction<_GgmlBackendRegByNameNative>>(
+            _windowsGgmlBackendRegByName,
+          ),
+        'ggml_backend_reg_get_proc_address' =>
+          Native.addressOf<NativeFunction<_GgmlBackendRegGetProcAddressNative>>(
+            _windowsGgmlBackendRegGetProcAddress,
+          ),
+        'ggml_backend_reg_dev_count' =>
+          Native.addressOf<NativeFunction<_GgmlBackendRegDevCountNative>>(
+            _windowsGgmlBackendRegDevCount,
+          ),
+        'ggml_backend_reg_dev_get' =>
+          Native.addressOf<NativeFunction<_GgmlBackendRegDevGetNative>>(
+            _windowsGgmlBackendRegDevGet,
+          ),
+        'ggml_backend_dev_count' =>
+          Native.addressOf<NativeFunction<_GgmlBackendDevCountNative>>(
+            _windowsGgmlBackendDevCount,
+          ),
+        'ggml_backend_dev_get' =>
+          Native.addressOf<NativeFunction<_GgmlBackendDevGetNative>>(
+            _windowsGgmlBackendDevGet,
+          ),
+        'ggml_backend_dev_name' =>
+          Native.addressOf<NativeFunction<_GgmlBackendDevNameNative>>(
+            _windowsGgmlBackendDevName,
+          ),
+        'ggml_backend_dev_backend_reg' =>
+          Native.addressOf<NativeFunction<_GgmlBackendDevBackendRegNative>>(
+            _windowsGgmlBackendDevBackendReg,
+          ),
+        'ggml_backend_dev_by_type' =>
+          Native.addressOf<NativeFunction<_GgmlBackendDevByTypeNative>>(
+            _windowsGgmlBackendDevByType,
+          ),
+        'ggml_backend_dev_buffer_type' =>
+          Native.addressOf<NativeFunction<_GgmlBackendDevBufferTypeNative>>(
+            _windowsGgmlBackendDevBufferType,
+          ),
+        'ggml_backend_dev_type' =>
+          Native.addressOf<NativeFunction<_GgmlBackendDevTypeNative>>(
+            _windowsGgmlBackendDevType,
+          ),
+        'ggml_backend_dev_get_props' =>
+          Native.addressOf<NativeFunction<_GgmlBackendDevGetPropsNative>>(
+            _windowsGgmlBackendDevGetProps,
+          ),
+        'ggml_backend_dev_memory' =>
+          Native.addressOf<NativeFunction<_GgmlBackendDevMemoryNative>>(
+            _windowsGgmlBackendDevMemory,
+          ),
+        _ => throw ArgumentError.value(symbol, 'symbol', 'not bound'),
+      };
 
-      if (_ggmlBackendRegisterFallback == null) {
-        try {
-          _ggmlBackendRegisterFallback = library
-              .lookupFunction<
-                _GgmlBackendRegisterNative,
-                _GgmlBackendRegisterDart
-              >('ggml_backend_register');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendRegCountFallback == null) {
-        try {
-          _ggmlBackendRegCountFallback = library
-              .lookupFunction<
-                _GgmlBackendRegCountNative,
-                _GgmlBackendRegCountDart
-              >('ggml_backend_reg_count');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendRegGetFallback == null) {
-        try {
-          _ggmlBackendRegGetFallback = library
-              .lookupFunction<_GgmlBackendRegGetNative, _GgmlBackendRegGetDart>(
-                'ggml_backend_reg_get',
-              );
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendRegNameFallback == null) {
-        try {
-          _ggmlBackendRegNameFallback = library
-              .lookupFunction<
-                _GgmlBackendRegNameNative,
-                _GgmlBackendRegNameDart
-              >('ggml_backend_reg_name');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendRegByNameFallback == null) {
-        try {
-          _ggmlBackendRegByNameFallback = library
-              .lookupFunction<
-                _GgmlBackendRegByNameNative,
-                _GgmlBackendRegByNameDart
-              >('ggml_backend_reg_by_name');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendRegDevCountFallback == null) {
-        try {
-          _ggmlBackendRegDevCountFallback = library
-              .lookupFunction<
-                _GgmlBackendRegDevCountNative,
-                _GgmlBackendRegDevCountDart
-              >('ggml_backend_reg_dev_count');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendRegDevGetFallback == null) {
-        try {
-          _ggmlBackendRegDevGetFallback = library
-              .lookupFunction<
-                _GgmlBackendRegDevGetNative,
-                _GgmlBackendRegDevGetDart
-              >('ggml_backend_reg_dev_get');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendDevCountFallback == null) {
-        try {
-          _ggmlBackendDevCountFallback = library
-              .lookupFunction<
-                _GgmlBackendDevCountNative,
-                _GgmlBackendDevCountDart
-              >('ggml_backend_dev_count');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendDevGetFallback == null) {
-        try {
-          _ggmlBackendDevGetFallback = library
-              .lookupFunction<_GgmlBackendDevGetNative, _GgmlBackendDevGetDart>(
-                'ggml_backend_dev_get',
-              );
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendDevNameFallback == null) {
-        try {
-          _ggmlBackendDevNameFallback = library
-              .lookupFunction<
-                _GgmlBackendDevNameNative,
-                _GgmlBackendDevNameDart
-              >('ggml_backend_dev_name');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendDevBackendRegFallback == null) {
-        try {
-          _ggmlBackendDevBackendRegFallback = library
-              .lookupFunction<
-                _GgmlBackendDevBackendRegNative,
-                _GgmlBackendDevBackendRegDart
-              >('ggml_backend_dev_backend_reg');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendDevByTypeFallback == null) {
-        try {
-          _ggmlBackendDevByTypeFallback = library
-              .lookupFunction<
-                _GgmlBackendDevByTypeNative,
-                _GgmlBackendDevByTypeDart
-              >('ggml_backend_dev_by_type');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendDevTypeFallback == null) {
-        try {
-          _ggmlBackendDevTypeFallback = library
-              .lookupFunction<
-                _GgmlBackendDevTypeNative,
-                _GgmlBackendDevTypeDart
-              >('ggml_backend_dev_type');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendDevGetPropsFallback == null) {
-        try {
-          _ggmlBackendDevGetPropsFallback = library
-              .lookupFunction<
-                _GgmlBackendDevGetPropsNative,
-                _GgmlBackendDevGetPropsDart
-              >('ggml_backend_dev_get_props');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendDevMemoryFallback == null) {
-        try {
-          _ggmlBackendDevMemoryFallback = library
-              .lookupFunction<
-                _GgmlBackendDevMemoryNative,
-                _GgmlBackendDevMemoryDart
-              >('ggml_backend_dev_memory');
-        } catch (_) {
-          // Keep searching other candidates.
-        }
-      }
-
-      if (_ggmlBackendLoadFallback != null &&
-          _ggmlBackendLoadAllFallback != null &&
-          _ggmlBackendLoadAllFromPathFallback != null &&
-          _ggmlBackendRegisterFallback != null &&
-          _ggmlBackendRegCountFallback != null &&
-          _ggmlBackendRegGetFallback != null &&
-          _ggmlBackendRegNameFallback != null &&
-          _ggmlBackendRegByNameFallback != null &&
-          _ggmlBackendRegDevCountFallback != null &&
-          _ggmlBackendRegDevGetFallback != null &&
-          _ggmlBackendDevCountFallback != null &&
-          _ggmlBackendDevGetFallback != null &&
-          _ggmlBackendDevNameFallback != null &&
-          _ggmlBackendDevBackendRegFallback != null &&
-          _ggmlBackendDevByTypeFallback != null &&
-          _ggmlBackendDevTypeFallback != null &&
-          _ggmlBackendDevGetPropsFallback != null &&
-          _ggmlBackendDevMemoryFallback != null) {
-        return;
-      }
+  /// Runs one symbol binding, returning `null` if it fails for any reason so
+  /// the caller can keep searching the remaining candidates.
+  ///
+  /// Every exception is swallowed, not just a missing symbol: a candidate that
+  /// exports the name with an incompatible signature is treated the same as one
+  /// that does not export it at all. That is deliberate, and matches the
+  /// per-symbol `try`/`catch` blocks this replaced.
+  static D? _tryBind<D extends Function>(D Function() bind) {
+    try {
+      return bind();
+    } catch (_) {
+      return null;
     }
   }
 
-  List<String> _ggmlAssetUriCandidates() {
-    if (Platform.isWindows) {
-      return const <String>[
-        'package:llamadart/ggml',
-        'package:llamadart/ggml-base',
-      ];
-    }
-    return const <String>['package:llamadart/ggml'];
-  }
-
-  void _resolveLogLevelFallbackFunction() {
+  void _resolveLogLevelFallbackFunction({
+    List<String>? candidates,
+    DynamicLibrary Function(String)? open,
+  }) {
     final directories = _llamadartFallbackLookupDirectories();
     final searchKey = directories.map(path.normalize).join('|');
 
@@ -2955,40 +3330,70 @@ class LlamaCppService {
     _logLevelFallbackLookupAttempted = true;
     _logLevelFallbackLookupSearchKey = searchKey;
 
-    final fileNameCandidates = _llamadartLibraryCandidateFileNames();
-    final candidates = <String>[..._llamadartAssetUriCandidates()];
-    final pattern = _llamadartLibraryPattern();
-    for (final directoryPath in directories) {
-      for (final fileName in fileNameCandidates) {
-        candidates.add(path.join(directoryPath, fileName));
-      }
-      for (final fileName in _matchingLibraryNames(directoryPath, pattern)) {
-        candidates.add(path.join(directoryPath, fileName));
-      }
+    final failures = BackendProbeFailures();
+    final setLogLevel = probeLibraryCandidates(
+      candidates ?? _libraryCandidates.wrapperPaths(directories),
+      failures: failures,
+      open: open ?? _openWrapperLibrary,
+      accept: (candidate, library) {
+        try {
+          return library.lookupFunction<
+            _LlamaDartSetLogLevelNative,
+            _LlamaDartSetLogLevelDart
+          >('llama_dart_set_log_level');
+        } catch (_) {
+          failures.add(candidate, 'no `llama_dart_set_log_level` export');
+          return null;
+        }
+      },
+    );
+    if (setLogLevel != null) {
+      _llamaDartSetLogLevelFallback = setLogLevel;
+      return;
     }
-    // Keep bare-name fallback last so module-dir resolution wins when present.
-    candidates.addAll(fileNameCandidates);
-
-    final seen = <String>{};
-    for (final candidate in candidates) {
-      if (!seen.add(candidate)) {
-        continue;
-      }
-      try {
-        final library = DynamicLibrary.open(candidate);
-        _llamaDartSetLogLevelFallback = library
-            .lookupFunction<
-              _LlamaDartSetLogLevelNative,
-              _LlamaDartSetLogLevelDart
-            >('llama_dart_set_log_level');
-        return;
-      } catch (_) {
-        continue;
-      }
-    }
+    _logLevelProbeOutcome = failures.describe();
   }
 
-  _ReasoningBudgetApi _resolveReasoningBudgetApi() {
+  /// Reports generation controls for a loaded model and this runtime bundle.
+  BackendGenerationCapabilities generationCapabilities(int modelHandle) {
+    final model = _models[modelHandle];
+    if (model == null) {
+      return const BackendGenerationCapabilities(
+        presencePenalty: false,
+        minP: false,
+        thinkingBudget: false,
+      );
+    }
+    _ensureModelUsable(model);
+    return BackendGenerationCapabilities(
+      penalty: true,
+      presencePenalty: true,
+      minP: true,
+      thinkingBudget: _supportsThinkingBudget(),
+      streamBatching: true,
+      speculativeDecodingStrategies:
+          _requiresQwen35VulkanRestriction(modelHandle)
+          ? const <SpeculativeDecodingStrategy>{}
+          : const <SpeculativeDecodingStrategy>{
+              SpeculativeDecodingStrategy.backendDefault,
+              SpeculativeDecodingStrategy.mtp,
+              SpeculativeDecodingStrategy.ngramSimple,
+              SpeculativeDecodingStrategy.draftSimple,
+              SpeculativeDecodingStrategy.draftEagle3,
+              SpeculativeDecodingStrategy.draftDflash,
+              SpeculativeDecodingStrategy.ngramMapK,
+              SpeculativeDecodingStrategy.ngramMapK4v,
+              SpeculativeDecodingStrategy.ngramMod,
+              SpeculativeDecodingStrategy.ngramCache,
+              SpeculativeDecodingStrategy.draftDspark,
+            },
+    );
+  }
+
+  _ReasoningBudgetApi _resolveReasoningBudgetApi({
+    List<String>? candidates,
+    DynamicLibrary Function(String)? open,
+  }) {
     final cached = _reasoningBudgetApi;
     if (cached != null) {
       return cached;
@@ -2999,16 +3404,25 @@ class LlamaCppService {
     }
     _reasoningBudgetApiLookupAttempted = true;
 
-    for (final candidate in _llamadartWrapperLibraryCandidates()) {
+    for (final candidate
+        in candidates ?? _llamadartWrapperLibraryCandidates()) {
+      var stage = 'open';
       try {
-        final library = DynamicLibrary.open(candidate);
-        final api = _ReasoningBudgetApi.tryLoad(library);
-        if (api != null) {
-          _reasoningBudgetApi = api;
-          return api;
-        }
-      } catch (_) {
-        continue;
+        final library = (open ?? _openWrapperLibrary)(candidate);
+        stage = 'lookup';
+        final api = _ReasoningBudgetApi.load(library);
+        _reasoningBudgetApi = api;
+        _reasoningBudgetLoadFailures.clear();
+        return api;
+      } catch (error) {
+        final diagnostic = stage == 'lookup'
+            ? 'lookup: required export unavailable'
+            : _reasoningBudgetOpenFailure(error);
+        _reasoningBudgetLoadFailures.update(
+          diagnostic,
+          (count) => count + 1,
+          ifAbsent: () => 1,
+        );
       }
     }
 
@@ -3017,23 +3431,48 @@ class LlamaCppService {
 
   String _reasoningBudgetUnavailableMessage() {
     return 'llama.cpp thinking-budget control is unavailable in this native '
-        'runtime bundle (missing llama_dart_sampler_init_reasoning_budget). '
-        'Update to a libllamadart build that includes the reasoning-budget '
-        'wrapper.';
+        'runtime bundle (could not resolve '
+        'llama_dart_sampler_init_reasoning_budget). '
+        'Use the package-pinned reasoning-budget wrapper and ensure its sibling '
+        'DLLs and Microsoft runtime dependencies can load. '
+        'loaderDiagnostics=['
+        '${_reasoningBudgetLoadFailures.entries.map((entry) => '${entry.key} '
+            '(${entry.value} attempts)').join('; ')}]';
   }
 
-  _SpeculativeApi _resolveSpeculativeApi() {
+  // Emit only a finite vocabulary: OS errors can contain credentials, signed
+  // URLs and arbitrary paths. Never retain the candidate or raw exception.
+  static String _reasoningBudgetOpenFailure(Object error) {
+    final message = error.toString();
+    final code = RegExp(
+      r'\(error code: (5|126|127|193|1114)\)',
+    ).firstMatch(message)?.group(1);
+    final reason = switch (code) {
+      '5' => 'access denied',
+      '126' => 'library or dependency not found',
+      '127' => 'dependency procedure not found',
+      '193' => 'invalid binary or architecture mismatch',
+      '1114' => 'DLL initialization failed',
+      _ => 'library or dependency could not be loaded',
+    };
+    return 'open: $reason${code == null ? '' : ' (Windows error $code)'}';
+  }
+
+  _SpeculativeApi _resolveSpeculativeApi({
+    List<String>? candidates,
+    DynamicLibrary Function(String)? open,
+  }) {
     final cached = _speculativeApi;
     if (cached != null) {
       return cached;
     }
 
     if (_speculativeApiLookupAttempted) {
-      throw UnsupportedError(_speculativeUnavailableMessage());
+      throw LlamaUnsupportedException(_speculativeUnavailableMessage());
     }
     _speculativeApiLookupAttempted = true;
 
-    if (!Platform.isWindows) {
+    if (!_isWindows) {
       try {
         final direct = _SpeculativeApi.direct();
         _speculativeApi = direct;
@@ -3041,7 +3480,7 @@ class LlamaCppService {
       } catch (_) {}
     }
 
-    if (Platform.isWindows) {
+    if (_isWindows) {
       try {
         final asset = _SpeculativeApi.windowsAsset();
         _speculativeApi = asset;
@@ -3049,9 +3488,10 @@ class LlamaCppService {
       } catch (_) {}
     }
 
-    for (final candidate in _llamadartWrapperLibraryCandidates()) {
+    for (final candidate
+        in candidates ?? _llamadartWrapperLibraryCandidates()) {
       try {
-        final library = DynamicLibrary.open(candidate);
+        final library = (open ?? _openWrapperLibrary)(candidate);
         final api = _SpeculativeApi.tryLoad(library);
         if (api != null) {
           _speculativeApi = api;
@@ -3062,345 +3502,109 @@ class LlamaCppService {
       }
     }
 
-    throw UnsupportedError(_speculativeUnavailableMessage());
+    throw LlamaUnsupportedException(_speculativeUnavailableMessage());
   }
 
-  String _speculativeUnavailableMessage() {
-    return 'llama.cpp speculative decoding is unavailable in this native '
-        'runtime bundle (missing llama_dart_speculative_* wrapper symbols).';
-  }
-
-  // Legacy wrapper resolver retained for native bundles that still expose only
-  // the MTP-specific speculative symbols.
-  // ignore: unused_element
-  _MtpApi _resolveMtpApi() {
-    final cached = _mtpApi;
+  _TtsApi _resolveTtsApi() {
+    final cached = _ttsApi;
     if (cached != null) {
       return cached;
     }
-
-    if (_mtpApiLookupAttempted) {
-      throw UnsupportedError(_mtpUnavailableMessage());
+    if (_ttsApiLookupAttempted) {
+      throw LlamaUnsupportedException(_ttsUnavailableMessage());
     }
-    _mtpApiLookupAttempted = true;
-
-    if (!Platform.isWindows) {
-      try {
-        final direct = _MtpApi.direct();
-        _mtpApi = direct;
-        return direct;
-      } catch (_) {}
-    }
-
-    if (Platform.isWindows) {
-      try {
-        final asset = _MtpApi.windowsAsset();
-        _mtpApi = asset;
-        return asset;
-      } catch (_) {}
-    }
+    _ttsApiLookupAttempted = true;
 
     for (final candidate in _llamadartWrapperLibraryCandidates()) {
       try {
-        final library = DynamicLibrary.open(candidate);
-        final api = _MtpApi.tryLoad(library);
+        final library = _openWrapperLibrary(candidate);
+        final api = _TtsApi.tryLoad(library);
         if (api != null) {
-          _mtpApi = api;
+          _ttsApi = api;
           return api;
         }
       } catch (_) {
         continue;
       }
     }
-
-    throw UnsupportedError(_mtpUnavailableMessage());
+    throw LlamaUnsupportedException(_ttsUnavailableMessage());
   }
 
-  String _mtpUnavailableMessage() {
-    return 'llama.cpp MTP speculative decoding is unavailable in this native '
-        'runtime bundle (missing llama_dart_mtp_* wrapper symbols).';
-  }
-
-  // Legacy wrapper resolver retained for native bundles that still expose only
-  // the ngram-specific speculative symbols.
-  // ignore: unused_element
-  _NgramApi _resolveNgramApi() {
-    final cached = _ngramApi;
-    if (cached != null) {
-      return cached;
-    }
-
-    if (_ngramApiLookupAttempted) {
-      throw UnsupportedError(_ngramUnavailableMessage());
-    }
-    _ngramApiLookupAttempted = true;
-
-    if (!Platform.isWindows) {
-      try {
-        final direct = _NgramApi.direct();
-        _ngramApi = direct;
-        return direct;
-      } catch (_) {}
-    }
-
-    if (Platform.isWindows) {
-      try {
-        final asset = _NgramApi.windowsAsset();
-        _ngramApi = asset;
-        return asset;
-      } catch (_) {}
-    }
-
-    for (final candidate in _llamadartWrapperLibraryCandidates()) {
-      try {
-        final library = DynamicLibrary.open(candidate);
-        final api = _NgramApi.tryLoad(library);
-        if (api != null) {
-          _ngramApi = api;
-          return api;
-        }
-      } catch (_) {
-        continue;
-      }
-    }
-
-    throw UnsupportedError(_ngramUnavailableMessage());
-  }
-
-  String _ngramUnavailableMessage() {
-    return 'llama.cpp ngram-simple speculative decoding is unavailable in this '
-        'native runtime bundle (missing llama_dart_ngram_* wrapper symbols).';
-  }
-
-  List<String> _llamadartWrapperLibraryCandidates() {
-    final candidates = <String>[..._llamadartAssetUriCandidates()];
-    final fileNameCandidates = _llamadartLibraryCandidateFileNames();
-    final pattern = _llamadartLibraryPattern();
-    for (final directoryPath in _llamadartFallbackLookupDirectories()) {
-      for (final fileName in fileNameCandidates) {
-        candidates.add(path.join(directoryPath, fileName));
-      }
-      for (final fileName in _matchingLibraryNames(directoryPath, pattern)) {
-        candidates.add(path.join(directoryPath, fileName));
-      }
-    }
-    candidates.addAll(fileNameCandidates);
-
-    final seen = <String>{};
-    return [
-      for (final candidate in candidates)
-        if (seen.add(candidate)) candidate,
-    ];
-  }
-
-  List<String> _llamadartAssetUriCandidates() {
-    // Prefer asset-URI resolution so Windows split bundles can reliably resolve
-    // the wrapper helper library without relying on process cwd/search paths.
-    if (Platform.isWindows) {
-      return const <String>[
-        'package:llamadart/llamadart_wrapper',
-        'package:llamadart/llamadart',
-      ];
-    }
-    return const <String>['package:llamadart/llamadart'];
-  }
-
-  List<String> _llamadartFallbackLookupDirectories() {
-    final directories = <String>{};
-    final backendModuleDirectory = _backendModuleDirectory;
-    if (backendModuleDirectory != null) {
-      directories.add(backendModuleDirectory);
-    }
-
-    final executableDir = path.dirname(Platform.resolvedExecutable);
-    directories.add(executableDir);
-    directories.add(Directory.current.path);
-    directories.add(path.join(Directory.current.path, '.dart_tool', 'lib'));
-
-    if (Platform.isIOS) {
-      directories.add(path.normalize(path.join(executableDir, 'Frameworks')));
-    }
-
-    if (Platform.isMacOS) {
-      directories.add(
-        path.normalize(path.join(executableDir, '..', 'Frameworks')),
-      );
-      directories.add(path.normalize(path.join(executableDir, 'Frameworks')));
-    }
-
-    return directories.toList(growable: false);
-  }
-
-  static String _ggmlLibraryFileName() {
-    if (Platform.isWindows) {
-      return 'ggml.dll';
-    }
-    if (Platform.isMacOS || Platform.isIOS) {
-      return 'libggml.dylib';
-    }
-    return 'libggml.so';
-  }
-
-  static String _llamadartLibraryFileName() {
-    if (Platform.isWindows) {
-      return 'llamadart.dll';
-    }
-    if (Platform.isMacOS || Platform.isIOS) {
-      return 'libllamadart.dylib';
-    }
-    return 'libllamadart.so';
-  }
-
-  List<String> _backendLibraryCandidateFileNames(String backend) {
-    final baseName = _backendLibraryFileName(backend);
-    final backendModuleDirectory = _backendModuleDirectory;
-    if (backendModuleDirectory == null) {
-      if (backend == 'cpu' && Platform.isAndroid) {
-        final variants = _androidCpuVariantPriority.keys
-            .map((variant) => 'libggml-cpu-$variant.so')
-            .toList(growable: false);
-        return <String>[...variants, baseName];
-      }
-      return <String>[baseName];
-    }
-
-    final candidates = <String>{};
-    final basePath = path.join(backendModuleDirectory, baseName);
-    if (File(basePath).existsSync()) {
-      candidates.add(baseName);
-    }
-    final dynamicNames = _matchingLibraryNames(
-      backendModuleDirectory,
-      _backendLibraryPattern(backend),
+  DynamicLibrary _openWrapperLibrary(String candidate) {
+    return openWrapperLibraryWithDependencies(
+      candidate,
+      isWindows: Platform.isWindows,
+      preload: (candidate) =>
+          _preloadWindowsBackendModule(candidate, 'wrapper'),
+      open: DynamicLibrary.open,
+      release: (handle, candidate) =>
+          _freeWindowsBackendModule(handle, candidate, 'wrapper'),
     );
-    if (backend == 'cpu' && Platform.isAndroid) {
-      dynamicNames.sort(_compareAndroidCpuLibraryCandidates);
-    }
-    candidates.addAll(dynamicNames);
-    final resolved = candidates.toList(growable: false);
-    if (backend == 'cpu' && Platform.isAndroid) {
-      resolved.sort(_compareAndroidCpuLibraryCandidates);
-    }
-    return resolved;
   }
 
-  static int _compareAndroidCpuLibraryCandidates(String a, String b) {
-    final rankA = _androidCpuLibraryCandidateRank(a);
-    final rankB = _androidCpuLibraryCandidateRank(b);
-    if (rankA != rankB) {
-      return rankA.compareTo(rankB);
-    }
-    return a.compareTo(b);
-  }
-
-  static int _androidCpuLibraryCandidateRank(String fileName) {
-    final lowered = fileName.toLowerCase();
-    if (lowered == 'libggml-cpu.so') {
-      return 1000;
-    }
-
-    final variantMatch = RegExp(
-      r'^libggml-cpu-([^/\\]+)\.so$',
-    ).firstMatch(lowered);
-    if (variantMatch == null) {
-      return 2000;
-    }
-
-    final variant = variantMatch.group(1)!;
-    return _androidCpuVariantPriority[variant] ?? 900;
-  }
-
-  List<String> _ggmlLibraryCandidateFileNames() {
-    final baseName = _ggmlLibraryFileName();
-    final candidates = <String>{baseName};
-    final backendModuleDirectory = _backendModuleDirectory;
-    if (backendModuleDirectory == null) {
-      return candidates.toList(growable: false);
-    }
-
-    final dynamicNames = _matchingLibraryNames(
-      backendModuleDirectory,
-      _ggmlLibraryPattern(),
-    );
-    candidates.addAll(dynamicNames);
-    return candidates.toList(growable: false);
-  }
-
-  List<String> _llamadartLibraryCandidateFileNames() {
-    final candidates = _llamadartStaticCandidateFileNames();
-    final backendModuleDirectory = _backendModuleDirectory;
-    if (backendModuleDirectory == null) {
-      return candidates.toList(growable: false);
-    }
-
-    final dynamicNames = _matchingLibraryNames(
-      backendModuleDirectory,
-      _llamadartLibraryPattern(),
-    );
-    candidates.addAll(dynamicNames);
-    return candidates.toList(growable: false);
-  }
-
-  Set<String> _llamadartStaticCandidateFileNames() {
-    final candidates = <String>{_llamadartLibraryFileName()};
-    if (Platform.isWindows) {
-      // Hook asset naming can expose wrapper helper as `llamadart_wrapper.dll`.
-      candidates.add('llamadart_wrapper.dll');
-    }
-    return candidates;
-  }
-
-  RegExp _backendLibraryPattern(String backend) {
-    final escapedBackend = RegExp.escape(backend);
-    if (Platform.isWindows) {
-      return RegExp('^ggml-$escapedBackend(?:-[^\\\\/]+)*\\.dll\$');
-    }
-    if (Platform.isMacOS || Platform.isIOS) {
-      return RegExp('^libggml-$escapedBackend(?:-[^\\\\/]+)*\\.dylib\$');
-    }
-    return RegExp('^libggml-$escapedBackend(?:-[^\\\\/]+)*\\.so\$');
-  }
-
-  RegExp _ggmlLibraryPattern() {
-    if (Platform.isWindows) {
-      return RegExp(r'^ggml(?:-[^.\\/]+)*\.dll$');
-    }
-    if (Platform.isMacOS || Platform.isIOS) {
-      return RegExp(r'^libggml(?:-[^.\\/]+)*\.dylib$');
-    }
-    return RegExp(r'^libggml(?:-[^.\\/]+)*\.so$');
-  }
-
-  RegExp _llamadartLibraryPattern() {
-    if (Platform.isWindows) {
-      return RegExp(r'^llamadart(?:[-_][^.\\/]+)*\.dll$');
-    }
-    if (Platform.isMacOS || Platform.isIOS) {
-      return RegExp(r'^libllamadart(?:[-_][^.\\/]+)*\.dylib$');
-    }
-    return RegExp(r'^libllamadart(?:[-_][^.\\/]+)*\.so$');
-  }
-
-  static List<String> _matchingLibraryNames(
-    String directoryPath,
-    RegExp regex,
-  ) {
+  /// Opens a wrapper while its sibling dependencies remain loaded on Windows.
+  ///
+  /// The temporary handle uses the same altered search path as backend modules.
+  /// Keep it alive until [open] acquires its own reference, including on failure.
+  /// Injectable operations allow resource-lifetime regression tests on every OS.
+  /// A candidate that takes the altered search path is preloaded only when
+  /// [exists] returns true for it; [exists] defaults to [File.existsSync].
+  static DynamicLibrary openWrapperLibraryWithDependencies(
+    String candidate, {
+    required bool isWindows,
+    required Pointer<Void> Function(String) preload,
+    required DynamicLibrary Function(String) open,
+    required void Function(Pointer<Void>, String) release,
+    bool Function(String)? exists,
+  }) {
+    final handle =
+        isWindows &&
+            windowsBackendModuleLoadFlags(candidate) != 0 &&
+            (exists ?? _fileExists)(candidate)
+        ? preload(candidate)
+        : nullptr;
     try {
-      final names = <String>[];
-      for (final entity in Directory(directoryPath).listSync()) {
-        if (entity is! File) {
-          continue;
-        }
-        final name = path.basename(entity.path);
-        if (regex.hasMatch(name)) {
-          names.add(name);
-        }
+      return open(candidate);
+    } finally {
+      if (handle != nullptr) {
+        release(handle, candidate);
       }
-      names.sort();
-      return names;
-    } catch (_) {
-      return const [];
     }
+  }
+
+  static bool _fileExists(String filePath) => File(filePath).existsSync();
+
+  LlamaCppLibraryCandidates get _libraryCandidates => LlamaCppLibraryCandidates(
+    os: Platform.operatingSystem,
+    abi: _abi,
+    moduleDirectory: _backendModuleDirectory,
+    listFiles: _listFileNames,
+    fileExists: _fileExists,
+  );
+
+  static List<String> _listFileNames(String directoryPath) => [
+    for (final entity in Directory(directoryPath).listSync())
+      if (entity is File) path.basename(entity.path),
+  ];
+
+  /// Tries to load the ggml [backend] module from [moduleDirectory], as model
+  /// loading does, for VM regression tests.
+  bool debugTryLoadBackendModuleForTesting(
+    String backend, {
+    required String moduleDirectory,
+  }) {
+    _backendModuleDirectory = moduleDirectory;
+    return _tryLoadBackendModule(backend);
+  }
+
+  /// Returns the Linux native bundle directory names for the running ABI for
+  /// VM regression tests.
+  List<String> debugLinuxBundleNamesForTesting() =>
+      _linuxBundleNamesForCurrentAbi();
+
+  /// Returns wrapper-library lookup candidates for VM regression tests.
+  List<String> debugLlamadartWrapperLibraryCandidatesForTesting() {
+    return _llamadartWrapperLibraryCandidates();
   }
 
   T _ggmlRegistryFallbackOr<T>(
@@ -3408,7 +3612,7 @@ class LlamaCppService {
     T Function() primaryCall,
     T? Function() fallbackCall,
   ) {
-    if (Platform.isWindows) {
+    if (_isWindows) {
       // Windows split bundles can expose ggml registry state through ggml.dll
       // while the generated default asset points at llama.dll. Prefer the
       // explicit ggml runtime lookup when it is available so count/get/name
@@ -3457,35 +3661,11 @@ class LlamaCppService {
     );
   }
 
-  ggml_backend_reg_t _ggmlBackendRegByName(Pointer<Char> name) {
-    return _ggmlRegistryFallbackOr<ggml_backend_reg_t>(
-      nullptr,
-      () => ggml_backend_reg_by_name(name),
-      () => _ggmlBackendRegByNameFallback?.call(name),
-    );
-  }
-
   int _ggmlBackendRegDevCount(ggml_backend_reg_t reg) {
     return _ggmlRegistryFallbackOr<int>(
       0,
       () => ggml_backend_reg_dev_count(reg),
       () => _ggmlBackendRegDevCountFallback?.call(reg),
-    );
-  }
-
-  ggml_backend_dev_t _ggmlBackendRegDevGet(ggml_backend_reg_t reg, int index) {
-    return _ggmlRegistryFallbackOr<ggml_backend_dev_t>(
-      nullptr,
-      () => ggml_backend_reg_dev_get(reg, index),
-      () => _ggmlBackendRegDevGetFallback?.call(reg, index),
-    );
-  }
-
-  int _ggmlBackendDevCount() {
-    return _ggmlRegistryFallbackOr<int>(
-      0,
-      ggml_backend_dev_count,
-      () => _ggmlBackendDevCountFallback?.call(),
     );
   }
 
@@ -3497,68 +3677,6 @@ class LlamaCppService {
     );
   }
 
-  Pointer<Char> _ggmlBackendDevName(ggml_backend_dev_t dev) {
-    return _ggmlRegistryFallbackOr<Pointer<Char>>(
-      nullptr,
-      () => ggml_backend_dev_name(dev),
-      () => _ggmlBackendDevNameFallback?.call(dev),
-    );
-  }
-
-  ggml_backend_reg_t _ggmlBackendDevBackendReg(ggml_backend_dev_t dev) {
-    return _ggmlRegistryFallbackOr<ggml_backend_reg_t>(
-      nullptr,
-      () => ggml_backend_dev_backend_reg(dev),
-      () => _ggmlBackendDevBackendRegFallback?.call(dev),
-    );
-  }
-
-  ggml_backend_dev_t _ggmlBackendDevByType(ggml_backend_dev_type type) {
-    return _ggmlRegistryFallbackOr<ggml_backend_dev_t>(
-      nullptr,
-      () => ggml_backend_dev_by_type(type),
-      () => _ggmlBackendDevByTypeFallback?.call(type.value),
-    );
-  }
-
-  /// Raw `ggml_backend_dev_type` value (the C enum int) for a device.
-  /// Callers compare against `ggml_backend_dev_type.GGML_*.value` so a
-  /// newer llama.cpp adding a new enum variant doesn't crash here via
-  /// the high-level binding's `fromValue` ArgumentError — unknown
-  /// values just don't match any of the GPU-class checks. Returns `-1`
-  /// when both the primary `@DefaultAsset` lookup and the ggml-runtime
-  /// fallback can't resolve the symbol.
-  int _ggmlBackendDevType(ggml_backend_dev_t dev) {
-    return _ggmlRegistryFallbackOr<int>(
-      -1,
-      () => ggml_backend_dev_type$1(dev).value,
-      () => _ggmlBackendDevTypeFallback?.call(dev),
-    );
-  }
-
-  /// Routes `ggml_backend_dev_get_props` through the registry fallback
-  /// so the call lands on whichever ggml runtime owns the device state
-  /// on Windows split bundles. Returns `false` when the symbol is
-  /// unavailable from both the primary asset and the ggml runtime.
-  bool _ggmlBackendDevGetProps(
-    ggml_backend_dev_t dev,
-    Pointer<ggml_backend_dev_props> props,
-  ) {
-    return _ggmlRegistryFallbackOr<bool>(
-      false,
-      () {
-        ggml_backend_dev_get_props(dev, props);
-        return true;
-      },
-      () {
-        final fn = _ggmlBackendDevGetPropsFallback;
-        if (fn == null) return null;
-        fn(dev, props);
-        return true;
-      },
-    );
-  }
-
   /// Routes `ggml_backend_dev_memory` through the registry fallback.
   /// Same shape as [_ggmlBackendDevGetProps]; returns `false` when the
   /// symbol is unavailable.
@@ -3567,6 +3685,8 @@ class LlamaCppService {
     Pointer<Size> free,
     Pointer<Size> total,
   ) {
+    final barrier = _calls.failures.barrier;
+    if (barrier != null) return barrier.ggmlBackendDevMemory(dev, free, total);
     return _ggmlRegistryFallbackOr<bool>(
       false,
       () {
@@ -3580,16 +3700,6 @@ class LlamaCppService {
         return true;
       },
     );
-  }
-
-  static String _backendLibraryFileName(String backend) {
-    if (Platform.isWindows) {
-      return 'ggml-$backend.dll';
-    }
-    if (Platform.isMacOS || Platform.isIOS) {
-      return 'libggml-$backend.dylib';
-    }
-    return 'libggml-$backend.so';
   }
 
   static bool _looksLikeGguf(File modelFile) {
@@ -3640,7 +3750,7 @@ class LlamaCppService {
       return null;
     }
 
-    final ptr = malloc<ggml_backend_dev_t>(devices.length + 1);
+    final ptr = _modelLoadAllocator<ggml_backend_dev_t>(devices.length + 1);
     for (var i = 0; i < devices.length; i++) {
       ptr[i] = devices[i];
     }
@@ -3649,31 +3759,34 @@ class LlamaCppService {
   }
 
   List<ggml_backend_dev_t>? _resolvePreferredDevices(GpuBackend backend) {
-    switch (backend) {
-      case GpuBackend.auto:
+    if (backend == GpuBackend.cpu) {
+      final cpuDev = _ggmlBackendDevByType(
+        ggml_backend_dev_type.GGML_BACKEND_DEVICE_TYPE_CPU,
+      );
+      if (cpuDev == nullptr) {
         return null;
-      case GpuBackend.cpu:
-        final cpuDev = _ggmlBackendDevByType(
-          ggml_backend_dev_type.GGML_BACKEND_DEVICE_TYPE_CPU,
-        );
-        if (cpuDev == nullptr) {
-          return null;
-        }
-        return [cpuDev];
-      case GpuBackend.vulkan:
-        return _devicesForBackendRegName('Vulkan');
-      case GpuBackend.metal:
-        return _devicesForBackendRegName('Metal');
-      case GpuBackend.cuda:
-        return _devicesForBackendRegName('CUDA');
-      case GpuBackend.blas:
-        return _devicesForBackendRegName('BLAS');
-      case GpuBackend.opencl:
-        return _devicesForBackendRegName('OpenCL');
-      case GpuBackend.hip:
-        return _devicesForBackendRegName('HIP');
+      }
+      return [cpuDev];
     }
+    final registryName = ggmlGpuRegistryName(backend);
+    return registryName == null
+        ? null
+        : _backendDevicesOverride?.call(backend) ??
+              _devicesForBackendRegName(registryName);
   }
+
+  /// Returns the name of the ggml backend registry that lists the devices of
+  /// an explicit GPU [backend], or `null` for [GpuBackend.auto] and
+  /// [GpuBackend.cpu].
+  static String? ggmlGpuRegistryName(GpuBackend backend) => switch (backend) {
+    GpuBackend.vulkan => 'Vulkan',
+    GpuBackend.metal => 'MTL',
+    GpuBackend.cuda => 'CUDA',
+    GpuBackend.blas => 'BLAS',
+    GpuBackend.opencl => 'OpenCL',
+    GpuBackend.hip => 'ROCm',
+    GpuBackend.auto || GpuBackend.cpu => null,
+  };
 
   List<ggml_backend_dev_t>? _devicesForBackendRegName(String regName) {
     final regNamePtr = regName.toNativeUtf8();
@@ -3708,8 +3821,9 @@ class LlamaCppService {
 
   /// Frees the model associated with [modelHandle].
   ///
-  /// This also frees all contexts and LoRA adapters associated with the model.
+  /// This also frees the model's decision heads, contexts and LoRA adapters.
   void freeModel(int modelHandle) {
+    _freeDecisionHeadsWhere((head) => head.modelHandle == modelHandle);
     final model = _models.remove(modelHandle);
     _modelToMtmdUseGpu.remove(modelHandle);
     if (model != null) {
@@ -3733,9 +3847,13 @@ class LlamaCppService {
       model.dispose();
     }
 
+    _modelResolvedBackends.remove(modelHandle);
+    _modelArchitectures.remove(modelHandle);
     _modelBackendNames.remove(modelHandle);
     _modelResolvedGpuLayers.remove(modelHandle);
+    _modelsOnNoGpu.remove(modelHandle);
     _modelLoadParams.remove(modelHandle);
+    _modelPlacements.remove(modelHandle);
     final draftModelKeys = _modelToSpeculativeDraftModelKeys.remove(
       modelHandle,
     );
@@ -3748,19 +3866,67 @@ class LlamaCppService {
       _activeBackendName = _backendDisplayName('cpu');
       _activeResolvedGpuLayers = 0;
     } else {
-      _activeBackendName = _modelBackendNames.values.last;
-      _activeResolvedGpuLayers = _modelResolvedGpuLayers.values.last;
+      _activateModelReport(_modelBackendNames.keys.last);
     }
+  }
+
+  void _validateRollbackReservation(
+    ModelParams params, {
+    required bool isRecurrent,
+    required bool isHybrid,
+  }) {
+    if (params.speculativeRollbackTokenMax == 0 ||
+        (!isRecurrent && !isHybrid)) {
+      return;
+    }
+    throw LlamaUnsupportedException(
+      'Native llama.cpp recurrent/hybrid models cannot safely reserve '
+      'speculativeRollbackTokenMax=${params.speculativeRollbackTokenMax}: '
+      'the native API does not expose a validated rollback graph-node budget. '
+      'Use speculativeRollbackTokenMax=0 for ordinary generation. '
+      'Speculative decoding that needs recurrent rollback is unsupported '
+      'until the native runtime can validate the required graph capacity.',
+    );
   }
 
   /// Creates an inference context for the specified [modelHandle].
   ///
   /// Returns a handle to the created context.
   /// Throws an [Exception] if the model handle is invalid or context creation fails.
-  int createContext(int modelHandle, ModelParams params) {
+  int createContext(
+    int modelHandle,
+    ModelParams params, {
+    bool reranking = false,
+  }) {
     final model = _models[modelHandle];
     if (model == null) {
       throw Exception("Invalid model handle");
+    }
+    _ensureModelUsable(model);
+    params = resolveComputeDeviceParams(
+      params,
+      isAndroid: _isAndroid,
+      isIosSimulator: _isIosSimulator,
+      isMacosX64: _isMacosX64,
+      platform: Platform.operatingSystem,
+    );
+    final qwen35OnSmallTileVulkan = _isQwen35OnSmallTileAndroidVulkan(
+      modelHandle,
+    );
+    final qwen35VulkanRestricted =
+        qwen35OnSmallTileVulkan && !_ggmlHasSmallMatmulTileFix;
+    if (qwen35VulkanRestricted &&
+        params.microBatchSize > androidVulkanPromptMicroBatchSize) {
+      throw LlamaUnsupportedException(
+        'microBatchSize=${params.microBatchSize} is unavailable. $_qwen35VulkanRestriction',
+      );
+    }
+    if (params.speculativeRollbackTokenMax > 0) {
+      _validateRollbackReservation(
+        params,
+        isRecurrent: llama_model_is_recurrent(model.pointer),
+        isHybrid: llama_model_is_hybrid(model.pointer),
+      );
     }
 
     final ctxParams = llama_context_default_params();
@@ -3786,16 +3952,19 @@ class LlamaCppService {
     ctxParams.n_ubatch = resolvedBatchSizes.microBatchSize;
     ctxParams.n_seq_max = resolvedMaxParallelSequences;
     ctxParams.n_rs_seq = params.speculativeRollbackTokenMax;
-    ctxParams.n_threads = params.numberOfThreads;
-    ctxParams.n_threads_batch = params.numberOfThreadsBatch;
+    applyContextThreads(ctxParams, params, availableCores: _availableCores);
     if (resolvedMaxParallelSequences > 1) {
       // Keep per-sequence context at full n_ctx when multiple sequence slots
       // are enabled so regular generation behavior is unchanged.
       ctxParams.kv_unified = true;
     }
 
-    final resolvedModelGpuLayers = _modelResolvedGpuLayers[modelHandle];
-    if (shouldDisableContextGpuOffload(
+    final resolvedModelGpuLayers = _modelsOnNoGpu.contains(modelHandle)
+        ? 0
+        : _modelResolvedGpuLayers[modelHandle];
+    if (qwen35OnSmallTileVulkan) {
+      _applyConservativeAndroidVulkanContextConfig(ctxParams, modelHandle);
+    } else if (shouldDisableContextGpuOffload(
       params,
       resolvedGpuLayers: resolvedModelGpuLayers,
     )) {
@@ -3806,18 +3975,9 @@ class LlamaCppService {
     } else if (shouldUseConservativeAndroidVulkanContextConfig(
       params,
       resolvedGpuLayers: resolvedModelGpuLayers,
-      isAndroid: Platform.isAndroid,
+      isAndroid: _isAndroid,
     )) {
-      if (!_androidVulkanAllowKqvOffload) {
-        ctxParams.offload_kqv = false;
-      }
-      if (!_androidVulkanAllowOpOffload) {
-        ctxParams.op_offload = false;
-      }
-      if (!_androidVulkanAllowFlashAttn) {
-        ctxParams.flash_attn_typeAsInt =
-            llama_flash_attn_type.LLAMA_FLASH_ATTN_TYPE_DISABLED.value;
-      }
+      _applyConservativeAndroidVulkanContextConfig(ctxParams, modelHandle);
     }
 
     params.validate();
@@ -3829,22 +3989,104 @@ class LlamaCppService {
       );
     }
 
-    final ctxPtr = llama_init_from_model(model.pointer, ctxParams);
+    if (reranking) {
+      ctxParams.pooling_type = llama_pooling_type.LLAMA_POOLING_TYPE_RANK;
+      ctxParams.embeddings = true;
+    }
+    final ctxPtr = _createOwnedContext(model.pointer, ctxParams);
+    IsolateShutdownReleases.current.hold(
+      ShutdownStage.context,
+      _calls.contextFreeAddress,
+      ctxPtr,
+    );
     if (ctxPtr == nullptr) {
+      if (params.moeCacheBytes > 0) {
+        throw LlamaContextException(
+          'Failed to create the context with a ${params.moeCacheBytes}-byte '
+          'MoE expert cache (ModelParams.moeCacheBytes): llama.cpp could not '
+          'allocate it on the GPU, or it cannot hold the experts of one '
+          'token. Change moeCacheBytes, or set it to 0 to disable the cache.',
+        );
+      }
       throw Exception("Failed to create context");
     }
 
     final handle = _getHandle();
-    _contexts[handle] = _LlamaContextWrapper(ctxPtr, model);
+    _contexts[handle] = _LlamaContextWrapper(
+      ctxPtr,
+      model,
+      _calls,
+      qwen35VulkanRestricted: qwen35VulkanRestricted,
+      promptMicroBatchLimit:
+          qwen35VulkanRestricted ||
+              qwen35OnSmallTileVulkan && params.microBatchSize <= 0
+          ? androidVulkanPromptMicroBatchSize
+          : resolvePromptMicroBatchLimit(
+              params,
+              resolvedGpuLayers: resolvedModelGpuLayers,
+              isAndroid: _isAndroid,
+              hasSmallMatmulTileDefect: _androidVulkanHasSmallMatmulTileDefect,
+            ),
+    );
     _contextToModel[handle] = modelHandle;
     _activeLoras[handle] = {};
     _contextParams[handle] = ctxParams;
-    _samplers[handle] = llama_sampler_chain_init(
+    final sampler = llama_sampler_chain_init(
       llama_sampler_chain_default_params(),
     );
-    _batches[handle] = llama_batch_init(resolvedBatchSizes.batchSize, 0, 1);
+    _holdSamplerChain(sampler);
+    _samplers[handle] = sampler;
+    final batch = TokenBatch.allocate(
+      resolvedBatchSizes.batchSize,
+      1,
+      allocator: _contextBatchAllocator,
+    );
+    IsolateShutdownReleases.current.hold(
+      ShutdownStage.session,
+      TokenBatch.freeAddress,
+      batch.block,
+    );
+    _batches[handle] = batch;
 
     return handle;
+  }
+
+  bool _androidVulkanHasSmallMatmulTileDefect() {
+    final registeredDeviceCount = _registeredVulkanDeviceCount();
+    // Without a ggml-vulkan device there is nothing to learn, and the facts
+    // are not to be read where Vulkan is ruled out.
+    if (registeredDeviceCount == 0) return true;
+    final probe = _vulkanDeviceProbe;
+    final defect = vulkanSmallMatmulTileDefect(
+      probe,
+      registeredDeviceCount: registeredDeviceCount,
+    );
+    LlamaLogger.instance.debug(
+      'llama_cpp_service: Android Vulkan text prompt decode is '
+      '${defect ? 'capped at $androidVulkanPromptMicroBatchSize tokens per '
+                'call' : 'not capped'} '
+      '(${probe.devices?.join(', ') ?? probe.unavailableReason})',
+    );
+    return defect;
+  }
+
+  void _applyConservativeAndroidVulkanContextConfig(
+    llama_context_params ctxParams,
+    int modelHandle,
+  ) {
+    if (!_androidVulkanAllowKqvOffload) {
+      final modelArchitecture = _modelArchitecture(modelHandle);
+      if (!shouldKeepAndroidVulkanKqvOffloadEnabled(modelArchitecture)) {
+        ctxParams.offload_kqv = false;
+      }
+    }
+    if (!_androidVulkanAllowOpOffload) {
+      ctxParams.op_offload = false;
+    }
+    if (!_androidVulkanAllowFlashAttn) {
+      ctxParams.flash_attn_typeAsInt =
+          llama_flash_attn_type.LLAMA_FLASH_ATTN_TYPE_DISABLED.value;
+    }
   }
 
   /// Frees the context associated with [contextHandle].
@@ -3857,10 +4099,51 @@ class LlamaCppService {
     _activeLoras.remove(handle);
     _contextParams.remove(handle);
     final sampler = _samplers.remove(handle);
-    if (sampler != null && sampler != nullptr) llama_sampler_free(sampler);
+    if (sampler != null && sampler != nullptr) _freeSamplerChain(sampler);
     final batch = _batches.remove(handle);
-    if (batch != null) llama_batch_free(batch);
+    if (batch != null) {
+      IsolateShutdownReleases.current.release(batch.block);
+      batch.free();
+    }
     _contexts.remove(handle)?.dispose();
+  }
+
+  static const String _encoderDecoderEmbeddingsUnsupported =
+      'Embeddings are not supported for encoder-decoder models such as T5; '
+      'use an encoder-only or decoder-only embedding model.';
+
+  // Without a projector the prompt would be evaluated as text and the media
+  // silently dropped; upstream llama-server rejects such requests too.
+  void _checkLlamaCppMediaParts(
+    List<LlamaContentPart> parts, {
+    required bool projectorLoaded,
+  }) {
+    if (!projectorLoaded) {
+      final hasImage = parts.any((part) => part is LlamaImageContent);
+      final hasAudio = parts.any((part) => part is LlamaAudioContent);
+      final kind = hasImage && hasAudio
+          ? 'Image and audio'
+          : hasImage
+          ? 'Image'
+          : 'Audio';
+      throw LlamaUnsupportedException(
+        '$kind input needs a multimodal projector on llama.cpp, and none is '
+        'loaded. Load the model with LlamaModel(source, projector: ...) '
+        'before sending media.',
+      );
+    }
+    for (final part in parts) {
+      if (part is LlamaImageContent &&
+          part.path == null &&
+          part.bytes == null &&
+          part.url != null) {
+        throw LlamaUnsupportedException(
+          'llama.cpp does not load remote image URLs '
+          '(LlamaImageContent.url). Pass a local image file path or encoded '
+          'image bytes.',
+        );
+      }
+    }
   }
 
   _LlamaCppThinkingBudgetConfig? _resolveLlamaCppThinkingBudgetConfig(
@@ -3926,7 +4209,7 @@ class LlamaCppService {
     }
 
     if (hasMediaParts) {
-      throw UnsupportedError(
+      throw LlamaUnsupportedException(
         'llama.cpp speculative decoding currently supports text-only '
         'generation in llamadart.',
       );
@@ -3938,7 +4221,7 @@ class LlamaCppService {
       );
     }
     if (params.grammar != null) {
-      throw UnsupportedError(
+      throw LlamaUnsupportedException(
         'llama.cpp speculative decoding does not yet support grammar '
         'sampling in llamadart.',
       );
@@ -3955,7 +4238,7 @@ class LlamaCppService {
     final uniqueStrategies = <SpeculativeDecodingStrategy>[];
     for (final strategy in strategies) {
       if (!_llamaCppSpeculativeTypeNames.containsKey(strategy)) {
-        throw UnsupportedError(
+        throw LlamaUnsupportedException(
           'llama.cpp does not support speculative strategy $strategy.',
         );
       }
@@ -3968,7 +4251,7 @@ class LlamaCppService {
         .where(_llamaCppDraftStrategies.contains)
         .length;
     if (draftStrategyCount > 1) {
-      throw UnsupportedError(
+      throw LlamaUnsupportedException(
         'llama.cpp speculative decoding can mix n-gram strategies with at '
         'most one draft-model strategy in llamadart.',
       );
@@ -3987,12 +4270,13 @@ class LlamaCppService {
       (strategy) =>
           strategy == SpeculativeDecodingStrategy.draftSimple ||
           strategy == SpeculativeDecodingStrategy.draftEagle3 ||
-          strategy == SpeculativeDecodingStrategy.draftDflash,
+          strategy == SpeculativeDecodingStrategy.draftDflash ||
+          strategy == SpeculativeDecodingStrategy.draftDspark,
     );
     if (requiresExternalDraft && draftModelPath == null) {
-      throw ArgumentError(
+      throw LlamaArgumentException(
         'llama.cpp ${uniqueStrategies.map((s) => _llamaCppSpeculativeTypeNames[s]).join(', ')} '
-        'requires draftModelPath.',
+        'requires SpeculativeDecodingConfig.draftModel.',
       );
     }
 
@@ -4008,10 +4292,10 @@ class LlamaCppService {
             speculativeConfig.minProbability != null ||
             speculativeConfig.draftSplitProbability != null ||
             speculativeConfig.draftModelPath != null)) {
-      throw UnsupportedError(
+      throw LlamaUnsupportedException(
         'llama.cpp n-gram speculative decoding uses token history and does '
         'not support draftTokenMin, minProbability, draftSplitProbability, or '
-        'draftModelPath unless a draft-model strategy is also enabled.',
+        'draftModel unless a draft-model strategy is also enabled.',
       );
     }
 
@@ -4071,6 +4355,34 @@ class LlamaCppService {
       );
     }
 
+    final draftMicroBatchSize = speculativeConfig.draftMicroBatchSize;
+    if (draftMicroBatchSize != null) {
+      if (draftStrategyCount == 0) {
+        throw LlamaUnsupportedException(
+          'llama.cpp n-gram speculative decoding creates no draft context, so '
+          'draftMicroBatchSize needs a draft-model or MTP strategy.',
+        );
+      }
+      if (draftMicroBatchSize < 1) {
+        throw LlamaArgumentException(
+          'SpeculativeDecodingConfig.draftMicroBatchSize must be at least 1, '
+          'or null to keep the target micro-batch size.',
+          name: 'draftMicroBatchSize',
+          invalidValue: draftMicroBatchSize,
+        );
+      }
+      final blockSize = draftTokenMax + 1;
+      final usesBlockDraft =
+          uniqueStrategies.contains(SpeculativeDecodingStrategy.draftDflash) ||
+          uniqueStrategies.contains(SpeculativeDecodingStrategy.draftDspark);
+      if (usesBlockDraft && draftMicroBatchSize < blockSize) {
+        throw _draftMicroBatchTooSmall((
+          size: draftMicroBatchSize,
+          inherited: false,
+        ), 'draftTokenMax + 1 ($blockSize) $_draftBlockRequirement');
+      }
+    }
+
     final typeNames = uniqueStrategies
         .map((strategy) => _llamaCppSpeculativeTypeNames[strategy]!)
         .join(',');
@@ -4083,6 +4395,7 @@ class LlamaCppService {
       draftTokenMin: draftTokenMin,
       minProbability: speculativeConfig.minProbability,
       draftSplitProbability: speculativeConfig.draftSplitProbability,
+      draftMicroBatchSize: draftMicroBatchSize,
       draftModelPath: draftModelPath,
       ngramSizeN: speculativeConfig.ngramSizeN ?? speculativeConfig.ngramSize,
       ngramSizeM: speculativeConfig.ngramSizeM,
@@ -4120,9 +4433,145 @@ class LlamaCppService {
       throw LlamaUnsupportedException(
         'Bundled MTP speculative decoding requires the model to be loaded '
         'with ModelParams(loadMtp: true). Reload the target model with MTP '
-        'tensors enabled, or provide a compatible external draftModelPath.',
+        'tensors enabled, or provide a compatible external draftModel.',
       );
     }
+  }
+
+  void _validateDraftMicroBatchSizeFitsContext(
+    _LlamaCppSpeculativeConfig? config, {
+    required int batchSize,
+    required int contextSize,
+  }) {
+    final draftMicroBatchSize = config?.draftMicroBatchSize;
+    if (draftMicroBatchSize == null) {
+      return;
+    }
+    final limit = math.min(batchSize, contextSize);
+    if (draftMicroBatchSize > limit) {
+      throw LlamaArgumentException(
+        'SpeculativeDecodingConfig.draftMicroBatchSize ($draftMicroBatchSize) '
+        "must not exceed the draft context's logical batch size ($limit): "
+        'the resolved ModelParams.batchSize, bounded by '
+        'ModelParams.contextSize.',
+        name: 'draftMicroBatchSize',
+        invalidValue: draftMicroBatchSize,
+      );
+    }
+  }
+
+  /// Resolves the draft context's micro-batch: `draftMicroBatchSize`, or the
+  /// target context parameters' `n_ubatch` as `llama_init_from_model`
+  /// resolves it.
+  _DraftMicroBatch _resolveDraftMicroBatch(
+    _LlamaCppSpeculativeConfig config, {
+    required int targetBatchSize,
+    required int targetMicroBatchSize,
+  }) {
+    final draftMicroBatchSize = config.draftMicroBatchSize;
+    if (draftMicroBatchSize != null) {
+      return (size: draftMicroBatchSize, inherited: false);
+    }
+    return (
+      size: targetMicroBatchSize == 0
+          ? targetBatchSize
+          : math.min(targetBatchSize, targetMicroBatchSize),
+      inherited: true,
+    );
+  }
+
+  /// Rejects a draft micro-batch smaller than the block llama.cpp
+  /// draft-dflash and draft-dspark decode in one micro-batch, which it sizes
+  /// from the draft model's metadata (`common/speculative.cpp`).
+  void _validateDraftBlockFitsMicroBatch(
+    _LlamaCppSpeculativeConfig config,
+    _DraftMicroBatch microBatch,
+    String? Function(String key) draftMetadata,
+  ) {
+    if (!config.usesBlockDraft) {
+      return;
+    }
+    int? metadataInt(String key) =>
+        int.tryParse(draftMetadata(key)?.trim() ?? '');
+    final blockSize =
+        metadataInt('dflash.block_size') ?? _llamaCppDefaultDflashBlockSize;
+    // llama.cpp decodes a LiliCorr draft's whole trained block, whatever
+    // draftTokenMax is.
+    final liliCorrTopK = metadataInt('lilicorr.candidate_topk') ?? 0;
+    if (liliCorrTopK > 0) {
+      if (microBatch.size < blockSize) {
+        throw _draftMicroBatchTooSmall(
+          microBatch,
+          'the draft model block size dflash.block_size ($blockSize) for a '
+          'LiliCorr draft model (lilicorr.candidate_topk $liliCorrTopK), '
+          'which llama.cpp draft-dflash and draft-dspark decode as a whole '
+          'block in one micro-batch.',
+        );
+      }
+      return;
+    }
+    // Otherwise the block is the draft length, clamped to what the trained
+    // block yields, plus the anchor token, which anchor-first DSpark drafts
+    // too. llama.cpp treats sample_from_anchor as true when absent and otherwise
+    // only when the value is exactly "true".
+    final anchorFirst =
+        config.usesDspark &&
+        (draftMetadata('dflash.sample_from_anchor') ?? 'true') == 'true';
+    final draftLength = math.min(
+      config.draftTokenMax,
+      anchorFirst ? blockSize : blockSize - 1,
+    );
+    final block = anchorFirst ? draftLength : draftLength + 1;
+    if (microBatch.size < block) {
+      throw _draftMicroBatchTooSmall(
+        microBatch,
+        'the $block-token draft block (draftTokenMax ${config.draftTokenMax} '
+        'within dflash.block_size $blockSize'
+        '${anchorFirst ? ', anchor-first DSpark' : ', plus the anchor token'}) '
+        '$_draftBlockRequirement',
+      );
+    }
+  }
+
+  /// Validates a block draft's micro-batch, set or inherited from target
+  /// context parameters, against the block the draft model's metadata gives
+  /// for unit tests.
+  void debugValidateDraftBlockMicroBatchForTesting(
+    GenerationParams params, {
+    Map<String, String> draftMetadata = const {},
+    int targetBatchSize = 2048,
+    int targetMicroBatchSize = 512,
+  }) {
+    final config = _resolveLlamaCppSpeculativeConfig(
+      params,
+      hasMediaParts: false,
+    );
+    if (config == null) {
+      return;
+    }
+    _validateDraftBlockFitsMicroBatch(
+      config,
+      _resolveDraftMicroBatch(
+        config,
+        targetBatchSize: targetBatchSize,
+        targetMicroBatchSize: targetMicroBatchSize,
+      ),
+      (key) => draftMetadata[key],
+    );
+  }
+
+  /// Validates a speculative draft micro-batch size against a context's
+  /// resolved logical batch and context sizes for unit tests.
+  void debugValidateDraftMicroBatchSizeForTesting(
+    GenerationParams params, {
+    required int batchSize,
+    required int contextSize,
+  }) {
+    _validateDraftMicroBatchSizeFitsContext(
+      _resolveLlamaCppSpeculativeConfig(params, hasMediaParts: false),
+      batchSize: batchSize,
+      contextSize: contextSize,
+    );
   }
 
   /// Validates bundled MTP model-loading requirements for unit tests.
@@ -4169,10 +4618,55 @@ class LlamaCppService {
     return <String, Object?>{
       'typeNames': config?.typeNames,
       'draftTokenMax': config?.draftTokenMax,
+      'draftMicroBatchSize': config?.draftMicroBatchSize,
       'ngramSizeN': config?.ngramSizeN,
       'ngramSizeM': config?.ngramSizeM,
       'ngramTokenMax': config?.ngramTokenMax,
+      'hasDraftContextStrategy': config?.hasDraftContextStrategy,
+      'requiresExternalDraftModel': config?.requiresExternalDraftModel,
+      'usesMtp': config?.usesMtp,
+      'suppressDraftProcessLogits': config?.suppressDraftProcessLogits,
     };
+  }
+
+  /// Throws the native speculative-session initialization error for tests.
+  Never debugThrowSpeculativeInitFailureForTesting(
+    GenerationParams params, {
+    bool hasMediaParts = false,
+  }) {
+    final config = _resolveLlamaCppSpeculativeConfig(
+      params,
+      hasMediaParts: hasMediaParts,
+    );
+    if (config == null) {
+      throw StateError('Speculative decoding must be enabled for this check.');
+    }
+    throw _speculativeInitFailure(config);
+  }
+
+  LlamaUnsupportedException _speculativeInitFailure(
+    _LlamaCppSpeculativeConfig config,
+  ) {
+    final strategyHint = config.usesDspark
+        ? 'DSpark requires leehack/llamadart-native@$_minimumDsparkNativeTag '
+              'or a newer ABI-compatible native build with DSpark '
+              'draft-context support. '
+        : '';
+    final draftHint = config.requiresExternalDraftModel
+        ? 'Verify that the external draft model is compatible with the target '
+              'model. '
+        : 'Verify that the selected strategy is compatible with this model. ';
+    return LlamaUnsupportedException(
+      'llama.cpp speculative decoding (${config.typeNames}) is not available '
+      'for this model/context. $strategyHint$draftHint'
+      'Use a native libllamadart build that includes the llama-common generic '
+      'speculative wrapper, and set ModelParams.speculativeRollbackTokenMax '
+      '>= the effective speculative draft length (draftTokenMax for '
+      'draft-model or ngram-cache strategies; ngramTokenMax when set for '
+      'ngram-mod, otherwise draftTokenMax/default; ngramSizeM for '
+      'ngram-simple, ngram-map-k, or ngram-map-k4v) when the target '
+      'architecture needs bounded rollback snapshots.',
+    );
   }
 
   ({int lastN, double repeat, double frequency, double presence})
@@ -4219,6 +4713,7 @@ class LlamaCppService {
         case SpeculativeDecodingStrategy.draftEagle3:
         case SpeculativeDecodingStrategy.mtp:
         case SpeculativeDecodingStrategy.draftDflash:
+        case SpeculativeDecodingStrategy.draftDspark:
           max = math.max(max, config.draftTokenMax ?? 3);
           break;
         case SpeculativeDecodingStrategy.ngramSimple:
@@ -4247,15 +4742,67 @@ class LlamaCppService {
   ///
   /// Returns a [Stream] of token bytes.
   /// Supports multimodal input via [parts].
+  /// Calls [onLimit] before the stream closes when a token limit ended the
+  /// generation.
+  ///
+  /// The caller wrote [prompt]: a media placeholder in it stands for a part,
+  /// and parts without one go before the prompt.
   Stream<List<int>> generate(
     int contextHandle,
     String prompt,
     GenerationParams params,
     int cancelTokenAddress, {
     List<LlamaContentPart>? parts,
+    bool countPromptTokensInPenalties = false,
+    void Function(BackendGenerationLimit limit)? onLimit,
+  }) => _generate(
+    contextHandle,
+    prompt,
+    params,
+    cancelTokenAddress,
+    parts: parts,
+    countPromptTokensInPenalties: countPromptTokensInPenalties,
+    onLimit: onLimit,
+  );
+
+  /// Generates like [generate] from a [prompt] that a chat template rendered
+  /// with [mediaMarker] where each part was. A placeholder string elsewhere
+  /// in it is message text.
+  Stream<List<int>> generateChatPrompt(
+    int contextHandle,
+    String prompt,
+    GenerationParams params,
+    int cancelTokenAddress, {
+    required String mediaMarker,
+    List<LlamaContentPart>? parts,
+    bool countPromptTokensInPenalties = false,
+    void Function(BackendGenerationLimit limit)? onLimit,
+  }) => _generate(
+    contextHandle,
+    prompt,
+    params,
+    cancelTokenAddress,
+    parts: parts,
+    countPromptTokensInPenalties: countPromptTokensInPenalties,
+    chatMediaMarker: mediaMarker,
+    onLimit: onLimit,
+  );
+
+  Stream<List<int>> _generate(
+    int contextHandle,
+    String prompt,
+    GenerationParams params,
+    int cancelTokenAddress, {
+    List<LlamaContentPart>? parts,
+    bool countPromptTokensInPenalties = false,
+    String? chatMediaMarker,
+    void Function(BackendGenerationLimit limit)? onLimit,
   }) async* {
     var ctx = _contexts[contextHandle];
     if (ctx == null) throw Exception("Invalid context handle");
+    _ensureNoActiveTts(contextHandle, 'generate text');
+    ctx.performanceAvailable = false;
+    _ensureContextUsable(contextHandle, ctx);
     _generatingContexts.update(
       contextHandle,
       (count) => count + 1,
@@ -4279,6 +4826,40 @@ class LlamaCppService {
       final hasMediaParts =
           parts?.any((p) => p is LlamaImageContent || p is LlamaAudioContent) ??
           false;
+      final hasVideoParts =
+          parts?.any((part) => part is LlamaVideoContent) ?? false;
+      if (ctx.qwen35VulkanRestricted &&
+          (hasMediaParts ||
+              hasVideoParts ||
+              params.resolvedSpeculativeDecodingConfig != null)) {
+        throw LlamaUnsupportedException(_qwen35VulkanRestriction);
+      }
+      if (hasVideoParts) {
+        final mmHandle = _modelToMtmd[modelHandle];
+        if (mmHandle == null) {
+          throw LlamaUnsupportedException(
+            'Video input is unavailable because no multimodal projector is '
+            'loaded to inspect native runtime capability. Loading a compatible '
+            'projector enables inspection only; it does not enable public video '
+            'ingestion. Extract and send image frames instead.',
+          );
+        }
+        final nativeRuntimeSupportsVideo = supportsVideo(mmHandle);
+        if (!nativeRuntimeSupportsVideo) {
+          throw LlamaUnsupportedException(_videoUnreportedMessage());
+        }
+        throw LlamaUnsupportedException(
+          'The loaded native runtime reports mtmd video support, but the Dart '
+          'frame-ingestion and video-context lifetime contract is not wired. '
+          'Extract and send image frames instead.',
+        );
+      }
+      if (hasMediaParts) {
+        _checkLlamaCppMediaParts(
+          parts!,
+          projectorLoaded: _modelToMtmd[modelHandle] != null,
+        );
+      }
       final thinkingBudgetConfig = _resolveLlamaCppThinkingBudgetConfig(
         params,
         hasMediaParts: hasMediaParts,
@@ -4290,6 +4871,11 @@ class LlamaCppService {
       _validateMtpModelLoad(
         speculativeConfig,
         _modelLoadParams[modelHandle] ?? const ModelParams(),
+      );
+      _validateDraftMicroBatchSizeFitsContext(
+        speculativeConfig,
+        batchSize: modelParams.n_batch,
+        contextSize: modelParams.n_ctx,
       );
       final reasoningBudgetApi = thinkingBudgetConfig == null
           ? null
@@ -4303,16 +4889,11 @@ class LlamaCppService {
             speculativeConfig != null ||
             !params.reusePromptPrefix,
       );
-      ctx.resetLastPerf();
-      llama_perf_context_reset(ctx.pointer);
-      final existingSampler = _samplers[contextHandle];
-      if (existingSampler != null) {
-        llama_perf_sampler_reset(existingSampler);
-      }
+      _resetRequestPerformance(contextHandle, ctx);
 
       // 2. Prepare Resources
       final nCtx = llama_n_ctx(ctx.pointer);
-      final batch = _batches[contextHandle]!;
+      final batch = _batches[contextHandle]!.batch;
       tokensPtr = malloc<Int32>(nCtx);
       pieceBuf = malloc<Uint8>(256);
 
@@ -4327,6 +4908,17 @@ class LlamaCppService {
                 'speculative draft model',
                 loadMtp: speculativeConfig.usesMtp,
               );
+        if (draftModel != null) {
+          _validateDraftBlockFitsMicroBatch(
+            speculativeConfig,
+            _resolveDraftMicroBatch(
+              speculativeConfig,
+              targetBatchSize: modelParams.n_batch,
+              targetMicroBatchSize: modelParams.n_ubatch,
+            ),
+            (key) => _readModelMetadataValue(draftModel.pointer, key),
+          );
+        }
         speculativeSession = speculativeApi.initSession(
           targetModel: model.pointer,
           draftModel: draftModel?.pointer,
@@ -4334,26 +4926,24 @@ class LlamaCppService {
           contextParams: modelParams,
           config: speculativeConfig,
         );
+        IsolateShutdownReleases.current.hold(
+          ShutdownStage.session,
+          speculativeApi.freeAddress,
+          speculativeSession,
+        );
         if (speculativeSession == nullptr) {
-          final draftHint = speculativeConfig.requiresExternalDraftModel
-              ? 'Verify the draft model is compatible with the target model'
-              : 'Verify the selected strategy is compatible with this model';
-          throw UnsupportedError(
-            'llama.cpp speculative decoding (${speculativeConfig.typeNames}) '
-            'is not available for this model/context. $draftHint, use a '
-            'native libllamadart build that includes llama-common generic '
-            'speculative wrapper symbols, and set '
-            'ModelParams.speculativeRollbackTokenMax >= the effective '
-            'speculative draft length (draftTokenMax for draft-model or '
-            'ngram-cache strategies; ngramTokenMax when set for ngram-mod, '
-            'otherwise draftTokenMax/default; ngramSizeM for ngram-simple, '
-            'ngram-map-k, or ngram-map-k4v) when the target architecture '
-            'needs bounded rollback snapshots.',
+          _calls.failures.throwIfCaught(
+            'llama_dart_speculative_init',
+            LlamaInferenceException.new,
+            windowsFreeOnly: [ctx.pointer],
           );
+          throw _speculativeInitFailure(speculativeConfig);
         }
-        if (speculativeApi.needEmbd(speculativeSession)) {
-          llama_set_embeddings(ctx.pointer, true);
-        }
+        debugOnSpeculativeDraftContextForTesting?.call(
+          speculativeApi.getDraftContext(speculativeSession),
+        );
+        // Native initialization enables the outputs its selected strategies
+        // consume; the legacy need_embd query always returned false.
         llama_perf_context_reset(ctx.pointer);
       }
 
@@ -4367,7 +4957,11 @@ class LlamaCppService {
 
       // 3. Ingest Prompt (Text or Multimodal)
       final promptEvalStopwatch = Stopwatch()..start();
-      final initialTokens = _ingestPrompt(
+      final (
+        nPast: initialTokens,
+        :promptTokenCount,
+        :evaluatedPromptTokens,
+      ) = _ingestPrompt(
         contextHandle,
         modelHandle,
         ctx,
@@ -4378,6 +4972,7 @@ class LlamaCppService {
         tokensPtr,
         nCtx,
         modelParams,
+        chatMediaMarker: chatMediaMarker,
         allowTextPromptReuse:
             speculativeConfig == null &&
             !hasMediaParts &&
@@ -4385,11 +4980,12 @@ class LlamaCppService {
         speculativeSession: speculativeSession,
         speculativeApi: speculativeApi,
         speculativeConfig: speculativeConfig,
+        cancelToken: Pointer<Int8>.fromAddress(cancelTokenAddress),
       );
       promptEvalStopwatch.stop();
       ctx.lastPerfPromptEvalMs =
           promptEvalStopwatch.elapsedMicroseconds / 1000.0;
-      ctx.lastPerfPromptEvalTokens = initialTokens;
+      ctx.lastPerfPromptEvalTokens = evaluatedPromptTokens;
 
       _ensureLogitsAvailableAfterPromptEval(ctx.pointer);
       if (speculativeSession != nullptr &&
@@ -4397,8 +4993,9 @@ class LlamaCppService {
             speculativeSession,
             0,
             tokensPtr,
-            initialTokens,
+            promptTokenCount,
           )) {
+        _throwIfSpeculativeCaught('llama_dart_speculative_begin', ctx.pointer);
         throw Exception(
           "Failed to initialize llama.cpp speculative prompt state",
         );
@@ -4415,8 +5012,9 @@ class LlamaCppService {
         lazyGrammarConfig,
         thinkingBudgetConfig,
         reasoningBudgetApi,
-        initialTokens,
+        promptTokenCount,
         tokensPtr,
+        countPromptTokensInPenalties,
       );
 
       final preservedTokenIds = _resolvePreservedTokenIds(
@@ -4445,6 +5043,7 @@ class LlamaCppService {
           speculativeSession,
           speculativeApi!,
           tokensPtr,
+          onLimit,
         );
       } else {
         yield* _runInferenceLoop(
@@ -4457,16 +5056,17 @@ class LlamaCppService {
           nCtx,
           cancelTokenAddress,
           pieceBuf,
-          grammarPtr,
           preservedTokenIds,
           effectiveStopSequences,
+          onLimit,
         );
       }
     } finally {
       if (speculativeSession != nullptr) {
+        IsolateShutdownReleases.current.release(speculativeSession);
         speculativeApi?.free(speculativeSession);
       }
-      if (sampler != nullptr) llama_sampler_free(sampler);
+      if (sampler != nullptr) _freeSamplerChain(sampler);
       final remaining = (_generatingContexts[contextHandle] ?? 1) - 1;
       if (remaining <= 0) {
         _generatingContexts.remove(contextHandle);
@@ -4481,8 +5081,193 @@ class LlamaCppService {
     }
   }
 
+  /// Evaluates [prompt] as [generate] would, then returns the
+  /// log-probabilities of [candidates] and of the [topK] most probable tokens
+  /// at the next position, from a softmax over the raw logits.
+  ///
+  /// Throws [RangeError] for a candidate outside the vocabulary,
+  /// [LlamaStateException] while text generation or text-to-speech is active
+  /// on the context, and [LlamaUnsupportedException] for a model without a
+  /// decoder.
+  LlamaNextTokenScores scoreNextToken(
+    int contextHandle,
+    String prompt, {
+    required List<int> candidates,
+    required int topK,
+    required bool reusePromptPrefix,
+  }) {
+    var ctx = _contexts[contextHandle];
+    if (ctx == null) throw Exception('Invalid context handle');
+    _ensureNoActiveTts(contextHandle, 'score tokens');
+    ctx.performanceAvailable = false;
+    _ensureContextUsable(contextHandle, ctx);
+    if (_generatingContexts.containsKey(contextHandle)) {
+      throw LlamaStateException(
+        'Cannot score tokens while generation is active on context '
+        '$contextHandle',
+      );
+    }
+    final modelHandle = _contextToModel[contextHandle]!;
+    final model = _models[modelHandle]!;
+    if (!llama_model_has_decoder(model.pointer)) {
+      throw LlamaUnsupportedException(
+        'Next-token scoring needs a model with a decoder; the loaded model '
+        'has none.',
+      );
+    }
+    final vocabSize = model.vocabSize;
+    for (final token in candidates) {
+      RangeError.checkValueInInterval(token, 0, vocabSize - 1, 'candidates');
+    }
+    RangeError.checkValueInInterval(topK, 0, vocabSize, 'topK');
+
+    final vocab = llama_model_get_vocab(model.pointer);
+    final modelParams = _contextParams[contextHandle]!;
+    ctx = _resetContext(contextHandle, ctx, clearMemory: !reusePromptPrefix);
+    _resetRequestPerformance(contextHandle, ctx);
+    final nCtx = llama_n_ctx(ctx.pointer);
+    final tokensPtr = malloc<Int32>(nCtx);
+    var pieceCapacity = 256;
+    var pieceBuf = malloc<Uint8>(pieceCapacity);
+    try {
+      final promptTokens = _ingestTextPrompt(
+        _batches[contextHandle]!.batch,
+        vocab,
+        prompt,
+        tokensPtr,
+        nCtx,
+        ctx,
+        maxBatchTokens: modelParams.n_batch,
+        allowPromptReuse: reusePromptPrefix,
+        speculativeSession: nullptr,
+        speculativeApi: null,
+        speculativeConfig: null,
+        isCancelled: () => false,
+      );
+      if (promptTokens == 0) {
+        throw LlamaInferenceException('The prompt tokenized to no tokens.');
+      }
+      _ensureLogitsAvailableAfterPromptEval(ctx.pointer);
+      final logitsPtr = llama_get_logits_ith(ctx.pointer, -1);
+      if (logitsPtr == nullptr) {
+        throw LlamaInferenceException(
+          'Prompt evaluation produced no logits for the last token.',
+        );
+      }
+      final logits = logitsPtr.asTypedList(vocabSize);
+
+      var maxLogit = double.negativeInfinity;
+      for (var i = 0; i < vocabSize; i++) {
+        if (logits[i] > maxLogit) maxLogit = logits[i];
+      }
+      var sum = 0.0;
+      for (var i = 0; i < vocabSize; i++) {
+        sum += math.exp(logits[i] - maxLogit);
+      }
+      final logSum = maxLogit + math.log(sum);
+
+      LlamaTokenLogprob scored(int token) {
+        var n = _calls.tokenToPiece(
+          vocab,
+          token,
+          pieceBuf.cast(),
+          pieceCapacity,
+          0,
+          true,
+        );
+        if (n < 0) {
+          malloc.free(pieceBuf);
+          pieceCapacity = -n;
+          pieceBuf = malloc<Uint8>(pieceCapacity);
+          n = _calls.tokenToPiece(
+            vocab,
+            token,
+            pieceBuf.cast(),
+            pieceCapacity,
+            0,
+            true,
+          );
+        }
+        return LlamaTokenLogprob(
+          token: token,
+          bytes: n > 0 ? List<int>.of(pieceBuf.asTypedList(n)) : const [],
+          logprob: logits[token] - logSum,
+        );
+      }
+
+      return LlamaNextTokenScores(
+        candidates: [for (final token in candidates) scored(token)],
+        top: [for (final token in _topTokens(logits, topK)) scored(token)],
+        promptTokens: promptTokens,
+      );
+    } finally {
+      malloc.free(tokensPtr);
+      malloc.free(pieceBuf);
+    }
+  }
+
+  /// Ids of the [k] largest [logits], largest first; ties keep the lower id.
+  static List<int> _topTokens(Float32List logits, int k) {
+    if (k == 0) return const [];
+    final heap = <int>[];
+    bool before(int a, int b) =>
+        logits[a] < logits[b] || (logits[a] == logits[b] && a > b);
+    void siftDown(int i) {
+      while (true) {
+        final left = 2 * i + 1, right = left + 1;
+        var smallest = i;
+        if (left < heap.length && before(heap[left], heap[smallest])) {
+          smallest = left;
+        }
+        if (right < heap.length && before(heap[right], heap[smallest])) {
+          smallest = right;
+        }
+        if (smallest == i) return;
+        final t = heap[i];
+        heap[i] = heap[smallest];
+        heap[smallest] = t;
+        i = smallest;
+      }
+    }
+
+    for (var token = 0; token < logits.length; token++) {
+      if (heap.length < k) {
+        heap.add(token);
+        var i = heap.length - 1;
+        while (i > 0) {
+          final parent = (i - 1) ~/ 2;
+          if (!before(heap[i], heap[parent])) break;
+          final t = heap[i];
+          heap[i] = heap[parent];
+          heap[parent] = t;
+          i = parent;
+        }
+      } else if (before(heap[0], token)) {
+        heap[0] = token;
+        siftDown(0);
+      }
+    }
+    return heap..sort((a, b) => before(a, b) ? 1 : (before(b, a) ? -1 : 0));
+  }
+
   /// Generates a single embedding vector for [text].
   List<double> embed(int contextHandle, String text, {bool normalize = true}) {
+    _ensureNoActiveTts(contextHandle, 'embed');
+    _contexts[contextHandle]?.performanceAvailable = false;
+    return _embed(
+      contextHandle,
+      text,
+      normalize: normalize,
+      resetPerformance: true,
+    );
+  }
+
+  List<double> _embed(
+    int contextHandle,
+    String text, {
+    required bool normalize,
+    required bool resetPerformance,
+  }) {
     final ctx = _contexts[contextHandle];
     if (ctx == null) {
       throw Exception('Invalid context handle');
@@ -4502,19 +5287,28 @@ class LlamaCppService {
     if (contextParams == null) {
       throw Exception('Missing context parameters');
     }
+    _ensureContextUsable(contextHandle, ctx);
+    _checkQwen35VulkanEmbedding(ctx);
 
     final hasEncoder = llama_model_has_encoder(model.pointer);
     final hasDecoder = llama_model_has_decoder(model.pointer);
     if (hasEncoder && hasDecoder) {
-      throw Exception(
-        'Embedding extraction for encoder-decoder models is not supported',
-      );
+      throw LlamaUnsupportedException(_encoderDecoderEmbeddingsUnsupported);
     }
     final useEncoderPath = hasEncoder && !hasDecoder;
+    final poolingType = llama_pooling_type$1(ctx.pointer);
+    _checkEmbeddingPoolingType(poolingType);
 
     final vocab = llama_model_get_vocab(model.pointer);
     final nSeqCtx = llama_n_ctx_seq(ctx.pointer);
     final tokens = _tokenizeEmbeddingText(vocab, text, nSeqCtx);
+    final passTokenLimit = _embeddingPassTokenLimit(
+      modelHandle,
+      ctx.pointer,
+      useEncoderPath,
+      poolingType,
+    );
+    _checkEmbeddingPassTokenLimit(tokens.length, passTokenLimit);
     final configuredBatchSize = contextParams.n_batch > 0
         ? contextParams.n_batch
         : tokens.length;
@@ -4522,11 +5316,12 @@ class LlamaCppService {
       1,
       math.min(configuredBatchSize, tokens.length),
     );
-    final batch = llama_batch_init(batchCapacity, 0, 1);
     final embeddingSize = _resolveEmbeddingDimension(model.pointer);
+    final batch = _batchInit(batchCapacity, 0, 1);
 
     try {
-      llama_synchronize(ctx.pointer);
+      _calls.synchronize(ctx.pointer);
+      if (resetPerformance) _resetRequestPerformance(contextHandle, ctx);
       _clearContextMemory(ctx.pointer, strict: false);
       ctx.cachedPromptTokens = null;
       llama_set_embeddings(ctx.pointer, true);
@@ -4547,16 +5342,15 @@ class LlamaCppService {
         }
 
         final status = useEncoderPath
-            ? llama_encode(ctx.pointer, batch)
-            : llama_decode(ctx.pointer, batch);
+            ? _calls.encode(ctx.pointer, batch)
+            : _calls.decode(ctx.pointer, batch);
         if (status != 0) {
-          throw Exception('Embedding forward pass failed');
+          throw LlamaInferenceException('Embedding forward pass failed');
         }
 
         decodedTokens += chunkTokenCount;
       }
 
-      final poolingType = llama_pooling_type$1(ctx.pointer);
       Pointer<Float> embeddingPtr;
       if (poolingType == llama_pooling_type.LLAMA_POOLING_TYPE_NONE) {
         embeddingPtr = llama_get_embeddings_ith(
@@ -4574,7 +5368,7 @@ class LlamaCppService {
       }
 
       if (embeddingPtr == nullptr) {
-        throw Exception('Embedding output is unavailable');
+        throw LlamaInferenceException('Embedding output is unavailable');
       }
 
       final vector = List<double>.from(
@@ -4589,7 +5383,7 @@ class LlamaCppService {
       return _normalizeEmbeddingVector(vector);
     } finally {
       llama_set_embeddings(ctx.pointer, false);
-      llama_batch_free(batch);
+      _batchFree(batch);
     }
   }
 
@@ -4603,7 +5397,9 @@ class LlamaCppService {
       return const <List<double>>[];
     }
 
+    _ensureNoActiveTts(contextHandle, 'embed');
     final ctx = _contexts[contextHandle];
+    ctx?.performanceAvailable = false;
     if (ctx == null) {
       throw Exception('Invalid context handle');
     }
@@ -4622,39 +5418,61 @@ class LlamaCppService {
     if (contextParams == null) {
       throw Exception('Missing context parameters');
     }
+    _ensureContextUsable(contextHandle, ctx);
+    _checkQwen35VulkanEmbedding(ctx);
 
     final hasEncoder = llama_model_has_encoder(model.pointer);
     final hasDecoder = llama_model_has_decoder(model.pointer);
     if (hasEncoder && hasDecoder) {
-      throw Exception(
-        'Embedding extraction for encoder-decoder models is not supported',
-      );
+      throw LlamaUnsupportedException(_encoderDecoderEmbeddingsUnsupported);
     }
     final useEncoderPath = hasEncoder && !hasDecoder;
 
     final poolingType = llama_pooling_type$1(ctx.pointer);
+    _checkEmbeddingPoolingType(poolingType);
     final maxParallelSequences = llama_n_seq_max(ctx.pointer);
-    if (poolingType == llama_pooling_type.LLAMA_POOLING_TYPE_NONE ||
-        maxParallelSequences <= 1) {
-      final fallbackVectors = <List<double>>[];
-      for (final text in texts) {
-        fallbackVectors.add(embed(contextHandle, text, normalize: normalize));
-      }
-      return fallbackVectors;
-    }
-
     final vocab = llama_model_get_vocab(model.pointer);
     final nSeqCtx = llama_n_ctx_seq(ctx.pointer);
     final configuredBatchSize = contextParams.n_batch > 0
         ? contextParams.n_batch
         : llama_n_ctx(ctx.pointer);
-    final batchCapacity = math.max(1, configuredBatchSize);
+    final passTokenLimit = _embeddingPassTokenLimit(
+      modelHandle,
+      ctx.pointer,
+      useEncoderPath,
+      poolingType,
+    );
+    final batchCapacity = math.max(
+      1,
+      passTokenLimit == null
+          ? configuredBatchSize
+          : math.min(configuredBatchSize, passTokenLimit),
+    );
     final embeddingSize = _resolveEmbeddingDimension(model.pointer);
 
     final tokenizedInputs = <List<int>>[];
     for (final text in texts) {
       final tokens = _tokenizeEmbeddingText(vocab, text, nSeqCtx);
+      _checkEmbeddingPassTokenLimit(tokens.length, passTokenLimit);
       tokenizedInputs.add(tokens);
+    }
+
+    _resetRequestPerformance(contextHandle, ctx);
+
+    if (poolingType == llama_pooling_type.LLAMA_POOLING_TYPE_NONE ||
+        maxParallelSequences <= 1) {
+      final fallbackVectors = <List<double>>[];
+      for (final text in texts) {
+        fallbackVectors.add(
+          _embed(
+            contextHandle,
+            text,
+            normalize: normalize,
+            resetPerformance: false,
+          ),
+        );
+      }
+      return fallbackVectors;
     }
 
     final vectors = List<List<double>?>.filled(texts.length, null);
@@ -4664,10 +5482,11 @@ class LlamaCppService {
       final currentTokenCount = tokenizedInputs[index].length;
 
       if (currentTokenCount > batchCapacity) {
-        vectors[index] = embed(
+        vectors[index] = _embed(
           contextHandle,
           texts[index],
           normalize: normalize,
+          resetPerformance: false,
         );
         index += 1;
         continue;
@@ -4692,19 +5511,20 @@ class LlamaCppService {
       }
 
       if (groupStart == index) {
-        vectors[index] = embed(
+        vectors[index] = _embed(
           contextHandle,
           texts[index],
           normalize: normalize,
+          resetPerformance: false,
         );
         index += 1;
         continue;
       }
 
       final groupSize = index - groupStart;
-      final batch = llama_batch_init(groupTokenCount, 0, groupSize);
+      final batch = _batchInit(groupTokenCount, 0, groupSize);
       try {
-        llama_synchronize(ctx.pointer);
+        _calls.synchronize(ctx.pointer);
         _clearContextMemory(ctx.pointer, strict: false);
         ctx.cachedPromptTokens = null;
         llama_set_embeddings(ctx.pointer, true);
@@ -4725,10 +5545,10 @@ class LlamaCppService {
         }
 
         final status = useEncoderPath
-            ? llama_encode(ctx.pointer, batch)
-            : llama_decode(ctx.pointer, batch);
+            ? _calls.encode(ctx.pointer, batch)
+            : _calls.decode(ctx.pointer, batch);
         if (status != 0) {
-          throw Exception('Batch embedding forward pass failed');
+          throw LlamaInferenceException('Batch embedding forward pass failed');
         }
 
         for (int sequence = 0; sequence < groupSize; sequence++) {
@@ -4737,7 +5557,9 @@ class LlamaCppService {
             embeddingPtr = llama_get_embeddings(ctx.pointer);
           }
           if (embeddingPtr == nullptr) {
-            throw Exception('Batch embedding output is unavailable');
+            throw LlamaInferenceException(
+              'Batch embedding output is unavailable',
+            );
           }
 
           final vector = List<double>.from(
@@ -4750,49 +5572,71 @@ class LlamaCppService {
         }
       } finally {
         llama_set_embeddings(ctx.pointer, false);
-        llama_batch_free(batch);
+        _batchFree(batch);
       }
     }
 
     return vectors.map((vector) => vector!).toList(growable: false);
   }
 
+  bool _embeddingAddsSpecial(Pointer<llama_vocab> vocab, String text) =>
+      !_promptStartsWithBosToken(vocab, text);
+
   List<int> _tokenizeEmbeddingText(
     Pointer<llama_vocab> vocab,
     String text,
     int maxTokens,
   ) {
-    final shouldAddSpecial = !_promptStartsWithBosToken(vocab, text);
-    final textPtr = text.toNativeUtf8();
+    final shouldAddSpecial = _embeddingAddsSpecial(vocab, text);
+    final (textPtr, textLength) = _toNativeUtf8WithLength(text);
 
-    final requiredTokenCount = -llama_tokenize(
-      vocab,
-      textPtr.cast(),
-      textPtr.length,
-      nullptr,
-      0,
-      shouldAddSpecial,
-      true,
-    );
-
-    if (requiredTokenCount <= 0 || requiredTokenCount > maxTokens) {
+    final int requiredTokenCount;
+    try {
+      requiredTokenCount = -_calls.tokenize(
+        vocab,
+        textPtr.cast(),
+        textLength,
+        nullptr,
+        0,
+        shouldAddSpecial,
+        true,
+      );
+    } catch (_) {
       malloc.free(textPtr);
-      throw Exception('Failed to tokenize embedding input');
+      rethrow;
+    }
+
+    if (requiredTokenCount <= 0) {
+      malloc.free(textPtr);
+      throw LlamaInferenceException(
+        'Failed to tokenize embedding input: it produced no tokens.',
+      );
+    }
+    if (requiredTokenCount > maxTokens) {
+      malloc.free(textPtr);
+      throw LlamaEmbeddingInputTooLongException(
+        'The embedding input has $requiredTokenCount tokens, but the context '
+        'holds at most $maxTokens tokens per sequence. Shorten the input or '
+        'raise ModelParams.contextSize; with ModelParams.kvUnified false, the '
+        'context is split across ModelParams.maxParallelSequences.',
+        maxInputTokens: maxTokens,
+        actualTokens: requiredTokenCount,
+      );
     }
 
     final tokensPtr = malloc<Int32>(requiredTokenCount);
     try {
-      final actualTokenCount = llama_tokenize(
+      final actualTokenCount = _calls.tokenize(
         vocab,
         textPtr.cast(),
-        textPtr.length,
+        textLength,
         tokensPtr,
         requiredTokenCount,
         shouldAddSpecial,
         true,
       );
       if (actualTokenCount <= 0 || actualTokenCount > maxTokens) {
-        throw Exception('Failed to encode embedding input');
+        throw LlamaInferenceException('Failed to encode embedding input');
       }
 
       return List<int>.from(tokensPtr.asTypedList(actualTokenCount));
@@ -4802,13 +5646,98 @@ class LlamaCppService {
     }
   }
 
+  void _checkEmbeddingPoolingType(llama_pooling_type poolingType) {
+    if (poolingType == llama_pooling_type.LLAMA_POOLING_TYPE_RANK) {
+      throw LlamaUnsupportedException(
+        'Embeddings are not supported for rank-pooled models such as '
+        'rerankers: llama.cpp returns classifier scores, not an embedding, '
+        'for pooling type RANK. Reranking is tracked in '
+        'https://github.com/leehack/llamadart/issues/323.',
+      );
+    }
+  }
+
+  int? _embeddingPassTokenLimit(
+    int modelHandle,
+    Pointer<llama_context> contextPointer,
+    bool useEncoderPath,
+    llama_pooling_type poolingType,
+  ) {
+    // MEAN/CLS pooling overwrites the sequence embedding per micro-batch;
+    // non-causal attention needs all prompt tokens in the same forward pass.
+    if (useEncoderPath ||
+        llama_get_memory(contextPointer) == nullptr ||
+        poolingType == llama_pooling_type.LLAMA_POOLING_TYPE_MEAN ||
+        poolingType == llama_pooling_type.LLAMA_POOLING_TYPE_CLS ||
+        !_embeddingModelHasCausalAttention(modelHandle)) {
+      return llama_n_ubatch(contextPointer);
+    }
+    return null;
+  }
+
+  bool _embeddingModelHasCausalAttention(
+    int modelHandle, {
+    bool Function(Pointer<llama_model>)? diffusionProbe,
+  }) {
+    try {
+      if ((diffusionProbe ?? llama_model_is_diffusion)(
+        _models[modelHandle]!.pointer,
+      )) {
+        return false;
+      }
+    } on Object {
+      throw LlamaUnsupportedException(
+        'Cannot verify causal attention for native embeddings: the runtime '
+        'does not expose the required llama_model_is_diffusion probe. '
+        'Use the pinned native runtime or a compatible version before decoding.',
+      );
+    }
+    final metadata = getMetadata(modelHandle);
+    final architecture = metadata['general.architecture'];
+    if (architecture == null || architecture.isEmpty) {
+      throw LlamaUnsupportedException(
+        'Cannot verify causal attention for native embeddings: the runtime '
+        'did not report general.architecture model metadata. Use a runtime '
+        'that exposes embedding model metadata before decoding.',
+      );
+    }
+    // llama.cpp v0.6.0 (d8123504) forces this non-diffusion architecture's
+    // attention to non-causal after loading the optional metadata override.
+    if (architecture == 'gemma-embedding') return false;
+    final causal = metadata['$architecture.attention.causal'];
+    // The other models in the pinned loader default causal_attn to true when
+    // this optional boolean key is absent. Context creation keeps that value.
+    return switch (causal) {
+      null || 'true' => true,
+      'false' => false,
+      _ => throw LlamaUnsupportedException(
+        'Cannot verify causal attention for native embeddings: the runtime '
+        'reported invalid attention.causal model metadata. Use a runtime '
+        'that reports a boolean attention mode before decoding.',
+      ),
+    };
+  }
+
+  void _checkEmbeddingPassTokenLimit(int tokenCount, int? passTokenLimit) {
+    if (passTokenLimit != null && tokenCount > passTokenLimit) {
+      throw LlamaEmbeddingInputTooLongException(
+        'The embedding input has $tokenCount tokens, but this model '
+        'embeds its input in one pass of at most $passTokenLimit tokens '
+        '(n_ubatch). Shorten the input or raise ModelParams.microBatchSize '
+        'and ModelParams.batchSize.',
+        maxInputTokens: passTokenLimit,
+        actualTokens: tokenCount,
+      );
+    }
+  }
+
   int _resolveEmbeddingDimension(Pointer<llama_model> modelPointer) {
     var embeddingSize = llama_model_n_embd_out(modelPointer);
     if (embeddingSize <= 0) {
       embeddingSize = llama_model_n_embd(modelPointer);
     }
     if (embeddingSize <= 0) {
-      throw Exception('Failed to resolve embedding dimension');
+      throw LlamaInferenceException('Failed to resolve embedding dimension');
     }
     return embeddingSize;
   }
@@ -4831,13 +5760,22 @@ class LlamaCppService {
     return normalized;
   }
 
+  // Native counters and Dart timing fallbacks must share a request boundary.
+  void _resetRequestPerformance(int contextHandle, _LlamaContextWrapper ctx) {
+    ctx.resetLastPerf();
+    llama_perf_context_reset(ctx.pointer);
+    final sampler = _samplers[contextHandle];
+    if (sampler != null) llama_perf_sampler_reset(sampler);
+    ctx.performanceAvailable = true;
+  }
+
   /// Helper: Resets the context state to be ready for new generation.
   _LlamaContextWrapper _resetContext(
     int contextHandle,
     _LlamaContextWrapper ctx, {
     required bool clearMemory,
   }) {
-    llama_synchronize(ctx.pointer);
+    _calls.synchronize(ctx.pointer);
 
     if (clearMemory) {
       _clearContextMemory(ctx.pointer);
@@ -4860,11 +5798,17 @@ class LlamaCppService {
       return;
     }
 
-    llama_memory_clear(memory, true);
+    _calls.memoryClear(contextPointer, memory, true);
   }
 
-  /// Helper: Ingests the prompt (text or multimodal) and returns initial token count.
-  int _ingestPrompt(
+  /// Ingests the prompt (text or multimodal).
+  ///
+  /// Returns the next KV position, how many prompt ids were written to
+  /// `tokensPtr`, and how many prompt tokens were evaluated, media tokens
+  /// included. Multimodal ingestion writes no ids, and its positions can be
+  /// fewer than its tokens. A prompt cancelled through `cancelToken` reports
+  /// only the tokens decoded before the cancel.
+  ({int nPast, int promptTokenCount, int evaluatedPromptTokens}) _ingestPrompt(
     int contextHandle,
     int modelHandle,
     _LlamaContextWrapper ctx,
@@ -4875,10 +5819,12 @@ class LlamaCppService {
     Pointer<Int32> tokensPtr,
     int nCtx,
     llama_context_params modelParams, {
+    required String? chatMediaMarker,
     required bool allowTextPromptReuse,
     required Pointer<llama_dart_speculative> speculativeSession,
     required _SpeculativeApi? speculativeApi,
     required _LlamaCppSpeculativeConfig? speculativeConfig,
+    required Pointer<Int8> cancelToken,
   }) {
     final mediaParts =
         parts
@@ -4889,16 +5835,23 @@ class LlamaCppService {
     final mmCtx = mmHandle != null ? _mtmdContexts[mmHandle] : null;
 
     if (mediaParts.isNotEmpty && mmCtx != null) {
-      return _ingestMultimodalPrompt(
+      final (:nPast, :evaluatedTokens) = _ingestMultimodalPrompt(
         mmCtx,
         ctx,
         vocab,
         prompt,
         mediaParts,
         modelParams,
+        cancelToken,
+        chatMediaMarker: chatMediaMarker,
+      );
+      return (
+        nPast: nPast,
+        promptTokenCount: 0,
+        evaluatedPromptTokens: evaluatedTokens,
       );
     } else {
-      return _ingestTextPrompt(
+      final nTokens = _ingestTextPrompt(
         batch,
         vocab,
         prompt,
@@ -4910,79 +5863,115 @@ class LlamaCppService {
         speculativeSession: speculativeSession,
         speculativeApi: speculativeApi,
         speculativeConfig: speculativeConfig,
+        isCancelled: () => cancelToken.value == 1,
+      );
+      return (
+        nPast: nTokens,
+        promptTokenCount: nTokens,
+        evaluatedPromptTokens: nTokens,
       );
     }
   }
 
-  int _ingestMultimodalPrompt(
+  /// Without chunk-level mtmd functions, [evaluatedTokens] falls back to the
+  /// positions, as no token count is reachable.
+  ({int nPast, int evaluatedTokens}) _ingestMultimodalPrompt(
     Pointer<mtmd_context> mmCtx,
     _LlamaContextWrapper ctx,
     Pointer<llama_vocab> vocab,
     String prompt,
     List<LlamaContentPart> mediaParts,
     llama_context_params modelParams,
-  ) {
+    Pointer<Int8> cancelToken, {
+    required String? chatMediaMarker,
+    Allocator allocator = calloc,
+  }) {
+    _calls.failures.ensureUsable(mmCtx, 'This multimodal projector');
     int initialTokens = 0;
-    final bitmaps = malloc<Pointer<mtmd_bitmap>>(mediaParts.length);
-    final chunks = _mtmdInputChunksInit();
+    int? evaluatedTokens;
+    // Zeroed, so the cleanup of a part that failed skips the slots after it.
+    final bitmaps = allocator<Pointer<mtmd_bitmap>>(mediaParts.length);
+    Pointer<mtmd_input_chunks> chunks = nullptr;
     Pointer<mtmd_input_text> inputText = nullptr;
     Pointer<Utf8> promptPtr = nullptr;
 
     try {
+      chunks = _mtmdInputChunksInit();
       for (int i = 0; i < mediaParts.length; i++) {
         final p = mediaParts[i];
-        bitmaps[i] = nullptr;
         if (p is LlamaImageContent) {
           if (p.path != null) {
-            final pathPtr = p.path!.toNativeUtf8();
-            bitmaps[i] = _mtmdHelperBitmapInitFromFile(mmCtx, pathPtr.cast());
-            malloc.free(pathPtr);
+            final pathPtr = p.path!.toNativeUtf8(allocator: allocator);
+            try {
+              bitmaps[i] = _mtmdHelperBitmapInitFromFile(mmCtx, pathPtr.cast());
+            } finally {
+              allocator.free(pathPtr);
+            }
           } else if (p.bytes != null) {
-            final dataPtr = malloc<Uint8>(p.bytes!.length);
-            dataPtr.asTypedList(p.bytes!.length).setAll(0, p.bytes!);
-            bitmaps[i] = _mtmdHelperBitmapInitFromBuf(
-              mmCtx,
-              dataPtr.cast(),
-              p.bytes!.length,
-            );
-            malloc.free(dataPtr);
+            final dataPtr = allocator<Uint8>(p.bytes!.length);
+            try {
+              dataPtr.asTypedList(p.bytes!.length).setAll(0, p.bytes!);
+              bitmaps[i] = _mtmdHelperBitmapInitFromBuf(
+                mmCtx,
+                dataPtr.cast(),
+                p.bytes!.length,
+              );
+            } finally {
+              allocator.free(dataPtr);
+            }
           }
         } else if (p is LlamaAudioContent) {
           if (p.path != null) {
-            final pathPtr = p.path!.toNativeUtf8();
-            bitmaps[i] = _mtmdHelperBitmapInitFromFile(mmCtx, pathPtr.cast());
-            malloc.free(pathPtr);
+            final pathPtr = p.path!.toNativeUtf8(allocator: allocator);
+            try {
+              bitmaps[i] = _mtmdHelperBitmapInitFromFile(mmCtx, pathPtr.cast());
+            } finally {
+              allocator.free(pathPtr);
+            }
           } else if (p.bytes != null) {
-            final dataPtr = malloc<Uint8>(p.bytes!.length);
-            dataPtr.asTypedList(p.bytes!.length).setAll(0, p.bytes!);
-            bitmaps[i] = _mtmdHelperBitmapInitFromBuf(
-              mmCtx,
-              dataPtr.cast(),
-              p.bytes!.length,
-            );
-            malloc.free(dataPtr);
+            final dataPtr = allocator<Uint8>(p.bytes!.length);
+            try {
+              dataPtr.asTypedList(p.bytes!.length).setAll(0, p.bytes!);
+              bitmaps[i] = _mtmdHelperBitmapInitFromBuf(
+                mmCtx,
+                dataPtr.cast(),
+                p.bytes!.length,
+              );
+            } finally {
+              allocator.free(dataPtr);
+            }
           } else if (p.samples != null) {
-            final dataPtr = malloc<Float>(p.samples!.length);
-            dataPtr.asTypedList(p.samples!.length).setAll(0, p.samples!);
-            bitmaps[i] = _mtmdBitmapInitFromAudio(
-              p.samples!.length,
-              dataPtr.cast(),
-            );
-            malloc.free(dataPtr);
+            final dataPtr = allocator<Float>(p.samples!.length);
+            try {
+              dataPtr.asTypedList(p.samples!.length).setAll(0, p.samples!);
+              bitmaps[i] = _mtmdBitmapInitFromAudio(
+                p.samples!.length,
+                dataPtr.cast(),
+              );
+            } finally {
+              allocator.free(dataPtr);
+            }
           }
         }
 
         if (bitmaps[i] == nullptr) {
-          throw Exception("Failed to load media part $i");
+          _calls.failures.throwIfCaught(
+            'the mtmd bitmap constructor',
+            LlamaInferenceException.new,
+            windowsFreeOnly: [mmCtx],
+          );
+          throw _missingEncoderFor(mmCtx, [p]) ??
+              Exception("Failed to load media part $i");
         }
       }
 
-      inputText = malloc<mtmd_input_text>();
+      inputText = allocator<mtmd_input_text>();
       final normalizedPrompt = _normalizeMtmdPromptMarkers(
         prompt,
         mediaParts.length,
+        chatMediaMarker: chatMediaMarker,
       );
-      promptPtr = normalizedPrompt.toNativeUtf8();
+      promptPtr = normalizedPrompt.toNativeUtf8(allocator: allocator);
       inputText.ref.text = promptPtr.cast();
       inputText.ref.text_len = utf8.encode(normalizedPrompt).length;
 
@@ -5003,45 +5992,136 @@ class LlamaCppService {
       );
 
       if (res == 0) {
-        final newPast = malloc<llama_pos>();
+        final newPast = allocator<llama_pos>();
         try {
-          final evalResult = _mtmdHelperEvalChunks(
-            mmCtx,
-            ctx.pointer,
-            chunks,
-            0,
-            0,
-            modelParams.n_batch,
-            true,
-            newPast,
-          );
+          final unguardedChunkEvalApi = _mtmdPrimarySymbolsUnavailable
+              ? _resolveMtmdFallbackApi()?.chunkEval
+              : MtmdChunkEvalApi.primary;
+          final exitTeardown = _mtmdExitTeardown;
+          final chunkEvalApi = exitTeardown == null
+              ? unguardedChunkEvalApi
+              : unguardedChunkEvalApi?.withExitTeardown(exitTeardown);
+          final int evalResult;
+          MtmdChunkEvalFailure? chunkFailure;
+          if (chunkEvalApi == null) {
+            evalResult = _mtmdHelperEvalChunks(
+              mmCtx,
+              ctx.pointer,
+              chunks,
+              0,
+              0,
+              modelParams.n_batch,
+              true,
+              newPast,
+            );
+          } else {
+            _checkNonCausalMediaChunks(
+              chunkEvalApi,
+              mmCtx,
+              chunks,
+              batchTokens: modelParams.n_batch,
+              microBatchTokens: llama_n_ubatch(ctx.pointer),
+            );
+            chunkFailure = evalMtmdChunksUntilCancelled(
+              chunkEvalApi,
+              mmCtx,
+              ctx.pointer,
+              chunks,
+              modelParams.n_batch,
+              newPast,
+              cancelToken,
+              onChunkEvaluated: (tokens) =>
+                  evaluatedTokens = (evaluatedTokens ?? 0) + tokens,
+            );
+            evalResult = chunkFailure?.result ?? 0;
+            if (evalResult == _nativeStatusException) {
+              _calls.failures.throwIfCaught(
+                'the mtmd chunk evaluation ($chunkFailure)',
+                LlamaInferenceException.new,
+                freeOnly: [mmCtx, ctx.pointer],
+              );
+            }
+          }
           if (evalResult == 0) {
+            // The tracked mtmd evaluations wait for the backend, as the
+            // object calls' decode does; upstream libmtmd returns before an
+            // asynchronous one has finished.
+            if (exitTeardown == null) _calls.synchronize(ctx.pointer);
             initialTokens = newPast.value;
           } else {
             throw Exception(
-              'Multimodal prompt evaluation failed: $evalResult. '
+              'Multimodal prompt evaluation failed: $evalResult'
+              '${chunkFailure == null ? '' : ' ($chunkFailure)'}. '
               'The active context window may be too small for this image and conversation history.',
             );
           }
         } finally {
-          malloc.free(newPast);
+          allocator.free(newPast);
         }
       } else {
-        throw Exception("mtmd_tokenize failed: $res");
+        throw _missingEncoderFor(mmCtx, mediaParts) ??
+            Exception("mtmd_tokenize failed: $res");
       }
     } finally {
       // Free in finally so a tokenize/eval failure above does not leak the
       // prompt buffer or the input-text struct.
-      if (promptPtr != nullptr) malloc.free(promptPtr);
-      if (inputText != nullptr) malloc.free(inputText);
+      if (promptPtr != nullptr) allocator.free(promptPtr);
+      if (inputText != nullptr) allocator.free(inputText);
       for (int i = 0; i < mediaParts.length; i++) {
         if (bitmaps[i] != nullptr) _mtmdBitmapFree(bitmaps[i]);
       }
-      malloc.free(bitmaps);
-      _mtmdInputChunksFree(chunks);
+      allocator.free(bitmaps);
+      if (chunks != nullptr) _mtmdInputChunksFree(chunks);
     }
     ctx.cachedPromptTokens = null;
-    return initialTokens;
+    return (
+      nPast: initialTokens,
+      evaluatedTokens: evaluatedTokens ?? initialTokens,
+    );
+  }
+
+  /// Rejects a prompt whose non-causal media chunk llama.cpp would abort on.
+  ///
+  /// `mtmd_helper_decode_image_chunk` decodes such a chunk in pieces of
+  /// [batchTokens], the `n_batch` it is given, and `llama_context::decode`
+  /// aborts on a non-causal piece above [microBatchTokens]. With the two
+  /// equal the pieces pass, and the chunk is decoded in several non-causal
+  /// batches, which is logged.
+  void _checkNonCausalMediaChunks(
+    MtmdChunkEvalApi api,
+    Pointer<mtmd_context> mmCtx,
+    Pointer<mtmd_input_chunks> chunks, {
+    required int batchTokens,
+    required int microBatchTokens,
+  }) {
+    final chunk = findMtmdChunkAboveMicroBatch(
+      api,
+      mmCtx,
+      chunks,
+      microBatchTokens,
+    );
+    if (chunk == null) return;
+    final media = mtmdMediaChunkName(chunk.chunkType);
+    if (batchTokens <= microBatchTokens) {
+      LlamaLogger.instance.warning(
+        'llama_cpp_service: the $media input has ${chunk.tokenCount} tokens, '
+        'more than the context\'s micro-batch of $microBatchTokens tokens '
+        '(n_ubatch), so it is decoded in several non-causal batches, which '
+        'can reduce accuracy. Load the model with '
+        'ModelParams.microBatchSize and ModelParams.batchSize of at least '
+        '${chunk.tokenCount} to decode it in one.',
+      );
+      return;
+    }
+    throw LlamaInferenceException(
+      'The $media input has ${chunk.tokenCount} tokens, more than the '
+      'context\'s micro-batch of $microBatchTokens tokens (n_ubatch), and '
+      'this projector decodes it with non-causal attention, which llama.cpp '
+      'cannot split across micro-batches. Raise ModelParams.microBatchSize '
+      'to at least ${chunk.tokenCount}, and ModelParams.batchSize with it, '
+      'or pass a smaller $media if the projector sizes its output by the '
+      'input.',
+    );
   }
 
   void _ensureLogitsAvailableAfterPromptEval(Pointer<llama_context> ctx) {
@@ -5055,32 +6135,27 @@ class LlamaCppService {
     );
   }
 
-  String _normalizeMtmdPromptMarkers(String prompt, int mediaPartCount) {
+  String _normalizeMtmdPromptMarkers(
+    String prompt,
+    int mediaPartCount, {
+    required String? chatMediaMarker,
+  }) {
     final markerPtr = _mtmdDefaultMarker();
     final marker = markerPtr == nullptr
         ? '<__media__>'
         : markerPtr.cast<Utf8>().toDartString();
 
-    var normalized = prompt;
-    const directPlaceholders = [
-      '<image>',
-      '[IMG]',
-      '<|image|>',
-      '<|audio|>',
-      '<|video|>',
-      '<img>',
-      '<|img|>',
-      '<image_soft_token>',
-      '<audio_soft_token>',
-      '<video_soft_token>',
-    ];
-
-    for (final placeholder in directPlaceholders) {
-      normalized = normalized.replaceAll(placeholder, marker);
-    }
-
-    // Some VLM templates index image placeholders (e.g. <|image_1|>).
-    normalized = normalized.replaceAll(RegExp(r'<\|image_\d+\|>'), marker);
+    // The projector splits a prompt on its marker wherever it is. Its helper
+    // for speech output writes the default marker itself, so the projector
+    // cannot be given another one.
+    var normalized = chatMediaMarker == null
+        ? normalizeMediaPlaceholders(prompt, marker: marker)
+        : chatPromptForMarkerRuntime(
+            prompt,
+            chatMarker: chatMediaMarker,
+            marker: marker,
+            runtimePlaceholders: marker,
+          );
 
     if (mediaPartCount <= 0) {
       return normalized;
@@ -5152,19 +6227,24 @@ class LlamaCppService {
     required Pointer<llama_dart_speculative> speculativeSession,
     required _SpeculativeApi? speculativeApi,
     required _LlamaCppSpeculativeConfig? speculativeConfig,
+    required bool Function() isCancelled,
   }) {
-    final promptPtr = prompt.toNativeUtf8();
+    final (promptPtr, promptLength) = _toNativeUtf8WithLength(prompt);
     final shouldAddSpecial = !_promptStartsWithBosToken(vocab, prompt);
-    final nTokens = llama_tokenize(
-      vocab,
-      promptPtr.cast(),
-      promptPtr.length,
-      tokensPtr,
-      nCtx,
-      shouldAddSpecial,
-      true,
-    );
-    malloc.free(promptPtr);
+    final int nTokens;
+    try {
+      nTokens = _calls.tokenize(
+        vocab,
+        promptPtr.cast(),
+        promptLength,
+        tokensPtr,
+        nCtx,
+        shouldAddSpecial,
+        true,
+      );
+    } finally {
+      malloc.free(promptPtr);
+    }
 
     if (nTokens < 0 || nTokens > nCtx) {
       throw Exception("Tokenization failed or prompt too long");
@@ -5181,6 +6261,7 @@ class LlamaCppService {
         speculativeSession: speculativeSession,
         speculativeApi: speculativeApi,
         speculativeConfig: speculativeConfig,
+        isCancelled: isCancelled,
       );
     }
 
@@ -5196,6 +6277,7 @@ class LlamaCppService {
         speculativeSession: speculativeSession,
         speculativeApi: speculativeApi,
         speculativeConfig: speculativeConfig,
+        isCancelled: isCancelled,
       );
     }
 
@@ -5224,6 +6306,7 @@ class LlamaCppService {
         speculativeSession: speculativeSession,
         speculativeApi: speculativeApi,
         speculativeConfig: speculativeConfig,
+        isCancelled: isCancelled,
       );
     }
 
@@ -5239,6 +6322,7 @@ class LlamaCppService {
         speculativeSession: speculativeSession,
         speculativeApi: speculativeApi,
         speculativeConfig: speculativeConfig,
+        isCancelled: isCancelled,
       );
     }
 
@@ -5246,6 +6330,8 @@ class LlamaCppService {
 
     final maxSeqPos = llama_memory_seq_pos_max(memory, 0);
     final removeTo = maxSeqPos >= decodeStart ? maxSeqPos + 1 : decodeStart;
+    ctx.cachedPromptTokens = null;
+    ctx.kvFromStateLoad = false;
     final removedTail = llama_memory_seq_rm(memory, 0, decodeStart, removeTo);
     if (!removedTail) {
       return _decodeAndCacheFullPrompt(
@@ -5258,29 +6344,34 @@ class LlamaCppService {
         speculativeSession: speculativeSession,
         speculativeApi: speculativeApi,
         speculativeConfig: speculativeConfig,
+        isCancelled: isCancelled,
       );
     }
 
+    ctx.lastPerfCachedPromptTokens = decodeStart;
     final suffixTokenCount = nTokens - decodeStart;
-    _decodePromptSegment(
-      batch,
-      tokensPtr,
-      ctx,
-      startTokenIndex: decodeStart,
-      tokenCount: suffixTokenCount,
-      maxBatchTokens: maxBatchTokens,
-      outputAllLogits: speculativeSession != nullptr,
-      speculativeSession: speculativeSession,
-      speculativeApi: speculativeApi,
-      speculativeConfig: speculativeConfig,
-    );
+    final decodedEnd =
+        decodeStart +
+        _decodePromptSegment(
+          batch,
+          tokensPtr,
+          ctx,
+          startTokenIndex: decodeStart,
+          tokenCount: suffixTokenCount,
+          maxBatchTokens: maxBatchTokens,
+          outputAllLogits: speculativeSession != nullptr,
+          speculativeSession: speculativeSession,
+          speculativeApi: speculativeApi,
+          speculativeConfig: speculativeConfig,
+          isCancelled: isCancelled,
+        );
 
-    ctx.cachedPromptTokens = exactStateLoadMatch
+    ctx.cachedPromptTokens = exactStateLoadMatch && decodedEnd == nTokens
         ? cachedTokens
-        : _copyPromptTokens(tokensPtr, nTokens);
+        : _copyPromptTokens(tokensPtr, decodedEnd);
     ctx.kvFromStateLoad = false;
 
-    return nTokens;
+    return decodedEnd;
   }
 
   int _decodeAndCacheFullPrompt(
@@ -5294,9 +6385,12 @@ class LlamaCppService {
     Pointer<llama_dart_speculative>? speculativeSession,
     _SpeculativeApi? speculativeApi,
     _LlamaCppSpeculativeConfig? speculativeConfig,
+    required bool Function() isCancelled,
   }) {
+    ctx.cachedPromptTokens = null;
+    ctx.kvFromStateLoad = false;
     _clearContextMemory(ctx.pointer);
-    _decodePromptSegment(
+    final decoded = _decodePromptSegment(
       batch,
       tokensPtr,
       ctx,
@@ -5307,11 +6401,13 @@ class LlamaCppService {
       speculativeSession: speculativeSession,
       speculativeApi: speculativeApi,
       speculativeConfig: speculativeConfig,
+      isCancelled: isCancelled,
     );
-    ctx.cachedPromptTokens =
-        existingCachedTokens ?? _copyPromptTokens(tokensPtr, nTokens);
+    ctx.cachedPromptTokens = decoded == nTokens && existingCachedTokens != null
+        ? existingCachedTokens
+        : _copyPromptTokens(tokensPtr, decoded);
     ctx.kvFromStateLoad = false;
-    return nTokens;
+    return decoded;
   }
 
   List<int> _copyPromptTokens(Pointer<Int32> tokensPtr, int tokenCount) {
@@ -5321,7 +6417,16 @@ class LlamaCppService {
     return List<int>.from(tokensPtr.asTypedList(tokenCount), growable: false);
   }
 
-  void _decodePromptSegment(
+  /// Decodes [tokenCount] prompt tokens from [startTokenIndex] and returns
+  /// how many were decoded before [isCancelled] reported a cancel.
+  ///
+  /// [isCancelled] is read before each `llama_decode` call. Without a
+  /// speculative session, each [maxBatchTokens] chunk is decoded in calls of
+  /// at most `n_ubatch` tokens, the size llama.cpp splits a larger call into.
+  /// A speculative session processes each call's batch, so it gets each chunk
+  /// in one call. Either way a call takes at most the context's
+  /// `promptMicroBatchLimit` tokens when it has one.
+  int _decodePromptSegment(
     llama_batch batch,
     Pointer<Int32> tokensPtr,
     _LlamaContextWrapper ctx, {
@@ -5332,21 +6437,37 @@ class LlamaCppService {
     Pointer<llama_dart_speculative>? speculativeSession,
     _SpeculativeApi? speculativeApi,
     _LlamaCppSpeculativeConfig? speculativeConfig,
+    required bool Function() isCancelled,
   }) {
     if (tokenCount <= 0) {
-      return;
+      return 0;
     }
 
     final effectiveBatchTokens = maxBatchTokens > 0
         ? maxBatchTokens
         : tokenCount;
+    final hasSpeculativeSession =
+        speculativeSession != null && speculativeSession != nullptr;
+    final microBatchLimit = ctx.promptMicroBatchLimit;
+    final uncappedCallTokens = hasSpeculativeSession
+        ? effectiveBatchTokens
+        : llama_n_ubatch(ctx.pointer);
+    final callTokens = microBatchLimit == null
+        ? uncappedCallTokens
+        : math.min(uncappedCallTokens, microBatchLimit);
     var decoded = 0;
 
     while (decoded < tokenCount) {
-      final remaining = tokenCount - decoded;
-      final chunkTokenCount = remaining > effectiveBatchTokens
-          ? effectiveBatchTokens
-          : remaining;
+      if (isCancelled()) {
+        break;
+      }
+      final chunkTokenCount = math.min(
+        math.min(
+          callTokens,
+          effectiveBatchTokens - decoded % effectiveBatchTokens,
+        ),
+        tokenCount - decoded,
+      );
       batch.n_tokens = chunkTokenCount;
 
       for (int i = 0; i < chunkTokenCount; i++) {
@@ -5359,22 +6480,23 @@ class LlamaCppService {
         batch.logits[i] = outputAllLogits || isLastTokenInPrompt ? 1 : 0;
       }
 
-      if (llama_decode(ctx.pointer, batch) != 0) {
+      if (_calls.decode(ctx.pointer, batch) != 0) {
         throw Exception("Initial decode failed");
       }
-      if (speculativeSession != null &&
-          speculativeSession != nullptr &&
+      if (hasSpeculativeSession &&
           !_processSpeculativeBatch(
             speculativeApi!,
             speculativeSession,
             batch,
             speculativeConfig,
+            ctx.pointer,
           )) {
         throw Exception("Speculative prompt decode processing failed");
       }
 
       decoded += chunkTokenCount;
     }
+    return decoded;
   }
 
   bool _processSpeculativeBatch(
@@ -5382,12 +6504,30 @@ class LlamaCppService {
     Pointer<llama_dart_speculative> speculativeSession,
     llama_batch batch,
     _LlamaCppSpeculativeConfig? speculativeConfig,
+    Pointer<llama_context> context,
   ) {
-    return _withSuppressedBatchLogits(
+    final processed = _withSuppressedBatchLogits(
       batch.logits,
       batch.n_tokens,
       speculativeConfig?.suppressDraftProcessLogits == true,
       () => speculativeApi.processBatch(speculativeSession, batch),
+    );
+    if (!processed) {
+      _throwIfSpeculativeCaught(
+        'llama_dart_speculative_process_batch',
+        context,
+      );
+    }
+    return processed;
+  }
+
+  // Speculative state is built on the target context, so a call on it that
+  // caught an exception leaves that context free-only too.
+  void _throwIfSpeculativeCaught(String call, Pointer<llama_context> context) {
+    _calls.failures.throwIfCaught(
+      call,
+      LlamaInferenceException.new,
+      freeOnly: [context],
     );
   }
 
@@ -5426,6 +6566,18 @@ class LlamaCppService {
     return i;
   }
 
+  void _holdSamplerChain(Pointer<llama_sampler> chain) =>
+      IsolateShutdownReleases.current.hold(
+        ShutdownStage.session,
+        _samplerFreeAddress,
+        chain,
+      );
+
+  void _freeSamplerChain(Pointer<llama_sampler> chain) {
+    IsolateShutdownReleases.current.release(chain);
+    llama_sampler_free(chain);
+  }
+
   /// Helper: Initializes the sampler chain.
   Pointer<llama_sampler> _initializeSampler(
     GenerationParams params,
@@ -5437,12 +6589,14 @@ class LlamaCppService {
     _LazyGrammarConfig? lazyGrammarConfig,
     _LlamaCppThinkingBudgetConfig? thinkingBudgetConfig,
     _ReasoningBudgetApi? reasoningBudgetApi,
-    int initialTokens,
+    int promptTokenCount,
     Pointer<Int32> tokensPtr,
+    bool countPromptTokensInPenalties,
   ) {
     final sampler = llama_sampler_chain_init(
       llama_sampler_chain_default_params(),
     );
+    _holdSamplerChain(sampler);
 
     final penaltyConfig = _resolvePenaltySamplerConfig(params);
     final penaltiesSampler = llama_sampler_init_penalties(
@@ -5460,7 +6614,7 @@ class LlamaCppService {
         suppressedTokens,
       );
       if (suppressSampler == nullptr) {
-        llama_sampler_free(sampler);
+        _freeSamplerChain(sampler);
         throw LlamaInferenceException(
           'llama.cpp failed to initialize model-specific suppressed tokens.',
         );
@@ -5472,15 +6626,20 @@ class LlamaCppService {
     final useLazyGrammar = params.grammarLazy && lazyGrammarConfig != null;
     if (grammarPtr != nullptr) {
       if (useLazyGrammar) {
-        grammarSampler = llama_sampler_init_grammar_lazy_patterns(
-          vocab,
-          grammarPtr.cast(),
-          rootPtr.cast(),
-          lazyGrammarConfig.triggerPatterns,
-          lazyGrammarConfig.numTriggerPatterns,
-          lazyGrammarConfig.triggerTokens,
-          lazyGrammarConfig.numTriggerTokens,
-        );
+        try {
+          grammarSampler = _calls.samplerInitGrammarLazyPatterns(
+            vocab,
+            grammarPtr.cast(),
+            rootPtr.cast(),
+            lazyGrammarConfig.triggerPatterns,
+            lazyGrammarConfig.numTriggerPatterns,
+            lazyGrammarConfig.triggerTokens,
+            lazyGrammarConfig.numTriggerTokens,
+          );
+        } on LlamaException {
+          _freeSamplerChain(sampler);
+          rethrow;
+        }
       } else {
         grammarSampler = llama_sampler_init_grammar(
           vocab,
@@ -5490,7 +6649,7 @@ class LlamaCppService {
       }
     }
     if (grammarPtr != nullptr && grammarSampler == nullptr) {
-      llama_sampler_free(sampler);
+      _freeSamplerChain(sampler);
       throw LlamaInferenceException(
         'llama.cpp failed to initialize the requested grammar sampler.',
       );
@@ -5502,7 +6661,7 @@ class LlamaCppService {
         if (grammarSampler != nullptr) {
           llama_sampler_free(grammarSampler);
         }
-        llama_sampler_free(sampler);
+        _freeSamplerChain(sampler);
         throw StateError('Missing llama.cpp reasoning-budget sampler API.');
       }
       final budgetSampler = api.initSampler(
@@ -5511,13 +6670,18 @@ class LlamaCppService {
         pauseGrammarDuringReasoning: grammarSampler != nullptr,
         grammarSampler: grammarSampler,
         promptTokens: tokensPtr,
-        promptTokenCount: initialTokens,
+        promptTokenCount: promptTokenCount,
       );
       if (budgetSampler == nullptr) {
         if (grammarSampler != nullptr) {
           llama_sampler_free(grammarSampler);
         }
-        llama_sampler_free(sampler);
+        _freeSamplerChain(sampler);
+        _calls.failures.throwIfCaught(
+          'llama_dart_sampler_init_reasoning_budget',
+          LlamaInferenceException.new,
+          windowsFreeOnly: [vocab],
+        );
         throw LlamaUnsupportedException(
           'llama.cpp could not initialize thinking-budget control. Verify '
           'that the configured thinking tags are supported by the loaded '
@@ -5548,18 +6712,39 @@ class LlamaCppService {
       llama_sampler_chain_add(sampler, llama_sampler_init_dist(seed));
     }
 
-    if (grammarPtr == nullptr && tokensPtr != nullptr && initialTokens > 0) {
-      if (thinkingBudgetConfig != null) {
-        // The composite sampler derives its reasoning state from the complete
-        // prompt rather than accepting it token by token, but prompt tokens
-        // still need to seed the repeat-penalty sampler as before.
-        for (int i = 0; i < initialTokens; i++) {
-          llama_sampler_accept(penaltiesSampler, tokensPtr[i]);
+    if (countPromptTokensInPenalties &&
+        grammarPtr != nullptr &&
+        tokensPtr != nullptr &&
+        promptTokenCount > 0) {
+      try {
+        // The prompt must never reach the attached grammar or activate it.
+        for (int i = 0; i < promptTokenCount; i++) {
+          _calls.samplerAccept(penaltiesSampler, tokensPtr[i]);
         }
-      } else {
-        for (int i = 0; i < initialTokens; i++) {
-          llama_sampler_accept(sampler, tokensPtr[i]);
+      } on LlamaException {
+        _freeSamplerChain(sampler);
+        rethrow;
+      }
+    }
+
+    if (grammarPtr == nullptr && tokensPtr != nullptr && promptTokenCount > 0) {
+      try {
+        if (thinkingBudgetConfig != null) {
+          // The composite sampler derives its reasoning state from the
+          // complete prompt rather than accepting it token by token, but
+          // prompt tokens still need to seed the repeat-penalty sampler as
+          // before.
+          for (int i = 0; i < promptTokenCount; i++) {
+            _calls.samplerAccept(penaltiesSampler, tokensPtr[i]);
+          }
+        } else {
+          for (int i = 0; i < promptTokenCount; i++) {
+            _calls.samplerAccept(sampler, tokensPtr[i]);
+          }
         }
+      } on LlamaException {
+        _freeSamplerChain(sampler);
+        rethrow;
       }
     }
 
@@ -5577,33 +6762,43 @@ class LlamaCppService {
     int nCtx,
     int cancelTokenAddress,
     Pointer<Uint8> pieceBuf,
-    Pointer<Utf8> grammarPtr,
     Set<int> preservedTokenIds,
     List<String> stopSequences,
+    void Function(BackendGenerationLimit limit)? onLimit,
   ) async* {
     final cancelToken = Pointer<Int8>.fromAddress(cancelTokenAddress);
     int currentPos = startPos;
-    final accumulatedBytes = <int>[];
+    final stopBuffer = StopSequenceBuffer(stopSequences);
+    BackendGenerationLimit? limit = BackendGenerationLimit.maxTokens;
     final evalStopwatch = Stopwatch()..start();
     var sampleMicros = 0;
     var evalMicros = 0;
     var generatedTokens = 0;
 
     for (int i = 0; i < params.maxTokens; i++) {
-      if (cancelToken.value == 1) break;
-      if (currentPos >= nCtx) break;
+      if (cancelToken.value == 1) {
+        limit = null;
+        break;
+      }
+      if (currentPos >= nCtx) {
+        limit = BackendGenerationLimit.contextSize;
+        break;
+      }
 
       final sampleTick = Stopwatch()..start();
-      final selectedToken = llama_sampler_sample(sampler, ctx.pointer, -1);
+      final selectedToken = _calls.samplerSample(sampler, ctx.pointer, -1);
       sampleTick.stop();
       sampleMicros += sampleTick.elapsedMicroseconds;
       // Never pass an invalid sampled token into get_rows / token_to_piece.
       // This applies only to sampled text tokens, not multimodal embeddings.
       validateSampledToken(selectedToken, llama_vocab_n_tokens(vocab));
-      if (llama_vocab_is_eog(vocab, selectedToken)) break;
+      if (llama_vocab_is_eog(vocab, selectedToken)) {
+        limit = null;
+        break;
+      }
 
       final pieceTick = Stopwatch()..start();
-      final n = llama_token_to_piece(
+      final n = _calls.tokenToPiece(
         vocab,
         selectedToken,
         pieceBuf.cast(),
@@ -5613,19 +6808,15 @@ class LlamaCppService {
       );
       pieceTick.stop();
       sampleMicros += pieceTick.elapsedMicroseconds;
+      generatedTokens++;
 
       if (n > 0) {
         final bytes = pieceBuf.asTypedList(n).toList();
-        yield bytes;
-        generatedTokens++;
-
-        if (stopSequences.isNotEmpty) {
-          accumulatedBytes.addAll(bytes);
-          if (accumulatedBytes.length > 64) {
-            accumulatedBytes.removeRange(0, accumulatedBytes.length - 64);
-          }
-          final text = utf8.decode(accumulatedBytes, allowMalformed: true);
-          if (stopSequences.any((s) => text.endsWith(s))) break;
+        final visible = stopBuffer.add(bytes);
+        if (visible.isNotEmpty) yield visible;
+        if (stopBuffer.isStopped) {
+          limit = null;
+          break;
         }
       }
 
@@ -5637,10 +6828,27 @@ class LlamaCppService {
       batch.logits[0] = 1;
 
       final evalTick = Stopwatch()..start();
-      final decodeStatus = llama_decode(ctx.pointer, batch);
+      final decodeStatus = _calls.decode(ctx.pointer, batch);
       evalTick.stop();
       evalMicros += evalTick.elapsedMicroseconds;
-      if (decodeStatus != 0) break;
+      if (decodeStatus != 0) {
+        limit = null;
+        break;
+      }
+    }
+
+    final remaining = stopBuffer.finish();
+    if (remaining.isNotEmpty) yield remaining;
+    if (limit != null && currentPos != 0) {
+      final probeToken = _calls.samplerSample(sampler, ctx.pointer, -1);
+      // Never pass an invalid sampled token into native EOG checks.
+      // This applies only to sampled text tokens, not multimodal embeddings.
+      validateSampledToken(probeToken, llama_vocab_n_tokens(vocab));
+      if (!llama_vocab_is_eog(vocab, probeToken)) {
+        onLimit?.call(limit);
+      }
+    } else if (limit != null) {
+      onLimit?.call(limit);
     }
 
     evalStopwatch.stop();
@@ -5667,6 +6875,7 @@ class LlamaCppService {
     Pointer<llama_dart_speculative> speculativeSession,
     _SpeculativeApi speculativeApi,
     Pointer<Int32> tokensPtr,
+    void Function(BackendGenerationLimit limit)? onLimit,
   ) async* {
     final cancelToken = Pointer<Int8>.fromAddress(cancelTokenAddress);
     final draftCapacity = speculativeConfig.draftTokenMax;
@@ -5678,7 +6887,7 @@ class LlamaCppService {
 
     int currentPos = startPos;
     int? pendingSampledToken;
-    final accumulatedBytes = <int>[];
+    final stopBuffer = StopSequenceBuffer(stopSequences);
     final evalStopwatch = Stopwatch()..start();
     var sampleMicros = 0;
     var evalMicros = 0;
@@ -5691,11 +6900,39 @@ class LlamaCppService {
     var speculativeVerifyTokens = 0;
     var speculativeReplayTokens = 0;
     var shouldStop = false;
+    var contextFull = false;
+
+    // Like [_runInferenceLoop], a reply that ends exactly at a limit is not
+    // truncated, and a failed decode reports no limit. The last accepted
+    // token may not be decoded yet.
+    bool limitStands() {
+      final undecoded = pendingSampledToken;
+      if (undecoded != null) {
+        if (currentPos >= nCtx) return true;
+        batch.n_tokens = 1;
+        batch.token[0] = undecoded;
+        batch.pos[0] = currentPos;
+        batch.n_seq_id[0] = 1;
+        batch.seq_id[0][0] = 0;
+        batch.logits[0] = 1;
+        if (_calls.decode(ctx.pointer, batch) != 0) return false;
+      } else if (currentPos == 0) {
+        return true;
+      }
+      final probeToken = _calls.samplerSample(sampler, ctx.pointer, -1);
+      // Never pass an invalid sampled token into native EOG checks.
+      // This applies only to sampled text tokens, not multimodal embeddings.
+      validateSampledToken(probeToken, llama_vocab_n_tokens(vocab));
+      return !llama_vocab_is_eog(vocab, probeToken);
+    }
 
     try {
       while (!shouldStop && generatedTokens < params.maxTokens) {
         if (cancelToken.value == 1) break;
-        if (currentPos >= nCtx) break;
+        if (currentPos >= nCtx) {
+          contextFull = true;
+          break;
+        }
 
         int selectedToken;
         if (pendingSampledToken != null) {
@@ -5703,7 +6940,7 @@ class LlamaCppService {
           pendingSampledToken = null;
         } else {
           final sampleTick = Stopwatch()..start();
-          selectedToken = llama_sampler_sample(sampler, ctx.pointer, -1);
+          selectedToken = _calls.samplerSample(sampler, ctx.pointer, -1);
           sampleTick.stop();
           sampleMicros += sampleTick.elapsedMicroseconds;
           // Never pass an invalid sampled token into get_rows / token_to_piece.
@@ -5712,7 +6949,7 @@ class LlamaCppService {
           if (llama_vocab_is_eog(vocab, selectedToken)) break;
 
           final pieceTick = Stopwatch()..start();
-          final n = llama_token_to_piece(
+          final n = _calls.tokenToPiece(
             vocab,
             selectedToken,
             pieceBuf.cast(),
@@ -5726,17 +6963,9 @@ class LlamaCppService {
 
           if (n > 0) {
             final bytes = pieceBuf.asTypedList(n).toList();
-            yield bytes;
-            if (stopSequences.isNotEmpty) {
-              accumulatedBytes.addAll(bytes);
-              if (accumulatedBytes.length > 64) {
-                accumulatedBytes.removeRange(0, accumulatedBytes.length - 64);
-              }
-              final text = utf8.decode(accumulatedBytes, allowMalformed: true);
-              if (stopSequences.any((s) => text.endsWith(s))) {
-                shouldStop = true;
-              }
-            }
+            final visible = stopBuffer.add(bytes);
+            if (visible.isNotEmpty) yield visible;
+            shouldStop = stopBuffer.isStopped;
           }
 
           if (shouldStop) {
@@ -5778,6 +7007,10 @@ class LlamaCppService {
           draftTick.stop();
           draftMicros += draftTick.elapsedMicroseconds;
           if (draftCount < 0) {
+            _throwIfSpeculativeCaught(
+              'llama_dart_speculative_draft',
+              ctx.pointer,
+            );
             throw Exception("llama.cpp speculative draft failed");
           }
           speculativeDraftTokens += draftCount;
@@ -5792,19 +7025,23 @@ class LlamaCppService {
           batch.logits[0] = 1;
 
           final evalTick = Stopwatch()..start();
-          final decodeStatus = llama_decode(ctx.pointer, batch);
+          final decodeStatus = _calls.decode(ctx.pointer, batch);
           if (decodeStatus == 0 &&
               !_processSpeculativeBatch(
                 speculativeApi,
                 speculativeSession,
                 batch,
                 speculativeConfig,
+                ctx.pointer,
               )) {
             throw Exception("Speculative decode processing failed");
           }
           evalTick.stop();
           evalMicros += evalTick.elapsedMicroseconds;
-          if (decodeStatus != 0) break;
+          if (decodeStatus != 0) {
+            shouldStop = true;
+            break;
+          }
 
           tokensPtr[currentPos] = selectedToken;
           currentPos++;
@@ -5826,15 +7063,15 @@ class LlamaCppService {
               );
             }
           } else {
-            llama_synchronize(ctx.pointer);
-            seqCheckpointSize = llama_state_seq_get_size_ext(
+            _calls.synchronize(ctx.pointer);
+            seqCheckpointSize = _calls.stateSeqGetSizeExt(
               ctx.pointer,
               0,
               LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY,
             );
             if (seqCheckpointSize > 0) {
               seqCheckpoint = malloc<Uint8>(seqCheckpointSize);
-              final written = llama_state_seq_get_data_ext(
+              final written = _calls.stateSeqGetDataExt(
                 ctx.pointer,
                 seqCheckpoint,
                 seqCheckpointSize,
@@ -5867,22 +7104,26 @@ class LlamaCppService {
           }
 
           final evalTick = Stopwatch()..start();
-          final decodeStatus = llama_decode(ctx.pointer, batch);
+          final decodeStatus = _calls.decode(ctx.pointer, batch);
           if (decodeStatus == 0 &&
               !_processSpeculativeBatch(
                 speculativeApi,
                 speculativeSession,
                 batch,
                 speculativeConfig,
+                ctx.pointer,
               )) {
             throw Exception("Speculative decode processing failed");
           }
           if (decodeStatus == 0) {
-            llama_synchronize(ctx.pointer);
+            _calls.synchronize(ctx.pointer);
           }
           evalTick.stop();
           evalMicros += evalTick.elapsedMicroseconds;
-          if (decodeStatus != 0) break;
+          if (decodeStatus != 0) {
+            shouldStop = true;
+            break;
+          }
           speculativeVerifyTokens += batchTokens;
 
           for (int i = 0; i < batchTokens; i++) {
@@ -5903,6 +7144,11 @@ class LlamaCppService {
           verifyTick.stop();
           verifyMicros += verifyTick.elapsedMicroseconds;
           if (acceptedCount <= 0) {
+            _calls.failures.throwIfCaught(
+              'llama_dart_sampler_sample_and_accept_n',
+              LlamaInferenceException.new,
+              windowsFreeOnly: [ctx.pointer],
+            );
             throw Exception("llama.cpp speculative draft verification failed");
           }
 
@@ -5925,7 +7171,7 @@ class LlamaCppService {
                 );
               }
 
-              final restored = llama_state_seq_set_data_ext(
+              final restored = _calls.stateSeqSetDataExt(
                 ctx.pointer,
                 seqCheckpoint,
                 seqCheckpointSize,
@@ -5965,18 +7211,19 @@ class LlamaCppService {
               }
 
               final replayTick = Stopwatch()..start();
-              final replayStatus = llama_decode(ctx.pointer, batch);
+              final replayStatus = _calls.decode(ctx.pointer, batch);
               if (replayStatus == 0 &&
                   !_processSpeculativeBatch(
                     speculativeApi,
                     speculativeSession,
                     batch,
                     speculativeConfig,
+                    ctx.pointer,
                   )) {
                 throw Exception("Speculative replay processing failed");
               }
               if (replayStatus == 0) {
-                llama_synchronize(ctx.pointer);
+                _calls.synchronize(ctx.pointer);
               }
               replayTick.stop();
               evalMicros += replayTick.elapsedMicroseconds;
@@ -5990,6 +7237,10 @@ class LlamaCppService {
 
           speculativeAcceptedDraftTokens += acceptedDraftCount;
           speculativeApi.accept(speculativeSession, 0, acceptedDraftCount);
+          _throwIfSpeculativeCaught(
+            'llama_dart_speculative_accept',
+            ctx.pointer,
+          );
 
           final targetMemory = llama_get_memory(ctx.pointer);
           final targetRollbackOk =
@@ -6026,7 +7277,7 @@ class LlamaCppService {
             }
 
             final pieceTick = Stopwatch()..start();
-            final n = llama_token_to_piece(
+            final n = _calls.tokenToPiece(
               vocab,
               token,
               pieceBuf.cast(),
@@ -6040,20 +7291,9 @@ class LlamaCppService {
 
             if (n > 0) {
               final bytes = pieceBuf.asTypedList(n).toList();
-              yield bytes;
-              if (stopSequences.isNotEmpty) {
-                accumulatedBytes.addAll(bytes);
-                if (accumulatedBytes.length > 64) {
-                  accumulatedBytes.removeRange(0, accumulatedBytes.length - 64);
-                }
-                final text = utf8.decode(
-                  accumulatedBytes,
-                  allowMalformed: true,
-                );
-                if (stopSequences.any((s) => text.endsWith(s))) {
-                  shouldStop = true;
-                }
-              }
+              final visible = stopBuffer.add(bytes);
+              if (visible.isNotEmpty) yield visible;
+              shouldStop = stopBuffer.isStopped;
             }
 
             if (shouldStop || generatedTokens >= params.maxTokens) {
@@ -6061,7 +7301,7 @@ class LlamaCppService {
             }
           }
 
-          if (!shouldStop && generatedTokens < params.maxTokens) {
+          if (!shouldStop) {
             pendingSampledToken = acceptedPtr[acceptedCount - 1];
           }
         } finally {
@@ -6070,706 +7310,14 @@ class LlamaCppService {
           }
         }
       }
-    } finally {
-      malloc.free(draftPtr);
-      malloc.free(idxPtr);
-      malloc.free(acceptedPtr);
-      evalStopwatch.stop();
-      ctx.lastPerfEvalMs = evalMicros / 1000.0;
-      ctx.lastPerfSampleMs = sampleMicros / 1000.0;
-      ctx.lastPerfDecodeMs = evalMicros / 1000.0;
-      ctx.lastPerfSpeculativeDraftMs = draftMicros / 1000.0;
-      ctx.lastPerfSpeculativeVerifyMs = verifyMicros / 1000.0;
-      ctx.lastPerfEvalTokens = generatedTokens;
-      ctx.lastPerfSampleCount = generatedTokens;
-      ctx.lastPerfSpeculativeDraftTokens = speculativeDraftTokens;
-      ctx.lastPerfSpeculativeAcceptedDraftTokens =
-          speculativeAcceptedDraftTokens;
-      ctx.lastPerfSpeculativeDraftAttempts = speculativeDraftAttempts;
-      ctx.lastPerfSpeculativeVerifyTokens = speculativeVerifyTokens;
-      ctx.lastPerfSpeculativeReplayTokens = speculativeReplayTokens;
-      ctx.lastPerfSpeculativeRan = true;
-    }
-  }
-
-  // Legacy MTP loop retained while older wrapper symbols remain supported.
-  // ignore: unused_element
-  Stream<List<int>> _runMtpInferenceLoop(
-    _LlamaContextWrapper ctx,
-    llama_batch batch,
-    Pointer<llama_vocab> vocab,
-    Pointer<llama_sampler> sampler,
-    GenerationParams params,
-    _LlamaCppMtpConfig mtpConfig,
-    int startPos,
-    int nCtx,
-    int cancelTokenAddress,
-    Pointer<Uint8> pieceBuf,
-    Set<int> preservedTokenIds,
-    List<String> stopSequences,
-    Pointer<llama_dart_mtp> mtpSession,
-    _MtpApi mtpApi,
-    Pointer<Int32> tokensPtr,
-  ) async* {
-    final cancelToken = Pointer<Int8>.fromAddress(cancelTokenAddress);
-    final draftCapacity = mtpConfig.draftTokenMax;
-    final draftPtr = malloc<Int32>(draftCapacity);
-    final idxPtr = malloc<Int32>(draftCapacity + 1);
-    final acceptedPtr = malloc<Int32>(draftCapacity + 1);
-
-    int currentPos = startPos;
-    int? pendingSampledToken;
-    final accumulatedBytes = <int>[];
-    final evalStopwatch = Stopwatch()..start();
-    var sampleMicros = 0;
-    var evalMicros = 0;
-    var draftMicros = 0;
-    var verifyMicros = 0;
-    var generatedTokens = 0;
-    var speculativeDraftTokens = 0;
-    var speculativeAcceptedDraftTokens = 0;
-    var speculativeDraftAttempts = 0;
-    var speculativeVerifyTokens = 0;
-    var speculativeReplayTokens = 0;
-    var shouldStop = false;
-    try {
-      while (!shouldStop && generatedTokens < params.maxTokens) {
-        if (cancelToken.value == 1) break;
-        if (currentPos >= nCtx) break;
-
-        int selectedToken;
-        if (pendingSampledToken != null) {
-          selectedToken = pendingSampledToken;
-          pendingSampledToken = null;
-        } else {
-          final sampleTick = Stopwatch()..start();
-          selectedToken = llama_sampler_sample(sampler, ctx.pointer, -1);
-          sampleTick.stop();
-          sampleMicros += sampleTick.elapsedMicroseconds;
-          // Never pass an invalid sampled token into get_rows / token_to_piece.
-          // This applies only to sampled text tokens, not multimodal embeddings.
-          validateSampledToken(selectedToken, llama_vocab_n_tokens(vocab));
-          if (llama_vocab_is_eog(vocab, selectedToken)) break;
-
-          final pieceTick = Stopwatch()..start();
-          final n = llama_token_to_piece(
-            vocab,
-            selectedToken,
-            pieceBuf.cast(),
-            256,
-            0,
-            preservedTokenIds.contains(selectedToken),
-          );
-          pieceTick.stop();
-          sampleMicros += pieceTick.elapsedMicroseconds;
-          generatedTokens++;
-
-          if (n > 0) {
-            final bytes = pieceBuf.asTypedList(n).toList();
-            yield bytes;
-            if (stopSequences.isNotEmpty) {
-              accumulatedBytes.addAll(bytes);
-              if (accumulatedBytes.length > 64) {
-                accumulatedBytes.removeRange(0, accumulatedBytes.length - 64);
-              }
-              final text = utf8.decode(accumulatedBytes, allowMalformed: true);
-              if (stopSequences.any((s) => text.endsWith(s))) {
-                shouldStop = true;
-              }
-            }
-          }
-
-          if (shouldStop) {
-            break;
-          }
-        }
-
-        final remainingToGenerate = params.maxTokens - generatedTokens;
-        final batchCapacity = math.max(1, llama_n_batch(ctx.pointer));
-        final rollbackCapacity = llama_n_rs_seq(ctx.pointer);
-        final contextDraftCapacity = rollbackCapacity > 0
-            ? math.min(nCtx - currentPos - 2, rollbackCapacity)
-            : nCtx - currentPos - 2;
-        final draftLimit = remainingToGenerate <= 1
-            ? 0
-            : math.min(
-                mtpConfig.draftTokenMax,
-                math.min(
-                  math.min(remainingToGenerate - 1, contextDraftCapacity),
-                  batchCapacity - 1,
-                ),
-              );
-
-        var draftCount = 0;
-        if (draftLimit > 0) {
-          speculativeDraftAttempts++;
-          final draftTick = Stopwatch()..start();
-          draftCount = mtpApi.draft(
-            mtpSession,
-            0,
-            currentPos,
-            selectedToken,
-            tokensPtr,
-            currentPos,
-            draftLimit,
-            draftPtr,
-            draftLimit,
-          );
-          draftTick.stop();
-          draftMicros += draftTick.elapsedMicroseconds;
-          if (draftCount < 0) {
-            throw Exception("llama.cpp MTP draft failed");
-          }
-          speculativeDraftTokens += draftCount;
-        }
-
-        if (draftCount <= 0) {
-          batch.n_tokens = 1;
-          batch.token[0] = selectedToken;
-          batch.pos[0] = currentPos;
-          batch.n_seq_id[0] = 1;
-          batch.seq_id[0][0] = 0;
-          batch.logits[0] = 1;
-
-          final evalTick = Stopwatch()..start();
-          final decodeStatus = llama_decode(ctx.pointer, batch);
-          if (decodeStatus == 0 && !mtpApi.processBatch(mtpSession, batch)) {
-            throw Exception("MTP decode processing failed");
-          }
-          evalTick.stop();
-          evalMicros += evalTick.elapsedMicroseconds;
-          if (decodeStatus != 0) break;
-
-          tokensPtr[currentPos] = selectedToken;
-          currentPos++;
-          continue;
-        }
-
-        final draftContext = mtpApi.getDraftContext(mtpSession);
-        final draftMemory = draftContext == nullptr
-            ? nullptr
-            : llama_get_memory(draftContext);
-        if (draftMemory == nullptr ||
-            !llama_memory_seq_rm(draftMemory, 0, currentPos, -1)) {
-          throw UnsupportedError(
-            'llama.cpp MTP draft rollback failed for this context.',
-          );
-        }
-
-        final batchTokens = draftCount + 1;
-        batch.n_tokens = batchTokens;
-        batch.token[0] = selectedToken;
-        batch.pos[0] = currentPos;
-        batch.n_seq_id[0] = 1;
-        batch.seq_id[0][0] = 0;
-        batch.logits[0] = 1;
-        for (int i = 0; i < draftCount; i++) {
-          final batchIndex = i + 1;
-          batch.token[batchIndex] = draftPtr[i];
-          batch.pos[batchIndex] = currentPos + batchIndex;
-          batch.n_seq_id[batchIndex] = 1;
-          batch.seq_id[batchIndex][0] = 0;
-          batch.logits[batchIndex] = 1;
-        }
-
-        final evalTick = Stopwatch()..start();
-        final decodeStatus = llama_decode(ctx.pointer, batch);
-        if (decodeStatus == 0 && !mtpApi.processBatch(mtpSession, batch)) {
-          throw Exception("MTP decode processing failed");
-        }
-        evalTick.stop();
-        evalMicros += evalTick.elapsedMicroseconds;
-        if (decodeStatus != 0) break;
-        speculativeVerifyTokens += batchTokens;
-
-        for (int i = 0; i < batchTokens; i++) {
-          idxPtr[i] = i;
-        }
-
-        final verifyTick = Stopwatch()..start();
-        final acceptedCount = mtpApi.sampleAndAcceptN(
-          sampler,
-          ctx.pointer,
-          idxPtr,
-          batchTokens,
-          draftPtr,
-          draftCount,
-          acceptedPtr,
-          batchTokens,
-        );
-        verifyTick.stop();
-        verifyMicros += verifyTick.elapsedMicroseconds;
-        if (acceptedCount <= 0) {
-          throw Exception("llama.cpp MTP draft verification failed");
-        }
-
-        final acceptedDraftCount = acceptedCount - 1;
-        speculativeAcceptedDraftTokens += acceptedDraftCount;
-        mtpApi.accept(mtpSession, 0, acceptedDraftCount);
-
-        final keepUntil = currentPos + 1 + acceptedDraftCount;
-        final targetMemory = llama_get_memory(ctx.pointer);
-        if (targetMemory == nullptr ||
-            !llama_memory_seq_rm(targetMemory, 0, keepUntil, -1) ||
-            !llama_memory_seq_rm(draftMemory, 0, keepUntil, -1)) {
-          throw UnsupportedError(
-            'llama.cpp MTP target rollback failed for this context.',
-          );
-        }
-
-        tokensPtr[currentPos] = selectedToken;
-        for (int i = 0; i < acceptedDraftCount; i++) {
-          tokensPtr[currentPos + 1 + i] = acceptedPtr[i];
-        }
-        currentPos = keepUntil;
-
-        for (int i = 0; i < acceptedCount; i++) {
-          final token = acceptedPtr[i];
-          if (llama_vocab_is_eog(vocab, token)) {
-            shouldStop = true;
-            break;
-          }
-
-          final pieceTick = Stopwatch()..start();
-          final n = llama_token_to_piece(
-            vocab,
-            token,
-            pieceBuf.cast(),
-            256,
-            0,
-            preservedTokenIds.contains(token),
-          );
-          pieceTick.stop();
-          sampleMicros += pieceTick.elapsedMicroseconds;
-          generatedTokens++;
-
-          if (n > 0) {
-            final bytes = pieceBuf.asTypedList(n).toList();
-            yield bytes;
-            if (stopSequences.isNotEmpty) {
-              accumulatedBytes.addAll(bytes);
-              if (accumulatedBytes.length > 64) {
-                accumulatedBytes.removeRange(0, accumulatedBytes.length - 64);
-              }
-              final text = utf8.decode(accumulatedBytes, allowMalformed: true);
-              if (stopSequences.any((s) => text.endsWith(s))) {
-                shouldStop = true;
-              }
-            }
-          }
-
-          if (shouldStop || generatedTokens >= params.maxTokens) {
-            break;
-          }
-        }
-
-        if (!shouldStop && generatedTokens < params.maxTokens) {
-          pendingSampledToken = acceptedPtr[acceptedCount - 1];
-        }
-      }
-    } finally {
-      malloc.free(draftPtr);
-      malloc.free(idxPtr);
-      malloc.free(acceptedPtr);
-      evalStopwatch.stop();
-      ctx.lastPerfEvalMs = evalMicros / 1000.0;
-      ctx.lastPerfSampleMs = sampleMicros / 1000.0;
-      ctx.lastPerfDecodeMs = evalMicros / 1000.0;
-      ctx.lastPerfSpeculativeDraftMs = draftMicros / 1000.0;
-      ctx.lastPerfSpeculativeVerifyMs = verifyMicros / 1000.0;
-      ctx.lastPerfEvalTokens = generatedTokens;
-      ctx.lastPerfSampleCount = generatedTokens;
-      ctx.lastPerfSpeculativeDraftTokens = speculativeDraftTokens;
-      ctx.lastPerfSpeculativeAcceptedDraftTokens =
-          speculativeAcceptedDraftTokens;
-      ctx.lastPerfSpeculativeDraftAttempts = speculativeDraftAttempts;
-      ctx.lastPerfSpeculativeVerifyTokens = speculativeVerifyTokens;
-      ctx.lastPerfSpeculativeReplayTokens = speculativeReplayTokens;
-      ctx.lastPerfSpeculativeRan = true;
-    }
-  }
-
-  // Legacy ngram-simple loop retained while older wrapper symbols remain
-  // supported.
-  // ignore: unused_element
-  Stream<List<int>> _runNgramInferenceLoop(
-    _LlamaContextWrapper ctx,
-    llama_batch batch,
-    Pointer<llama_vocab> vocab,
-    Pointer<llama_sampler> sampler,
-    GenerationParams params,
-    _LlamaCppNgramSimpleConfig ngramConfig,
-    int startPos,
-    int nCtx,
-    int cancelTokenAddress,
-    Pointer<Uint8> pieceBuf,
-    Set<int> preservedTokenIds,
-    List<String> stopSequences,
-    Pointer<llama_dart_ngram> ngramSession,
-    _NgramApi ngramApi,
-    Pointer<Int32> tokensPtr,
-  ) async* {
-    final cancelToken = Pointer<Int8>.fromAddress(cancelTokenAddress);
-    final draftCapacity = ngramConfig.draftTokenMax;
-    final draftPtr = malloc<Int32>(draftCapacity);
-    final idxPtr = malloc<Int32>(draftCapacity + 1);
-    final acceptedPtr = malloc<Int32>(draftCapacity + 1);
-
-    int currentPos = startPos;
-    int? pendingSampledToken;
-    final accumulatedBytes = <int>[];
-    final evalStopwatch = Stopwatch()..start();
-    var sampleMicros = 0;
-    var evalMicros = 0;
-    var draftMicros = 0;
-    var verifyMicros = 0;
-    var generatedTokens = 0;
-    var speculativeDraftTokens = 0;
-    var speculativeAcceptedDraftTokens = 0;
-    var speculativeDraftAttempts = 0;
-    var speculativeVerifyTokens = 0;
-    var speculativeReplayTokens = 0;
-    var shouldStop = false;
-
-    try {
-      while (!shouldStop && generatedTokens < params.maxTokens) {
-        if (cancelToken.value == 1) break;
-        if (currentPos >= nCtx) break;
-
-        int selectedToken;
-        if (pendingSampledToken != null) {
-          selectedToken = pendingSampledToken;
-          pendingSampledToken = null;
-        } else {
-          final sampleTick = Stopwatch()..start();
-          selectedToken = llama_sampler_sample(sampler, ctx.pointer, -1);
-          sampleTick.stop();
-          sampleMicros += sampleTick.elapsedMicroseconds;
-          // Never pass an invalid sampled token into get_rows / token_to_piece.
-          // This applies only to sampled text tokens, not multimodal embeddings.
-          validateSampledToken(selectedToken, llama_vocab_n_tokens(vocab));
-          if (llama_vocab_is_eog(vocab, selectedToken)) break;
-
-          final pieceTick = Stopwatch()..start();
-          final n = llama_token_to_piece(
-            vocab,
-            selectedToken,
-            pieceBuf.cast(),
-            256,
-            0,
-            preservedTokenIds.contains(selectedToken),
-          );
-          pieceTick.stop();
-          sampleMicros += pieceTick.elapsedMicroseconds;
-          generatedTokens++;
-
-          if (n > 0) {
-            final bytes = pieceBuf.asTypedList(n).toList();
-            yield bytes;
-            if (stopSequences.isNotEmpty) {
-              accumulatedBytes.addAll(bytes);
-              if (accumulatedBytes.length > 64) {
-                accumulatedBytes.removeRange(0, accumulatedBytes.length - 64);
-              }
-              final text = utf8.decode(accumulatedBytes, allowMalformed: true);
-              if (stopSequences.any((s) => text.endsWith(s))) {
-                shouldStop = true;
-              }
-            }
-          }
-
-          if (shouldStop) {
-            break;
-          }
-        }
-
-        final remainingToGenerate = params.maxTokens - generatedTokens;
-        final batchCapacity = math.max(1, llama_n_batch(ctx.pointer));
-        final rollbackCapacity = llama_n_rs_seq(ctx.pointer);
-        final contextDraftCapacity = rollbackCapacity > 0
-            ? math.min(nCtx - currentPos - 2, rollbackCapacity)
-            : nCtx - currentPos - 2;
-        final draftLimit = remainingToGenerate <= 1
-            ? 0
-            : math.min(
-                ngramConfig.draftTokenMax,
-                math.min(
-                  math.min(remainingToGenerate - 1, contextDraftCapacity),
-                  batchCapacity - 1,
-                ),
-              );
-
-        var draftCount = 0;
-        if (draftLimit > 0) {
-          speculativeDraftAttempts++;
-          final draftTick = Stopwatch()..start();
-          draftCount = ngramApi.draft(
-            ngramSession,
-            0,
-            currentPos,
-            selectedToken,
-            tokensPtr,
-            currentPos,
-            draftLimit,
-            draftPtr,
-            draftLimit,
-          );
-          draftTick.stop();
-          draftMicros += draftTick.elapsedMicroseconds;
-          if (draftCount < 0) {
-            throw Exception("llama.cpp ngram-simple draft failed");
-          }
-          speculativeDraftTokens += draftCount;
-        }
-
-        if (draftCount <= 0) {
-          batch.n_tokens = 1;
-          batch.token[0] = selectedToken;
-          batch.pos[0] = currentPos;
-          batch.n_seq_id[0] = 1;
-          batch.seq_id[0][0] = 0;
-          batch.logits[0] = 1;
-
-          final evalTick = Stopwatch()..start();
-          final decodeStatus = llama_decode(ctx.pointer, batch);
-          if (decodeStatus == 0 &&
-              !ngramApi.processBatch(ngramSession, batch)) {
-            throw Exception("ngram-simple decode processing failed");
-          }
-          evalTick.stop();
-          evalMicros += evalTick.elapsedMicroseconds;
-          if (decodeStatus != 0) break;
-
-          tokensPtr[currentPos] = selectedToken;
-          currentPos++;
-          continue;
-        }
-
-        final batchTokens = draftCount + 1;
-        Pointer<Uint8> seqCheckpoint = nullptr;
-        var seqCheckpointSize = 0;
-        try {
-          llama_synchronize(ctx.pointer);
-          seqCheckpointSize = llama_state_seq_get_size_ext(
-            ctx.pointer,
-            0,
-            LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY,
-          );
-          if (seqCheckpointSize > 0) {
-            seqCheckpoint = malloc<Uint8>(seqCheckpointSize);
-            final written = llama_state_seq_get_data_ext(
-              ctx.pointer,
-              seqCheckpoint,
-              seqCheckpointSize,
-              0,
-              LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY,
-            );
-            if (written != seqCheckpointSize) {
-              throw Exception(
-                'ngram-simple checkpoint capture failed '
-                '(expected $seqCheckpointSize bytes, got $written)',
-              );
-            }
-          }
-
-          batch.n_tokens = batchTokens;
-          batch.token[0] = selectedToken;
-          batch.pos[0] = currentPos;
-          batch.n_seq_id[0] = 1;
-          batch.seq_id[0][0] = 0;
-          batch.logits[0] = 1;
-          for (int i = 0; i < draftCount; i++) {
-            final batchIndex = i + 1;
-            batch.token[batchIndex] = draftPtr[i];
-            batch.pos[batchIndex] = currentPos + batchIndex;
-            batch.n_seq_id[batchIndex] = 1;
-            batch.seq_id[batchIndex][0] = 0;
-            batch.logits[batchIndex] = 1;
-          }
-
-          final evalTick = Stopwatch()..start();
-          final decodeStatus = llama_decode(ctx.pointer, batch);
-          if (decodeStatus == 0 &&
-              !ngramApi.processBatch(ngramSession, batch)) {
-            throw Exception("ngram-simple decode processing failed");
-          }
-          if (decodeStatus == 0) {
-            llama_synchronize(ctx.pointer);
-          }
-          evalTick.stop();
-          evalMicros += evalTick.elapsedMicroseconds;
-          if (decodeStatus != 0) break;
-          speculativeVerifyTokens += batchTokens;
-
-          for (int i = 0; i < batchTokens; i++) {
-            idxPtr[i] = i;
-          }
-
-          final verifyTick = Stopwatch()..start();
-          final acceptedCount = ngramApi.sampleAndAcceptN(
-            sampler,
-            ctx.pointer,
-            idxPtr,
-            batchTokens,
-            draftPtr,
-            draftCount,
-            acceptedPtr,
-            batchTokens,
-          );
-          verifyTick.stop();
-          verifyMicros += verifyTick.elapsedMicroseconds;
-          if (acceptedCount <= 0) {
-            throw Exception("llama.cpp ngram-simple draft verification failed");
-          }
-
-          final acceptedDraftCount = acceptedCount - 1;
-          final rejectedTailCount = batchTokens - acceptedCount;
-          final keepUntil = currentPos + 1 + acceptedDraftCount;
-          var targetTailReconciled = false;
-          if (rejectedTailCount > 0) {
-            final targetMemory = llama_get_memory(ctx.pointer);
-            final trimmedRejectedTail =
-                targetMemory != nullptr &&
-                llama_memory_seq_rm(targetMemory, 0, keepUntil, -1);
-            if (trimmedRejectedTail) {
-              targetTailReconciled = true;
-            } else {
-              if (seqCheckpoint == nullptr) {
-                throw UnsupportedError(
-                  'llama.cpp ngram-simple checkpoint rollback is unavailable '
-                  'for this context.',
-                );
-              }
-
-              final restored = llama_state_seq_set_data_ext(
-                ctx.pointer,
-                seqCheckpoint,
-                seqCheckpointSize,
-                0,
-                LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY,
-              );
-              if (restored != seqCheckpointSize) {
-                throw Exception(
-                  'ngram-simple checkpoint restore failed '
-                  '(expected $seqCheckpointSize bytes, got $restored)',
-                );
-              }
-
-              final targetMemory = llama_get_memory(ctx.pointer);
-              if (targetMemory == nullptr ||
-                  !llama_memory_seq_rm(targetMemory, 0, currentPos, -1)) {
-                throw UnsupportedError(
-                  'llama.cpp ngram-simple checkpoint rollback failed for this '
-                  'context.',
-                );
-              }
-
-              final replayTokens = 1 + acceptedDraftCount;
-              batch.n_tokens = replayTokens;
-              batch.token[0] = selectedToken;
-              batch.pos[0] = currentPos;
-              batch.n_seq_id[0] = 1;
-              batch.seq_id[0][0] = 0;
-              batch.logits[0] = 0;
-              for (int i = 0; i < acceptedDraftCount; i++) {
-                final batchIndex = i + 1;
-                batch.token[batchIndex] = acceptedPtr[i];
-                batch.pos[batchIndex] = currentPos + batchIndex;
-                batch.n_seq_id[batchIndex] = 1;
-                batch.seq_id[batchIndex][0] = 0;
-                batch.logits[batchIndex] = 0;
-              }
-
-              final replayTick = Stopwatch()..start();
-              final replayStatus = llama_decode(ctx.pointer, batch);
-              if (replayStatus == 0 &&
-                  !ngramApi.processBatch(ngramSession, batch)) {
-                throw Exception("ngram-simple replay processing failed");
-              }
-              if (replayStatus == 0) {
-                llama_synchronize(ctx.pointer);
-              }
-              replayTick.stop();
-              evalMicros += replayTick.elapsedMicroseconds;
-              if (replayStatus != 0) {
-                throw Exception("ngram-simple replay decode failed");
-              }
-              speculativeReplayTokens += replayTokens;
-              targetTailReconciled = true;
-            }
-          }
-          speculativeAcceptedDraftTokens += acceptedDraftCount;
-          ngramApi.accept(ngramSession, 0, acceptedDraftCount);
-
-          final targetMemory = llama_get_memory(ctx.pointer);
-          if (!targetTailReconciled &&
-              (targetMemory == nullptr ||
-                  !llama_memory_seq_rm(targetMemory, 0, keepUntil, -1))) {
-            throw UnsupportedError(
-              'llama.cpp ngram-simple target rollback failed for this context. '
-              'Set ModelParams.speculativeRollbackTokenMax >= ngramSizeM if '
-              'this model/backend uses bounded rollback snapshots.',
-            );
-          }
-
-          tokensPtr[currentPos] = selectedToken;
-          for (int i = 0; i < acceptedDraftCount; i++) {
-            tokensPtr[currentPos + 1 + i] = acceptedPtr[i];
-          }
-          currentPos = keepUntil;
-
-          for (int i = 0; i < acceptedCount; i++) {
-            final token = acceptedPtr[i];
-            if (llama_vocab_is_eog(vocab, token)) {
-              shouldStop = true;
-              break;
-            }
-
-            final pieceTick = Stopwatch()..start();
-            final n = llama_token_to_piece(
-              vocab,
-              token,
-              pieceBuf.cast(),
-              256,
-              0,
-              preservedTokenIds.contains(token),
-            );
-            pieceTick.stop();
-            sampleMicros += pieceTick.elapsedMicroseconds;
-            generatedTokens++;
-
-            if (n > 0) {
-              final bytes = pieceBuf.asTypedList(n).toList();
-              yield bytes;
-              if (stopSequences.isNotEmpty) {
-                accumulatedBytes.addAll(bytes);
-                if (accumulatedBytes.length > 64) {
-                  accumulatedBytes.removeRange(0, accumulatedBytes.length - 64);
-                }
-                final text = utf8.decode(
-                  accumulatedBytes,
-                  allowMalformed: true,
-                );
-                if (stopSequences.any((s) => text.endsWith(s))) {
-                  shouldStop = true;
-                }
-              }
-            }
-
-            if (shouldStop || generatedTokens >= params.maxTokens) {
-              break;
-            }
-          }
-
-          if (!shouldStop && generatedTokens < params.maxTokens) {
-            pendingSampledToken = acceptedPtr[acceptedCount - 1];
-          }
-        } finally {
-          if (seqCheckpoint != nullptr) {
-            malloc.free(seqCheckpoint);
-          }
-        }
-      }
+      final remaining = stopBuffer.finish();
+      if (remaining.isNotEmpty) yield remaining;
+      final limit = contextFull
+          ? BackendGenerationLimit.contextSize
+          : !shouldStop && generatedTokens >= params.maxTokens
+          ? BackendGenerationLimit.maxTokens
+          : null;
+      if (limit != null && limitStands()) onLimit?.call(limit);
     } finally {
       malloc.free(draftPtr);
       malloc.free(idxPtr);
@@ -6793,32 +7341,8 @@ class LlamaCppService {
   }
 
   _LazyGrammarConfig? _buildLazyGrammarConfig(GenerationParams params) {
-    final triggerPatterns = <String>[];
-    final triggerTokens = <int>[];
-
-    for (final trigger in params.grammarTriggers) {
-      switch (trigger.type) {
-        case 0:
-          triggerPatterns.add(_regexEscape(trigger.value));
-          break;
-        case 1:
-          final token = trigger.token ?? int.tryParse(trigger.value);
-          if (token != null) {
-            triggerTokens.add(token);
-          }
-          break;
-        case 2:
-          triggerPatterns.add(trigger.value);
-          break;
-        case 3:
-          final pattern = trigger.value;
-          final anchored = pattern.isEmpty
-              ? r'^$'
-              : "${pattern.startsWith('^') ? '' : '^'}$pattern${pattern.endsWith(r'$') ? '' : r'$'}";
-          triggerPatterns.add(anchored);
-          break;
-      }
-    }
+    final (patterns: triggerPatterns, tokens: triggerTokens) =
+        lazyGrammarTriggerInputs(params.grammarTriggers);
 
     if (triggerPatterns.isEmpty && triggerTokens.isEmpty) {
       return null;
@@ -6871,12 +7395,12 @@ class LlamaCppService {
         continue;
       }
 
-      final textPtr = tokenText.toNativeUtf8();
+      final (textPtr, textLength) = _toNativeUtf8WithLength(tokenText);
       try {
-        final required = -llama_tokenize(
+        final required = -_calls.tokenize(
           vocab,
           textPtr.cast(),
-          textPtr.length,
+          textLength,
           nullptr,
           0,
           false,
@@ -6889,10 +7413,10 @@ class LlamaCppService {
 
         final tokenIds = malloc<Int32>(required);
         try {
-          final actual = llama_tokenize(
+          final actual = _calls.tokenize(
             vocab,
             textPtr.cast(),
-            textPtr.length,
+            textLength,
             tokenIds,
             required,
             false,
@@ -6929,90 +7453,92 @@ class LlamaCppService {
         .toList(growable: false);
   }
 
-  String _regexEscape(String input) {
-    final escaped = StringBuffer();
-    const regexMeta = r'\^$.*+?()[]{}|';
-    for (var i = 0; i < input.length; i++) {
-      final char = input[i];
-      if (regexMeta.contains(char)) {
-        escaped.write('\\');
-      }
-      escaped.write(char);
-    }
-    return escaped.toString();
-  }
-
   /// Tokenizes the given [text].
   List<int> tokenize(int modelHandle, String text, bool addSpecial) {
     final model = _models[modelHandle];
     if (model == null) return [];
+    _ensureModelUsable(model);
     final vocab = llama_model_get_vocab(model.pointer);
-    final textPtr = text.toNativeUtf8();
+    final (textPtr, textLength) = _toNativeUtf8WithLength(text);
     final shouldAddSpecial =
         addSpecial && !_promptStartsWithBosToken(vocab, text);
-    final n = -llama_tokenize(
-      vocab,
-      textPtr.cast(),
-      textPtr.length,
-      nullptr,
-      0,
-      shouldAddSpecial,
-      true,
-    );
-    final tokensPtr = malloc<Int32>(n);
-    final actual = llama_tokenize(
-      vocab,
-      textPtr.cast(),
-      textPtr.length,
-      tokensPtr,
-      n,
-      shouldAddSpecial,
-      true,
-    );
-    final result = List.generate(actual, (i) => tokensPtr[i]);
-    malloc.free(textPtr);
-    malloc.free(tokensPtr);
-    return result;
+    Pointer<Int32> tokensPtr = nullptr;
+    try {
+      final n = -_calls.tokenize(
+        vocab,
+        textPtr.cast(),
+        textLength,
+        nullptr,
+        0,
+        shouldAddSpecial,
+        true,
+      );
+      tokensPtr = malloc<Int32>(n);
+      final actual = _calls.tokenize(
+        vocab,
+        textPtr.cast(),
+        textLength,
+        tokensPtr,
+        n,
+        shouldAddSpecial,
+        true,
+      );
+      return List.generate(actual, (i) => tokensPtr[i]);
+    } finally {
+      malloc.free(textPtr);
+      if (tokensPtr != nullptr) malloc.free(tokensPtr);
+    }
   }
 
   /// Detokenizes the given [tokens].
   String detokenize(int modelHandle, List<int> tokens, bool special) {
     final model = _models[modelHandle];
     if (model == null) return "";
+    _ensureModelUsable(model);
     final vocab = llama_model_get_vocab(model.pointer);
-    final buffer = malloc<Int8>(256);
+    // UTF-8 decoding requires unsigned bytes, including byte-fallback tokens.
+    final buffer = malloc<Uint8>(256);
     final bytes = <int>[];
-    for (final t in tokens) {
-      final n = llama_token_to_piece(vocab, t, buffer.cast(), 256, 0, special);
-      if (n > 0) bytes.addAll(buffer.asTypedList(n));
+    try {
+      for (final t in tokens) {
+        final n = _calls.tokenToPiece(vocab, t, buffer.cast(), 256, 0, special);
+        if (n > 0) bytes.addAll(buffer.asTypedList(n));
+      }
+    } finally {
+      malloc.free(buffer);
     }
-    malloc.free(buffer);
     return utf8.decode(bytes, allowMalformed: true);
   }
 
   /// Persists the KV-cache state of [contextHandle] to [path] together
   /// with the producing token sequence so a later [stateLoadFile] can
-  /// resume inference without paying the prompt-eval cost again.
+  /// reuse matching prompt KV. Live logits and sampler/RNG state are not
+  /// persisted; exact-prompt reuse re-evaluates the final token and can differ
+  /// from full-prompt evaluation.
   ///
   /// Wraps `llama_state_save_file`. Returns true on success.
   bool stateSaveFile(int contextHandle, String path, List<int> tokens) {
     final ctx = _contexts[contextHandle];
     if (ctx == null) {
-      throw StateError('Unknown context handle: $contextHandle');
+      throw LlamaStateException('Unknown context handle: $contextHandle');
     }
+    _ensureContextUsable(contextHandle, ctx);
     if (_generatingContexts.containsKey(contextHandle)) {
-      throw StateError(
-        'Cannot save state while generation is active on context $contextHandle',
+      final activity = _activeTtsContextHandle == contextHandle
+          ? 'text-to-speech'
+          : 'generation';
+      throw LlamaStateException(
+        'Cannot save state while $activity is active on context $contextHandle',
       );
     }
-    llama_synchronize(ctx.pointer);
+    _calls.synchronize(ctx.pointer);
     final pathPtr = path.toNativeUtf8();
     final tokensPtr = tokens.isEmpty ? nullptr : malloc<Int32>(tokens.length);
     try {
       for (int i = 0; i < tokens.length; i++) {
         tokensPtr[i] = tokens[i];
       }
-      return llama_state_save_file(
+      return _calls.stateSaveFile(
         ctx.pointer,
         pathPtr.cast(),
         tokensPtr,
@@ -7024,43 +7550,74 @@ class LlamaCppService {
     }
   }
 
+  /// The llama.cpp session version in the header of the state file at
+  /// [path], or `null` when it cannot be read or is not a session file.
+  static int? readSessionFileVersion(String path) {
+    try {
+      final file = File(path).openSync();
+      try {
+        final header = file.readSync(8);
+        if (header.length < 8) return null;
+        final words = ByteData.sublistView(header);
+        return words.getUint32(0, Endian.little) == LLAMA_FILE_MAGIC_GGSN
+            ? words.getUint32(4, Endian.little)
+            : null;
+      } finally {
+        file.closeSync();
+      }
+    } on FileSystemException {
+      return null;
+    }
+  }
+
   /// Restores a previously saved KV-cache state into [contextHandle].
   /// [tokenCapacity] caps the number of tokens read back.
   ///
   /// Wraps `llama_state_load_file`. Throws on failure (corrupt file,
   /// schema mismatch, etc.).
+  /// A capacity outside 1..context size throws [LlamaArgumentException] before
+  /// native state-load work and leaves a usable, idle context unchanged.
   List<int> stateLoadFile(int contextHandle, String path, int tokenCapacity) {
     final ctx = _contexts[contextHandle];
     if (ctx == null) {
-      throw StateError('Unknown context handle: $contextHandle');
+      throw LlamaStateException('Unknown context handle: $contextHandle');
     }
+    _ensureContextUsable(contextHandle, ctx);
     if (_generatingContexts.containsKey(contextHandle)) {
-      throw StateError(
-        'Cannot load state while generation is active on context $contextHandle',
+      final activity = _activeTtsContextHandle == contextHandle
+          ? 'text-to-speech'
+          : 'generation';
+      throw LlamaStateException(
+        'Cannot load state while $activity is active on context $contextHandle',
       );
     }
     if (tokenCapacity <= 0) {
-      throw ArgumentError.value(
-        tokenCapacity,
-        'tokenCapacity',
-        'must be positive',
+      throw LlamaArgumentException(
+        'tokenCapacity must be positive; received $tokenCapacity.',
+        name: 'tokenCapacity',
+        invalidValue: tokenCapacity,
       );
     }
     final contextCapacity = llama_n_ctx(ctx.pointer);
     if (tokenCapacity > contextCapacity) {
-      throw ArgumentError.value(
-        tokenCapacity,
-        'tokenCapacity',
-        'must not exceed context size ($contextCapacity)',
+      throw LlamaArgumentException(
+        'tokenCapacity must not exceed context size ($contextCapacity); '
+        'received $tokenCapacity.',
+        name: 'tokenCapacity',
+        invalidValue: tokenCapacity,
       );
     }
-    llama_synchronize(ctx.pointer);
+    _calls.synchronize(ctx.pointer);
     final pathPtr = path.toNativeUtf8();
     final tokensPtr = malloc<Int32>(tokenCapacity);
     final countPtr = malloc<Size>();
+    // llama.cpp clears the KV cache when a load fails after reading the
+    // token list, so the cached prefix must not survive any load attempt.
+    ctx.cachedPromptTokens = null;
+    ctx.kvFromStateLoad = false;
     try {
       countPtr.value = 0;
-      final ok = llama_state_load_file(
+      final ok = _calls.stateLoadFile(
         ctx.pointer,
         pathPtr.cast(),
         tokensPtr,
@@ -7068,14 +7625,24 @@ class LlamaCppService {
         countPtr,
       );
       if (!ok) {
-        throw StateError(
+        final fileVersion = readSessionFileVersion(path);
+        if (fileVersion != null && fileVersion != LLAMA_SESSION_VERSION) {
+          throw LlamaStateException(
+            'The state file "$path" has llama.cpp session version '
+            '$fileVersion, and this runtime reads version '
+            '$LLAMA_SESSION_VERSION. A state file does not carry over to a '
+            'llama.cpp release that changed the format: evaluate the prompt '
+            'again and save a new one.',
+          );
+        }
+        throw LlamaStateException(
           'llama_state_load_file failed for "$path" '
           '(corrupt file, version mismatch, or capacity too small)',
         );
       }
       final actual = countPtr.value;
       if (actual > tokenCapacity) {
-        throw StateError(
+        throw LlamaStateException(
           'llama_state_load_file returned actual=$actual '
           'exceeding capacity=$tokenCapacity',
         );
@@ -7088,6 +7655,78 @@ class LlamaCppService {
       malloc.free(pathPtr);
       malloc.free(tokensPtr);
       malloc.free(countPtr);
+    }
+  }
+
+  /// The identity of the state [stateSaveFile] writes for [contextHandle].
+  ///
+  /// Throws [LlamaUnsupportedException] when the runtime does not export
+  /// `llama_dart_build_identity` or reports an empty identity.
+  LlamaStateIdentity stateIdentity(int contextHandle) {
+    final ctx = _contexts[contextHandle];
+    if (ctx == null) {
+      throw LlamaStateException('Unknown context handle: $contextHandle');
+    }
+    _ensureContextUsable(contextHandle, ctx);
+    final build = _buildIdentity;
+    if (build == null) {
+      throw LlamaUnsupportedException(
+        'State identity needs a llama.cpp runtime that reports its build '
+        'identity (llama_dart_build_identity, llamadart-native '
+        '$minimumBuildIdentityNativeRelease or newer). The loaded runtime is '
+        'older: remove the native release override or use '
+        '$minimumBuildIdentityNativeRelease or newer.',
+      );
+    }
+    if (build.isEmpty) {
+      throw LlamaUnsupportedException(
+        'State identity needs a llama.cpp runtime that reports its build '
+        'identity, and the loaded runtime reports an empty one: it was not '
+        'built from git checkouts of llamadart-native and llama.cpp. Use a '
+        'llamadart-native $minimumBuildIdentityNativeRelease or newer release, '
+        'or build it from git checkouts.',
+      );
+    }
+    return LlamaStateIdentity(
+      runtimeBuild: build,
+      sessionFormatVersion: LLAMA_SESSION_VERSION,
+      contextSize: llama_n_ctx(ctx.pointer),
+      contextConfigDigest: stateContextConfigDigest(
+        _contextParams[contextHandle]!,
+      ),
+    );
+  }
+
+  /// Returns one metadata value without enumerating the full model metadata.
+  String? _getModelMetadataValue(int modelHandle, String key) {
+    final model = _models[modelHandle];
+    if (model == null) return null;
+    return _readModelMetadataValue(model.pointer, key);
+  }
+
+  String? _readModelMetadataValue(Pointer<llama_model> model, String key) {
+    if (key.isEmpty) return null;
+
+    final keyPtr = key.toNativeUtf8();
+    try {
+      final length = llama_model_meta_val_str(model, keyPtr.cast(), nullptr, 0);
+      if (length < 0) return null;
+
+      final valueBuf = malloc<Int8>(length + 1);
+      try {
+        final written = llama_model_meta_val_str(
+          model,
+          keyPtr.cast(),
+          valueBuf.cast(),
+          length + 1,
+        );
+        if (written != length) return null;
+        return valueBuf.cast<Utf8>().toDartString(length: written);
+      } finally {
+        malloc.free(valueBuf);
+      }
+    } finally {
+      malloc.free(keyPtr);
     }
   }
 
@@ -7249,6 +7888,8 @@ class LlamaCppService {
     final ctx = _contexts[contextHandle];
     final modelHandle = _contextToModel[contextHandle];
     if (ctx == null || modelHandle == null) return;
+    _ensureNoActiveTts(contextHandle, 'change LoRA adapters');
+    _ensureContextUsable(contextHandle, ctx);
 
     final modelAdapters = _loraAdapters[modelHandle];
     final activeLoras = _activeLoras[contextHandle];
@@ -7266,14 +7907,25 @@ class LlamaCppService {
         var adapter = modelAdapters[path];
         if (adapter == null) {
           final pathPtr = path.toNativeUtf8();
-          final adapterPtr = llama_adapter_lora_init(
-            _models[modelHandle]!.pointer,
-            pathPtr.cast(),
-          );
-          malloc.free(pathPtr);
-          if (adapterPtr == nullptr) {
-            throw Exception("Failed to load LoRA at $path");
+          final Pointer<llama_adapter_lora> adapterPtr;
+          try {
+            adapterPtr = _calls.adapterLoraInit(
+              _models[modelHandle]!.pointer,
+              pathPtr.cast(),
+            );
+          } finally {
+            malloc.free(pathPtr);
           }
+          if (adapterPtr == nullptr) {
+            throw LlamaModelException('Failed to load LoRA at $path');
+          }
+          _validateLoraForEagerActivation(
+            adapterPtr,
+            path,
+            invocationTokenCount: llama_adapter_get_alora_n_invocation_tokens,
+            invocationTokenData: llama_adapter_get_alora_invocation_tokens,
+            freeAdapter: llama_adapter_lora_free,
+          );
           adapter = _LlamaLoraWrapper(adapterPtr);
           modelAdapters[path] = adapter;
         }
@@ -7297,6 +7949,85 @@ class LlamaCppService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  static void _validateLoraForEagerActivation(
+    Pointer<llama_adapter_lora> adapter,
+    String adapterPath, {
+    required int Function(Pointer<llama_adapter_lora>) invocationTokenCount,
+    required Pointer<llama_token> Function(Pointer<llama_adapter_lora>)
+    invocationTokenData,
+    required void Function(Pointer<llama_adapter_lora>) freeAdapter,
+  }) {
+    final int invocationTokens;
+    try {
+      invocationTokens = invocationTokenCount(adapter);
+      final tokenData = invocationTokenData(adapter);
+      if (invocationTokens > 0 && tokenData == nullptr) {
+        throw StateError(
+          'aLoRA metadata reports invocation tokens without token data',
+        );
+      }
+    } catch (_) {
+      _freeRejectedLoraAdapter(adapter, freeAdapter);
+      throw LlamaUnsupportedException(
+        'Cannot safely load the LoRA adapter at $adapterPath because the '
+        'loaded native runtime cannot inspect aLoRA invocation-token metadata '
+        '(missing or incompatible '
+        'llama_adapter_get_alora_n_invocation_tokens / '
+        'llama_adapter_get_alora_invocation_tokens ABI). Use a native runtime '
+        'artifact that matches this package\'s bindings or another '
+        'ABI-compatible build that exports both symbols.',
+      );
+    }
+
+    // aLoRA must activate only after its invocation tokens appear, but
+    // adapters here apply from the start of generation.
+    if (invocationTokens > 0) {
+      _freeRejectedLoraAdapter(adapter, freeAdapter);
+      throw LlamaUnsupportedException(
+        'The adapter at $adapterPath is an aLoRA adapter ($invocationTokens '
+        'invocation token(s)). llamadart applies LoRA adapters from the start '
+        'of generation, but an aLoRA adapter must activate only after its '
+        'invocation sequence appears in the prompt, so applying it eagerly '
+        'would silently change output. Use a standard LoRA adapter until '
+        'invocation-aware activation is implemented.',
+      );
+    }
+  }
+
+  static void _freeRejectedLoraAdapter(
+    Pointer<llama_adapter_lora> adapter,
+    void Function(Pointer<llama_adapter_lora>) freeAdapter,
+  ) {
+    try {
+      freeAdapter(adapter);
+    } catch (_) {
+      // Keep the safety failure typed and actionable even for a severely
+      // version-skewed runtime whose cleanup symbol is also unavailable.
+    }
+  }
+
+  /// Exercises the production aLoRA safety guard with injected native calls.
+  ///
+  /// This is public only for VM unit tests, which use inert pointer values and
+  /// callbacks to cover ordinary LoRA, aLoRA, version-skew, and cleanup paths
+  /// without requiring a large model/adapter fixture.
+  static void debugValidateLoraForEagerActivationForTesting(
+    Pointer<llama_adapter_lora> adapter,
+    String adapterPath, {
+    required int Function(Pointer<llama_adapter_lora>) invocationTokenCount,
+    required Pointer<llama_token> Function(Pointer<llama_adapter_lora>)
+    invocationTokenData,
+    required void Function(Pointer<llama_adapter_lora>) freeAdapter,
+  }) {
+    _validateLoraForEagerActivation(
+      adapter,
+      adapterPath,
+      invocationTokenCount: invocationTokenCount,
+      invocationTokenData: invocationTokenData,
+      freeAdapter: freeAdapter,
+    );
   }
 
   void _applyActiveLoras(
@@ -7379,7 +8110,8 @@ class LlamaCppService {
       ];
 
       for (final backend in backendCandidates) {
-        if (_isBackendModuleBundled(backend)) {
+        if (_isBackendModuleBundled(backend) &&
+            !_failedBackendModules.contains(backend)) {
           available.add(_backendDisplayName(backend));
         }
       }
@@ -7498,10 +8230,17 @@ class LlamaCppService {
 
   /// Disposes of all resources managed by the service.
   void dispose() {
-    for (final c in _contexts.values) {
-      c.dispose();
+    _freeDecisionHeadsWhere((_) => true);
+    for (final handle in _contexts.keys.toList()) {
+      _freeContext(handle);
     }
-    _contexts.clear();
+    // A projector uses its model, so it goes first, as in freeModel.
+    for (final m in _mtmdContexts.values) {
+      _mtmdFree(m);
+    }
+    _mtmdContexts.clear();
+    _modelToMtmd.clear();
+    _modelToMtmdUseGpu.clear();
     for (final m in _models.values) {
       m.dispose();
     }
@@ -7511,17 +8250,15 @@ class LlamaCppService {
     }
     _speculativeDraftModels.clear();
     _modelToSpeculativeDraftModelKeys.clear();
+    _modelResolvedBackends.clear();
+    _modelArchitectures.clear();
     _modelBackendNames.clear();
     _modelResolvedGpuLayers.clear();
+    _modelsOnNoGpu.clear();
     _modelLoadParams.clear();
+    _modelPlacements.clear();
     _activeBackendName = _backendDisplayName('cpu');
     _activeResolvedGpuLayers = 0;
-    for (final m in _mtmdContexts.values) {
-      _mtmdFree(m);
-    }
-    _mtmdContexts.clear();
-    _modelToMtmd.clear();
-    _modelToMtmdUseGpu.clear();
     // llama_backend_free(); // DISABLED: Prevents race conditions with other isolates
   }
 
@@ -7531,26 +8268,86 @@ class LlamaCppService {
     if (model == null) {
       throw Exception("Invalid model handle");
     }
+    _ensureModelUsable(model);
+    if (!File(mmProjPath).existsSync()) {
+      throw LlamaModelException('Multimodal projector file not found.');
+    }
     _applyConfiguredLogLevel();
 
     final mmProjPathPtr = mmProjPath.toNativeUtf8();
     Pointer<mtmd_context> mmCtx = nullptr;
     try {
-      final ctxParams = _mtmdContextParamsDefault();
-      ctxParams.use_gpu = _modelToMtmdUseGpu[modelHandle] ?? true;
-      mmCtx = _mtmdInitFromFile(mmProjPathPtr.cast(), model.pointer, ctxParams);
+      mmCtx = _mtmdInitFromFile(
+        mmProjPathPtr.cast(),
+        model.pointer,
+        _mtmdContextParamsFor(modelHandle),
+      );
     } finally {
       malloc.free(mmProjPathPtr);
     }
 
     if (mmCtx == nullptr) {
-      throw Exception("Failed to load multimodal projector");
+      throw LlamaModelException(
+        'The native runtime could not load the multimodal projector for the '
+        'loaded model. It may be for a different model family, use a '
+        'projector type this runtime does not support, or not be a projector '
+        'file.',
+      );
     }
 
     final handle = _getHandle();
     _mtmdContexts[handle] = mmCtx;
     _modelToMtmd[modelHandle] = handle;
     return handle;
+  }
+
+  mtmd_context_params _mtmdContextParamsFor(int modelHandle) {
+    final ctxParams = _mtmdContextParamsDefault();
+    ctxParams.use_gpu = _modelToMtmdUseGpu[modelHandle] ?? true;
+    if (ctxParams.use_gpu && _keepsProjectorOnCpu(modelHandle)) {
+      LlamaLogger.instance.debug(
+        'llama_cpp_service: keeping the Qwen3.5 projector on the CPU on '
+        'Android Vulkan',
+      );
+      ctxParams.use_gpu = false;
+    }
+    // Without a device mtmd takes the first GPU of any backend, which a
+    // gpuDevices list may exclude.
+    if (ctxParams.use_gpu && _modelPlacements[modelHandle] != null) {
+      final device = _placedAuxiliaryDevice(modelHandle);
+      if (device == null) {
+        ctxParams.use_gpu = false;
+      } else {
+        ctxParams.device = device;
+      }
+    }
+    ctxParams.cb_eval = _ttsEvalCallback();
+    // ModelParams thread counts never reached mtmd, which defaults to 4.
+    ctxParams.n_threads = resolveCpuThreads(0, availableCores: _availableCores);
+    return ctxParams;
+  }
+
+  /// The `cb_eval` address [createMultimodalContext] passes to mtmd: that of
+  /// `llama_dart_tts_eval_callback` in the library providing the text-to-
+  /// speech API, or 0 when that API is unavailable or its library does not
+  /// export the callback.
+  int debugMtmdEvalCallbackAddressForTesting() =>
+      _mtmdContextParamsFor(-1).cb_eval.address;
+
+  /// Whether the text-to-speech API this service resolves has
+  /// `llama_dart_tts_eval_callback` and `llama_dart_tts_set_cancel_flag`;
+  /// null when that API is unavailable.
+  ({bool evalCallback, bool setCancelFlag})? debugTtsCancelExportsForTesting() {
+    final _TtsApi api;
+    try {
+      api = _resolveTtsApi();
+    } on LlamaUnsupportedException {
+      return null;
+    }
+    return (
+      evalCallback: api.evalCallback != nullptr,
+      setCancelFlag: api.setCancelFlag != null,
+    );
   }
 
   /// Frees the multimodal context (projector).
@@ -7584,31 +8381,98 @@ class LlamaCppService {
     }
     final fallback = _resolveMtmdFallbackApi();
     if (fallback == null) {
-      throw Exception(_mtmdUnavailableMessage('mtmd_context_params_default'));
+      throw LlamaUnsupportedException(
+        _mtmdUnavailableMessage('mtmd_context_params_default'),
+      );
     }
     return fallback.contextParamsDefault();
   }
+
+  /// The exit-teardown functions the mtmd calls go through; `null` when the
+  /// service calls llama.cpp directly or the runtime has no mtmd.
+  ExitTeardownApi? get _mtmdExitTeardown {
+    final exitTeardown = _calls.exit;
+    if (exitTeardown == null ||
+        (_mtmdPrimarySymbolsUnavailable && _resolveMtmdFallbackApi() == null)) {
+      return null;
+    }
+    return exitTeardown;
+  }
+
+  /// The exception barrier the mtmd bitmap constructors go through; `null`
+  /// when the runtime has none or the mtmd calls are not guarded.
+  NativeBarrierApi? get _mtmdBarrier =>
+      _mtmdExitTeardown == null ? null : _calls.failures.barrier;
 
   Pointer<mtmd_context> _mtmdInitFromFile(
     Pointer<Char> mmProjPath,
     Pointer<llama_model> model,
     mtmd_context_params ctxParams,
   ) {
+    final exitTeardown = _mtmdExitTeardown;
+    if (exitTeardown != null) {
+      final params = calloc<mtmd_context_params>()..ref = ctxParams;
+      try {
+        final owner = _nativeOwner;
+        final context = owner == null
+            ? exitTeardown.mtmdInitFromFile(mmProjPath, model, params)
+            : owner.api.createProjector(owner.token, mmProjPath, model, params);
+        if (context == nullptr) {
+          _calls.failures.throwIfCaught(
+            'mtmd_init_from_file',
+            LlamaModelException.new,
+            windowsFreeOnly: [model],
+          );
+        }
+        IsolateShutdownReleases.current.hold(
+          ShutdownStage.modelUser,
+          exitTeardown.freeAddress,
+          context,
+        );
+        return context;
+      } finally {
+        calloc.free(params);
+      }
+    }
     if (!_mtmdPrimarySymbolsUnavailable) {
       try {
-        return mtmd_init_from_file(mmProjPath, model, ctxParams);
+        final free = Native.addressOf<NativeFunction<_MtmdFreeNative>>(
+          mtmd_free,
+        ).cast<NativeFinalizerFunction>();
+        final context = mtmd_init_from_file(mmProjPath, model, ctxParams);
+        IsolateShutdownReleases.current.hold(
+          ShutdownStage.modelUser,
+          free,
+          context,
+        );
+        return context;
       } on ArgumentError {
         _mtmdPrimarySymbolsUnavailable = true;
       }
     }
     final fallback = _resolveMtmdFallbackApi();
     if (fallback == null) {
-      throw Exception(_mtmdUnavailableMessage('mtmd_init_from_file'));
+      throw LlamaUnsupportedException(
+        _mtmdUnavailableMessage('mtmd_init_from_file'),
+      );
     }
-    return fallback.initFromFile(mmProjPath, model, ctxParams);
+    final context = fallback.initFromFile(mmProjPath, model, ctxParams);
+    IsolateShutdownReleases.current.hold(
+      ShutdownStage.modelUser,
+      fallback.freeAddress,
+      context,
+    );
+    return context;
   }
 
   void _mtmdFree(Pointer<mtmd_context> ctx) {
+    IsolateShutdownReleases.current.release(ctx);
+    _calls.failures.forget(ctx);
+    final exitTeardown = _mtmdExitTeardown;
+    if (exitTeardown != null) {
+      exitTeardown.free(ctx.cast());
+      return;
+    }
     if (!_mtmdPrimarySymbolsUnavailable) {
       try {
         mtmd_free(ctx);
@@ -7634,7 +8498,9 @@ class LlamaCppService {
     }
     final fallback = _resolveMtmdFallbackApi();
     if (fallback == null) {
-      throw Exception(_mtmdUnavailableMessage('mtmd_input_chunks_init'));
+      throw LlamaUnsupportedException(
+        _mtmdUnavailableMessage('mtmd_input_chunks_init'),
+      );
     }
     return fallback.inputChunksInit();
   }
@@ -7659,20 +8525,34 @@ class LlamaCppService {
     Pointer<mtmd_context> ctx,
     Pointer<Char> pathPtr,
   ) {
+    final barrier = _mtmdBarrier;
+    if (barrier != null) return barrier.mtmdBitmapInitFromFile(ctx, pathPtr);
     if (!_mtmdPrimarySymbolsUnavailable) {
       try {
-        return mtmd_helper_bitmap_init_from_file(ctx, pathPtr, false).bitmap;
+        return mtmd_helper_bitmap_init_from_file(
+          ctx,
+          pathPtr,
+          false,
+          mtmd_helper_init_opt_default(),
+        ).bitmap;
       } on ArgumentError {
         _mtmdPrimarySymbolsUnavailable = true;
       }
     }
     final fallback = _resolveMtmdFallbackApi();
     if (fallback == null) {
-      throw Exception(
+      throw LlamaUnsupportedException(
         _mtmdUnavailableMessage('mtmd_helper_bitmap_init_from_file'),
       );
     }
-    return fallback.helperBitmapInitFromFile(ctx, pathPtr, false).bitmap;
+    return fallback
+        .helperBitmapInitFromFile(
+          ctx,
+          pathPtr,
+          false,
+          fallback.helperInitOptDefault(),
+        )
+        .bitmap;
   }
 
   Pointer<mtmd_bitmap> _mtmdHelperBitmapInitFromBuf(
@@ -7680,23 +8560,41 @@ class LlamaCppService {
     Pointer<UnsignedChar> data,
     int size,
   ) {
+    final barrier = _mtmdBarrier;
+    if (barrier != null) return barrier.mtmdBitmapInitFromBuf(ctx, data, size);
     if (!_mtmdPrimarySymbolsUnavailable) {
       try {
-        return mtmd_helper_bitmap_init_from_buf(ctx, data, size, false).bitmap;
+        return mtmd_helper_bitmap_init_from_buf(
+          ctx,
+          data,
+          size,
+          false,
+          mtmd_helper_init_opt_default(),
+        ).bitmap;
       } on ArgumentError {
         _mtmdPrimarySymbolsUnavailable = true;
       }
     }
     final fallback = _resolveMtmdFallbackApi();
     if (fallback == null) {
-      throw Exception(
+      throw LlamaUnsupportedException(
         _mtmdUnavailableMessage('mtmd_helper_bitmap_init_from_buf'),
       );
     }
-    return fallback.helperBitmapInitFromBuf(ctx, data, size, false).bitmap;
+    return fallback
+        .helperBitmapInitFromBuf(
+          ctx,
+          data,
+          size,
+          false,
+          fallback.helperInitOptDefault(),
+        )
+        .bitmap;
   }
 
   Pointer<mtmd_bitmap> _mtmdBitmapInitFromAudio(int n, Pointer<Float> samples) {
+    final barrier = _mtmdBarrier;
+    if (barrier != null) return barrier.mtmdBitmapInitFromAudio(n, samples);
     if (!_mtmdPrimarySymbolsUnavailable) {
       try {
         return mtmd_bitmap_init_from_audio(n, samples);
@@ -7706,7 +8604,9 @@ class LlamaCppService {
     }
     final fallback = _resolveMtmdFallbackApi();
     if (fallback == null) {
-      throw Exception(_mtmdUnavailableMessage('mtmd_bitmap_init_from_audio'));
+      throw LlamaUnsupportedException(
+        _mtmdUnavailableMessage('mtmd_bitmap_init_from_audio'),
+      );
     }
     return fallback.bitmapInitFromAudio(n, samples);
   }
@@ -7734,6 +8634,24 @@ class LlamaCppService {
     Pointer<Pointer<mtmd_bitmap>> bitmaps,
     int nBitmaps,
   ) {
+    final exitTeardown = _mtmdExitTeardown;
+    if (exitTeardown != null) {
+      final result = exitTeardown.mtmdTokenize(
+        ctx,
+        output,
+        text,
+        bitmaps,
+        nBitmaps,
+      );
+      if (result == _nativeStatusException) {
+        _calls.failures.throwIfCaught(
+          'mtmd_tokenize',
+          LlamaInferenceException.new,
+          freeOnly: [ctx],
+        );
+      }
+      return result;
+    }
     if (!_mtmdPrimarySymbolsUnavailable) {
       try {
         return mtmd_tokenize(ctx, output, text, bitmaps, nBitmaps);
@@ -7743,7 +8661,7 @@ class LlamaCppService {
     }
     final fallback = _resolveMtmdFallbackApi();
     if (fallback == null) {
-      throw Exception(_mtmdUnavailableMessage('mtmd_tokenize'));
+      throw LlamaUnsupportedException(_mtmdUnavailableMessage('mtmd_tokenize'));
     }
     return fallback.tokenize(ctx, output, text, bitmaps, nBitmaps);
   }
@@ -7758,6 +8676,27 @@ class LlamaCppService {
     bool logitsLast,
     Pointer<llama_pos> newNPast,
   ) {
+    final exitTeardown = _mtmdExitTeardown;
+    if (exitTeardown != null) {
+      final result = exitTeardown.mtmdHelperEvalChunks(
+        ctx,
+        lctx,
+        chunks,
+        nPast,
+        seqId,
+        nBatch,
+        logitsLast,
+        newNPast,
+      );
+      if (result == _nativeStatusException) {
+        _calls.failures.throwIfCaught(
+          'mtmd_helper_eval_chunks',
+          LlamaInferenceException.new,
+          freeOnly: [ctx, lctx],
+        );
+      }
+      return result;
+    }
     if (!_mtmdPrimarySymbolsUnavailable) {
       try {
         return mtmd_helper_eval_chunks(
@@ -7776,7 +8715,9 @@ class LlamaCppService {
     }
     final fallback = _resolveMtmdFallbackApi();
     if (fallback == null) {
-      throw Exception(_mtmdUnavailableMessage('mtmd_helper_eval_chunks'));
+      throw LlamaUnsupportedException(
+        _mtmdUnavailableMessage('mtmd_helper_eval_chunks'),
+      );
     }
     return fallback.helperEvalChunks(
       ctx,
@@ -7790,14 +8731,69 @@ class LlamaCppService {
     );
   }
 
-  _MtmdApi? _resolveMtmdFallbackApi() {
-    if (_mtmdFallbackLookupAttempted) {
+  /// Puts the service on its mtmd fallback path, resolving that fallback from
+  /// a wrapper library candidate instead of the mtmd library, for real-model
+  /// regression tests.
+  ///
+  /// With [chunkEval] true, the fallback is loaded the way the service loads
+  /// its own; with false, it gets no chunk-level functions.
+  /// Returns false, changing nothing, when no candidate provides the
+  /// fallback's mtmd functions.
+  bool debugUseWrapperMtmdFallbackForTesting({required bool chunkEval}) {
+    for (final candidate in _llamadartWrapperLibraryCandidates()) {
+      final _MtmdApi? api;
+      try {
+        final library = _openWrapperLibrary(candidate);
+        api = chunkEval
+            ? _MtmdApi.tryLoad(library)
+            : _MtmdApi.tryLoad(library, loadChunkEval: false);
+      } catch (_) {
+        continue;
+      }
+      if (api == null) continue;
+      _mtmdPrimarySymbolsUnavailable = true;
+      _mtmdFallbackLookupAttempted = true;
+      _mtmdFallbackApi = api;
+      return true;
+    }
+    return false;
+  }
+
+  /// Whether the mtmd fallback, loaded from [library] the way the service
+  /// loads its own, has chunk-level functions.
+  static bool debugMtmdFallbackHasChunkEvalForTesting(DynamicLibrary library) =>
+      _MtmdApi.tryLoad(library)?.chunkEval != null;
+
+  Pointer<NativeType> _mixedMtmdSymbol(String name) {
+    final library = _resolveMtmdFallbackApi()?.library;
+    if (library == null) throw ArgumentError('mtmd library unavailable');
+    return library.lookup<NativeType>(name);
+  }
+
+  // Log setup can probe before backend initialization discovers the bundle's
+  // module directory. A miss only describes that search, while a loaded API
+  // must stay bound to the same library for live projector objects.
+  static bool _shouldRetryMtmdFallbackLookup({
+    required bool attempted,
+    required bool hasApi,
+    required String? searchedDirectory,
+    required String? moduleDirectory,
+  }) => !attempted || (!hasApi && searchedDirectory != moduleDirectory);
+
+  _MtmdApi? _resolveMtmdFallbackApi({DynamicLibrary Function(String)? open}) {
+    if (!_shouldRetryMtmdFallbackLookup(
+      attempted: _mtmdFallbackLookupAttempted,
+      hasApi: _mtmdFallbackApi != null,
+      searchedDirectory: _mtmdFallbackLookupDirectory,
+      moduleDirectory: _backendModuleDirectory,
+    )) {
       return _mtmdFallbackApi;
     }
     _mtmdFallbackLookupAttempted = true;
+    _mtmdFallbackLookupDirectory = _backendModuleDirectory;
 
-    final fileNameCandidates = _mtmdLibraryCandidateFileNames();
-    final candidates = <String>{...fileNameCandidates};
+    final fileNameCandidates = _libraryCandidates.mtmd();
+    final candidates = <String>{};
     final backendModuleDirectory = _backendModuleDirectory;
     if (backendModuleDirectory != null) {
       for (final fileName in fileNameCandidates) {
@@ -7805,10 +8801,13 @@ class LlamaCppService {
       }
     }
 
+    // Keep the bundled runtime ahead of unrelated libraries on the search path.
+    candidates.addAll(fileNameCandidates);
+
     DynamicLibrary? library;
     for (final candidate in candidates) {
       try {
-        library = DynamicLibrary.open(candidate);
+        library = (open ?? DynamicLibrary.open)(candidate);
         break;
       } catch (_) {
         continue;
@@ -7822,45 +8821,12 @@ class LlamaCppService {
     return _mtmdFallbackApi;
   }
 
-  List<String> _mtmdLibraryCandidateFileNames() {
-    final baseName = _mtmdLibraryFileName();
-    final candidates = <String>{baseName};
-    final backendModuleDirectory = _backendModuleDirectory;
-    if (backendModuleDirectory == null) {
-      return candidates.toList(growable: false);
-    }
-
-    final dynamicNames = _matchingLibraryNames(
-      backendModuleDirectory,
-      _mtmdLibraryPattern(),
-    );
-    candidates.addAll(dynamicNames);
-    return candidates.toList(growable: false);
-  }
-
-  static String _mtmdLibraryFileName() {
-    if (Platform.isWindows) {
-      return 'mtmd.dll';
-    }
-    if (Platform.isMacOS || Platform.isIOS) {
-      return 'libmtmd.dylib';
-    }
-    return 'libmtmd.so';
-  }
-
-  RegExp _mtmdLibraryPattern() {
-    if (Platform.isWindows) {
-      return RegExp(r'^mtmd(?:-[^.\\/]+)*\.dll$');
-    }
-    if (Platform.isMacOS || Platform.isIOS) {
-      return RegExp(r'^libmtmd(?:-[^.\\/]+)*\.dylib$');
-    }
-    return RegExp(r'^libmtmd(?:-[^.\\/]+)*\.so$');
-  }
-
   String _mtmdUnavailableMessage(String symbol) {
-    return 'Multimodal support is unavailable in this native runtime bundle '
-        '(missing `$symbol` in both primary and mtmd libraries).';
+    return 'Multimodal support is unavailable in this native runtime: the '
+        'llamadart library lacks an mtmd function this package calls, and the '
+        'fallback mtmd library is missing or incomplete, so `$symbol` cannot '
+        'run. Use the llamadart-native runtime this package pins '
+        '($llamaCppTag) or an ABI-compatible build.';
   }
 
   // --- Helper Getters ---
@@ -8050,10 +9016,11 @@ class LlamaCppService {
     return gpuBackendFromRegName(namePtr.cast<Utf8>().toDartString());
   }
 
-  /// Maps a ggml backend registry name to a [GpuBackend]; returns
-  /// [GpuBackend.auto] when unrecognized. Match-by-substring because registry
-  /// names vary by build (e.g. the Metal backend registers as `Metal` on some
-  /// builds and `MTL` on others), mirroring [_backendInfoContainsBackendMarker].
+  /// Maps a ggml backend registry name, or a backend display name such as
+  /// `Metal`, to a [GpuBackend]; returns [GpuBackend.auto] when unrecognized.
+  /// Match-by-substring because registry names vary by build (e.g. the Metal
+  /// backend registers as `Metal` on some builds and `MTL` on others),
+  /// mirroring [_backendInfoContainsBackendMarker].
   static GpuBackend gpuBackendFromRegName(String regName) {
     final name = regName.toLowerCase();
     if (name.contains('vulkan')) return GpuBackend.vulkan;
@@ -8075,7 +9042,23 @@ class LlamaCppService {
     return llama_n_ctx(ctx.pointer);
   }
 
-  /// Returns native llama.cpp perf timings for [contextHandle].
+  /// Token counts of the last generation on [contextHandle], or null when
+  /// no such context exists.
+  ({int promptTokens, int cachedPromptTokens, int completionTokens})?
+  lastGenerationTokenCounts(int contextHandle) {
+    final ctx = _contexts[contextHandle];
+    if (ctx == null) {
+      return null;
+    }
+    return (
+      promptTokens: ctx.lastPerfPromptEvalTokens,
+      cachedPromptTokens: ctx.lastPerfCachedPromptTokens,
+      completionTokens: ctx.lastPerfEvalTokens,
+    );
+  }
+
+  /// Returns native llama.cpp perf timings, or null after a request fails
+  /// before its counters can be reset.
   ({
     double loadMs,
     double promptEvalMs,
@@ -8093,12 +9076,14 @@ class LlamaCppService {
     int? speculativeReplayTokens,
     double? speculativeDraftMs,
     double? speculativeVerifyMs,
-  })
+  })?
   getPerformanceContext(int contextHandle) {
     final ctx = _contexts[contextHandle];
     if (ctx == null) {
       throw Exception("Invalid context handle");
     }
+
+    if (!ctx.performanceAvailable) return null;
 
     final perf = llama_perf_context(ctx.pointer);
     final sampler = _samplers[contextHandle];
@@ -8163,47 +9148,1399 @@ class LlamaCppService {
     );
   }
 
-  /// Checks if a multimodal context exists.
-  bool hasMultimodalContext(int mmContextHandle) {
-    return _mtmdContexts.containsKey(mmContextHandle);
-  }
-
   /// Returns whether the active multimodal projector supports vision input.
   bool supportsVision(int mmContextHandle) {
     final mmCtx = _mtmdContexts[mmContextHandle];
-    if (mmCtx == null) {
+    if (mmCtx == null ||
+        _projectorHasQwen35VulkanRestriction(mmContextHandle)) {
       return false;
     }
-
-    if (!_mtmdPrimarySymbolsUnavailable) {
-      try {
-        return mtmd_support_vision(mmCtx);
-      } on ArgumentError {
-        _mtmdPrimarySymbolsUnavailable = true;
-      }
-    }
-
-    final fallback = _resolveMtmdFallbackApi();
-    return fallback?.supportsVision(mmCtx) ?? false;
+    return _mtmdHasEncoder(mmCtx, audio: false) ??
+        (throw LlamaUnsupportedException(
+          _mtmdUnavailableMessage('mtmd_support_vision'),
+        ));
   }
 
   /// Returns whether the active multimodal projector supports audio input.
   bool supportsAudio(int mmContextHandle) {
     final mmCtx = _mtmdContexts[mmContextHandle];
-    if (mmCtx == null) {
+    if (mmCtx == null ||
+        _projectorHasQwen35VulkanRestriction(mmContextHandle)) {
       return false;
     }
+    return _mtmdHasEncoder(mmCtx, audio: true) ??
+        (throw LlamaUnsupportedException(
+          _mtmdUnavailableMessage('mtmd_support_audio'),
+        ));
+  }
 
+  /// Whether the projector [mmCtx] has an audio encoder, or with [audio]
+  /// false a vision encoder, as mtmd reports it.
+  ///
+  /// Null when neither the llamadart library nor the fallback mtmd library
+  /// has the probe function.
+  bool? _mtmdHasEncoder(Pointer<mtmd_context> mmCtx, {required bool audio}) {
     if (!_mtmdPrimarySymbolsUnavailable) {
       try {
-        return mtmd_support_audio(mmCtx);
+        return audio ? mtmd_support_audio(mmCtx) : mtmd_support_vision(mmCtx);
       } on ArgumentError {
         _mtmdPrimarySymbolsUnavailable = true;
       }
     }
 
     final fallback = _resolveMtmdFallbackApi();
-    return fallback?.supportsAudio(mmCtx) ?? false;
+    if (fallback == null) return null;
+    return audio
+        ? fallback.supportsAudio(mmCtx)
+        : fallback.supportsVision(mmCtx);
+  }
+
+  /// The error for [parts] that mtmd failed to load or tokenize when the
+  /// projector [mmCtx] reports no encoder for the kind of one of them, and
+  /// null otherwise, as when the runtime lacks the probe function.
+  LlamaUnsupportedException? _missingEncoderFor(
+    Pointer<mtmd_context> mmCtx,
+    List<LlamaContentPart> parts,
+  ) {
+    final kinds = parts.map(_isAudioRatherThanImage).toList(growable: false);
+    for (final (kind, audio) in const [('Image', false), ('Audio', true)]) {
+      if (kinds.contains(audio) &&
+          _mtmdHasEncoder(mmCtx, audio: audio) == false) {
+        return LlamaUnsupportedException(
+          '$kind input is not supported by the loaded multimodal projector: '
+          'it has no ${kind.toLowerCase()} encoder. Load a projector that has '
+          'one, or leave ${kind.toLowerCase()} input out of the request.',
+        );
+      }
+    }
+    return null;
+  }
+
+  /// Whether [part] is audio (true) or an image (false) to mtmd, or null
+  /// when neither is established.
+  ///
+  /// mtmd decides by content for a path or encoded bytes, whatever the type
+  /// of the part: audio by the magic of `is_audio_file` in llama.cpp's
+  /// `mtmd-helper.cpp`, and anything else is tried as an image. Other content
+  /// is an image here when it has the magic of an image format, or when the
+  /// caller typed the part as an image too. An audio part that mtmd does not
+  /// read as audio, such as an m4a or Ogg file, and a source that cannot be
+  /// read are neither, so their mtmd error is kept.
+  static bool? _isAudioRatherThanImage(LlamaContentPart part) {
+    final (path, bytes) = switch (part) {
+      LlamaImageContent() => (part.path, part.bytes),
+      LlamaAudioContent() => (part.path, part.bytes),
+      _ => (null, null),
+    };
+    final List<int> head;
+    if (path != null) {
+      try {
+        final file = File(path).openSync();
+        try {
+          head = file.readSync(12);
+        } finally {
+          file.closeSync();
+        }
+      } on FileSystemException {
+        return null;
+      }
+    } else if (bytes != null) {
+      head = bytes;
+    } else {
+      return part is LlamaAudioContent ? true : null;
+    }
+    bool has(String magic, [int offset = 0]) {
+      if (head.length < offset + magic.length) return false;
+      for (var i = 0; i < magic.length; i++) {
+        if (head[offset + i] != magic.codeUnitAt(i)) return false;
+      }
+      return true;
+    }
+
+    if (head.length >= 12 &&
+        (has('RIFF') && has('WAVE', 8) ||
+            has('ID3') ||
+            head[0] == 0xFF && head[1] & 0xE0 == 0xE0 ||
+            has('fLaC'))) {
+      return true;
+    }
+    final imageMagic =
+        has('\x89PNG\r\n\x1a\n') ||
+        has('\xff\xd8\xff') ||
+        has('GIF8') ||
+        has('BM');
+    return imageMagic || part is LlamaImageContent ? false : null;
+  }
+
+  String _videoUnreportedMessage() {
+    final platform = switch (_abi) {
+      Abi.androidArm ||
+      Abi.androidArm64 ||
+      Abi.androidIA32 ||
+      Abi.androidX64 ||
+      Abi.androidRiscv64 => 'Android',
+      Abi.iosArm64 || Abi.iosX64 => 'iOS',
+      _ => null,
+    };
+    if (platform != null) {
+      return 'Video input is unavailable on $platform: the llamadart native '
+          'artifacts for this platform are built without mtmd video support '
+          '(upstream forces MTMD_VIDEO off when LLAMA_SUBPROCESS, which '
+          'spawns FFmpeg, is off), so mtmd_helper_support_video reports '
+          'false. Extract and send image frames instead.';
+    }
+    return 'Video input is unavailable: the loaded native mtmd runtime '
+        'reports no video support (mtmd_helper_support_video is false). On '
+        'the pinned $llamaCppTag macOS, Linux and Windows artifacts this means '
+        'the loaded multimodal projector has no vision encoder; load a vision '
+        'projector. Otherwise the runtime is an older or custom build without '
+        'LLAMA_SUBPROCESS/MTMD_VIDEO. Video also needs FFmpeg/ffprobe on '
+        'PATH, and llamadart does not yet ingest video frames. Extract and '
+        'send image frames instead.';
+  }
+
+  /// Returns whether the active native mtmd build and projector report video.
+  ///
+  /// This is a behavioral probe. The helper symbol is present even when
+  /// `MTMD_VIDEO` was compiled out, so symbol lookup alone is not sufficient.
+  bool supportsVideo(int mmContextHandle) {
+    final mmCtx = _mtmdContexts[mmContextHandle];
+    if (mmCtx == null) {
+      return false;
+    }
+
+    if (!_mtmdPrimarySymbolsUnavailable &&
+        !_mtmdVideoPrimarySymbolUnavailable) {
+      try {
+        return mtmd_helper_support_video(mmCtx);
+      } on ArgumentError {
+        // Video helpers were added after the core mtmd surface. Do not mark
+        // working vision/audio symbols unavailable when only this optional
+        // probe is absent from an older library.
+        _mtmdVideoPrimarySymbolUnavailable = true;
+      }
+    }
+
+    final fallback = _resolveMtmdFallbackApi();
+    return fallback?.supportsVideo(mmCtx) ?? false;
+  }
+
+  /// Reports whether the model [modelHandle] can run decision heads.
+  ///
+  /// Supported models are loaded ModernBERT encoders (`general.architecture`
+  /// `modern-bert`) with CLS, SEP and MASK tokens.
+  BackendDecisionCapabilities decisionCapabilities(int modelHandle) {
+    final reason = _decisionUnsupportedReason(modelHandle);
+    return BackendDecisionCapabilities(
+      isSupported: reason == null,
+      unsupportedReason: reason,
+    );
+  }
+
+  /// Loads the decision head at [headPath] for the model [modelHandle] and
+  /// returns its description.
+  ///
+  /// The head's config is the [configPath] file when given, else the head's
+  /// `laya.config` metadata. The head gets a private encoder context of the
+  /// config's `max_len` tokens, whose batch thread count also drives the
+  /// head's CPU work. It runs on a GPU device of the load's backend
+  /// (`mainGpu` picks among several), or on CPU with a CPU backend, disabled
+  /// GPU layers, no matching device, or single-device mode with negative
+  /// `mainGpu`. In other split modes, a negative or out-of-range `mainGpu`
+  /// picks the first matching head device. An out-of-range nonnegative
+  /// `mainGpu` in single-device mode fails the model load before head loading.
+  /// Throws [LlamaStateException] for an unknown
+  /// model, [LlamaUnsupportedException] for a model [decisionCapabilities]
+  /// rejects, [LlamaModelException] for a head or config that does not fit
+  /// the model, and [LlamaContextException] when the encoder context cannot
+  /// be created or fails [checkDecisionEncoderContext].
+  BackendDecisionHeadInfo loadDecisionHead(
+    int modelHandle,
+    String headPath,
+    String? configPath,
+  ) {
+    final model = _models[modelHandle];
+    if (model == null) {
+      throw LlamaStateException(
+        'No model is loaded for handle $modelHandle. Load the decision '
+        'encoder before its head.',
+      );
+    }
+    final unsupportedReason = _decisionUnsupportedReason(modelHandle);
+    if (unsupportedReason != null) {
+      throw LlamaUnsupportedException(unsupportedReason);
+    }
+    final vocab = llama_model_get_vocab(model.pointer);
+    final clsToken = llama_vocab_bos(vocab);
+    final sepToken = llama_vocab_sep(vocab);
+    final maskToken = llama_vocab_mask(vocab);
+    final hiddenSize = llama_model_n_embd(model.pointer);
+
+    final String configText;
+    final Pointer<llama_context> context;
+    final DecisionHeadRuntime runtime;
+    final int tokenLimit;
+    final file = SafetensorsFile.open(headPath);
+    try {
+      configText = resolveDecisionHeadConfigText(
+        headPath: headPath,
+        configPath: configPath,
+        metadata: file.metadata,
+      );
+      final config = parseDecisionHeadConfig(
+        configText,
+        source: configPath ?? '$headPath (laya.config metadata)',
+      );
+      final maxTokens = config.maxTokens;
+      checkDecisionHeadFitsEncoder(
+        trainedContext: llama_model_n_ctx_train(model.pointer),
+        maxTokens: maxTokens,
+      );
+      final weights = DecisionHeadWeights.read(
+        file,
+        hiddenSize: hiddenSize,
+        layers: config.headLayers,
+      );
+
+      final params = _modelLoadParams[modelHandle] ?? const ModelParams();
+      final resolvedGpuLayers =
+          _modelResolvedGpuLayers[modelHandle] ??
+          resolveGpuLayersForLoad(
+            params,
+            isAndroid: _isAndroid,
+            isIosSimulator: _isIosSimulator,
+            isMacosX64: _isMacosX64,
+          );
+      final runsOnCpu = decisionHeadRunsOnCpu(
+        params: params,
+        modelBackendName: _modelBackendNames[modelHandle],
+        resolvedGpuLayers: resolvedGpuLayers,
+      );
+
+      final ctxParams = llama_context_default_params();
+      applyDecisionContextParams(
+        ctxParams,
+        params,
+        maxTokens: maxTokens,
+        runsOnCpu: runsOnCpu,
+        availableCores: _availableCores,
+      );
+      if (!runsOnCpu &&
+          shouldUseConservativeAndroidVulkanContextConfig(
+            params,
+            resolvedGpuLayers: resolvedGpuLayers,
+            isAndroid: _isAndroid,
+          )) {
+        _applyConservativeAndroidVulkanContextConfig(ctxParams, modelHandle);
+      }
+
+      context = _createOwnedContext(model.pointer, ctxParams);
+      IsolateShutdownReleases.current.hold(
+        ShutdownStage.context,
+        _calls.contextFreeAddress,
+        context,
+      );
+      if (context == nullptr) {
+        throw LlamaContextException(
+          'Failed to create the decision encoder context of $maxTokens tokens.',
+        );
+      }
+      try {
+        tokenLimit = llama_n_ubatch(context);
+        checkDecisionEncoderContext(
+          poolingType: llama_pooling_type$1(context).value,
+          tokenLimit: tokenLimit,
+          maxTokens: maxTokens,
+        );
+        final device = runsOnCpu ? null : _decisionHeadDevice(modelHandle);
+        runtime = DecisionHeadRuntime.create(
+          weights,
+          device: device,
+          cpuThreads: llama_n_threads_batch(context),
+          opOffload: device != null && ctxParams.op_offload,
+          api: _decisionHeadGraphApi,
+          exitTeardown: _calls.exit,
+          failures: _calls.failures,
+        );
+      } catch (_) {
+        IsolateShutdownReleases.current.release(context);
+        _calls.freeContext(context);
+        rethrow;
+      }
+    } finally {
+      file.close();
+    }
+
+    final handle = _getHandle();
+    _decisionHeads[handle] = _DecisionHead(
+      modelHandle: modelHandle,
+      context: context,
+      runtime: runtime,
+      hiddenSize: hiddenSize,
+      tokenLimit: tokenLimit,
+      vocabSize: llama_vocab_n_tokens(vocab),
+      encode: (context, batch, valueCount) =>
+          _encodeDecisionBatch(_calls.encode, context, batch, valueCount),
+      freeContext: _calls.freeContext,
+    );
+    return BackendDecisionHeadInfo(
+      handle: handle,
+      hiddenSize: hiddenSize,
+      clsToken: clsToken,
+      sepToken: sepToken,
+      maskToken: maskToken,
+      maskText: _vocabTokenText(vocab, maskToken),
+      configJson: configText,
+      deviceName: runtime.deviceName,
+    );
+  }
+
+  /// Runs [sequences] through the encoder and the decision head [headHandle]
+  /// and returns one output per sequence, in order.
+  ///
+  /// Throws [LlamaStateException] for an unknown head and
+  /// [LlamaInferenceException] when a sequence fails
+  /// [validateDecisionSequences] or the encoder pass fails; no sequence runs
+  /// unless all are valid.
+  List<BackendDecisionOutput> runDecision(
+    int headHandle,
+    List<BackendDecisionSequence> sequences,
+  ) {
+    final head = _decisionHeads[headHandle];
+    if (head == null) {
+      throw LlamaStateException(
+        'Decision head $headHandle is not loaded; it was freed or its model '
+        'was unloaded. Load the decision head again.',
+      );
+    }
+    _calls.failures.ensureUsable(head.context, 'This decision head');
+    validateDecisionSequences(
+      sequences,
+      tokenLimit: head.tokenLimit,
+      vocabSize: head.vocabSize,
+    );
+    final batch = _batchInit(head.tokenLimit, 0, 1);
+    try {
+      return <BackendDecisionOutput>[
+        for (final sequence in sequences)
+          _runDecisionSequence(head, batch, sequence),
+      ];
+    } finally {
+      _batchFree(batch);
+    }
+  }
+
+  /// Frees the decision head [headHandle]; unknown handles are ignored.
+  void freeDecisionHead(int headHandle) {
+    _decisionHeads.remove(headHandle)?.dispose();
+  }
+
+  /// Checks [sequences] against a decision head's limits.
+  ///
+  /// Each sequence needs 1 to [tokenLimit] tokens, each in `[0, vocabSize)`,
+  /// 1 to token-count markers, and every marker a position in its tokens.
+  /// Throws [LlamaInferenceException] naming the first sequence that fails.
+  /// The llama-web-bridge decision core runs these checks with the same
+  /// messages, so both runtimes reject the same sequences.
+  static void validateDecisionSequences(
+    List<BackendDecisionSequence> sequences, {
+    required int tokenLimit,
+    required int vocabSize,
+  }) {
+    for (var i = 0; i < sequences.length; i++) {
+      final sequence = sequences[i];
+      final tokens = sequence.tokens;
+      if (tokens.isEmpty || tokens.length > tokenLimit) {
+        throw LlamaInferenceException(
+          'Decision sequence $i has ${tokens.length} tokens; the decision '
+          'encoder accepts 1 to $tokenLimit.',
+        );
+      }
+      for (final token in tokens) {
+        if (token < 0 || token >= vocabSize) {
+          throw LlamaInferenceException(
+            'Decision sequence $i contains token $token, outside the '
+            'encoder vocabulary of $vocabSize tokens.',
+          );
+        }
+      }
+      if (sequence.markers.isEmpty) {
+        throw LlamaInferenceException(
+          'Decision sequence $i has no option markers.',
+        );
+      }
+      if (sequence.markers.length > tokens.length) {
+        throw LlamaInferenceException(
+          'Decision sequence $i has ${sequence.markers.length} markers for '
+          'its ${tokens.length} tokens; a sequence holds at most one marker '
+          'per token.',
+        );
+      }
+      for (final marker in sequence.markers) {
+        if (marker < 0 || marker >= tokens.length) {
+          throw LlamaInferenceException(
+            'Decision sequence $i has marker $marker outside its '
+            '${tokens.length} tokens.',
+          );
+        }
+      }
+    }
+  }
+
+  /// Returns the Laya config text of the decision head at [headPath].
+  ///
+  /// Reads the [configPath] file when given, else returns the `laya.config`
+  /// entry of the head's [metadata]. Throws [LlamaModelException] when the
+  /// file cannot be read or neither source exists.
+  static String resolveDecisionHeadConfigText({
+    required String headPath,
+    required String? configPath,
+    required Map<String, String> metadata,
+  }) {
+    if (configPath != null) {
+      try {
+        return File(configPath).readAsStringSync();
+      } on FileSystemException catch (error) {
+        throw LlamaModelException(
+          'Cannot read the decision head config at $configPath.',
+          error.osError?.message ?? error.message,
+        );
+      }
+    }
+    final text = metadata['laya.config'];
+    if (text == null) {
+      throw LlamaModelException(
+        'The decision head at $headPath has no "laya.config" metadata. Pass '
+        'the head\'s rl_agent_config.json as its config.',
+      );
+    }
+    return text;
+  }
+
+  /// Parses decision head config [text] read from [source].
+  ///
+  /// Throws [LlamaModelException] naming [source] when
+  /// [decodeDecisionHeadConfig] rejects [text].
+  static DecisionHeadConfig parseDecisionHeadConfig(
+    String text, {
+    required String source,
+  }) {
+    try {
+      return decodeDecisionHeadConfig(text);
+    } on LlamaDecisionException catch (error) {
+      throw LlamaModelException(
+        'The decision head config in $source is invalid: ${error.message}',
+      );
+    }
+  }
+
+  /// Returns why a model cannot run decision heads, or null when it can.
+  ///
+  /// The model needs [architecture] `modern-bert`; [clsToken], [sepToken]
+  /// and [maskToken] within `[0, vocabSize)`; a non-empty [maskText]; and an
+  /// [outputSize] of 0 or equal to [hiddenSize], so the encoder returns its
+  /// last hidden state.
+  static String? decisionModelUnsupportedReason({
+    required String? architecture,
+    required int vocabSize,
+    required int clsToken,
+    required int sepToken,
+    required int maskToken,
+    required String maskText,
+    required int hiddenSize,
+    required int outputSize,
+  }) {
+    if (architecture != _decisionEncoderArchitecture) {
+      final reported = architecture == null
+          ? 'no architecture'
+          : 'architecture "$architecture"';
+      return 'Decision heads need a ModernBERT encoder GGUF '
+          '(general.architecture "$_decisionEncoderArchitecture"); the loaded '
+          'model reports $reported.';
+    }
+    for (final (name, token) in <(String, int)>[
+      ('CLS', clsToken),
+      ('SEP', sepToken),
+      ('MASK', maskToken),
+    ]) {
+      if (token < 0 || token >= vocabSize) {
+        return 'The loaded encoder has no $name token, which decision '
+            'sequences need. Convert the GGUF with its tokenizer\'s special '
+            'tokens.';
+      }
+    }
+    if (maskText.isEmpty) {
+      return 'The loaded encoder\'s MASK token has no text, which decision '
+          'prompts need to strip it from user text.';
+    }
+    if (outputSize > 0 && outputSize != hiddenSize) {
+      return 'The encoder outputs $outputSize values per token but its hidden '
+          'size is $hiddenSize; decision heads need the last hidden state.';
+    }
+    return null;
+  }
+
+  /// Checks that a decision head config's [maxTokens] fits the loaded
+  /// encoder.
+  ///
+  /// Throws [LlamaModelException] when [maxTokens] exceeds the encoder's
+  /// [trainedContext].
+  static void checkDecisionHeadFitsEncoder({
+    required int trainedContext,
+    required int maxTokens,
+  }) {
+    if (trainedContext < maxTokens) {
+      throw LlamaModelException(
+        'The decision head config sets max_len $maxTokens, but the loaded '
+        'encoder was trained for $trainedContext tokens.',
+      );
+    }
+  }
+
+  /// Checks a decision encoder context for a head config's [maxTokens].
+  ///
+  /// Throws [LlamaContextException] when [poolingType] is not
+  /// `LLAMA_POOLING_TYPE_NONE`, so the context would not return per-token
+  /// hidden states, or when its [tokenLimit] (`n_ubatch`) is below
+  /// [maxTokens].
+  static void checkDecisionEncoderContext({
+    required int poolingType,
+    required int tokenLimit,
+    required int maxTokens,
+  }) {
+    if (poolingType != llama_pooling_type.LLAMA_POOLING_TYPE_NONE.value) {
+      throw LlamaContextException(
+        'The decision encoder context does not return per-token hidden '
+        'states (pooling is not NONE).',
+      );
+    }
+    if (tokenLimit < maxTokens) {
+      throw LlamaContextException(
+        'The decision encoder context accepts $tokenLimit tokens per pass, '
+        'fewer than the head config max_len $maxTokens.',
+      );
+    }
+  }
+
+  /// Returns whether a decision head for a model runs on the CPU.
+  ///
+  /// True when the model loaded on the CPU backend ([modelBackendName]
+  /// `CPU`), offloads no layers ([resolvedGpuLayers] <= 0), or [params]
+  /// selects no GPU (single-device split mode with a negative main GPU).
+  static bool decisionHeadRunsOnCpu({
+    required ModelParams params,
+    required String? modelBackendName,
+    required int resolvedGpuLayers,
+  }) {
+    return modelBackendName == _backendDisplayName('cpu') ||
+        resolvedGpuLayers <= 0 ||
+        selectsNoGpuDevice(
+          splitMode: params.splitMode.llamaCppValue,
+          mainGpu: params.mainGpu,
+        );
+  }
+
+  /// Picks the device of a decision head for a model on [modelBackendName].
+  ///
+  /// [deviceBackends] holds the backend of each GPU or iGPU device, in
+  /// registry order, and [mainGpu] counts among the devices of the model's
+  /// backend. Returns the index in [deviceBackends] of the device [mainGpu]
+  /// selects, or of the backend's first device when [mainGpu] is out of
+  /// range in other split modes. A single-device model load with an
+  /// out-of-range nonnegative index fails before head selection; callers must
+  /// pass the placement of a successfully loaded model.
+  /// Returns null, meaning the CPU, when single-device [splitMode]
+  /// with a negative [mainGpu] selects no GPU, when [modelBackendName] maps to
+  /// the CPU or to no backend, or when no device has the model's backend.
+  static int? decisionHeadDeviceIndex({
+    required ModelSplitMode splitMode,
+    required String? modelBackendName,
+    required List<GpuBackend> deviceBackends,
+    required int mainGpu,
+  }) {
+    if (selectsNoGpuDevice(
+      splitMode: splitMode.llamaCppValue,
+      mainGpu: mainGpu,
+    )) {
+      return null;
+    }
+    final backend = gpuBackendFromRegName(modelBackendName ?? '');
+    if (backend == GpuBackend.auto || backend == GpuBackend.cpu) {
+      return null;
+    }
+    final matching = [
+      for (final (index, deviceBackend) in deviceBackends.indexed)
+        if (deviceBackend == backend) index,
+    ];
+    if (matching.isEmpty) {
+      return null;
+    }
+    return mainGpu >= 0 && mainGpu < matching.length
+        ? matching[mainGpu]
+        : matching.first;
+  }
+
+  String? _decisionUnsupportedReason(int modelHandle) {
+    final model = _models[modelHandle];
+    if (model == null) {
+      return 'No llama.cpp model is loaded for handle $modelHandle. Load a '
+          'ModernBERT encoder GGUF first.';
+    }
+    final vocab = llama_model_get_vocab(model.pointer);
+    final vocabSize = llama_vocab_n_tokens(vocab);
+    final maskToken = llama_vocab_mask(vocab);
+    return decisionModelUnsupportedReason(
+      architecture: _getModelMetadataValue(modelHandle, 'general.architecture'),
+      vocabSize: vocabSize,
+      clsToken: llama_vocab_bos(vocab),
+      sepToken: llama_vocab_sep(vocab),
+      maskToken: maskToken,
+      maskText: maskToken >= 0 && maskToken < vocabSize
+          ? _vocabTokenText(vocab, maskToken)
+          : '',
+      hiddenSize: llama_model_n_embd(model.pointer),
+      outputSize: llama_model_n_embd_out(model.pointer),
+    );
+  }
+
+  static const String _decisionEncoderArchitecture = 'modern-bert';
+
+  String _vocabTokenText(Pointer<llama_vocab> vocab, int token) {
+    final text = llama_vocab_get_text(vocab, token);
+    return text == nullptr ? '' : text.cast<Utf8>().toDartString();
+  }
+
+  /// The listed device the decision heads and projector of [modelHandle]
+  /// run on, or `null`, the CPU, when its placement lists no GPU.
+  ggml_backend_dev_t? _placedAuxiliaryDevice(int modelHandle) {
+    final params = _modelLoadParams[modelHandle] ?? const ModelParams();
+    return auxiliaryPlacementDevice(
+      _modelPlacements[modelHandle]!,
+      params.mainGpu,
+    )?.device;
+  }
+
+  ggml_backend_dev_t? _decisionHeadDevice(int modelHandle) {
+    if (_modelPlacements.containsKey(modelHandle)) {
+      return _placedAuxiliaryDevice(modelHandle);
+    }
+    final devices = [
+      for (final entry in _registeredDevices())
+        if (entry.device != null &&
+            entry.device != nullptr &&
+            (entry.type ==
+                    ggml_backend_dev_type.GGML_BACKEND_DEVICE_TYPE_GPU.value ||
+                entry.type ==
+                    ggml_backend_dev_type.GGML_BACKEND_DEVICE_TYPE_IGPU.value))
+          entry,
+    ];
+    final params = _modelLoadParams[modelHandle] ?? const ModelParams();
+    final index = decisionHeadDeviceIndex(
+      splitMode: params.splitMode,
+      modelBackendName: _modelBackendNames[modelHandle],
+      deviceBackends: [
+        for (final entry in devices) gpuBackendFromRegName(entry.registry),
+      ],
+      mainGpu: params.mainGpu,
+    );
+    return index == null ? null : devices[index].device;
+  }
+
+  BackendDecisionOutput _runDecisionSequence(
+    _DecisionHead head,
+    llama_batch batch,
+    BackendDecisionSequence sequence,
+  ) {
+    final tokens = sequence.tokens;
+    batch.n_tokens = tokens.length;
+    for (var i = 0; i < tokens.length; i++) {
+      batch.token[i] = tokens[i];
+      batch.pos[i] = i;
+      batch.n_seq_id[i] = 1;
+      batch.seq_id[i][0] = 0;
+      batch.logits[i] = 1;
+    }
+    return head.runtime.run(
+      head.encode(head.context, batch, tokens.length * head.hiddenSize),
+      tokens.length,
+      sequence.questionType,
+      sequence.markers,
+    );
+  }
+
+  void _freeDecisionHeadsWhere(bool Function(_DecisionHead head) test) {
+    final handles = <int>[
+      for (final MapEntry(:key, :value) in _decisionHeads.entries)
+        if (test(value)) key,
+    ];
+    for (final handle in handles) {
+      _decisionHeads.remove(handle)!.dispose();
+    }
+  }
+
+  /// Discovers dedicated native text-to-speech support.
+  BackendTextToSpeechCapabilities textToSpeechCapabilities(
+    int contextHandle,
+    int mmContextHandle,
+  ) {
+    if (!_isMatchingContextAndProjector(contextHandle, mmContextHandle)) {
+      return const BackendTextToSpeechCapabilities(
+        isSupported: false,
+        unsupportedReason:
+            'The loaded context and text-to-speech projector do not match.',
+      );
+    }
+
+    _TtsApi api;
+    try {
+      api = _resolveTtsApi();
+    } on LlamaUnsupportedException catch (error) {
+      return BackendTextToSpeechCapabilities(
+        isSupported: false,
+        unsupportedReason: error.message,
+      );
+    }
+
+    if (api.apiVersion() != LLAMA_DART_TTS_API_VERSION) {
+      return BackendTextToSpeechCapabilities(
+        isSupported: false,
+        unsupportedReason:
+            'The native text-to-speech ABI version is incompatible '
+            '(expected $LLAMA_DART_TTS_API_VERSION).',
+      );
+    }
+
+    final mtmd = _mtmdContexts[mmContextHandle]!;
+    final acceptedTypes = _ttsAcceptedModelTypes(api);
+    final info = malloc<llama_dart_tts_info>();
+    try {
+      info.ref.struct_size = sizeOf<llama_dart_tts_info>();
+      final getInfoExt = api.hasModelTypeOptIn ? api.getInfoExt : null;
+      final status = llama_dart_tts_status.fromValue(
+        getInfoExt != null
+            ? getInfoExt(mtmd, acceptedTypes, info)
+            : api.getInfo(mtmd, info),
+      );
+      if (status == llama_dart_tts_status.LLAMA_DART_TTS_STATUS_UNSUPPORTED) {
+        return BackendTextToSpeechCapabilities(
+          isSupported: false,
+          unsupportedReason: _ttsUnsupportedProjectorMessage(
+            api,
+            acceptedTypes,
+          ),
+        );
+      }
+      _throwForTtsStatus(
+        status,
+        operation: 'Text-to-speech capability probe',
+        barrierCall: getInfoExt != null
+            ? 'llama_dart_tts_get_info_ext'
+            : 'llama_dart_tts_get_info',
+      );
+      final model = _backendTtsModels[info.ref.model_type];
+      if (model == null || acceptedTypes & (1 << info.ref.model_type) == 0) {
+        return BackendTextToSpeechCapabilities(
+          isSupported: false,
+          unsupportedReason: _ttsUnsupportedProjectorMessage(
+            api,
+            acceptedTypes,
+          ),
+        );
+      }
+      final flags = info.ref.capabilities;
+      bool has(llama_dart_tts_capability capability) =>
+          flags & capability.value != 0;
+      final supportsLanguage = has(
+        llama_dart_tts_capability.LLAMA_DART_TTS_CAPABILITY_LANGUAGE,
+      );
+      if (model == BackendTextToSpeechModel.chatterbox && supportsLanguage) {
+        final sequences = llama_n_seq_max(_contexts[contextHandle]!.pointer);
+        if (sequences < 2) {
+          return BackendTextToSpeechCapabilities(
+            isSupported: false,
+            unsupportedReason:
+                'Chatterbox Multilingual decodes a second sequence for '
+                'classifier-free guidance, so its context needs '
+                'ModelParams.maxParallelSequences of at least 2; this '
+                'context has $sequences.',
+          );
+        }
+      }
+      if (model == BackendTextToSpeechModel.lfm3Audio &&
+          !_modelHasTtsTemplate(contextHandle)) {
+        return const BackendTextToSpeechCapabilities(
+          isSupported: false,
+          unsupportedReason:
+              'The loaded model has no `tts` chat template, which LFM3-Audio '
+              'speech output needs. Load the LFM3-Audio or LFM3-Omni model '
+              'that matches this projector.',
+        );
+      }
+      final supportsVoice = has(
+        llama_dart_tts_capability.LLAMA_DART_TTS_CAPABILITY_VOICE,
+      );
+      return BackendTextToSpeechCapabilities(
+        isSupported: true,
+        model: model,
+        sampleRateHz: info.ref.sample_rate,
+        channelCount: info.ref.channels,
+        supportsLanguage: supportsLanguage,
+        supportsSpeakerReference: has(
+          llama_dart_tts_capability.LLAMA_DART_TTS_CAPABILITY_SPEAKER_REFERENCE,
+        ),
+        supportsCancellation: true,
+        supportsVoice: supportsVoice && api.hasModelTypeOptIn,
+        voices: supportsVoice && api.hasModelTypeOptIn
+            ? _ttsVoices(api, mtmd, acceptedTypes)
+            : const <String>[],
+      );
+    } finally {
+      malloc.free(info);
+    }
+  }
+
+  /// Why this runtime cannot drive [model], or null when it can; reads the
+  /// runtime's exports only.
+  String? textToSpeechModelUnsupportedReason(BackendTextToSpeechModel model) {
+    final _TtsApi api;
+    try {
+      api = _resolveTtsApi();
+    } on LlamaUnsupportedException catch (error) {
+      return error.message;
+    }
+    if (model == BackendTextToSpeechModel.qwen3Tts) return null;
+    final name = _ttsModelName(model);
+    final version = _ttsOptInNativeVersions[model]!;
+    if (!api.hasModelTypeOptIn) {
+      return '$name speech output needs the model-type opt-in '
+          '(`llama_dart_tts_init_ext`) of llamadart-native $version or later; '
+          'this llama.cpp runtime predates it.';
+    }
+    final type = _backendTtsModels.entries
+        .firstWhere((entry) => entry.value == model)
+        .key;
+    if (_ttsAcceptedModelTypes(api) & (1 << type) != 0) return null;
+    return 'This llama.cpp runtime cannot drive $name speech output '
+        '(`llama_dart_tts_supported_model_types`); it needs '
+        'llamadart-native $version or later.';
+  }
+
+  static const Map<int, BackendTextToSpeechModel> _backendTtsModels = {
+    1: BackendTextToSpeechModel.qwen3Tts,
+    2: BackendTextToSpeechModel.lfm3Audio,
+    3: BackendTextToSpeechModel.soprano,
+    4: BackendTextToSpeechModel.chatterbox,
+    5: BackendTextToSpeechModel.pocketTts,
+  };
+
+  /// The `_ext` mask of model types this core drives and the runtime can
+  /// create; Qwen3-TTS alone on a runtime without the opt-in.
+  int _ttsAcceptedModelTypes(_TtsApi api) {
+    const qwen3 = 1 << 1;
+    final supportedModelTypes = api.supportedModelTypes;
+    if (!api.hasModelTypeOptIn || supportedModelTypes == null) return qwen3;
+    var known = 0;
+    for (final type in _backendTtsModels.keys) {
+      known |= 1 << type;
+    }
+    return (supportedModelTypes() & known) | qwen3;
+  }
+
+  String _ttsUnsupportedProjectorMessage(_TtsApi api, int acceptedTypes) {
+    const base =
+        'The loaded projector does not expose supported audio generation.';
+    if (!api.hasModelTypeOptIn) {
+      return '$base This runtime drives Qwen3-TTS only: other models need '
+          'the model-type opt-in (`llama_dart_tts_init_ext`) of '
+          'llamadart-native v0.8.0 or later (Chatterbox and Pocket TTS: '
+          'v0.9.0).';
+    }
+    final missing = [
+      for (final MapEntry(key: type, value: model) in _backendTtsModels.entries)
+        if (acceptedTypes & (1 << type) == 0)
+          '${_ttsModelName(model)} (llamadart-native '
+              '${_ttsOptInNativeVersions[model]})',
+    ];
+    if (missing.isEmpty) return base;
+    return '$base This runtime cannot drive ${missing.join(', ')} '
+        '(`llama_dart_tts_supported_model_types`).';
+  }
+
+  /// The first llamadart-native release that drives each model type behind
+  /// the model-type opt-in; Qwen3-TTS predates it.
+  static const Map<BackendTextToSpeechModel, String> _ttsOptInNativeVersions = {
+    BackendTextToSpeechModel.lfm3Audio: 'v0.8.0',
+    BackendTextToSpeechModel.soprano: 'v0.8.0',
+    BackendTextToSpeechModel.chatterbox: 'v0.9.0',
+    BackendTextToSpeechModel.pocketTts: 'v0.9.0',
+  };
+
+  static String _ttsModelName(BackendTextToSpeechModel model) =>
+      switch (model) {
+        BackendTextToSpeechModel.qwen3Tts => 'Qwen3-TTS',
+        BackendTextToSpeechModel.lfm3Audio => 'LFM3-Audio',
+        BackendTextToSpeechModel.soprano => 'Soprano',
+        BackendTextToSpeechModel.chatterbox => 'Chatterbox',
+        BackendTextToSpeechModel.pocketTts => 'Pocket TTS',
+      };
+
+  bool _modelHasTtsTemplate(int contextHandle) {
+    final model = _models[_contextToModel[contextHandle]];
+    if (model == null) return false;
+    final name = 'tts'.toNativeUtf8();
+    try {
+      return llama_model_chat_template(model.pointer, name.cast()) != nullptr;
+    } finally {
+      malloc.free(name);
+    }
+  }
+
+  /// The projector's predefined voices in upstream order, or none when the
+  /// runtime cannot list them (llamadart-native before v0.9.0).
+  List<String> _ttsVoices(
+    _TtsApi api,
+    Pointer<mtmd_context> mtmd,
+    int acceptedTypes,
+  ) {
+    final getVoiceCount = api.getVoiceCount;
+    final getVoiceName = api.getVoiceName;
+    if (getVoiceCount == null || getVoiceName == null) {
+      return const <String>[];
+    }
+    final count = malloc<Int32>();
+    final length = malloc<Size>();
+    try {
+      _throwForTtsStatus(
+        llama_dart_tts_status.fromValue(
+          getVoiceCount(mtmd, acceptedTypes, count),
+        ),
+        operation: 'Text-to-speech voice listing',
+        barrierCall: 'llama_dart_tts_get_voice_count',
+      );
+      final voices = <String>[];
+      for (var index = 0; index < count.value; index++) {
+        _throwForTtsStatus(
+          llama_dart_tts_status.fromValue(
+            getVoiceName(mtmd, acceptedTypes, index, nullptr, 0, length),
+          ),
+          operation: 'Text-to-speech voice listing',
+          barrierCall: 'llama_dart_tts_get_voice_name',
+        );
+        final capacity = length.value + 1;
+        final name = malloc<Char>(capacity);
+        try {
+          _throwForTtsStatus(
+            llama_dart_tts_status.fromValue(
+              getVoiceName(mtmd, acceptedTypes, index, name, capacity, length),
+            ),
+            operation: 'Text-to-speech voice listing',
+            barrierCall: 'llama_dart_tts_get_voice_name',
+          );
+          voices.add(name.cast<Utf8>().toDartString(length: length.value));
+        } finally {
+          malloc.free(name);
+        }
+      }
+      return List<String>.unmodifiable(voices);
+    } finally {
+      malloc.free(count);
+      malloc.free(length);
+    }
+  }
+
+  /// Synthesizes complete float32 PCM with the stable native TTS wrapper.
+  ///
+  /// [cancelFlagAddress] is the address of a one-byte flag that another
+  /// isolate sets to nonzero to cancel. It is read before the native task is
+  /// created and, when the runtime exports `llama_dart_tts_set_cancel_flag`,
+  /// attached to the task after startup so native code reads it while a step
+  /// runs. It must stay allocated until this future completes; it is last read
+  /// before then.
+  Future<BackendTextToSpeechResult> synthesizeTextToSpeech(
+    int contextHandle,
+    int mmContextHandle,
+    BackendTextToSpeechRequest request,
+    int cancelFlagAddress, {
+    void Function(BackendTextToSpeechProgress progress)? onProgress,
+  }) async {
+    final context = _contexts[contextHandle];
+    if (_activeTtsContextHandle != null) {
+      throw LlamaStateException('Text-to-speech synthesis is already active.');
+    }
+    if (_generatingContexts.containsKey(contextHandle)) {
+      throw LlamaStateException(
+        'Cannot start text-to-speech while generation is active.',
+      );
+    }
+    context?.performanceAvailable = false;
+    final mtmd = _mtmdContexts[mmContextHandle];
+    if (context == null ||
+        mtmd == null ||
+        !_isMatchingContextAndProjector(contextHandle, mmContextHandle)) {
+      throw LlamaStateException(
+        'The loaded context and text-to-speech projector do not match.',
+      );
+    }
+    _ensureContextUsable(contextHandle, context);
+    _calls.failures.ensureUsable(mtmd, 'This multimodal projector');
+    // Speaker-reference loading can yield before a native task exists.
+    _generatingContexts[contextHandle] = 1;
+    _activeTtsContextHandle = contextHandle;
+    try {
+      return await _synthesizeTextToSpeech(
+        contextHandle,
+        context,
+        mtmd,
+        request,
+        cancelFlagAddress,
+        onProgress: onProgress,
+      );
+    } finally {
+      _activeTtsContextHandle = null;
+      _generatingContexts.remove(contextHandle);
+    }
+  }
+
+  Future<BackendTextToSpeechResult> _synthesizeTextToSpeech(
+    int contextHandle,
+    _LlamaContextWrapper context,
+    Pointer<mtmd_context> mtmd,
+    BackendTextToSpeechRequest request,
+    int cancelFlagAddress, {
+    void Function(BackendTextToSpeechProgress progress)? onProgress,
+  }) async {
+    final cancelFlag = Pointer<Int8>.fromAddress(cancelFlagAddress);
+    // A cancel for this synthesis is only sent after its synthesize request,
+    // so anything latched here belongs to a run that already ended.
+    _ttsCancelPending = false;
+
+    final api = _resolveTtsApi();
+    final textBytes = utf8.encode(request.text);
+    final text = malloc<Uint8>(textBytes.length + 1);
+    for (var index = 0; index < textBytes.length; index++) {
+      text[index] = textBytes[index];
+    }
+    text[textBytes.length] = 0;
+
+    Pointer<Utf8> language = nullptr;
+    final trimmedLanguage = request.language?.trim();
+    if (trimmedLanguage != null && trimmedLanguage.isNotEmpty) {
+      language = trimmedLanguage.toNativeUtf8();
+    }
+    final voiceName = request.voice;
+    final startWithVoice = api.hasModelTypeOptIn ? api.startWithVoice : null;
+    if (voiceName != null && startWithVoice == null) {
+      malloc.free(text);
+      if (language != nullptr) malloc.free(language);
+      throw LlamaUnsupportedException(
+        'Selecting a text-to-speech voice needs the model-type opt-in '
+        '(`llama_dart_tts_start_with_voice`) of llamadart-native v0.8.0 or '
+        'later; this runtime lacks it.',
+      );
+    }
+    final Pointer<Utf8> voice = voiceName == null
+        ? nullptr
+        : voiceName.toNativeUtf8();
+
+    Pointer<UnsignedChar> speakerAudio = nullptr;
+    Uint8List? speakerBytes = request.speakerAudioBytes;
+    final speakerPath = request.speakerAudioPath;
+    if (speakerBytes == null && speakerPath != null) {
+      try {
+        speakerBytes = await File(speakerPath).readAsBytes();
+      } catch (error) {
+        malloc.free(text);
+        if (language != nullptr) malloc.free(language);
+        if (voice != nullptr) malloc.free(voice);
+        throw LlamaAudioFormatException(
+          'Unable to read speaker reference audio.',
+          error,
+        );
+      }
+    }
+    if (speakerBytes != null && speakerBytes.isNotEmpty) {
+      speakerAudio = malloc<UnsignedChar>(speakerBytes.length);
+      speakerAudio
+          .cast<Uint8>()
+          .asTypedList(speakerBytes.length)
+          .setAll(0, speakerBytes);
+    }
+
+    final requestPointer = malloc<llama_dart_tts_request>();
+    final initStatus = malloc<Int32>();
+    final progress = malloc<llama_dart_tts_progress>();
+    Pointer<llama_dart_tts> task = nullptr;
+    var framesGenerated = 0;
+    var truncated = false;
+
+    llama_set_embeddings(context.pointer, true);
+    try {
+      // Yields so a cancel already queued for this synthesis can be processed
+      // before the native task setup, which cannot be interrupted.
+      await Future<void>.delayed(Duration.zero);
+      if (_ttsCancelPending || cancelFlag.value != 0) {
+        _ttsCancelPending = false;
+        throw LlamaTextToSpeechException(
+          'Text-to-speech synthesis was cancelled.',
+        );
+      }
+      _calls.synchronize(context.pointer);
+      _resetRequestPerformance(contextHandle, context);
+      final initExt = api.hasModelTypeOptIn ? api.initExt : null;
+      task = initExt != null
+          ? initExt(
+              context.pointer,
+              mtmd,
+              _ttsAcceptedModelTypes(api),
+              initStatus,
+            )
+          : api.init(context.pointer, mtmd, initStatus);
+      IsolateShutdownReleases.current.hold(
+        ShutdownStage.session,
+        api.freeAddress,
+        task,
+      );
+      if (task == nullptr) {
+        _throwForTtsStatus(
+          llama_dart_tts_status.fromValue(initStatus.value),
+          operation: 'Text-to-speech initialization',
+          barrierCall: initExt != null
+              ? 'llama_dart_tts_init_ext'
+              : 'llama_dart_tts_init',
+          context: context.pointer,
+        );
+        throw LlamaTextToSpeechException(
+          'Text-to-speech initialization returned no task.',
+        );
+      }
+      _activeTts = task;
+      if (_ttsCancelPending) {
+        _ttsCancelPending = false;
+        api.cancel(task);
+      }
+
+      requestPointer.ref = api.requestDefault();
+      requestPointer.ref.text = text.cast();
+      requestPointer.ref.text_length = textBytes.length;
+      requestPointer.ref.speaker_audio = speakerAudio;
+      requestPointer.ref.speaker_audio_length = speakerBytes?.length ?? 0;
+      requestPointer.ref.language = language.cast();
+      requestPointer.ref.sequence_id = 0;
+      requestPointer.ref.prompt_batch_size = request.promptBatchSize;
+      requestPointer.ref.max_frames = request.maxFrames;
+      requestPointer.ref.top_k = request.topK;
+      requestPointer.ref.top_p = request.topP;
+      requestPointer.ref.min_p = request.minP;
+      requestPointer.ref.temperature = request.temperature;
+      requestPointer.ref.seed = request.seed;
+
+      _throwForTtsStatus(
+        llama_dart_tts_status.fromValue(
+          voice == nullptr
+              ? api.start(task, requestPointer)
+              : startWithVoice!(task, requestPointer, voice.cast()),
+        ),
+        operation: 'Text-to-speech startup',
+        api: api,
+        task: task,
+        barrierCall: voice == nullptr
+            ? 'llama_dart_tts_start'
+            : 'llama_dart_tts_start_with_voice',
+        context: context.pointer,
+      );
+      api.setCancelFlag?.call(task, cancelFlag);
+
+      while (true) {
+        progress.ref.struct_size = sizeOf<llama_dart_tts_progress>();
+        final status = llama_dart_tts_status.fromValue(
+          api.step(task, progress),
+        );
+        if (status == llama_dart_tts_status.LLAMA_DART_TTS_STATUS_CANCELLED) {
+          throw LlamaTextToSpeechException(
+            'Text-to-speech synthesis was cancelled.',
+          );
+        }
+        _throwForTtsStatus(
+          status,
+          operation: 'Text-to-speech generation',
+          api: api,
+          task: task,
+          barrierCall: 'llama_dart_tts_step',
+          context: context.pointer,
+        );
+        framesGenerated = progress.ref.frames_generated;
+        truncated = progress.ref.truncated;
+        final state = llama_dart_tts_state.fromValue(progress.ref.state);
+        if (state == llama_dart_tts_state.LLAMA_DART_TTS_STATE_COMPLETED) {
+          break;
+        }
+        if (state == llama_dart_tts_state.LLAMA_DART_TTS_STATE_CANCELLED) {
+          throw LlamaTextToSpeechException(
+            'Text-to-speech synthesis was cancelled.',
+          );
+        }
+        if (state == llama_dart_tts_state.LLAMA_DART_TTS_STATE_FAILED) {
+          throw LlamaTextToSpeechException(
+            'Text-to-speech synthesis failed.',
+            _ttsLastError(api, task),
+          );
+        }
+        onProgress?.call(
+          BackendTextToSpeechProgress(
+            phase:
+                state ==
+                    llama_dart_tts_state.LLAMA_DART_TTS_STATE_PROCESSING_PROMPT
+                ? BackendTextToSpeechPhase.processingPrompt
+                : BackendTextToSpeechPhase.generating,
+            promptTokensRemaining: progress.ref.prompt_tokens_remaining,
+            framesGenerated: framesGenerated,
+            truncated: truncated,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      final outputInfo = malloc<llama_dart_tts_output_info>();
+      try {
+        outputInfo.ref.struct_size = sizeOf<llama_dart_tts_output_info>();
+        _throwForTtsStatus(
+          llama_dart_tts_status.fromValue(api.getOutputInfo(task, outputInfo)),
+          operation: 'Text-to-speech output metadata',
+          api: api,
+          task: task,
+        );
+        final sampleCount = outputInfo.ref.sample_count;
+        if (sampleCount <= 0) {
+          throw LlamaTextToSpeechException(
+            'Text-to-speech completed without PCM output.',
+          );
+        }
+        final pcm = malloc<Float>(sampleCount);
+        final outputCount = malloc<Size>();
+        try {
+          _throwForTtsStatus(
+            llama_dart_tts_status.fromValue(
+              api.readPcm(task, 0, pcm, sampleCount, outputCount),
+            ),
+            operation: 'Text-to-speech PCM read',
+            api: api,
+            task: task,
+          );
+          if (outputCount.value != sampleCount) {
+            throw LlamaTextToSpeechException(
+              'Native text-to-speech returned incomplete PCM output.',
+              '${outputCount.value}/$sampleCount samples',
+            );
+          }
+          return BackendTextToSpeechResult(
+            samples: Float32List.fromList(pcm.asTypedList(sampleCount)),
+            sampleRateHz: outputInfo.ref.sample_rate,
+            channelCount: outputInfo.ref.channels,
+            framesGenerated: framesGenerated,
+            truncated: truncated,
+          );
+        } finally {
+          malloc.free(pcm);
+          malloc.free(outputCount);
+        }
+      } finally {
+        malloc.free(outputInfo);
+      }
+    } finally {
+      if (task != nullptr) {
+        try {
+          api.reset(task);
+        } catch (_) {}
+        IsolateShutdownReleases.current.release(task);
+        api.free(task);
+      }
+      _activeTts = nullptr;
+      _ttsCancelPending = false;
+      llama_set_embeddings(context.pointer, false);
+      malloc.free(requestPointer);
+      malloc.free(initStatus);
+      malloc.free(progress);
+      malloc.free(text);
+      if (language != nullptr) malloc.free(language);
+      if (voice != nullptr) malloc.free(voice);
+      if (speakerAudio != nullptr) malloc.free(speakerAudio);
+    }
+  }
+
+  /// Requests cancellation of the active native synthesis.
+  void cancelTextToSpeech() {
+    final task = _activeTts;
+    if (task == nullptr) {
+      _ttsCancelPending = true;
+      return;
+    }
+    _resolveTtsApi().cancel(task);
+  }
+
+  bool _isMatchingContextAndProjector(int contextHandle, int mmContextHandle) {
+    final modelHandle = _contextToModel[contextHandle];
+    return modelHandle != null &&
+        _contexts.containsKey(contextHandle) &&
+        _mtmdContexts.containsKey(mmContextHandle) &&
+        _modelToMtmd[modelHandle] == mmContextHandle;
+  }
+
+  void _throwForTtsStatus(
+    llama_dart_tts_status status, {
+    required String operation,
+    _TtsApi? api,
+    Pointer<llama_dart_tts>? task,
+    String? barrierCall,
+    Pointer<llama_context>? context,
+  }) {
+    if (status == llama_dart_tts_status.LLAMA_DART_TTS_STATUS_OK) {
+      return;
+    }
+    if (barrierCall != null &&
+        status == llama_dart_tts_status.LLAMA_DART_TTS_STATUS_UPSTREAM_ERROR) {
+      _calls.failures.throwIfCaught(
+        barrierCall,
+        LlamaTextToSpeechException.new,
+        freeOnly: [?context],
+      );
+    }
+    final details = api != null && task != null && task != nullptr
+        ? _ttsLastError(api, task)
+        : null;
+    switch (status) {
+      case llama_dart_tts_status.LLAMA_DART_TTS_STATUS_UNSUPPORTED:
+        throw LlamaUnsupportedException(
+          '$operation is unsupported by the loaded native runtime or model.',
+        );
+      case llama_dart_tts_status.LLAMA_DART_TTS_STATUS_INVALID_STATE:
+        throw LlamaStateException(
+          '$operation is not valid in this state.',
+          details,
+        );
+      case llama_dart_tts_status.LLAMA_DART_TTS_STATUS_SPEAKER_DECODE_FAILED:
+        throw LlamaAudioFormatException(
+          'Speaker reference audio could not be decoded.',
+          details,
+        );
+      case llama_dart_tts_status.LLAMA_DART_TTS_STATUS_CANCELLED:
+        throw LlamaTextToSpeechException(
+          'Text-to-speech synthesis was cancelled.',
+        );
+      case llama_dart_tts_status.LLAMA_DART_TTS_STATUS_INVALID_ARGUMENT:
+      case llama_dart_tts_status.LLAMA_DART_TTS_STATUS_UPSTREAM_ERROR:
+        throw LlamaTextToSpeechException('$operation failed.', details);
+      case llama_dart_tts_status.LLAMA_DART_TTS_STATUS_OK:
+        return;
+    }
+  }
+
+  String? _ttsLastError(_TtsApi api, Pointer<llama_dart_tts> task) {
+    final error = api.lastError(task);
+    if (error == nullptr) {
+      return null;
+    }
+    final message = error.cast<Utf8>().toDartString().trim();
+    return message.isEmpty ? null : message;
   }
 }
 
@@ -8236,699 +10573,6 @@ class _LazyGrammarConfig {
   }
 }
 
-class _ReasoningBudgetApi {
-  const _ReasoningBudgetApi({required this.init});
-
-  final _LlamaDartReasoningBudgetInitDart init;
-
-  Pointer<llama_sampler> initSampler({
-    required Pointer<llama_vocab> vocab,
-    required _LlamaCppThinkingBudgetConfig config,
-    required bool pauseGrammarDuringReasoning,
-    required Pointer<llama_sampler> grammarSampler,
-    required Pointer<Int32> promptTokens,
-    required int promptTokenCount,
-  }) {
-    final startTag = config.startTag.toNativeUtf8();
-    final endTag = config.endTag.toNativeUtf8();
-    final forcedMessage = config.forcedMessage.toNativeUtf8();
-    try {
-      return init(
-        vocab,
-        startTag.cast(),
-        endTag.cast(),
-        forcedMessage.cast(),
-        config.maxTokens,
-        pauseGrammarDuringReasoning,
-        grammarSampler,
-        promptTokens,
-        promptTokenCount,
-      );
-    } finally {
-      malloc.free(startTag);
-      malloc.free(endTag);
-      malloc.free(forcedMessage);
-    }
-  }
-
-  static _ReasoningBudgetApi? tryLoad(DynamicLibrary library) {
-    try {
-      return _ReasoningBudgetApi(
-        init: library
-            .lookupFunction<
-              _LlamaDartReasoningBudgetInitNative,
-              _LlamaDartReasoningBudgetInitDart
-            >('llama_dart_sampler_init_reasoning_budget'),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-}
-
-class _SpeculativeApi {
-  final _LlamaDartSpeculativeInitDart init;
-  final _LlamaDartSpeculativeFreeDart free;
-  final _LlamaDartSpeculativeGetDraftContextDart getDraftContext;
-  final _LlamaDartSpeculativeNeedEmbdDart needEmbd;
-  final _LlamaDartSpeculativeNeedEmbdDart needEmbdNextn;
-  final _LlamaDartSpeculativeBeginDart begin;
-  final _LlamaDartSpeculativeProcessBatchDart processBatch;
-  final _LlamaDartSpeculativeDraftDart draft;
-  final _LlamaDartSpeculativeAcceptDart accept;
-  final _LlamaDartSamplerSampleAndAcceptNDart sampleAndAcceptN;
-
-  const _SpeculativeApi({
-    required this.init,
-    required this.free,
-    required this.getDraftContext,
-    required this.needEmbd,
-    required this.needEmbdNextn,
-    required this.begin,
-    required this.processBatch,
-    required this.draft,
-    required this.accept,
-    required this.sampleAndAcceptN,
-  });
-
-  factory _SpeculativeApi.direct() {
-    final api = _SpeculativeApi(
-      init: llama_dart_speculative_init,
-      free: llama_dart_speculative_free,
-      getDraftContext: llama_dart_speculative_get_draft_context,
-      needEmbd: llama_dart_speculative_need_embd,
-      needEmbdNextn: llama_dart_speculative_need_embd_nextn,
-      begin: llama_dart_speculative_begin,
-      processBatch: llama_dart_speculative_process_batch,
-      draft: llama_dart_speculative_draft,
-      accept: llama_dart_speculative_accept,
-      sampleAndAcceptN: llama_dart_sampler_sample_and_accept_n,
-    );
-    api.probe();
-    return api;
-  }
-
-  factory _SpeculativeApi.windowsAsset() {
-    _llamadartWrapperSpeculativeFree(nullptr.cast<llama_dart_speculative>());
-    return _SpeculativeApi(
-      init: _llamadartWrapperSpeculativeInit,
-      free: _llamadartWrapperSpeculativeFree,
-      getDraftContext: _llamadartWrapperSpeculativeGetDraftContext,
-      needEmbd: _llamadartWrapperSpeculativeNeedEmbd,
-      needEmbdNextn: _llamadartWrapperSpeculativeNeedEmbdNextn,
-      begin: _llamadartWrapperSpeculativeBegin,
-      processBatch: _llamadartWrapperSpeculativeProcessBatch,
-      draft: _llamadartWrapperSpeculativeDraft,
-      accept: _llamadartWrapperSpeculativeAccept,
-      sampleAndAcceptN: _llamadartWrapperSamplerSampleAndAcceptN,
-    );
-  }
-
-  void probe() {
-    final nullSpeculative = nullptr.cast<llama_dart_speculative>();
-    final nullModel = nullptr.cast<llama_model>();
-    final nullContext = nullptr.cast<llama_context>();
-    final nullParams = nullptr.cast<llama_dart_speculative_params>();
-    final nullSampler = nullptr.cast<llama_sampler>();
-    final nullTokenArray = nullptr.cast<Int32>();
-    final ctxParams = llama_context_default_params();
-    final batch = llama_batch_init(1, 0, 1);
-    try {
-      init(nullModel, nullModel, nullContext, ctxParams, nullParams);
-      free(nullSpeculative);
-      getDraftContext(nullSpeculative);
-      needEmbd(nullSpeculative);
-      needEmbdNextn(nullSpeculative);
-      begin(nullSpeculative, 0, nullTokenArray, 0);
-      processBatch(nullSpeculative, batch);
-      draft(nullSpeculative, 0, 0, 0, nullTokenArray, 0, 1, nullTokenArray, 0);
-      accept(nullSpeculative, 0, 0);
-      sampleAndAcceptN(
-        nullSampler,
-        nullContext,
-        nullTokenArray,
-        0,
-        nullTokenArray,
-        0,
-        nullTokenArray,
-        0,
-      );
-    } finally {
-      llama_batch_free(batch);
-    }
-  }
-
-  static _SpeculativeApi? tryLoad(DynamicLibrary library) {
-    try {
-      return _SpeculativeApi(
-        init: library
-            .lookupFunction<
-              _LlamaDartSpeculativeInitNative,
-              _LlamaDartSpeculativeInitDart
-            >('llama_dart_speculative_init'),
-        free: library
-            .lookupFunction<
-              _LlamaDartSpeculativeFreeNative,
-              _LlamaDartSpeculativeFreeDart
-            >('llama_dart_speculative_free'),
-        getDraftContext: library
-            .lookupFunction<
-              _LlamaDartSpeculativeGetDraftContextNative,
-              _LlamaDartSpeculativeGetDraftContextDart
-            >('llama_dart_speculative_get_draft_context'),
-        needEmbd: library
-            .lookupFunction<
-              _LlamaDartSpeculativeNeedEmbdNative,
-              _LlamaDartSpeculativeNeedEmbdDart
-            >('llama_dart_speculative_need_embd'),
-        needEmbdNextn: library
-            .lookupFunction<
-              _LlamaDartSpeculativeNeedEmbdNative,
-              _LlamaDartSpeculativeNeedEmbdDart
-            >('llama_dart_speculative_need_embd_nextn'),
-        begin: library
-            .lookupFunction<
-              _LlamaDartSpeculativeBeginNative,
-              _LlamaDartSpeculativeBeginDart
-            >('llama_dart_speculative_begin'),
-        processBatch: library
-            .lookupFunction<
-              _LlamaDartSpeculativeProcessBatchNative,
-              _LlamaDartSpeculativeProcessBatchDart
-            >('llama_dart_speculative_process_batch'),
-        draft: library
-            .lookupFunction<
-              _LlamaDartSpeculativeDraftNative,
-              _LlamaDartSpeculativeDraftDart
-            >('llama_dart_speculative_draft'),
-        accept: library
-            .lookupFunction<
-              _LlamaDartSpeculativeAcceptNative,
-              _LlamaDartSpeculativeAcceptDart
-            >('llama_dart_speculative_accept'),
-        sampleAndAcceptN: library
-            .lookupFunction<
-              _LlamaDartSamplerSampleAndAcceptNNative,
-              _LlamaDartSamplerSampleAndAcceptNDart
-            >('llama_dart_sampler_sample_and_accept_n'),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Pointer<llama_dart_speculative> initSession({
-    required Pointer<llama_model> targetModel,
-    required Pointer<llama_model>? draftModel,
-    required Pointer<llama_context> targetContext,
-    required llama_context_params contextParams,
-    required _LlamaCppSpeculativeConfig config,
-  }) {
-    final params = malloc<llama_dart_speculative_params>();
-    final typeNamesPtr = config.typeNames.toNativeUtf8();
-    final staticCachePathPtr = config.ngramCacheStaticPath?.toNativeUtf8();
-    final dynamicCachePathPtr = config.ngramCacheDynamicPath?.toNativeUtf8();
-
-    try {
-      params.ref.type_names = typeNamesPtr.cast();
-      params.ref.type_mask = 0;
-      params.ref.draft_token_max = config.draftTokenMax;
-      params.ref.draft_token_min = config.draftTokenMin;
-      params.ref.draft_min_probability = config.minProbability ?? -1.0;
-      params.ref.draft_split_probability = config.draftSplitProbability ?? -1.0;
-      params.ref.backend_sampling = true;
-      params.ref.ngram_size_n = config.ngramSizeN ?? 0;
-      params.ref.ngram_size_m = config.ngramSizeM ?? 0;
-      params.ref.ngram_min_hits = config.ngramMinHits ?? 0;
-      params.ref.ngram_match = config.ngramMatch ?? 0;
-      params.ref.ngram_token_min = config.ngramTokenMin ?? -1;
-      params.ref.ngram_token_max = config.ngramTokenMax ?? 0;
-      params.ref.ngram_cache_static_path = staticCachePathPtr == null
-          ? nullptr
-          : staticCachePathPtr.cast();
-      params.ref.ngram_cache_dynamic_path = dynamicCachePathPtr == null
-          ? nullptr
-          : dynamicCachePathPtr.cast();
-
-      return init(
-        targetModel,
-        draftModel ?? nullptr.cast<llama_model>(),
-        targetContext,
-        contextParams,
-        params,
-      );
-    } finally {
-      malloc.free(params);
-      malloc.free(typeNamesPtr);
-      if (staticCachePathPtr != null) {
-        malloc.free(staticCachePathPtr);
-      }
-      if (dynamicCachePathPtr != null) {
-        malloc.free(dynamicCachePathPtr);
-      }
-    }
-  }
-}
-
-class _MtpApi {
-  final _LlamaDartMtpInitDart init;
-  final _LlamaDartMtpInitDart? initWithDraftModel;
-  final _LlamaDartMtpFreeDart free;
-  final _LlamaDartMtpGetDraftContextDart getDraftContext;
-  final _LlamaDartMtpBeginDart begin;
-  final _LlamaDartMtpProcessBatchDart processBatch;
-  final _LlamaDartMtpDraftDart draft;
-  final _LlamaDartMtpAcceptDart accept;
-  final _LlamaDartSamplerSampleAndAcceptNDart sampleAndAcceptN;
-
-  const _MtpApi({
-    required this.init,
-    required this.initWithDraftModel,
-    required this.free,
-    required this.getDraftContext,
-    required this.begin,
-    required this.processBatch,
-    required this.draft,
-    required this.accept,
-    required this.sampleAndAcceptN,
-  });
-
-  factory _MtpApi.direct() {
-    final api = _MtpApi(
-      init: llama_dart_mtp_init,
-      initWithDraftModel: llama_dart_mtp_init_with_draft_model,
-      free: llama_dart_mtp_free,
-      getDraftContext: llama_dart_mtp_get_draft_context,
-      begin: llama_dart_mtp_begin,
-      processBatch: llama_dart_mtp_process_batch,
-      draft: llama_dart_mtp_draft,
-      accept: llama_dart_mtp_accept,
-      sampleAndAcceptN: llama_dart_sampler_sample_and_accept_n,
-    );
-    api.probe();
-    return api;
-  }
-
-  factory _MtpApi.windowsAsset() {
-    _llamadartWrapperMtpFree(nullptr.cast<llama_dart_mtp>());
-    return _MtpApi(
-      init: _llamadartWrapperMtpInit,
-      initWithDraftModel: _llamadartWrapperMtpInitWithDraftModel,
-      free: _llamadartWrapperMtpFree,
-      getDraftContext: _llamadartWrapperMtpGetDraftContext,
-      begin: _llamadartWrapperMtpBegin,
-      processBatch: _llamadartWrapperMtpProcessBatch,
-      draft: _llamadartWrapperMtpDraft,
-      accept: _llamadartWrapperMtpAccept,
-      sampleAndAcceptN: _llamadartWrapperSamplerSampleAndAcceptN,
-    );
-  }
-
-  void probe() {
-    final nullMtp = nullptr.cast<llama_dart_mtp>();
-    final nullModel = nullptr.cast<llama_model>();
-    final nullContext = nullptr.cast<llama_context>();
-    final nullSampler = nullptr.cast<llama_sampler>();
-    final nullTokenArray = nullptr.cast<Int32>();
-    final ctxParams = llama_context_default_params();
-    final batch = llama_batch_init(1, 0, 1);
-    try {
-      init(nullModel, nullContext, ctxParams, 1, 0, 0.0, true);
-      free(nullMtp);
-      getDraftContext(nullMtp);
-      begin(nullMtp, 0, nullTokenArray, 0);
-      processBatch(nullMtp, batch);
-      draft(nullMtp, 0, 0, 0, nullTokenArray, 0, 1, nullTokenArray, 0);
-      accept(nullMtp, 0, 0);
-      sampleAndAcceptN(
-        nullSampler,
-        nullContext,
-        nullTokenArray,
-        0,
-        nullTokenArray,
-        0,
-        nullTokenArray,
-        0,
-      );
-    } finally {
-      llama_batch_free(batch);
-    }
-  }
-
-  Pointer<llama_dart_mtp> initSession({
-    required Pointer<llama_model> targetModel,
-    required Pointer<llama_model>? draftModel,
-    required Pointer<llama_context> targetContext,
-    required llama_context_params contextParams,
-    required int draftTokenMax,
-    required int draftTokenMin,
-    required double minProbability,
-    required bool backendSampling,
-  }) {
-    final resolvedDraftModel = draftModel;
-    if (resolvedDraftModel == null) {
-      return init(
-        targetModel,
-        targetContext,
-        contextParams,
-        draftTokenMax,
-        draftTokenMin,
-        minProbability,
-        backendSampling,
-      );
-    }
-    final initWithDraft = initWithDraftModel;
-    if (initWithDraft == null) {
-      throw UnsupportedError(
-        'llama.cpp MTP draftModelPath requires a native libllamadart build '
-        'that exports llama_dart_mtp_init_with_draft_model.',
-      );
-    }
-    try {
-      return initWithDraft(
-        resolvedDraftModel,
-        targetContext,
-        contextParams,
-        draftTokenMax,
-        draftTokenMin,
-        minProbability,
-        backendSampling,
-      );
-    } on Object catch (error) {
-      throw UnsupportedError(
-        'llama.cpp MTP draftModelPath requires a native libllamadart build '
-        'that exports llama_dart_mtp_init_with_draft_model. Native lookup '
-        'failed: $error',
-      );
-    }
-  }
-
-  static _MtpApi? tryLoad(DynamicLibrary library) {
-    try {
-      _LlamaDartMtpInitDart? initWithDraftModel;
-      try {
-        initWithDraftModel = library
-            .lookupFunction<_LlamaDartMtpInitNative, _LlamaDartMtpInitDart>(
-              'llama_dart_mtp_init_with_draft_model',
-            );
-      } catch (_) {
-        initWithDraftModel = null;
-      }
-      return _MtpApi(
-        init: library
-            .lookupFunction<_LlamaDartMtpInitNative, _LlamaDartMtpInitDart>(
-              'llama_dart_mtp_init',
-            ),
-        initWithDraftModel: initWithDraftModel,
-        free: library
-            .lookupFunction<_LlamaDartMtpFreeNative, _LlamaDartMtpFreeDart>(
-              'llama_dart_mtp_free',
-            ),
-        getDraftContext: library
-            .lookupFunction<
-              _LlamaDartMtpGetDraftContextNative,
-              _LlamaDartMtpGetDraftContextDart
-            >('llama_dart_mtp_get_draft_context'),
-        begin: library
-            .lookupFunction<_LlamaDartMtpBeginNative, _LlamaDartMtpBeginDart>(
-              'llama_dart_mtp_begin',
-            ),
-        processBatch: library
-            .lookupFunction<
-              _LlamaDartMtpProcessBatchNative,
-              _LlamaDartMtpProcessBatchDart
-            >('llama_dart_mtp_process_batch'),
-        draft: library
-            .lookupFunction<_LlamaDartMtpDraftNative, _LlamaDartMtpDraftDart>(
-              'llama_dart_mtp_draft',
-            ),
-        accept: library
-            .lookupFunction<_LlamaDartMtpAcceptNative, _LlamaDartMtpAcceptDart>(
-              'llama_dart_mtp_accept',
-            ),
-        sampleAndAcceptN: library
-            .lookupFunction<
-              _LlamaDartSamplerSampleAndAcceptNNative,
-              _LlamaDartSamplerSampleAndAcceptNDart
-            >('llama_dart_sampler_sample_and_accept_n'),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-}
-
-class _NgramApi {
-  final _LlamaDartNgramSimpleInitDart initSimple;
-  final _LlamaDartNgramFreeDart free;
-  final _LlamaDartNgramBeginDart begin;
-  final _LlamaDartNgramProcessBatchDart processBatch;
-  final _LlamaDartNgramDraftDart draft;
-  final _LlamaDartNgramAcceptDart accept;
-  final _LlamaDartSamplerSampleAndAcceptNDart sampleAndAcceptN;
-
-  const _NgramApi({
-    required this.initSimple,
-    required this.free,
-    required this.begin,
-    required this.processBatch,
-    required this.draft,
-    required this.accept,
-    required this.sampleAndAcceptN,
-  });
-
-  factory _NgramApi.direct() {
-    final api = _NgramApi(
-      initSimple: llama_dart_ngram_simple_init,
-      free: llama_dart_ngram_free,
-      begin: llama_dart_ngram_begin,
-      processBatch: llama_dart_ngram_process_batch,
-      draft: llama_dart_ngram_draft,
-      accept: llama_dart_ngram_accept,
-      sampleAndAcceptN: llama_dart_sampler_sample_and_accept_n,
-    );
-    api.probe();
-    return api;
-  }
-
-  factory _NgramApi.windowsAsset() {
-    _llamadartWrapperNgramFree(nullptr.cast<llama_dart_ngram>());
-    return _NgramApi(
-      initSimple: _llamadartWrapperNgramSimpleInit,
-      free: _llamadartWrapperNgramFree,
-      begin: _llamadartWrapperNgramBegin,
-      processBatch: _llamadartWrapperNgramProcessBatch,
-      draft: _llamadartWrapperNgramDraft,
-      accept: _llamadartWrapperNgramAccept,
-      sampleAndAcceptN: _llamadartWrapperSamplerSampleAndAcceptN,
-    );
-  }
-
-  void probe() {
-    final nullNgram = nullptr.cast<llama_dart_ngram>();
-    final nullSampler = nullptr.cast<llama_sampler>();
-    final nullContext = nullptr.cast<llama_context>();
-    final nullTokenArray = nullptr.cast<Int32>();
-    final batch = llama_batch_init(1, 0, 1);
-    Pointer<llama_dart_ngram> probeSession = nullptr;
-    try {
-      probeSession = initSimple(12, 1);
-      if (probeSession != nullptr) {
-        free(probeSession);
-        probeSession = nullptr;
-      }
-      free(nullNgram);
-      begin(nullNgram, 0, nullTokenArray, 0);
-      processBatch(nullNgram, batch);
-      draft(nullNgram, 0, 0, 0, nullTokenArray, 0, 1, nullTokenArray, 0);
-      accept(nullNgram, 0, 0);
-      sampleAndAcceptN(
-        nullSampler,
-        nullContext,
-        nullTokenArray,
-        0,
-        nullTokenArray,
-        0,
-        nullTokenArray,
-        0,
-      );
-    } finally {
-      if (probeSession != nullptr) {
-        free(probeSession);
-      }
-      llama_batch_free(batch);
-    }
-  }
-
-  static _NgramApi? tryLoad(DynamicLibrary library) {
-    try {
-      return _NgramApi(
-        initSimple: library
-            .lookupFunction<
-              _LlamaDartNgramSimpleInitNative,
-              _LlamaDartNgramSimpleInitDart
-            >('llama_dart_ngram_simple_init'),
-        free: library
-            .lookupFunction<_LlamaDartNgramFreeNative, _LlamaDartNgramFreeDart>(
-              'llama_dart_ngram_free',
-            ),
-        begin: library
-            .lookupFunction<
-              _LlamaDartNgramBeginNative,
-              _LlamaDartNgramBeginDart
-            >('llama_dart_ngram_begin'),
-        processBatch: library
-            .lookupFunction<
-              _LlamaDartNgramProcessBatchNative,
-              _LlamaDartNgramProcessBatchDart
-            >('llama_dart_ngram_process_batch'),
-        draft: library
-            .lookupFunction<
-              _LlamaDartNgramDraftNative,
-              _LlamaDartNgramDraftDart
-            >('llama_dart_ngram_draft'),
-        accept: library
-            .lookupFunction<
-              _LlamaDartNgramAcceptNative,
-              _LlamaDartNgramAcceptDart
-            >('llama_dart_ngram_accept'),
-        sampleAndAcceptN: library
-            .lookupFunction<
-              _LlamaDartSamplerSampleAndAcceptNNative,
-              _LlamaDartSamplerSampleAndAcceptNDart
-            >('llama_dart_sampler_sample_and_accept_n'),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-}
-
-class _MtmdApi {
-  final _MtmdDefaultMarkerDart defaultMarker;
-  final _MtmdContextParamsDefaultDart contextParamsDefault;
-  final _MtmdInitFromFileDart initFromFile;
-  final _MtmdFreeDart free;
-  final _MtmdInputChunksInitDart inputChunksInit;
-  final _MtmdInputChunksFreeDart inputChunksFree;
-  final _MtmdHelperBitmapInitFromFileDart helperBitmapInitFromFile;
-  final _MtmdHelperBitmapInitFromBufDart helperBitmapInitFromBuf;
-  final _MtmdBitmapInitFromAudioDart bitmapInitFromAudio;
-  final _MtmdSupportVisionDart supportsVision;
-  final _MtmdSupportAudioDart supportsAudio;
-  final _MtmdBitmapFreeDart bitmapFree;
-  final _MtmdTokenizeDart tokenize;
-  final _MtmdHelperEvalChunksDart helperEvalChunks;
-  final _MtmdLogSetDart? logSet;
-  final _MtmdLogSetDart? helperLogSet;
-
-  const _MtmdApi({
-    required this.defaultMarker,
-    required this.contextParamsDefault,
-    required this.initFromFile,
-    required this.free,
-    required this.inputChunksInit,
-    required this.inputChunksFree,
-    required this.helperBitmapInitFromFile,
-    required this.helperBitmapInitFromBuf,
-    required this.bitmapInitFromAudio,
-    required this.supportsVision,
-    required this.supportsAudio,
-    required this.bitmapFree,
-    required this.tokenize,
-    required this.helperEvalChunks,
-    required this.logSet,
-    required this.helperLogSet,
-  });
-
-  static _MtmdApi? tryLoad(DynamicLibrary library) {
-    try {
-      _MtmdLogSetDart? logSet;
-      _MtmdLogSetDart? helperLogSet;
-      try {
-        logSet = library.lookupFunction<_MtmdLogSetNative, _MtmdLogSetDart>(
-          'mtmd_log_set',
-        );
-      } catch (_) {}
-      try {
-        helperLogSet = library
-            .lookupFunction<_MtmdLogSetNative, _MtmdLogSetDart>(
-              'mtmd_helper_log_set',
-            );
-      } catch (_) {}
-
-      return _MtmdApi(
-        defaultMarker: library
-            .lookupFunction<_MtmdDefaultMarkerNative, _MtmdDefaultMarkerDart>(
-              'mtmd_default_marker',
-            ),
-        contextParamsDefault: library
-            .lookupFunction<
-              _MtmdContextParamsDefaultNative,
-              _MtmdContextParamsDefaultDart
-            >('mtmd_context_params_default'),
-        initFromFile: library
-            .lookupFunction<_MtmdInitFromFileNative, _MtmdInitFromFileDart>(
-              'mtmd_init_from_file',
-            ),
-        free: library.lookupFunction<_MtmdFreeNative, _MtmdFreeDart>(
-          'mtmd_free',
-        ),
-        inputChunksInit: library
-            .lookupFunction<
-              _MtmdInputChunksInitNative,
-              _MtmdInputChunksInitDart
-            >('mtmd_input_chunks_init'),
-        inputChunksFree: library
-            .lookupFunction<
-              _MtmdInputChunksFreeNative,
-              _MtmdInputChunksFreeDart
-            >('mtmd_input_chunks_free'),
-        helperBitmapInitFromFile: library
-            .lookupFunction<
-              _MtmdHelperBitmapInitFromFileNative,
-              _MtmdHelperBitmapInitFromFileDart
-            >('mtmd_helper_bitmap_init_from_file'),
-        helperBitmapInitFromBuf: library
-            .lookupFunction<
-              _MtmdHelperBitmapInitFromBufNative,
-              _MtmdHelperBitmapInitFromBufDart
-            >('mtmd_helper_bitmap_init_from_buf'),
-        bitmapInitFromAudio: library
-            .lookupFunction<
-              _MtmdBitmapInitFromAudioNative,
-              _MtmdBitmapInitFromAudioDart
-            >('mtmd_bitmap_init_from_audio'),
-        supportsVision: library
-            .lookupFunction<_MtmdSupportVisionNative, _MtmdSupportVisionDart>(
-              'mtmd_support_vision',
-            ),
-        supportsAudio: library
-            .lookupFunction<_MtmdSupportAudioNative, _MtmdSupportAudioDart>(
-              'mtmd_support_audio',
-            ),
-        bitmapFree: library
-            .lookupFunction<_MtmdBitmapFreeNative, _MtmdBitmapFreeDart>(
-              'mtmd_bitmap_free',
-            ),
-        tokenize: library
-            .lookupFunction<_MtmdTokenizeNative, _MtmdTokenizeDart>(
-              'mtmd_tokenize',
-            ),
-        helperEvalChunks: library
-            .lookupFunction<
-              _MtmdHelperEvalChunksNative,
-              _MtmdHelperEvalChunksDart
-            >('mtmd_helper_eval_chunks'),
-        logSet: logSet,
-        helperLogSet: helperLogSet,
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-}
-
 // --- Native Wrappers ---
 
 class _LlamaLoraWrapper {
@@ -8939,24 +10583,89 @@ class _LlamaLoraWrapper {
   }
 }
 
+class _DecisionHead {
+  _DecisionHead({
+    required this.modelHandle,
+    required this.context,
+    required this.runtime,
+    required this.hiddenSize,
+    required this.tokenLimit,
+    required this.vocabSize,
+    required this.encode,
+    required this.freeContext,
+  });
+
+  final int modelHandle;
+  final Pointer<llama_context> context;
+  final DecisionHeadRuntime runtime;
+  final int hiddenSize;
+  final int tokenLimit;
+  final int vocabSize;
+  final Float32List Function(
+    Pointer<llama_context> context,
+    llama_batch batch,
+    int valueCount,
+  )
+  encode;
+  final void Function(Pointer<llama_context> context) freeContext;
+
+  void dispose() {
+    try {
+      runtime.dispose();
+    } finally {
+      IsolateShutdownReleases.current.release(context);
+      freeContext(context);
+    }
+  }
+}
+
+Float32List _encodeDecisionBatch(
+  int Function(Pointer<llama_context> context, llama_batch batch) encode,
+  Pointer<llama_context> context,
+  llama_batch batch,
+  int valueCount,
+) {
+  final status = encode(context, batch);
+  if (status != 0) {
+    throw LlamaInferenceException(
+      'The decision encoder pass failed.',
+      'llama_encode returned $status',
+    );
+  }
+  final embeddings = llama_get_embeddings(context);
+  if (embeddings == nullptr) {
+    throw LlamaInferenceException(
+      'The decision encoder returned no per-token hidden states.',
+    );
+  }
+  // The next llama_encode or llama_free on the context invalidates this view.
+  return embeddings.asTypedList(valueCount);
+}
+
 class _LlamaModelWrapper {
   final Pointer<llama_model> pointer;
   final String? sourcePath;
   final int vocabSize;
   final List<int> suppressedTokens;
+  final LlamaCppObjectCalls _calls;
   _LlamaModelWrapper(
-    this.pointer, {
+    this.pointer,
+    this._calls, {
     this.sourcePath,
     required this.vocabSize,
     required this.suppressedTokens,
   });
   void dispose() {
-    llama_model_free(pointer);
+    IsolateShutdownReleases.current.release(pointer);
+    _calls.failures.forget(llama_model_get_vocab(pointer));
+    _calls.freeModel(pointer);
   }
 }
 
 class _LlamaContextWrapper {
   final Pointer<llama_context> pointer;
+  // Keep a strong model reference while the context pointer is alive.
+  // ignore: unused_field
   final _LlamaModelWrapper? _modelKeepAlive;
   List<int>? cachedPromptTokens;
 
@@ -8972,6 +10681,7 @@ class _LlamaContextWrapper {
   double lastPerfSpeculativeDraftMs = 0;
   double lastPerfSpeculativeVerifyMs = 0;
   int lastPerfPromptEvalTokens = 0;
+  int lastPerfCachedPromptTokens = 0;
   int lastPerfEvalTokens = 0;
   int lastPerfSampleCount = 0;
   int lastPerfSpeculativeDraftTokens = 0;
@@ -8980,7 +10690,21 @@ class _LlamaContextWrapper {
   int lastPerfSpeculativeVerifyTokens = 0;
   int lastPerfSpeculativeReplayTokens = 0;
   bool lastPerfSpeculativeRan = false;
-  _LlamaContextWrapper(this.pointer, this._modelKeepAlive);
+  bool performanceAvailable = true;
+  final LlamaCppObjectCalls _calls;
+
+  /// Most tokens of a text prompt one decode call takes, or `null` for the
+  /// context's own micro-batch.
+  final int? promptMicroBatchLimit;
+  final bool qwen35VulkanRestricted;
+
+  _LlamaContextWrapper(
+    this.pointer,
+    this._modelKeepAlive,
+    this._calls, {
+    this.promptMicroBatchLimit,
+    this.qwen35VulkanRestricted = false,
+  });
   void resetLastPerf() {
     lastPerfPromptEvalMs = 0;
     lastPerfEvalMs = 0;
@@ -8989,6 +10713,7 @@ class _LlamaContextWrapper {
     lastPerfSpeculativeDraftMs = 0;
     lastPerfSpeculativeVerifyMs = 0;
     lastPerfPromptEvalTokens = 0;
+    lastPerfCachedPromptTokens = 0;
     lastPerfEvalTokens = 0;
     lastPerfSampleCount = 0;
     lastPerfSpeculativeDraftTokens = 0;
@@ -9000,10 +10725,9 @@ class _LlamaContextWrapper {
   }
 
   void dispose() {
-    // ignore: unused_local_variable
-    final _ = _modelKeepAlive;
     cachedPromptTokens = null;
     kvFromStateLoad = false;
-    llama_free(pointer);
+    IsolateShutdownReleases.current.release(pointer);
+    _calls.freeContext(pointer);
   }
 }

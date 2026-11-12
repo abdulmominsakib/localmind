@@ -48,6 +48,23 @@ void main() {
     final noTool = handler.parse('plain', parseToolCalls: false);
     expect(noTool.content, equals('plain'));
   });
+
+  test('MinimaxM2Handler returns a forced-open thought as reasoning', () {
+    const call =
+        '<minimax:tool_call>\n<invoke name="weather">\n'
+        '<parameter name="city">Paris</parameter>\n</invoke>\n'
+        '</minimax:tool_call>';
+    for (final (output, reasoning, calls) in [
+      ('Plan.', 'Plan.', 0),
+      ('Plan. $call', 'Plan. $call', 0),
+      ('Plan.</think>\n$call', 'Plan.', 1),
+    ]) {
+      final parsed = MinimaxM2Handler().parse(output, thinkingForcedOpen: true);
+      expect(parsed.content, isEmpty, reason: output);
+      expect(parsed.reasoningContent, reasoning, reason: output);
+      expect(parsed.toolCalls, hasLength(calls), reason: output);
+    }
+  });
 }
 
 Future<Object?> _noop(_) async {

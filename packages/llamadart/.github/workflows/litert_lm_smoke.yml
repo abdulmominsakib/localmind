@@ -1,0 +1,201 @@
+name: LiteRT-LM Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/litert_lm_smoke.yml"
+      - "hook/**"
+      - "lib/src/backends/litert_lm/**"
+      - "lib/src/backends/native/**"
+      - "lib/src/hook/**"
+      - "pubspec.*"
+      - "tool/litert_lm_chat_features_smoke.dart"
+      - "tool/audio_chat_smoke_support.dart"
+      - "tool/litert_lm_tokenizer_fixture.dart"
+      - "tool/testing/run_local_e2e.dart"
+      - "tool/litert_lm_engine_smoke.dart"
+      - "tool/litert_lm_library_smoke.dart"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/litert_lm_smoke.yml"
+      - "hook/**"
+      - "lib/src/backends/litert_lm/**"
+      - "lib/src/backends/native/**"
+      - "lib/src/hook/**"
+      - "pubspec.*"
+      - "tool/litert_lm_chat_features_smoke.dart"
+      - "tool/audio_chat_smoke_support.dart"
+      - "tool/litert_lm_tokenizer_fixture.dart"
+      - "tool/testing/run_local_e2e.dart"
+      - "tool/litert_lm_engine_smoke.dart"
+      - "tool/litert_lm_library_smoke.dart"
+
+env:
+  LITERT_LM_SMOKE_MODEL_REVISION: e6687177e00897731e7716267eebd4eba0dde7c2
+  LITERT_LM_SMOKE_MODEL_SHA256: c5f39b4191926786c3e6668b62af4d6eb15248dfc7a5348252a9b406f33f2108
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-smoke:
+    name: Native smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - os: ubuntu-latest
+            litert_lib_subdir: linux/x64
+          - os: windows-latest
+            litert_lib_subdir: windows/x64
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+
+      - name: Enable LiteRT-LM runtime for smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          pubspec = Path("pubspec.yaml")
+          text = pubspec.read_text()
+          if "\nhooks:" in text or text.startswith("hooks:"):
+              raise SystemExit(
+                  "pubspec.yaml already contains hooks; update the "
+                  "LiteRT-LM smoke workflow to merge the CI user_defines."
+              )
+          pubspec.write_text(text.rstrip() + """
+
+          hooks:
+            user_defines:
+              llamadart:
+                llamadart_native_runtimes: [litert_lm]
+          """)
+          PY
+
+      - name: Resolve LiteRT-LM runtime version
+        id: litert-version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(python3 - <<'PY'
+          import pathlib
+          import re
+
+          text = pathlib.Path("lib/src/hook/native_release_pins.dart").read_text()
+          match = re.search(r"const liteRtLmVersion = '([^']+)';", text)
+          if not match:
+              raise SystemExit("Could not locate liteRtLmVersion")
+          print(match.group(1))
+          PY
+          )"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run LiteRT-LM library smoke
+        shell: bash
+        env:
+          LLAMADART_LITERT_LM_LIB_DIR: ${{ github.workspace }}/.dart_tool/llamadart/litert_lm/${{ steps.litert-version.outputs.version }}/${{ matrix.litert_lib_subdir }}
+        run: |
+          set -euo pipefail
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            export LD_LIBRARY_PATH="$LLAMADART_LITERT_LM_LIB_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          fi
+          dart run tool/litert_lm_library_smoke.dart
+
+      - name: Cache tiny LiteRT-LM model
+        uses: actions/cache@v6
+        with:
+          path: .dart_tool/litert_lm_models/Qwen3-0.6B.litertlm
+          key: litert-lm-smoke-qwen3-0.6b-${{ runner.os }}-${{ env.LITERT_LM_SMOKE_MODEL_REVISION }}-${{ env.LITERT_LM_SMOKE_MODEL_SHA256 }}
+
+      - name: Download tiny LiteRT-LM model
+        id: download-model
+        continue-on-error: true
+        shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          model_path=".dart_tool/litert_lm_models/Qwen3-0.6B.litertlm"
+          model_url="https://huggingface.co/litert-community/Qwen3-0.6B/resolve/${LITERT_LM_SMOKE_MODEL_REVISION}/Qwen3-0.6B.litertlm?download=true"
+          model_sha256="$LITERT_LM_SMOKE_MODEL_SHA256"
+          mkdir -p "$(dirname "$model_path")"
+          if [ -s "$model_path" ]; then
+            cached_sha256="$(sha256sum "$model_path" | cut -d' ' -f1)"
+            if [ "$cached_sha256" = "$model_sha256" ]; then
+              echo "Using cached $model_path (sha256 $cached_sha256)"
+              exit 0
+            fi
+            echo "::warning::Cached model sha256 mismatch: expected $model_sha256, got $cached_sha256; re-downloading"
+            rm -f "$model_path"
+          fi
+          tmp_path="${model_path}.tmp"
+          rm -f "$tmp_path"
+          curl_args=(
+            --fail
+            --location
+            --retry 8
+            --retry-all-errors
+            --retry-delay 15
+            --retry-max-time 600
+            --connect-timeout 30
+            --output "$tmp_path"
+          )
+          if [ -n "${HF_TOKEN:-}" ]; then
+            curl_args+=(--header "Authorization: Bearer ${HF_TOKEN}")
+          fi
+          curl "${curl_args[@]}" "$model_url"
+          actual_sha256="$(sha256sum "$tmp_path" | cut -d' ' -f1)"
+          if [ "$actual_sha256" != "$model_sha256" ]; then
+            rm -f "$tmp_path"
+            echo "::error::Model sha256 mismatch: expected $model_sha256, got $actual_sha256"
+            exit 1
+          fi
+          mv "$tmp_path" "$model_path"
+          echo "Downloaded $model_path (sha256 $actual_sha256)"
+
+      - name: Run LiteRT-LM engine and chat smoke
+        if: steps.download-model.outcome == 'success'
+        shell: bash
+        env:
+          LLAMADART_LITERT_LM_LIB_DIR: ${{ github.workspace }}/.dart_tool/llamadart/litert_lm/${{ steps.litert-version.outputs.version }}/${{ matrix.litert_lib_subdir }}
+          LITERT_LM_MODEL_PATH: ${{ github.workspace }}/.dart_tool/litert_lm_models/Qwen3-0.6B.litertlm
+        run: |
+          set -euo pipefail
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            export LD_LIBRARY_PATH="$LLAMADART_LITERT_LM_LIB_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          fi
+          dart run tool/litert_lm_engine_smoke.dart \
+            "$LITERT_LM_MODEL_PATH" \
+            cpu \
+            "What is 2+2? Answer only with the number." \
+            16 \
+            1024
+          dart run tool/testing/run_local_e2e.dart \
+            --scenario qwen3-litert-cpu-unicode \
+            --model-path "$LITERT_LM_MODEL_PATH" --backend cpu
+
+      - name: Note skipped LiteRT-LM model smokes
+        if: steps.download-model.outcome != 'success'
+        shell: bash
+        run: |
+          echo "::warning::Skipped LiteRT-LM engine/chat smokes because the external model download failed. The library/native-asset smoke already passed."

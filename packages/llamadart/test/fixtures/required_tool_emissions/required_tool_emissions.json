@@ -1,0 +1,80 @@
+{
+  "tool": {
+    "name": "get_weather",
+    "description": "Returns current weather for a city.",
+    "parameters": {
+      "location": {
+        "type": "string",
+        "description": "City name"
+      }
+    }
+  },
+  "messages": [
+    {
+      "role": "system",
+      "content": "You must call get_weather. Return only a tool call."
+    },
+    {
+      "role": "user",
+      "content": "Call get_weather with location Seoul."
+    }
+  ],
+  "sampling": {
+    "temp": 0,
+    "seed": 1,
+    "max_tokens": 160
+  },
+  "cases": [
+    {
+      "name": "deepseek-r1-distill-llama-8b",
+      "model": "DeepSeek-R1-Distill-Llama-8B-Q4_K_M.gguf",
+      "model_sha256": "87bcba20b4846d8dadf753d3ff48f9285d131fc95e3e0e7e934d4f20bc896f5d",
+      "template": "test/fixtures/templates/DeepSeek-R1-Distill-Llama-8B.jinja",
+      "template_sha256": "b6835114b7303ddd78919a82e4d9f7d8c26ed0d7dfc36beeb12d524f6144eab1",
+      "format": "deepseekR1",
+      "prompt": "<｜begin▁of▁sentence｜>You must call get_weather. Return only a tool call.<｜User｜>Call get_weather with location Seoul.<｜Assistant｜>",
+      "base_emission": "</think>\n    <｜tool calls begin｜> function<｜tool▁sep｜>get_weather\\n```json\\n{\"location\": \"Seoul\"}```<｜tool▁call▁end｜>function<｜tool▁sep｜>get_weather\\n```json\\n{\"location\": \"Seoul\"}```<｜tool▁call▁end｜>function<｜tool▁sep｜>get_weather\\n```json\\n{\"location\": \"Seoul\"}```<｜tool▁call▁end｜>function<｜tool",
+      "emission": "</think>\n    <｜tool calls begin｜> function<｜tool▁sep｜>get_weather\n```json\n{\n  \"location\": \"Seoul\"\n}\n```<｜tool▁call▁end｜><｜tool▁calls▁end｜>\n                    ",
+      "tool_call": {
+        "name": "get_weather",
+        "arguments": {
+          "location": "Seoul"
+        }
+      }
+    },
+    {
+      "name": "lfm2-1.2b-tool",
+      "model": "LFM2-1.2B-Tool-Q4_K_M.gguf",
+      "model_sha256": "3a942f51f9f3088c0b502b61ee49480a3d8c54de369f9c53ee5668419caf67a7",
+      "template": "test/fixtures/required_tool_emissions/LFM2-1_2B-Tool.jinja",
+      "template_sha256": "89e790f027916b5a2bca145a6a8454e06ffc7a5043bf3b6d97829aff86bb543f",
+      "format": "lfm2",
+      "prompt": "<|im_start|>system\nYou must call get_weather. Return only a tool call.\nList of tools: <|tool_list_start|>[{\"name\": \"get_weather\", \"description\": \"Returns current weather for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\", \"description\": \"City name\"}}}}]<|tool_list_end|><|im_end|>\n<|im_start|>user\nCall get_weather with location Seoul.<|im_end|>\n<|im_start|>assistant\n",
+      "base_emission": "<|tool_call_start|>[{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Seoul\"}, \"id\": \"],]<|tool_call_end|>One moment while I retrieve the current weather for Seoul. Please wait a moment... Okay, here is the current weather in Seoul: [insert weather details]. Let me know if you need any more information!  However, since this tool call is being executed now, I will return the result immediately. The weather data is as follows: Temperature: 22°C, Condition: Sunny, Humidity: 45%, Wind Speed: 10 km/h.]} Wait, no, let me double-check... Okay, here's the detailed weather report for Seoul: [insert full details]. Would you like me to continue with another tool call?",
+      "emission": "<|tool_call_start|>[{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Seoul\"}}]<|tool_call_end|>",
+      "tool_call": {
+        "name": "get_weather",
+        "arguments": {
+          "location": "Seoul"
+        }
+      }
+    },
+    {
+      "name": "functionary-small-v3.2",
+      "model": "functionary-small-v3.2-Q4_K_M.gguf",
+      "model_sha256": "8b391d7346d825bd593fc31b97417174071e1f2a5371088b49cf7d849f40a937",
+      "template": "test/fixtures/required_tool_emissions/functionary-small-v3_2.jinja",
+      "template_sha256": "79f1a8a55dc64fa4e9307cee4de2c599e5ff1a26caa074a24d80bf11f9790ff6",
+      "format": "functionaryV32",
+      "prompt": "<|start_header_id|>system<|end_header_id|>\n\nYou must call get_weather. Return only a tool call.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nCall get_weather with location Seoul.<|eot_id|><|start_header_id|>{role}<|end_header_id|>\n\n",
+      "base_emission": "get_weather\\n{\"location\": \"Seoul\"}",
+      "emission": "get_weather\n{\"location\": \"Seoul\"}",
+      "tool_call": {
+        "name": "get_weather",
+        "arguments": {
+          "location": "Seoul"
+        }
+      }
+    }
+  ]
+}

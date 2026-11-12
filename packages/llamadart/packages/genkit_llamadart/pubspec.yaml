@@ -1,0 +1,43 @@
+name: genkit_llamadart
+description: >-
+  Genkit Dart plugin for local AI through llamadart: GGUF and LiteRT-LM chat,
+  tool calling, JSON, embeddings, plus native batch transcription, speech
+  synthesis and image generation.
+version: 3.8.0
+homepage: https://llamadart.leehack.com
+repository: https://github.com/leehack/llamadart/tree/main/packages/genkit_llamadart
+issue_tracker: https://github.com/leehack/llamadart/issues
+topics:
+  - genkit
+  - llm
+  - gguf
+  - llama-cpp
+  - on-device-ai
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  web:
+  windows:
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  crypto: ^3.0.7
+  genkit: ^1.0.0
+  http: ^1.6.0
+  llamadart: ^0.19.0
+  schemantic: ^1.0.0
+
+dev_dependencies:
+  dartastic_opentelemetry: ^0.11.0
+  ffi: ^2.2.0
+  genkit_otel: ^0.2.0
+  image: ^4.11.1
+  lints: ^6.1.0
+  path: ^1.9.1
+  test: ^1.33.0
+  yaml: ^3.1.4

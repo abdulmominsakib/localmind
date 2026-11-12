@@ -1,0 +1,53 @@
+2026-09-24 15:59:48.653 xcodebuild[31337:77196235]  DVTDeviceOperation: Encountered a build number "" that is incompatible with DVTBuildVersion.
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C01.load","sequence":0}
+ggml_metal_device_init: GPU name:   MTL0 (Apple A18 Pro GPU)
+llama_prepare_model_devices: using device MTL0 (Apple A18 Pro GPU) (unknown id) - 5428 MiB free
+load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 23 repeating layers to GPU
+load_tensors: offloaded 25/25 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =   257.66 MiB
+load_tensors:  MTL0_Mapped model buffer size =   526.50 MiB
+sched_reserve:       MTL0 compute buffer size =   490.02 MiB
+sched_reserve:        CPU compute buffer size =     5.02 MiB
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C02.unicode","sequence":2}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C03.raw","sequence":4}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C04.hello","sequence":6}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C04.arithmetic","sequence":8}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C06.history","sequence":10}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C08.cancel","sequence":12}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C08.cancel.early","sequence":14}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C08.cancel.restart","sequence":16}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C08.overlap","sequence":18}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C09.reload","sequence":20}
+llama_prepare_model_devices: using device MTL0 (Apple A18 Pro GPU) (unknown id) - 5428 MiB free
+load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 23 repeating layers to GPU
+load_tensors: offloaded 25/25 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =   257.66 MiB
+load_tensors:  MTL0_Mapped model buffer size =   526.50 MiB
+sched_reserve:       MTL0 compute buffer size =   490.02 MiB
+sched_reserve:        CPU compute buffer size =     5.02 MiB
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C10.limit","sequence":22}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C12.grammar","sequence":24}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C12.recovery","sequence":26}
+llama_prepare_model_devices: using device MTL0 (Apple A18 Pro GPU) (unknown id) - 5428 MiB free
+load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 23 repeating layers to GPU
+load_tensors: offloaded 25/25 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =   257.66 MiB
+load_tensors:  MTL0_Mapped model buffer size =   526.50 MiB
+sched_reserve:       MTL0 compute buffer size =   490.02 MiB
+sched_reserve:        CPU compute buffer size =     5.02 MiB
+LLAMADART_VALIDATION {"type":"case_start","case_id":"B01.warmup","sequence":28}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"B01.1","sequence":30}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"B01.2","sequence":32}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"B01.3","sequence":34}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C07.tools","sequence":36}
+LLAMADART_VALIDATION {"type":"case_start","case_id":"C07.tools.auto_text","sequence":38}
+LLAMADART_VALIDATION {"type":"cleanup","status":"PASS","sequence":40}
+LLAMADART_VALIDATION {"type":"run_end","sequence":41,"cancelled":false}
+Test Case '-[RunnerTests testSharedValidationChatGgufMetal]' started.
+Test Case '-[RunnerTests testSharedValidationChatGgufMetal]' failed (0.084 seconds).

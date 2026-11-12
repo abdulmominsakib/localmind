@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:llamadart:pr-head-update-evidence:1.0.0",
+  "title": "llamadart PR head update evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "timestamp",
+    "correlation_id",
+    "writer",
+    "target_ref",
+    "remote",
+    "expected_head_sha",
+    "remote_head_before",
+    "proposed_head_sha",
+    "remote_head_after",
+    "decision",
+    "failure_classification",
+    "message"
+  ],
+  "properties": {
+    "schema": { "const": "llamadart.pr-head-update-evidence" },
+    "schema_version": { "const": "1.0.0" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "correlation_id": { "type": "string", "minLength": 1 },
+    "writer": { "type": "string", "minLength": 1 },
+    "target_ref": { "type": "string", "minLength": 1 },
+    "remote": { "type": "string", "minLength": 1 },
+    "expected_head_sha": { "$ref": "#/$defs/nullableSha" },
+    "remote_head_before": { "$ref": "#/$defs/nullableSha" },
+    "proposed_head_sha": { "$ref": "#/$defs/sha" },
+    "remote_head_after": { "$ref": "#/$defs/nullableSha" },
+    "decision": {
+      "enum": ["accepted", "rejected", "noOp", "validated"]
+    },
+    "failure_classification": {
+      "enum": [
+        "none",
+        "expectedHeadMismatch",
+        "nonDescendantHistory",
+        "staleAncestorRewind",
+        "invalidInput",
+        "invalidRemoteConfiguration",
+        "commitObjectMissing",
+        "remoteRefMissing",
+        "gitExecutionError",
+        "remoteMutationFailed",
+        "postMutationVerificationFailed",
+        "prePushHookRejected"
+      ]
+    },
+    "message": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "nullableSha": {
+      "oneOf": [
+        { "$ref": "#/$defs/sha" },
+        { "type": "null" }
+      ]
+    }
+  }
+}

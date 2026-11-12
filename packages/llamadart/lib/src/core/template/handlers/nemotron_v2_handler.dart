@@ -12,6 +12,16 @@ import '../tool_call_grammar_utils.dart';
 
 /// Handler for Nemotron V2 format.
 class NemotronV2Handler extends ChatTemplateHandler {
+  static const String _toolCallPrefix = '<TOOLCALL>';
+
+  /// Finds where [parse] may find a tool-call opening in [text].
+  ///
+  /// Returns the first index at or after [from] where `<TOOLCALL>`
+  /// starts, or where the rest of [text] is the start of it, and
+  /// `text.length` when there is none.
+  static int toolCallOpening(String text, [int from = 0]) =>
+      ToolCallParsingUtils.literalOpening(text, const [_toolCallPrefix], from);
+
   @override
   ChatFormat get format => ChatFormat.nemotronV2;
 
@@ -32,7 +42,7 @@ class NemotronV2Handler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'bos_token': metadata['tokenizer.ggml.bos_token'] ?? '<s>',
@@ -41,9 +51,11 @@ class NemotronV2Handler extends ChatTemplateHandler {
     );
 
     var thinkingForcedOpen = false;
+    var thoughtClosed = false;
     if (isThinkingForcedOpen(prompt)) {
       if (!enableThinking) {
         prompt = '${prompt.trimRight()}</think>';
+        thoughtClosed = true;
       } else {
         thinkingForcedOpen = true;
       }
@@ -53,7 +65,7 @@ class NemotronV2Handler extends ChatTemplateHandler {
     final triggerPattern = thinkingForcedOpen
         ? r'[\s\S]*?(</think>\s*)(<TOOLCALL>)[\s\S]*'
         : r'(?:<think>[\s\S]*?</think>\s*)?(<TOOLCALL>)[\s\S]*';
-    return LlamaChatTemplateResult(
+    final rendered = LlamaChatTemplateResult(
       prompt: prompt,
       format: format.index,
       grammar: buildGrammar(tools),
@@ -67,6 +79,7 @@ class NemotronV2Handler extends ChatTemplateHandler {
           ? [GrammarTrigger(type: 3, value: triggerPattern)]
           : [],
     );
+    return withThoughtClosedForThinkingOff(rendered, closed: thoughtClosed);
   }
 
   @override
@@ -89,10 +102,9 @@ class NemotronV2Handler extends ChatTemplateHandler {
       );
     }
 
-    const prefix = '<TOOLCALL>';
     const suffix = '</TOOLCALL>';
 
-    final start = text.indexOf(prefix);
+    final start = text.indexOf(_toolCallPrefix);
     if (start == -1) {
       return ChatParseResult(
         content: text.trim(),
@@ -101,7 +113,7 @@ class NemotronV2Handler extends ChatTemplateHandler {
     }
 
     final prelude = text.substring(0, start);
-    final payload = text.substring(start + prefix.length);
+    final payload = text.substring(start + _toolCallPrefix.length);
     final jsonSlice = ToolCallParsingUtils.extractLeadingJsonValue(payload, 0);
     if (jsonSlice == null || jsonSlice.value is! List) {
       return ChatParseResult(

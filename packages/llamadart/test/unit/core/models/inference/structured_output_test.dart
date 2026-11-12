@@ -147,7 +147,7 @@ void main() {
         schema: {
           'type': 'object',
           'properties': {
-            'age': {'type': 'integer', 'minimum': 0},
+            'age': {'type': 'number', 'minimum': 0},
           },
         },
       ),
@@ -312,6 +312,60 @@ void main() {
       ]).parseStructuredJson(output);
 
       expect(result, {'ok': true});
+    });
+
+    test('streams annotation-only and annotated allOf schemas', () async {
+      final any = LlamaStructuredOutput<Object?>.jsonValueSchema(
+        schema: const {'description': 'Anything'},
+        decoder: (value) => value,
+      );
+      expect(
+        await Stream.fromIterable([
+          _chunk('[1,'),
+          _chunk('"a"]'),
+        ]).parseStructuredJson(any),
+        [1, 'a'],
+      );
+      expect(
+        await Stream.fromIterable([
+          _chunk('nu'),
+          _chunk('ll'),
+        ]).parseStructuredJson(any),
+        isNull,
+      );
+      await expectLater(
+        Stream.fromIterable([_chunk('[1,')]).parseStructuredJson(any),
+        throwsA(isA<LlamaInferenceException>()),
+      );
+
+      final merged = LlamaStructuredOutput<Map<String, dynamic>>.jsonSchema(
+        schema: const {
+          'allOf': [
+            {'description': 'Base'},
+            {
+              'type': 'object',
+              'properties': {
+                'ok': {'type': 'boolean'},
+              },
+            },
+          ],
+        },
+        decoder: (json) => json,
+      );
+      expect(
+        await Stream.fromIterable([
+          _chunk('{"ok":'),
+          _chunk('true}'),
+        ]).parseStructuredJson(merged),
+        {'ok': true},
+      );
+      await expectLater(
+        Stream.fromIterable([
+          _chunk('{"ok":'),
+          _chunk('1}'),
+        ]).parseStructuredJson(merged),
+        throwsA(isA<LlamaInferenceException>()),
+      );
     });
   });
 }

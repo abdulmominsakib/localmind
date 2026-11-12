@@ -7,8 +7,12 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:llamadart/src/core/exceptions.dart';
+import 'package:llamadart/src/core/llama_logger.dart';
+import 'package:llamadart/src/core/models/config/log_level.dart';
+import 'package:llamadart/src/core/models/download/model_download_controller.dart';
 import 'package:llamadart/src/core/models/download/model_download_manager_base.dart';
 import 'package:llamadart/src/core/models/model_load_options.dart';
+import 'package:llamadart/src/platform/io/mobile_app_cache_directory.dart';
 import 'package:llamadart/src/platform/io/model_download_manager_io.dart';
 import 'package:llamadart/src/core/models/model_source.dart';
 import 'package:path/path.dart' as path;
@@ -20,17 +24,10 @@ void main() {
     late _ModelHttpFixture server;
 
     setUp(() async {
-      tempDir = await Directory.systemTemp.createTemp(
-        'llamadart_model_cache_test_',
-      );
-      server = await _ModelHttpFixture.start();
-    });
-
-    tearDown(() async {
-      await server.close();
-      if (await tempDir.exists()) {
-        await tempDir.delete(recursive: true);
-      }
+      // Register each cleanup immediately so a partial setUp failure neither
+      // leaks an earlier resource nor reads an uninitialized `late` field.
+      tempDir = await _createManagedTempDirectory();
+      server = await _startManagedFixture();
     });
 
     test('resolves desktop shared model cache directories', () {
@@ -214,6 +211,228 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    group('globalCacheDirectory', () {
+      tearDown(() => DefaultModelDownloadManager.globalCacheDirectory = null);
+
+      test('replaces the platform default on every platform', () {
+        final global = path.join(tempDir.path, 'global');
+        DefaultModelDownloadManager.globalCacheDirectory = global;
+
+        expect(DefaultModelDownloadManager().defaultCacheDirectory, global);
+        for (final platform in <ModelCachePlatform>[
+          ModelCachePlatform.android,
+          ModelCachePlatform.ios,
+          ModelCachePlatform.linux,
+          ModelCachePlatform.macos,
+          ModelCachePlatform.windows,
+        ]) {
+          expect(
+            DefaultModelDownloadManager.auto(
+              platform: platform,
+              environment: const <String, String>{},
+              homeDirectory: '/home/alice',
+            ).defaultCacheDirectory,
+            global,
+            reason: platform.name,
+          );
+        }
+      });
+
+      test('is read when a default-constructed manager first needs it', () {
+        final manager = DefaultModelDownloadManager();
+        final global = path.join(tempDir.path, 'set-after-construction');
+        DefaultModelDownloadManager.globalCacheDirectory = global;
+
+        expect(manager.defaultCacheDirectory, global);
+        DefaultModelDownloadManager.globalCacheDirectory = null;
+        expect(manager.defaultCacheDirectory, global);
+      });
+
+      test('never overrides an explicit directory', () {
+        DefaultModelDownloadManager.globalCacheDirectory = path.join(
+          tempDir.path,
+          'global',
+        );
+        final explicit = path.join(tempDir.path, 'explicit');
+
+        expect(
+          DefaultModelDownloadManager(
+            defaultCacheDirectory: explicit,
+          ).defaultCacheDirectory,
+          explicit,
+        );
+        expect(
+          DefaultModelDownloadManager.auto(
+            cacheDirectory: explicit,
+          ).defaultCacheDirectory,
+          explicit,
+        );
+        expect(
+          DefaultModelDownloadManager.auto(
+            platform: ModelCachePlatform.android,
+            appPrivateCacheDirectory: explicit,
+          ).defaultCacheDirectory,
+          explicit,
+        );
+        expect(
+          DefaultModelDownloadManager.auto(
+            platform: ModelCachePlatform.ios,
+            iosAppPrivateCacheDirectory: explicit,
+          ).defaultCacheDirectory,
+          explicit,
+        );
+      });
+
+      test('treats a blank value as unset', () {
+        DefaultModelDownloadManager.globalCacheDirectory = '  ';
+
+        expect(
+          DefaultModelDownloadManager.auto(
+            platform: ModelCachePlatform.macos,
+            environment: const <String, String>{},
+            homeDirectory: '/Users/alice',
+          ).defaultCacheDirectory,
+          '/Users/alice/Library/Caches/llamadart/models',
+        );
+      });
+
+      test('receives downloads from default-constructed managers', () async {
+        final global = path.join(tempDir.path, 'global');
+        DefaultModelDownloadManager.globalCacheDirectory = global;
+        server.payload = utf8.encode('global-cache-bytes');
+
+        final entry = await ModelDownloadController().manager.ensureModel(
+          ModelSource.url(server.modelUri, fileName: 'tiny.gguf'),
+        );
+
+        expect(path.isWithin(global, entry.filePath), isTrue);
+        expect(File(entry.filePath).readAsBytesSync(), server.payload);
+      });
+    });
+
+    group('mobile app cache default', () {
+      tearDown(
+        () => mobileAppCacheDirectoryResolver = hostMobileAppCacheDirectory,
+      );
+
+      test('is <app cache>/<namespace>/models on Android and iOS', () {
+        final asked = <ModelCachePlatform>[];
+        mobileAppCacheDirectoryResolver = (platform) {
+          asked.add(platform);
+          return '/app/${platform.name}/cache';
+        };
+
+        expect(
+          DefaultModelDownloadManager.auto(
+            platform: ModelCachePlatform.android,
+          ).defaultCacheDirectory,
+          '/app/android/cache/llamadart/models',
+        );
+        expect(
+          DefaultModelDownloadManager.auto(
+            platform: ModelCachePlatform.ios,
+          ).defaultCacheDirectory,
+          '/app/ios/cache/llamadart/models',
+        );
+        expect(
+          DefaultModelDownloadManager.auto(
+            namespace: 'com.example.app',
+            platform: ModelCachePlatform.android,
+          ).defaultCacheDirectory,
+          '/app/android/cache/com.example.app/models',
+        );
+        expect(asked, <ModelCachePlatform>[
+          ModelCachePlatform.android,
+          ModelCachePlatform.ios,
+          ModelCachePlatform.android,
+        ]);
+        expect(
+          () => DefaultModelDownloadManager.auto(
+            namespace: '../bad',
+            platform: ModelCachePlatform.ios,
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('yields to explicit and global directories', () {
+        mobileAppCacheDirectoryResolver = (_) => '/app/cache';
+        final explicit = path.join(tempDir.path, 'explicit');
+
+        expect(
+          DefaultModelDownloadManager.auto(
+            platform: ModelCachePlatform.android,
+            appPrivateCacheDirectory: explicit,
+          ).defaultCacheDirectory,
+          explicit,
+        );
+        DefaultModelDownloadManager.globalCacheDirectory = explicit;
+        addTearDown(
+          () => DefaultModelDownloadManager.globalCacheDirectory = null,
+        );
+        expect(
+          DefaultModelDownloadManager.auto(
+            platform: ModelCachePlatform.ios,
+          ).defaultCacheDirectory,
+          explicit,
+        );
+      });
+
+      test('falls back to temp only when the resolver finds nothing', () {
+        mobileAppCacheDirectoryResolver = (_) => null;
+
+        expect(
+          DefaultModelDownloadManager.auto(
+            platform: ModelCachePlatform.android,
+          ).defaultCacheDirectory,
+          path.join(Directory.systemTemp.path, 'llamadart', 'models'),
+        );
+      });
+    });
+
+    test(
+      'warns once, when warnings are enabled, if a mobile default falls back to temp',
+      () {
+        final records = <LlamaLogRecord>[];
+        final logger = LlamaLogger.instance;
+        final previousLevel = logger.level;
+        logger
+          ..setLevel(LlamaLogLevel.none)
+          ..setHandler(records.add);
+        addTearDown(() {
+          logger
+            ..setLevel(previousLevel)
+            ..setHandler(null);
+        });
+        resetMobileTemporaryCacheWarningForTesting();
+
+        DefaultModelDownloadManager.auto(platform: ModelCachePlatform.android);
+        logger.setLevel(LlamaLogLevel.error);
+        DefaultModelDownloadManager.auto(platform: ModelCachePlatform.android);
+        logger.setLevel(LlamaLogLevel.warn);
+        DefaultModelDownloadManager.auto(
+          platform: ModelCachePlatform.android,
+          appPrivateCacheDirectory: path.join(tempDir.path, 'explicit'),
+        );
+        expect(records, isEmpty);
+
+        DefaultModelDownloadManager.auto(platform: ModelCachePlatform.android);
+        DefaultModelDownloadManager.auto(platform: ModelCachePlatform.ios);
+
+        expect(records, hasLength(1));
+        expect(records.single.level, LlamaLogLevel.warn);
+        expect(
+          records.single.message,
+          allOf(
+            contains(
+              path.join(Directory.systemTemp.path, 'llamadart', 'models'),
+            ),
+            contains('DefaultModelDownloadManager.globalCacheDirectory'),
+          ),
+        );
+      },
+    );
 
     test(
       'auto uses generic mobile directory when specific directory is blank',
@@ -560,8 +779,7 @@ void main() {
     test(
       'cross-origin redirects do not forward caller supplied headers',
       () async {
-        final redirectedServer = await _ModelHttpFixture.start();
-        addTearDown(redirectedServer.close);
+        final redirectedServer = await _startManagedFixture();
         server.redirectTo = redirectedServer.modelUri;
         redirectedServer.payload = utf8.encode('redirected-model');
         final manager = DefaultModelDownloadManager(
@@ -750,6 +968,115 @@ void main() {
         );
       },
     );
+
+    group('after the cache root moves, as an iOS app update does', () {
+      late String oldRoot;
+      late String newRoot;
+
+      setUp(() {
+        oldRoot = path.join(tempDir.path, 'AAAA', 'Library', 'Caches');
+        newRoot = path.join(tempDir.path, 'BBBB', 'Library', 'Caches');
+      });
+
+      Future<void> moveContainer() => Directory(
+        path.join(tempDir.path, 'AAAA'),
+      ).rename(path.join(tempDir.path, 'BBBB'));
+
+      test('cacheOnly reuses the entry and records its new path', () async {
+        final source = ModelSource.url(server.modelUri, fileName: 'tiny.gguf');
+        server.payload = utf8.encode('moved-model');
+        final first = await DefaultModelDownloadManager(
+          defaultCacheDirectory: oldRoot,
+        ).ensureModel(source);
+        await moveContainer();
+        final manager = DefaultModelDownloadManager(
+          defaultCacheDirectory: newRoot,
+        );
+
+        server.payload = utf8.encode('remote-newer-model');
+        final moved = await manager.ensureModel(
+          source,
+          options: ModelLoadOptions(cachePolicy: ModelCachePolicy.cacheOnly),
+        );
+
+        final newPath = path.join(
+          newRoot,
+          path.relative(first.filePath, from: oldRoot),
+        );
+        expect(server.requestCount, 1);
+        expect(moved.filePath, newPath);
+        expect(File(moved.filePath).readAsStringSync(), 'moved-model');
+        final metadata =
+            jsonDecode(
+                  File(
+                    path.join(path.dirname(newPath), 'metadata.json'),
+                  ).readAsStringSync(),
+                )
+                as Map<String, dynamic>;
+        expect(metadata['file_path'], newPath);
+        expect((await manager.list()).single.filePath, newPath);
+      });
+
+      test('a recorded length mismatch still downloads again', () async {
+        final source = ModelSource.url(server.modelUri, fileName: 'tiny.gguf');
+        server.payload = utf8.encode('moved-model');
+        final first = await DefaultModelDownloadManager(
+          defaultCacheDirectory: oldRoot,
+        ).ensureModel(source);
+        await moveContainer();
+        final metadataFile = File(
+          path.join(
+            newRoot,
+            path.relative(path.dirname(first.filePath), from: oldRoot),
+            'metadata.json',
+          ),
+        );
+        final metadata =
+            jsonDecode(metadataFile.readAsStringSync()) as Map<String, dynamic>;
+        metadata['bytes'] = 1024 * 1024;
+        await metadataFile.writeAsString(jsonEncode(metadata));
+
+        server.payload = utf8.encode('redownloaded-model');
+        final refreshed = await DefaultModelDownloadManager(
+          defaultCacheDirectory: newRoot,
+        ).ensureModel(source);
+
+        expect(server.requestCount, 2);
+        expect(
+          File(refreshed.filePath).readAsStringSync(),
+          'redownloaded-model',
+        );
+      });
+
+      test('a stored sha256 mismatch still downloads again', () async {
+        final source = ModelSource.url(server.modelUri, fileName: 'tiny.gguf');
+        server.payload = utf8.encode('checksummed-model');
+        final first =
+            await DefaultModelDownloadManager(
+              defaultCacheDirectory: oldRoot,
+            ).ensureModel(
+              source,
+              options: ModelLoadOptions(
+                sha256: sha256.convert(server.payload).toString(),
+              ),
+            );
+        await moveContainer();
+        await File(
+          path.join(newRoot, path.relative(first.filePath, from: oldRoot)),
+        ).writeAsString('checksum-mismatch');
+
+        server.payload = utf8.encode('redownloaded-model');
+        final refreshed = await DefaultModelDownloadManager(
+          defaultCacheDirectory: newRoot,
+        ).ensureModel(source);
+
+        expect(server.requestCount, 2);
+        expect(
+          File(refreshed.filePath).readAsStringSync(),
+          'redownloaded-model',
+        );
+      });
+    });
 
     test(
       'cache hit redownloads when metadata byte length does not match file',
@@ -944,7 +1271,7 @@ void main() {
     });
 
     test(
-      'ignores metadata whose file path points outside its cache entry',
+      'uses the current entry instead of a saved outside file path',
       () async {
         final manager = DefaultModelDownloadManager(
           defaultCacheDirectory: tempDir.path,
@@ -955,14 +1282,9 @@ void main() {
         final metadataFile = File(
           path.join(path.dirname(entry.filePath), 'metadata.json'),
         );
-        final outsideDir = await Directory.systemTemp.createTemp(
-          'llamadart_outside_cache_',
+        final outsideDir = await _createManagedTempDirectory(
+          prefix: 'llamadart_outside_cache_',
         );
-        addTearDown(() async {
-          if (await outsideDir.exists()) {
-            await outsideDir.delete(recursive: true);
-          }
-        });
         final outsideFile = File(path.join(outsideDir.path, 'outside.gguf'))
           ..writeAsStringSync('outside');
         final metadata =
@@ -970,11 +1292,13 @@ void main() {
         metadata['file_path'] = outsideFile.path;
         metadataFile.writeAsStringSync(jsonEncode(metadata));
 
-        expect(await manager.list(), isEmpty);
+        expect((await manager.list()).single.filePath, entry.filePath);
+        expect((await manager.get(source.cacheKey))?.filePath, entry.filePath);
 
         await manager.remove(source.cacheKey);
 
-        expect(outsideFile.existsSync(), isTrue);
+        expect(File(entry.filePath).existsSync(), isFalse);
+        expect(outsideFile.readAsStringSync(), 'outside');
       },
     );
 
@@ -1045,6 +1369,58 @@ void main() {
         ).readAsStringSync(),
         contains(expectedSha256),
       );
+    });
+
+    test('local paths holding %, # and ? resolve to the same file', () async {
+      final manager = DefaultModelDownloadManager(
+        defaultCacheDirectory: tempDir.path,
+      );
+      for (final relative in [
+        '100% done/qwen 100%.gguf',
+        '50%25 off/m%41%C3.gguf',
+        'a#b%zz/m#1.gguf',
+        if (!Platform.isWindows) 'a?b/m?.gguf',
+      ]) {
+        final localFile = File(path.join(tempDir.path, relative))
+          ..createSync(recursive: true)
+          ..writeAsStringSync(relative);
+
+        final entry = await manager.ensureModel(
+          ModelSource.parse(localFile.path),
+        );
+
+        expect(
+          entry.filePath,
+          path.normalize(localFile.path),
+          reason: relative,
+        );
+        expect(entry.fileName, path.basename(relative), reason: relative);
+        expect(
+          File(entry.filePath).readAsStringSync(),
+          relative,
+          reason: relative,
+        );
+      }
+    });
+
+    test('a cache directory holding % reuses its completed entry', () async {
+      server.payload = utf8.encode('percent-cache-model');
+      final manager = DefaultModelDownloadManager(
+        defaultCacheDirectory: path.join(tempDir.path, '100% cache', '50%25'),
+      );
+      final source = ModelSource.url(
+        server.modelUri,
+        fileName: 'qwen%20100%25.gguf',
+      );
+
+      final entry = await manager.ensureModel(source);
+      final cached = await manager.ensureModel(source);
+
+      expect(server.requestCount, 1);
+      expect(entry.fileName, 'qwen 100%.gguf');
+      expect(entry.filePath, contains('${path.separator}50%25'));
+      expect(cached.filePath, entry.filePath);
+      expect(File(cached.filePath).readAsStringSync(), 'percent-cache-model');
     });
 
     test('local path sha256 is verified before metadata is returned', () async {
@@ -1121,6 +1497,39 @@ void main() {
         throwsA(isA<LlamaStateException>()),
       );
     });
+
+    test(
+      'local paths with escaped path syntax throw LlamaUnsupportedException',
+      () async {
+        final manager = DefaultModelDownloadManager(
+          defaultCacheDirectory: tempDir.path,
+        );
+        for (final segments in const [
+          ['a%2Fb.gguf'],
+          ['a%5cb.gguf'],
+          ['%2e', 'model.gguf'],
+          ['%2E%2e', 'model.gguf'],
+        ]) {
+          final file = File(path.joinAll([tempDir.path, ...segments]));
+          await file.create(recursive: true);
+
+          await expectLater(
+            manager.ensureModel(ModelSource.path(file.path)),
+            throwsA(
+              isA<LlamaUnsupportedException>().having(
+                (error) => error.message,
+                'message',
+                allOf(
+                  contains(file.path),
+                  contains('LlamaEngine.load or setModel'),
+                ),
+              ),
+            ),
+            reason: file.path,
+          );
+        }
+      },
+    );
 
     test('normalizes local paths before returning metadata', () async {
       final manager = DefaultModelDownloadManager(
@@ -1298,6 +1707,125 @@ void main() {
 
       expect(server.requestCount, 2);
       expect(File(entry.filePath).readAsStringSync(), 'eventual-model');
+    });
+
+    for (final location in [
+      'ftp://alice:RedirectPassword@cdn.example.com/m.gguf?X-Amz-Signature=RedirectSignature',
+      'http://[invalid/m.gguf?token=RedirectSignature',
+    ]) {
+      test('redirect failures redact every URL hop and snapshot', () async {
+        final redirect = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        addTearDown(() => redirect.close(force: true));
+        var requestCount = 0;
+        final requests = redirect.listen((request) {
+          requestCount++;
+          request.response
+            ..statusCode = HttpStatus.found
+            ..headers.set(HttpHeaders.locationHeader, location);
+          unawaited(request.response.close());
+        });
+        addTearDown(requests.cancel);
+        final manager = DefaultModelDownloadManager(
+          defaultCacheDirectory: tempDir.path,
+        );
+        final source = ModelSource.url(
+          Uri.parse(
+            'http://alice:RedirectPassword@127.0.0.1:${redirect.port}/RedirectPassword.gguf?token=OriginalSignature',
+          ),
+        );
+        final controller = ModelDownloadController(manager: manager);
+        addTearDown(controller.dispose);
+        final safe = allOf(
+          isNot(contains('RedirectPassword')),
+          isNot(contains('RedirectSignature')),
+          isNot(contains('OriginalSignature')),
+        );
+        await expectLater(
+          controller.start(source, options: ModelLoadOptions(maxRetries: 2)),
+          throwsA(
+            isA<LlamaModelException>().having((e) => '$e', 'safe error', safe),
+          ),
+        );
+        expect(controller.snapshot.errorMessage, safe);
+        expect(requestCount, 1);
+      });
+    }
+
+    test(
+      'a transient IO failure retries and preserves a successful download',
+      () async {
+        final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+        addTearDown(socket.close);
+        var requestCount = 0;
+        final connections = socket.listen((client) {
+          addTearDown(client.destroy);
+          var handled = false;
+          final input = client.listen((_) {
+            if (handled) return;
+            handled = true;
+            requestCount++;
+            if (requestCount == 1) {
+              client.destroy();
+            } else {
+              client.write(
+                'HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nmodel',
+              );
+              unawaited(client.flush().then((_) => client.close()));
+            }
+          }, onError: (_) {});
+          addTearDown(input.cancel);
+        });
+        addTearDown(connections.cancel);
+        final manager = DefaultModelDownloadManager(
+          defaultCacheDirectory: tempDir.path,
+        );
+        final source = ModelSource.url(
+          Uri.parse('http://127.0.0.1:${socket.port}/m.gguf?token=RetrySecret'),
+        );
+        final entry = await manager.ensureModel(
+          source,
+          options: ModelLoadOptions(maxRetries: 1),
+        );
+        expect(requestCount, 2);
+        expect(File(entry.filePath).readAsStringSync(), 'model');
+      },
+    );
+
+    test('keeps URL secrets out of a failed download', () async {
+      final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(socket.close);
+      final connections = socket.listen((client) {
+        client.listen((_) {}, onError: (_) {});
+        client.write('HTTP/1.1 200 OK\r\nContent-Le');
+        client.destroy();
+      });
+      addTearDown(connections.cancel);
+      final manager = DefaultModelDownloadManager(
+        defaultCacheDirectory: tempDir.path,
+      );
+      final source = ModelSource.url(
+        Uri.parse(
+          'http://alice:Pw9secret@127.0.0.1:${socket.port}/m.gguf'
+          '?token=Tk9secretvalue',
+        ),
+        fileName: 'm.gguf',
+      );
+
+      await expectLater(
+        manager.ensureModel(source, options: ModelLoadOptions(maxRetries: 0)),
+        throwsA(
+          isA<LlamaModelException>().having(
+            (error) => '$error',
+            'error',
+            allOf(
+              contains('http://127.0.0.1:${socket.port}/m.gguf'),
+              isNot(contains('Pw9secret')),
+              isNot(contains('Tk9secretvalue')),
+              isNot(contains('alice')),
+            ),
+          ),
+        ),
+      );
     });
 
     test('does not retry non-retryable HTTP failures', () async {
@@ -1637,12 +2165,403 @@ void main() {
       },
     );
   });
+
+  group('cache directory creation', () {
+    late Directory tempDir;
+    late _ModelHttpFixture server;
+
+    setUp(() async {
+      tempDir = await _createManagedTempDirectory();
+      server = await _startManagedFixture();
+    });
+
+    Matcher cannotCreate(String directory) => throwsA(
+      isA<LlamaModelException>().having(
+        (error) => error.message,
+        'message',
+        allOf(
+          startsWith('Cannot create the model cache directory $directory'),
+          contains('set ModelLoadOptions.cacheDirectory to a writable'),
+        ),
+      ),
+    );
+
+    for (final policy in [
+      ModelCachePolicy.preferCached,
+      ModelCachePolicy.refresh,
+      ModelCachePolicy.noCache,
+    ]) {
+      test('a cache root that cannot be created throws LlamaModelException '
+          'before any request with ${policy.name}', () async {
+        final blocker = File(path.join(tempDir.path, 'not-a-directory'))
+          ..writeAsStringSync('');
+        final cacheRoot = path.join(blocker.path, 'cache');
+        final source = ModelSource.url(server.modelUri);
+        final options = ModelLoadOptions(
+          cacheDirectory: cacheRoot,
+          cachePolicy: policy,
+          maxRetries: 0,
+        );
+
+        await expectLater(
+          DefaultModelDownloadManager().ensureModel(source, options: options),
+          cannotCreate(cacheRoot),
+        );
+        await expectLater(
+          DefaultModelDownloadManager(
+            defaultCacheDirectory: cacheRoot,
+          ).ensureModel(
+            source,
+            options: ModelLoadOptions(cachePolicy: policy, maxRetries: 0),
+          ),
+          cannotCreate(cacheRoot),
+        );
+        expect(server.requestCount, 0);
+      });
+    }
+
+    test('an unwritable cache root names the permission failure', () async {
+      final readOnly = Directory(path.join(tempDir.path, 'ro'))..createSync();
+      await Process.run('chmod', ['a-w', readOnly.path]);
+      addTearDown(() => Process.run('chmod', ['u+w', readOnly.path]));
+      final cacheRoot = path.join(readOnly.path, 'cache');
+      try {
+        Directory(cacheRoot).createSync();
+        markTestSkipped('This user can write to a read-only directory.');
+        return;
+      } on FileSystemException {
+        // Expected: the directory is not writable.
+      }
+
+      await expectLater(
+        DefaultModelDownloadManager().ensureModel(
+          ModelSource.url(server.modelUri),
+          options: ModelLoadOptions(cacheDirectory: cacheRoot),
+        ),
+        throwsA(
+          isA<LlamaModelException>().having(
+            (error) => error.message,
+            'message',
+            startsWith(
+              'Cannot create the model cache directory '
+              '${path.join(cacheRoot, ModelSource.url(server.modelUri).cacheDirectoryName)}: '
+              'Permission denied.',
+            ),
+          ),
+        ),
+      );
+      expect(server.requestCount, 0);
+    }, testOn: '!windows');
+  });
+
+  group('TLS failures', () {
+    late Directory tempDir;
+    final source = ModelSource.url(
+      Uri.parse('https://models.example/tiny.gguf'),
+    );
+
+    setUp(() async {
+      tempDir = await _createManagedTempDirectory();
+    });
+
+    Future<ModelCacheEntry> download(_FakeHttp http) => http.run(
+      () => DefaultModelDownloadManager().ensureModel(
+        source,
+        options: ModelLoadOptions(cacheDirectory: tempDir.path, maxRetries: 2),
+      ),
+    );
+
+    Matcher certificateFailure(Matcher details) => throwsA(
+      isA<LlamaModelException>()
+          .having(
+            (error) => error.message,
+            'message',
+            allOf(
+              contains("the server's TLS certificate could not be verified"),
+              contains('missing the root certificate'),
+              contains('not retried'),
+            ),
+          )
+          .having((error) => '${error.details}', 'details', details),
+    );
+
+    Matcher handshakeFailure(String cause) => throwsA(
+      isA<LlamaModelException>()
+          .having(
+            (error) => error.message,
+            'message',
+            allOf(
+              contains('the TLS handshake with the server failed'),
+              contains('not retried'),
+              isNot(contains('certificate')),
+            ),
+          )
+          .having((error) => '${error.details}', 'details', contains(cause)),
+    );
+
+    for (final cause in [
+      'CERTIFICATE_VERIFY_FAILED: unable to get local issuer '
+          'certificate(handshake.cc:393)',
+      'error:0A000086:SSL routines::certificate verify failed',
+    ]) {
+      test('a certificate verification failure ($cause) names the cause and '
+          'is not retried', () async {
+        final http = _FakeHttp.failing(
+          HandshakeException('Handshake error in client', OSError(cause, 0)),
+        );
+
+        await expectLater(download(http), certificateFailure(contains(cause)));
+        expect(http.requests, 1);
+      });
+    }
+
+    test('a CertificateException names the certificate and is not '
+        'retried', () async {
+      final http = _FakeHttp.failing(
+        const CertificateException('Bad certificate'),
+      );
+
+      await expectLater(
+        download(http),
+        certificateFailure(contains('Bad certificate')),
+      );
+      expect(http.requests, 1);
+    });
+
+    test('another handshake failure names TLS and is not retried', () async {
+      final http = _FakeHttp.failing(
+        const HandshakeException(
+          'Handshake error in client',
+          OSError('WRONG_VERSION_NUMBER(tls_record.cc:231)', 0),
+        ),
+      );
+
+      await expectLater(
+        download(http),
+        handshakeFailure('WRONG_VERSION_NUMBER'),
+      );
+      expect(http.requests, 1);
+    });
+
+    for (final alert in [
+      'SSLV3_ALERT_BAD_CERTIFICATE',
+      'TLSV13_ALERT_CERTIFICATE_REQUIRED',
+    ]) {
+      test(
+        'a server alert $alert does not blame the server certificate',
+        () async {
+          final http = _FakeHttp.failing(
+            HandshakeException(
+              'Handshake error in client',
+              OSError('$alert(tls_record.cc:592)', 0),
+            ),
+          );
+
+          await expectLater(download(http), handshakeFailure(alert));
+          expect(http.requests, 1);
+        },
+      );
+    }
+
+    test('a connection closed during the handshake is retried', () async {
+      final http = _FakeHttp.failing(
+        const HandshakeException('Connection terminated during handshake'),
+      );
+
+      await expectLater(
+        download(http),
+        throwsA(
+          isA<LlamaModelException>().having(
+            (error) => error.message,
+            'message',
+            'Failed to download tiny.gguf.',
+          ),
+        ),
+      );
+      expect(http.requests, 3);
+    });
+
+    test('a TLS error in the body stream is retried', () async {
+      final payload = utf8.encode('tiny model payload');
+      final http = _FakeHttp((attempt) async* {
+        if (attempt == 0) {
+          yield payload.sublist(0, 4);
+          throw const TlsException('Bad record MAC');
+        }
+        yield payload;
+      });
+
+      final entry = await download(http);
+
+      expect(http.requests, 2);
+      expect(await File(entry.filePath).readAsBytes(), payload);
+    });
+  });
+
+  group('suite resource isolation', () {
+    final createdDirectories = <Directory>[];
+
+    // Group tearDown runs after every callback a test registered with
+    // addTearDown, so this observes the state the next test would inherit.
+    tearDown(() {
+      for (final directory in createdDirectories) {
+        expect(
+          directory.existsSync(),
+          isFalse,
+          reason: 'leaked temporary directory ${directory.path}',
+        );
+      }
+      createdDirectories.clear();
+    });
+
+    test('temporary directories own their cleanup independently', () async {
+      final first = await _createManagedTempDirectory();
+      final second = await _createManagedTempDirectory();
+      createdDirectories.addAll(<Directory>[first, second]);
+
+      expect(first.path, isNot(second.path));
+      expect(first.existsSync(), isTrue);
+      expect(second.existsSync(), isTrue);
+    });
+
+    test('close waits for started request handlers', () async {
+      final fixture = await _startManagedFixture();
+      fixture.responseDelay = const Duration(milliseconds: 200);
+      final client = HttpClient();
+      addTearDown(() => client.close(force: true));
+
+      final pending = client
+          .getUrl(fixture.modelUri)
+          .then((request) => request.close())
+          .then((response) => response.drain<void>());
+      await fixture.firstRequestStarted;
+
+      expect(fixture.activeRequests, 1);
+
+      await fixture.close();
+
+      expect(
+        fixture.activeRequests,
+        0,
+        reason: 'close must not leave a handler running past the test',
+      );
+      await pending;
+    });
+
+    test('close is idempotent and stops accepting new requests', () async {
+      final fixture = await _startManagedFixture();
+      fixture.responseDelay = const Duration(milliseconds: 200);
+      final modelUri = fixture.modelUri;
+      final client = HttpClient();
+      addTearDown(() => client.close(force: true));
+
+      final pending = client
+          .getUrl(modelUri)
+          .then((request) => request.close())
+          .then((response) => response.drain<void>());
+      await fixture.firstRequestStarted;
+
+      final firstClose = fixture.close();
+      final secondClose = fixture.close();
+      await secondClose;
+      final activeAfterSecondClose = fixture.activeRequests;
+      await firstClose;
+      await pending;
+
+      expect(activeAfterSecondClose, 0);
+      await expectLater(
+        client.getUrl(modelUri).then((request) => request.close()),
+        throwsA(anyOf(isA<SocketException>(), isA<HttpException>())),
+      );
+      expect(fixture.requestCount, 1);
+    });
+
+    test('close reports request handler failures', () async {
+      final fixture = await _ModelHttpFixture.start();
+      addTearDown(() async {
+        try {
+          await fixture.close();
+        } on FormatException {
+          // This test deliberately gives the fixture an invalid byte range.
+        }
+      });
+      fixture.supportRanges = true;
+      final client = HttpClient();
+      addTearDown(() => client.close(force: true));
+      final request = await client.getUrl(fixture.modelUri);
+      request.headers.set(HttpHeaders.rangeHeader, 'bytes=invalid-');
+      final clientDone = request.close().then<void>(
+        (response) => response.drain<void>(),
+        onError: (Object error, StackTrace stackTrace) {
+          if (error is! SocketException && error is! HttpException) {
+            Error.throwWithStackTrace(error, stackTrace);
+          }
+        },
+      );
+      await fixture.firstRequestStarted;
+
+      await expectLater(fixture.close(), throwsA(isA<FormatException>()));
+      await clientDone;
+    });
+
+    test(
+      'repeated fixture cycles leave no handler or listener behind',
+      () async {
+        for (var cycle = 0; cycle < 20; cycle += 1) {
+          final fixture = await _startManagedFixture();
+          fixture.responseDelay = const Duration(milliseconds: 20);
+          final client = HttpClient();
+          final abandoned = client
+              .getUrl(fixture.modelUri)
+              .then((request) => request.close());
+          await fixture.firstRequestStarted;
+          client.close(force: true);
+
+          final clientDone = abandoned.then<void>(
+            (_) {},
+            onError: (Object error, StackTrace stackTrace) {
+              if (error is! SocketException && error is! HttpException) {
+                Error.throwWithStackTrace(error, stackTrace);
+              }
+            },
+          );
+          await Future.wait<void>(<Future<void>>[fixture.close(), clientDone]);
+
+          expect(fixture.activeRequests, 0, reason: 'cycle $cycle');
+          expect(fixture.requestCount, 1, reason: 'cycle $cycle');
+        }
+      },
+    );
+  });
+}
+
+Future<Directory> _createManagedTempDirectory({
+  String prefix = 'llamadart_model_cache_test_',
+}) async {
+  final directory = await Directory.systemTemp.createTemp(prefix);
+  addTearDown(() async {
+    if (await directory.exists()) {
+      await directory.delete(recursive: true);
+    }
+  });
+  return directory;
+}
+
+Future<_ModelHttpFixture> _startManagedFixture() async {
+  final fixture = await _ModelHttpFixture.start();
+  addTearDown(fixture.close);
+  return fixture;
 }
 
 class _ModelHttpFixture {
   _ModelHttpFixture._(this._server);
 
   final HttpServer _server;
+  late final StreamSubscription<HttpRequest> _subscription;
+  final Set<Future<void>> _inFlight = <Future<void>>{};
+  Future<void>? _closeFuture;
+  Object? _handlerError;
+  StackTrace? _handlerStackTrace;
   List<int> payload = utf8.encode('model-bytes');
   bool supportRanges = false;
   String? etag = '"fixture-v1"';
@@ -1667,15 +2586,47 @@ class _ModelHttpFixture {
   static Future<_ModelHttpFixture> start() async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final fixture = _ModelHttpFixture._(server);
-    server.listen(fixture._handleRequest);
+    fixture._subscription = server.listen(fixture._acceptRequest);
     return fixture;
   }
 
-  Future<void> close() => _server.close(force: true);
+  /// Releases the listening socket once every started handler has finished.
+  ///
+  /// Returning while a handler is still writing hands the next test a live
+  /// socket and a pending handler owned by a test that already ended, so the
+  /// fixture is no longer isolated to the test that created it.
+  Future<void> close() => _closeFuture ??= _close();
+
+  Future<void> _close() async {
+    await _subscription.cancel();
+    while (_inFlight.isNotEmpty) {
+      await Future.wait(_inFlight.toList());
+    }
+    await _server.close(force: true);
+
+    final handlerError = _handlerError;
+    if (handlerError != null) {
+      Error.throwWithStackTrace(handlerError, _handlerStackTrace!);
+    }
+  }
 
   Future<void> get firstRequestStarted => _firstRequestStarted.future;
 
-  void _handleRequest(HttpRequest request) async {
+  void _acceptRequest(HttpRequest request) {
+    late final Future<void> tracked;
+    tracked = _handleRequest(request)
+        .then<void>(
+          (_) {},
+          onError: (Object error, StackTrace stackTrace) {
+            _handlerError ??= error;
+            _handlerStackTrace ??= stackTrace;
+          },
+        )
+        .whenComplete(() => _inFlight.remove(tracked));
+    _inFlight.add(tracked);
+  }
+
+  Future<void> _handleRequest(HttpRequest request) async {
     requestCount += 1;
     final requestNumber = requestCount;
     activeRequests += 1;
@@ -1755,4 +2706,88 @@ class _ModelHttpFixture {
       activeRequests -= 1;
     }
   }
+}
+
+/// Stands in for every [HttpClient] created inside [run]: each request either
+/// throws the connection error from [_FakeHttp.failing] or answers 200 with
+/// the body that [_body] returns for the zero-based request number.
+class _FakeHttp {
+  _FakeHttp(this._body) : _error = null;
+
+  _FakeHttp.failing(Exception error) : _error = error, _body = null;
+
+  final Exception? _error;
+  final Stream<List<int>> Function(int request)? _body;
+  int requests = 0;
+
+  Future<T> run<T>(Future<T> Function() body) => HttpOverrides.runZoned(
+    body,
+    createHttpClient: (_) => _FakeHttpClient(this),
+  );
+
+  Future<HttpClientRequest> _open() async {
+    final request = requests;
+    requests += 1;
+    final error = _error;
+    if (error != null) {
+      throw error;
+    }
+    return _FakeHttpClientRequest(_FakeHttpClientResponse(_body!(request)));
+  }
+}
+
+class _FakeHttpClient implements HttpClient {
+  _FakeHttpClient(this._http);
+
+  final _FakeHttp _http;
+
+  @override
+  Future<HttpClientRequest> getUrl(Uri url) => _http._open();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _FakeHttpClientRequest implements HttpClientRequest {
+  _FakeHttpClientRequest(this._response);
+
+  final HttpClientResponse _response;
+
+  @override
+  final HttpHeaders headers = _FakeHttpHeaders();
+
+  @override
+  Future<HttpClientResponse> close() async => _response;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _FakeHttpClientResponse extends StreamView<List<int>>
+    implements HttpClientResponse {
+  _FakeHttpClientResponse(super.stream);
+
+  @override
+  int get statusCode => HttpStatus.ok;
+
+  @override
+  int get contentLength => -1;
+
+  @override
+  HttpClientResponseCompressionState get compressionState =>
+      HttpClientResponseCompressionState.notCompressed;
+
+  @override
+  final HttpHeaders headers = _FakeHttpHeaders();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _FakeHttpHeaders implements HttpHeaders {
+  @override
+  String? value(String name) => null;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }

@@ -1,0 +1,85 @@
+{
+  "baseline": "4432c7538ad04e15727e048d49003c10ab7e7c01",
+  "scope": "Unclosed or malformed envelopes retain existing behavior; schema and escape policy are unchanged.",
+  "cases": [
+    {
+      "input": "Before<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\")]",
+      "content": "Beforeb\")]",
+      "reasoning": null,
+      "calls": []
+    },
+    {
+      "input": "Before<|tool_call_start|>[weather(city=\"unterminated)]<|tool_call_end|>After",
+      "content": "BeforeAfter",
+      "reasoning": null,
+      "calls": [
+        {
+          "name": "weather",
+          "arguments": "{\"city\":\"\\\"unterminated\"}"
+        }
+      ]
+    },
+    {
+      "input": "Before<|tool_call_start|>[weather(city=')]<|tool_call_end|>After",
+      "content": "BeforeAfter",
+      "reasoning": null,
+      "calls": [
+        {
+          "name": "weather",
+          "arguments": "{\"city\":\"'\"}"
+        }
+      ]
+    },
+    {
+      "input": "Before<|tool_call_start|>nonsense \"a<|tool_call_end|>b\"<|tool_call_end|> After",
+      "content": "Beforeb\"<|tool_call_end|> After",
+      "reasoning": null,
+      "calls": []
+    },
+    {
+      "input": "<|tool_call_start|>[weather(city=\"unterminated)]<|tool_call_end|><|tool_call_start|>[weather(city=\"Seoul\")]<|tool_call_end|>",
+      "content": "",
+      "reasoning": null,
+      "calls": [
+        {
+          "name": "weather",
+          "arguments": "{\"city\":\"\\\"unterminated\"}"
+        },
+        {
+          "name": "weather",
+          "arguments": "{\"city\":\"Seoul\"}"
+        }
+      ]
+    },
+    {
+      "input": "<|tool_call_start|>[weather(city='unterminated)]<|tool_call_end|><|tool_call_start|>[weather(city='Seoul')]<|tool_call_end|>",
+      "content": "",
+      "reasoning": null,
+      "calls": [
+        {
+          "name": "weather",
+          "arguments": "{\"city\":\"'unterminated\"}"
+        },
+        {
+          "name": "weather",
+          "arguments": "{\"city\":\"Seoul\"}"
+        }
+      ]
+    },
+    {
+      "input": "<|tool_call_start|>[weather(city=\"unterminated)]<|tool_call_end|> \"prose\" <|tool_call_start|>[weather(city=\"Seoul\")]<|tool_call_end|>",
+      "content": "\"prose\"",
+      "reasoning": null,
+      "calls": [
+        {
+          "name": "weather",
+          "arguments": "{\"city\":\"\\\"unterminated\"}"
+        },
+        {
+          "name": "weather",
+          "arguments": "{\"city\":\"Seoul\"}"
+        }
+      ]
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import 'package:llamadart/src/core/models/tools/tool_definition.dart';
 import 'package:llamadart/src/core/models/tools/tool_param.dart';
 import 'package:llamadart/src/core/template/chat_format.dart';
 import 'package:llamadart/src/core/template/handlers/ministral_handler.dart';
+import 'package:llamadart/src/core/template/template_internal_metadata.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -47,6 +48,52 @@ void main() {
     expect(
       jsonDecode(parsed.toolCalls.first.function!.arguments!),
       containsPair('location', 'Seoul'),
+    );
+  });
+
+  test('grammar root repeats tool calls only with parallel tool calls', () {
+    final handler = MinistralHandler();
+    final tools = [
+      ToolDefinition(
+        name: 'search',
+        description: 'Search docs',
+        parameters: [ToolParam.string('query', required: true)],
+        handler: _noop,
+      ),
+    ];
+    String rootFor(Map<String, String> metadata) {
+      final rendered = handler.render(
+        templateSource: '{{ messages[0]["content"] }}',
+        messages: const [
+          LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'hello'),
+        ],
+        metadata: metadata,
+        tools: tools,
+      );
+      return rendered.grammar!
+          .split('\n')
+          .singleWhere((line) => line.startsWith('root ::='));
+    }
+
+    const single = 'root ::= "[TOOL_CALLS]" space tool-call space';
+    const repeated =
+        'root ::= "[TOOL_CALLS]" space tool-call '
+        '(space "[TOOL_CALLS]" space tool-call)* space';
+    expect(rootFor(const {}), equals(single));
+    expect(
+      rootFor(const {internalParallelToolCallsMetadataKey: 'false'}),
+      equals(single),
+    );
+    expect(
+      rootFor(const {internalParallelToolCallsMetadataKey: 'true'}),
+      equals(repeated),
+    );
+    expect(
+      handler
+          .buildGrammar(tools)!
+          .split('\n')
+          .singleWhere((line) => line.startsWith('root ::=')),
+      equals(repeated),
     );
   });
 

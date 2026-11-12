@@ -1,9 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:test/test.dart';
+import 'package:llamadart/backend.dart';
 import 'package:llamadart/llamadart.dart';
 
-class MockLlamaBackend implements LlamaBackend, BackendAvailability {
+class MockLlamaBackend
+    implements
+        LlamaBackend,
+        BackendLoraSupport,
+        BackendMultimodalSupport,
+        BackendAvailability {
   bool _isReady = false;
   final List<String> prompts = [];
   final List<GenerationParams> paramsList = [];
@@ -24,7 +30,7 @@ class MockLlamaBackend implements LlamaBackend, BackendAvailability {
   Future<int> modelLoadFromUrl(
     String url,
     ModelParams params, {
-    Function(double progress)? onProgress,
+    void Function(double progress)? onProgress,
   }) async {
     _isReady = true;
     return 1;
@@ -180,20 +186,6 @@ void main() {
     ];
   });
 
-  group('ToolDefinition', () {
-    test('toJsonSchema includes tool definitions', () {
-      final tool = tools.first;
-      final schema = tool.toJsonSchema();
-      expect(schema['properties'], containsPair('location', isA<Map>()));
-    });
-
-    test('invoke handles valid tool call', () async {
-      final tool = tools.first;
-      final result = await tool.invoke({'location': 'London'});
-      expect(result, 'Sunny in London');
-    });
-  });
-
   group('ChatSession with Tools', () {
     test('tools are passed to engine.create', () async {
       final session = ChatSession(engine);
@@ -209,7 +201,7 @@ void main() {
       expect(backend.prompts.first, contains('Get weather'));
       expect(backend.prompts.first, contains('<|im_start|>system'));
       // Check for the tools JSON injection
-      expect(backend.prompts.first, contains('"name":"get_weather"'));
+      expect(backend.prompts.first, contains('"name": "get_weather"'));
     });
 
     test('response with tool call can be parsed by caller', () async {

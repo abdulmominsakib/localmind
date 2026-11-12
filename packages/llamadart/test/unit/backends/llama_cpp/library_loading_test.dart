@@ -1,0 +1,556 @@
+@TestOn('vm')
+library;
+
+import 'dart:ffi';
+import 'dart:io';
+
+import 'package:llamadart/src/backends/llama_cpp/llama_cpp_service.dart';
+import 'package:llamadart/src/core/exceptions.dart';
+import 'package:test/test.dart';
+
+void main() {
+  group('backend probe failure aggregation', () {
+    test('groups candidates by reason and keeps no directory', () {
+      final failures = BackendProbeFailures();
+      expect(failures.isEmpty, isTrue);
+      expect(failures.describe(), 'no candidates');
+
+      failures
+        ..add('/Users/secret/bundle/libggml-cpu.so', 'not found')
+        ..add('package:llamadart/cpu', 'not found')
+        ..add(
+          'package:llamadart/ggml-cpu',
+          '`ggml_backend_init` returned null',
+        );
+
+      expect(failures.isEmpty, isFalse);
+      expect(
+        failures.describe(),
+        'not found (libggml-cpu.so, package:llamadart/cpu); '
+        '`ggml_backend_init` returned null (package:llamadart/ggml-cpu)',
+      );
+    });
+
+    test('deduplicates the same failure across directories', () {
+      final failures = BackendProbeFailures()
+        ..add('libggml-cpu.so', '`ggml_backend_load` returned null')
+        ..add('/a/libggml-cpu.so', '`ggml_backend_load` returned null')
+        ..add('/b/libggml-cpu.so', '`ggml_backend_load` returned null')
+        ..add('/b/libggml-cpu.so', '`ggml_backend_load` returned null');
+
+      expect(
+        failures.describe(),
+        '`ggml_backend_load` returned null (libggml-cpu.so)',
+      );
+    });
+
+    test('classifies loader errors without quoting them', () {
+      const candidate = '/Users/secret/bundle/libggml-vulkan.so';
+      const cases = <String, String>{
+        "Invalid argument(s): Failed to load dynamic library '$candidate': "
+                'dlopen($candidate, 0x0001): tried: '
+                "'$candidate' (no such file), '/Users/secret/x' (no such file)":
+            'not found',
+        "Failed to load dynamic library '$candidate': $candidate: cannot "
+                'open shared object file: No such file or directory':
+            'not found',
+        "Failed to load dynamic library '$candidate': libvulkan.so.1: cannot "
+                'open shared object file: No such file or directory':
+            'dependency not loaded `libvulkan.so.1`',
+        'The specified module could not be found. (error code: 126)':
+            'not found',
+        "Failed to load dynamic library '$candidate': $candidate: undefined "
+                'symbol: ggml_backend_dev_get_props':
+            'unresolved symbol `ggml_backend_dev_get_props`',
+        'dlopen($candidate, 0x0001): symbol not found in flat namespace '
+                "'_ggml_backend_load'":
+            'unresolved symbol `ggml_backend_load`',
+        'dlopen($candidate): Symbol not found: _ggml_backend_reg_count\n'
+                '  Referenced from: $candidate':
+            'unresolved symbol `ggml_backend_reg_count`',
+        'The specified procedure could not be found. (error code: 127)':
+            'unresolved symbol',
+        'dlopen($candidate): Library not loaded: @rpath/libggml-base.dylib\n'
+                '  Referenced from: $candidate\n  Reason: image not found':
+            'dependency not loaded `libggml-base.dylib`',
+        '$candidate: wrong ELF class: ELFCLASS32': 'incompatible binary',
+        'dlopen($candidate): mach-o file, but is an incompatible architecture '
+                '(have x86_64, need arm64)':
+            'incompatible binary',
+        '%1 is not a valid Win32 application. (error code: 193)':
+            'incompatible binary',
+        'dlopen failed: cannot locate symbol "ggml_backend_dev_get_props" '
+                'referenced by "$candidate"...':
+            'unresolved symbol `ggml_backend_dev_get_props`',
+        'dlopen failed: library "libvulkan.so" not found: needed by '
+                '$candidate in namespace classloader-namespace':
+            'dependency not loaded `libvulkan.so`',
+        'dlopen failed: library "libggml-vulkan.so" not found': 'not found',
+        'dlopen failed: "$candidate" has unexpected e_machine: 62 '
+                '(EM_X86_64)':
+            'incompatible binary',
+        'dlopen failed: "$candidate" has bad ELF magic: 0a0a0a0a':
+            'incompatible binary',
+        'dlopen failed: library "$candidate" ("$candidate") needed or '
+                'dlopened by "/system/lib64/libnativeloader.so" is not '
+                'accessible for the namespace "classloader-namespace"':
+            'blocked by namespace',
+        'Authorization: Bearer secret-token https://user:pass@example.com/'
+                'lib.so?token=secret':
+            'open failed',
+      };
+
+      cases.forEach((text, expected) {
+        final reason = describeLibraryProbeError(
+          ArgumentError(text),
+          candidate,
+        );
+        expect(reason, expected, reason: text);
+        expect(reason, isNot(contains('/Users/secret')), reason: text);
+        expect(reason, isNot(contains('secret')), reason: text);
+      });
+    });
+
+    test('summaries are sanitized by the startup diagnostic buffer', () {
+      final failures = BackendProbeFailures()
+        ..add('lib\x00ggml\ncpu.so', 'not found')
+        ..add(
+          'https://user:pass@example.com/lib.so?token=secret',
+          describeLibraryProbeError(
+            ArgumentError(
+              'Bearer secret https://user:pass@example.com/x?token=secret',
+            ),
+            'https://user:pass@example.com/lib.so?token=secret',
+          ),
+        );
+      final buffer = StartupDiagnosticBuffer()
+        ..record(
+          'Backend module `cpu` not loaded from any candidate: '
+          '${failures.describe()}.',
+        );
+
+      expect(buffer.entries, <String>[
+        'Backend module `cpu` not loaded from any candidate: '
+            'not found (lib ggml cpu.so); open failed (lib.so).',
+      ]);
+      expect(buffer.entries.single, isNot(contains('pass')));
+      expect(buffer.entries.single, isNot(contains('Bearer')));
+      expect(buffer.entries.single, isNot(contains('secret')));
+    });
+
+    test('candidate identity drops directories, queries and fragments', () {
+      expect(
+        probeCandidateIdentity('package:llamadart/cpu'),
+        'package:llamadart/cpu',
+      );
+      expect(
+        probeCandidateIdentity('/Users/secret/libggml-cpu.so?token=secret#f'),
+        'libggml-cpu.so',
+      );
+      expect(
+        probeCandidateIdentity('package:llamadart/cpu?token=secret'),
+        'package:llamadart/cpu',
+      );
+    });
+
+    test('probing returns the first accepted candidate', () {
+      final library = DynamicLibrary.executable();
+      final opened = <String>[];
+      final accepted = <String>[];
+      final failures = BackendProbeFailures()
+        ..add('libearlier.so', 'file missing');
+
+      final result = probeLibraryCandidates<String>(
+        const <String>[
+          '/Users/secret/libmissing.so',
+          'librejected.so',
+          '/Users/secret/libmissing.so',
+          'libaccepted.so',
+          'liblater.so',
+        ],
+        failures: failures,
+        open: (candidate) {
+          opened.add(candidate);
+          if (candidate.contains('missing')) {
+            throw ArgumentError(
+              "Failed to load dynamic library '$candidate': $candidate: "
+              'cannot open shared object file: No such file or directory',
+            );
+          }
+          return library;
+        },
+        accept: (candidate, openedLibrary) {
+          expect(openedLibrary, same(library));
+          accepted.add(candidate);
+          if (candidate == 'librejected.so') {
+            failures.add(candidate, 'no `probe_symbol` export');
+            return null;
+          }
+          return 'bound from $candidate';
+        },
+      );
+
+      expect(result, 'bound from libaccepted.so');
+      expect(opened, <String>[
+        '/Users/secret/libmissing.so',
+        'librejected.so',
+        'libaccepted.so',
+      ]);
+      expect(accepted, <String>['librejected.so', 'libaccepted.so']);
+      expect(
+        failures.describe(),
+        'file missing (libearlier.so); not found (libmissing.so); '
+        'no `probe_symbol` export (librejected.so)',
+      );
+    });
+
+    test('probing returns null when no candidate is accepted', () {
+      final failures = BackendProbeFailures();
+      var accepts = 0;
+
+      final result = probeLibraryCandidates<bool>(
+        const <String>['liba.so', 'libb.so'],
+        failures: failures,
+        open: (_) => DynamicLibrary.executable(),
+        accept: (candidate, _) {
+          accepts++;
+          failures.add(candidate, 'rejected');
+          return null;
+        },
+      );
+
+      expect(result, isNull);
+      expect(accepts, 2);
+      expect(failures.describe(), 'rejected (liba.so, libb.so)');
+      expect(
+        probeLibraryCandidates<bool>(
+          const <String>[],
+          failures: failures,
+          open: (_) => fail('no candidate to open'),
+          accept: (_, _) => fail('no candidate to accept'),
+        ),
+        isNull,
+      );
+    });
+  });
+
+  group('Windows runtime load failures', () {
+    final error126 = ArgumentError(
+      "Couldn't resolve native function 'llama_backend_init' in "
+      "'package:llamadart/llamadart' : Failed to load dynamic library "
+      "'llamadart.dll': The specified module could not be found.\r\n "
+      '(error code: 126).\n',
+    );
+
+    List<String> Function(List<String>) missingFrom(
+      Set<String> missing, [
+      List<String>? checked,
+    ]) {
+      return (names) {
+        checked?.addAll(names);
+        return [
+          for (final name in names)
+            if (missing.contains(name)) name,
+        ];
+      };
+    }
+
+    test('names the missing Visual C++ runtime on Windows x64', () {
+      final checked = <String>[];
+      final failure = llamaCppWindowsLoadFailure(
+        error: error126,
+        abi: Abi.windowsX64,
+        missingWindowsLibraries: missingFrom({
+          'msvcp140.dll',
+          'vcruntime140_1.dll',
+        }, checked),
+      );
+
+      expect(checked, [
+        'msvcp140.dll',
+        'vcruntime140.dll',
+        'vcruntime140_1.dll',
+      ]);
+      expect(failure, isA<LlamaBackendInitializationException>());
+      expect(
+        failure!.message,
+        "llama.cpp runtime could not be loaded on windows-x64: Couldn't "
+        "resolve native function 'llama_backend_init' in "
+        "'package:llamadart/llamadart' : Failed to load dynamic library "
+        "'llamadart.dll': The specified module could not be found. It "
+        'requires the latest Microsoft Visual C++ v14 Redistributable (x64), '
+        'at least as new as the build tools of llamadart.dll, and '
+        'msvcp140.dll, vcruntime140_1.dll could not be loaded; install '
+        'https://aka.ms/vc14/vc_redist.x64.exe or ship those DLLs next to '
+        'llamadart.dll.',
+      );
+    });
+
+    test('Windows arm64 checks only the DLLs its libraries import', () {
+      final checked = <String>[];
+      final failure = llamaCppWindowsLoadFailure(
+        error: error126,
+        abi: Abi.windowsArm64,
+        missingWindowsLibraries: missingFrom({'vcruntime140.dll'}, checked),
+      );
+
+      expect(checked, ['msvcp140.dll', 'vcruntime140.dll']);
+      expect(failure!.message, contains('on windows-arm64:'));
+      expect(failure.message, contains('Redistributable (arm64)'));
+      expect(
+        failure.message,
+        contains('https://aka.ms/vc14/vc_redist.arm64.exe'),
+      );
+    });
+
+    test('recognizes error 126 without an English system message', () {
+      final failure = llamaCppWindowsLoadFailure(
+        error: ArgumentError(
+          "Couldn't resolve native function 'llama_backend_init' in "
+          "'package:llamadart/llamadart' : Failed to load dynamic library "
+          "'llamadart.dll': error code 126",
+        ),
+        abi: Abi.windowsX64,
+        missingWindowsLibraries: missingFrom({'msvcp140.dll'}),
+      );
+
+      expect(failure!.message, contains("'llamadart.dll': error code 126."));
+      expect(failure.message, contains('msvcp140.dll could not be loaded'));
+    });
+
+    test('does not treat error 1260 as error 126', () {
+      final checked = <String>[];
+
+      expect(
+        llamaCppWindowsLoadFailure(
+          error: ArgumentError(
+            "Failed to load dynamic library 'llamadart.dll': This program is "
+            'blocked by group policy.\r\n (error code: 1260).\n',
+          ),
+          abi: Abi.windowsX64,
+          missingWindowsLibraries: missingFrom({'msvcp140.dll'}, checked),
+        ),
+        isNull,
+      );
+      expect(checked, isEmpty);
+    });
+
+    test('keeps the loader error when the runtime loads', () {
+      expect(
+        llamaCppWindowsLoadFailure(
+          error: error126,
+          abi: Abi.windowsX64,
+          missingWindowsLibraries: missingFrom(const {}),
+        ),
+        isNull,
+      );
+    });
+
+    test('ignores other errors and other platforms without probing', () {
+      final checked = <String>[];
+      final everythingMissing = missingFrom({
+        'msvcp140.dll',
+        'vcruntime140.dll',
+        'vcruntime140_1.dll',
+      }, checked);
+
+      expect(
+        llamaCppWindowsLoadFailure(
+          error: ArgumentError(
+            "Couldn't resolve native function 'llama_backend_init' in "
+            "'package:llamadart/llamadart' : Failed to load dynamic library "
+            "'llamadart.dll': %1 is not a valid Win32 application.\r\n "
+            '(error code: 193).\n',
+          ),
+          abi: Abi.windowsX64,
+          missingWindowsLibraries: everythingMissing,
+        ),
+        isNull,
+      );
+      expect(
+        llamaCppWindowsLoadFailure(
+          error: error126,
+          abi: Abi.linuxX64,
+          missingWindowsLibraries: everythingMissing,
+        ),
+        isNull,
+      );
+      expect(checked, isEmpty);
+    });
+
+    test(
+      'the default check probes every Visual C++ DLL llama.cpp imports',
+      () {
+        // Off Windows none of these load, so the real check must report all
+        // of them: this pins the list against the pinned Windows x64 PE
+        // imports (MSVCP140, VCRUNTIME140, VCRUNTIME140_1).
+        final failure = llamaCppWindowsLoadFailure(
+          error: error126,
+          abi: Abi.windowsX64,
+        );
+
+        expect(
+          failure!.message,
+          contains(
+            'msvcp140.dll, vcruntime140.dll, vcruntime140_1.dll could not be '
+            'loaded',
+          ),
+        );
+      },
+      skip: Platform.isWindows
+          ? 'the Visual C++ runtime loads on Windows hosts'
+          : false,
+    );
+
+    test('backend init reports the missing runtime instead of error 126', () {
+      expect(
+        () => runLlamaBackendInit(
+          () => throw error126,
+          abi: Abi.windowsX64,
+          missingWindowsLibraries: missingFrom({'vcruntime140.dll'}),
+        ),
+        throwsA(
+          isA<LlamaBackendInitializationException>().having(
+            (error) => error.message,
+            'message',
+            contains('vcruntime140.dll could not be loaded'),
+          ),
+        ),
+      );
+    });
+
+    test('backend init rethrows other failures unchanged', () {
+      var calls = 0;
+      runLlamaBackendInit(
+        () => calls++,
+        abi: Abi.windowsX64,
+        missingWindowsLibraries: missingFrom({'msvcp140.dll'}),
+      );
+      expect(calls, 1);
+
+      expect(
+        () => runLlamaBackendInit(
+          () => throw error126,
+          abi: Abi.windowsX64,
+          missingWindowsLibraries: missingFrom(const {}),
+        ),
+        throwsA(same(error126)),
+      );
+      final stateError = StateError('not a loader failure');
+      expect(
+        () => runLlamaBackendInit(
+          () => throw stateError,
+          abi: Abi.windowsX64,
+          missingWindowsLibraries: missingFrom({'msvcp140.dll'}),
+        ),
+        throwsA(same(stateError)),
+      );
+    });
+
+    test('initializeBackend reports the missing runtime', () {
+      final checked = <String>[];
+      final service = LlamaCppService(
+        backendInit: () => throw error126,
+        abi: Abi.windowsArm64,
+        missingWindowsLibraries: missingFrom({'msvcp140.dll'}, checked),
+      );
+
+      expect(
+        service.initializeBackend,
+        throwsA(
+          isA<LlamaBackendInitializationException>().having(
+            (error) => error.message,
+            'message',
+            contains('on windows-arm64:'),
+          ),
+        ),
+      );
+      expect(checked, ['msvcp140.dll', 'vcruntime140.dll']);
+    });
+
+    test('a failed Windows GPU module load names its missing loader', () {
+      final moduleDirectory = Directory.systemTemp.createTempSync(
+        'llamadart_backend_modules_',
+      );
+      addTearDown(() => moduleDirectory.deleteSync(recursive: true));
+      final checked = <String>[];
+      final service = LlamaCppService(
+        isWindows: true,
+        missingWindowsLibraries: missingFrom({'nvcuda.dll'}, checked),
+      );
+
+      expect(
+        service.debugTryLoadBackendModuleForTesting(
+          'cuda',
+          moduleDirectory: moduleDirectory.path,
+        ),
+        isFalse,
+      );
+      expect(checked, ['nvcuda.dll']);
+      expect(
+        service.getStartupDiagnostics().last,
+        allOf(
+          startsWith('Backend module `cuda` not loaded from any candidate: '),
+          endsWith(
+            ' nvcuda.dll could not be loaded; install an NVIDIA driver.',
+          ),
+        ),
+      );
+    });
+
+    test('names the loader a Windows GPU backend module could not load', () {
+      final allMissing = missingFrom({'vulkan-1.dll', 'nvcuda.dll'});
+
+      expect(
+        describeMissingWindowsBackendLoader(
+          'vulkan',
+          isWindows: true,
+          missingWindowsLibraries: allMissing,
+        ),
+        ' vulkan-1.dll could not be loaded; install a GPU driver that '
+        'provides the Vulkan loader.',
+      );
+      expect(
+        describeMissingWindowsBackendLoader(
+          'cuda',
+          isWindows: true,
+          missingWindowsLibraries: allMissing,
+        ),
+        ' nvcuda.dll could not be loaded; install an NVIDIA driver.',
+      );
+    });
+
+    test('adds nothing when the loader loads, off Windows or for CPU', () {
+      final checked = <String>[];
+
+      expect(
+        describeMissingWindowsBackendLoader(
+          'vulkan',
+          isWindows: true,
+          missingWindowsLibraries: missingFrom(const {}, checked),
+        ),
+        isEmpty,
+      );
+      expect(checked, ['vulkan-1.dll']);
+      checked.clear();
+      final allMissing = missingFrom({'vulkan-1.dll'}, checked);
+      expect(
+        describeMissingWindowsBackendLoader(
+          'vulkan',
+          isWindows: false,
+          missingWindowsLibraries: allMissing,
+        ),
+        isEmpty,
+      );
+      expect(
+        describeMissingWindowsBackendLoader(
+          'cpu',
+          isWindows: true,
+          missingWindowsLibraries: allMissing,
+        ),
+        isEmpty,
+      );
+      expect(checked, isEmpty);
+    });
+  });
+}

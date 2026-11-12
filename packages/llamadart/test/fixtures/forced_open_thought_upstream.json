@@ -1,0 +1,531 @@
+{
+  "upstream_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+  "user_prompt": "Weather in Paris?",
+  "tool": {
+    "name": "weather",
+    "parameters": {
+      "city": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "templates": [
+    {
+      "template": "test/fixtures/llama_cpp_templates/MiniMax-M2.jinja",
+      "format": "minimaxM2",
+      "generation_prompt": "]~b]ai\n<think>\n",
+      "cases": [
+        {
+          "name": "unended-thought",
+          "output": "Plan it.\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan it.\n",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-inside-unended-thought",
+          "output": "Plan. <minimax:tool_call>\n<invoke name=\"weather\">\n<parameter name=\"city\">Paris</parameter>\n</invoke>\n</minimax:tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan. <minimax:tool_call>\n<invoke name=\"weather\">\n<parameter name=\"city\">Paris</parameter>\n</invoke>\n</minimax:tool_call>",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "ended-thought",
+          "output": "Plan.\n</think>\n\nSunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan.\n",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-after-ended-thought",
+          "output": "Plan.\n</think>\n\n<minimax:tool_call>\n<invoke name=\"weather\">\n<parameter name=\"city\">Paris</parameter>\n</invoke>\n</minimax:tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.\n",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/deepseek-ai-DeepSeek-V3.1.jinja",
+      "format": "deepseekV3",
+      "chat_template_kwargs": {
+        "thinking": true
+      },
+      "generation_prompt": "<｜Assistant｜><think>",
+      "cases": [
+        {
+          "name": "unended-thought",
+          "output": "Plan it.\n",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan it.\n",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-inside-unended-thought",
+          "output": "Plan. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>weather<｜tool▁sep｜>{\"city\": \"Paris\"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>weather<｜tool▁sep｜>{\"city\": \"Paris\"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "ended-thought",
+          "output": "Plan.\n</think>\n\nSunny.",
+          "upstream": {
+            "content": "\n\nSunny.",
+            "reasoning_content": "Plan.\n",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-after-ended-thought",
+          "output": "Plan.</think><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>weather<｜tool▁sep｜>{\"city\": \"Paris\"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escaped-newline-in-ended-thought",
+          "output": "Plan \\n x.</think>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan \\n x.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "escaped-newline-in-unended-thought",
+          "output": "Plan it out \\n more",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan it out \\n more",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-start-tag",
+          "output": "<think>Plan</think>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "<think>Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "tags-after-first-end-tag",
+          "output": "Plan.</think>A</think>B<think>X</think>C",
+          "upstream": {
+            "content": "A</think>B<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-after-thought-with-escaped-newline",
+          "output": "Plan \\n x.</think><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>weather<｜tool▁sep｜>{\"city\": \"Paris\"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan \\n x.",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escaped-newline-in-content",
+          "output": "Plan.</think>Sunny \\n there.",
+          "upstream": {
+            "content": "Sunny \\n there.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-end-tag-at-end",
+          "output": "Plan it </thi",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan it </thi",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan it ",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/templates/Qwen3_5-0_8B.jinja",
+      "format": "qwen3CoderXml",
+      "generation_prompt": "<|im_start|>assistant\n<think>\n",
+      "required_grammar_start": "root ::= text-before-calls tool-call",
+      "cases": [
+        {
+          "name": "escaped-newline-in-ended-thought",
+          "output": "Plan \\n x.</think>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan \\n x.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "escaped-newline-in-unended-thought",
+          "output": "Plan it out \\n more",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan it out \\n more",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-start-tag",
+          "output": "<think>Plan</think>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "<think>Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-inside-thought",
+          "output": "Plan <think> again</think><think>X</think>Y",
+          "upstream": {
+            "content": "<think>X</think>Y",
+            "reasoning_content": "Plan <think> again",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "tags-after-first-end-tag",
+          "output": "Plan.</think>A</think>B<think>X</think>C",
+          "upstream": {
+            "content": "A</think>B<think>X</think>C",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-end-tag-at-end",
+          "output": "Plan it </thin",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan it </thin",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan it ",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-after-thought",
+          "output": "Plan.</think><tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escaped-newline-in-content",
+          "output": "Plan.</think>Sunny \\n there.",
+          "upstream": {
+            "content": "Sunny \\n there.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-ends-unended-thought",
+          "output": "Plan <tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "partial-call-opening-at-end",
+          "output": "Plan <tool",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan <tool",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "two-calls-end-unended-thought",
+          "output": "Plan <tool_call>\n<function=weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=weather>\n<parameter=city>\nRome\n</parameter>\n</function>\n</tool_call>",
+          "parallel_tool_calls": true,
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan ",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              },
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Rome\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Qwen-QwQ-32B.jinja",
+      "format": "hermes",
+      "generation_prompt": "<|im_start|>assistant\n<think>\n",
+      "cases": [
+        {
+          "name": "escaped-newline-in-ended-thought",
+          "output": "Plan \\n x.</think>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "\nPlan \\n x.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "escaped-newline-in-unended-thought",
+          "output": "Plan it out \\n more",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "\nPlan it out \\n more",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "repeated-start-tag",
+          "output": "<think>Plan</think>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "\n<think>Plan",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-inside-thought",
+          "output": "Plan <think> again</think><think>X</think>Y",
+          "upstream": {
+            "content": "<think>X</think>Y",
+            "reasoning_content": "\nPlan <think> again",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "tags-after-first-end-tag",
+          "output": "Plan.</think>A</think>B<think>X</think>C",
+          "upstream": {
+            "content": "A</think>B<think>X</think>C",
+            "reasoning_content": "\nPlan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-end-tag-at-end",
+          "output": "Plan it </thin",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "\nPlan it </thin",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "\nPlan it ",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-after-thought",
+          "output": "Plan.</think><tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "\nPlan.",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escaped-newline-in-content",
+          "output": "Plan.</think>Sunny \\n there.",
+          "upstream": {
+            "content": "Sunny \\n there.",
+            "reasoning_content": "\nPlan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "call-inside-unended-thought",
+          "output": "Plan <tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "\nPlan <tool_call>\n{\"name\": \"weather\", \"arguments\": {\"city\": \"Paris\"}}\n</tool_call>",
+            "tool_calls": []
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Cohere2MoE.jinja",
+      "format": "cohere2Moe",
+      "generation_prompt": "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_THINKING|>",
+      "required_grammar_start": "root ::= think-body \"<|END_THINKING|>\" think-space (",
+      "cases": [
+        {
+          "name": "ended-thought",
+          "output": "Plan.<|END_THINKING|><|START_TEXT|>Sunny.<|END_TEXT|>",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "text-marker-ends-thought",
+          "output": "Plan.<|START_TEXT|>Sunny.<|END_TEXT|>",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "text-marker-ends-thought-unended-text",
+          "output": "Plan.<|START_TEXT|>Sunny.",
+          "upstream": {
+            "content": "Sunny.",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "action-marker-ends-thought",
+          "output": "Plan. <|START_ACTION|>[{\"tool_call_id\": \"0\", \"tool_name\": \"weather\", \"parameters\": {\"city\": \"Paris\"}}]<|END_ACTION|>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan. ",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "call-after-ended-thought",
+          "output": "Plan.<|END_THINKING|><|START_ACTION|>[{\"tool_call_id\": \"0\", \"tool_name\": \"weather\", \"parameters\": {\"city\": \"Paris\"}}]<|END_ACTION|>",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan.",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\": \"Paris\"}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "end-tag-inside-text",
+          "output": "Plan.<|START_TEXT|>A <|END_THINKING|> B<|END_TEXT|>",
+          "upstream": {
+            "content": "A <|END_THINKING|> B",
+            "reasoning_content": "Plan.",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-end-tag-at-end",
+          "output": "Plan it <|END_THI",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan it <|END_THI",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan it ",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "partial-text-marker-at-end",
+          "output": "Plan it <|START_TE",
+          "upstream": {
+            "content": "",
+            "reasoning_content": "Plan it <|START_TE",
+            "tool_calls": []
+          },
+          "upstream_partial": {
+            "content": "",
+            "reasoning_content": "Plan it ",
+            "tool_calls": []
+          }
+        },
+        {
+          "name": "start-tag-inside-thought",
+          "output": "Plan <|START_THINKING|>x<|END_THINKING|><|START_TEXT|>A<|END_TEXT|>",
+          "upstream": {
+            "content": "A",
+            "reasoning_content": "Plan <|START_THINKING|>x",
+            "tool_calls": []
+          }
+        }
+      ]
+    }
+  ]
+}

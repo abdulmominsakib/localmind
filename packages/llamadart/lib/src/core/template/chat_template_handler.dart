@@ -1,15 +1,20 @@
+import 'dart:async';
+
 import 'package:dinja/dinja.dart';
 
 import '../exceptions.dart';
 import '../models/chat/chat_message.dart';
 import '../models/chat/chat_template_result.dart';
+import '../models/chat/content_part.dart';
+import '../models/inference/tool_choice.dart';
 import '../models/tools/tool_definition.dart';
 import 'chat_format.dart';
+import 'media_placeholders.dart';
 import 'chat_parse_result.dart';
+import 'template_caps.dart';
 import 'template_internal_metadata.dart';
 import 'template_render_context.dart';
-import 'thinking_utils.dart';
-import 'tool_call_parsing_utils.dart';
+import 'tool_call_grammar_utils.dart';
 
 export 'template_render_context.dart' show TemplateToolCallSerialization;
 
@@ -44,16 +49,46 @@ abstract class ChatTemplateHandler {
   ///
   /// Handlers should use this instead of calling [LlamaChatMessage.toJson]
   /// directly so template-specific tool-call shapes are applied only at the
-  /// render-context boundary.
+  /// render-context boundary. Pass the [templateSource] being rendered:
+  /// tool-call arguments become objects when [TemplateCaps] detects that it
+  /// reads them as objects, and string content becomes a text part when it
+  /// reads content only as parts, as llama.cpp does. A handler that builds
+  /// typed parts itself passes `typedContent: false` to keep string content.
+  /// Inside [renderWithToolResultsAsUserTurns], tool results become user
+  /// turns, with tool calls in `content` when [TemplateCaps] finds the
+  /// template cannot render them. With
+  /// [multimodal], each media part becomes [mediaMarker] in the message
+  /// text.
   List<Map<String, dynamic>> templateMessages(
     List<LlamaChatMessage> messages, {
     bool multimodal = false,
+    String mediaMarker = mtmdMediaMarker,
+    String? templateSource,
+    bool typedContent = true,
   }) {
+    final caps = templateSource == null
+        ? null
+        : TemplateCaps.detect(templateSource);
+    final polyfill =
+        caps != null && Zone.current[_toolResultsAsUserTurns] == true;
     try {
       return TemplateRenderContext.messagesForTemplate(
         messages,
         toolCallSerialization: toolCallSerialization,
         multimodal: multimodal,
+        mediaMarker: mediaMarker,
+        objectArguments: caps?.supportsObjectArguments ?? false,
+        typedContentOnly:
+            typedContent &&
+            caps != null &&
+            caps.supportsTypedContent &&
+            !caps.supportsStringContent,
+        stringContentOnly:
+            caps != null &&
+            caps.supportsStringContent &&
+            !caps.supportsTypedContent,
+        toolResultsAsUser: polyfill,
+        toolCallsAsContent: polyfill && !caps.supportsToolCalls,
       );
     } catch (e, stackTrace) {
       if (toolCallSerialization.isEmpty) rethrow;
@@ -128,29 +163,53 @@ abstract class ChatTemplateHandler {
   /// for Hermes, `[TOOL_CALLS]` prefix for Mistral).
   String? buildGrammar(List<ToolDefinition>? tools);
 
+  /// Returns [grammar], or for a [ToolChoice.required] request in [metadata]
+  /// after a forced-open thought, [grammar] preceded by that thought and its
+  /// [thinkingEndTag], so the parse finds the calls outside it.
+  String? requiredGrammarAfterThought(
+    String? grammar, {
+    required Map<String, String> metadata,
+    required bool thinkingForcedOpen,
+  }) =>
+      grammar != null &&
+          thinkingForcedOpen &&
+          metadata[internalToolChoiceMetadataKey] == ToolChoice.required.name
+      ? ToolCallGrammarUtils.afterForcedOpenThought(grammar, thinkingEndTag)
+      : grammar;
+
   /// Renders [template] with [context] plus llama.cpp-style extra globals.
   ///
   /// This injects `chat_template_kwargs` values encoded by
-  /// [ChatTemplateEngine]/[LlamaEngine] through metadata.
+  /// [ChatTemplateEngine]/[LlamaEngine] through metadata. [context] overrides
+  /// them, and they override [defaults]: template settings derived from
+  /// `enableThinking` that a caller can set itself, as in llama-server.
   String renderTemplate(
     Template template, {
     required Map<String, String> metadata,
     required Map<String, dynamic> context,
+    Map<String, dynamic> defaults = const {},
   }) {
+    final templateNow = DateTime.tryParse(
+      metadata[internalTemplateNowMetadataKey] ?? '',
+    );
     return template.render(<String, dynamic>{
-      ..._templateContextFromMetadata(metadata),
+      ...defaults,
+      ...chatTemplateKwargsFromMetadata(metadata),
       ...context,
+      if (templateNow != null) 'strftime_now': strftimeNow(templateNow),
     });
   }
 
-  /// Re-renders with content always in list-of-parts format.
+  /// Renders a request that carries media for a template that reads both
+  /// string and typed content.
   ///
-  /// Some templates (e.g. SmolVLM) expect `content` to be
-  /// `[{type: 'text', text: '...'}, {type: 'image'}]` rather than a string.
-  /// This method converts messages to multimodal format and re-renders.
-  ///
-  /// After rendering, replaces model-specific image placeholders with
-  /// the mtmd marker `<__media__>` so the native tokenizer can find them.
+  /// Each image, audio or video part becomes [mediaMarker] in the message
+  /// text, where the part was, as llama.cpp renders it. The template's own
+  /// placeholder for a typed media part is not written, and a placeholder
+  /// string in message text stays text. The request then goes through
+  /// [render], so it gets the grammar, triggers, preserved tokens, parser and
+  /// stops of the same text request: llama-server applies one chat format to
+  /// both.
   LlamaChatTemplateResult renderWithMultimodalContent({
     required String templateSource,
     required List<LlamaChatMessage> messages,
@@ -158,81 +217,30 @@ abstract class ChatTemplateHandler {
     bool addAssistant = true,
     List<ToolDefinition>? tools,
     bool enableThinking = true,
+    String mediaMarker = mtmdMediaMarker,
   }) {
-    final template = Template(templateSource);
-    var prompt = renderTemplate(
-      template,
+    bool isMedia(LlamaContentPart part) =>
+        part is LlamaImageContent ||
+        part is LlamaAudioContent ||
+        part is LlamaVideoContent;
+    return render(
+      templateSource: templateSource,
+      messages: [
+        for (final message in messages)
+          message.parts.any(isMedia)
+              ? message.copyWith(
+                  parts: [
+                    for (final part in message.parts)
+                      isMedia(part) ? LlamaTextContent(mediaMarker) : part,
+                  ],
+                )
+              : message,
+      ],
       metadata: metadata,
-      context: {
-        'messages': templateMessages(messages, multimodal: true),
-        'add_generation_prompt': addAssistant,
-        'tools': tools?.map((t) => t.toJson()).toList(),
-        'enable_thinking': enableThinking,
-        'bos_token': metadata['tokenizer.ggml.bos_token'] ?? '',
-        'eos_token': metadata['tokenizer.ggml.eos_token'] ?? '',
-      },
+      addAssistant: addAssistant,
+      tools: tools,
+      enableThinking: enableThinking,
     );
-
-    var thinkingForcedOpen = false;
-    if (isThinkingForcedOpen(prompt, startTag: thinkingStartTag.trimRight())) {
-      if (!enableThinking) {
-        prompt = '${prompt.trimRight()}$thinkingEndTag\n';
-      } else {
-        thinkingForcedOpen = true;
-      }
-    }
-
-    // Post-process: replace model-specific image placeholders with
-    // the mtmd marker so the native tokenizer can match bitmaps to markers.
-    const mtmdMarker = '<__media__>';
-    const imagePlaceholders = [
-      '<image>', // SmolVLM, InternVL, etc.
-      '[IMG]', // Some CLIP-based models
-      '<|image|>', // Phi-3 vision
-      '<|audio|>',
-      '<|video|>',
-      '<image_soft_token>',
-      '<audio_soft_token>',
-      '<video_soft_token>',
-    ];
-    for (final placeholder in imagePlaceholders) {
-      prompt = prompt.replaceAll(placeholder, mtmdMarker);
-    }
-
-    final hasTools = tools != null && tools.isNotEmpty;
-
-    return LlamaChatTemplateResult(
-      prompt: prompt,
-      format: format.index,
-      grammar: buildGrammar(tools),
-      grammarLazy: hasTools,
-      additionalStops: getStops(
-        hasTools: hasTools,
-        enableThinking: enableThinking,
-      ),
-      thinkingForcedOpen: thinkingForcedOpen,
-    );
-  }
-
-  Map<String, dynamic> _templateContextFromMetadata(
-    Map<String, String> metadata,
-  ) {
-    final context = <String, dynamic>{};
-
-    final rawKwargs = metadata[internalChatTemplateKwargsMetadataKey];
-    if (rawKwargs != null && rawKwargs.trim().isNotEmpty) {
-      try {
-        final decoded = ToolCallParsingUtils.decodeJsonValue(rawKwargs);
-        final kwargs = ToolCallParsingUtils.coerceMap(decoded);
-        if (kwargs != null) {
-          context.addAll(kwargs);
-        }
-      } catch (_) {
-        // Ignore invalid internal metadata payloads and render without extras.
-      }
-    }
-
-    return context;
   }
 
   /// Resolves a caller-provided template `now` value or falls back to current
@@ -247,4 +255,32 @@ abstract class ChatTemplateHandler {
     }
     return DateTime.now();
   }
+}
+
+final Object _toolResultsAsUserTurns = Object();
+
+/// Runs [render] so that [ChatTemplateHandler.templateMessages] sends tool
+/// results as user turns to a template that rejects the `tool` role.
+///
+/// `ChatTemplateEngine` uses it only to retry a failed render for a template
+/// whose [TemplateCaps.supportsToolResponses] is `false`, so a request the
+/// template renders as given is never changed.
+T renderWithToolResultsAsUserTurns<T>(T Function() render) =>
+    runZoned(render, zoneValues: {_toolResultsAsUserTurns: true});
+
+/// Optional handler contract for output formats whose argument decoding depends
+/// on the tool JSON schemas supplied for the completion request.
+///
+/// [ChatTemplateEngine] uses this contract when schemas are available while
+/// retaining [ChatTemplateHandler.parse] for callers that only have raw output.
+abstract interface class ToolSchemaAwareChatTemplateHandler {
+  /// Parses [output] using [tools] to validate names, required properties, and
+  /// schema-directed argument types.
+  ChatParseResult parseWithTools(
+    String output, {
+    List<ToolDefinition>? tools,
+    bool isPartial = false,
+    bool parseToolCalls = true,
+    bool thinkingForcedOpen = false,
+  });
 }

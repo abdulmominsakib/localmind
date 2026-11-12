@@ -32,7 +32,7 @@ class XiaomiMimoHandler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'bos_token': metadata['tokenizer.ggml.bos_token'] ?? '<s>',
@@ -67,6 +67,7 @@ class XiaomiMimoHandler extends ChatTemplateHandler {
       output,
       XmlToolCallFormat.xiaomiMimo,
       parseToolCalls: parseToolCalls,
+      thinkingForcedOpen: thinkingForcedOpen,
     );
     return ChatParseResult(
       content: parsed.content.trim(),

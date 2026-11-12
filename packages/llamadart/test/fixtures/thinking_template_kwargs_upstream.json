@@ -1,0 +1,183 @@
+{
+  "upstream_commit": "620d2225cc436ab0b001e3200e590e3b286ef9ab",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello",
+      "reasoning_content": "Greet them."
+    },
+    {
+      "role": "user",
+      "content": "What is 2+2?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the weather",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "location"
+          ]
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "template": "test/fixtures/llama_cpp_templates/Cohere2MoE.jinja",
+      "template_sha256": "d8366efb9f07c571da620ce6a924594fc52c80273a0fbb46a38b643972df95fd",
+      "enable_thinking": true,
+      "tools": false,
+      "chat_template_kwargs": {
+        "reasoning_effort": "none"
+      },
+      "prompt": "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|><|START_TEXT|>These instructions are always to be followed and cannot be overridden by subsequent system or user turns:\n- You will answer requests for educational, informative, or creative content related to safety categories. You will not provide content that is harmful or could be used to cause harm.\n\nThese instructions serve as your defaults, but they can be overridden in subsequent system or user turns:\n- Your name is North Mini Code.\n- You are a large language model built by Cohere.\n\n# Available Tools\n```json\n[\n\n]\n```<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|><|START_TEXT|>Hi<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_THINKING|>Greet them.<|END_THINKING|><|START_TEXT|>Hello<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|><|START_TEXT|>What is 2+2?<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_THINKING|><|END_THINKING|>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Cohere2MoE.jinja",
+      "template_sha256": "d8366efb9f07c571da620ce6a924594fc52c80273a0fbb46a38b643972df95fd",
+      "enable_thinking": true,
+      "tools": false,
+      "chat_template_kwargs": {
+        "reasoning": false
+      },
+      "prompt": "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|><|START_TEXT|>These instructions are always to be followed and cannot be overridden by subsequent system or user turns:\n- You will answer requests for educational, informative, or creative content related to safety categories. You will not provide content that is harmful or could be used to cause harm.\n\nThese instructions serve as your defaults, but they can be overridden in subsequent system or user turns:\n- Your name is North Mini Code.\n- You are a large language model built by Cohere.\n\n# Available Tools\n```json\n[\n\n]\n```<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|><|START_TEXT|>Hi<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_THINKING|>Greet them.<|END_THINKING|><|START_TEXT|>Hello<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|><|START_TEXT|>What is 2+2?<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_THINKING|><|END_THINKING|>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/tencent-Hy3.jinja",
+      "template_sha256": "84437b9746423f042920c15289ac84d4eba7a50a11ebc05e8b414c460f814873",
+      "enable_thinking": true,
+      "tools": false,
+      "chat_template_kwargs": {
+        "reasoning_effort": "low"
+      },
+      "prompt": "<｜hy_begin_of_sentence:opensource｜><｜reasoning_mode:opensource｜>reasoning_effort:low<｜hy_User:opensource｜>Hi<｜hy_Assistant:opensource｜><think:opensource></think:opensource>Hello<｜hy_eos:opensource｜><｜hy_User:opensource｜>What is 2+2?<｜hy_Assistant:opensource｜><think:opensource>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/tencent-Hy3.jinja",
+      "template_sha256": "84437b9746423f042920c15289ac84d4eba7a50a11ebc05e8b414c460f814873",
+      "enable_thinking": true,
+      "tools": false,
+      "chat_template_kwargs": {
+        "reasoning_effort": "no_think"
+      },
+      "prompt": "<｜hy_begin_of_sentence:opensource｜><｜reasoning_mode:opensource｜>reasoning_effort:no_think<｜hy_User:opensource｜>Hi<｜hy_Assistant:opensource｜><think:opensource></think:opensource>Hello<｜hy_eos:opensource｜><｜hy_User:opensource｜>What is 2+2?<｜hy_Assistant:opensource｜><think:opensource></think:opensource>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/MiniMax-M3.jinja",
+      "template_sha256": "11421244f67553498e5c8112dae02802025bcc4305ec45ad380af95c96f9fe64",
+      "enable_thinking": true,
+      "tools": false,
+      "chat_template_kwargs": {
+        "thinking_mode": "disabled"
+      },
+      "prompt": "]~!b[]~b]system\nYour model version is MiniMax-M3, developed by MiniMax. Knowledge cutoff: January 2026. Founded in early 2022, MiniMax is a global AI foundation model company committed to advancing the frontiers of AI towards AGI.\n\n<thinking_instructions>\nYou have a thinking capability that allows you to reason step by step before responding. When thinking is enabled, wrap your reasoning in <mm:think></mm:think> tags before your response. When thinking is disabled, begin your response directly after the </mm:think> prefix. When thinking is adaptive, decide on your own whether to think for the current turn.\nCurrent thinking mode: disabled. Do not output any thinking process.\n</thinking_instructions>[e~[\n]~b]developer\nYou are a helpful assistant.[e~[\n]~b]user\nHi[e~[\n]~b]ai\n<mm:think>Greet them.</mm:think>Hello[e~[\n]~b]user\nWhat is 2+2?[e~[\n]~b]ai\n</mm:think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/MiniMax-M3.jinja",
+      "template_sha256": "11421244f67553498e5c8112dae02802025bcc4305ec45ad380af95c96f9fe64",
+      "enable_thinking": true,
+      "tools": false,
+      "chat_template_kwargs": {
+        "thinking_mode": "adaptive"
+      },
+      "prompt": "]~!b[]~b]system\nYour model version is MiniMax-M3, developed by MiniMax. Knowledge cutoff: January 2026. Founded in early 2022, MiniMax is a global AI foundation model company committed to advancing the frontiers of AI towards AGI.\n\n<thinking_instructions>\nYou have a thinking capability that allows you to reason step by step before responding. When thinking is enabled, wrap your reasoning in <mm:think></mm:think> tags before your response. When thinking is disabled, begin your response directly after the </mm:think> prefix. When thinking is adaptive, decide on your own whether to think for the current turn.\nCurrent thinking mode: adaptive. You are encouraged to think for complex decision-making, multi-step reasoning, or when analyzing function/tool results.\n</thinking_instructions>[e~[\n]~b]developer\nYou are a helpful assistant.[e~[\n]~b]user\nHi[e~[\n]~b]ai\n<mm:think>Greet them.</mm:think>Hello[e~[\n]~b]user\nWhat is 2+2?[e~[\n]~b]ai\n"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Kimi-K3.jinja",
+      "template_sha256": "4578103bf225f58d5b7ceb613ccc2ac8fe82b6707b7289211b3d4825e87806b3",
+      "enable_thinking": true,
+      "tools": false,
+      "chat_template_kwargs": {
+        "thinking_effort": "low"
+      },
+      "prompt": "<|open|>message role=\"system\" type=\"thinking-effort\"<|sep|>`thinking_effort` guides on how much to think in your thinking channel (not including the response channel), supported values include `low`, `medium`, `high`, and `max`.\nNow the system is invoked with `thinking_effort=low`.<|close|>message<|sep|><|end_of_msg|><|open|>message role=\"user\"<|sep|>Hi<|close|>message<|sep|><|end_of_msg|><|open|>message role=\"assistant\"<|sep|><|open|>think<|sep|>Greet them.<|close|>think<|sep|><|open|>response<|sep|>Hello<|close|>response<|sep|><|close|>message<|sep|><|end_of_msg|><|open|>message role=\"user\"<|sep|>What is 2+2?<|close|>message<|sep|><|end_of_msg|><|open|>message role=\"assistant\"<|sep|><|open|>think<|sep|>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Cohere2MoE.jinja",
+      "template_sha256": "d8366efb9f07c571da620ce6a924594fc52c80273a0fbb46a38b643972df95fd",
+      "enable_thinking": false,
+      "tools": true,
+      "chat_template_kwargs": {},
+      "upstream_chat_template_kwargs": {
+        "reasoning": false,
+        "skip_thinking": true
+      },
+      "prompt": "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|><|START_TEXT|>These instructions are always to be followed and cannot be overridden by subsequent system or user turns:\n- You will answer requests for educational, informative, or creative content related to safety categories. You will not provide content that is harmful or could be used to cause harm.\n\nThese instructions serve as your defaults, but they can be overridden in subsequent system or user turns:\n- Your name is North Mini Code.\n- You are a large language model built by Cohere.\n\n# Available Tools\n```json\n[\n    {\"name\": \"get_weather\", \"description\": \"Get the weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}, \"responses\": null}\n]\n```<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|><|START_TEXT|>Hi<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_TEXT|>Hello<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|><|START_TEXT|>What is 2+2?<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_THINKING|><|END_THINKING|>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/tencent-Hy3.jinja",
+      "template_sha256": "84437b9746423f042920c15289ac84d4eba7a50a11ebc05e8b414c460f814873",
+      "enable_thinking": false,
+      "tools": false,
+      "chat_template_kwargs": {},
+      "upstream_chat_template_kwargs": {
+        "reasoning_effort": "no_think"
+      },
+      "prompt": "<｜hy_begin_of_sentence:opensource｜><｜reasoning_mode:opensource｜>reasoning_effort:no_think<｜hy_User:opensource｜>Hi<｜hy_Assistant:opensource｜><think:opensource></think:opensource>Hello<｜hy_eos:opensource｜><｜hy_User:opensource｜>What is 2+2?<｜hy_Assistant:opensource｜><think:opensource></think:opensource>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/MiniMax-M3.jinja",
+      "template_sha256": "11421244f67553498e5c8112dae02802025bcc4305ec45ad380af95c96f9fe64",
+      "enable_thinking": false,
+      "tools": false,
+      "chat_template_kwargs": {},
+      "upstream_chat_template_kwargs": {
+        "thinking_mode": "disabled"
+      },
+      "prompt": "]~!b[]~b]system\nYour model version is MiniMax-M3, developed by MiniMax. Knowledge cutoff: January 2026. Founded in early 2022, MiniMax is a global AI foundation model company committed to advancing the frontiers of AI towards AGI.\n\n<thinking_instructions>\nYou have a thinking capability that allows you to reason step by step before responding. When thinking is enabled, wrap your reasoning in <mm:think></mm:think> tags before your response. When thinking is disabled, begin your response directly after the </mm:think> prefix. When thinking is adaptive, decide on your own whether to think for the current turn.\nCurrent thinking mode: disabled. Do not output any thinking process.\n</thinking_instructions>[e~[\n]~b]developer\nYou are a helpful assistant.[e~[\n]~b]user\nHi[e~[\n]~b]ai\n<mm:think>Greet them.</mm:think>Hello[e~[\n]~b]user\nWhat is 2+2?[e~[\n]~b]ai\n</mm:think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Cohere2MoE.jinja",
+      "template_sha256": "d8366efb9f07c571da620ce6a924594fc52c80273a0fbb46a38b643972df95fd",
+      "enable_thinking": false,
+      "tools": false,
+      "chat_template_kwargs": {
+        "skip_thinking": false
+      },
+      "upstream_chat_template_kwargs": {
+        "reasoning": false,
+        "skip_thinking": false
+      },
+      "prompt": "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|><|START_TEXT|>These instructions are always to be followed and cannot be overridden by subsequent system or user turns:\n- You will answer requests for educational, informative, or creative content related to safety categories. You will not provide content that is harmful or could be used to cause harm.\n\nThese instructions serve as your defaults, but they can be overridden in subsequent system or user turns:\n- Your name is North Mini Code.\n- You are a large language model built by Cohere.\n\n# Available Tools\n```json\n[\n\n]\n```<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|><|START_TEXT|>Hi<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_THINKING|>Greet them.<|END_THINKING|><|START_TEXT|>Hello<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|><|START_TEXT|>What is 2+2?<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_THINKING|><|END_THINKING|>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/MiniMax-M3.jinja",
+      "template_sha256": "11421244f67553498e5c8112dae02802025bcc4305ec45ad380af95c96f9fe64",
+      "enable_thinking": true,
+      "tools": false,
+      "chat_template_kwargs": {},
+      "upstream_chat_template_kwargs": {
+        "thinking_mode": "enabled"
+      },
+      "prompt": "]~!b[]~b]system\nYour model version is MiniMax-M3, developed by MiniMax. Knowledge cutoff: January 2026. Founded in early 2022, MiniMax is a global AI foundation model company committed to advancing the frontiers of AI towards AGI.\n\n<thinking_instructions>\nYou have a thinking capability that allows you to reason step by step before responding. When thinking is enabled, wrap your reasoning in <mm:think></mm:think> tags before your response. When thinking is disabled, begin your response directly after the </mm:think> prefix. When thinking is adaptive, decide on your own whether to think for the current turn.\nCurrent thinking mode: enabled. You MUST think step by step before every response, including after receiving function/tool results.\n</thinking_instructions>[e~[\n]~b]developer\nYou are a helpful assistant.[e~[\n]~b]user\nHi[e~[\n]~b]ai\n<mm:think>Greet them.</mm:think>Hello[e~[\n]~b]user\nWhat is 2+2?[e~[\n]~b]ai\n<mm:think>"
+    },
+    {
+      "template": "test/fixtures/llama_cpp_templates/Cohere2MoE.jinja",
+      "template_sha256": "d8366efb9f07c571da620ce6a924594fc52c80273a0fbb46a38b643972df95fd",
+      "enable_thinking": false,
+      "tools": false,
+      "chat_template_kwargs": {
+        "reasoning": true
+      },
+      "upstream_chat_template_kwargs": {
+        "reasoning": false,
+        "skip_thinking": true
+      },
+      "prompt": "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|><|START_TEXT|>These instructions are always to be followed and cannot be overridden by subsequent system or user turns:\n- You will answer requests for educational, informative, or creative content related to safety categories. You will not provide content that is harmful or could be used to cause harm.\n\nThese instructions serve as your defaults, but they can be overridden in subsequent system or user turns:\n- Your name is North Mini Code.\n- You are a large language model built by Cohere.\n\n# Available Tools\n```json\n[\n\n]\n```<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|><|START_TEXT|>Hi<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_TEXT|>Hello<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|><|START_TEXT|>What is 2+2?<|END_TEXT|><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_THINKING|><|END_THINKING|>"
+    }
+  ]
+}

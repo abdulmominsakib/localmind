@@ -1,0 +1,131 @@
+name: High-Risk Readiness Advisory
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: high-risk-readiness-advisory-${{ github.repository }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  inspect:
+    name: Read-only advisory (not a required readiness check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout immutable trusted workflow revision
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup repository-pinned Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies from trusted default branch
+        run: dart pub get
+
+      - name: Read PR metadata and classify both sides of renames
+        id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::Invalid pull request number."
+            exit 64
+          fi
+
+          readiness_dir="$RUNNER_TEMP/high-risk-readiness"
+          mkdir -p "$readiness_dir"
+          gh api "repos/$REPOSITORY/pulls/$PR_NUMBER" > "$readiness_dir/pr.json"
+
+          repository="$(jq -r '.base.repo.full_name' "$readiness_dir/pr.json")"
+          base_ref="$(jq -r '.base.ref' "$readiness_dir/pr.json")"
+          observed_head="$(jq -r '.head.sha' "$readiness_dir/pr.json")"
+          observed_base="$(jq -r '.base.sha' "$readiness_dir/pr.json")"
+          observed_changed_files="$(jq -er '.changed_files | select(type == "number" and . >= 0 and floor == .)' "$readiness_dir/pr.json")"
+          if [[ "$repository" != "$REPOSITORY" || "$base_ref" != "$DEFAULT_BRANCH" ]]; then
+            echo "::error::Diagnostic is restricted to PRs targeting the repository default branch."
+            exit 65
+          fi
+          if [[ ! "$observed_head" =~ ^[0-9a-f]{40}$ || ! "$observed_base" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::PR metadata did not contain exact lowercase head and base SHAs."
+            exit 65
+          fi
+
+          gh api "repos/$REPOSITORY/pulls/$PR_NUMBER/files" --paginate --slurp > "$readiness_dir/files.json"
+          jq -e --argjson expected "$observed_changed_files" '
+            def safe_path:
+              type == "string"
+              and length > 0
+              and (test("[\u0000-\u001F\u007F]") | not);
+            [.[][]] as $files
+            | ($files | length) == $expected
+              and all(
+                $files[];
+                (.filename | safe_path)
+                and (
+                  (has("previous_filename") | not)
+                  or .previous_filename == null
+                  or (.previous_filename | safe_path)
+                )
+              )
+          ' "$readiness_dir/files.json" > /dev/null
+          jq -r '.[][] | .filename, (.previous_filename // empty)' "$readiness_dir/files.json" > "$readiness_dir/changed_paths.txt"
+
+          gh api "repos/$REPOSITORY/pulls/$PR_NUMBER" > "$readiness_dir/pr-after-files.json"
+          current_head="$(jq -r '.head.sha' "$readiness_dir/pr-after-files.json")"
+          current_base="$(jq -r '.base.sha' "$readiness_dir/pr-after-files.json")"
+          current_changed_files="$(jq -er '.changed_files | select(type == "number" and . >= 0 and floor == .)' "$readiness_dir/pr-after-files.json")"
+          if [[ "$current_head" != "$observed_head" || "$current_base" != "$observed_base" || "$current_changed_files" != "$observed_changed_files" ]]; then
+            echo "::error::PR head, base, or changed-file count changed while the inventory was read."
+            exit 1
+          fi
+
+          dart run tool/testing/classify_high_risk_changes.dart < "$readiness_dir/changed_paths.txt" > "$readiness_dir/classification.txt"
+          cat "$readiness_dir/classification.txt"
+
+          if grep -Fqx 'Classification: high-risk' "$readiness_dir/classification.txt"; then
+            echo "is_high_risk=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_high_risk=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report standard-risk advisory
+        if: steps.classify.outputs.is_high_risk == 'false'
+        run: |
+          {
+            echo '### High-risk readiness advisory'
+            echo
+            echo 'The trusted default-branch classifier found no high-risk surface.'
+            echo 'This workflow is advisory only and must not be configured as a required readiness check.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report high-risk advisory
+        if: steps.classify.outputs.is_high_risk == 'true'
+        run: |
+          {
+            echo '### High-risk readiness advisory'
+            echo
+            echo 'High-risk paths were detected.'
+            echo 'No protected GitHub App evidence publisher or conditional ruleset is configured, so this advisory cannot verify readiness and does not gate the merge.'
+            echo 'PR comments, PR-authored files, workflow artifacts, and environment variables are not trusted readiness evidence.'
+            echo 'Complete the repository-local review manually: run tool/testing/high_risk_readiness.dart with independently observed repository, PR, author, head, and base values, obtain an independent blocking audit, and fill the PR template high-risk block.'
+            echo 'See doc/high_risk_pre_merge_readiness.md.'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::High-risk paths detected; readiness must be reviewed manually in the repository."

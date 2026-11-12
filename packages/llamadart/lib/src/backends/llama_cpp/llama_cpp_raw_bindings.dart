@@ -18,3 +18,10 @@ external int llama_model_ftype_raw(ffi.Pointer<llama_model> model);
   symbol: 'llama_ftype_name',
 )
 external ffi.Pointer<ffi.Char> llama_ftype_name_raw(int ftype);
+
+/// Raw `mtmd_input_chunk_get_type` binding used to preserve unknown chunk
+/// types.
+@ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<mtmd_input_chunk>)>(
+  symbol: 'mtmd_input_chunk_get_type',
+)
+external int mtmd_input_chunk_get_type_raw(ffi.Pointer<mtmd_input_chunk> chunk);

@@ -29,6 +29,7 @@ void main() {
     var failWasm64StagingUntilRemoteFetch = false;
     late List<bool?> bridgePreferMemory64Values;
     late List<bool?> loadForceRemoteFetchValues;
+    late List<String> completionPrompts;
 
     setUp(() {
       globalContext.delete('__llamadartBridgeAllowAutoRemoteFetchBackend'.toJS);
@@ -48,6 +49,7 @@ void main() {
       failWasm64StagingUntilRemoteFetch = false;
       bridgePreferMemory64Values = <bool?>[];
       loadForceRemoteFetchValues = <bool?>[];
+      completionPrompts = <String>[];
 
       bridge.setProperty(
         'loadModelFromUrl'.toJS,
@@ -112,6 +114,7 @@ void main() {
             }
           }
 
+          completionPrompts.add(prompt);
           final onToken = opts.getProperty('onToken'.toJS) as JSFunction?;
           if (onToken != null) {
             final piece = JSUint8Array.withLength(5);
@@ -417,6 +420,69 @@ void main() {
       );
 
       expect(lastLoadUseCache, isFalse);
+    });
+
+    test('LlamaEngine create gives the bridge its marker where the part '
+        'was and breaks the placeholders a message quotes', () async {
+      await engine.loadModelFromUrl(
+        'https://example.com/model.gguf',
+        modelParams: const ModelParams(contextSize: 1024),
+      );
+      await engine.loadMultimodalProjector('https://example.com/mmproj.gguf');
+
+      await engine.create(<LlamaChatMessage>[
+        LlamaChatMessage.withContent(
+          role: LlamaChatRole.user,
+          content: <LlamaContentPart>[
+            const LlamaTextContent(
+              'What do <img>, <|img|>, <image>, <|image|>, [IMG], <audio>, '
+              '<|audio|>, <|image_2|>, <|audio_10|>, '
+              '<|vision_start|><|image_pad|><|vision_end|>, '
+              '<|vision_start|><|video_pad|><|vision_end|>, <__media__> and '
+              '<start_of_image> mean?',
+            ),
+            LlamaAudioContent(
+              samples: Float32List.fromList(<double>[0.1, -0.2, 0.3]),
+            ),
+          ],
+        ),
+      ], params: const GenerationParams(maxTokens: 8)).drain<void>();
+
+      expect(
+        completionPrompts.single,
+        contains(
+          'What do <\u200Bimg>, <\u200B|img|>, <\u200Bimage>, '
+          '<\u200B|image|>, [\u200BIMG], <\u200Baudio>, <\u200B|audio|>, '
+          '<\u200B|image_2|>, <\u200B|audio_10|>, '
+          '<\u200B|vision_start|><|image_pad|><|vision_end|>, '
+          '<\u200B|vision_start|><|video_pad|><|vision_end|>, '
+          '<\u200B__media__> and <start_of_image> mean?<__media__>',
+        ),
+      );
+      expect('<__media__>'.allMatches(completionPrompts.single), hasLength(1));
+    });
+
+    test('LlamaEngine generate gives the bridge the prompt its caller '
+        'wrote', () async {
+      await engine.loadModelFromUrl(
+        'https://example.com/model.gguf',
+        modelParams: const ModelParams(contextSize: 1024),
+      );
+      await engine.loadMultimodalProjector('https://example.com/mmproj.gguf');
+
+      await engine
+          .generate(
+            '<|audio|>Transcribe <__media__>.',
+            parts: <LlamaContentPart>[
+              LlamaAudioContent(
+                samples: Float32List.fromList(<double>[0.1, -0.2, 0.3]),
+              ),
+            ],
+            params: const GenerationParams(maxTokens: 8),
+          )
+          .drain<void>();
+
+      expect(completionPrompts.single, '<|audio|>Transcribe <__media__>.');
     });
 
     test('LlamaEngine create forwards multimodal audio parts', () async {

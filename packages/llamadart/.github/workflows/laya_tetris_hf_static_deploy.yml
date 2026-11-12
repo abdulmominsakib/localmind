@@ -1,0 +1,119 @@
+name: Laya Tetris HF Static Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'example/laya_tetris/**'
+      - 'lib/**'
+      - 'hook/**'
+      - 'pubspec.yaml'
+      - 'scripts/fetch_webgpu_bridge_assets.sh'
+      - '.github/workflows/laya_tetris_hf_static_deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: laya-tetris-hf-static-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Test and deploy Laya Tetris
+    if: github.ref == 'refs/heads/main' && github.repository == 'leehack/llamadart'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SPACE_REPO: leehack/flutter-laya-tetris
+      APP_URL: https://leehack-flutter-laya-tetris.static.hf.space
+      BUILD_DIR: example/laya_tetris/build/web
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+
+      - name: Test the example
+        working-directory: example/laya_tetris
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+
+      - name: Build the Web app with the pinned bridge assets
+        run: |
+          WEBGPU_BRIDGE_OUT_DIR=example/laya_tetris/web/webgpu_bridge \
+            ./scripts/fetch_webgpu_bridge_assets.sh
+          (cd example/laya_tetris && flutter build web --release)
+          for file in index.html main.dart.js \
+            webgpu_bridge/manifest.json \
+            webgpu_bridge/llama_webgpu_bridge.js \
+            webgpu_bridge/llama_webgpu_bridge_worker.js \
+            webgpu_bridge/llama_webgpu_core.wasm \
+            webgpu_bridge/llama_webgpu_core_mem64.wasm; do
+            test -s "$BUILD_DIR/$file"
+          done
+          printf '%s\n' "$GITHUB_SHA" > "$BUILD_DIR/deploy-sha.txt"
+          {
+            printf '%s\n' '---'
+            printf '%s\n' 'title: Laya Tetris'
+            printf '%s\n' 'sdk: static'
+            printf '%s\n' 'app_file: index.html'
+            printf '%s\n' 'short_description: Real-time Tetris played by a Laya decision model'
+            printf '%s\n' 'custom_headers:'
+            printf '%s\n' '  cross-origin-embedder-policy: require-corp'
+            printf '%s\n' '  cross-origin-opener-policy: same-origin'
+            printf '%s\n' '  cross-origin-resource-policy: cross-origin'
+            printf '%s\n' '---'
+            printf '%s\n' ''
+            printf '%s\n' 'Built from https://github.com/leehack/llamadart/tree/main/example/laya_tetris'
+          } > "$BUILD_DIR/README.md"
+
+      - name: Install Hugging Face Hub client
+        run: python3 -m pip install --upgrade "huggingface_hub>=0.36.0,<0.37.0"
+
+      - name: Check that main has not superseded this build
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: python3 tool/ci/deploy_guard.py laya-tetris
+
+      - name: Deploy to Hugging Face Space
+        if: steps.current.outputs.deploy == 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python3 tool/ci/hf_space_deploy.py \
+            --repo "$SPACE_REPO" \
+            --folder "$BUILD_DIR" \
+            --commit-message "chore: deploy Laya Tetris ${GITHUB_SHA:0:7}" \
+            --delete-pattern '*' \
+            --delete-pattern '**/*' \
+            --public
+
+      - name: Verify the deployed app
+        if: steps.current.outputs.deploy == 'true'
+        run: |
+          for attempt in $(seq 1 30); do
+            if [ "$(curl -fsS "$APP_URL/deploy-sha.txt?attempt=$attempt" || true)" = "$GITHUB_SHA" ]; then
+              headers="$(curl -fsSIL "$APP_URL/")"
+              grep -qi '^cross-origin-opener-policy: same-origin' <<<"$headers"
+              grep -qi '^cross-origin-embedder-policy: require-corp' <<<"$headers"
+              curl -fsS "$APP_URL/webgpu_bridge/manifest.json" \
+                | cmp - "$BUILD_DIR/webgpu_bridge/manifest.json"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "error: $APP_URL did not serve $GITHUB_SHA within 5 minutes" >&2
+          exit 1

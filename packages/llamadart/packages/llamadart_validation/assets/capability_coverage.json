@@ -1,0 +1,740 @@
+{
+  "schema_version": 1,
+  "description": "Source-derived obligation inventory only. Public LiteRT-LM C API 1.0 activation has compiled-fixture default-client/service/speech dispatch, cancellation and reload controls in litert_lm_v1_public_qualification_test.dart; actual public rows bind chat-litert-cpu and reviewed ASR inputs separately. These model-free controls do not qualify artifacts, devices or new capability families; adoption remains https://github.com/leehack/llamadart/issues/1677. Existing pack bindings do not assert execution, platform/backend qualification or completeness of every semantic branch. Exemptions remain open work. Native LiteRT-LM catalog 10 S01 records capability admission only; the maintained litert-lm-json-schema local scenario supplies per-model (Qwen3-0.6B, Gemma 4 E2B) CPU and GPU enforcement, schema-contract and Gemma 4 thinking evidence on each qualified host. Validation-pack qualification of the widened contract and of non-macOS hosts remains https://github.com/leehack/llamadart/issues/174.",
+  "packs": [
+    {
+      "id": "batching",
+      "cases": [
+        "C11.batching"
+      ],
+      "profiles": [
+        "assets/profiles/tiny-gguf-batching.json"
+      ]
+    },
+    {
+      "id": "decision",
+      "cases": [
+        "D01.head",
+        "D02.tokenizer",
+        "D03.logits",
+        "D04.answers",
+        "D05.batch",
+        "D06.reload",
+        "D07.guards"
+      ],
+      "profiles": [
+        "assets/profiles/decision-gguf-cpu.json"
+      ]
+    },
+    {
+      "id": "embeddings",
+      "cases": [
+        "E01.capabilities",
+        "E02.text",
+        "E03.image",
+        "E04.audio",
+        "E05.mixed",
+        "E06.batch",
+        "E07.normalization",
+        "E08.guards",
+        "E09.cancel.before",
+        "E10.cancel.after"
+      ],
+      "profiles": [
+        "assets/profiles/embedding-gguf-cpu.json"
+      ],
+      "notes": "LiteRT-LM native CPU embeddings are qualified by the local-only litert-lm-multimodal-embedding scenario, not by this pack's profiles; Linux x64, Linux arm64 and Windows x64 joined macOS, iOS and Android arm64 with litert-lm-native v0.19.1-1 and require its in-process LiteRT marker from v0.19.1-2; VM tests cover refusal of runtimes without it (https://github.com/leehack/llamadart/issues/1367). Model-free recording tests cover the native qwen35 Android Vulkan #948 restriction, which applies only to llama.cpp runtimes older than ggml 0.28.0 (bundled runtimes lift it), and the lift on newer runtimes. Device evidence for the lift is recorded on the issue, not by a pack. https://github.com/leehack/llamadart/issues/948"
+    },
+    {
+      "id": "history",
+      "cases": [
+        "C06.history"
+      ],
+      "profiles": [
+        "assets/profiles/chat-gguf-cpu.json"
+      ]
+    },
+    {
+      "id": "lifecycle",
+      "notes": "Web negative-mainGpu routing and unsupported GPU paths are covered by test/unit/backends/webgpu/webgpu_backend_test.dart; native CPU-placement rejection is covered by test/unit/core/engine/engine_test.dart. These model-free controls do not qualify WebGPU hardware or the separate NPU work in https://github.com/leehack/llamadart/issues/915. Shared LlamadartEngine lifecycle typing (#1613) is covered by model-free generic consumer tests for all five engines, including attached ownership, pending disposal, synchronous cleanup reentrancy and failure/no-retry controls. This adds no runtime capability or hardware qualification; existing model-backed lifecycle profiles remain unchanged. https://github.com/leehack/llamadart/issues/1613",
+      "cases": [
+        "C01.load",
+        "C08.cancel",
+        "C08.cancel.early",
+        "C08.cancel.restart",
+        "C08.overlap",
+        "C09.reload",
+        "C12.recovery",
+        "C09.reload.second"
+      ],
+      "profiles": [
+        "assets/profiles/tiny-gguf-lifecycle.json"
+      ]
+    },
+    {
+      "id": "next_token_scoring",
+      "notes": "Catalog 13 binds raw top-K and candidate scores, prompt-prefix reuse equivalence and argument guards on CPU Stories15M, plus typed unsupported rejection for LiteRT-LM (scoring-litert-cpu runs only N01 as an expected-unsupported profile; LiteRT-LM scoring has an unresolved API/semantic contract, issue 1158; runtime upgrades are tracked separately in leehack/litert-lm-native#75 and do not establish scoring support). A mapping is not qualification of other models, platforms or WebGPU, and reuse equivalence does not prove the cache was used.",
+      "cases": [
+        "N01.capability",
+        "N02.top_k",
+        "N03.candidates",
+        "N04.reuse",
+        "N05.guards"
+      ],
+      "profiles": [
+        "assets/profiles/scoring-gguf-cpu.json",
+        "assets/profiles/scoring-litert-cpu.json"
+      ]
+    },
+    {
+      "id": "streaming",
+      "cases": [
+        "C08.cancel",
+        "C08.cancel.early",
+        "C08.cancel.restart",
+        "C08.overlap",
+        "C10.limit"
+      ],
+      "profiles": [
+        "assets/profiles/tiny-gguf-cpu.json"
+      ]
+    },
+    {
+      "id": "structured_output",
+      "notes": "Web lazyGrammar capability admission, explicit trigger transport, legacy false-probe fallback and typed version-skew rejection are covered by test/unit/backends/webgpu/webgpu_lazy_grammar_test.dart and webgpu_backend_test.dart. The local web-lazy-grammar scenario checks actual pinned-asset CPU Wasm activation and reuse in direct and worker runtimes. These controls do not qualify LFM2 Python-call auto grammar (#1715), model accuracy or hardware WebGPU.",
+      "cases": [
+        "S01.capabilities",
+        "S02.json_object",
+        "S03.json_schema",
+        "S04.grammar",
+        "S05.grammar.lazy",
+        "S06.reject",
+        "S07.stream",
+        "S08.tools.schema"
+      ],
+      "profiles": [
+        "assets/profiles/structured-gguf-cpu.json",
+        "assets/profiles/chat-litert-cpu.json"
+      ]
+    },
+    {
+      "id": "text",
+      "cases": [
+        "C03.raw",
+        "C04.hello",
+        "C04.arithmetic"
+      ],
+      "profiles": [
+        "assets/profiles/chat-gguf-cpu.json"
+      ]
+    },
+    {
+      "id": "tokenization",
+      "cases": [
+        "T01.roundtrip",
+        "T02.count"
+      ],
+      "profiles": [
+        "assets/profiles/tokenization-gguf-cpu.json"
+      ]
+    },
+    {
+      "id": "tools",
+      "cases": [
+        "C07.tools",
+        "C07.tools.auto_text",
+        "M01.tool_result_image"
+      ],
+      "profiles": [
+        "assets/profiles/chat-gguf-cpu.json",
+        "assets/profiles/qwen3vl-gguf-cpu.json",
+        "assets/profiles/qwen3vl-gguf-metal.json"
+      ]
+    },
+    {
+      "id": "sampler_controls",
+      "cases": [
+        "G01.capability",
+        "G02.min_p",
+        "G03.repeat_penalty",
+        "G04.presence_penalty",
+        "G05.thinking_budget"
+      ],
+      "profiles": [
+        "assets/profiles/sampler-gguf-cpu.json"
+      ],
+      "notes": "Catalog 15 binds greedy-equivalent Min-P, repetition and presence penalties, and raw-prompt thinking-budget forcing on CPU Stories15M, plus typed LiteRT-LM Min-P rejection in G01. Template-derived budget tags, WebGPU bridge skew, LiteRT penalties/budgets and other models or platforms are not qualified by this mapping."
+    },
+    {
+      "id": "state_persistence",
+      "cases": [
+        "P01.capability",
+        "P02.roundtrip",
+        "P03.restore_reuse",
+        "P04.invalid_recovery",
+        "P05.identity"
+      ],
+      "profiles": [
+        "assets/profiles/state-gguf-cpu.json"
+      ],
+      "notes": "Catalog 14 adds raw source/fresh-target identity to the bounded CPU Stories15M state profile. Mapping is contract coverage, not qualification of another model, platform, sampler/RNG checkpoint or exact continuation. Web persistence does not imply native build identity support."
+    }
+  ],
+  "mappings": [
+    {
+      "surfaces": [
+        "matrix:GPU device list and split (gpuDevices, tensorSplit)"
+      ],
+      "exemption": {
+        "id": "gpu-device-placement",
+        "reason": "ModelParams.gpuDevices and tensorSplit have maintained validation, runtime-rejection, listGpuDevices index mapping, refusal (missing index, split length, several backends, CPU fallback, unusable Vulkan device) and native devices/tensor_split/draft-load tests, decision-head and projector device tests (fake listed devices plus one real Metal GPU), plus the local-only LLAMADART_GPU_MODEL scenario that loads on every GPU of a backend with an even split and keeps greedy output. It ran on one Metal GPU; no multi-GPU host has qualified it, and no validation-pack profile covers device placement.",
+        "issue": "https://github.com/leehack/llamadart/issues/916"
+      }
+    },
+    {
+      "surfaces": [
+        "matrix:Row split (ModelSplitMode.row)"
+      ],
+      "exemption": {
+        "id": "row-split-unsupported",
+        "reason": "No bundled llama.cpp backend provides the split buffer types row split needs, so the row is a refusal, not a capability: native tests cover the per-device ggml_backend_split_buffer_type probe on the CPU device and fake GPU devices with and without split buffers, and a local Metal run refuses before the load. No validation-pack profile can run row split.",
+        "issue": "https://github.com/leehack/llamadart/issues/1576"
+      }
+    },
+    {
+      "surfaces": [
+        "matrix:Model-free setup report"
+      ],
+      "exemption": {
+        "id": "desktop-setup-report",
+        "reason": "This pre-load desktop report has no model/backend probe and cannot qualify native loading or inference. VM production-path tests cover host publication selectors, bounded package version origin, privacy and actual CLI JSON/argument behavior; common model and unsupported Web paths run in Chrome. A versioned diagnostics pack remains separate from model capability validation (#861) and cross-platform qualification (#1196).",
+        "issue": "https://github.com/leehack/llamadart/issues/124"
+      }
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.checkLoad",
+        "matrix:Pre-load check"
+      ],
+      "exemption": {
+        "id": "pre-load-check",
+        "reason": "LlamaEngine.checkLoad reports the pre-I/O policy that setModel enforces and starts no runtime, so no model pack can qualify it. VM tests cover every native router gap (LiteRT-LM ABIs, Linux arm64 GPU, explicit NPU, unqualified embedding ABIs, deferred formats) and a single-runtime backend such as LlamaEngine(LiteRtLmBackend()) reporting unknown; Chrome tests the Web option, NPU and embedding-engine checks; each has a property test that setModel throws the reported error before resolving a file exactly when the report is unsupported. ModelLoadOptions rejections are out of scope: checkLoad takes none.",
+        "issue": "https://github.com/leehack/llamadart/issues/861"
+      }
+    },
+    {
+      "surfaces": [
+        "matrix:Deterministic session template time"
+      ],
+      "exemption": {
+        "id": "session-template-clock",
+        "reason": "The history pack does not assert template clock semantics. Production-path VM and Chrome tests cover real strftime_now rendering, request snapshots, context trimming, structured output, tool loops and compatibility with existing ChatSession implementations and application extensions. Runtime-owned LiteRT-LM templates retain their runtime clock. A versioned clock scenario remains tracked separately.",
+        "issue": "https://github.com/leehack/llamadart/issues/1196"
+      }
+    },
+    {
+      "surfaces": [
+        "api:LlamaReranker.new",
+        "api:LlamaReranker.engine",
+        "api:LlamaReranker.capabilities",
+        "api:LlamaReranker.rerank",
+        "api:LlamaReranker.cancel",
+        "capability:LlamaRerankingCapabilities.isSupported",
+        "capability:LlamaRerankingCapabilities.unsupportedReason",
+        "capability:LlamaRerankingCapabilities.classifierLabels",
+        "capability:LlamaRerankingCapabilities.maxInputTokens",
+        "capability:LlamaRerankingCapabilities.maxParallelSequences",
+        "matrix:Reranking",
+        "api:LlamaReranker.load",
+        "api:LlamaReranker.dispose"
+      ],
+      "exemption": {
+        "id": "native-reranking",
+        "reason": "The local-only native-reranking scenario compares full classifier outputs and server output zero against exact pinned upstream for named-template two-class Qwen3 and single-output fallback Jina/BGE, with batching, overflow, cancellation and lifecycle controls. Deterministic tests cover framing, optional-backend rejection, bounded classifier-directory verification, explicit RANK loading and buffer lifetime. A versioned cross-platform validation pack remains separate; local receipts do not qualify other platforms or model families.",
+        "issue": "https://github.com/leehack/llamadart/issues/323"
+      }
+    },
+    {
+      "surfaces": [
+        "api:LlamaTextEmbedder.new",
+        "api:LlamaTextEmbedder.engine",
+        "api:LlamaTextEmbedder.profile",
+        "api:LlamaTextEmbedder.dimensions",
+        "api:LlamaTextEmbedder.normalize",
+        "api:LlamaTextEmbedder.embed",
+        "api:LlamaTextEmbedder.embedBatch",
+        "matrix:Text task helpers and Matryoshka"
+      ],
+      "exemption": {
+        "id": "text-embedding-profiles",
+        "reason": "The shared embeddings pack exercises raw engine vectors, not explicit text profiles. Deterministic production-path tests cover raw defaults, prefixes, batching/fallback and invalid outputs; the local-only text-embedding-retrieval scenario compares every EG2 output dimension with the pinned official float32 CPU model. A versioned cross-platform profile pack remains separate; no GPU, media or quantized qualification is implied.",
+        "issue": "https://github.com/leehack/llamadart/issues/1196"
+      }
+    },
+    {
+      "surfaces": [
+        "matrix:Automatic sendWithTools / completeWithTools loop"
+      ],
+      "exemption": {
+        "id": "automatic-tool-loops",
+        "reason": "Reliable runtime termination and automatic-loop rollback, including native LiteRT-LM finish reasons and LiteRT-LM Web limits inferred from @litert-lm/core@0.19.0 token counts, need their own validation contract; the litert-lm-chat-features-smoke local check covers the native LiteRT-LM cutoff, and production-path Chrome tests plus the litert-lm-web-truncation local runner (direct-runtime token counts at the maxTokens boundary and a filled context, completed and truncated loops) cover LiteRT-LM Web. Ordinary best-effort tool-call cases are insufficient.",
+        "issue": "https://github.com/leehack/llamadart/issues/919"
+      }
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.backend",
+        "api:LlamaEngine.backendGenerationCapabilities",
+        "api:LlamaEngine.capabilities",
+        "api:LlamaEngine.chatTemplate",
+        "api:LlamaEngine.configureLogging",
+        "api:LlamaEngine.dartLogLevel",
+        "api:LlamaEngine.getAvailableBackends",
+        "api:LlamaEngine.getBackendName",
+        "api:LlamaEngine.getContextSize",
+        "api:LlamaEngine.getMetadata",
+        "api:LlamaEngine.getModelFileType",
+        "api:LlamaEngine.getPerformanceContext",
+        "api:LlamaEngine.getResolvedGpuLayers",
+        "api:LlamaEngine.getVramInfo",
+        "api:LlamaEngine.isGpuSupported",
+        "api:LlamaEngine.listGpuDevices",
+        "api:LlamaEngine.modelDownloadManager",
+        "api:LlamaEngine.modelResolver",
+        "api:LlamaEngine.nativeLogLevel",
+        "api:LlamaEngine.observers",
+        "api:LlamaEngine.runtime",
+        "api:LlamaEngine.setDartLogLevel",
+        "api:LlamaEngine.setLogLevel",
+        "api:LlamaEngine.setNativeLogLevel",
+        "capability:EngineCapabilities.backendName",
+        "capability:EngineCapabilities.isSupported",
+        "capability:EngineCapabilities.unsupportedReason",
+        "capability:LlamaEngineCapabilities.backendName",
+        "capability:LlamaEngineCapabilities.runtime",
+        "capability:LlamaEngineCapabilities.unsupportedReason",
+        "matrix:Operation observers",
+        "matrix:Per-request usage"
+      ],
+      "exemption": {
+        "id": "configuration-and-diagnostics",
+        "reason": "Administrative/configuration, compatibility or diagnostic surface has existing unit/integration coverage but no dedicated feature-pack contract. Native LiteRT-LM backendName after the ComputeDevice.auto CPU retry of a failed GPU engine (#1034) is covered by service and worker integration tests, not device runs. Inventory is not a claim of model/device qualification.",
+        "issue": "https://github.com/leehack/llamadart/issues/1196"
+      }
+    },
+    {
+      "surfaces": [
+        "capability:ImageGenerationCapabilities.backendName",
+        "capability:ImageGenerationCapabilities.deviceNames",
+        "capability:ImageGenerationCapabilities.isSupported",
+        "capability:ImageGenerationCapabilities.maxConcurrentTasks",
+        "capability:ImageGenerationCapabilities.modelVersion",
+        "capability:ImageGenerationCapabilities.runtimeVersion",
+        "capability:ImageGenerationCapabilities.supportsCancellation",
+        "capability:ImageGenerationCapabilities.unsupportedReason"
+      ],
+      "exemption": {
+        "id": "image-capabilities",
+        "reason": "Dedicated image profiles and device evidence exist, but reported image capability fields are not yet bound to versioned validation feature/case IDs. This is a coverage-map gap, not a new runtime support claim. ImageConditioningCacheParams.capacity has maintained engine/worker tests and image-generation-smoke qualification on SDXS/SD-Turbo CPU and Metal; it has no versioned validation-pack case yet. SeamlessImageGenerationRequest circularX/circularY has maintained API/ABI refusal tests and image-seamless-textures CPU/Metal quality and cancellation qualification for SDXS; versioned pack case IDs remain open in https://github.com/leehack/llamadart/issues/1234. TiledImageGenerationRequest has maintained request/legacy-interface, engine/worker/ABI guards and image-generation-smoke SD-Turbo full-VAE/TAESD CPU/Metal qualification; it has no versioned validation-pack case yet (https://github.com/leehack/llamadart/issues/1231). FP8 weights load on Metal with the pinned stable-diffusion-native v0.3.0-1, which converts them to F16, decided by StableDiffusionCalls.loadsFp8AsF16OnMetal; engine/worker/probe tests cover both that path and the refusal on a runtime without the fix, and local-only SD-Turbo FP8 re-encodings generate on macOS arm64 CPU and Metal. A versioned FP8 validation-pack case remains open in https://github.com/leehack/llamadart/issues/1446. Approximation caching remains https://github.com/leehack/llamadart/issues/1233. ImageModelPlacement (text encoder or VAE on the CPU, maxGpuMemoryGiB, autoFit) has maintained engine, parameter-mapping and CPU/Web refusal tests and an image-generation-smoke check on SD-Turbo with Metal that reads the runtime's weight placement and compares pixels; Vulkan and multi-GPU hosts have no evidence yet (https://github.com/leehack/llamadart/issues/806). The iOS Metal VAE restriction has maintained known-full-VAE and old-runtime pre-native rejection, versioned native decoder-policy admission and worker routing, actual intrinsic SDXS family verification, rejected-session disposal, external-TAESD fallback refusal and CPU preservation tests; local native CPU/Metal controls exercise unchanged/refreshed SDXS and refuse SDXS-to-SD-Turbo source replacement before runner probes; it does not qualify a full-VAE iPhone watchdog mitigation recipe or a new device pack (https://github.com/leehack/llamadart/issues/1047).",
+        "issue": "https://github.com/leehack/llamadart/issues/1196"
+      }
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.clearLoras",
+        "api:LlamaEngine.removeLora",
+        "api:LlamaEngine.removeLoraSource",
+        "api:LlamaEngine.setLora",
+        "api:LlamaEngine.setLoraSource",
+        "matrix:LoRA"
+      ],
+      "exemption": {
+        "id": "lora",
+        "reason": "Runtime adapter loading, scaling, removal and unsupported/version-skew paths need a dedicated LoRA pack. Current LiteRT-LM advanced engines reject text LoRA; the internal v1 refusal is covered by compiled native fixtures. Runtime support remains tracked at https://github.com/leehack/litert-lm-native/issues/99.",
+        "issue": "https://github.com/leehack/llamadart/issues/1196"
+      }
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.hasMultimodalProjector",
+        "api:LlamaEngine.loadMultimodalProjector",
+        "api:LlamaEngine.loadMultimodalProjectorSource",
+        "api:LlamaEngine.supportsAudio",
+        "api:LlamaEngine.supportsVision",
+        "api:LlamaEngine.unloadMultimodalProjector",
+        "capability:LlamaEngineCapabilities.supportsAudio",
+        "capability:LlamaEngineCapabilities.supportsVision",
+        "matrix:Multimodal"
+      ],
+      "exemption": {
+        "id": "multimodal-chat",
+        "reason": "Chat image/audio and projector lifecycle need a dedicated multimodal-chat pack. Embedding media packs are a separate contract. Public API VM/Chrome regressions cover early typed refusal of tool-role image/audio and valid separate user-media routing (#1445); they do not qualify model media transport or tool-result media support (#1008). Model-free recording tests cover the native qwen35 Android Vulkan #948 restriction, which applies only to llama.cpp runtimes older than ggml 0.28.0 (bundled runtimes lift it), and the lift on newer runtimes. Device evidence for the lift is recorded on the issue, not by a pack. https://github.com/leehack/llamadart/issues/948",
+        "issue": "https://github.com/leehack/llamadart/issues/1196"
+      }
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.scoreNextToken",
+        "api:LlamaEngine.supportsNextTokenScoring",
+        "capability:LlamaEngineCapabilities.supportsNextTokenScoring",
+        "matrix:Next-token scores"
+      ],
+      "pack": "next_token_scoring"
+    },
+    {
+      "surfaces": [
+        "capability:LlamaEngineCapabilities.supportsMinP",
+        "capability:LlamaEngineCapabilities.supportsPenalty",
+        "capability:LlamaEngineCapabilities.supportsPresencePenalty",
+        "capability:LlamaEngineCapabilities.supportsThinkingBudget",
+        "matrix:Min-P",
+        "matrix:Presence penalty",
+        "matrix:Repetition penalty",
+        "matrix:Thinking budget"
+      ],
+      "pack": "sampler_controls"
+    },
+    {
+      "surfaces": [
+        "matrix:Renamed legacy Qwen3 thinking switch"
+      ],
+      "exemption": {
+        "id": "litert-qwen3-thinking-switch",
+        "reason": "The renamed Qwen3 thinking switch is a native LiteRT-LM chat-template override (liteRtLmQwen3ChatTemplate); GGUF reads the switch from model metadata, so the GGUF sampler pack cannot observe it. It needs a LiteRT-LM Qwen3 template scenario.",
+        "issue": "https://github.com/leehack/llamadart/issues/1196"
+      }
+    },
+    {
+      "surfaces": [
+        "capability:LlamaEngineCapabilities.speculativeDecodingStrategies",
+        "matrix:Speculative decoding"
+      ],
+      "exemption": {
+        "id": "speculative-decoding",
+        "reason": "Draft/MTP/ngram strategies need a dedicated pack with target/draft output and memory controls; ordinary text generation is insufficient. Model-free recording tests cover the native qwen35 Android Vulkan #948 restriction, which applies only to llama.cpp runtimes older than ggml 0.28.0 (bundled runtimes lift it), and the lift on newer runtimes. Device evidence for the lift is recorded on the issue, not by a pack. https://github.com/leehack/llamadart/issues/948",
+        "issue": "https://github.com/leehack/llamadart/issues/1196"
+      }
+    },
+    {
+      "surfaces": [
+        "capability:SpeechToTextCapabilities.backendName",
+        "capability:SpeechToTextCapabilities.encodedAudioFormats",
+        "capability:SpeechToTextCapabilities.implementation",
+        "capability:SpeechToTextCapabilities.inputKinds",
+        "capability:SpeechToTextCapabilities.isSupported",
+        "capability:SpeechToTextCapabilities.maxConcurrentTasks",
+        "capability:SpeechToTextCapabilities.supportsCancellation",
+        "capability:SpeechToTextCapabilities.supportsConfidence",
+        "capability:SpeechToTextCapabilities.supportsInputBackpressure",
+        "capability:SpeechToTextCapabilities.supportsLanguageDetection",
+        "capability:SpeechToTextCapabilities.supportsLanguageHints",
+        "capability:SpeechToTextCapabilities.supportsOutputBackpressure",
+        "capability:SpeechToTextCapabilities.supportsPartialResults",
+        "capability:SpeechToTextCapabilities.supportsSegmentTimestamps",
+        "capability:SpeechToTextCapabilities.supportsSpeakerDiarization",
+        "capability:SpeechToTextCapabilities.supportsStreamingInput",
+        "capability:SpeechToTextCapabilities.supportsTimestamps",
+        "capability:SpeechToTextCapabilities.supportsWordTimestamps",
+        "capability:SpeechToTextCapabilities.unsupportedReason",
+        "capability:TextToSpeechCapabilities.backendName",
+        "capability:TextToSpeechCapabilities.channelCount",
+        "capability:TextToSpeechCapabilities.implementation",
+        "capability:TextToSpeechCapabilities.isSupported",
+        "capability:TextToSpeechCapabilities.maxConcurrentTasks",
+        "capability:TextToSpeechCapabilities.sampleRateHz",
+        "capability:TextToSpeechCapabilities.speakerReferenceInputKinds",
+        "capability:TextToSpeechCapabilities.supportedLanguages",
+        "capability:TextToSpeechCapabilities.supportsCancellation",
+        "capability:TextToSpeechCapabilities.supportsIncrementalAudio",
+        "capability:TextToSpeechCapabilities.supportsLanguage",
+        "capability:TextToSpeechCapabilities.supportsOutputBackpressure",
+        "capability:TextToSpeechCapabilities.supportsSpeakerReference",
+        "capability:TextToSpeechCapabilities.supportsVoice",
+        "capability:TextToSpeechCapabilities.unsupportedReason",
+        "capability:TextToSpeechCapabilities.voices"
+      ],
+      "exemption": {
+        "id": "speech-capabilities",
+        "reason": "Dedicated speech profiles/runners exist, but their reported capability fields are not yet bound to versioned validation feature/case IDs. The web-speech-task-cancel local E2E separately covers direct/worker task isolation and bounded reuse with explicit TTS batch 512/micro-batch 256 (#1371); it does not bind these capability fields or qualify every speech flag or negative path. The local-only text-to-speech-models-smoke checks LFM3-Audio and Soprano voices, refusals and an ASR round trip (#1615) without binding these fields to a locked pack.",
+        "issue": "https://github.com/leehack/llamadart/issues/1196"
+      }
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.stateLoadFile",
+        "api:LlamaEngine.stateSaveFile",
+        "api:LlamaEngine.supportsStatePersistence",
+        "matrix:State persistence"
+      ],
+      "pack": "state_persistence"
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.stateIdentity",
+        "matrix:State identity (stateIdentity)"
+      ],
+      "pack": "state_persistence"
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.detokenize",
+        "api:LlamaEngine.getTokenCount",
+        "api:LlamaEngine.tokenize"
+      ],
+      "pack": "tokenization"
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.supportsVideo",
+        "matrix:Video"
+      ],
+      "exemption": {
+        "id": "video",
+        "reason": "Video is unsupported by the public runtime paths. Preserve typed rejection; no compatible video model/validation pack is claimed.",
+        "issue": "https://github.com/leehack/llamadart/issues/1162"
+      }
+    },
+    {
+      "surfaces": [
+        "capability:LlamaEngineCapabilities.supportsStreamBatching"
+      ],
+      "pack": "batching"
+    },
+    {
+      "surfaces": [
+        "capability:DecisionCapabilities.backendName",
+        "capability:DecisionCapabilities.isSupported",
+        "capability:DecisionCapabilities.runtime",
+        "capability:DecisionCapabilities.unsupportedReason"
+      ],
+      "pack": "decision"
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.embed",
+        "api:LlamaEngine.embedBatch",
+        "api:LlamaEngine.embedContent",
+        "api:LlamaEngine.embedContentBatch",
+        "api:LlamaEngine.embeddingCapabilities",
+        "api:LlamaEngine.supportsEmbeddings",
+        "capability:LlamaEmbeddingCapabilities.audio",
+        "capability:LlamaEmbeddingCapabilities.image",
+        "capability:LlamaEmbeddingCapabilities.mediaUnsupportedReason",
+        "capability:LlamaEmbeddingCapabilities.supports",
+        "capability:LlamaEmbeddingCapabilities.text",
+        "capability:LlamaEngineCapabilities.supportsEmbeddings",
+        "matrix:Embeddings",
+        "matrix:Image/audio embeddings (embedContent)"
+      ],
+      "pack": "embeddings"
+    },
+    {
+      "surfaces": [
+        "capability:LlamaEngineCapabilities.supportsMultiTurnChat",
+        "matrix:Multi-turn ChatSession"
+      ],
+      "exemption": {
+        "issue": "https://github.com/leehack/llamadart/issues/1196",
+        "reason": "The existing C06.history pack covers native GGUF profiles, not the LiteRT-LM Web preface path that carries history and system prompts (and the tool turns of litert-web-tool-calling-profile). Production-path Chrome tests cover ordered text, old/missing APIs, typed rejection and reset/cancellation isolation; the maintained litert-lm-web-text-history local runner compares a pinned JS reference and preface-bypass controls on an identified browser/model. No versioned Web validation profile exists yet (#1196); media/template parity stays out of scope. No model qualification is inferred from these inventory bindings.",
+        "id": "litert-web-text-history-profile"
+      }
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.dispose",
+        "api:LlamaEngine.isDisposed",
+        "api:LlamaEngine.isReady",
+        "api:LlamaEngine.load",
+        "api:LlamaEngine.loadModel",
+        "api:LlamaEngine.loadModelFromUrl",
+        "api:LlamaEngine.loadModelSource",
+        "api:LlamaEngine.new",
+        "api:LlamaEngine.setModel",
+        "api:LlamaEngine.unloadModel",
+        "capability:LlamaEngineCapabilities.isSupported"
+      ],
+      "pack": "lifecycle"
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.cancelGeneration",
+        "matrix:Generation-limit reporting"
+      ],
+      "pack": "streaming"
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.createStructuredJson",
+        "capability:LlamaEngineCapabilities.supportsGrammar",
+        "capability:LlamaEngineCapabilities.supportsLazyGrammar",
+        "capability:LlamaEngineCapabilities.supportsStructuredOutput",
+        "matrix:Canonical JSON Schema tools",
+        "matrix:Lazy grammar",
+        "matrix:Strict responseFormat"
+      ],
+      "pack": "structured_output"
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.complete",
+        "api:LlamaEngine.create",
+        "api:LlamaEngine.generate"
+      ],
+      "pack": "text"
+    },
+    {
+      "surfaces": [
+        "capability:LlamaEngineCapabilities.supportsToolCalling"
+      ],
+      "pack": "tools"
+    },
+    {
+      "surfaces": [
+        "matrix:Tool calling"
+      ],
+      "exemption": {
+        "issue": "https://github.com/leehack/llamadart/issues/1196",
+        "reason": "The row's native and WebGPU columns are the tools pack's routes (bound through capability:supportsToolCalling); its LiteRT-LM Web column has no versioned Web validation profile. That column (manual tool calling, #1790) is covered by production-path Chrome tests of the preface.tools probe, declaration/call/result wire shapes, runtime tool_calls carried beside text in either order, typed refusals and cancel/reset, and by the maintained litert-lm-web-tool-calling local runner, which compares a pinned @litert-lm/core@0.19.0 reference and a no-tools control on an identified browser/model. Automatic loops and truncation are covered by the automatic-tool-loops exemption (#919). No model qualification is inferred.",
+        "id": "litert-web-tool-calling-profile"
+      }
+    },
+    {
+      "surfaces": [
+        "capability:LlamaEngineCapabilities.toolResultMedia",
+        "matrix:Tool-result media"
+      ],
+      "pack": "tools"
+    },
+    {
+      "surfaces": [
+        "capability:ImageGenerationCapabilities.supportsLocalSafetensorsSets"
+      ],
+      "exemption": {
+        "id": "bounded-local-checkpoint-sets",
+        "issue": "https://github.com/leehack/llamadart/issues/1219",
+        "reason": "The bounded local complete SD-Turbo F16/F32 Safetensors set recipe has maintained path/identity/header/cache/cancellation/refusal tests and a native-reference directory/index CPU qualification scenario. A dedicated versioned validation-pack profile remains open in #1219. This inventory binding does not qualify generic Diffusers layouts, other tensor profiles, platforms or image-editing/tiling/seamless combinations."
+      }
+    },
+    {
+      "surfaces": [
+        "capability:ImageGenerationCapabilities.supportsImageEditing"
+      ],
+      "exemption": {
+        "id": "bounded-image-editing",
+        "issue": "https://github.com/leehack/llamadart/issues/1221",
+        "reason": "Owned RGB/binary-mask requests have maintained API validation, engine/worker/ABI refusal and lifetime tests plus the image-editing macOS CPU SD-Turbo full-VAE direct-C qualification scenario. Versioned image-editing pack/profile cases remain open in #1221; inventory presence is not platform/model qualification."
+      }
+    },
+    {
+      "surfaces": [
+        "capability:ImageGenerationCapabilities.supportsControlNet"
+      ],
+      "exemption": {
+        "id": "bounded-image-controlnet",
+        "issue": "https://github.com/leehack/llamadart/issues/1224",
+        "reason": "Load-time SD 1.x ControlNet admission, owned control input, worker probe/failure detection and native mapping have maintained unit tests plus the local-only image-controlnet macOS CPU direct-C scenario; real SD 1.5 plus canny ControlNet qualification passed on macOS CPU (doc/image_controlnet.md); a versioned validation-pack profile remains open in #1224. Inventory presence is not platform/model qualification."
+      }
+    },
+    {
+      "surfaces": [
+        "capability:ImageGenerationCapabilities.supportsHiresFix"
+      ],
+      "exemption": {
+        "id": "bounded-image-hires-fix",
+        "issue": "https://github.com/leehack/llamadart/issues/1228",
+        "reason": "Hires-fix limits, load-time recipe admission, session probe, two-pass progress, output-size check and sd_hires_params_t mapping have maintained unit and worker tests plus the local-only image-hires-fix macOS CPU/Metal direct-C scenario (doc/image_hires_fix.md); a versioned validation-pack profile is not yet defined. Inventory presence is not platform/model qualification."
+      }
+    },
+    {
+      "surfaces": [
+        "capability:ImageGenerationCapabilities.supportsReferenceImageEditing"
+      ],
+      "exemption": {
+        "id": "bounded-image-reference-editing",
+        "issue": "https://github.com/leehack/llamadart/issues/1222",
+        "reason": "FLUX.1 Kontext header admission, load-time recipe gate, session probe, reference size/count validation and ref_images/ref_image_args mapping have maintained unit and worker tests plus the local-only image-reference-editing macOS Metal direct-C scenario (doc/image_reference_editing.md); a versioned validation-pack profile is not yet defined. Inventory presence is not platform/model qualification."
+      }
+    },
+    {
+      "surfaces": [
+        "matrix:MoE expert placement and cache"
+      ],
+      "exemption": {
+        "id": "moe-expert-cache",
+        "reason": "ModelParams.cpuMoeLayers and moeCacheBytes have maintained validation, runtime-rejection, override-pattern, device-gate and native parameter tests, plus the local-only LLAMADART_MOE_MODEL scenario that checks the cache allocates its budget and keeps greedy output on Metal (OLMoE-1B-7B). No validation-pack profile covers MoE models; CUDA, multiple GPUs and performance gains are not qualified by this binding.",
+        "issue": "https://github.com/leehack/llamadart/issues/1123"
+      }
+    },
+    {
+      "surfaces": [
+        "api:LlamaEngine.createTask",
+        "api:LlamaEngine.generateTask"
+      ],
+      "exemption": {
+        "id": "text-generation-tasks",
+        "reason": "These eager task handles reuse existing text generation and parser paths. Model-free VM and Chrome production-path controls cover eager completion without observation, cancellation cleanup, partial output, errors, event subscription independence and borrowed-engine ownership. Existing text/streaming packs do not yet bind task lifecycle observations; this adds no platform or model qualification. Dedicated task pack coverage remains in #1614.",
+        "issue": "https://github.com/leehack/llamadart/issues/1614"
+      }
+    },
+    {
+      "surfaces": [
+        "matrix:Decision tasks (cooperative)"
+      ],
+      "exemption": {
+        "id": "decision-tasks",
+        "reason": "Additive cooperative task adapters preserve the existing Decision backend. Maintained VM/Chrome tests cover tokenization/dispatch checkpoints, pending backend lifetime, sibling and borrowed-encoder isolation, snapshots and event/completion semantics. A local-only native Laya CPU task parity/cancel/reuse test is available; no new runtime or cross-device qualification is claimed. Task lifecycle is not yet a validation-pack scenario.",
+        "issue": "https://github.com/leehack/llamadart/issues/1614"
+      }
+    },
+    {
+      "surfaces": [
+        "matrix:LFM2 Python tool argument types"
+      ],
+      "exemption": {
+        "id": "lfm2-schema-parser",
+        "reason": "Schema-directed legacy ToolParam parsing has durable affected-family raw emissions, unchanged-baseline identical-byte comparisons, typed scalar/container/zero-argument and VM/Chrome tests. It changes Dart parsing only, not LFM inference or canonical raw-schema admission. Historical parsed-only probe rows cannot establish raw replay; the complete historical matrix and remaining parity requirements are tracked in #1610. No new device qualification or validation-pack scenario is claimed.",
+        "issue": "https://github.com/leehack/llamadart/issues/1610"
+      }
+    },
+    {
+      "surfaces": [
+        "matrix:LFM2 reasoning tool markers"
+      ],
+      "exemption": {
+        "id": "lfm2-reasoning-boundary",
+        "reason": "Primary pinned upstream reasoning fixtures, direct/public-engine and partitioned-stream tests cover non-executable thought calls and literal argument tags. All3967 retained actual emissions are replayed for call/content/reasoning preservation. This is Dart parser qualification, not a new runtime or device validation-pack profile.",
+        "issue": "https://github.com/leehack/llamadart/issues/1714"
+      }
+    },
+    {
+      "surfaces": [
+        "matrix:Explicit parallel tool flags"
+      ],
+      "exemption": {
+        "id": "explicit-parallel-tool-flags",
+        "reason": "A caps-false public Qwen3-Coder render and native compiled grammar controls cover explicit true/false bounds; Ministral/Nemotron parser tests preserve their bounds. Capability probes remain descriptive. Existing tools packs do not qualify every format/backend parallel grammar; no broader runtime support is claimed.",
+        "issue": "https://github.com/leehack/llamadart/issues/1713"
+      }
+    },
+    {
+      "surfaces": [
+        "matrix:Incomplete tool diagnostics"
+      ],
+      "exemption": {
+        "id": "lfm-partial-tool-diagnostics",
+        "issue": "https://github.com/leehack/llamadart/issues/1716",
+        "reason": "Bounded host parser and public completion/session tests cover raw non-executable length diagnostics across stream partitions, terminal controls, serialization, history, dispatch and reuse. No versioned model/backend validation pack qualifies this new surface yet; broader model/backend qualification remains separate. Diagnostics do not qualify a termination cause or lift LiteRT-LM Web issue919."
+      }
+    },
+    {
+      "surfaces": [
+        "matrix:LFM2 auto Python-call grammar"
+      ],
+      "exemption": {
+        "id": "lfm2-auto-python-grammar",
+        "issue": "https://github.com/leehack/llamadart/issues/1715",
+        "reason": "Durable compiled grammar, native lazy activation, public completion routing, false/missing capability, draft-parameter copy, native worker transport and prompt-penalty sampler controls cover this bounded legacy ToolParam route. Affected-family fresh generation is a separate required exact-source gate; existing validation packs do not qualify LFM2 schema accuracy or new devices. Web loaded-core admission and version-skew refusal are covered by webgpu_backend_test.dart; prompt_penalty_grammar_e2e_test.dart checks direct/worker wasm32/memory64 transport and sampler behavior. These pipeline checks do not establish affected-family accuracy or hardware GPU qualification (llama-web-bridge#207)."
+      }
+    }
+  ]
+}

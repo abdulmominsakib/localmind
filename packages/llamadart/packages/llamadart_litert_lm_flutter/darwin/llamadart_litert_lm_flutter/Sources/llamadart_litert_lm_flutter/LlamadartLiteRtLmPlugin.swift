@@ -6,7 +6,6 @@ import CLiteRTLM
 #elseif os(macOS)
 import FlutterMacOS
 import Cocoa
-import LiteRtLm
 #endif
 
 public class LlamadartLiteRtLmPlugin: NSObject, FlutterPlugin {

@@ -1,0 +1,153 @@
+name: Publish companion to pub.dev
+
+on:
+  push:
+    tags:
+      - 'llamadart_llama_cpp_flutter-v[0-9]+.[0-9]+.[0-9]+*'
+      - 'llamadart_litert_lm_flutter-v[0-9]+.[0-9]+.[0-9]+*'
+      - 'llamadart_stable_diffusion_flutter-v[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  publish-companion:
+    name: Publish companion
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve package from tag
+        id: package
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          case "$TAG_NAME" in
+            llamadart_llama_cpp_flutter-v*)
+              package_name="llamadart_llama_cpp_flutter"
+              package_path="packages/llamadart_llama_cpp_flutter"
+              ;;
+            llamadart_litert_lm_flutter-v*)
+              package_name="llamadart_litert_lm_flutter"
+              package_path="packages/llamadart_litert_lm_flutter"
+              ;;
+            llamadart_stable_diffusion_flutter-v*)
+              package_name="llamadart_stable_diffusion_flutter"
+              package_path="packages/llamadart_stable_diffusion_flutter"
+              ;;
+            *)
+              echo "Unsupported companion publish tag: $TAG_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          tag_version="${TAG_NAME#"$package_name-v"}"
+          package_version="$(awk '/^version:[[:space:]]*/ {print $2; exit}' "$package_path/pubspec.yaml")"
+          if [ -z "$package_version" ]; then
+            echo "$package_path/pubspec.yaml does not contain a version" >&2
+            exit 1
+          fi
+          if [ "$tag_version" != "$package_version" ]; then
+            echo "Tag $TAG_NAME resolves to $tag_version, but $package_path/pubspec.yaml is $package_version" >&2
+            exit 1
+          fi
+
+          {
+            echo "name=$package_name"
+            echo "path=$package_path"
+            echo "version=$package_version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether to publish
+        id: publish
+        env:
+          PACKAGE_NAME: ${{ steps.package.outputs.name }}
+          PACKAGE_VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          set -euo pipefail
+          package_status="$(
+            curl -sS --max-time 30 -o "$RUNNER_TEMP/pubdev-package.json" -w '%{http_code}' \
+              "https://pub.dev/api/packages/$PACKAGE_NAME"
+          )"
+          case "$package_status" in
+            200)
+              ;;
+            404)
+              echo "$PACKAGE_NAME does not exist on pub.dev yet." >&2
+              echo "Publish the first version manually from a temporary package copy with flutter pub publish, then configure automated publishing for tag pattern $PACKAGE_NAME-v{{version}}." >&2
+              exit 1
+              ;;
+            *)
+              echo "Unexpected pub.dev response for $PACKAGE_NAME: HTTP $package_status" >&2
+              cat "$RUNNER_TEMP/pubdev-package.json" >&2 || true
+              exit 1
+              ;;
+          esac
+
+          version_status="$(
+            curl -sS --max-time 30 -o "$RUNNER_TEMP/pubdev-version.json" -w '%{http_code}' \
+              "https://pub.dev/api/packages/$PACKAGE_NAME/versions/$PACKAGE_VERSION"
+          )"
+          case "$version_status" in
+            200)
+              echo "should_publish=false" >> "$GITHUB_OUTPUT"
+              echo "$PACKAGE_NAME $PACKAGE_VERSION already exists on pub.dev; skipping companion publish."
+              ;;
+            404)
+              echo "should_publish=true" >> "$GITHUB_OUTPUT"
+              echo "$PACKAGE_NAME $PACKAGE_VERSION is not on pub.dev; publishing."
+              ;;
+            *)
+              echo "Unexpected pub.dev response for $PACKAGE_NAME $PACKAGE_VERSION: HTTP $version_status" >&2
+              cat "$RUNNER_TEMP/pubdev-version.json" >&2 || true
+              exit 1
+              ;;
+          esac
+
+      - uses: dart-lang/setup-dart@e51d8e571e22473a2ddebf0ef8a2123f0ab2c02c
+        if: steps.publish.outputs.should_publish == 'true'
+
+      - uses: flutter-actions/setup-flutter@80479eab6de1d7909df79ed6aea93aa7f7e8e859
+        if: steps.publish.outputs.should_publish == 'true'
+
+      # Without the checkout's pubspec_overrides.yaml, pub resolves the
+      # companion's llamadart constraint against pub.dev, so this publishes
+      # only once release_on_prep_merge.yml has published that core.
+      - name: Prepare package
+        if: steps.publish.outputs.should_publish == 'true'
+        env:
+          PACKAGE_PATH: ${{ steps.package.outputs.path }}
+        run: |
+          rm -rf "$RUNNER_TEMP/pub-package"
+          dart tool/release/stage_companion_package.dart \
+            "$PACKAGE_PATH" "$RUNNER_TEMP/pub-package"
+
+      # pub.dev serves the package listing with max-age=120, so pub can
+      # briefly miss the core release_on_prep_merge.yml just saw there.
+      - name: Install dependencies
+        if: steps.publish.outputs.should_publish == 'true'
+        run: |
+          set -euo pipefail
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if flutter pub get; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "flutter pub get failed ($attempt/$attempts); retrying in 60 seconds in case the pub.dev listing is stale." >&2
+              sleep 60
+            fi
+          done
+          echo "flutter pub get failed $attempts times." >&2
+          exit 1
+        working-directory: ${{ runner.temp }}/pub-package
+
+      - name: Publish - dry run
+        if: steps.publish.outputs.should_publish == 'true'
+        run: flutter pub publish --dry-run
+        working-directory: ${{ runner.temp }}/pub-package
+
+      - name: Publish to pub.dev
+        if: steps.publish.outputs.should_publish == 'true'
+        run: flutter pub publish --force
+        working-directory: ${{ runner.temp }}/pub-package

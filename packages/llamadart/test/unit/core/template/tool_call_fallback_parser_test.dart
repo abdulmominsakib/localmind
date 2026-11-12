@@ -59,6 +59,16 @@ void main() {
       expect(args, containsPair('body', 'hello, world'));
     });
 
+    test('keeps a lone quote as the argument value', () {
+      for (final quote in ["'", '"']) {
+        final parsed = parseToolCallsFromLooseText('f(x=$quote)');
+        expect(
+          parsed.toolCalls.single.function?.arguments,
+          jsonEncode({'x': quote}),
+        );
+      }
+    });
+
     test('does not coerce bare weather-like alias', () {
       final parsed = parseToolCallsFromLooseText('weatherlookup');
 

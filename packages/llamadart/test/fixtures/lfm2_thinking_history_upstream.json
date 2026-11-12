@@ -1,0 +1,90 @@
+{
+  "upstream_commit": "8642541b255bfb5dc39cd351a178be09013a55d6",
+  "endpoint": "POST /apply-template",
+  "evidence": "https://github.com/leehack/llamadart/issues/1623",
+  "comparison": "Prompt from first user onward; system tool declarations intentionally differ between flat LiquidAI and OpenAI definitions.",
+  "template": {
+    "path": "templates/LFM2_5-8B-A1B-6d65c8804847.jinja",
+    "sha256": "6d65c8804847ad74eea912dd7eca3dc1cf7a457b53a77f47d841a14121910963",
+    "source": "tokenizer.chat_template from LFM2.5-8B-A1B-Q4_0.gguf"
+  },
+  "request": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Get quotes for AAPL and MSFT."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_0",
+            "type": "function",
+            "function": {
+              "name": "get_quote",
+              "arguments": "{\"symbol\":\"AAPL\"}"
+            }
+          },
+          {
+            "id": "call_1",
+            "type": "function",
+            "function": {
+              "name": "get_quote",
+              "arguments": "{\"symbol\":\"MSFT\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_0",
+        "name": "get_quote",
+        "content": "price-of-AAPL"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_1",
+        "name": "get_quote",
+        "content": "price-of-MSFT"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_quote",
+          "description": "Returns a stock quote.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "symbol": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "symbol"
+            ]
+          }
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "parallel_tool_calls": true,
+    "add_generation_prompt": true
+  },
+  "variants": {
+    "calls": {},
+    "text+calls": {
+      "content": "Checking."
+    },
+    "think+calls": {
+      "reasoning_content": "Need quotes."
+    }
+  },
+  "prompt_tails": {
+    "calls": "<|im_start|>user\nGet quotes for AAPL and MSFT.<|im_end|>\n<|im_start|>assistant\n<|tool_call_start|>[get_quote(symbol='AAPL'), get_quote(symbol='MSFT')]<|tool_call_end|><|im_end|>\n<|im_start|>tool\nprice-of-AAPL<|im_end|>\n<|im_start|>tool\nprice-of-MSFT<|im_end|>\n<|im_start|>assistant\n",
+    "text+calls": "<|im_start|>user\nGet quotes for AAPL and MSFT.<|im_end|>\n<|im_start|>assistant\nChecking.<|tool_call_start|>[get_quote(symbol='AAPL'), get_quote(symbol='MSFT')]<|tool_call_end|><|im_end|>\n<|im_start|>tool\nprice-of-AAPL<|im_end|>\n<|im_start|>tool\nprice-of-MSFT<|im_end|>\n<|im_start|>assistant\n",
+    "think+calls": "<|im_start|>user\nGet quotes for AAPL and MSFT.<|im_end|>\n<|im_start|>assistant\n<think>Need quotes.</think><|tool_call_start|>[get_quote(symbol='AAPL'), get_quote(symbol='MSFT')]<|tool_call_end|><|im_end|>\n<|im_start|>tool\nprice-of-AAPL<|im_end|>\n<|im_start|>tool\nprice-of-MSFT<|im_end|>\n<|im_start|>assistant\n"
+  }
+}

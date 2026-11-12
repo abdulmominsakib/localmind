@@ -1,0 +1,14 @@
+{
+  "account": "your-account@example.com",
+  "project": "your-unbilled-project",
+  "settings": {
+    "billing_mode": "spark",
+    "device_model": "REPLACE_FROM_CURRENT_CATALOG",
+    "device_version": "REPLACE_FROM_CURRENT_CATALOG",
+    "quota": {
+      "verified_at": "REPLACE_WITH_CURRENT_UTC_TIME",
+      "remaining_physical": 0,
+      "evidence": "REPLACE_WITH_CHECKED_FIREBASE_QUOTA_SOURCE"
+    }
+  }
+}

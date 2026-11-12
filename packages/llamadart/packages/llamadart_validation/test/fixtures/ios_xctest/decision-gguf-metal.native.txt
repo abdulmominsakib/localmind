@@ -1,0 +1,27 @@
+ggml_metal_device_init: GPU name:   MTL0 (Apple A18 Pro GPU)
+llama_prepare_model_devices: using device MTL0 (Apple A18 Pro GPU) (unknown id) - 5428 MiB free
+load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 27 repeating layers to GPU
+load_tensors: offloaded 29/29 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =    52.26 MiB
+load_tensors:  MTL0_Mapped model buffer size =   400.19 MiB
+sched_reserve:       MTL0 compute buffer size =    22.44 MiB
+sched_reserve:        CPU compute buffer size =     5.01 MiB
+sched_reserve:       MTL0 compute buffer size =    22.44 MiB
+sched_reserve:        CPU compute buffer size =     5.01 MiB
+sched_reserve:       MTL0 compute buffer size =    22.44 MiB
+sched_reserve:        CPU compute buffer size =     5.01 MiB
+sched_reserve:       MTL0 compute buffer size =    22.44 MiB
+sched_reserve:        CPU compute buffer size =     5.01 MiB
+llama_prepare_model_devices: using device MTL0 (Apple A18 Pro GPU) (unknown id) - 5428 MiB free
+load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 27 repeating layers to GPU
+load_tensors: offloaded 29/29 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =    52.26 MiB
+load_tensors:  MTL0_Mapped model buffer size =   400.19 MiB
+sched_reserve:       MTL0 compute buffer size =    22.44 MiB
+sched_reserve:        CPU compute buffer size =     5.01 MiB
+sched_reserve:       MTL0 compute buffer size =    22.44 MiB
+sched_reserve:        CPU compute buffer size =     5.01 MiB

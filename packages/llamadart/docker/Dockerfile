@@ -59,6 +59,7 @@ RUN flutter build linux --release
 # ---------------------------------------------------------
 FROM ubuntu:22.04 AS chat-app-run
 RUN apt-get update && apt-get install -y \
+    libgomp1 \
     libgtk-3-0 \
     libglu1-mesa \
     libvulkan1 \

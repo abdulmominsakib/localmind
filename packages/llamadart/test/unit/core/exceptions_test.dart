@@ -2,6 +2,42 @@ import 'package:test/test.dart';
 import 'package:llamadart/src/core/exceptions.dart';
 
 void main() {
+  test(
+    'embedding overflow remains an inference error with optional exact count',
+    () {
+      final error = LlamaEmbeddingInputTooLongException(
+        'too long',
+        maxInputTokens: 64,
+      );
+      expect(error, isA<LlamaInferenceException>());
+      expect(error.maxInputTokens, 64);
+      expect(error.actualTokens, isNull);
+      expect(
+        LlamaEmbeddingInputTooLongException(
+          'too long',
+          maxInputTokens: 64,
+          actualTokens: 65,
+        ).actualTokens,
+        65,
+      );
+    },
+  );
+
+  test('a cache entry in use is a state error that keeps its paths out of '
+      'the message', () {
+    final directories = <String>['/cache/model-0123456789ab'];
+    final error = ModelCacheEntryInUseException(
+      '1 model cache entry is in use and was not removed.',
+      entryDirectories: directories,
+    );
+    directories.clear();
+
+    expect(error, isA<LlamaStateException>());
+    expect(error.entryDirectories, <String>['/cache/model-0123456789ab']);
+    expect(() => error.entryDirectories.add('/other'), throwsUnsupportedError);
+    expect(error.toString(), isNot(contains('/cache')));
+  });
+
   group('LlamaException Tests', () {
     test('LlamaModelException properties', () {
       final ex = LlamaModelException('Fail to load', 'err_code_1');
@@ -18,24 +54,6 @@ void main() {
       expect(ex.message, 'Context full');
       expect(ex.details, isNull);
       expect(ex.toString(), 'LlamaException: Context full');
-    });
-
-    test('LlamaInferenceException properties', () {
-      final ex = LlamaInferenceException('Gen failed');
-      expect(ex.message, 'Gen failed');
-      expect(ex.toString(), contains('Gen failed'));
-    });
-
-    test('LlamaUnsupportedException properties', () {
-      final ex = LlamaUnsupportedException('No CUDA');
-      expect(ex.message, 'No CUDA');
-      expect(ex.toString(), contains('No CUDA'));
-    });
-
-    test('LlamaStateException properties', () {
-      final ex = LlamaStateException('Not loaded');
-      expect(ex.message, 'Not loaded');
-      expect(ex.toString(), contains('Not loaded'));
     });
   });
 }

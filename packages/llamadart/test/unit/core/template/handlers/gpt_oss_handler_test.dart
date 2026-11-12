@@ -1,10 +1,85 @@
 import 'dart:convert';
 
-import 'package:llamadart/src/core/template/chat_format.dart';
-import 'package:llamadart/src/core/template/chat_template_engine.dart';
+import 'package:llamadart/llamadart.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test(
+    'GPT-OSS continuation calls keep JSON data and reject broken arguments',
+    () {
+      for (final city in [
+        'Montréal',
+        '<think>literal</think>',
+        '<|start|>assistant',
+      ]) {
+        final result = ChatTemplateEngine.parse(
+          ChatFormat.gptOss.index,
+          '<|channel|>analysis to=functions.weather<|message|>${jsonEncode({'city': city})}<|end|>',
+        );
+        expect(result.content, '');
+        expect(result.toolCalls.single.function?.name, 'weather');
+        expect(jsonDecode(result.toolCalls.single.function!.arguments!), {
+          'city': city,
+        });
+      }
+      for (final arguments in ['{"city":', '{"city":"Paris","city":"Rome"}']) {
+        final result = ChatTemplateEngine.parse(
+          ChatFormat.gptOss.index,
+          '<|channel|>analysis to=functions.weather<|message|>$arguments',
+        );
+        expect(result.content, '');
+        expect(result.toolCalls, isEmpty);
+      }
+    },
+  );
+
+  test('GPT-OSS lazy grammar starts only at a function recipient', () {
+    final result = ChatTemplateEngine.render(
+      templateSource:
+          '{# <|channel|> #}{{ messages[0].content }}<|start|>assistant',
+      metadata: const {},
+      messages: const [
+        LlamaChatMessage.fromText(role: LlamaChatRole.user, text: 'Say hello.'),
+      ],
+      tools: [
+        ToolDefinition(
+          name: 'weather',
+          description: 'Weather.',
+          parameters: [ToolParam.string('city', required: true)],
+        ),
+      ],
+    );
+    expect(result.grammarLazy, true);
+    expect(
+      result.grammarTriggers.map((t) => t.value),
+      containsAll([
+        '<|channel|>commentary to=functions.',
+        '<|channel|>analysis to=functions.',
+        '<|start|>assistant to=functions.',
+      ]),
+    );
+    expect(
+      result.grammarTriggers
+          .where((t) => t.type == 0)
+          .every((t) => t.value.contains('to=functions.')),
+      true,
+    );
+    final recipient = RegExp(
+      result.grammarTriggers.singleWhere((t) => t.type == 3).value,
+    );
+    expect(
+      recipient.hasMatch(' to=functions.weather<|channel|>commentary'),
+      true,
+    );
+    expect(recipient.hasMatch('Mention to=functions.weather in prose.'), false);
+    expect(
+      recipient.hasMatch(
+        '<|channel|>analysis<|message|>Quote to=functions.weather',
+      ),
+      false,
+    );
+  });
+
   group('New format handlers', () {
     test('parses GPT-OSS analysis, tool call, and final content', () {
       const output =
@@ -27,7 +102,7 @@ void main() {
     test('parses Seed-OSS reasoning and XML tool call', () {
       const output =
           '<seed:think>reasoning</seed:think>'
-          '<seed:tool_call><function=weather><parameter=city>"Seoul"</parameter></function></seed:tool_call>';
+          '<seed:tool_call>\n<function=weather><parameter=city>"Seoul"</parameter></function></seed:tool_call>';
 
       final result = ChatTemplateEngine.parse(ChatFormat.seedOss.index, output);
 
@@ -123,7 +198,7 @@ void main() {
       expect(result.toolCalls.first.function?.name, equals('weather'));
     });
 
-    test('treats forced-open EXAONE output as content when no end tag', () {
+    test('treats forced-open EXAONE output as reasoning when no end tag', () {
       const output =
           '<tool_call>{"name":"weather","arguments":{"city":"Seoul"}}</tool_call>';
 
@@ -133,9 +208,9 @@ void main() {
         thinkingForcedOpen: true,
       );
 
-      expect(result.reasoningContent, isNull);
-      expect(result.toolCalls, hasLength(1));
-      expect(result.toolCalls.first.function?.name, equals('weather'));
+      expect(result.content, isEmpty);
+      expect(result.reasoningContent, output);
+      expect(result.toolCalls, isEmpty);
     });
 
     test('parses Kimi K2 tool call and strips function prefix/index', () {

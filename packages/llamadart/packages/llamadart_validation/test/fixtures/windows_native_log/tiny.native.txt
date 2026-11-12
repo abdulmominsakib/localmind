@@ -1,0 +1,376 @@
+load_backend: loaded CPU backend from C:\Users\jhin.lee\smoke\bundle\lib\ggml-cpu.dll
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 23033 MiB):
+  Device 0: NVIDIA L4, compute capability 8.9, VMM: yes, VRAM: 23033 MiB
+load_backend: loaded CUDA backend from C:\Users\jhin.lee\smoke\bundle\lib\ggml-cuda.dll
+llama_model_loader: loaded meta data with 18 key-value pairs and 57 tensors from C:\Users\jhin.lee\smoke\models\stories15M.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                      tokenizer.ggml.tokens arr[str,32000]   = ["<unk>", "<s>", "</s>", "<0x00>", "<...
+llama_model_loader: - kv   1:                      tokenizer.ggml.scores arr[f32,32000]   = [0.000000, 0.000000, 0.000000, 0.0000...
+llama_model_loader: - kv   2:                  tokenizer.ggml.token_type arr[i32,32000]   = [2, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...
+llama_model_loader: - kv   3:                       tokenizer.ggml.model str              = llama
+llama_model_loader: - kv   4:                       general.architecture str              = llama
+llama_model_loader: - kv   5:                               general.name str              = llama
+llama_model_loader: - kv   6:            tokenizer.ggml.unknown_token_id u32              = 0
+llama_model_loader: - kv   7:                tokenizer.ggml.bos_token_id u32              = 1
+llama_model_loader: - kv   8:                tokenizer.ggml.eos_token_id u32              = 2
+llama_model_loader: - kv   9:          tokenizer.ggml.seperator_token_id u32              = 4294967295
+llama_model_loader: - kv  10:            tokenizer.ggml.padding_token_id u32              = 4294967295
+llama_model_loader: - kv  11:                       llama.context_length u32              = 128
+llama_model_loader: - kv  12:                     llama.embedding_length u32              = 288
+llama_model_loader: - kv  13:                  llama.feed_forward_length u32              = 768
+llama_model_loader: - kv  14:                 llama.attention.head_count u32              = 6
+llama_model_loader: - kv  15:                          llama.block_count u32              = 6
+llama_model_loader: - kv  16:                 llama.rope.dimension_count u32              = 48
+llama_model_loader: - kv  17:     llama.attention.layer_norm_rms_epsilon f32              = 0.000010
+llama_model_loader: - type  f32:   57 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = (guessed) all F32
+print_info: file size   = 93.11 MiB (32.00 BPW) 
+llama_prepare_model_devices: using device CUDA0 (NVIDIA L4) (0000:00:03.0) - 21663 MiB free
+load: bad special token: 'tokenizer.ggml.seperator_token_id' = 4294967295, using default id -1
+load: bad special token: 'tokenizer.ggml.padding_token_id' = 4294967295, using default id -1
+load: 0 unused tokens
+load: printing all EOG tokens:
+load:   - 2 ('</s>')
+load: special tokens cache size = 3
+load: token to piece cache size = 0.1684 MB
+print_info: arch                  = llama
+print_info: vocab_only            = 0
+print_info: no_alloc              = 0
+print_info: n_ctx_train           = 128
+print_info: n_embd_inp            = 288
+print_info: n_embd                = 288
+print_info: n_embd_out            = 288
+print_info: n_layer               = 6
+print_info: n_layer_all           = 6
+print_info: n_head                = 6
+print_info: n_head_kv             = 6
+print_info: n_rot                 = 48
+print_info: n_swa                 = 0
+print_info: is_swa_any            = 0
+print_info: non_causal_type       = 0
+print_info: n_embd_head_k         = 48
+print_info: n_embd_head_v         = 48
+print_info: n_gqa                 = 1
+print_info: n_embd_k_gqa          = 288
+print_info: n_embd_v_gqa          = 288
+print_info: f_norm_eps            = 0.0e+00
+print_info: f_norm_rms_eps        = 1.0e-05
+print_info: f_clamp_kqv           = 0.0e+00
+print_info: f_max_alibi_bias      = 0.0e+00
+print_info: f_logit_scale         = 0.0e+00
+print_info: f_attn_scale          = 0.0e+00
+print_info: f_attn_value_scale    = 0.0000
+print_info: n_ff                  = 768
+print_info: n_expert              = 0
+print_info: n_expert_used         = 0
+print_info: n_expert_groups       = 0
+print_info: n_group_used          = 0
+print_info: causal attn           = 1
+print_info: pooling type          = -1
+print_info: rope type             = 0
+print_info: rope scaling          = linear
+print_info: freq_base_train       = 10000.0
+print_info: freq_scale_train      = 1
+print_info: n_ctx_orig_yarn       = 128
+print_info: rope_yarn_log_mul     = 0.0000
+print_info: rope_finetuned        = unknown
+print_info: model type            = ?B
+print_info: model params          = 24.41 M
+print_info: general.name          = llama
+print_info: vocab type            = SPM
+print_info: n_vocab               = 32000
+print_info: n_merges              = 0
+print_info: BOS token             = 1 '<s>'
+print_info: EOS token             = 2 '</s>'
+print_info: UNK token             = 0 '<unk>'
+print_info: LF token              = 13 '<0x0A>'
+print_info: EOG token             = 2 '</s>'
+print_info: max token length      = 48
+load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 5 repeating layers to GPU
+load_tensors: offloaded 7/7 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =    35.16 MiB
+load_tensors:        CUDA0 model buffer size =    57.95 MiB
+llama_context: constructing llama_context
+llama_context: n_seq_max             = 1
+llama_context: n_ctx                 = 1024
+llama_context: n_ctx_seq             = 1024
+llama_context: n_batch               = 1024
+llama_context: n_ubatch              = 512
+llama_context: causal_attn           = 1
+llama_context: flash_attn            = auto
+llama_context: kv_unified            = false
+llama_context: freq_base             = 10000.0
+llama_context: freq_scale            = 1
+llama_context: n_rs_seq              = 0
+llama_context: n_outputs_max         = 1024
+llama_context: n_outputs_max_per_seq = 1
+llama_context: n_ctx_seq (1024) > n_ctx_train (128) -- possible training context overflow
+llama_context:  CUDA_Host  output buffer size =     0.12 MiB
+llama_kv_cache:      CUDA0 KV buffer size =     6.75 MiB
+llama_kv_cache: size =    6.75 MiB (  1024 cells,   6 layers,  1/1 seqs), K (f16):    3.38 MiB, V (f16):    3.38 MiB
+llama_kv_cache: n_rot_k = 0, n_embd_head_k_all = 48
+llama_kv_cache: n_rot_v = 0, n_embd_head_k_all = 48
+sched_reserve: reserving ...
+resolve_fused_ops: layer 0 is assigned to device CUDA0 but Flash Attention is assigned to device CPU (usually due to missing support)
+resolve_fused_ops: Flash Attention not supported, set to disabled
+resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+resolve_fused_ops: fused DeepSeek V4 HC post enabled
+sched_reserve:      CUDA0 compute buffer size =    66.77 MiB
+sched_reserve:  CUDA_Host compute buffer size =     4.27 MiB
+sched_reserve: graph: nodes = 225, splits = 2, input objects = 4, input tensors = 9
+sched_reserve: reserve took 13.64 ms, sched copies = 1
+load_backend: loaded CPU backend from C:\Users\jhin.lee\smoke\bundle\lib\ggml-cpu.dll
+load_backend: loaded CUDA backend from C:\Users\jhin.lee\smoke\bundle\lib\ggml-cuda.dll
+llama_model_loader: loaded meta data with 18 key-value pairs and 57 tensors from C:\Users\jhin.lee\smoke\models\stories15M.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                      tokenizer.ggml.tokens arr[str,32000]   = ["<unk>", "<s>", "</s>", "<0x00>", "<...
+llama_model_loader: - kv   1:                      tokenizer.ggml.scores arr[f32,32000]   = [0.000000, 0.000000, 0.000000, 0.0000...
+llama_model_loader: - kv   2:                  tokenizer.ggml.token_type arr[i32,32000]   = [2, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...
+llama_model_loader: - kv   3:                       tokenizer.ggml.model str              = llama
+llama_model_loader: - kv   4:                       general.architecture str              = llama
+llama_model_loader: - kv   5:                               general.name str              = llama
+llama_model_loader: - kv   6:            tokenizer.ggml.unknown_token_id u32              = 0
+llama_model_loader: - kv   7:                tokenizer.ggml.bos_token_id u32              = 1
+llama_model_loader: - kv   8:                tokenizer.ggml.eos_token_id u32              = 2
+llama_model_loader: - kv   9:          tokenizer.ggml.seperator_token_id u32              = 4294967295
+llama_model_loader: - kv  10:            tokenizer.ggml.padding_token_id u32              = 4294967295
+llama_model_loader: - kv  11:                       llama.context_length u32              = 128
+llama_model_loader: - kv  12:                     llama.embedding_length u32              = 288
+llama_model_loader: - kv  13:                  llama.feed_forward_length u32              = 768
+llama_model_loader: - kv  14:                 llama.attention.head_count u32              = 6
+llama_model_loader: - kv  15:                          llama.block_count u32              = 6
+llama_model_loader: - kv  16:                 llama.rope.dimension_count u32              = 48
+llama_model_loader: - kv  17:     llama.attention.layer_norm_rms_epsilon f32              = 0.000010
+llama_model_loader: - type  f32:   57 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = (guessed) all F32
+print_info: file size   = 93.11 MiB (32.00 BPW) 
+llama_prepare_model_devices: using device CUDA0 (NVIDIA L4) (0000:00:03.0) - 21643 MiB free
+load: bad special token: 'tokenizer.ggml.seperator_token_id' = 4294967295, using default id -1
+load: bad special token: 'tokenizer.ggml.padding_token_id' = 4294967295, using default id -1
+load: 0 unused tokens
+load: printing all EOG tokens:
+load:   - 2 ('</s>')
+load: special tokens cache size = 3
+load: token to piece cache size = 0.1684 MB
+print_info: arch                  = llama
+print_info: vocab_only            = 0
+print_info: no_alloc              = 0
+print_info: n_ctx_train           = 128
+print_info: n_embd_inp            = 288
+print_info: n_embd                = 288
+print_info: n_embd_out            = 288
+print_info: n_layer               = 6
+print_info: n_layer_all           = 6
+print_info: n_head                = 6
+print_info: n_head_kv             = 6
+print_info: n_rot                 = 48
+print_info: n_swa                 = 0
+print_info: is_swa_any            = 0
+print_info: non_causal_type       = 0
+print_info: n_embd_head_k         = 48
+print_info: n_embd_head_v         = 48
+print_info: n_gqa                 = 1
+print_info: n_embd_k_gqa          = 288
+print_info: n_embd_v_gqa          = 288
+print_info: f_norm_eps            = 0.0e+00
+print_info: f_norm_rms_eps        = 1.0e-05
+print_info: f_clamp_kqv           = 0.0e+00
+print_info: f_max_alibi_bias      = 0.0e+00
+print_info: f_logit_scale         = 0.0e+00
+print_info: f_attn_scale          = 0.0e+00
+print_info: f_attn_value_scale    = 0.0000
+print_info: n_ff                  = 768
+print_info: n_expert              = 0
+print_info: n_expert_used         = 0
+print_info: n_expert_groups       = 0
+print_info: n_group_used          = 0
+print_info: causal attn           = 1
+print_info: pooling type          = -1
+print_info: rope type             = 0
+print_info: rope scaling          = linear
+print_info: freq_base_train       = 10000.0
+print_info: freq_scale_train      = 1
+print_info: n_ctx_orig_yarn       = 128
+print_info: rope_yarn_log_mul     = 0.0000
+print_info: rope_finetuned        = unknown
+print_info: model type            = ?B
+print_info: model params          = 24.41 M
+print_info: general.name          = llama
+print_info: vocab type            = SPM
+print_info: n_vocab               = 32000
+print_info: n_merges              = 0
+print_info: BOS token             = 1 '<s>'
+print_info: EOS token             = 2 '</s>'
+print_info: UNK token             = 0 '<unk>'
+print_info: LF token              = 13 '<0x0A>'
+print_info: EOG token             = 2 '</s>'
+print_info: max token length      = 48
+load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 5 repeating layers to GPU
+load_tensors: offloaded 7/7 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =    35.16 MiB
+load_tensors:        CUDA0 model buffer size =    57.95 MiB
+llama_context: constructing llama_context
+llama_context: n_seq_max             = 1
+llama_context: n_ctx                 = 1024
+llama_context: n_ctx_seq             = 1024
+llama_context: n_batch               = 1024
+llama_context: n_ubatch              = 512
+llama_context: causal_attn           = 1
+llama_context: flash_attn            = auto
+llama_context: kv_unified            = false
+llama_context: freq_base             = 10000.0
+llama_context: freq_scale            = 1
+llama_context: n_rs_seq              = 0
+llama_context: n_outputs_max         = 1024
+llama_context: n_outputs_max_per_seq = 1
+llama_context: n_ctx_seq (1024) > n_ctx_train (128) -- possible training context overflow
+llama_context:  CUDA_Host  output buffer size =     0.12 MiB
+llama_kv_cache:      CUDA0 KV buffer size =     6.75 MiB
+llama_kv_cache: size =    6.75 MiB (  1024 cells,   6 layers,  1/1 seqs), K (f16):    3.38 MiB, V (f16):    3.38 MiB
+llama_kv_cache: n_rot_k = 0, n_embd_head_k_all = 48
+llama_kv_cache: n_rot_v = 0, n_embd_head_k_all = 48
+sched_reserve: reserving ...
+resolve_fused_ops: layer 0 is assigned to device CUDA0 but Flash Attention is assigned to device CPU (usually due to missing support)
+resolve_fused_ops: Flash Attention not supported, set to disabled
+resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+resolve_fused_ops: fused DeepSeek V4 HC post enabled
+sched_reserve:      CUDA0 compute buffer size =    66.77 MiB
+sched_reserve:  CUDA_Host compute buffer size =     4.27 MiB
+sched_reserve: graph: nodes = 225, splits = 2, input objects = 4, input tensors = 9
+sched_reserve: reserve took 12.86 ms, sched copies = 1
+parse: error parsing grammar: unexpected end of input
+
+root ::= "unterminated
+failed to parse grammar
+llama_model_loader: loaded meta data with 18 key-value pairs and 57 tensors from C:\Users\jhin.lee\smoke\models\stories15M.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                      tokenizer.ggml.tokens arr[str,32000]   = ["<unk>", "<s>", "</s>", "<0x00>", "<...
+llama_model_loader: - kv   1:                      tokenizer.ggml.scores arr[f32,32000]   = [0.000000, 0.000000, 0.000000, 0.0000...
+llama_model_loader: - kv   2:                  tokenizer.ggml.token_type arr[i32,32000]   = [2, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...
+llama_model_loader: - kv   3:                       tokenizer.ggml.model str              = llama
+llama_model_loader: - kv   4:                       general.architecture str              = llama
+llama_model_loader: - kv   5:                               general.name str              = llama
+llama_model_loader: - kv   6:            tokenizer.ggml.unknown_token_id u32              = 0
+llama_model_loader: - kv   7:                tokenizer.ggml.bos_token_id u32              = 1
+llama_model_loader: - kv   8:                tokenizer.ggml.eos_token_id u32              = 2
+llama_model_loader: - kv   9:          tokenizer.ggml.seperator_token_id u32              = 4294967295
+llama_model_loader: - kv  10:            tokenizer.ggml.padding_token_id u32              = 4294967295
+llama_model_loader: - kv  11:                       llama.context_length u32              = 128
+llama_model_loader: - kv  12:                     llama.embedding_length u32              = 288
+llama_model_loader: - kv  13:                  llama.feed_forward_length u32              = 768
+llama_model_loader: - kv  14:                 llama.attention.head_count u32              = 6
+llama_model_loader: - kv  15:                          llama.block_count u32              = 6
+llama_model_loader: - kv  16:                 llama.rope.dimension_count u32              = 48
+llama_model_loader: - kv  17:     llama.attention.layer_norm_rms_epsilon f32              = 0.000010
+llama_model_loader: - type  f32:   57 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = (guessed) all F32
+print_info: file size   = 93.11 MiB (32.00 BPW) 
+llama_prepare_model_devices: using device CUDA0 (NVIDIA L4) (0000:00:03.0) - 21643 MiB free
+load: bad special token: 'tokenizer.ggml.seperator_token_id' = 4294967295, using default id -1
+load: bad special token: 'tokenizer.ggml.padding_token_id' = 4294967295, using default id -1
+load: 0 unused tokens
+load: printing all EOG tokens:
+load:   - 2 ('</s>')
+load: special tokens cache size = 3
+load: token to piece cache size = 0.1684 MB
+print_info: arch                  = llama
+print_info: vocab_only            = 0
+print_info: no_alloc              = 0
+print_info: n_ctx_train           = 128
+print_info: n_embd_inp            = 288
+print_info: n_embd                = 288
+print_info: n_embd_out            = 288
+print_info: n_layer               = 6
+print_info: n_layer_all           = 6
+print_info: n_head                = 6
+print_info: n_head_kv             = 6
+print_info: n_rot                 = 48
+print_info: n_swa                 = 0
+print_info: is_swa_any            = 0
+print_info: non_causal_type       = 0
+print_info: n_embd_head_k         = 48
+print_info: n_embd_head_v         = 48
+print_info: n_gqa                 = 1
+print_info: n_embd_k_gqa          = 288
+print_info: n_embd_v_gqa          = 288
+print_info: f_norm_eps            = 0.0e+00
+print_info: f_norm_rms_eps        = 1.0e-05
+print_info: f_clamp_kqv           = 0.0e+00
+print_info: f_max_alibi_bias      = 0.0e+00
+print_info: f_logit_scale         = 0.0e+00
+print_info: f_attn_scale          = 0.0e+00
+print_info: f_attn_value_scale    = 0.0000
+print_info: n_ff                  = 768
+print_info: n_expert              = 0
+print_info: n_expert_used         = 0
+print_info: n_expert_groups       = 0
+print_info: n_group_used          = 0
+print_info: causal attn           = 1
+print_info: pooling type          = -1
+print_info: rope type             = 0
+print_info: rope scaling          = linear
+print_info: freq_base_train       = 10000.0
+print_info: freq_scale_train      = 1
+print_info: n_ctx_orig_yarn       = 128
+print_info: rope_yarn_log_mul     = 0.0000
+print_info: rope_finetuned        = unknown
+print_info: model type            = ?B
+print_info: model params          = 24.41 M
+print_info: general.name          = llama
+print_info: vocab type            = SPM
+print_info: n_vocab               = 32000
+print_info: n_merges              = 0
+print_info: BOS token             = 1 '<s>'
+print_info: EOS token             = 2 '</s>'
+print_info: UNK token             = 0 '<unk>'
+print_info: LF token              = 13 '<0x0A>'
+print_info: EOG token             = 2 '</s>'
+print_info: max token length      = 48
+load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 5 repeating layers to GPU
+load_tensors: offloaded 7/7 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =    35.16 MiB
+load_tensors:        CUDA0 model buffer size =    57.95 MiB
+llama_context: constructing llama_context
+llama_context: n_seq_max             = 1
+llama_context: n_ctx                 = 1024
+llama_context: n_ctx_seq             = 1024
+llama_context: n_batch               = 1024
+llama_context: n_ubatch              = 512
+llama_context: causal_attn           = 1
+llama_context: flash_attn            = auto
+llama_context: kv_unified            = false
+llama_context: freq_base             = 10000.0
+llama_context: freq_scale            = 1
+llama_context: n_rs_seq              = 0
+llama_context: n_outputs_max         = 1024
+llama_context: n_outputs_max_per_seq = 1
+llama_context: n_ctx_seq (1024) > n_ctx_train (128) -- possible training context overflow
+llama_context:  CUDA_Host  output buffer size =     0.12 MiB
+llama_kv_cache:      CUDA0 KV buffer size =     6.75 MiB
+llama_kv_cache: size =    6.75 MiB (  1024 cells,   6 layers,  1/1 seqs), K (f16):    3.38 MiB, V (f16):    3.38 MiB
+llama_kv_cache: n_rot_k = 0, n_embd_head_k_all = 48
+llama_kv_cache: n_rot_v = 0, n_embd_head_k_all = 48
+sched_reserve: reserving ...
+resolve_fused_ops: layer 0 is assigned to device CUDA0 but Flash Attention is assigned to device CPU (usually due to missing support)
+resolve_fused_ops: Flash Attention not supported, set to disabled
+resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+resolve_fused_ops: fused DeepSeek V4 HC post enabled
+sched_reserve:      CUDA0 compute buffer size =    66.77 MiB
+sched_reserve:  CUDA_Host compute buffer size =     4.27 MiB
+sched_reserve: graph: nodes = 225, splits = 2, input objects = 4, input tensors = 9
+sched_reserve: reserve took 13.97 ms, sched copies = 1

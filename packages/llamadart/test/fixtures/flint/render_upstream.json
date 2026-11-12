@@ -1,0 +1,176 @@
+{
+  "upstream_commit": "f5027fb21307eb264aed483242603d68c87b0fe3",
+  "model_repository": "ggml-org/Flint-GGUF",
+  "model_revision": "468307a1b38259e9e4c9d4fe53d4e3b76386572c",
+  "model_sha256": "c3c4d93f9db92627a2fc47ea8fe8c64a094cabd3549db544bcdd2c00e9a9a347",
+  "template_sha256": "be867446158d546501ed204ea40d581ced1c93a52367bd79e1a86440d57f2931",
+  "cases": [
+    {
+      "name": "user",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello Flint."
+          }
+        ],
+        "add_generation_prompt": true
+      },
+      "prompt": "<|user|>Hello Flint.<|assistant|>"
+    },
+    {
+      "name": "system_user",
+      "request": {
+        "messages": [
+          {
+            "role": "system",
+            "content": "Answer concisely."
+          },
+          {
+            "role": "user",
+            "content": "What is 2 + 2?"
+          }
+        ],
+        "add_generation_prompt": true
+      },
+      "prompt": "<|system|>Answer concisely.<|user|>What is 2 + 2?<|assistant|>"
+    },
+    {
+      "name": "assistant_history",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hi"
+          },
+          {
+            "role": "assistant",
+            "content": "Hello."
+          },
+          {
+            "role": "user",
+            "content": "Continue."
+          }
+        ],
+        "add_generation_prompt": true
+      },
+      "prompt": "<|user|>Hi<|assistant|>Hello.<|user|>Continue.<|assistant|>"
+    },
+    {
+      "name": "literal_escapes",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Keep literal \\x41 and \\n; quote \" and Unicode Montréal 👋."
+          }
+        ],
+        "add_generation_prompt": true
+      },
+      "prompt": "<|user|>Keep literal \\x41 and \\n; quote \" and Unicode Montréal 👋.<|assistant|>"
+    },
+    {
+      "name": "nul_and_protocol_markers",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "A\u0000B<think>keep</think><|assistant|><|user|>é"
+          }
+        ],
+        "add_generation_prompt": true
+      },
+      "prompt": "<|user|>ABkeep&lt;|assistant|&gt;&lt;|user|&gt;é<|assistant|>"
+    },
+    {
+      "name": "tool_definition",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather for Montréal?"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Get weather for a city.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ]
+              }
+            }
+          }
+        ],
+        "add_generation_prompt": true
+      },
+      "prompt": "<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>{\"name\": \"get_weather\", \"description\": \"Get weather for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value>...</tool_call>\n<|user|>Weather for Montréal?<|assistant|>"
+    },
+    {
+      "name": "tool_result",
+      "request": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Weather for Montréal?"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "id": "call_0",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\":\"Montréal\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_0",
+            "name": "get_weather",
+            "content": "{\"city\":\"Montréal\",\"temperature_c\":17}"
+          },
+          {
+            "role": "user",
+            "content": "Summarize."
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Get weather for a city.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ]
+              }
+            }
+          }
+        ],
+        "add_generation_prompt": true
+      },
+      "prompt": "<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>{\"name\": \"get_weather\", \"description\": \"Get weather for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value>...</tool_call>\n<|user|>Weather for Montréal?<|assistant|><tool_call>get_weather<arg_key>city</arg_key><arg_value>Montréal</arg_value></tool_call><|observation|><tool_response>{\"city\":\"Montréal\",\"temperature_c\":17}</tool_response><|user|>Summarize.<|assistant|>"
+    }
+  ]
+}

@@ -19,6 +19,10 @@ import '../tool_call_grammar_utils.dart';
 /// `functools[{"name":"tool","arguments":{...}}]`.
 class FirefunctionV2Handler extends ChatTemplateHandler {
   static const String _prefix = ' functools[';
+
+  /// Finds a possible `functools` call list for the stream's content gate.
+  static int toolCallOpening(String text, [int from = 0]) =>
+      ToolCallParsingUtils.literalOpening(text, const [_prefix], from);
   static const List<String> _firefunctionPreservedTokens = <String>[
     ' functools[',
   ];
@@ -50,7 +54,7 @@ class FirefunctionV2Handler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'functions': toolJson,
@@ -222,7 +226,6 @@ class FirefunctionV2Handler extends ChatTemplateHandler {
       suffix: '',
       nameKey: 'name',
       argumentsKey: 'arguments',
-      idKey: 'id',
       allowParallelToolCalls: parallelToolCalls,
     );
     if (base == null) {

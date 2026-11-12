@@ -1,0 +1,134 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+pubspec.lock
+!example/chat_app/pubspec.lock
+!packages/llamadart_validation/pubspec.lock
+!website/pubspec.lock
+!website/examples/observability/pubspec.lock
+
+# Native runtime profiling output from optional model validation.
+*.profraw
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+.pub/
+
+# Android
+android/gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/**/generated/
+android/**/gradle-wrapper.jar
+android/.gradle
+android/build
+android/app/build
+android/app/src/main/assets/
+android/.cxx/
+
+# iOS / macOS
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+macos/Flutter/ephemeral/
+macos/Runner/GeneratedPluginRegistrant.*
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+Thumbs.db
+
+# C/C++ / CMake / Build Artifacts
+*.o
+*.a
+*.exe
+cmake_install.cmake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+compile_commands.json
+*.gch
+*.pch
+
+# Native binaries (pre-built or generated)
+*.so
+*.dll
+*.dylib
+*.xcframework/
+.dart_tool/native_assets.json
+
+# Models (Large files)
+*.gguf
+*.bin
+# Deterministic transport fixture is source data, not model weights.
+!/test/fixtures/windows_ggml_registry_qualification/transport-selftest.bin
+
+# Test Assets
+/test_assets/
+/models/
+
+# build outputs
+build-*/
+artifacts/
+release_assets/
+
+# Legacy native source/build workspace (not tracked in this repo)
+third_party/
+
+coverage/
+*.log
+# Pub checks tracked fixtures against Git ignores even outside its archive.
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-0085/s24.native.cpu-corrected/stderr.log
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-0085/s24.native.gpu-corrected/stderr.log
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-0085/s24.native.gpu-guard/stderr.log
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-0085/s24.native.launch/stderr.log
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-2028/s24.native.cpu-corrected/stderr.log
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-2028/s24.native.gpu-corrected/stderr.log
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-2028/s24.native.gpu-guard/stderr.log
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-2028/s24.native.launch/stderr.log
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-2029/s24.native.cpu-corrected/stderr.log
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-2029/s24.native.gpu-corrected/stderr.log
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-2029/s24.native.gpu-guard/stderr.log
+!/packages/llamadart_validation/native/android_litert/fixtures/dart_transport/unicode-2029/s24.native.launch/stderr.log
+
+# FVM Version Cache
+.fvm/
+.fvmrc
+# Test artifacts
+test_output.txt
+test_output_*.txt
+test_failure_details.txt
+full_log.txt
+
+# Emscripten sanity outputs
+a.out.js
+a.out.wasm
+
+# Python local artifacts
+__pycache__/
+*.pyc
+
+# Local web bridge artifacts fetched/built for chat_app
+example/chat_app/web/webgpu_bridge/*.js
+example/chat_app/web/webgpu_bridge/*.d.ts
+example/chat_app/web/webgpu_bridge/*.wasm
+example/chat_app/web/webgpu_bridge/manifest.json
+example/chat_app/web/webgpu_bridge/sha256sums.txt
+
+
+# SwiftPM build output (for example from `swift package dump-package`)
+.build/

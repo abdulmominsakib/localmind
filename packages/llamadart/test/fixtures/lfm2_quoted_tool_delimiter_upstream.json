@@ -1,0 +1,347 @@
+{
+  "upstream": "ggml-org/llama.cpp",
+  "commit": "8642541b255bfb5dc39cd351a178be09013a55d6",
+  "apis": [
+    "common_chat_templates_apply",
+    "common_chat_peg_parse",
+    "common_chat_session"
+  ],
+  "request": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Weather?"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "weather",
+          "description": "Weather",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": [
+      "<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\")]<|tool_call_end|>",
+      "<|tool_call_start|>[weather(city='a<|tool_call_end|>b')]<|tool_call_end|>",
+      "<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\"), weather(city=\"Seoul\")]<|tool_call_end|>",
+      "Before<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\")]<|tool_call_end|>After",
+      "<|tool_call_start|>[{\"name\":\"weather\",\"arguments\":{\"city\":\"a<|tool_call_end|>b\"}}]<|tool_call_end|>"
+    ],
+    "tool_choice": "auto",
+    "enable_thinking": false,
+    "parallel": true
+  },
+  "cases": [
+    {
+      "template": "test/fixtures/required_tool_emissions/LFM2-1_2B-Tool.jinja",
+      "template_sha256": "89e790f027916b5a2bca145a6a8454e06ffc7a5043bf3b6d97829aff86bb543f",
+      "format": "peg-native",
+      "parsed": [
+        {
+          "input": "<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\")]<|tool_call_end|>",
+          "content": "",
+          "reasoning": "",
+          "tool_calls": [
+            {
+              "name": "weather",
+              "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+            }
+          ]
+        },
+        {
+          "input": "<|tool_call_start|>[weather(city='a<|tool_call_end|>b')]<|tool_call_end|>",
+          "content": "",
+          "reasoning": "",
+          "tool_calls": [
+            {
+              "name": "weather",
+              "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+            }
+          ]
+        },
+        {
+          "input": "<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\"), weather(city=\"Seoul\")]<|tool_call_end|>",
+          "content": "",
+          "reasoning": "",
+          "tool_calls": [
+            {
+              "name": "weather",
+              "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+            },
+            {
+              "name": "weather",
+              "arguments": "{\"city\":\"Seoul\"}"
+            }
+          ]
+        },
+        {
+          "input": "Before<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\")]<|tool_call_end|>After",
+          "error": "The model produced output that does not match the expected peg-native format"
+        },
+        {
+          "input": "<|tool_call_start|>[{\"name\":\"weather\",\"arguments\":{\"city\":\"a<|tool_call_end|>b\"}}]<|tool_call_end|>",
+          "error": "The model produced output that does not match the expected peg-native format"
+        }
+      ],
+      "sessions": [
+        {
+          "input": "<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\")]<|tool_call_end|>",
+          "whole": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              }
+            ]
+          },
+          "bytewise": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              }
+            ]
+          }
+        },
+        {
+          "input": "<|tool_call_start|>[weather(city='a<|tool_call_end|>b')]<|tool_call_end|>",
+          "whole": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              }
+            ]
+          },
+          "bytewise": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              }
+            ]
+          }
+        },
+        {
+          "input": "<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\"), weather(city=\"Seoul\")]<|tool_call_end|>",
+          "whole": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              },
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Seoul\"}"
+              }
+            ]
+          },
+          "bytewise": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              },
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Seoul\"}"
+              }
+            ]
+          }
+        },
+        {
+          "input": "Before<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\")]<|tool_call_end|>After",
+          "whole": {
+            "error": "The model produced output that does not match the expected peg-native format"
+          },
+          "bytewise": {
+            "error": "The model produced output that does not match the expected peg-native format"
+          }
+        },
+        {
+          "input": "<|tool_call_start|>[{\"name\":\"weather\",\"arguments\":{\"city\":\"a<|tool_call_end|>b\"}}]<|tool_call_end|>",
+          "whole": {
+            "error": "The model produced output that does not match the expected peg-native format"
+          },
+          "bytewise": {
+            "error": "The model produced output that does not match the expected peg-native format"
+          }
+        }
+      ]
+    },
+    {
+      "template": "test/fixtures/templates/LFM2_5-1_2B-Thinking-ba551d58630a.jinja",
+      "template_sha256": "ba551d58630afa3190b1be3602e28301f3d2e9bbac978dfc49d6d825171648b6",
+      "format": "peg-native",
+      "parsed": [
+        {
+          "input": "<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\")]<|tool_call_end|>",
+          "content": "",
+          "reasoning": "",
+          "tool_calls": [
+            {
+              "name": "weather",
+              "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+            }
+          ]
+        },
+        {
+          "input": "<|tool_call_start|>[weather(city='a<|tool_call_end|>b')]<|tool_call_end|>",
+          "content": "",
+          "reasoning": "",
+          "tool_calls": [
+            {
+              "name": "weather",
+              "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+            }
+          ]
+        },
+        {
+          "input": "<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\"), weather(city=\"Seoul\")]<|tool_call_end|>",
+          "content": "",
+          "reasoning": "",
+          "tool_calls": [
+            {
+              "name": "weather",
+              "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+            },
+            {
+              "name": "weather",
+              "arguments": "{\"city\":\"Seoul\"}"
+            }
+          ]
+        },
+        {
+          "input": "Before<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\")]<|tool_call_end|>After",
+          "error": "The model produced output that does not match the expected peg-native format"
+        },
+        {
+          "input": "<|tool_call_start|>[{\"name\":\"weather\",\"arguments\":{\"city\":\"a<|tool_call_end|>b\"}}]<|tool_call_end|>",
+          "error": "The model produced output that does not match the expected peg-native format"
+        }
+      ],
+      "sessions": [
+        {
+          "input": "<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\")]<|tool_call_end|>",
+          "whole": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              }
+            ]
+          },
+          "bytewise": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              }
+            ]
+          }
+        },
+        {
+          "input": "<|tool_call_start|>[weather(city='a<|tool_call_end|>b')]<|tool_call_end|>",
+          "whole": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              }
+            ]
+          },
+          "bytewise": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              }
+            ]
+          }
+        },
+        {
+          "input": "<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\"), weather(city=\"Seoul\")]<|tool_call_end|>",
+          "whole": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              },
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Seoul\"}"
+              }
+            ]
+          },
+          "bytewise": {
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"a<|tool_call_end|>b\"}"
+              },
+              {
+                "name": "weather",
+                "arguments": "{\"city\":\"Seoul\"}"
+              }
+            ]
+          }
+        },
+        {
+          "input": "Before<|tool_call_start|>[weather(city=\"a<|tool_call_end|>b\")]<|tool_call_end|>After",
+          "whole": {
+            "error": "The model produced output that does not match the expected peg-native format"
+          },
+          "bytewise": {
+            "error": "The model produced output that does not match the expected peg-native format"
+          }
+        },
+        {
+          "input": "<|tool_call_start|>[{\"name\":\"weather\",\"arguments\":{\"city\":\"a<|tool_call_end|>b\"}}]<|tool_call_end|>",
+          "whole": {
+            "error": "The model produced output that does not match the expected peg-native format"
+          },
+          "bytewise": {
+            "error": "The model produced output that does not match the expected peg-native format"
+          }
+        }
+      ]
+    }
+  ]
+}

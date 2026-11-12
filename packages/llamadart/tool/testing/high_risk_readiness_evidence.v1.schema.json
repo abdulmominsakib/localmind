@@ -1,0 +1,377 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:llamadart:high-risk-readiness-evidence:1.0.0",
+  "title": "llamadart high-risk pre-merge readiness evidence and evaluation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "timestamp",
+    "correlation_id",
+    "repository",
+    "pr_number",
+    "expected_pr_head_sha",
+    "current_base_sha",
+    "pr_author",
+    "classification",
+    "surfaces",
+    "required_matrix_row_ids",
+    "matrix_row_evidence",
+    "independent_audit",
+    "structured_output_evidence",
+    "affected_test_paths",
+    "evaluation"
+  ],
+  "properties": {
+    "schema": { "const": "llamadart.high-risk-readiness-evidence" },
+    "schema_version": { "const": "1.0.0" },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$"
+    },
+    "correlation_id": { "$ref": "#/$defs/identifier" },
+    "repository": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "pr_number": { "type": "integer", "minimum": 1 },
+    "expected_pr_head_sha": { "$ref": "#/$defs/sha" },
+    "current_base_sha": { "$ref": "#/$defs/sha" },
+    "pr_author": {
+      "type": "string",
+      "pattern": "^(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$"
+    },
+    "classification": { "enum": ["standard", "high-risk"] },
+    "surfaces": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "structuredOutput",
+          "backendRuntime",
+          "artifactConsumer",
+          "releaseAutomation",
+          "regressionPolicy"
+        ]
+      }
+    },
+    "required_matrix_row_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "high-risk-exact-head-independent-qa",
+          "structured-output-adversarial",
+          "release-metadata-verification"
+        ]
+      }
+    },
+    "matrix_row_evidence": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "high-risk-exact-head-independent-qa",
+          "structured-output-adversarial",
+          "release-metadata-verification"
+        ]
+      },
+      "additionalProperties": { "$ref": "#/$defs/matrixRow" }
+    },
+    "independent_audit": {
+      "oneOf": [
+        { "$ref": "#/$defs/independentAudit" },
+        { "type": "null" }
+      ]
+    },
+    "structured_output_evidence": {
+      "oneOf": [
+        { "$ref": "#/$defs/structuredOutputEvidence" },
+        { "type": "null" }
+      ]
+    },
+    "affected_test_paths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/testPath" }
+    },
+    "evaluation": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/evaluation" }
+      ]
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$"
+    },
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "not": { "const": "0000000000000000000000000000000000000000" }
+    },
+    "testPath": {
+      "type": "string",
+      "pattern": "^(?![\\s\\S]*[\\u0000-\\u001F\\u007F])(?![\\s\\S]*[*?\\[\\]])(?!.*\\\\)(?!.*(?:^|/)(?:\\.|\\.\\.)(?:/|$))test/(?:[^/]+/)*[^/]+_test\\.dart$"
+    },
+    "matrixRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["row_id", "result", "command", "evidence_notes"],
+      "properties": {
+        "row_id": {
+          "enum": [
+            "high-risk-exact-head-independent-qa",
+            "structured-output-adversarial",
+            "release-metadata-verification"
+          ]
+        },
+        "result": { "enum": ["pass", "fail", "notApplicable"] },
+        "command": { "type": "string", "minLength": 1 },
+        "evidence_notes": { "type": "string", "minLength": 1 }
+      }
+    },
+    "independentAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "auditor_identity",
+        "audit_kind",
+        "audit_head_sha",
+        "audit_base_sha",
+        "decision",
+        "unresolved_review_threads",
+        "known_pr_caused_p1_regressions",
+        "summary"
+      ],
+      "properties": {
+        "auditor_identity": { "$ref": "#/$defs/identifier" },
+        "audit_kind": { "enum": ["operator-owned", "codex-adversarial"] },
+        "audit_head_sha": { "$ref": "#/$defs/sha" },
+        "audit_base_sha": { "$ref": "#/$defs/sha" },
+        "decision": { "enum": ["accepted", "rejected", "blocked"] },
+        "unresolved_review_threads": { "type": "integer", "minimum": 0 },
+        "known_pr_caused_p1_regressions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "summary": { "type": "string", "minLength": 1 }
+      }
+    },
+    "coveragePaths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/testPath" }
+    },
+    "structuredOutputEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coverage", "families"],
+      "properties": {
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "compiled_grammar_acceptance",
+            "compiled_grammar_rejection",
+            "schema_reconstruction",
+            "streaming_rollback",
+            "tool_choice_thinking",
+            "upstream_parity"
+          ],
+          "properties": {
+            "compiled_grammar_acceptance": {
+              "$ref": "#/$defs/coveragePaths"
+            },
+            "compiled_grammar_rejection": {
+              "$ref": "#/$defs/coveragePaths"
+            },
+            "schema_reconstruction": {
+              "$ref": "#/$defs/coveragePaths"
+            },
+            "streaming_rollback": {
+              "$ref": "#/$defs/coveragePaths"
+            },
+            "tool_choice_thinking": {
+              "$ref": "#/$defs/coveragePaths"
+            },
+            "upstream_parity": {
+              "$ref": "#/$defs/coveragePaths"
+            }
+          }
+        },
+        "families": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "family",
+              "status",
+              "evidence_test_paths",
+              "rationale"
+            ],
+            "properties": {
+              "family": { "$ref": "#/$defs/identifier" },
+              "status": { "enum": ["tested", "unavailable"] },
+              "evidence_test_paths": {
+                "$ref": "#/$defs/coveragePaths"
+              },
+              "rationale": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "repositoryChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "status"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "status": {
+          "enum": [
+            "added",
+            "modified",
+            "deleted",
+            "renamed",
+            "copied",
+            "typeChanged",
+            "unmerged",
+            "unknown"
+          ]
+        },
+        "previous_path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "externalPrerequisites": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "app_installed",
+        "protected_environment_configured",
+        "independent_auditor_authenticated",
+        "ruleset_enforced",
+        "diagnostic_message"
+      ],
+      "properties": {
+        "app_installed": { "const": false },
+        "protected_environment_configured": { "const": false },
+        "independent_auditor_authenticated": { "const": false },
+        "ruleset_enforced": { "const": false },
+        "diagnostic_message": { "type": "string", "minLength": 1 }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluated_at",
+        "changed_files",
+        "decision",
+        "failure_classification",
+        "message",
+        "external_prerequisites"
+      ],
+      "properties": {
+        "evaluated_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$"
+        },
+        "changed_files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/repositoryChange" }
+        },
+        "decision": {
+          "enum": [
+            "rejected",
+            "unverifiedPrerequisites",
+            "standardRiskDiagnostic"
+          ]
+        },
+        "failure_classification": {
+          "enum": [
+            "none",
+            "schemaViolation",
+            "repositoryMismatch",
+            "prMismatch",
+            "headMismatch",
+            "baseMismatch",
+            "authorMismatch",
+            "classificationMismatch",
+            "changedFilesMismatch",
+            "selfApprovalProhibited",
+            "retiredQaProfileProhibited",
+            "unresolvedReviewThreads",
+            "knownP1Regressions",
+            "missingAudit",
+            "auditRejected",
+            "missingRequiredMatrixRow",
+            "matrixRowFailed",
+            "missingStructuredOutputEvidence",
+            "missingTestPath",
+            "nonTestPathCited",
+            "unchangedEvidencePath",
+            "deletedEvidencePath",
+            "renamedEvidencePath",
+            "invalidReleaseMetadata",
+            "externalPrerequisitesUnavailable",
+            "gitExecutionError",
+            "invalidInput"
+          ]
+        },
+        "message": { "type": "string", "minLength": 1 },
+        "external_prerequisites": {
+          "$ref": "#/$defs/externalPrerequisites"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "decision": { "const": "rejected" } },
+            "required": ["decision"]
+          },
+          "then": {
+            "properties": {
+              "failure_classification": { "not": { "const": "none" } }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "decision": { "const": "unverifiedPrerequisites" }
+            },
+            "required": ["decision"]
+          },
+          "then": {
+            "properties": {
+              "failure_classification": {
+                "const": "externalPrerequisitesUnavailable"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "decision": { "const": "standardRiskDiagnostic" }
+            },
+            "required": ["decision"]
+          },
+          "then": {
+            "properties": {
+              "failure_classification": { "const": "none" }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

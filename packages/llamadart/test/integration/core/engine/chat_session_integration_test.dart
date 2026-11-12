@@ -20,6 +20,8 @@ void main() async {
     await engine.loadModel(
       modelFile.path,
       modelParams: const ModelParams(
+        numberOfThreads: 2,
+        numberOfThreadsBatch: 2,
         contextSize: 256,
         gpuLayers: 0, // Disable GPU for stability on CI
       ),

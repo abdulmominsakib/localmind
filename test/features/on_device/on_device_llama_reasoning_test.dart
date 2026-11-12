@@ -10,11 +10,18 @@ import 'package:localmind/features/on_device/data/imported_gguf_model_repository
 import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:localmind/features/on_device/data/on_device_llama_service.dart';
 
+class RecordingBackend implements llama.LlamaBackend {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class RecordingEngine implements llama.LlamaEngine {
   final thinking = <bool>[];
   final loadedProjectors = <String>[];
   bool visionSupported = false;
   bool failDisposal = false;
+  @override
+  final RecordingBackend backend = RecordingBackend();
 
   @override
   Future<bool> get supportsVision => Future.value(visionSupported);
@@ -22,14 +29,18 @@ class RecordingEngine implements llama.LlamaEngine {
   @override
   dynamic noSuchMethod(Invocation invocation) {
     switch (invocation.memberName) {
-      case #loadModel:
-        return Future<void>.value();
       case #dispose:
         return failDisposal
             ? Future<void>.error(StateError('native disposal failed'))
             : Future<void>.value();
-      case #loadMultimodalProjector:
-        loadedProjectors.add(invocation.positionalArguments[0] as String);
+      case #backend:
+        return backend;
+      case #setModel:
+        final projector =
+            (invocation.positionalArguments[0] as llama.LlamaModel).projector;
+        if (projector?.path case final path?) {
+          loadedProjectors.add(path);
+        }
         return Future<void>.value();
       case #supportsVision:
         return Future.value(visionSupported);

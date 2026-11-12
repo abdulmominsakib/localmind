@@ -50,6 +50,31 @@ void main() {
       );
     });
 
+    test('renders an image as the given marker and leaves a placeholder the '
+        'message quotes as text', () {
+      final source = File(
+        'test/fixtures/templates/functiongemma-270m-it.jinja',
+      ).readAsStringSync();
+
+      final result = ChatTemplateEngine.render(
+        templateSource: source,
+        messages: const [
+          LlamaChatMessage.withContent(
+            role: LlamaChatRole.user,
+            content: [
+              LlamaImageContent(path: '/tmp/page.png'),
+              LlamaTextContent('What is <start_of_image>?'),
+            ],
+          ),
+        ],
+        metadata: const {},
+        mediaMarker: '<__media_x__>',
+      );
+
+      expect(result.format, ChatFormat.functionGemma.index);
+      expect(result.prompt, contains('<__media_x__>What is <start_of_image>?'));
+    });
+
     test('renders template with FunctionGemma routing', () {
       final source = File(
         'test/fixtures/templates/functiongemma-270m-it.jinja',
@@ -95,6 +120,34 @@ void main() {
         contains('<start_function_response>response:get_current_time{'),
       );
       expect(result.prompt, contains('<end_function_response>'));
+    });
+
+    test('gives a tool-call-only assistant turn empty content', () {
+      final result = ChatTemplateEngine.handlerFor(ChatFormat.functionGemma)
+          .render(
+            templateSource:
+                '{%- for message in messages -%}'
+                '{{ message.role }}:{{ message.content is string }}'
+                '={{ message.content }};'
+                '{%- endfor -%}',
+            messages: const [
+              LlamaChatMessage.withContent(
+                role: LlamaChatRole.assistant,
+                content: [
+                  LlamaToolCallContent(
+                    id: 'call_0',
+                    name: 'get_current_time',
+                    arguments: {},
+                    rawJson: '{}',
+                  ),
+                ],
+              ),
+            ],
+            metadata: const {},
+            addAssistant: false,
+          );
+
+      expect(result.prompt, 'assistant:True=;');
     });
 
     test('normalizes JSON-string tool responses when rendering', () {

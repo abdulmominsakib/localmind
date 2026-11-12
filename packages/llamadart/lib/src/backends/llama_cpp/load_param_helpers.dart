@@ -2,8 +2,10 @@
 // inlined in the service) so they can be unit-tested without going through
 // `LlamaEngine.loadModel`, which is integration-level and needs a real model.
 
+import 'dart:convert';
 import 'dart:ffi';
 
+import 'package:crypto/crypto.dart';
 import 'package:ffi/ffi.dart';
 
 import '../../core/models/config/flash_attention.dart';
@@ -127,5 +129,108 @@ FlashAttention applyContextParams(
   if (params.ropeFrequencyScale != null) {
     ctxParams.rope_freq_scale = params.ropeFrequencyScale!;
   }
+  ctxParams.moe_cache_size = params.moeCacheBytes;
   return resolvedFlashAttn;
+}
+
+/// The canonical encoding of the [ctxParams] fields that change the layout
+/// or the content of a saved llama.cpp state: K and V cache types,
+/// flash-attention mode, sequence count, unified KV, full-size SWA cache, and
+/// the RoPE frequency base and scale written into the params (0 keeps the
+/// model's value).
+///
+/// The flash-attention mode is the requested one: llama.cpp resolves `auto`
+/// per device, and rejects a state whose V cache transposition differs.
+/// llama.cpp does not check RoPE settings, and keys saved under other ones
+/// restore without error but score wrongly. Changing a field or its spelling
+/// needs a new version tag.
+String stateContextConfigEncoding(llama_context_params ctxParams) => [
+  'llamadart-state-context/2',
+  'type_k=${ctxParams.type_k.name}',
+  'type_v=${ctxParams.type_v.name}',
+  'flash_attn=${ctxParams.flash_attn_type.name}',
+  'n_seq_max=${ctxParams.n_seq_max}',
+  'kv_unified=${ctxParams.kv_unified}',
+  'swa_full=${ctxParams.swa_full}',
+  'rope_freq_base=${ctxParams.rope_freq_base}',
+  'rope_freq_scale=${ctxParams.rope_freq_scale}',
+].join(';');
+
+/// The SHA-256 hex digest of [stateContextConfigEncoding].
+String stateContextConfigDigest(llama_context_params ctxParams) => sha256
+    .convert(utf8.encode(stateContextConfigEncoding(ctxParams)))
+    .toString();
+
+/// The context parameters a speculative session creates its draft context
+/// from, for a target context created with [targetParams].
+///
+/// Returns [targetParams] itself when [draftMicroBatchSize] is null, so the
+/// draft context keeps the target's micro-batch size. Otherwise copies
+/// [targetParams] into [scratch], which the caller allocates and frees, and
+/// sets its `n_ubatch` to [draftMicroBatchSize].
+llama_context_params speculativeDraftContextParams(
+  llama_context_params targetParams,
+  int? draftMicroBatchSize,
+  Pointer<llama_context_params> scratch,
+) {
+  if (draftMicroBatchSize == null) {
+    return targetParams;
+  }
+  scratch.ref = targetParams;
+  return scratch.ref..n_ubatch = draftMicroBatchSize;
+}
+
+/// The CPU thread count to pass to llama.cpp for a [requested] count.
+///
+/// A positive [requested] is returned unchanged. Otherwise returns ggml's
+/// default of 4 (`GGML_DEFAULT_N_THREADS`), capped at [availableCores]:
+/// `ggml_barrier` spin-waits, so more threads than cores stall each other and
+/// inference runs tens of times slower.
+int resolveCpuThreads(int requested, {required int availableCores}) =>
+    requested > 0 ? requested : availableCores.clamp(1, 4);
+
+/// Sets the generation and batch thread counts of [ctxParams] from [params],
+/// through [resolveCpuThreads].
+void applyContextThreads(
+  llama_context_params ctxParams,
+  ModelParams params, {
+  required int availableCores,
+}) {
+  ctxParams.n_threads = resolveCpuThreads(
+    params.numberOfThreads,
+    availableCores: availableCores,
+  );
+  ctxParams.n_threads_batch = resolveCpuThreads(
+    params.numberOfThreadsBatch,
+    availableCores: availableCores,
+  );
+}
+
+/// Configures a decision head's private encoder context.
+///
+/// One sequence of up to [maxTokens] tokens runs in one ubatch, with
+/// per-token embeddings and no pooling. Thread counts come from [params] and
+/// [availableCores], through [applyContextThreads].
+/// When [runsOnCpu], KQV and op offload and flash attention are disabled so no
+/// work reaches a GPU backend.
+void applyDecisionContextParams(
+  llama_context_params ctxParams,
+  ModelParams params, {
+  required int maxTokens,
+  required bool runsOnCpu,
+  required int availableCores,
+}) {
+  ctxParams.n_ctx = maxTokens;
+  ctxParams.n_batch = maxTokens;
+  ctxParams.n_ubatch = maxTokens;
+  ctxParams.n_seq_max = 1;
+  ctxParams.embeddings = true;
+  ctxParams.pooling_type = llama_pooling_type.LLAMA_POOLING_TYPE_NONE;
+  applyContextThreads(ctxParams, params, availableCores: availableCores);
+  if (runsOnCpu) {
+    ctxParams.offload_kqv = false;
+    ctxParams.op_offload = false;
+    ctxParams.flash_attn_typeAsInt =
+        llama_flash_attn_type.LLAMA_FLASH_ATTN_TYPE_DISABLED.value;
+  }
 }

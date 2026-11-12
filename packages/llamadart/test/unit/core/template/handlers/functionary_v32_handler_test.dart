@@ -1,12 +1,21 @@
-import 'package:llamadart/src/core/template/chat_format.dart';
+import 'package:llamadart/src/core/models/tools/tool_definition.dart';
+import 'package:llamadart/src/core/models/tools/tool_param.dart';
 import 'package:llamadart/src/core/template/handlers/functionary_v32_handler.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('FunctionaryV32Handler', () {
-    test('exposes chat format', () {
-      final handler = FunctionaryV32Handler();
-      expect(handler.format, isA<ChatFormat>());
+    test('grammar ends the function name with a GBNF newline', () {
+      final grammar = FunctionaryV32Handler().buildGrammar([
+        ToolDefinition(
+          name: 'get_weather',
+          description: 'Get weather',
+          parameters: [ToolParam.string('city', required: true)],
+          handler: (_) async => null,
+        ),
+      ]);
+
+      expect(grammar, contains(r'tool-0-call ::= "get_weather\n" tool-0-args'));
     });
 
     test('parses JSON tool calls with >>>name markers', () {
@@ -62,7 +71,7 @@ void main() {
     });
 
     test(
-      'keeps leading all-channel content when later tool call is malformed',
+      'keeps content but drops the all header when a later call is malformed',
       () {
         final handler = FunctionaryV32Handler();
         const output = '>>>all\nhello\n>>>weather\n{"city":"Seoul"';
@@ -70,8 +79,16 @@ void main() {
         final parsed = handler.parse(output);
 
         expect(parsed.toolCalls, isEmpty);
-        expect(parsed.content, equals(output));
+        expect(parsed.content, equals(output.substring('>>>all\n'.length)));
       },
     );
+
+    test('partial parse keeps a closing angle bracket before a marker', () {
+      final parsed = FunctionaryV32Handler().parse(
+        'See <b>x</b>>>>weather\n{"city":5',
+        isPartial: true,
+      );
+      expect(parsed.content, 'See <b>x</b>');
+    });
   });
 }

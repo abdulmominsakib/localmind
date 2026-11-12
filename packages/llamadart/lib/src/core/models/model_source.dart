@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
+import '../url_redaction.dart';
+import 'model_format.dart';
+
 /// The kind of model source represented by a [ModelSource].
 enum ModelSourceKind {
   /// A local filesystem path supplied explicitly by the caller.
@@ -18,9 +21,13 @@ enum ModelSourceKind {
 ///
 /// [ModelSource] is a value object only; creating one does not perform network
 /// or filesystem access.
+///
+/// Every factory takes an optional `format` that names the model's
+/// [ModelFormat] when neither its file content nor its name can: see
+/// [format].
 class ModelSource {
   /// Creates a local filesystem path model source.
-  factory ModelSource.path(String path) {
+  factory ModelSource.path(String path, {ModelFormat? format}) {
     if (path.isEmpty) {
       throw ArgumentError.value(path, 'path', 'Path must not be empty.');
     }
@@ -29,36 +36,33 @@ class ModelSource {
       path: path,
       fileName: _fileNameFromPath(path),
       canonicalKey: 'path:$path',
+      format: format,
     );
   }
 
   /// Creates an HTTP(S) URL model source.
-  factory ModelSource.url(Uri url, {String? fileName}) {
-    if (url.scheme != 'http' && url.scheme != 'https') {
+  factory ModelSource.url(Uri url, {String? fileName, ModelFormat? format}) {
+    try {
+      _validateRemoteUri(url, 'url');
+      final inferredFileName = fileName == null
+          ? _fileNameFromUri(url)
+          : _validateRemoteFileName(fileName, 'fileName');
+      return ModelSource._(
+        kind: ModelSourceKind.http,
+        url: url,
+        fileName: inferredFileName,
+        canonicalKey: fileName == null
+            ? url.toString()
+            : 'url:${url.toString()}\nfileName:$inferredFileName',
+        format: format,
+      );
+    } on ArgumentError catch (error) {
       throw ArgumentError.value(
-        url,
-        'url',
-        'Only http and https URLs are supported.',
+        sourceUrlDisplay('$url'),
+        error.name,
+        redactUrlSecrets('${error.message}', sourceUrls: <String>['$url']),
       );
     }
-    if (!url.hasAuthority || url.host.isEmpty) {
-      throw ArgumentError.value(
-        url,
-        'url',
-        'HTTP(S) model URLs must include a host.',
-      );
-    }
-    final inferredFileName = fileName == null
-        ? _fileNameFromUri(url)
-        : _validateRemoteFileName(fileName, 'fileName');
-    return ModelSource._(
-      kind: ModelSourceKind.http,
-      url: url,
-      fileName: inferredFileName,
-      canonicalKey: fileName == null
-          ? url.toString()
-          : 'url:${url.toString()}\nfileName:$inferredFileName',
-    );
   }
 
   /// Creates a Hugging Face model source from repository details.
@@ -71,6 +75,7 @@ class ModelSource {
     required String filePath,
     String revision = 'main',
     String? fileName,
+    ModelFormat? format,
   }) {
     final normalizedRepoId = _validateRepoId(repoId);
     final normalizedRevision = _validateRevision(revision);
@@ -95,6 +100,7 @@ class ModelSource {
         normalizedRevision,
         normalizedFilePath,
       ),
+      format: format,
     );
   }
 
@@ -103,31 +109,16 @@ class ModelSource {
   /// Hugging Face references use `hf://owner/repo/path/to/model-file`. A simple
   /// branch or tag can be written as `hf://owner/repo@revision/model-file`; use
   /// `?revision=refs/pr/12` when the revision itself contains `/`.
-  factory ModelSource.parse(String value) {
-    if (value.isEmpty) {
-      throw ArgumentError.value(value, 'value', 'Source must not be empty.');
-    }
-
-    if (value.startsWith('hf://')) {
-      return _parseHuggingFaceUri(value);
-    }
-
-    final parsedUri = Uri.tryParse(value);
-    if (parsedUri != null && parsedUri.hasScheme) {
-      if (parsedUri.scheme == 'http' || parsedUri.scheme == 'https') {
-        return ModelSource.url(parsedUri);
-      }
-      if (_looksLikeWindowsPath(value, parsedUri.scheme)) {
-        return ModelSource.path(value);
-      }
+  factory ModelSource.parse(String value, {ModelFormat? format}) {
+    try {
+      return _parseModelSource(value, format);
+    } on ArgumentError catch (error) {
       throw ArgumentError.value(
-        value,
-        'value',
-        'Unsupported model source scheme: ${parsedUri.scheme}.',
+        sourceUrlDisplay(value),
+        error.name,
+        redactUrlSecrets('${error.message}', sourceUrls: <String>[value]),
       );
     }
-
-    return ModelSource.path(value);
   }
 
   const ModelSource._({
@@ -139,6 +130,7 @@ class ModelSource {
     this.repoId,
     this.revision,
     this.filePath,
+    this.format,
   });
 
   /// The source kind.
@@ -165,6 +157,15 @@ class ModelSource {
   /// A canonical identity string used for deterministic cache keys.
   final String canonicalKey;
 
+  /// The model's format, or null to detect it.
+  ///
+  /// Null by default: a native load reads the file header and a Web URL load
+  /// uses the URL's extension. Set it for a Web URL without a model
+  /// extension, such as `https://host/download?id=42`; a native load then
+  /// rejects a file whose header names another format with
+  /// `LlamaModelFormatException`. It does not change [cacheKey].
+  final ModelFormat? format;
+
   /// Whether this source is a local filesystem path.
   bool get isLocal => kind == ModelSourceKind.path;
 
@@ -178,7 +179,8 @@ class ModelSource {
   String get scheme => isLocal ? 'path' : url!.scheme;
 
   /// Human-friendly source name suitable for logs.
-  String get displayName => fileName;
+  String get displayName =>
+      isLocal ? _fileNameFromPath(sourcePathDisplay(path!)) : fileName;
 
   /// SHA-256 digest of [canonicalKey], used as a deterministic cache key.
   String get cacheKey => sha256.convert(utf8.encode(canonicalKey)).toString();
@@ -188,18 +190,26 @@ class ModelSource {
   /// [canonicalKey] intentionally remains the full source identity so cache keys
   /// stay unique for signed URLs. This value omits raw URL query strings while
   /// including [cacheKey] so persisted metadata can still be correlated with the
-  /// deterministic cache entry without storing credentials.
+  /// deterministic cache entry without storing credentials. Explicit paths
+  /// with URL authority or query key/value syntax receive the same protection;
+  /// other native filename literals remain unchanged.
   String get metadataSourceKey {
     if (kind == ModelSourceKind.http) {
       final redactedUri = _uriWithoutQueryOrFragment(url!);
       return 'url:${redactedUri.toString()}#cacheKey=$cacheKey';
+    }
+    if (isLocal) {
+      final displayPath = sourcePathDisplay(path!);
+      if (displayPath != path) {
+        return 'path:$displayPath#cacheKey=$cacheKey';
+      }
     }
     return canonicalKey;
   }
 
   /// Safe deterministic cache directory name for this source.
   String get cacheDirectoryName {
-    final stem = _fileStem(fileName);
+    final stem = _fileStem(displayName);
     final safeStem = _safeName(stem.isEmpty ? 'model' : stem);
     return '$safeStem-${cacheKey.substring(0, 12)}';
   }
@@ -228,28 +238,76 @@ class ModelSource {
       filePath: filePath,
       fileName: fileName,
       canonicalKey: canonicalKey,
+      format: format,
     );
   }
+}
+
+/// The files of a model that `LlamaEngine` runs.
+///
+/// A value object: creating one reads and downloads nothing. Pass it to
+/// `LlamaEngine.load` or `LlamaEngine.setModel`.
+class LlamaModel {
+  /// Describes the model at [source], with the multimodal [projector] of a
+  /// llama.cpp model.
+  const LlamaModel(this.source, {this.projector});
+
+  /// The model file: a GGUF, which llama.cpp runs, or a `.litertlm` bundle,
+  /// which LiteRT-LM runs. The engine picks the runtime for each model.
+  final ModelSource source;
+
+  /// The multimodal projector (mmproj) GGUF that gives a llama.cpp model
+  /// vision or audio input, or null.
+  ///
+  /// A `.litertlm` bundle carries its own media encoders and takes none.
+  final ModelSource? projector;
+}
+
+ModelSource _parseModelSource(String value, ModelFormat? format) {
+  if (value.isEmpty) {
+    throw ArgumentError.value(value, 'value', 'Source must not be empty.');
+  }
+
+  if (value.startsWith('hf://')) {
+    return _parseHuggingFaceUri(value, format);
+  }
+
+  final parsedUri = Uri.tryParse(value);
+  if (parsedUri != null && parsedUri.hasScheme) {
+    if (parsedUri.scheme == 'http' || parsedUri.scheme == 'https') {
+      return ModelSource.url(parsedUri, format: format);
+    }
+    if (_looksLikeWindowsPath(value, parsedUri.scheme)) {
+      return ModelSource.path(value, format: format);
+    }
+    throw ArgumentError.value(
+      value,
+      'value',
+      'Unsupported model source scheme: ${parsedUri.scheme}.',
+    );
+  }
+
+  return ModelSource.path(value, format: format);
 }
 
 void _validateRemoteUri(Uri url, String name) {
   if (url.scheme != 'http' && url.scheme != 'https') {
     throw ArgumentError.value(
-      url,
+      sourceUrlDisplay('$url'),
       name,
       'Only http and https URLs are supported.',
     );
   }
   if (!url.hasAuthority || url.host.isEmpty) {
     throw ArgumentError.value(
-      url,
+      sourceUrlDisplay('$url'),
       name,
       'HTTP(S) model URLs must include a host.',
     );
   }
 }
 
-ModelSource _parseHuggingFaceUri(String value) {
+ModelSource _parseHuggingFaceUri(String value, ModelFormat? format) {
   final reference = value.substring('hf://'.length);
   if (reference.isEmpty || reference.contains('#')) {
     throw ArgumentError.value(
@@ -335,6 +393,7 @@ ModelSource _parseHuggingFaceUri(String value) {
     repoId: repoId,
     revision: revision,
     filePath: decodedFileSegments.join('/'),
+    format: format,
   );
 }
 
@@ -500,7 +559,7 @@ String _fileNameFromUri(Uri uri) {
       .where((segment) => segment.isNotEmpty);
   if (rawSegments.isEmpty) {
     throw ArgumentError.value(
-      uri,
+      sourceUrlDisplay('$uri'),
       'url',
       'URL must include a model file name.',
     );

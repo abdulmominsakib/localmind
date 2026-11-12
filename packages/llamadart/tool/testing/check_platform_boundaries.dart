@@ -6,11 +6,13 @@ class _BoundaryScope {
   final String name;
   final String targetPath;
   final Set<String> forbiddenUris;
+  final bool followsDefaultImports;
 
   const _BoundaryScope({
     required this.name,
     required this.targetPath,
     required this.forbiddenUris,
+    this.followsDefaultImports = false,
   });
 }
 
@@ -39,7 +41,20 @@ const List<_BoundaryScope> _scopes = <_BoundaryScope>[
   _BoundaryScope(
     name: 'public-entrypoint',
     targetPath: 'lib/llamadart.dart',
-    forbiddenUris: <String>{'dart:io', 'dart:ffi'},
+    forbiddenUris: <String>{'dart:io', 'dart:ffi', 'package:ffi/ffi.dart'},
+    followsDefaultImports: true,
+  ),
+  _BoundaryScope(
+    name: 'backend-entrypoint',
+    targetPath: 'lib/backend.dart',
+    forbiddenUris: <String>{'dart:io', 'dart:ffi', 'package:ffi/ffi.dart'},
+    followsDefaultImports: true,
+  ),
+  _BoundaryScope(
+    name: 'bindings-entrypoint',
+    targetPath: 'lib/llama_cpp_bindings.dart',
+    forbiddenUris: <String>{'dart:io', 'dart:ffi', 'package:ffi/ffi.dart'},
+    followsDefaultImports: true,
   ),
   _BoundaryScope(
     name: 'web-backend',
@@ -75,10 +90,9 @@ void main() {
       continue;
     }
 
-    final List<File> dartFiles = _collectDartFiles(
-      scope.targetPath,
-      entityType,
-    );
+    final List<File> dartFiles = scope.followsDefaultImports
+        ? _collectDefaultImportClosure(scope.targetPath)
+        : _collectDartFiles(scope.targetPath, entityType);
     for (final File file in dartFiles) {
       final List<String> lines = file.readAsLinesSync();
       for (int i = 0; i < lines.length; i++) {
@@ -151,4 +165,48 @@ List<File> _collectDartFiles(
       .whereType<File>()
       .where((File file) => file.path.endsWith('.dart'))
       .toList(growable: false);
+}
+
+/// The library at [entrypoint] and every library it reaches through the
+/// default URI of its imports and exports.
+///
+/// The `if (dart.library...)` branches of a conditional directive are
+/// skipped, so native code stays allowed there; the default URI must not
+/// need it.
+List<File> _collectDefaultImportClosure(String entrypoint) {
+  final Set<String> visited = <String>{};
+  final List<String> pending = <String>[path.normalize(entrypoint)];
+  while (pending.isNotEmpty) {
+    final String current = pending.removeLast();
+    if (!visited.add(current) || !File(current).existsSync()) {
+      continue;
+    }
+    for (final String line in File(current).readAsLinesSync()) {
+      final Match? match = _directivePattern.firstMatch(line);
+      if (match == null) {
+        continue;
+      }
+      final String? target = _packageLibraryPath(current, match.group(2)!);
+      if (target != null) {
+        pending.add(target);
+      }
+    }
+  }
+  return visited
+      .where((String filePath) => File(filePath).existsSync())
+      .map(File.new)
+      .toList(growable: false);
+}
+
+String? _packageLibraryPath(String fromFile, String uri) {
+  const String packagePrefix = 'package:llamadart/';
+  if (uri.startsWith(packagePrefix)) {
+    return path.normalize(
+      path.join('lib', uri.substring(packagePrefix.length)),
+    );
+  }
+  if (Uri.parse(uri).hasScheme) {
+    return null;
+  }
+  return path.normalize(path.join(path.dirname(fromFile), uri));
 }
