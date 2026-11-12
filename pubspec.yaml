@@ -175,6 +175,8 @@ hooks:
 dependency_overrides:
   audio_service:
     path: packages/audio_service
+  clipboard:
+    path: packages/clipboard
   flutter_gemma_litertlm:
     path: packages/flutter_gemma_litertlm
   llamadart:

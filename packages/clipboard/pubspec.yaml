@@ -1,0 +1,35 @@
+name: clipboard
+description: Flutter clipboard with text, Rich Text (HTML), and image support.
+version: 3.0.14
+homepage: https://github.com/samuelezedi/flutter_clipboard
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=1.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  web: ^1.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: net.cubiclab.clipboard
+        pluginClass: ClipboardPlugin
+      ios:
+        pluginClass: ClipboardPlugin
+      macos:
+        pluginClass: ClipboardPlugin
+      # windows: disabled in this fork. Upstream's Windows CMake points the
+      # generated_plugin_registrant include at <clipboard/clipboard_plugin.h>
+      # but ships the header under windows/, so the registrant never compiles;
+      # its /W4 /WX build also dies on an unused variable. LocalMind does not
+      # use this plugin on desktop (it uses Flutter's built-in Clipboard API;
+      # only syntax_highlight's unused CodeEditor calls this plugin). See
+      # LOCALMIND_PATCHES.md.
