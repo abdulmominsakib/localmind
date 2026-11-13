@@ -285,6 +285,11 @@ void main() {
       expect(adapter, isA<OpenAiToolAdapter>());
     });
 
+    test('uses OpenAI adapter for UberLLM servers', () {
+      final adapter = createAdapterForServerType(ServerType.uberllm);
+      expect(adapter, isA<OpenAiToolAdapter>());
+    });
+
     test('uses Ollama adapter for Ollama servers', () {
       final adapter = createAdapterForServerType(ServerType.ollama);
       expect(adapter, isA<OllamaToolAdapter>());

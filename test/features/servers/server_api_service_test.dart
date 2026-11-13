@@ -1333,6 +1333,86 @@ void main() {
     });
   });
 
+  group('ServerApiService - UberLLM model parsing', () {
+    late Server uberllmServer;
+
+    setUp(() {
+      uberllmServer = Server(
+        id: 'test-uberllm',
+        name: 'Test UberLLM',
+        type: ServerType.uberllm,
+        host: 'https://api.uberllm.dev/v1',
+        port: 443,
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        lastConnectedAt: DateTime.now(),
+      );
+    });
+
+    test('uses the UberLLM endpoints', () {
+      expect(uberllmServer.baseUrl, 'https://api.uberllm.dev/v1');
+      expect(
+        uberllmServer.chatEndpoint,
+        'https://api.uberllm.dev/v1/chat/completions',
+      );
+      expect(uberllmServer.modelsEndpoint, 'https://api.uberllm.dev/v1/models');
+      expect(uberllmServer.runningModelsEndpoint, isEmpty);
+      expect(uberllmServer.displayAddress, 'api.uberllm.dev');
+    });
+
+    test('parses names, capabilities and per-million prices', () async {
+      final service = ServerApiService(
+        Dio()
+          ..interceptors.add(
+            RoutingInterceptor({
+              'GET https://api.uberllm.dev/v1/models': {
+                'object': 'list',
+                'data': [
+                  {
+                    'id': 'anthropic/claude-sonnet-4.6',
+                    'display_name': 'Claude Sonnet 4.6',
+                    'available': true,
+                    'context_length': 1000000,
+                    'pricing': {'prompt': '0.000003', 'completion': '0.000015'},
+                    'supports_vision': true,
+                    'supports_reasoning': true,
+                    'supports_tools': true,
+                  },
+                  {
+                    'id': 'deepseek/deepseek-v4.1-flash',
+                    'available': true,
+                    'supports_tools': true,
+                  },
+                  {'id': 'example/retired-model', 'available': false},
+                ],
+              },
+            }),
+          ),
+      );
+      final models = await service.fetchModels(uberllmServer);
+
+      expect(models.map((m) => m.id), [
+        'anthropic/claude-sonnet-4.6',
+        'deepseek/deepseek-v4.1-flash',
+      ]);
+
+      final sonnet = models.first;
+      expect(sonnet.name, 'Claude Sonnet 4.6');
+      expect(sonnet.serverType, ServerType.uberllm);
+      expect(sonnet.contextLength, 1000000);
+      expect(sonnet.supportsVision, isTrue);
+      expect(sonnet.supportsReasoning, isTrue);
+      expect(sonnet.supportsToolUse, isTrue);
+      expect(sonnet.inputPricePerMillion, closeTo(3.0, 0.0001));
+      expect(sonnet.outputPricePerMillion, closeTo(15.0, 0.0001));
+
+      final flash = models.last;
+      expect(flash.name, 'deepseek/deepseek-v4.1-flash');
+      expect(flash.supportsVision, isFalse);
+      expect(flash.pricingLabel, isNull);
+    });
+  });
+
   group('ServerApiService - LM Studio load model behavior', () {
     late Server lmStudioServer;
 
