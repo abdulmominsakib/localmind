@@ -1109,6 +1109,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '유효한 API 키를 사용하여 Requesty를 통해 연결하고 모델 라우팅을 위해 이 프로필을 준비하세요.';
 
   @override
+  String get add_server_standard_compute_subtitle =>
+      '유효한 API 키를 사용하여 Standard Compute를 통해 연결하고 모델 라우팅을 위해 이 프로필을 준비하세요.';
+
+  @override
   String get add_server_endpoint_subtitle =>
       '로컬 또는 자체 호스팅 끝점을 구성한 다음 저장하기 전에 연결을 확인하세요.';
 
@@ -1119,10 +1123,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get server_type_requesty => 'Requesty';
 
   @override
+  String get server_type_standard_compute => 'Standard Compute';
+
+  @override
   String get server_type_openrouter_sub => '통합 클라우드';
 
   @override
   String get server_type_requesty_sub => '통합 클라우드';
+
+  @override
+  String get server_type_standard_compute_sub => '통합 클라우드';
 
   @override
   String get ready_continue => '계속할 준비가 되었습니다';
@@ -1178,6 +1188,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get api_key_required_requesty => 'Requesty에 필요한 API 키';
 
   @override
+  String get api_key_required_standard_compute => 'Standard Compute에 필요한 API 키';
+
+  @override
   String get api_key_format => 'OpenRouter API 키는 sk-로 시작합니다.';
 
   @override
@@ -1194,6 +1207,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get api_key_hint_requesty => 'rqsty-...';
+
+  @override
+  String get api_key_hint_standard_compute => 'sk_live_...';
 
   @override
   String get api_key_hint_generic => '인증된 서버의 경우';
@@ -1381,6 +1397,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get server_type_requesty_display => 'Requesty';
 
   @override
+  String get server_type_standard_compute_display => 'Standard Compute';
+
+  @override
   String get server_type_on_device_display => '기기 내';
 
   @override
@@ -1388,6 +1407,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get server_address_requesty => 'router.requesty.ai';
+
+  @override
+  String get server_address_standard_compute => 'api.stdcmpt.com';
 
   @override
   String get server_address_on_device => '국소 추론';
@@ -2272,6 +2294,10 @@ class AppLocalizationsKo extends AppLocalizations {
       'Requesty는 테스트하기 전에 API 키가 필요합니다.';
 
   @override
+  String get server_authentication_required_desc_standard_compute =>
+      'Standard Compute는 테스트하기 전에 API 키가 필요합니다.';
+
+  @override
   String get server_authentication_optional_desc =>
       '이 서버에 API 키가 필요하지 않은 경우 API 키를 비워 두세요.';
 
@@ -2908,6 +2934,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get requesty_disclosure =>
+      '이 공급자를 연결하면 귀하의 채팅 메시지와 입력 내용이 해당 공급자의 서버로 전송됩니다. LocalMind는 대화를 추적하거나 저장하지 않습니다.';
+
+  @override
+  String get standard_compute_disclosure =>
       '이 공급자를 연결하면 귀하의 채팅 메시지와 입력 내용이 해당 공급자의 서버로 전송됩니다. LocalMind는 대화를 추적하거나 저장하지 않습니다.';
 
   @override

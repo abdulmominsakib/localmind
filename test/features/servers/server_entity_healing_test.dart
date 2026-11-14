@@ -167,6 +167,17 @@ void main() {
         ),
         ServerType.requesty,
       );
+
+      expect(
+        ServerEntity.resolveServerType(
+          typeIndex: 7,
+          id: 'standard-compute-1',
+          name: 'Standard Compute',
+          host: 'api.stdcmpt.com',
+          port: 443,
+        ),
+        ServerType.standardCompute,
+      );
     });
   });
 

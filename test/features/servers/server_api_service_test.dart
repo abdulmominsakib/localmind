@@ -1333,6 +1333,100 @@ void main() {
     });
   });
 
+  group('ServerApiService - Standard Compute model parsing', () {
+    late Server standardComputeServer;
+
+    setUp(() {
+      standardComputeServer = Server(
+        id: 'test-standard-compute',
+        name: 'Test Standard Compute',
+        type: ServerType.standardCompute,
+        host: '',
+        port: 443,
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        lastConnectedAt: DateTime.now(),
+      );
+    });
+
+    test('uses the Standard Compute endpoints', () {
+      expect(standardComputeServer.baseUrl, 'https://api.stdcmpt.com/v1');
+      expect(
+        standardComputeServer.chatEndpoint,
+        'https://api.stdcmpt.com/v1/chat/completions',
+      );
+      expect(
+        standardComputeServer.modelsEndpoint,
+        'https://api.stdcmpt.com/v1/models',
+      );
+      expect(standardComputeServer.displayAddress, 'api.stdcmpt.com');
+    });
+
+    test('lists the routed model first and maps capabilities', () async {
+      final service = ServerApiService(
+        Dio()
+          ..interceptors.add(
+            RoutingInterceptor({
+              'GET https://api.stdcmpt.com/v1/models': {
+                'object': 'list',
+                'data': [
+                  {
+                    'id': 'deepseek/deepseek-v4-flash',
+                    'object': 'model',
+                    'display_name': 'DeepSeek V4 Flash',
+                    'context_length': 1000000,
+                    'architecture': {
+                      'input_modalities': ['text'],
+                      'output_modalities': ['text'],
+                    },
+                    'supported_parameters': ['tools', 'tool_choice'],
+                  },
+                  {
+                    'id': 'StandardCompute',
+                    'object': 'model',
+                    'context_length': 1000000,
+                    'supported_parameters': [
+                      'tools',
+                      'tool_choice',
+                      'reasoning',
+                    ],
+                  },
+                  {
+                    'id': 'example/image-only',
+                    'object': 'model',
+                    'architecture': {
+                      'input_modalities': ['text'],
+                      'output_modalities': ['image'],
+                    },
+                  },
+                ],
+              },
+            }),
+          ),
+      );
+      final models = await service.fetchModels(standardComputeServer);
+
+      expect(models.map((m) => m.id), [
+        'StandardCompute',
+        'deepseek/deepseek-v4-flash',
+      ]);
+
+      final routed = models.first;
+      expect(routed.name, 'StandardCompute');
+      expect(routed.serverType, ServerType.standardCompute);
+      expect(routed.contextLength, 1000000);
+      expect(routed.supportsToolUse, isTrue);
+      expect(routed.supportsReasoning, isTrue);
+      expect(routed.pricingLabel, isNull);
+
+      final pinned = models.last;
+      expect(pinned.name, 'DeepSeek V4 Flash');
+      expect(pinned.supportsVision, isFalse);
+      expect(pinned.supportsReasoning, isFalse);
+      expect(pinned.supportsToolUse, isTrue);
+    });
+  });
+
   group('ServerApiService - LM Studio load model behavior', () {
     late Server lmStudioServer;
 

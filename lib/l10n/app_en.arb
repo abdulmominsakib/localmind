@@ -1520,6 +1520,10 @@
   "@add_server_requesty_subtitle": {
     "description": "Add server screen subtitle for Requesty"
   },
+  "add_server_standard_compute_subtitle": "Connect through Standard Compute with a valid API key and keep this profile ready for model routing.",
+  "@add_server_standard_compute_subtitle": {
+    "description": "Add server screen subtitle for Standard Compute"
+  },
   "add_server_endpoint_subtitle": "Configure a local or self-hosted endpoint, then verify the connection before saving.",
   "@add_server_endpoint_subtitle": {
     "description": "Add server screen subtitle for endpoint-based servers"
@@ -1532,6 +1536,10 @@
   "@server_type_requesty": {
     "description": "Requesty server type card title"
   },
+  "server_type_standard_compute": "Standard Compute",
+  "@server_type_standard_compute": {
+    "description": "Standard Compute server type card title"
+  },
   "server_type_openrouter_sub": "UNIFIED CLOUD",
   "@server_type_openrouter_sub": {
     "description": "OpenRouter server type card subtitle"
@@ -1539,6 +1547,10 @@
   "server_type_requesty_sub": "UNIFIED CLOUD",
   "@server_type_requesty_sub": {
     "description": "Requesty server type card subtitle"
+  },
+  "server_type_standard_compute_sub": "UNIFIED CLOUD",
+  "@server_type_standard_compute_sub": {
+    "description": "Standard Compute server type card subtitle"
   },
   "ready_continue": "READY TO CONTINUE",
   "@ready_continue": {
@@ -1614,6 +1626,10 @@
   "@api_key_required_requesty": {
     "description": "Validation: API key for Requesty"
   },
+  "api_key_required_standard_compute": "API Key required for Standard Compute",
+  "@api_key_required_standard_compute": {
+    "description": "Validation: API key for Standard Compute"
+  },
   "api_key_format": "OpenRouter API keys start with sk-",
   "@api_key_format": {
     "description": "Validation: API key format"
@@ -1637,6 +1653,10 @@
   "api_key_hint_requesty": "rqsty-...",
   "@api_key_hint_requesty": {
     "description": "Requesty API key hint"
+  },
+  "api_key_hint_standard_compute": "sk_live_...",
+  "@api_key_hint_standard_compute": {
+    "description": "Standard Compute API key hint"
   },
   "api_key_hint_generic": "For authenticated servers",
   "@api_key_hint_generic": {
@@ -1916,6 +1936,10 @@
   "@server_type_requesty_display": {
     "description": "Requesty server type display"
   },
+  "server_type_standard_compute_display": "Standard Compute",
+  "@server_type_standard_compute_display": {
+    "description": "Standard Compute server type display"
+  },
   "server_type_on_device_display": "On-Device",
   "@server_type_on_device_display": {
     "description": "On-device server type display"
@@ -1927,6 +1951,10 @@
   "server_address_requesty": "router.requesty.ai",
   "@server_address_requesty": {
     "description": "Requesty default address"
+  },
+  "server_address_standard_compute": "api.stdcmpt.com",
+  "@server_address_standard_compute": {
+    "description": "Standard Compute default address"
   },
   "server_address_on_device": "Local inference",
   "@server_address_on_device": {
@@ -2939,6 +2967,7 @@
   "server_authentication_title": "Authentication",
   "server_authentication_required_desc": "OpenRouter requires an API key before testing.",
   "server_authentication_required_desc_requesty": "Requesty requires an API key before testing.",
+  "server_authentication_required_desc_standard_compute": "Standard Compute requires an API key before testing.",
   "server_authentication_optional_desc": "Leave the API key empty if this server does not require one.",
   "mcp_tools_title": "MCP Tools",
   "available_tools": "Available tools",
@@ -3307,6 +3336,10 @@
   "requesty_disclosure": "By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.",
   "@requesty_disclosure": {
     "description": "Disclosure shown when connecting to Requesty about data being sent to their servers"
+  },
+  "standard_compute_disclosure": "By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.",
+  "@standard_compute_disclosure": {
+    "description": "Disclosure shown when connecting to Standard Compute about data being sent to their servers"
   },
   "welcome_message_cloud": "Your messages are sent to your connected provider.",
   "@welcome_message_cloud": {
