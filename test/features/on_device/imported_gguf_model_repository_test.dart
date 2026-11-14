@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:localmind/features/on_device/data/download_engine.dart';
 import 'package:localmind/features/on_device/data/imported_gguf_model_repository.dart';
 import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,12 +21,22 @@ void main() {
   }) async {
     SharedPreferences.setMockInitialValues(initialValues);
     final prefs = await SharedPreferences.getInstance();
+    final resolvedDio = dio ?? Dio();
+    final resolvedDir = modelsDirectory;
+    final engine = DownloadEngine(
+      store: DownloadTaskStore(prefs),
+      dio: resolvedDio,
+      workDirectory: () async => resolvedDir ?? Directory.systemTemp.createTemp('gguf_engine'),
+      tokenResolver: () => null,
+    );
+    await engine.ready;
     return ImportedGgufModelRepository(
       prefs,
-      dio ?? Dio(),
-      modelsDirectoryProvider: modelsDirectory == null
+      resolvedDio,
+      modelsDirectoryProvider: resolvedDir == null
           ? null
-          : () async => modelsDirectory,
+          : () async => resolvedDir,
+      engine: engine,
     );
   }
 

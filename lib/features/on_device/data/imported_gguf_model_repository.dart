@@ -2,11 +2,19 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'dart:async';
+
+// The engine field is wired through the named constructor parameter.
+// ignore_for_file: prefer_initializing_formals
+
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/logger/app_logger.dart';
+import 'download_engine.dart';
+import 'download_task.dart';
 import 'models/on_device_model.dart';
 
 class ImportedGgufModelMetadata {
@@ -150,21 +158,84 @@ class ImportedGgufModelMetadata {
   }
 }
 
+/// Handle to one enqueued Hugging Face import group.
+class HuggingFaceImportGroup {
+  final String groupId;
+  final String name;
+  final String modelTaskId;
+  final String? projectorTaskId;
+  final bool hasProjector;
+
+  const HuggingFaceImportGroup({
+    required this.groupId,
+    required this.name,
+    required this.modelTaskId,
+    required this.projectorTaskId,
+    required this.hasProjector,
+  });
+}
+
+/// Legacy awaiter for one import group (progress + final metadata).
+class _GroupWaiter {
+  final Completer<ImportedGgufModelMetadata> completer =
+      Completer<ImportedGgufModelMetadata>();
+  final void Function(int receivedBytes, int totalBytes)? onProgress;
+
+  _GroupWaiter({this.onProgress});
+}
+
+/// Import group tracked until every task is published.
+class _PendingImport {
+  final String groupId;
+  final String name;
+  final String sourceUrl;
+  final String modelFinalPath;
+  final String? projectorFinalPath;
+  bool modelPublished = false;
+  bool projectorPublished = false;
+  String? publishedProjectorPath;
+
+  _PendingImport({
+    required this.groupId,
+    required this.name,
+    required this.sourceUrl,
+    required this.modelFinalPath,
+    required this.projectorFinalPath,
+  });
+
+  bool get hasProjector => projectorFinalPath != null;
+}
+
 class ImportedGgufModelRepository {
   static const _storageKey = 'imported_gguf_models_v1';
   static const _storageDirName = 'imported_gguf_models';
 
   final SharedPreferences _prefs;
+  // The engine owns HTTP transfers; dio is retained for legacy call sites.
+  // ignore: unused_field
   final Dio _dio;
   final Random _random;
   final Future<Directory> Function()? modelsDirectoryProvider;
+  final DownloadEngine? _engine;
+
+  /// Imports mid-flight, keyed by group id (== metadata id). Published files
+  /// stay on disk per task; metadata persists only when the whole group is
+  /// published, and any failure rolls published files back.
+  final Map<String, _PendingImport> _pendingImports = {};
+  final Map<String, _GroupWaiter> _groupWaiters = {};
 
   ImportedGgufModelRepository(
     this._prefs,
     this._dio, {
     Random? random,
     this.modelsDirectoryProvider,
-  }) : _random = random ?? Random.secure();
+    DownloadEngine? engine,
+  }) : _random = random ?? Random.secure(),
+       _engine = engine {
+    _engine
+      ?..registerPostTransfer(_handleImportTask)
+      ..registerTaskFailureHandler(_handleImportFailure);
+  }
 
   List<ImportedGgufModelMetadata> load() {
     final encoded = _prefs.getString(_storageKey);
@@ -481,144 +552,195 @@ class ImportedGgufModelRepository {
     return updated;
   }
 
-  Future<ImportedGgufModelMetadata> importFromHuggingFaceUrl(
-    String sourceUrl, {
-    String? projectorUrl,
-    String? token,
-    void Function(int receivedBytes, int totalBytes)? onProgress,
-    CancelToken? cancelToken,
-  }) async {
-    final normalizedUrl = _normalizeHuggingFaceGgufUrl(sourceUrl);
-    final originalName = _fileNameFromUri(normalizedUrl);
-    final dir = await _modelsDirectory();
-    final id = _createId(originalName);
-    final fileName = '$id-${_sanitizeFileName(originalName)}';
-    final targetPath = p.join(dir.path, fileName);
-    final tempPath = '$targetPath.part';
-    final tempFile = File(tempPath);
-    final targetFile = File(targetPath);
-
-    if (await tempFile.exists()) {
-      await tempFile.delete();
-    }
-
-    File? targetProjectorFile;
-    var metadataSaved = false;
-
-    try {
-      await _dio.download(
-        normalizedUrl.toString(),
-        tempPath,
-        cancelToken: cancelToken,
-        onReceiveProgress: onProgress,
-        options: Options(
-          headers: {
-            if (token != null && token.isNotEmpty)
-              HttpHeaders.authorizationHeader: 'Bearer $token',
-          },
-          followRedirects: true,
-          receiveTimeout: const Duration(hours: 12),
-          sendTimeout: const Duration(minutes: 5),
-          validateStatus: (status) =>
-              status != null && status >= 200 && status < 400,
-        ),
-      );
-
-      if (!await tempFile.exists() || await tempFile.length() <= 0) {
-        throw const FileSystemException(
-          'The downloaded GGUF file was empty or missing.',
-        );
-      }
-
-      await _validateGgufFile(tempFile);
-      await tempFile.rename(targetPath);
-
-      if (projectorUrl != null && projectorUrl.trim().isNotEmpty) {
-        final normalizedProjUrl = _normalizeHuggingFaceGgufUrl(
-          projectorUrl.trim(),
-        );
-        final projOriginalName = _fileNameFromUri(normalizedProjUrl);
-        final projFileName =
-            '$id-mmproj-${_sanitizeFileName(projOriginalName)}';
-        final projTargetPath = p.join(dir.path, projFileName);
-        final projTempPath = '$projTargetPath.part';
-        final projTempFile = File(projTempPath);
-        targetProjectorFile = File(projTargetPath);
-
-        if (await projTempFile.exists()) {
-          await projTempFile.delete();
-        }
-
-        try {
-          await _dio.download(
-            normalizedProjUrl.toString(),
-            projTempPath,
-            cancelToken: cancelToken,
-            options: Options(
-              headers: {
-                if (token != null && token.isNotEmpty)
-                  HttpHeaders.authorizationHeader: 'Bearer $token',
-              },
-              followRedirects: true,
-              receiveTimeout: const Duration(hours: 12),
-              sendTimeout: const Duration(minutes: 5),
-              validateStatus: (status) =>
-                  status != null && status >= 200 && status < 400,
-            ),
-          );
-
-          if (!await projTempFile.exists() ||
-              await projTempFile.length() <= 0) {
-            throw const FileSystemException(
-              'The downloaded projector GGUF file was empty or missing.',
-            );
-          }
-
-          await _validateGgufFile(projTempFile);
-          await projTempFile.rename(projTargetPath);
-        } finally {
-          if (await projTempFile.exists()) {
-            await projTempFile.delete();
-          }
-        }
-      }
-
-      final metadata = ImportedGgufModelMetadata(
-        id: id,
-        name: _displayNameFromFileName(originalName),
-        filePath: targetFile.path,
-        projectorPath: targetProjectorFile?.path,
-        fileSizeBytes: await targetFile.length(),
-        importedAt: DateTime.now(),
-        source: OnDeviceImportedSource.huggingFace,
-        sourceUrl: normalizedUrl.toString(),
-      );
-
-      final current = load();
-      await saveAll([...current, metadata]);
-      metadataSaved = true;
-      return metadata;
-    } on DioException catch (e) {
-      if (CancelToken.isCancel(e)) {
-        throw const HttpException('GGUF import canceled.');
-      }
-      throw HttpException(_friendlyDioError(e));
-    } finally {
-      if (await tempFile.exists()) {
-        await tempFile.delete();
-      }
-      if (!metadataSaved) {
-        if (await targetFile.exists()) {
-          await targetFile.delete();
-        }
-        if (targetProjectorFile != null && await targetProjectorFile.exists()) {
-          await targetProjectorFile.delete();
-        }
-      }
-    }
+/// Enqueues a Hugging Face GGUF import (plus its optional projector) as a
+/// download-engine task group. Fire-and-forget: progress and terminal states
+/// arrive through [DownloadEngine.changes]; metadata persists once every
+/// task of the group is published.
+Future<HuggingFaceImportGroup> enqueueHuggingFaceImport({
+  required String sourceUrl,
+  String? projectorUrl,
+  String? token,
+}) async {
+  // Validate inputs before requiring the engine so URL-only errors surface
+  // even in mis-wired contexts.
+  final engine = _requireEngine();
+  final normalizedUrl = _normalizeHuggingFaceGgufUrl(sourceUrl);
+  final originalName = _fileNameFromUri(normalizedUrl);
+  final dir = await _modelsDirectory();
+  final id = _createId(originalName);
+  final modelFinalPath = p.join(dir.path, '$id-${_sanitizeFileName(originalName)}');
+  String? projectorFinalPath;
+  if (projectorUrl != null && projectorUrl.trim().isNotEmpty) {
+    final normalizedProjector = _normalizeHuggingFaceGgufUrl(projectorUrl.trim());
+    final projOriginalName = _fileNameFromUri(normalizedProjector);
+    projectorFinalPath =
+        p.join(dir.path, '$id-mmproj-${_sanitizeFileName(projOriginalName)}');
   }
 
+  final modelTask = await engine.enqueue(
+    kind: DownloadTaskKind.gguf,
+    groupId: id,
+    url: normalizedUrl.toString(),
+    finalPath: modelFinalPath,
+    partPath: '$modelFinalPath.part',
+    requiresAuth: token != null && token.isNotEmpty,
+    authToken: token,
+  );
+  String? projectorTaskId;
+  if (projectorFinalPath != null) {
+    final projectorTask = await engine.enqueue(
+      kind: DownloadTaskKind.projector,
+      groupId: id,
+      url: projectorUrl!.trim(),
+      finalPath: projectorFinalPath,
+      partPath: '$projectorFinalPath.part',
+      dependsOnTaskId: modelTask.id,
+      requiresAuth: token != null && token.isNotEmpty,
+      authToken: token,
+    );
+    projectorTaskId = projectorTask.id;
+  }
+
+  _pendingImports[id] = _PendingImport(
+    groupId: id,
+    name: _displayNameFromFileName(originalName),
+    sourceUrl: normalizedUrl.toString(),
+    modelFinalPath: modelFinalPath,
+    projectorFinalPath: projectorFinalPath,
+  );
+  return HuggingFaceImportGroup(
+    groupId: id,
+    name: _displayNameFromFileName(originalName),
+    modelTaskId: modelTask.id,
+    projectorTaskId: projectorTaskId,
+    hasProjector: projectorFinalPath != null,
+  );
+}
+
+/// Post-transfer hook: validates the downloaded GGUF, renames it into place
+/// and persists metadata once the whole import group is published.
+Future<void> _handleImportTask(DownloadTask task) async {
+  final pending = _pendingImports[task.groupId];
+  if (pending == null) {
+    // The import group was deleted mid-chain: discard the result as an
+    // orphan file cleanup and let the task complete with a warning.
+    final part = File(task.partPath);
+    if (await part.exists()) await part.delete();
+    Log.warning(
+      'Import group ${task.groupId} disappeared; discarded ${task.kind.name} result',
+    );
+    return;
+  }
+  final file = File(task.partPath);
+  await _validateGgufFile(file);
+  await file.rename(task.finalPath);
+  if (task.kind == DownloadTaskKind.gguf) {
+    pending.modelPublished = true;
+  } else {
+    pending.projectorPublished = true;
+    pending.publishedProjectorPath = task.finalPath;
+  }
+  if (pending.modelPublished &&
+      (!pending.hasProjector || pending.projectorPublished)) {
+    final metadata = ImportedGgufModelMetadata(
+      id: pending.groupId,
+      name: pending.name,
+      filePath: pending.modelFinalPath,
+      projectorPath: pending.publishedProjectorPath,
+      fileSizeBytes: await File(pending.modelFinalPath).length(),
+      importedAt: DateTime.now(),
+      source: OnDeviceImportedSource.huggingFace,
+      sourceUrl: pending.sourceUrl,
+    );
+    final models = load().where((m) => m.id != pending.groupId).toList();
+    await saveAll([...models, metadata]);
+    _pendingImports.remove(pending.groupId);
+    _groupWaiters.remove(pending.groupId)?.completer.complete(metadata);
+  }
+}
+
+/// Failure hook: rolls published files of the group back so storage stays
+/// clean, matching the previous all-or-nothing import behavior.
+Future<void> _handleImportFailure(DownloadTask task, Object error) async {
+  final pending = _pendingImports[task.groupId];
+  if (pending == null) return;
+  if (pending.modelPublished && await File(pending.modelFinalPath).exists()) {
+    await File(pending.modelFinalPath).delete();
+  }
+  if (pending.publishedProjectorPath != null &&
+      await File(pending.publishedProjectorPath!).exists()) {
+    await File(pending.publishedProjectorPath!).delete();
+  }
+  _pendingImports.remove(pending.groupId);
+  await _engine?.deleteGroup(pending.groupId);
+  Log.error('Import group ${task.groupId} failed: $error');
+  _groupWaiters.remove(pending.groupId)?.completer.completeError(error);
+}
+
+DownloadEngine _requireEngine() {
+  final engine = _engine;
+  if (engine == null) {
+    throw StateError('Download engine is not wired to this repository');
+  }
+  return engine;
+}
+
+/// Legacy-compatible Hugging Face import: enqueues through the engine and
+/// awaits the whole group, forwarding progress and honoring [cancelToken].
+Future<ImportedGgufModelMetadata> importFromHuggingFaceUrl(
+  String sourceUrl, {
+  String? projectorUrl,
+  String? token,
+  void Function(int receivedBytes, int totalBytes)? onProgress,
+  CancelToken? cancelToken,
+}) async {
+  final engine = _requireEngine();
+  final group = await enqueueHuggingFaceImport(
+    sourceUrl: sourceUrl,
+    projectorUrl: projectorUrl,
+    token: token,
+  );
+  if (cancelToken != null && cancelToken.isCancelled) {
+    await engine.deleteGroup(group.groupId);
+    _pendingImports.remove(group.groupId);
+    throw const HttpException('GGUF import canceled.');
+  }
+  final waiter = _GroupWaiter(onProgress: onProgress);
+  _groupWaiters[group.groupId] = waiter;
+  if (cancelToken != null) {
+    unawaited(
+      cancelToken.whenCancel.then((_) {
+        unawaited(engine.cancel(group.modelTaskId));
+        final projector = group.projectorTaskId;
+        if (projector != null) unawaited(engine.cancel(projector));
+        if (!waiter.completer.isCompleted) {
+          waiter.completer
+              .completeError(const HttpException('GGUF import canceled.'));
+        }
+      }),
+    );
+  }
+  // Progress lives on engine changes; completion/errors arrive through the
+  // waiter registered above (state-emission order independent).
+  final progressSub = engine.changes.listen((tasks) {
+    if (onProgress == null || waiter.completer.isCompleted) return;
+    final groupTasks = tasks.where((t) => t.groupId == group.groupId);
+    for (final t in groupTasks) {
+      if (t.totalBytes > 0) {
+        onProgress(t.receivedBytes, t.totalBytes);
+      }
+    }
+  });
+  try {
+    return await waiter.completer.future;
+  } finally {
+    await progressSub.cancel();
+    _groupWaiters.remove(group.groupId);
+  }
+}
+
   Future<void> delete(String id) async {
+    await _engine?.deleteGroup(id);
     final current = load();
     final kept = <ImportedGgufModelMetadata>[];
 
@@ -776,25 +898,6 @@ class ImportedGgufModelRepository {
         'The selected file is not a valid GGUF model.',
       );
     }
-  }
-
-  String _friendlyDioError(DioException error) {
-    final statusCode = error.response?.statusCode;
-    if (statusCode == 401 || statusCode == 403) {
-      return 'Hugging Face denied access to this file. Add a valid Hugging Face token in Settings for gated or private models.';
-    }
-    if (statusCode == 404) {
-      return 'The GGUF file could not be found on Hugging Face.';
-    }
-    if (statusCode != null) {
-      return 'Failed to download GGUF from Hugging Face (HTTP $statusCode).';
-    }
-    if (error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.sendTimeout ||
-        error.type == DioExceptionType.receiveTimeout) {
-      return 'The GGUF download timed out. Please try again on a stable connection.';
-    }
-    return error.message ?? 'Failed to download GGUF from Hugging Face.';
   }
 
   String _createId(String fileName) {

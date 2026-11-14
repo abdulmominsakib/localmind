@@ -448,15 +448,21 @@
   "@bulk_ai_rename_progress": {
     "description": "Progress text while AI-renaming multiple conversations",
     "placeholders": {
-      "done": {"type": "int"},
-      "total": {"type": "int"}
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "selected_count": "{count} selected",
   "@selected_count": {
     "description": "Header shown in selection mode",
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "ai_rename_tooltip": "Rename selected with AI",
@@ -471,7 +477,9 @@
   "@total_tokens_count": {
     "description": "Total token count shown under the chat text field",
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "smart_replies_use_persona": "Use persona in smart replies",
@@ -538,7 +546,9 @@
   "@bulk_export_conversations_success": {
     "description": "Success message after bulk-exporting conversations",
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "bulk_ai_rename_confirm_title": "Rename with AI?",
@@ -549,7 +559,9 @@
   "@bulk_ai_rename_confirm_body": {
     "description": "Body text for the bulk AI rename confirmation dialog",
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sort_by_modified_date": "Last modified",
@@ -3062,13 +3074,17 @@
   "token_count": "{count} tokens",
   "@token_count": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "estimated_token_count": "~{count} tokens (estimated)",
   "@estimated_token_count": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "test_tts_section_title": "Test voice",
@@ -3180,7 +3196,9 @@
   "lm_studio_models_count": "{count} models",
   "@lm_studio_models_count": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "lm_studio_browse_models": "Browse & download",
@@ -3223,13 +3241,17 @@
   "lm_studio_download_size": "Download {size}",
   "@lm_studio_download_size": {
     "placeholders": {
-      "size": { "type": "String" }
+      "size": {
+        "type": "String"
+      }
     }
   },
   "lm_studio_downloading_percent": "Downloading {percent}%",
   "@lm_studio_downloading_percent": {
     "placeholders": {
-      "percent": { "type": "int" }
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "lm_studio_readme_unavailable": "README not available for this model.",
@@ -3522,7 +3544,14 @@
   "stt_error_language": "The speech recognizer on this device doesn't support your language.",
   "stt_error_unavailable": "No speech recognition service found on this device. Install a voice input app (for example FUTO Voice Input) and set it as the default speech recognizer.",
   "stt_error_generic": "Speech recognition error: {code}",
-  "@stt_error_generic": {"description": "Fallback speech recognition error with the platform error name", "placeholders": {"code": {"type": "String"}}},
+  "@stt_error_generic": {
+    "description": "Fallback speech recognition error with the platform error name",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "send_temperature_to_api": "Send temperature",
   "send_top_p_to_api": "Send Top P",
   "send_sampling_params_desc": "Turn off for providers or models that reject this parameter (for example some reasoning models). Applies to all chats with remote servers.",
@@ -3530,13 +3559,34 @@
   "default_system_prompt_desc": "Used for chats that have no persona and no chat-specific system prompt.",
   "default_system_prompt_hint": "You are a helpful assistant…",
   "background_generation_notice": "Still replying in \"{title}\". You can send here once it finishes. Tap to open.",
-  "@background_generation_notice": {"description": "Notice above the input while another chat's reply generates in the background", "placeholders": {"title": {"type": "String"}}},
+  "@background_generation_notice": {
+    "description": "Notice above the input while another chat's reply generates in the background",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "background_generation_notice_untitled": "Another chat is still replying. You can send here once it finishes. Tap to open.",
   "background_generation_notice_info": "Replying in \"{title}\" in the background. Tap to open.",
-  "@background_generation_notice_info": {"description": "Non-blocking notice when a remote chat is replying in the background", "placeholders": {"title": {"type": "String"}}},
+  "@background_generation_notice_info": {
+    "description": "Non-blocking notice when a remote chat is replying in the background",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "background_generation_notice_info_untitled": "Another chat is replying in the background. Tap to open.",
   "background_generation_notice_multiple": "{count} chats are replying in the background.",
-  "@background_generation_notice_multiple": {"description": "Notice when multiple chats are replying in the background", "placeholders": {"count": {"type": "int"}}},
+  "@background_generation_notice_multiple": {
+    "description": "Notice when multiple chats are replying in the background",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "background_generation_chat_untitled": "Untitled chat",
   "model_loaded_status": "Loaded",
   "@model_loaded_status": {
@@ -3546,13 +3596,34 @@
   "new_chat_on_device_headline": "It stays on this phone.",
   "new_chat_on_device_detail": "Replies are generated right here — no upload, no account, works offline.",
   "new_chat_self_hosted_headline": "Answered by {server}.",
-  "@new_chat_self_hosted_headline": {"description": "Second line of the new-chat heading for a self-hosted or OpenAI-compatible server", "placeholders": {"server": {"type": "String"}}},
+  "@new_chat_self_hosted_headline": {
+    "description": "Second line of the new-chat heading for a self-hosted or OpenAI-compatible server",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
   "new_chat_self_hosted_detail": "Messages go to your own server, not to a third party.",
   "new_chat_endpoint_detail": "Messages are sent to {server}, an OpenAI-compatible endpoint.",
-  "@new_chat_endpoint_detail": {"description": "New-chat note for an OpenAI-compatible server", "placeholders": {"server": {"type": "String"}}},
+  "@new_chat_endpoint_detail": {
+    "description": "New-chat note for an OpenAI-compatible server",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
   "new_chat_cloud_headline": "Answered in the cloud.",
   "new_chat_router_detail": "Messages are sent to {provider} and the model provider it routes to.",
-  "@new_chat_router_detail": {"description": "New-chat note for a routing cloud provider such as OpenRouter or Requesty", "placeholders": {"provider": {"type": "String"}}},
+  "@new_chat_router_detail": {
+    "description": "New-chat note for a routing cloud provider such as OpenRouter or Requesty",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
   "new_chat_ollama_cloud_detail": "Messages are sent to Ollama's cloud service.",
   "new_chat_no_server_headline": "Pick a model to begin.",
   "new_chat_no_server_detail": "Run one on this phone or connect a server.",
@@ -3627,5 +3698,19 @@
   "image_generation_invalid": "The provider returned an invalid or unsupported image.",
   "image_generation_failed": "Could not generate an image. Check the connection and try again.",
   "image_generation_save_failed": "Could not save the generated image. Check available storage and try again.",
-  "image_generation_share": "Share image"
+  "image_generation_share": "Share image",
+  "download_tasks_title": "Downloads",
+  "download_tasks_subtitle": "Hugging Face imports in progress or finished. Paused transfers resume from where they stopped.",
+  "download_state_queued": "Queued",
+  "download_state_running": "Downloading",
+  "download_state_paused": "Paused",
+  "download_state_failed": "Failed",
+  "download_state_completed": "Completed",
+  "download_state_canceled": "Canceled",
+  "download_action_pause": "Pause",
+  "download_action_resume": "Resume",
+  "download_action_cancel": "Cancel",
+  "download_action_retry": "Retry",
+  "download_action_delete": "Delete",
+  "gguf_import_queued_message": "import queued — track it under Downloads"
 }

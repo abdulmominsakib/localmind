@@ -1,5 +1,4 @@
 import 'package:hugeicons/hugeicons.dart';
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/utils/safe_file_picker.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:path/path.dart' as p;
+import 'package:localmind/features/on_device/data/download_task.dart';
 import 'package:localmind/features/on_device/data/imported_gguf_model_repository.dart';
 import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:localmind/features/on_device/providers/foreground_download_providers.dart';
@@ -49,6 +49,7 @@ class _OnDeviceModelManagerScreenState
     final downloadedAsync = ref.watch(downloadedModelsProvider);
     final engineState = ref.watch(onDeviceEngineProvider);
     final downloadProgress = ref.watch(foregroundDownloadNotifierProvider);
+    final importTasks = ref.watch(downloadTasksProvider);
 
     final importedModels = models.where((model) => model.isImported).toList()
       ..sort(
@@ -70,6 +71,8 @@ class _OnDeviceModelManagerScreenState
             padding: const EdgeInsets.all(16),
             children: [
               const MemoryStatsPanel(),
+              if (importTasks.isNotEmpty)
+                _DownloadTasksSection(tasks: importTasks),
               _ImportOverviewCard(
                 importedModels: importedModels,
                 onImportLocalGguf: () => _importLocalGguf(context),
@@ -624,6 +627,222 @@ class _EmptyImportedModelsCard extends StatelessWidget {
   }
 }
 
+
+/// Live download-engine task list shown on the model manager screen.
+class _DownloadTasksSection extends ConsumerWidget {
+  const _DownloadTasksSection({required this.tasks});
+
+  final List<DownloadTask> tasks;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: l10n.download_tasks_title,
+          subtitle: l10n.download_tasks_subtitle,
+        ),
+        const SizedBox(height: 4),
+        ...tasks.map((task) => _DownloadTaskCard(task: task, ref: ref)),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+}
+
+class _DownloadTaskCard extends ConsumerWidget {
+  const _DownloadTaskCard({required this.task, required this.ref});
+
+  final DownloadTask task;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final fileName = p.basename(task.finalPath);
+    final progress =
+        (task.totalBytes > 0 && task.receivedBytes <= task.totalBytes)
+            ? task.receivedBytes / task.totalBytes
+            : null;
+    final stateLabel = switch (task.state) {
+      DownloadTaskState.queued => l10n.download_state_queued,
+      DownloadTaskState.running => l10n.download_state_running,
+      DownloadTaskState.paused => l10n.download_state_paused,
+      DownloadTaskState.failed => l10n.download_state_failed,
+      DownloadTaskState.completed => l10n.download_state_completed,
+      DownloadTaskState.canceled => l10n.download_state_canceled,
+    };
+
+    final actions = <Widget>[];
+    switch (task.state) {
+      case DownloadTaskState.running:
+        actions.add(_TaskAction(
+          icon: HugeIcons.strokeRoundedPause,
+          tooltip: l10n.download_action_pause,
+          onPressed: () =>
+              ref.read(downloadEngineProvider).pause(task.id),
+        ));
+        actions.add(_TaskAction(
+          icon: HugeIcons.strokeRoundedCancel01,
+          tooltip: l10n.download_action_cancel,
+          onPressed: () =>
+              ref.read(downloadEngineProvider).cancel(task.id),
+        ));
+      case DownloadTaskState.paused:
+      case DownloadTaskState.canceled:
+        actions.add(_TaskAction(
+          icon: HugeIcons.strokeRoundedPlay,
+          tooltip: l10n.download_action_resume,
+          onPressed: () =>
+              ref.read(downloadEngineProvider).resume(task.id),
+        ));
+        actions.add(_TaskAction(
+          icon: HugeIcons.strokeRoundedDelete02,
+          tooltip: l10n.download_action_delete,
+          onPressed: () =>
+              ref.read(downloadEngineProvider).delete(task.id),
+        ));
+      case DownloadTaskState.failed:
+        actions.add(_TaskAction(
+          icon: HugeIcons.strokeRoundedRefresh,
+          tooltip: l10n.download_action_retry,
+          onPressed: () =>
+              ref.read(downloadEngineProvider).retry(task.id),
+        ));
+        actions.add(_TaskAction(
+          icon: HugeIcons.strokeRoundedDelete02,
+          tooltip: l10n.download_action_delete,
+          onPressed: () =>
+              ref.read(downloadEngineProvider).delete(task.id),
+        ));
+      case DownloadTaskState.queued:
+        actions.add(_TaskAction(
+          icon: HugeIcons.strokeRoundedCancel01,
+          tooltip: l10n.download_action_cancel,
+          onPressed: () =>
+              ref.read(downloadEngineProvider).cancel(task.id),
+        ));
+      case DownloadTaskState.completed:
+        break;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: task.state == DownloadTaskState.failed
+                        ? Colors.red.withValues(alpha: 0.12)
+                        : theme.colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    stateLabel,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: task.state == DownloadTaskState.failed
+                          ? Colors.red.shade700
+                          : theme.colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (task.state == DownloadTaskState.running && progress != null)
+              LinearProgressIndicator(value: progress.clamp(0.0, 1.0))
+            else if (task.state == DownloadTaskState.failed &&
+                task.error != null)
+              Text(
+                task.error!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.red.shade700,
+                ),
+              )
+            else
+              LinearProgressIndicator(value: progress),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  '${_formatDownloadBytes(task.receivedBytes)} / '
+                  '${_formatDownloadBytes(task.totalBytes)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                const Spacer(),
+                ...actions,
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TaskAction extends StatelessWidget {
+  const _TaskAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final List<List<dynamic>> icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      icon: HugeIcon(icon: icon, size: 20),
+    );
+  }
+}
+
+String _formatDownloadBytes(int bytes) {
+  if (bytes >= 1024 * 1024 * 1024) {
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  }
+  if (bytes >= 1024 * 1024) {
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+  if (bytes >= 1024) {
+    return '${(bytes / 1024).toStringAsFixed(0)} KB';
+  }
+  return '$bytes B';
+}
+
 class _HuggingFaceGgufImportDialog extends ConsumerStatefulWidget {
   const _HuggingFaceGgufImportDialog();
 
@@ -640,15 +859,10 @@ class _HuggingFaceGgufImportDialogState
 
   final TextEditingController _urlController = TextEditingController();
   final TextEditingController _projectorUrlController = TextEditingController();
-  CancelToken? _cancelToken;
-  bool _isImporting = false;
   String? _error;
-  int _receivedBytes = 0;
-  int _totalBytes = 0;
 
   @override
   void dispose() {
-    _cancelToken?.cancel();
     _urlController.dispose();
     _projectorUrlController.dispose();
     super.dispose();
@@ -665,7 +879,6 @@ class _HuggingFaceGgufImportDialogState
     );
     final input = _urlController.text.trim();
     final preview = _ImportUrlPreview.fromInput(input);
-    final progress = _totalBytes > 0 ? _receivedBytes / _totalBytes : null;
     final dialogWidth = MediaQuery.of(context).size.width > 560
         ? 520.0
         : MediaQuery.of(context).size.width * 0.82;
@@ -707,7 +920,6 @@ class _HuggingFaceGgufImportDialogState
               const SizedBox(height: 14),
               TextField(
                 controller: _urlController,
-                enabled: !_isImporting,
                 maxLines: 2,
                 minLines: 1,
                 keyboardType: TextInputType.url,
@@ -719,11 +931,7 @@ class _HuggingFaceGgufImportDialogState
                     setState(() {});
                   }
                 },
-                onSubmitted: (_) {
-                  if (!_isImporting) {
-                    _startImport();
-                  }
-                },
+                onSubmitted: (_) => _startImport(),
                 decoration: InputDecoration(
                   labelText: l10n.gguf_url_or_repo_path,
                   hintText:
@@ -745,7 +953,7 @@ class _HuggingFaceGgufImportDialogState
                 runSpacing: 8,
                 children: [
                   OutlinedButton.icon(
-                    onPressed: _isImporting ? null : _pasteFromClipboard,
+                    onPressed: _pasteFromClipboard,
                     icon: const HugeIcon(
                       icon: HugeIcons.strokeRoundedClipboard,
                       size: 18,
@@ -753,9 +961,7 @@ class _HuggingFaceGgufImportDialogState
                     label: Text(l10n.paste),
                   ),
                   OutlinedButton.icon(
-                    onPressed: _isImporting || input.isEmpty
-                        ? null
-                        : _clearInput,
+                    onPressed: input.isEmpty ? null : _clearInput,
                     icon: const HugeIcon(
                       icon: HugeIcons.strokeRoundedCancel01,
                       size: 18,
@@ -763,9 +969,7 @@ class _HuggingFaceGgufImportDialogState
                     label: Text(l10n.clear_huggingface_token),
                   ),
                   OutlinedButton.icon(
-                    onPressed: _isImporting
-                        ? null
-                        : () => _openHuggingFace(context),
+                    onPressed: () => _openHuggingFace(context),
                     icon: const HugeIcon(
                       icon: HugeIcons.strokeRoundedShare01,
                       size: 18,
@@ -781,7 +985,6 @@ class _HuggingFaceGgufImportDialogState
               const SizedBox(height: 12),
               TextField(
                 controller: _projectorUrlController,
-                enabled: !_isImporting,
                 maxLines: 1,
                 keyboardType: TextInputType.url,
                 textInputAction: TextInputAction.done,
@@ -848,75 +1051,6 @@ class _HuggingFaceGgufImportDialogState
                   ],
                 ),
               ),
-              if (_isImporting) ...[
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.14),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              preview?.fileName ?? l10n.gguf_downloading,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withValues(
-                                alpha: 0.12,
-                              ),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              progress == null
-                                  ? l10n.gguf_preparing
-                                  : '${(progress * 100).toStringAsFixed(1)}%',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _ImportProgressBar(progress: progress),
-                      const SizedBox(height: 10),
-                      Text(
-                        progress != null
-                            ? '${_formatBytes(_receivedBytes)} / ${_formatBytes(_totalBytes)}'
-                            : l10n.gguf_preparing_download,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.70,
-                          ),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -957,16 +1091,11 @@ class _HuggingFaceGgufImportDialogState
       ),
       actions: [
         TextButton(
-          onPressed: _isImporting
-              ? () {
-                  _cancelToken?.cancel();
-                  Navigator.of(context).pop();
-                }
-              : () => Navigator.of(context).pop(),
-          child: Text(_isImporting ? l10n.gguf_cancel_import : l10n.cancel),
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton.icon(
-          onPressed: _isImporting || input.isEmpty ? null : _startImport,
+          onPressed: input.isEmpty ? null : _startImport,
           icon: const HugeIcon(
             icon: HugeIcons.strokeRoundedDownload01,
             size: 18,
@@ -1031,6 +1160,7 @@ class _HuggingFaceGgufImportDialogState
   }
 
   Future<void> _startImport() async {
+    final l10n = AppLocalizations.of(context)!;
     final sourceUrl = _urlController.text.trim();
     if (sourceUrl.isEmpty) {
       setState(() {
@@ -1039,42 +1169,31 @@ class _HuggingFaceGgufImportDialogState
       return;
     }
 
-    setState(() {
-      _isImporting = true;
-      _error = null;
-      _receivedBytes = 0;
-      _totalBytes = 0;
-    });
-
-    _cancelToken = CancelToken();
-
+    final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       final huggingFaceToken = ref.read(
         settingsProvider.select((settings) => settings.huggingFaceToken),
       );
       final projectorUrl = _projectorUrlController.text.trim();
-      final model = await ref
+      final group = await ref
           .read(importedGgufModelsProvider.notifier)
-          .importModelFromHuggingFaceUrl(
-            sourceUrl,
+          .enqueueHuggingFaceImport(
+            sourceUrl: sourceUrl,
             projectorUrl: projectorUrl.isNotEmpty ? projectorUrl : null,
-            huggingFaceToken: huggingFaceToken,
-            cancelToken: _cancelToken,
-            onProgress: (receivedBytes, totalBytes) {
-              if (!mounted) return;
-              setState(() {
-                _receivedBytes = receivedBytes;
-                _totalBytes = totalBytes > 0 ? totalBytes : 0;
-              });
-            },
+            token: huggingFaceToken,
           );
-
       if (!mounted) return;
-      Navigator.of(context).pop(model);
+      Navigator.of(context).pop();
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(
+            '${group.name} ${l10n.gguf_import_queued_message}',
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _isImporting = false;
         _error = _friendlyError(e);
       });
     }
@@ -1110,15 +1229,6 @@ class _HuggingFaceGgufImportDialogState
     }
   }
 
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    final kb = bytes / 1024;
-    if (kb < 1024) return '${kb.toStringAsFixed(0)} KB';
-    final mb = kb / 1024;
-    if (mb < 1024) return '${mb.toStringAsFixed(1)} MB';
-    final gb = mb / 1024;
-    return '${gb.toStringAsFixed(2)} GB';
-  }
 }
 
 class _ImportPreviewCard extends StatelessWidget {
@@ -1244,32 +1354,6 @@ class _PreviewRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ImportProgressBar extends StatelessWidget {
-  const _ImportProgressBar({required this.progress});
-
-  final double? progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final trackColor = theme.colorScheme.primary.withValues(alpha: 0.12);
-    final fillColor = theme.colorScheme.primary;
-    final normalizedProgress = progress?.clamp(0.0, 1.0);
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: SizedBox(
-        height: 10,
-        child: LinearProgressIndicator(
-          value: normalizedProgress?.toDouble(),
-          backgroundColor: trackColor,
-          valueColor: AlwaysStoppedAnimation<Color>(fillColor),
-        ),
       ),
     );
   }

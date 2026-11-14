@@ -3545,4 +3545,48 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get image_generation_share => 'इमेज शेयर करें';
+
+  @override
+  String get download_tasks_title => 'Downloads';
+
+  @override
+  String get download_tasks_subtitle =>
+      'Hugging Face imports in progress or finished. Paused transfers resume from where they stopped.';
+
+  @override
+  String get download_state_queued => 'Queued';
+
+  @override
+  String get download_state_running => 'Downloading';
+
+  @override
+  String get download_state_paused => 'Paused';
+
+  @override
+  String get download_state_failed => 'Failed';
+
+  @override
+  String get download_state_completed => 'Completed';
+
+  @override
+  String get download_state_canceled => 'Canceled';
+
+  @override
+  String get download_action_pause => 'Pause';
+
+  @override
+  String get download_action_resume => 'Resume';
+
+  @override
+  String get download_action_cancel => 'Cancel';
+
+  @override
+  String get download_action_retry => 'Retry';
+
+  @override
+  String get download_action_delete => 'Delete';
+
+  @override
+  String get gguf_import_queued_message =>
+      'import queued — track it under Downloads';
 }

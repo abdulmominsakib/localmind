@@ -45,6 +45,7 @@ dependencies:
   characters: ^1.4.0
   dio: ^5.9.2
   flutter_secure_storage: ^10.3.1
+  ffi: ^2.1.0
   aws_common: ^0.7.7
   aws_signature_v4: ^0.6.11
   cryptography: ^2.9.0

@@ -69,7 +69,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "bn": [
@@ -146,7 +160,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "de": [
@@ -223,7 +251,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "es": [
@@ -300,7 +342,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "fr": [
@@ -377,7 +433,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "hi": [
@@ -454,7 +524,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "it": [
@@ -531,7 +615,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "ja": [
@@ -608,7 +706,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "ko": [
@@ -671,7 +783,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "pt": [
@@ -734,7 +860,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "ru": [
@@ -811,7 +951,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "tr": [
@@ -888,7 +1042,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "zh": [
@@ -965,7 +1133,21 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ],
 
   "zh_TW": [
@@ -1042,6 +1224,20 @@
     "image_generation_timeout",
     "image_generation_invalid",
     "image_generation_failed",
-    "image_generation_save_failed"
+    "image_generation_save_failed",
+    "download_tasks_title",
+    "download_tasks_subtitle",
+    "download_state_queued",
+    "download_state_running",
+    "download_state_paused",
+    "download_state_failed",
+    "download_state_completed",
+    "download_state_canceled",
+    "download_action_pause",
+    "download_action_resume",
+    "download_action_cancel",
+    "download_action_retry",
+    "download_action_delete",
+    "gguf_import_queued_message"
   ]
 }

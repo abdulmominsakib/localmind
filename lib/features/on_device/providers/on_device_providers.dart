@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_gemma/flutter_gemma.dart' show PreferredBackend;
 import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../../../core/utils/async_operation_queue.dart';
 import '../../../core/inference/local_inference.dart';
@@ -17,6 +19,9 @@ import '../../../core/providers/chat_background_service_provider.dart';
 import '../../../core/providers/review_prompt_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/storage_providers.dart';
+import '../data/download_engine.dart';
+import '../data/download_task.dart';
+import '../data/disk_space.dart';
 import '../data/imported_gguf_model_repository.dart';
 import '../data/models/on_device_model.dart';
 import '../data/notification_permission_service.dart';
@@ -69,8 +74,42 @@ final importedGgufModelRepositoryProvider =
       return ImportedGgufModelRepository(
         ref.read(sharedPreferencesProvider),
         ref.read(dioProvider),
+        engine: ref.watch(downloadEngineProvider),
       );
     });
+
+final downloadEngineProvider = Provider<DownloadEngine>((ref) {
+  final engine = DownloadEngine(
+    store: DownloadTaskStore(ref.read(sharedPreferencesProvider)),
+    dio: ref.read(dioProvider),
+    workDirectory: () async {
+      final supportDir = await getApplicationSupportDirectory();
+      final dir = Directory(p.join(supportDir.path, 'imported_gguf_models'));
+      return dir;
+    },
+    tokenResolver: () => ref.read(settingsProvider).huggingFaceToken,
+    freeDiskSpaceBytes: freeDiskSpaceBytes,
+  );
+  ref.onDispose(() => engine.dispose());
+  return engine;
+});
+
+final downloadTasksProvider =
+    NotifierProvider<DownloadTasksNotifier, List<DownloadTask>>(
+      DownloadTasksNotifier.new,
+    );
+
+class DownloadTasksNotifier extends Notifier<List<DownloadTask>> {
+  @override
+  List<DownloadTask> build() {
+    final engine = ref.watch(downloadEngineProvider);
+    final sub = engine.changes.listen((tasks) {
+      if (ref.mounted) state = tasks;
+    });
+    ref.onDispose(() => unawaited(sub.cancel()));
+    return engine.tasks;
+  }
+}
 
 final importedGgufModelsProvider =
     NotifierProvider<ImportedGgufModelsNotifier, List<OnDeviceModel>>(() {
@@ -234,7 +273,47 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
         }
       });
     }
+    _watchEngineTerminalStates();
     return _repository.load().map((model) => model.toOnDeviceModel()).toList();
+  }
+
+  /// Reloads the imported list whenever a download task reaches a terminal
+  /// state (publish, rollback or cancel changes what the repository holds).
+  void _watchEngineTerminalStates() {
+    final prevStates = <String, DownloadTaskState>{};
+    final sub = ref
+        .read(downloadEngineProvider)
+        .changes
+        .listen((tasks) {
+      if (!ref.mounted) return;
+      var terminalChanged = false;
+      for (final task in tasks) {
+        final prev = prevStates[task.id];
+        if (prev != task.state &&
+            (task.state == DownloadTaskState.completed ||
+                task.state == DownloadTaskState.failed ||
+                task.state == DownloadTaskState.canceled)) {
+          terminalChanged = true;
+        }
+        prevStates[task.id] = task.state;
+      }
+      if (terminalChanged) {
+        state = _repository.load().map((m) => m.toOnDeviceModel()).toList();
+      }
+    });
+    ref.onDispose(() => unawaited(sub.cancel()));
+  }
+
+  Future<HuggingFaceImportGroup> enqueueHuggingFaceImport({
+    required String sourceUrl,
+    String? projectorUrl,
+    String? token,
+  }) {
+    return _repository.enqueueHuggingFaceImport(
+      sourceUrl: sourceUrl,
+      projectorUrl: projectorUrl,
+      token: token,
+    );
   }
 
   Future<OnDeviceModel> importModel(

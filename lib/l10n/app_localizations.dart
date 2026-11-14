@@ -6518,6 +6518,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share image'**
   String get image_generation_share;
+
+  /// No description provided for @download_tasks_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads'**
+  String get download_tasks_title;
+
+  /// No description provided for @download_tasks_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hugging Face imports in progress or finished. Paused transfers resume from where they stopped.'**
+  String get download_tasks_subtitle;
+
+  /// No description provided for @download_state_queued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get download_state_queued;
+
+  /// No description provided for @download_state_running.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading'**
+  String get download_state_running;
+
+  /// No description provided for @download_state_paused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get download_state_paused;
+
+  /// No description provided for @download_state_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get download_state_failed;
+
+  /// No description provided for @download_state_completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get download_state_completed;
+
+  /// No description provided for @download_state_canceled.
+  ///
+  /// In en, this message translates to:
+  /// **'Canceled'**
+  String get download_state_canceled;
+
+  /// No description provided for @download_action_pause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get download_action_pause;
+
+  /// No description provided for @download_action_resume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get download_action_resume;
+
+  /// No description provided for @download_action_cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get download_action_cancel;
+
+  /// No description provided for @download_action_retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get download_action_retry;
+
+  /// No description provided for @download_action_delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get download_action_delete;
+
+  /// No description provided for @gguf_import_queued_message.
+  ///
+  /// In en, this message translates to:
+  /// **'import queued — track it under Downloads'**
+  String get gguf_import_queued_message;
 }
 
 class _AppLocalizationsDelegate
