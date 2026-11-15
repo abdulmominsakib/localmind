@@ -17,6 +17,14 @@ class TtsInitRequest extends TtsWorkerMessage {
   final String dataDir;
   final String lexicon;
 
+  /// Jieba dict directory for lexicon-driven Chinese models (Melo). Empty
+  /// for espeak-phonemized models (Piper, Kitten).
+  final String dictDir;
+
+  /// Comma-separated FST rule files normalizing dates/numbers/phones before
+  /// synthesis (Melo and Kokoro ship them). Empty for the other engines.
+  final String ruleFsts;
+
   TtsInitRequest({
     required this.engineId,
     required this.modelPath,
@@ -24,6 +32,8 @@ class TtsInitRequest extends TtsWorkerMessage {
     required this.tokensPath,
     required this.dataDir,
     required this.lexicon,
+    this.dictDir = '',
+    this.ruleFsts = '',
   });
 }
 
@@ -171,7 +181,10 @@ void validateTtsModelFiles(TtsInitRequest request) {
   final required = <String>[
     request.modelPath,
     request.tokensPath,
-    if (request.engineId == EngineId.kitten) request.voicesPath,
+    if (request.engineId == EngineId.kitten ||
+        request.engineId == EngineId.kokoro)
+      request.voicesPath,
+    if (request.lexicon.isNotEmpty) request.lexicon,
   ];
   for (final path in required) {
     final file = File(path);
@@ -188,15 +201,24 @@ void validateTtsModelFiles(TtsInitRequest request) {
       'Delete the voice and download it again.',
     );
   }
+  if (request.dictDir.isNotEmpty && !Directory(request.dictDir).existsSync()) {
+    throw StateError(
+      'TTS dict folder is missing: ${request.dictDir}. '
+      'Delete the voice and download it again.',
+    );
+  }
 }
 
 sherpa_onnx.OfflineTts _createTts(TtsInitRequest message) {
-  final vits = message.engineId == EngineId.piper
+  final usesVits =
+      message.engineId == EngineId.piper || message.engineId == EngineId.melo;
+  final vits = usesVits
       ? sherpa_onnx.OfflineTtsVitsModelConfig(
           model: message.modelPath,
           tokens: message.tokensPath,
           dataDir: message.dataDir,
           lexicon: message.lexicon,
+          dictDir: message.dictDir,
         )
       : sherpa_onnx.OfflineTtsVitsModelConfig();
 
@@ -209,9 +231,20 @@ sherpa_onnx.OfflineTts _createTts(TtsInitRequest message) {
         )
       : sherpa_onnx.OfflineTtsKittenModelConfig();
 
+  final kokoro = message.engineId == EngineId.kokoro
+      ? sherpa_onnx.OfflineTtsKokoroModelConfig(
+          model: message.modelPath,
+          voices: message.voicesPath,
+          tokens: message.tokensPath,
+          dataDir: message.dataDir,
+          lexicon: message.lexicon,
+        )
+      : sherpa_onnx.OfflineTtsKokoroModelConfig();
+
   final modelConfig = sherpa_onnx.OfflineTtsModelConfig(
     vits: vits,
     kitten: kitten,
+    kokoro: kokoro,
     numThreads: 2,
     debug: false,
     provider: 'cpu',
@@ -219,6 +252,7 @@ sherpa_onnx.OfflineTts _createTts(TtsInitRequest message) {
 
   final config = sherpa_onnx.OfflineTtsConfig(
     model: modelConfig,
+    ruleFsts: message.ruleFsts,
     maxNumSenetences: 1,
   );
 
@@ -226,12 +260,15 @@ sherpa_onnx.OfflineTts _createTts(TtsInitRequest message) {
 }
 
 int _resolveSpeakerId(EngineId engine, String voiceId) {
-  if (engine == EngineId.piper) {
+  if (engine == EngineId.piper || engine == EngineId.melo) {
     return 0;
   }
   final voices = voicesForEngine(engine);
   final index = voices.indexWhere((voice) => voice.id == voiceId);
-  return index < 0 ? 0 : index;
+  if (index < 0) {
+    return 0;
+  }
+  return voices[index].speakerId;
 }
 
 Uint8List _createWav(Float32List samples, int sampleRate) {

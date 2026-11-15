@@ -633,6 +633,12 @@ Future<HuggingFaceImportGroup> enqueueHuggingFaceImport({
 /// Post-transfer hook: validates the downloaded GGUF, renames it into place
 /// and persists metadata once the whole import group is published.
 Future<void> _handleImportTask(DownloadTask task) async {
+  // Other consumers (e.g. TTS bundles) register their own hooks on the
+  // shared engine; their tasks are not import-group business.
+  if (task.kind != DownloadTaskKind.gguf &&
+      task.kind != DownloadTaskKind.projector) {
+    return;
+  }
   final pending = _pendingImports[task.groupId];
   if (pending == null) {
     // The import group was deleted mid-chain: discard the result as an

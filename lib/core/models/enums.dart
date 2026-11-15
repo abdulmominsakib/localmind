@@ -1,6 +1,6 @@
 import '../constants/app_constants.dart';
 
-enum EngineId { system, kitten, piper }
+enum EngineId { system, kitten, piper, melo, kokoro }
 
 class EngineMeta {
   final String name;
@@ -46,12 +46,34 @@ class EngineMeta {
     accentColor: 0xFF4CAF50,
   );
 
+  static const melo = EngineMeta(
+    name: 'Melo TTS',
+    tagline: 'Chinese-English VITS',
+    sizeMb: 170,
+    ramMb: 400,
+    voiceCount: 1,
+    accentColor: 0xFFE91E63,
+  );
+
+  static const kokoro = EngineMeta(
+    name: 'Kokoro TTS',
+    tagline: 'Chinese-English neural voices',
+    sizeMb: 115,
+    ramMb: 300,
+    voiceCount: 15,
+    accentColor: 0xFF3F51B5,
+  );
+
   static EngineMeta forEngine(EngineId engine) {
     switch (engine) {
       case EngineId.kitten:
         return kitten;
       case EngineId.piper:
         return piper;
+      case EngineId.melo:
+        return melo;
+      case EngineId.kokoro:
+        return kokoro;
       default:
         return system;
     }
@@ -66,6 +88,11 @@ class Voice {
   final String? language;
   final String gender;
 
+  /// The model's speaker index this voice maps to. List position alone is not
+  /// enough once an engine ships a curated subset (Kokoro) of a larger
+  /// speaker table; Kitten voices carry their historical index explicitly.
+  final int speakerId;
+
   const Voice({
     required this.id,
     required this.name,
@@ -73,6 +100,7 @@ class Voice {
     required this.family,
     this.language,
     required this.gender,
+    this.speakerId = 0,
   });
 }
 
@@ -82,6 +110,10 @@ List<Voice> voicesForEngine(EngineId engine) {
       return kittenVoices;
     case EngineId.piper:
       return piperVoices;
+    case EngineId.melo:
+      return meloVoices;
+    case EngineId.kokoro:
+      return kokoroVoices;
     default:
       return [];
   }
@@ -103,6 +135,7 @@ const List<Voice> kittenVoices = [
     family: 'Kitten',
     language: 'en',
     gender: 'm',
+    speakerId: 0,
   ),
   Voice(
     id: 'Bella',
@@ -111,6 +144,7 @@ const List<Voice> kittenVoices = [
     family: 'Kitten',
     language: 'en',
     gender: 'f',
+    speakerId: 1,
   ),
   Voice(
     id: 'Bruno',
@@ -119,6 +153,7 @@ const List<Voice> kittenVoices = [
     family: 'Kitten',
     language: 'en',
     gender: 'm',
+    speakerId: 2,
   ),
   Voice(
     id: 'Luna',
@@ -127,6 +162,7 @@ const List<Voice> kittenVoices = [
     family: 'Kitten',
     language: 'en',
     gender: 'f',
+    speakerId: 3,
   ),
   Voice(
     id: 'Hugo',
@@ -135,6 +171,7 @@ const List<Voice> kittenVoices = [
     family: 'Kitten',
     language: 'en',
     gender: 'm',
+    speakerId: 4,
   ),
   Voice(
     id: 'Rosie',
@@ -143,6 +180,7 @@ const List<Voice> kittenVoices = [
     family: 'Kitten',
     language: 'en',
     gender: 'f',
+    speakerId: 5,
   ),
   Voice(
     id: 'Leo',
@@ -151,6 +189,7 @@ const List<Voice> kittenVoices = [
     family: 'Kitten',
     language: 'en',
     gender: 'm',
+    speakerId: 6,
   ),
   Voice(
     id: 'Kiki',
@@ -159,6 +198,161 @@ const List<Voice> kittenVoices = [
     family: 'Kitten',
     language: 'en',
     gender: 'f',
+    speakerId: 7,
+  ),
+];
+
+const List<Voice> meloVoices = [
+  Voice(
+    id: 'mei',
+    name: 'Mei',
+    engine: EngineId.melo,
+    family: 'Melo',
+    language: 'zh',
+    gender: 'f',
+    speakerId: 0,
+  ),
+];
+
+/// Curated Chinese-first subset of kokoro-multi-lang-v1_1's 103 speakers.
+/// sid ranges follow sherpa-onnx PR #1942: 0-2 English female
+/// (af_maple / af_sol / bf_vale), 3-57 Chinese female (`zf_<sid-2>`),
+/// 58-102 Chinese male (`zm_<sid-57>`).
+const List<Voice> kokoroVoices = [
+  Voice(
+    id: 'zf_001',
+    name: 'zf_001',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'f',
+    speakerId: 3,
+  ),
+  Voice(
+    id: 'zf_005',
+    name: 'zf_005',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'f',
+    speakerId: 7,
+  ),
+  Voice(
+    id: 'zf_011',
+    name: 'zf_011',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'f',
+    speakerId: 13,
+  ),
+  Voice(
+    id: 'zf_021',
+    name: 'zf_021',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'f',
+    speakerId: 23,
+  ),
+  Voice(
+    id: 'zf_051',
+    name: 'zf_051',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'f',
+    speakerId: 53,
+  ),
+  Voice(
+    id: 'zf_055',
+    name: 'zf_055',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'f',
+    speakerId: 57,
+  ),
+  Voice(
+    id: 'zm_001',
+    name: 'zm_001',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'm',
+    speakerId: 58,
+  ),
+  Voice(
+    id: 'zm_007',
+    name: 'zm_007',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'm',
+    speakerId: 64,
+  ),
+  Voice(
+    id: 'zm_017',
+    name: 'zm_017',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'm',
+    speakerId: 74,
+  ),
+  Voice(
+    id: 'zm_027',
+    name: 'zm_027',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'm',
+    speakerId: 84,
+  ),
+  Voice(
+    id: 'zm_037',
+    name: 'zm_037',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'm',
+    speakerId: 94,
+  ),
+  Voice(
+    id: 'zm_045',
+    name: 'zm_045',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'zh',
+    gender: 'm',
+    speakerId: 102,
+  ),
+  Voice(
+    id: 'af_maple',
+    name: 'Maple (EN)',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'en',
+    gender: 'f',
+    speakerId: 0,
+  ),
+  Voice(
+    id: 'af_sol',
+    name: 'Sol (EN)',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'en',
+    gender: 'f',
+    speakerId: 1,
+  ),
+  Voice(
+    id: 'bf_vale',
+    name: 'Vale (EN)',
+    engine: EngineId.kokoro,
+    family: 'Kokoro',
+    language: 'en',
+    gender: 'f',
+    speakerId: 2,
   ),
 ];
 
@@ -187,6 +381,10 @@ EngineId engineIdFromString(String value) {
       return EngineId.kitten;
     case 'piper':
       return EngineId.piper;
+    case 'melo':
+      return EngineId.melo;
+    case 'kokoro':
+      return EngineId.kokoro;
     default:
       return EngineId.system;
   }

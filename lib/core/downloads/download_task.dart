@@ -9,8 +9,10 @@ import 'dart:io';
 enum DownloadTaskState { queued, running, paused, failed, completed, canceled }
 
 /// Kind of payload a task transfers. `projector` tasks are dependent
-/// follow-ups of a `gguf` task within the same import group.
-enum DownloadTaskKind { gguf, projector }
+/// follow-ups of a `gguf` task within the same import group; `ttsBundle`
+/// tasks carry a compressed TTS voice bundle archive extracted by the
+/// consumer's post-transfer hook.
+enum DownloadTaskKind { gguf, projector, ttsBundle }
 
 /// One queued/running/finished transfer owned by the download engine.
 class DownloadTask {

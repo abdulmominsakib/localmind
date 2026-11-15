@@ -108,6 +108,11 @@ class _VoiceModeOverlayState extends ConsumerState<VoiceModeOverlay> {
         label = 'Piper • ${voice?.name ?? 'Ryan'}';
       case EngineId.kitten:
         label = 'Kitten • ${settings.kittenTtsModelVariant.displayName}';
+      case EngineId.melo:
+        label = 'Melo • ${voiceFromSettings(settings.ttsVoiceId, EngineId.melo)?.name ?? 'Mei'}';
+      case EngineId.kokoro:
+        final voice = voiceFromSettings(settings.ttsVoiceId, EngineId.kokoro);
+        label = 'Kokoro • ${voice?.name ?? 'zf_001'}';
     }
 
     return InkWell(

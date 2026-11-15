@@ -89,7 +89,7 @@ class DownloadEngine implements DownloadLifecycleController {
       StreamController<List<DownloadTask>>.broadcast();
   final Completer<void> _ready = Completer<void>();
 
-  Future<void> Function(DownloadTask task)? _postTransfer;
+  final List<Future<void> Function(DownloadTask task)> _postTransferHooks = [];
   Future<void> _sidecarChain = Future<void>.value();
   Future<void> Function(DownloadTask task, Object error)? _taskFailureHandler;
   bool _disposed = false;
@@ -121,11 +121,13 @@ class DownloadEngine implements DownloadLifecycleController {
   /// Broadcast stream emitting the full task list on every change.
   Stream<List<DownloadTask>> get changes => _changes.stream;
 
-  /// Registers the post-transfer hook. A successful return lets the engine
-  /// set `completed`; a thrown error marks the task `failed` (bytes kept for
-  /// retry) and cancels dependent tasks with that reason.
+  /// Registers an additional post-transfer hook. On completion every hook
+  /// runs in registration order; each hook self-selects by [DownloadTaskKind]
+  /// and returns immediately for kinds it does not own. A successful return
+  /// lets the engine set `completed`; a thrown error marks the task `failed`
+  /// (bytes kept for retry) and cancels dependent tasks with that reason.
   void registerPostTransfer(Future<void> Function(DownloadTask task)? hook) {
-    _postTransfer = hook;
+    if (hook != null) _postTransferHooks.add(hook);
   }
 
   /// Registers a failure hook, invoked once per task after the engine marks
@@ -161,10 +163,9 @@ class DownloadEngine implements DownloadLifecycleController {
         totalBytes:
             task.totalBytes > 0 ? task.totalBytes : durableOffset,
       );
-      final hook = _postTransfer;
-      if (hook != null) {
+      if (_postTransferHooks.isNotEmpty) {
         try {
-          await hook(finished);
+          await _runPostTransferHooks(finished);
         } catch (e) {
           await _update(finished.copyWith(
             state: DownloadTaskState.failed,
@@ -191,6 +192,14 @@ class DownloadEngine implements DownloadLifecycleController {
     if (receivedBytes != null) {
       final current = _tasks[taskId] ?? task;
       await _update(current.copyWith(receivedBytes: receivedBytes));
+    }
+  }
+
+  /// Runs every registered post-transfer hook in order; the first throw
+  /// propagates so the caller applies failure semantics.
+  Future<void> _runPostTransferHooks(DownloadTask task) async {
+    for (final hook in _postTransferHooks) {
+      await hook(task);
     }
   }
 
@@ -862,10 +871,9 @@ class DownloadEngine implements DownloadLifecycleController {
           etag: respEtag ?? task.etag,
         );
 
-        final hook = _postTransfer;
-        if (hook != null) {
+        if (_postTransferHooks.isNotEmpty) {
           try {
-            await hook(finished);
+            await _runPostTransferHooks(finished);
           } catch (e) {
             await _update(finished.copyWith(
               state: DownloadTaskState.failed,
