@@ -1,8 +1,8 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:localmind/features/on_device/data/download_engine.dart';
-import 'package:localmind/features/on_device/data/download_lifecycle_observer.dart';
+import 'package:localmind/core/downloads/download_engine.dart';
+import 'package:localmind/core/downloads/download_lifecycle_observer.dart';
 
 /// Records engine calls without touching files — verifies the observer maps
 /// lifecycle/connectivity events to the right engine operations.

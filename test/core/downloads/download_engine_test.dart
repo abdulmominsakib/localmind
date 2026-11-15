@@ -4,9 +4,9 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:localmind/features/on_device/data/download_engine.dart';
-import 'package:localmind/features/on_device/data/os_download_bridge.dart';
-import 'package:localmind/features/on_device/data/download_task.dart';
+import 'package:localmind/core/downloads/download_engine.dart';
+import 'package:localmind/core/downloads/os_download_bridge.dart';
+import 'package:localmind/core/downloads/download_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Deterministic in-memory dio adapter serving byte payloads with optional

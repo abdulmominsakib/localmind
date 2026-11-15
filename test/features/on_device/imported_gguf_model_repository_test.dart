@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:localmind/features/on_device/data/download_engine.dart';
+import 'package:localmind/core/downloads/download_engine.dart';
 import 'package:localmind/features/on_device/data/imported_gguf_model_repository.dart';
 import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';

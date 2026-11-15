@@ -7,8 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_gemma/flutter_gemma.dart' show PreferredBackend;
 import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import '../../../core/utils/async_operation_queue.dart';
 import '../../../core/inference/local_inference.dart';
@@ -19,11 +17,11 @@ import '../../../core/providers/chat_background_service_provider.dart';
 import '../../../core/providers/review_prompt_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/storage_providers.dart';
-import '../data/download_engine.dart';
-import '../data/os_download_bridge.dart';
-import '../data/download_lifecycle_observer.dart';
-import '../data/download_task.dart';
-import '../data/disk_space.dart';
+import '../../../core/downloads/download_providers.dart';
+
+import '../../../core/downloads/os_download_bridge.dart';
+import '../../../core/downloads/download_lifecycle_observer.dart';
+import '../../../core/downloads/download_task.dart';
 import '../data/imported_gguf_model_repository.dart';
 import '../data/models/on_device_model.dart';
 import '../data/notification_permission_service.dart';
@@ -80,22 +78,6 @@ final importedGgufModelRepositoryProvider =
         osBridge: OsDownloadBridge(),
       );
     });
-
-final downloadEngineProvider = Provider<DownloadEngine>((ref) {
-  final engine = DownloadEngine(
-    store: DownloadTaskStore(ref.read(sharedPreferencesProvider)),
-    dio: ref.read(dioProvider),
-    workDirectory: () async {
-      final supportDir = await getApplicationSupportDirectory();
-      final dir = Directory(p.join(supportDir.path, 'imported_gguf_models'));
-      return dir;
-    },
-    tokenResolver: () => ref.read(settingsProvider).huggingFaceToken,
-    freeDiskSpaceBytes: freeDiskSpaceBytes,
-  );
-  ref.onDispose(() => engine.dispose());
-  return engine;
-});
 
 final downloadTasksProvider =
     NotifierProvider<DownloadTasksNotifier, List<DownloadTask>>(

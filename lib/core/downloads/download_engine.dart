@@ -11,7 +11,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../core/logger/app_logger.dart';
+import '../../core/logger/app_logger.dart';
 import 'download_task.dart';
 import 'os_download_bridge.dart';
 

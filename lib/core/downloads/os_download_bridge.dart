@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/logger/app_logger.dart';
+import '../../core/logger/app_logger.dart';
 
 /// Payload handed to the native OS downloader (iOS background URLSession /
 /// Android WorkManager worker). Native resumes via `Range: bytes=<offset>-`

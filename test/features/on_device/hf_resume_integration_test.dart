@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:localmind/features/on_device/data/download_engine.dart';
-import 'package:localmind/features/on_device/data/download_lifecycle_observer.dart';
-import 'package:localmind/features/on_device/data/download_task.dart';
+import 'package:localmind/core/downloads/download_engine.dart';
+import 'package:localmind/core/downloads/download_lifecycle_observer.dart';
+import 'package:localmind/core/downloads/download_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Opt-in end-to-end resume test against the real Hugging Face CDN, proving

@@ -13,9 +13,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/logger/app_logger.dart';
-import 'download_engine.dart';
-import 'os_download_bridge.dart';
-import 'download_task.dart';
+import '../../../core/downloads/download_engine.dart';
+import '../../../core/downloads/os_download_bridge.dart';
+import '../../../core/downloads/download_task.dart';
 import 'models/on_device_model.dart';
 
 class ImportedGgufModelMetadata {

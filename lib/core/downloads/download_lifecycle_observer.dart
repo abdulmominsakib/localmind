@@ -9,7 +9,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../../core/logger/app_logger.dart';
+import '../../core/logger/app_logger.dart';
 import 'download_engine.dart';
 
 /// Bridges app lifecycle and connectivity events to the download engine:
