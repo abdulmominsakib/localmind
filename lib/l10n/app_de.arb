@@ -991,5 +991,9 @@
   "image_generation_prompt": "Beschreibe das Bild, das du erstellen möchtest",
   "image_generation_temporary": "Bilder lassen sich in gespeicherten Chats erstellen. Starte einen gespeicherten Chat, um ein Bild zu erstellen.",
   "image_generation_remove_attachments": "Entferne die Anhänge, bevor du ein Bild erstellst.",
-  "image_generation_share": "Bild teilen"
+  "image_generation_share": "Bild teilen",
+  "tts_melo_desc": "Melo TTS — zweisprachige chinesisch-englische Stimme.\nErfordert einen Download von {size}.",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS — hochwertige chinesisch-englische Stimmen (103 Sprecher).\nErfordert einen Download von {size}.",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }

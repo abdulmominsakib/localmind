@@ -3512,4 +3512,14 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get os_background_downloads_desc =>
       'Hand Hugging Face imports to the system downloader so they continue while the app is in the background (iOS / Android).';
+
+  @override
+  String tts_melo_desc(String size) {
+    return 'Melo TTS — 중국어·영어 이중 언어 음성입니다.\n$size 다운로드가 필요합니다.';
+  }
+
+  @override
+  String tts_kokoro_desc(String size) {
+    return 'Kokoro TTS — 고품질 중국어·영어 음성(103명 화자)입니다.\n$size 다운로드가 필요합니다.';
+  }
 }

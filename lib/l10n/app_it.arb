@@ -994,5 +994,9 @@
   "image_generation_prompt": "Descrivi l’immagine che vuoi creare",
   "image_generation_temporary": "Puoi generare immagini nelle chat salvate. Avvia una chat salvata per creare un’immagine.",
   "image_generation_remove_attachments": "Rimuovi gli allegati prima di generare un’immagine.",
-  "image_generation_share": "Condividi immagine"
+  "image_generation_share": "Condividi immagine",
+  "tts_melo_desc": "Melo TTS — voce neurale bilingue cinese-inglese.\nRichiede un download di {size}.",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS — voci neurali cinesi-inglesi di alta qualità (103 parlanti).\nRichiede un download di {size}.",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }

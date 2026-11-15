@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:audio_session/audio_session.dart';
 import 'package:file_picker/file_picker.dart';
@@ -132,11 +133,14 @@ class TtsNotifier extends Notifier<TtsState> {
   int _currentChunkIndex = 0;
   EngineId? _currentEngine;
   String? _currentVoice;
+
   String? _currentModelPath;
   String? _currentVoicesPath;
   String? _currentTokensPath;
   String? _currentDataDir;
   String? _currentLexicon;
+  String? _currentDictDir;
+  String? _currentRuleFsts;
 
   // Isolate worker fields
   Isolate? _workerIsolate;
@@ -509,7 +513,10 @@ class TtsNotifier extends Notifier<TtsState> {
   List<String> _splitText(String text) {
     if (text.length <= 250) return [text];
 
-    final regex = RegExp(r'(?<=[.!?])\s+');
+    // Sentence boundaries: Latin punctuation followed by whitespace, or CJK
+    // terminal punctuation (zero-width split — Chinese has no trailing
+    // spaces, and the punctuation must stay attached to its sentence).
+    final regex = RegExp(r'(?<=[.!?])\s+|(?<=[。！？；…])');
     final sentences = text.split(regex);
 
     final List<String> chunks = [];
@@ -523,7 +530,7 @@ class TtsNotifier extends Notifier<TtsState> {
       }
 
       if (sentence.length > 250) {
-        final subRegex = RegExp(r'(?<=[,;])\s+');
+        final subRegex = RegExp(r'(?<=[,;])\s+|(?<=[，、])');
         final parts = sentence.split(subRegex);
         for (final part in parts) {
           if ((currentChunk.length + part.length) > 250 &&
@@ -557,6 +564,8 @@ class TtsNotifier extends Notifier<TtsState> {
     String tokensPath = '';
     String dataDir = '';
     String lexicon = '';
+    String dictDir = '';
+    String ruleFsts = '';
 
     switch (engineId) {
       case EngineId.kitten:
@@ -604,6 +613,48 @@ class TtsNotifier extends Notifier<TtsState> {
         tokensPath = tPath;
         dataDir = dDir.path;
         break;
+      case EngineId.melo:
+      case EngineId.kokoro:
+        final service = ref.read(chineseTtsBundleServiceProvider);
+        final descriptor = service.descriptorFor(engineId);
+        if (descriptor == null) return;
+        final mPath = await service.filePath(descriptor, descriptor.modelFileName);
+        final tPath = await service.filePath(descriptor, descriptor.tokensFileName);
+        if (mPath == null || tPath == null) {
+          throw StateError(
+            '${EngineMeta.forEngine(engineId).name} bundle files not found. '
+            'Please download them in the Model Manager.',
+          );
+        }
+        modelPath = mPath;
+        tokensPath = tPath;
+        ruleFsts = await service.ruleFstsArg(descriptor);
+        if (engineId == EngineId.melo) {
+          final lexiconPath = await service.filePath(descriptor, 'lexicon.txt');
+          final dictPath = await service.dirPath(descriptor, 'dict');
+          if (lexiconPath == null || dictPath == null) {
+            throw StateError(
+              'Melo bundle files not found. Please download them in the Model Manager.',
+            );
+          }
+          lexicon = lexiconPath;
+          dictDir = dictPath;
+        } else {
+          final vPath = await service.filePath(descriptor, 'voices.bin');
+          final dataPath = await service.dirPath(descriptor, 'espeak-ng-data');
+          if (vPath == null || dataPath == null) {
+            throw StateError(
+              'Kokoro bundle files not found. Please download them in the Model Manager.',
+            );
+          }
+          voicesPath = vPath;
+          dataDir = dataPath;
+          lexicon = await service.joinedFilesArg(descriptor, const [
+            'lexicon-us-en.txt',
+            'lexicon-zh.txt',
+          ]);
+        }
+        break;
       default:
         return;
     }
@@ -614,7 +665,9 @@ class TtsNotifier extends Notifier<TtsState> {
         _currentVoicesPath == voicesPath &&
         _currentTokensPath == tokensPath &&
         _currentDataDir == dataDir &&
-        _currentLexicon == lexicon) {
+        _currentLexicon == lexicon &&
+        _currentDictDir == dictDir &&
+        _currentRuleFsts == ruleFsts) {
       return;
     }
 
@@ -630,6 +683,8 @@ class TtsNotifier extends Notifier<TtsState> {
           tokensPath: tokensPath,
           dataDir: dataDir,
           lexicon: lexicon,
+          dictDir: dictDir,
+          ruleFsts: ruleFsts,
         ),
       );
 
@@ -640,6 +695,8 @@ class TtsNotifier extends Notifier<TtsState> {
       _currentTokensPath = tokensPath;
       _currentDataDir = dataDir;
       _currentLexicon = lexicon;
+      _currentDictDir = dictDir;
+      _currentRuleFsts = ruleFsts;
     } finally {
       _isWorkerInitializing = false;
     }
@@ -1276,15 +1333,30 @@ class TtsNotifier extends Notifier<TtsState> {
 
   Future<void> previewVoice(Voice voice) async {
     await speak(
-      ttsPreviewSample,
+      _previewSampleFor(voice),
       engineId: voice.engine,
       voiceId: voice.id,
       isPreview: true,
     );
   }
+
+  /// Preview text matching the voice: Chinese-capable voices preview the
+  /// Chinese sample (that is what they will be used for), English voices
+  /// preview English, and the locale-neutral system engine follows the app
+  /// language.
+  String _previewSampleFor(Voice voice) {
+    final appIsZh = PlatformDispatcher.instance.locale.languageCode
+        .startsWith('zh');
+    if (voice.language == 'zh' || (voice.language == null && appIsZh)) {
+      return ttsPreviewSampleZh;
+    }
+    return ttsPreviewSample;
+  }
 }
 
 const ttsPreviewSample = "Hello, this is a preview of the selected voice";
+
+const ttsPreviewSampleZh = '你好，这是当前所选音色的中文试听示例';
 
 class _MessageAudioCache {
   const _MessageAudioCache({

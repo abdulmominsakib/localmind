@@ -85,7 +85,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "bn": [
@@ -178,7 +180,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "de": [
@@ -271,7 +275,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "es": [
@@ -364,7 +370,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "fr": [
@@ -457,7 +465,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "hi": [
@@ -550,7 +560,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "it": [
@@ -643,7 +655,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "ja": [
@@ -736,7 +750,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "ko": [
@@ -815,7 +831,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "pt": [
@@ -894,7 +912,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "ru": [
@@ -987,7 +1007,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "tr": [
@@ -1080,7 +1102,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "zh": [
@@ -1173,7 +1197,9 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ],
 
   "zh_TW": [
@@ -1266,6 +1292,8 @@
     "download_action_delete",
     "gguf_import_queued_message",
     "download_auto_resume_title",
-    "download_auto_resume_desc"
+    "download_auto_resume_desc",
+    "os_background_downloads_title",
+    "os_background_downloads_desc"
   ]
 }

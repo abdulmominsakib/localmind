@@ -6,12 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../core/downloads/download_task.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/utils/system_insets.dart';
 import '../../settings/data/models/app_settings.dart';
 import '../data/kitten_tts_model.dart';
+import '../data/kokoro_tts_model.dart';
+import '../data/melo_tts_model.dart';
 import '../data/piper_tts_model.dart';
+import '../data/tts_bundle.dart';
 import '../providers/tts_model_providers.dart';
 import '../providers/tts_providers.dart' as tts;
 
@@ -85,6 +89,16 @@ class TtsModelManagerScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               _PiperEngineCard(
                 isSelected: settings.ttsEngine == EngineId.piper,
+              ),
+              const SizedBox(height: 16),
+              _BundleEngineCard(
+                descriptor: MeloTtsModel.instance,
+                isSelected: settings.ttsEngine == EngineId.melo,
+              ),
+              const SizedBox(height: 16),
+              _BundleEngineCard(
+                descriptor: KokoroTtsModel.instance,
+                isSelected: settings.ttsEngine == EngineId.kokoro,
               ),
               const SizedBox(height: 24),
               const _TtsTestSection(),
@@ -1191,5 +1205,219 @@ class _TtsTestSectionState extends ConsumerState<_TtsTestSection> {
         ),
       ],
     );
+  }
+}
+
+// ── Melo / Kokoro (shared download-engine bundles) ──
+
+/// Engine card for the sherpa-onnx Chinese bundles (Melo, Kokoro). Both are
+/// single-bundle engines whose archive transfer runs on the shared download
+/// engine, so the card mirrors live `ttsBundle` task state instead of a
+/// per-engine progress stream.
+class _BundleEngineCard extends ConsumerWidget {
+  final TtsBundleDescriptor descriptor;
+  final bool isSelected;
+
+  const _BundleEngineCard({required this.descriptor, required this.isSelected});
+
+  String get _groupId => 'tts-${descriptor.bundleDirName}';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final meta = EngineMeta.forEngine(descriptor.engine);
+    final downloadedAsync = descriptor.engine == EngineId.melo
+        ? ref.watch(meloTtsBundleDownloadedProvider)
+        : ref.watch(kokoroTtsBundleDownloadedProvider);
+    final progress = ref.watch(chineseTtsBundleProgressProvider)[_groupId];
+    final isInstalled = downloadedAsync.when(
+      data: (v) => v,
+      loading: () => false,
+      error: (_, _) => false,
+    );
+    final taskState = progress?.state;
+    final isActive =
+        taskState == DownloadTaskState.queued ||
+        taskState == DownloadTaskState.running ||
+        taskState == DownloadTaskState.paused;
+    final voices = voicesForEngine(descriptor.engine);
+
+    final statusText = isInstalled
+        ? l10n.installed
+        : isActive
+        ? l10n.downloading_status
+        : taskState == DownloadTaskState.failed
+        ? l10n.download_failed
+        : l10n.not_installed;
+
+    return _EngineCard(
+      isSelected: isSelected,
+      meta: meta,
+      engine: descriptor.engine,
+      installed: isInstalled,
+      statusText: statusText,
+      trailing: _buildAction(context, ref, isInstalled, isActive),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: ShadBadge.secondary(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const HugeIcon(
+                    icon: HugeIcons.strokeRoundedMusicNote01,
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    l10n.tts_supports_background,
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              descriptor.engine == EngineId.melo
+                  ? l10n.tts_melo_desc(_formatSize(descriptor.totalSizeBytes))
+                  : l10n.tts_kokoro_desc(_formatSize(descriptor.totalSizeBytes)),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (isActive && progress != null) ...[
+            LinearProgressIndicator(
+              value: progress.fraction,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Color(meta.accentColor),
+              ),
+              backgroundColor: Color(meta.accentColor).withValues(alpha: 0.15),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _formatSize(progress.receivedBytes),
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+                Text(
+                  '${(progress.fraction * 100).toStringAsFixed(0)}%',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ],
+            ),
+          ],
+          if (taskState == DownloadTaskState.failed && progress != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                progress.error ?? l10n.download_failed,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          if (isInstalled) _VoiceChips(voices: voices, engine: descriptor.engine),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAction(
+    BuildContext context,
+    WidgetRef ref,
+    bool isInstalled,
+    bool isActive,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    if (isActive) {
+      return ShadButton.outline(
+        size: ShadButtonSize.sm,
+        onPressed: () =>
+            ref.read(chineseTtsBundleProgressProvider.notifier).cancel(_groupId),
+        child: Text(l10n.cancel),
+      );
+    }
+    if (isInstalled) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!isSelected)
+            ShadButton.outline(
+              size: ShadButtonSize.sm,
+              onPressed: () {
+                final voices = voicesForEngine(descriptor.engine);
+                ref
+                    .read(settingsProvider.notifier)
+                    .setTtsVoiceId(voices.first.id);
+                ref
+                    .read(settingsProvider.notifier)
+                    .setTtsEngine(descriptor.engine);
+              },
+              child: Text(l10n.select),
+            ),
+          const SizedBox(width: 8),
+          ShadIconButton.ghost(
+            padding: EdgeInsets.zero,
+            icon: const HugeIcon(
+              icon: HugeIcons.strokeRoundedDelete01,
+              color: Colors.red,
+              size: 20,
+            ),
+            onPressed: () => _confirmDelete(context, ref),
+          ),
+        ],
+      );
+    }
+    return ShadButton.outline(
+      size: ShadButtonSize.sm,
+      onPressed: () =>
+          ref.read(chineseTtsBundleServiceProvider).enqueue(descriptor),
+      child: Text(l10n.install),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.delete_voice_title),
+        content: Text(
+          l10n.delete_voice_body(
+            descriptor.engine == EngineId.melo ? 'Melo' : 'Kokoro',
+            _formatSize(descriptor.totalSizeBytes),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(chineseTtsBundleServiceProvider).deleteBundle(descriptor);
+              Navigator.of(context).pop();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatSize(int bytes) {
+    final mb = bytes / (1024 * 1024);
+    return '${mb.toStringAsFixed(0)} MB';
   }
 }

@@ -994,5 +994,9 @@
   "image_generation_prompt": "作成したい画像を説明してください",
   "image_generation_temporary": "画像生成は履歴に保存されるチャットで利用できます。画像を作成するには、保存されるチャットを開始してください。",
   "image_generation_remove_attachments": "画像を生成する前に添付ファイルを削除してください。",
-  "image_generation_share": "画像を共有"
+  "image_generation_share": "画像を共有",
+  "tts_melo_desc": "Melo TTS — 中国語・英語のバイリンガル音声。\n{size} のダウンロードが必要です。",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS — 高品質な中国語・英語の音声（103話者）。\n{size} のダウンロードが必要です。",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }

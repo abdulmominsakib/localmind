@@ -991,5 +991,9 @@
   "image_generation_prompt": "Oluşturmak istediğiniz görseli tarif edin",
   "image_generation_temporary": "Görsel oluşturma kayıtlı sohbetlerde kullanılabilir. Görsel oluşturmak için kaydedilen bir sohbet başlatın.",
   "image_generation_remove_attachments": "Görsel oluşturmadan önce ekleri kaldırın.",
-  "image_generation_share": "Görseli paylaş"
+  "image_generation_share": "Görseli paylaş",
+  "tts_melo_desc": "Melo TTS — Çince-İngilizce çift dilli nötr ses.\n{size} indirme gerekir.",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS — yüksek kaliteli Çince-İngilizce nötr sesler (103 konuşmacı).\n{size} indirme gerekir.",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }

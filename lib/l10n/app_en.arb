@@ -3716,5 +3716,9 @@
   "download_auto_resume_title": "Auto-resume downloads",
   "download_auto_resume_desc": "When the app returns to the foreground or connectivity returns, downloads paused by the system resume automatically.",
   "os_background_downloads_title": "OS background downloads",
-  "os_background_downloads_desc": "Hand Hugging Face imports to the system downloader so they continue while the app is in the background (iOS / Android)."
+  "os_background_downloads_desc": "Hand Hugging Face imports to the system downloader so they continue while the app is in the background (iOS / Android).",
+  "tts_melo_desc": "Melo TTS — Chinese-English bilingual neural voice.\nRequires {size} download.",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS — high-quality Chinese-English neural voices (103 speakers).\nRequires {size} download.",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }

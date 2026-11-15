@@ -1005,5 +1005,9 @@
   "image_generation_prompt": "만들고 싶은 이미지를 설명하세요",
   "image_generation_temporary": "이미지 생성은 저장되는 채팅에서 사용할 수 있습니다. 이미지를 만들려면 저장되는 채팅을 시작하세요.",
   "image_generation_remove_attachments": "이미지를 생성하기 전에 첨부 파일을 제거하세요.",
-  "image_generation_share": "이미지 공유"
+  "image_generation_share": "이미지 공유",
+  "tts_melo_desc": "Melo TTS — 중국어·영어 이중 언어 음성입니다.\n{size} 다운로드가 필요합니다.",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS — 고품질 중국어·영어 음성(103명 화자)입니다.\n{size} 다운로드가 필요합니다.",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }

@@ -1872,6 +1872,16 @@ class _EngineDropdown extends StatelessWidget implements _Searchable {
           EngineMeta.piper.name,
           dot(EngineId.piper, HugeIcons.strokeRoundedCpu),
         ),
+        (
+          EngineId.melo,
+          EngineMeta.melo.name,
+          dot(EngineId.melo, HugeIcons.strokeRoundedVoice),
+        ),
+        (
+          EngineId.kokoro,
+          EngineMeta.kokoro.name,
+          dot(EngineId.kokoro, HugeIcons.strokeRoundedRobot01),
+        ),
       ],
     );
   }

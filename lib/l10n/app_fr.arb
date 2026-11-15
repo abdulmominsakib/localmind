@@ -991,5 +991,9 @@
   "image_generation_prompt": "Décrivez l’image à créer",
   "image_generation_temporary": "La génération d’images est disponible dans les discussions enregistrées. Démarrez une discussion enregistrée pour créer une image.",
   "image_generation_remove_attachments": "Retirez les pièces jointes avant de générer une image.",
-  "image_generation_share": "Partager l’image"
+  "image_generation_share": "Partager l’image",
+  "tts_melo_desc": "Melo TTS — voix neuronale bilingue chinois-anglais.\nNécessite un téléchargement de {size}.",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS — voix neuronales chino-anglaises de haute qualité (103 locuteurs).\nNécessite un téléchargement de {size}.",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }

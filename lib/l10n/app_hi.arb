@@ -994,5 +994,9 @@
   "image_generation_prompt": "बताएँ कि आप कैसी इमेज बनाना चाहते हैं",
   "image_generation_temporary": "सेव की गई चैट में इमेज बनाई जा सकती हैं। इमेज बनाने के लिए ऐसी चैट शुरू करें जिसे सेव किया जाएगा।",
   "image_generation_remove_attachments": "इमेज बनाने से पहले अटैचमेंट हटाएँ।",
-  "image_generation_share": "इमेज शेयर करें"
+  "image_generation_share": "इमेज शेयर करें",
+  "tts_melo_desc": "Melo TTS — चीनी-अंग्रेज़ी द्विभाषी न्यूरल आवाज़।\n{size} डाउनलोड आवश्यक।",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS — उच्च-गुणवत्ता वाली चीनी-अंग्रेज़ी न्यूरल आवाज़ें (103 वक्ता)।\n{size} डाउनलोड आवश्यक।",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }

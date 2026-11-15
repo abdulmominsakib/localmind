@@ -998,5 +998,9 @@
   "image_generation_prompt": "صِف الصورة التي تريد إنشاءها",
   "image_generation_temporary": "يمكن إنشاء الصور في المحادثات المحفوظة. ابدأ محادثة محفوظة لإنشاء صورة.",
   "image_generation_remove_attachments": "أزل المرفقات قبل إنشاء صورة.",
-  "image_generation_share": "مشاركة الصورة"
+  "image_generation_share": "مشاركة الصورة",
+  "tts_melo_desc": "Melo TTS — صوت عصبي ثنائي اللغة (الصينية والإنجليزية).\nيتطلب تنزيل {size}.",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS — أصوات عصبية عالية الجودة ثنائية اللغة (103 متحدثًا).\nيتطلب تنزيل {size}.",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }

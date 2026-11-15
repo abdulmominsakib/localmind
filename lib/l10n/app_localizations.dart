@@ -6626,6 +6626,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hand Hugging Face imports to the system downloader so they continue while the app is in the background (iOS / Android).'**
   String get os_background_downloads_desc;
+
+  /// Chinese TTS bundle engine description
+  ///
+  /// In en, this message translates to:
+  /// **'Melo TTS — Chinese-English bilingual neural voice.\nRequires {size} download.'**
+  String tts_melo_desc(String size);
+
+  /// Chinese TTS bundle engine description
+  ///
+  /// In en, this message translates to:
+  /// **'Kokoro TTS — high-quality Chinese-English neural voices (103 speakers).\nRequires {size} download.'**
+  String tts_kokoro_desc(String size);
 }
 
 class _AppLocalizationsDelegate

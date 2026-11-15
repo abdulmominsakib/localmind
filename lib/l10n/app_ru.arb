@@ -991,5 +991,9 @@
   "image_generation_prompt": "Опишите изображение, которое хотите создать",
   "image_generation_temporary": "Генерация изображений доступна в сохраняемых чатах. Чтобы создать изображение, начните сохраняемый чат.",
   "image_generation_remove_attachments": "Удалите вложения перед генерацией изображения.",
-  "image_generation_share": "Поделиться изображением"
+  "image_generation_share": "Поделиться изображением",
+  "tts_melo_desc": "Melo TTS — двуязычный китайско-английский нейроголос.\nТребуется загрузка {size}.",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS — качественные китайско-английские нейроголоса (103 диктора).\nТребуется загрузка {size}.",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }

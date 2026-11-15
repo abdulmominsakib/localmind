@@ -3,16 +3,105 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/model_downloader.dart';
-import '../data/kitten_tts_model.dart';
+import '../../../core/downloads/download_providers.dart';
+import '../../../core/downloads/download_task.dart';
 import '../data/kitten_tts_downloader.dart';
-import '../data/piper_tts_model.dart';
+import '../data/kitten_tts_model.dart';
+import '../data/kokoro_tts_model.dart';
+import '../data/melo_tts_model.dart';
+import '../data/model_downloader.dart';
 import '../data/piper_tts_downloader.dart';
+import '../data/piper_tts_model.dart';
+import '../data/tts_bundle.dart';
+import '../data/tts_bundle_download_service.dart';
 
 /// Provider for the KittenTTS downloader instance.
 final kittenTtsDownloaderProvider = Provider<KittenTtsDownloader>((ref) {
   return KittenTtsDownloader();
 });
+
+/// Shared-engine service publishing the Chinese TTS bundles (Melo, Kokoro).
+final chineseTtsBundleServiceProvider = Provider<TtsBundleDownloadService>((
+  ref,
+) {
+  return TtsBundleDownloadService(engine: ref.watch(downloadEngineProvider));
+});
+
+/// Installed state of the Melo bundle (invalidated on download completion).
+final meloTtsBundleDownloadedProvider = FutureProvider<bool>((ref) async {
+  return ref
+      .read(chineseTtsBundleServiceProvider)
+      .isDownloaded(MeloTtsModel.instance);
+});
+
+/// Installed state of the Kokoro bundle (invalidated on download completion).
+final kokoroTtsBundleDownloadedProvider = FutureProvider<bool>((ref) async {
+  return ref
+      .read(chineseTtsBundleServiceProvider)
+      .isDownloaded(KokoroTtsModel.instance);
+});
+
+/// Live `ttsBundle` engine tasks keyed by bundle group id
+/// (`tts-<bundleDirName>`), bridged from the shared engine's change stream.
+final chineseTtsBundleProgressProvider =
+    NotifierProvider<ChineseTtsBundleProgressNotifier, Map<String, TtsBundleTaskProgress>>(
+      ChineseTtsBundleProgressNotifier.new,
+    );
+
+class ChineseTtsBundleProgressNotifier
+    extends Notifier<Map<String, TtsBundleTaskProgress>> {
+  StreamSubscription<List<DownloadTask>>? _sub;
+  Set<String> _completedGroups = {};
+
+  @override
+  Map<String, TtsBundleTaskProgress> build() {
+    final engine = ref.watch(downloadEngineProvider);
+    ref.onDispose(() => _sub?.cancel());
+    _sub = engine.changes.listen((tasks) {
+      if (!ref.mounted) return;
+      final next = <String, TtsBundleTaskProgress>{};
+      for (final task in tasks) {
+        if (task.kind != DownloadTaskKind.ttsBundle) continue;
+        next[task.groupId] = TtsBundleTaskProgress(
+          state: task.state,
+          receivedBytes: task.receivedBytes,
+          totalBytes: task.totalBytes,
+          error: task.error,
+        );
+      }
+      state = next;
+
+      // A bundle that just finished downloading may now be installed —
+      // drop the cached FutureProvider so the cards re-check the disk.
+      final completed = next.entries
+          .where((e) => e.value.state == DownloadTaskState.completed)
+          .map((e) => e.key)
+          .toSet();
+      if (completed.length != _completedGroups.length ||
+          !completed.containsAll(_completedGroups)) {
+        _completedGroups = completed;
+        ref.invalidate(meloTtsBundleDownloadedProvider);
+        ref.invalidate(kokoroTtsBundleDownloadedProvider);
+      }
+      _completedGroups = completed;
+    });
+    return {};
+  }
+
+  TtsBundleTaskProgress? progressFor(String groupId) => state[groupId];
+
+  /// Delegates cancel to the shared service and lets the engine stream
+  /// refresh this notifier.
+  Future<void> cancel(String groupId) async {
+    final service = ref.read(chineseTtsBundleServiceProvider);
+    for (final descriptor in service.descriptors) {
+      if ('tts-${descriptor.bundleDirName}' == groupId) {
+        await service.cancel(descriptor);
+        return;
+      }
+    }
+  }
+}
 
 /// Provider for the Piper TTS downloader instance.
 final piperTtsDownloaderProvider = Provider<PiperTtsDownloader>((ref) {

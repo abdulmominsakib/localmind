@@ -3499,6 +3499,16 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get os_background_downloads_desc =>
       'Hand Hugging Face imports to the system downloader so they continue while the app is in the background (iOS / Android).';
+
+  @override
+  String tts_melo_desc(String size) {
+    return 'Melo TTS —— 中英双语神经语音。\n需要下载 $size。';
+  }
+
+  @override
+  String tts_kokoro_desc(String size) {
+    return 'Kokoro TTS —— 高质量中英双语神经语音（103 个音色）。\n需要下载 $size。';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6675,4 +6685,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get image_generation_share => '分享圖片';
+
+  @override
+  String tts_melo_desc(String size) {
+    return 'Melo TTS —— 中英雙語神經語音。\n需要下載 $size。';
+  }
+
+  @override
+  String tts_kokoro_desc(String size) {
+    return 'Kokoro TTS —— 高品質中英雙語神經語音（103 個音色）。\n需要下載 $size。';
+  }
 }

@@ -3607,4 +3607,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get os_background_downloads_desc =>
       'Hand Hugging Face imports to the system downloader so they continue while the app is in the background (iOS / Android).';
+
+  @override
+  String tts_melo_desc(String size) {
+    return 'Melo TTS — voix neuronale bilingue chinois-anglais.\nNécessite un téléchargement de $size.';
+  }
+
+  @override
+  String tts_kokoro_desc(String size) {
+    return 'Kokoro TTS — voix neuronales chino-anglaises de haute qualité (103 locuteurs).\nNécessite un téléchargement de $size.';
+  }
 }

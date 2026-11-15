@@ -994,5 +994,9 @@
   "image_generation_prompt": "描述你想生成的圖片",
   "image_generation_temporary": "圖片生成僅適用於會儲存記錄的聊天。請開啟會儲存記錄的聊天來生成圖片。",
   "image_generation_remove_attachments": "請先移除附件，再生成圖片。",
-  "image_generation_share": "分享圖片"
+  "image_generation_share": "分享圖片",
+  "tts_melo_desc": "Melo TTS —— 中英雙語神經語音。\n需要下載 {size}。",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS —— 高品質中英雙語神經語音（103 個音色）。\n需要下載 {size}。",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }

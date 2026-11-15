@@ -994,5 +994,9 @@
   "image_generation_prompt": "যে ছবিটি তৈরি করতে চান, তার বর্ণনা দিন",
   "image_generation_temporary": "সংরক্ষিত চ্যাটে ছবি তৈরি করা যায়। ছবি তৈরি করতে একটি সংরক্ষিত চ্যাট শুরু করুন।",
   "image_generation_remove_attachments": "ছবি তৈরির আগে সংযুক্তিগুলো সরান।",
-  "image_generation_share": "ছবি শেয়ার করুন"
+  "image_generation_share": "ছবি শেয়ার করুন",
+  "tts_melo_desc": "Melo TTS — চীনা-ইংরেজি দ্বিভাষিক নিউরাল ভয়েস।\n{size} ডাউনলোড প্রয়োজন।",
+  "@tts_melo_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}},
+  "tts_kokoro_desc": "Kokoro TTS — উচ্চ-মানের চীনা-ইংরেজি নিউরাল ভয়েস (১০৩ জন বক্তা)।\n{size} ডাউনলোড প্রয়োজন।",
+  "@tts_kokoro_desc": {"description": "Chinese TTS bundle engine description", "placeholders": {"size": {"type": "String", "example": "160 MB"}}}
 }
