@@ -32,7 +32,22 @@ import UIKit
             }
         })
 
+        let osChannel = FlutterMethodChannel(name: "localmind/os_downloads", binaryMessenger: controller.binaryMessenger)
+        OsBackgroundDownloadManager.shared.register(channel: osChannel)
+
         return result
+    }
+
+    override func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) -> Bool {
+        // Keep the session identifier stable with the manager's config.
+        OsBackgroundDownloadManager.shared.handleBackgroundEvents(
+            identifier: identifier,
+            completionHandler: completionHandler)
+        return true
     }
 
     private func startBackgroundTask() {

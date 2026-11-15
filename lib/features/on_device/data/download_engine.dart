@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/logger/app_logger.dart';
 import 'download_task.dart';
+import 'os_download_bridge.dart';
 
 /// SharedPreferences-backed persistence of the task list. The engine is the
 /// single writer; UI mutates state only through engine methods.
@@ -136,6 +137,63 @@ class DownloadEngine implements DownloadLifecycleController {
     _taskFailureHandler = handler;
   }
 
+  /// Events from the OS downloader (iOS URLSession / Android WorkManager)
+  /// for a task whose bytes the OS moves. Progress updates bookkeeping only;
+  /// completion runs the same post-transfer validation/publish chain as the
+  /// in-app path; failure marks the task  and cancels dependents.
+  Future<void> ingestNativeEvent(
+    String taskId, {
+    int? receivedBytes,
+    bool completed = false,
+    Object? error,
+  }) async {
+    final task = _tasks[taskId];
+    if (task == null || !task.osManaged) {
+      Log.warning('Native event for unknown/non-OS task $taskId ignored');
+      return;
+    }
+    if (completed) {
+      final durableOffset = await _fileLength(File(task.partPath));
+      await _writeSidecar('${task.partPath}.json', task.url,
+          task.etag ?? '', task.totalBytes, durableOffset);
+      final finished = task.copyWith(
+        receivedBytes: task.totalBytes > 0 ? task.totalBytes : durableOffset,
+        totalBytes:
+            task.totalBytes > 0 ? task.totalBytes : durableOffset,
+      );
+      final hook = _postTransfer;
+      if (hook != null) {
+        try {
+          await hook(finished);
+        } catch (e) {
+          await _update(finished.copyWith(
+            state: DownloadTaskState.failed,
+            error: e.toString(),
+          ));
+          await _notifyFailure(finished, e);
+          await _cancelDependents(task.id, 'Dependency failed');
+          return;
+        }
+      }
+      await _update(finished.copyWith(state: DownloadTaskState.completed));
+      return;
+    }
+    if (error != null) {
+      final failure = _transferErrorText(error);
+      await _update(task.copyWith(
+        state: DownloadTaskState.failed,
+        error: failure,
+      ));
+      await _notifyFailure(task, failure);
+      await _cancelDependents(task.id, 'Dependency failed');
+      return;
+    }
+    if (receivedBytes != null) {
+      final current = _tasks[taskId] ?? task;
+      await _update(current.copyWith(receivedBytes: receivedBytes));
+    }
+  }
+
   Future<void> _initialize() async {
     try {
       final persisted = _store.load();
@@ -188,6 +246,7 @@ class DownloadEngine implements DownloadLifecycleController {
     String? dependsOnTaskId,
     bool requiresAuth = false,
     String? authToken,
+    bool osManaged = false,
   }) async {
     await ready;
     final duplicate = _tasks.values.where(
@@ -206,6 +265,7 @@ class DownloadEngine implements DownloadLifecycleController {
       partPath: partPath,
       dependsOnTaskId: dependsOnTaskId,
       requiresAuth: requiresAuth,
+      osManaged: osManaged,
       createdAt: now,
       updatedAt: now,
     );
@@ -260,8 +320,11 @@ class DownloadEngine implements DownloadLifecycleController {
   Future<void> pauseAllRunning({String? note}) async {
     final affected = _tasks.values
         .where((t) =>
-            t.state == DownloadTaskState.running ||
-            t.state == DownloadTaskState.queued)
+            (t.state == DownloadTaskState.running ||
+                t.state == DownloadTaskState.queued) &&
+            // OS-managed tasks keep downloading in the background — the OS
+            // owns their transport, so lifecycle pauses do not apply.
+            !t.osManaged)
         .toList(growable: false);
     for (final task in affected) {
       _systemPaused.add(task.id);
@@ -300,6 +363,66 @@ class DownloadEngine implements DownloadLifecycleController {
         ));
       }
     }
+  }
+
+  /// Hands a running (or queued) task to the OS downloader: the in-app
+  /// transfer stops gracefully, the sidecar lands, and the native side
+  /// resumes from the recorded offset. Returns false (task unchanged on the
+  /// in-app path) when unsupported or the hand-off fails.
+  Future<bool> delegateToOs(
+    String taskId, {
+    required Future<bool> Function(OsDownloadHandOff payload) handOff,
+  }) async {
+    final task = _tasks[taskId];
+    if (task == null || task.osManaged) return false;
+    if (task.state == DownloadTaskState.running) {
+      _stop(task, _StopReason.pause);
+      final landed = await _waitForState(
+        taskId,
+        DownloadTaskState.paused,
+        const Duration(seconds: 5),
+      );
+      if (!landed) return false;
+    }
+    final current = _tasks[taskId]!;
+    final sidecar = await DownloadSidecar.load('${current.partPath}.json');
+    final offset =
+        sidecar?.offset ?? (current.receivedBytes > 0 ? current.receivedBytes : 0);
+    final token = _authTokens.remove(taskId) ??
+        (current.requiresAuth ? _tokenResolver() : null);
+    final ok = await handOff(OsDownloadHandOff(
+      taskId: taskId,
+      url: current.url,
+      authToken: token,
+      offset: offset,
+      totalBytes: current.totalBytes,
+      partPath: current.partPath,
+      finalPath: current.finalPath,
+    ));
+    if (!ok) return false;
+    _systemPaused.remove(taskId);
+    _pauseNotes.remove(taskId);
+    await _update(current.copyWith(
+      state: DownloadTaskState.running,
+      osManaged: true,
+      receivedBytes: offset,
+      clearError: true,
+    ));
+    return true;
+  }
+
+  Future<bool> _waitForState(
+    String taskId,
+    DownloadTaskState state,
+    Duration timeout,
+  ) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      final task = _tasks[taskId];
+      if (task != null && task.state == state) return true;
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    return false;
   }
 
   Future<void> cancel(String taskId) async {

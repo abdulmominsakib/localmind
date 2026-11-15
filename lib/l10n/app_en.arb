@@ -3714,5 +3714,7 @@
   "download_action_delete": "Delete",
   "gguf_import_queued_message": "import queued — track it under Downloads",
   "download_auto_resume_title": "Auto-resume downloads",
-  "download_auto_resume_desc": "When the app returns to the foreground or connectivity returns, downloads paused by the system resume automatically."
+  "download_auto_resume_desc": "When the app returns to the foreground or connectivity returns, downloads paused by the system resume automatically.",
+  "os_background_downloads_title": "OS background downloads",
+  "os_background_downloads_desc": "Hand Hugging Face imports to the system downloader so they continue while the app is in the background (iOS / Android)."
 }

@@ -34,3 +34,17 @@
 - Two transports (in-app dio + native) can disagree on byte counts; the sidecar offset clamp and post-transfer length check are the guards — resume after a mixed history restarts cleanly rather than merging corrupt bytes.
 - WorkManager `dataSync` is subject to OS quota on some OEMs; the in-app fallback covers denied cases.
 - Platform-channel surface must stay minimal (hand-off / progress / completion / failure / cancel) to keep the native side testable.
+
+## Appendix: implementation notes (2026-11-15)
+
+- The Android v1 worker runs as a plain WorkManager CoroutineWorker without
+  a foreground service — background execution is bounded (~10 minutes per
+  OEM policy), which covers the common 100-400 MB model files; very large
+  downloads exceeding the budget fail with "Transfer ended early" and the
+  queue retry picks up from the last checkpoint. Promoting the worker to a
+  dataSync foreground service is a follow-up.
+- iOS callbacks move the downloaded file onto the partial path and write a
+  `.osdone` marker; the Dart engine finalizes bookkeeping on init by
+  reading that marker (same finalize-on-init contract as Android).
+- Swift sources could not be compiled on this Windows host; they are to be
+  verified by the next Codemagic/TestFlight iOS build.

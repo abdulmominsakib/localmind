@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/logger/app_logger.dart';
 import 'download_engine.dart';
+import 'os_download_bridge.dart';
 import 'download_task.dart';
 import 'models/on_device_model.dart';
 
@@ -217,6 +218,7 @@ class ImportedGgufModelRepository {
   final Random _random;
   final Future<Directory> Function()? modelsDirectoryProvider;
   final DownloadEngine? _engine;
+  final OsDownloadBridge? _osBridge;
 
   /// Imports mid-flight, keyed by group id (== metadata id). Published files
   /// stay on disk per task; metadata persists only when the whole group is
@@ -230,8 +232,10 @@ class ImportedGgufModelRepository {
     Random? random,
     this.modelsDirectoryProvider,
     DownloadEngine? engine,
+    OsDownloadBridge? osBridge,
   }) : _random = random ?? Random.secure(),
-       _engine = engine {
+       _engine = engine,
+       _osBridge = osBridge {
     _engine
       ?..registerPostTransfer(_handleImportTask)
       ..registerTaskFailureHandler(_handleImportFailure);
@@ -560,6 +564,7 @@ Future<HuggingFaceImportGroup> enqueueHuggingFaceImport({
   required String sourceUrl,
   String? projectorUrl,
   String? token,
+  bool osBackground = false,
 }) async {
   // Validate inputs before requiring the engine so URL-only errors surface
   // even in mis-wired contexts.
@@ -601,6 +606,14 @@ Future<HuggingFaceImportGroup> enqueueHuggingFaceImport({
     projectorTaskId = projectorTask.id;
   }
 
+  if (osBackground) {
+    // Hand the model transfer to the OS downloader; on hand-off failure the
+    // task silently continues on the in-app path (spec fallback).
+    await _engine!.delegateToOs(
+      modelTask.id,
+      handOff: (payload) => _osBridge!.handOff(payload),
+    );
+  }
   _pendingImports[id] = _PendingImport(
     groupId: id,
     name: _displayNameFromFileName(originalName),

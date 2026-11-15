@@ -6614,6 +6614,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'When the app returns to the foreground or connectivity returns, downloads paused by the system resume automatically.'**
   String get download_auto_resume_desc;
+
+  /// No description provided for @os_background_downloads_title.
+  ///
+  /// In en, this message translates to:
+  /// **'OS background downloads'**
+  String get os_background_downloads_title;
+
+  /// No description provided for @os_background_downloads_desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand Hugging Face imports to the system downloader so they continue while the app is in the background (iOS / Android).'**
+  String get os_background_downloads_desc;
 }
 
 class _AppLocalizationsDelegate

@@ -20,6 +20,7 @@ import '../../../core/providers/review_prompt_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/storage_providers.dart';
 import '../data/download_engine.dart';
+import '../data/os_download_bridge.dart';
 import '../data/download_lifecycle_observer.dart';
 import '../data/download_task.dart';
 import '../data/disk_space.dart';
@@ -76,6 +77,7 @@ final importedGgufModelRepositoryProvider =
         ref.read(sharedPreferencesProvider),
         ref.read(dioProvider),
         engine: ref.watch(downloadEngineProvider),
+        osBridge: OsDownloadBridge(),
       );
     });
 
@@ -323,10 +325,15 @@ class ImportedGgufModelsNotifier extends Notifier<List<OnDeviceModel>> {
     String? projectorUrl,
     String? token,
   }) {
+    final osBackground = ref
+        .read(settingsProvider)
+        .osBackgroundDownloads;
     return _repository.enqueueHuggingFaceImport(
       sourceUrl: sourceUrl,
       projectorUrl: projectorUrl,
       token: token,
+      osBackground:
+          osBackground && Platform.isIOS || Platform.isAndroid,
     );
   }
 

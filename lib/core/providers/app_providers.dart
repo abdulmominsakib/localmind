@@ -127,6 +127,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(resumeLastChat: value));
   void setDownloadAutoResume(bool value) =>
       _update(state.copyWith(downloadAutoResume: value));
+  void setOsBackgroundDownloads(bool value) =>
+      _update(state.copyWith(osBackgroundDownloads: value));
   void setImageCompressionEnabled(bool value) =>
       _update(state.copyWith(imageCompressionEnabled: value));
   void setImageCompressionLevel(ImageCompressionLevel value) =>

@@ -3492,6 +3492,13 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get download_auto_resume_desc =>
       'When the app returns to the foreground or connectivity returns, downloads paused by the system resume automatically.';
+
+  @override
+  String get os_background_downloads_title => 'OS background downloads';
+
+  @override
+  String get os_background_downloads_desc =>
+      'Hand Hugging Face imports to the system downloader so they continue while the app is in the background (iOS / Android).';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

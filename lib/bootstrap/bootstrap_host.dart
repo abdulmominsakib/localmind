@@ -1,5 +1,6 @@
 import '../core/inference/local_inference.dart';
 import '../features/on_device/providers/external_inference_provider.dart';
+import '../features/on_device/views/download_lifecycle_host.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -185,7 +186,9 @@ class _BootstrapHostState extends State<BootstrapHost> {
               container: container,
               child: SafeRiverpodScopeHost(
                 container: container,
-                child: const CloudSyncLifecycleHost(child: App()),
+                child: const CloudSyncLifecycleHost(
+              child: DownloadLifecycleHost(child: App()),
+            ),
               ),
             )
           : BootstrapScreen(

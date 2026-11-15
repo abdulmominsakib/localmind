@@ -79,3 +79,16 @@ Date: 2026-11-15. Platform: Windows host (Flutter 3.44.2).
   Windows build (UTF-8 comments without BOM + /WX) handled via /utf-8 on the
   plugin target in windows/CMakeLists.txt.
 
+## OS background downloads (add-os-background-downloads, 2026-11-15)
+
+- Dart: delegateToOs hand-off/fallback tests (2), engine ingestion tests,
+  lifecycle exemption (OS-managed tasks skipped by pauseAllRunning) — suite
+  51/51 green; flutter analyze clean.
+- Native: iOS Swift (background URLSession + handleEventsForBackgroundURLSession
+  + osdone marker) and Android Kotlin (WorkManager CoroutineWorker +
+  reportProgress/Completed/Failure events + osdone marker) implemented.
+  Compilation could not be verified on this host: Swift requires macOS;
+  the local Android NDK directory is empty (pre-existing environment issue),
+  so  fails at configuration (CXX1101) on any commit.
+  Both are to be compile-verified by the next CI/device build.
+

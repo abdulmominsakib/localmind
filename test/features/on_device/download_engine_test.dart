@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/features/on_device/data/download_engine.dart';
+import 'package:localmind/features/on_device/data/os_download_bridge.dart';
 import 'package:localmind/features/on_device/data/download_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,7 +61,7 @@ ResponseBody _body({
 /// Emits chunks on demand with an optional hold gate so tests can pause at a
 /// deterministic byte offset.
 class _SlowSource {
-  final controller = StreamController<Uint8List>();
+  StreamController<Uint8List> controller = StreamController<Uint8List>();
   Completer<void>? holdUntil;
   int sent = 0;
 
@@ -85,6 +86,20 @@ class _SlowSource {
       if (!controller.isClosed) await controller.close();
     }());
   }
+}
+
+/// Windows keeps file handles open briefly after a cancelled transfer's
+/// sink closes; teardown deletion can race that and fail spuriously.
+Future<void> _deleteDirWithRetry(Directory dir) async {
+  for (var attempt = 0; attempt < 5; attempt++) {
+    try {
+      await dir.delete(recursive: true);
+      return;
+    } on FileSystemException {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+  }
+  await dir.delete(recursive: true);
 }
 
 Future<Directory> _tempDir(String tag) async {
@@ -151,6 +166,9 @@ Future<bool> _waitForAbsent(
 }
 
 ResponseBody _slowResponseBody(_SlowSource source) {
+  // A resume's second HTTP request must not re-listen the first request's
+  // already-consumed stream — reset the controller each call.
+  source.controller = StreamController<Uint8List>();
   return ResponseBody(
     source.controller.stream,
     200,
@@ -217,7 +235,7 @@ void main() {
   group('DownloadSidecar', () {
     test('save/load round-trip and identity match', () async {
       final dir = await _tempDir('sidecar');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final path = '${dir.path}/m.gguf.part.json';
       const sidecar = DownloadSidecar(
         sourceUrl: 'https://huggingface.co/a/b/resolve/main/m.gguf',
@@ -237,7 +255,7 @@ void main() {
 
     test('resolveOffset flags torn writes', () async {
       final dir = await _tempDir('torn');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final part = File('${dir.path}/m.gguf.part');
       await part.writeAsBytes(_payload(0, 100));
       const torn = DownloadSidecar(
@@ -267,7 +285,7 @@ void main() {
     test('fresh download completes and publishes via post-transfer hook',
         () async {
       final dir = await _tempDir('fresh');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final hook = <DownloadTask>[];
       final adapter = MockDownloadAdapter((options, _) async {
         return _body(
@@ -306,7 +324,7 @@ void main() {
 
     test('resumes a retained partial via Range and completes', () async {
       final dir = await _tempDir('resume');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final requests = <String>[];
       final adapter = MockDownloadAdapter((options, _) async {
         final range = options.headers['range']?.toString();
@@ -346,19 +364,33 @@ void main() {
       await engine.dispose();
     });
 
-    test('pausing retains bytes; resuming finishes the transfer', () async {
+    test(
+'pausing retains bytes; resuming finishes the transfer',
+    () async {
       final dir = await _tempDir('pause');
-      addTearDown(() => dir.delete(recursive: true));
-      final source = _SlowSource();
-      final gate = Completer<void>();
+      addTearDown(() => _deleteDirWithRetry(dir));
       final adapter = MockDownloadAdapter((options, _) async {
         final range = options.headers['range']?.toString();
         if (range != null) {
-          final start = int.parse(range.replaceAll(RegExp(r'[^\d]'), ''));
-          return _continueResponseBody(start);
+          final start = int.parse(range.replaceAll(RegExp(r'[^0-9]'), ''));
+          return _body(
+            status: 206,
+            bytes: _payload(start, 1000),
+            total: 1000,
+            start: start,
+            etag: 'etag-1',
+          );
         }
-        source.drip(holdUntil: gate);
-        return _slowResponseBody(source);
+        final source = _SlowSource();
+        source.drip(chunkSize: 50, total: 1000, delayMs: 25);
+        return ResponseBody(
+          source.controller.stream,
+          200,
+          headers: {
+            HttpHeaders.etagHeader: ['etag-1'],
+            HttpHeaders.contentLengthHeader: ['1000'],
+          },
+        );
       });
       final engine = await _engine(adapter, dir);
       final task = await engine.enqueue(
@@ -383,10 +415,11 @@ void main() {
         engine,
         (t) => t.id == task.id && t.state == DownloadTaskState.paused,
       );
-      expect(paused?.receivedBytes, greaterThan(0));
-      expect(paused?.receivedBytes, lessThan(1000));
+      expect(paused, isNotNull);
+      expect(paused!.receivedBytes, greaterThan(0));
+      expect(paused.receivedBytes, lessThan(1000));
       final keptBytes = File(task.partPath).lengthSync();
-      gate.complete();
+      expect(keptBytes, greaterThan(0));
 
       await engine.resume(task.id);
       final done = await _waitFor(
@@ -395,23 +428,36 @@ void main() {
       );
       expect(done, isNotNull);
       expect(File(task.finalPath).lengthSync(), 1000);
-      expect(keptBytes, lessThan(1000));
       await engine.dispose();
     });
 
-    test('cancel keeps bytes as a resumable canceled task', () async {
+    test(
+'cancel keeps bytes as a resumable canceled task',
+    () async {
       final dir = await _tempDir('cancel');
-      addTearDown(() => dir.delete(recursive: true));
-      final source = _SlowSource();
-      final gate = Completer<void>();
+      addTearDown(() => _deleteDirWithRetry(dir));
       final adapter = MockDownloadAdapter((options, _) async {
         final range = options.headers['range']?.toString();
         if (range != null) {
-          final start = int.parse(range.replaceAll(RegExp(r'[^\d]'), ''));
-          return _continueResponseBody(start);
+          final start = int.parse(range.replaceAll(RegExp(r'[^0-9]'), ''));
+          return _body(
+            status: 206,
+            bytes: _payload(start, 1000),
+            total: 1000,
+            start: start,
+            etag: 'etag-1',
+          );
         }
-        source.drip(holdUntil: gate);
-        return _slowResponseBody(source);
+        final source = _SlowSource();
+        source.drip(chunkSize: 50, total: 1000, delayMs: 25);
+        return ResponseBody(
+          source.controller.stream,
+          200,
+          headers: {
+            HttpHeaders.etagHeader: ['etag-1'],
+            HttpHeaders.contentLengthHeader: ['1000'],
+          },
+        );
       });
       final engine = await _engine(adapter, dir);
       final task = await engine.enqueue(
@@ -423,10 +469,14 @@ void main() {
       );
       await _waitFor(
         engine,
+        (t) => t.id == task.id && t.state == DownloadTaskState.running,
+      );
+      final progressing = await _waitFor(
+        engine,
         (t) => t.id == task.id && t.receivedBytes >= 100,
       );
+      expect(progressing, isNotNull);
       await engine.cancel(task.id);
-      gate.complete();
       final canceled = await _waitFor(
         engine,
         (t) => t.id == task.id && t.state == DownloadTaskState.canceled,
@@ -447,12 +497,13 @@ void main() {
 
     test('delete removes the record, partial and sidecar', () async {
       final dir = await _tempDir('delete');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final source = _SlowSource();
       final gate = Completer<void>();
       final adapter = MockDownloadAdapter((options, _) async {
+        final body = _slowResponseBody(source);
         source.drip(holdUntil: gate);
-        return _slowResponseBody(source);
+        return body;
       });
       final engine = await _engine(adapter, dir);
       final task = await engine.enqueue(
@@ -467,7 +518,6 @@ void main() {
         (t) => t.id == task.id && t.receivedBytes >= 100,
       );
       await engine.delete(task.id);
-      gate.complete();
       final removed = await _waitForAbsent(
         engine,
         (t) => t.id == task.id,
@@ -482,7 +532,7 @@ void main() {
     test('server ignoring Range restarts from byte 0 and completes',
         () async {
       final dir = await _tempDir('ignorerange');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final adapter = MockDownloadAdapter((options, _) async {
         return _body(status: 200, bytes: _payload(0, 1000), total: 1000, etag: 'etag-1');
       });
@@ -515,7 +565,7 @@ void main() {
 
     test('torn partial below sidecar offset restarts from byte 0', () async {
       final dir = await _tempDir('torn');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final requested = <String>[];
       final adapter = MockDownloadAdapter((options, _) async {
         requested.add(options.headers['range']?.toString() ?? 'none');
@@ -552,7 +602,7 @@ void main() {
 
     test('dependent task waits for its model and runs after it', () async {
       final dir = await _tempDir('deps');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final order = <String>[];
       final adapter = MockDownloadAdapter((options, _) async {
         order.add(options.uri.path);
@@ -587,7 +637,7 @@ void main() {
 
     test('dependency failure cancels dependents with the reason', () async {
       final dir = await _tempDir('depfail');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final adapter = MockDownloadAdapter((options, _) async {
         if (options.uri.path.contains('model')) {
           return ResponseBody.fromString('forbidden', 403, headers: {
@@ -630,7 +680,7 @@ void main() {
     test('post-transfer failure marks the task failed and keeps bytes',
         () async {
       final dir = await _tempDir('hookfail');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final adapter = MockDownloadAdapter((options, _) async {
         return _body(status: 200, bytes: _payload(0, 100), total: 100, etag: 'e');
       });
@@ -658,7 +708,7 @@ void main() {
 
     test('concurrency cap holds at two simultaneous transfers', () async {
       final dir = await _tempDir('cap');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       var inFlight = 0;
       var peak = 0;
       final adapter = MockDownloadAdapter((options, _) async {
@@ -694,7 +744,7 @@ void main() {
 
     test('persisted running task is demoted to paused on restart', () async {
       final dir = await _tempDir('restart');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final prefs = await SharedPreferences.getInstance();
       final store = DownloadTaskStore(prefs);
@@ -728,7 +778,7 @@ void main() {
 
     test('orphan partials without a task record are cleaned up', () async {
       final dir = await _tempDir('orphans');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final orphanPart = File('${dir.path}/orphan.gguf.part');
       await orphanPart.writeAsBytes(_payload(0, 10));
       final orphanSidecar = File('${dir.path}/orphan.gguf.part.json');
@@ -750,7 +800,7 @@ void main() {
     test('auth token rides on the request and 403 fails auth-specific',
         () async {
       final dir = await _tempDir('auth');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final requests = <String>[];
       final adapter = MockDownloadAdapter((options, req) async {
         requests.add(req.last);
@@ -779,7 +829,7 @@ void main() {
 
     test('no Bearer header without auth requirement', () async {
       final dir = await _tempDir('noauth');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final requests = <String>[];
       final adapter = MockDownloadAdapter((options, req) async {
         requests.add(req.last);
@@ -801,10 +851,135 @@ void main() {
       await engine.dispose();
     });
 
+    test('delegateToOs hands a running task to native and marks it; '
+        'failure falls back to the in-app path', () async {
+      final dir = await _tempDir('osdelegate');
+      addTearDown(() => _deleteDirWithRetry(dir));
+      final adapter = MockDownloadAdapter((options, _) async {
+        final range = options.headers['range']?.toString();
+        if (range != null) {
+          final start = int.parse(range.replaceAll(RegExp(r'[^0-9]'), ''));
+          return _body(
+            status: 206,
+            bytes: _payload(start, 1000),
+            total: 1000,
+            start: start,
+            etag: 'etag-1',
+          );
+        }
+        final source = _SlowSource();
+        source.drip(chunkSize: 50, total: 1000, delayMs: 25);
+        return ResponseBody(
+          source.controller.stream,
+          200,
+          headers: {
+            HttpHeaders.etagHeader: ['etag-1'],
+            HttpHeaders.contentLengthHeader: ['1000'],
+          },
+        );
+      });
+      final engine = await _engine(adapter, dir);
+      final task = await engine.enqueue(
+        kind: DownloadTaskKind.gguf,
+        groupId: 'g',
+        url: 'https://huggingface.co/o/r/resolve/main/m.gguf',
+        finalPath: '${dir.path}/m.gguf',
+        partPath: '${dir.path}/m.gguf.part',
+      );
+      await _waitFor(
+        engine,
+        (t) => t.id == task.id && t.receivedBytes >= 100,
+      );
+      var handOffCalls = 0;
+      var handedOffset = -1;
+      Future<bool> bridge(OsDownloadHandOff payload) async {
+        handOffCalls++;
+        handedOffset = payload.offset;
+        return true;
+      }
+
+      final handed = await engine.delegateToOs(task.id, handOff: bridge);
+      expect(handed, isTrue);
+      expect(handOffCalls, 1);
+      expect(handedOffset, greaterThanOrEqualTo(100));
+      final managed = engine.tasks.firstWhere((t) => t.id == task.id);
+      expect(managed.osManaged, isTrue);
+      expect(managed.state, DownloadTaskState.running);
+      // Native progress events drive bookkeeping.
+      await engine.ingestNativeEvent(task.id, receivedBytes: 800);
+      expect(
+        engine.tasks.firstWhere((t) => t.id == task.id).receivedBytes,
+        800,
+      );
+      // Completion event with no consumer hook completes the task.
+      await engine.ingestNativeEvent(task.id, completed: true);
+      expect(
+        engine.tasks.firstWhere((t) => t.id == task.id).state,
+        DownloadTaskState.completed,
+      );
+      await engine.dispose();
+    });
+
+    test('delegateToOs falls back when the OS hand-off fails', () async {
+      final dir = await _tempDir('osfail');
+      addTearDown(() => _deleteDirWithRetry(dir));
+      final source = _SlowSource();
+      final gate = Completer<void>();
+      final adapter = MockDownloadAdapter((options, _) async {
+        final range = options.headers['range']?.toString();
+        if (range != null) {
+          final start = int.parse(range.replaceAll(RegExp(r'[^0-9]'), ''));
+          return _body(
+            status: 206,
+            bytes: _payload(start, 1000),
+            total: 1000,
+            start: start,
+            etag: 'etag-1',
+          );
+        }
+        final body = _slowResponseBody(source);
+        source.drip(holdUntil: gate, chunkSize: 100, total: 1000);
+        return body;
+      });
+      final engine = await _engine(adapter, dir);
+      final task = await engine.enqueue(
+        kind: DownloadTaskKind.gguf,
+        groupId: 'g',
+        url: 'https://huggingface.co/o/r/resolve/main/m.gguf',
+        finalPath: '${dir.path}/m.gguf',
+        partPath: '${dir.path}/m.gguf.part',
+      );
+      await _waitFor(
+        engine,
+        (t) => t.id == task.id && t.receivedBytes >= 100,
+      );
+      final handed = await engine.delegateToOs(
+        task.id,
+        handOff: (payload) async => false,
+      );
+      expect(handed, isFalse);
+      expect(
+        engine.tasks.firstWhere((t) => t.id == task.id).osManaged,
+        isFalse,
+      );
+      expect(
+        engine.tasks.firstWhere((t) => t.id == task.id).state,
+        DownloadTaskState.paused,
+      );
+      await engine.resume(task.id);
+      final done = await _waitFor(
+        engine,
+        (t) => t.id == task.id && t.state == DownloadTaskState.completed,
+      );
+      expect(done, isNotNull);
+      expect(File(task.finalPath).lengthSync(), 1000);
+      await engine.dispose();
+    });
+
     test('disk-space shortfall fails the task with a disk-full reason',
         () async {
       final dir = await _tempDir('diskfull');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final adapter = MockDownloadAdapter((options, _) async {
         return _body(status: 200, bytes: _payload(0, 1000), total: 1000, etag: 'e');
       });
@@ -829,20 +1004,28 @@ void main() {
       await engine.dispose();
     });
 
-    test('pauseAllRunning pauses running+queued as system-paused and '
-        'resumeSystemPaused restores exactly them', () async {
+    test(
+'pauseAllRunning pauses running+queued as system-paused and '
+        'resumeSystemPaused restores exactly them',
+    () async {
       final dir = await _tempDir('syspause');
-      addTearDown(() => dir.delete(recursive: true));
-      final gate = Completer<void>();
+      addTearDown(() => _deleteDirWithRetry(dir));
       final adapter = MockDownloadAdapter((options, _) async {
         final range = options.headers['range']?.toString();
         if (range != null) {
-          final start = int.parse(range.replaceAll(RegExp(r'[^\d]'), ''));
+          final start = int.parse(range.replaceAll(RegExp(r'[^0-9]'), ''));
           return _continueResponseBody(start);
         }
         final source = _SlowSource();
-        source.drip(holdUntil: gate, chunkSize: 100, total: 1000);
-        return _slowResponseBody(source);
+        source.drip(chunkSize: 50, total: 1000, delayMs: 25);
+        return ResponseBody(
+          source.controller.stream,
+          200,
+          headers: {
+            HttpHeaders.etagHeader: ['etag-1'],
+            HttpHeaders.contentLengthHeader: ['1000'],
+          },
+        );
       });
       final engine = await _engine(adapter, dir, maxConcurrent: 2);
       final running = await engine.enqueue(
@@ -907,7 +1090,6 @@ void main() {
       // Network note lands in the error field of the system-paused task.
       expect(pausedRunning!.error, contains('network'));
 
-      gate.complete();
       await engine.resumeSystemPaused();
 
       final resumedRunning = await _waitFor(
@@ -930,12 +1112,24 @@ void main() {
     test('user pause clears system bookkeeping (no double resume)',
         () async {
       final dir = await _tempDir('userpause');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final gate = Completer<void>();
       final source = _SlowSource();
       final adapter = MockDownloadAdapter((options, _) async {
+        final range = options.headers['range']?.toString();
+        if (range != null) {
+          final start = int.parse(range.replaceAll(RegExp(r'[^0-9]'), ''));
+          return _body(
+            status: 206,
+            bytes: _payload(start, 1000),
+            total: 1000,
+            start: start,
+            etag: 'etag-1',
+          );
+        }
+        final body = _slowResponseBody(source);
         source.drip(holdUntil: gate, chunkSize: 100, total: 1000);
-        return _slowResponseBody(source);
+        return body;
       });
       final engine = await _engine(adapter, dir);
       final task = await engine.enqueue(
@@ -956,7 +1150,6 @@ void main() {
       );
       // The user resumes manually — resumeSystemPaused must not re-queue.
       await engine.resume(task.id);
-      gate.complete();
       await engine.resumeSystemPaused();
 
       // Wait a moment; if double-handled, the task would flip states.
@@ -973,7 +1166,7 @@ void main() {
     test('checkpoint sidecar advances during transfer and honors the '
         'interval knob', () async {
       final dir = await _tempDir('checkpoint');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final source = _SlowSource();
       // 50 bytes every 30ms: reaches 400 bytes with three checkpoints in
       // ~240ms, completes ~3s — time to observe checkpoints while running.
@@ -1051,12 +1244,24 @@ void main() {
     test('initial sidecar is written when a transfer enters running',
         () async {
       final dir = await _tempDir('initialsidecar');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final source = _SlowSource();
       final gate = Completer<void>();
       final adapter = MockDownloadAdapter((options, _) async {
+        final range = options.headers['range']?.toString();
+        if (range != null) {
+          final start = int.parse(range.replaceAll(RegExp(r'[^0-9]'), ''));
+          return _body(
+            status: 206,
+            bytes: _payload(start, 1000),
+            total: 1000,
+            start: start,
+            etag: 'etag-1',
+          );
+        }
+        final body = _slowResponseBody(source);
         source.drip(holdUntil: gate, chunkSize: 100, total: 1000);
-        return _slowResponseBody(source);
+        return body;
       });
       final engine = await _engine(adapter, dir);
       final task = await engine.enqueue(
@@ -1082,7 +1287,6 @@ void main() {
       expect(sidecar, isNotNull);
       expect(sidecar!.sourceUrl, task.url);
       expect(sidecar.totalBytes, 1000);
-      gate.complete();
       await _waitFor(
         engine,
         (t) => t.id == task.id && t.state == DownloadTaskState.completed,
@@ -1090,10 +1294,12 @@ void main() {
       await engine.dispose();
     });
 
-    test('resume after hard kill truncates OS-cached bytes past the '
-        'checkpoint (no mid-file hole)', () async {
+    test(
+'resume after hard kill truncates OS-cached bytes past the '
+        'checkpoint (no mid-file hole)',
+    () async {
       final dir = await _tempDir('truncate');
-      addTearDown(() => dir.delete(recursive: true));
+      addTearDown(() => _deleteDirWithRetry(dir));
       final requested = <String>[];
       final adapter = MockDownloadAdapter((options, _) async {
         final range = options.headers['range']?.toString();

@@ -346,6 +346,12 @@ class _SettingsViewsState extends ConsumerState<SettingsViews> {
           onChanged: notifier.setUnloadModelsBeforeLoad,
         ),
         _ToggleSetting(
+          label: l10n.os_background_downloads_title,
+          description: l10n.os_background_downloads_desc,
+          value: settings.osBackgroundDownloads,
+          onChanged: notifier.setOsBackgroundDownloads,
+        ),
+        _ToggleSetting(
           label: l10n.download_auto_resume_title,
           description: l10n.download_auto_resume_desc,
           value: settings.downloadAutoResume,

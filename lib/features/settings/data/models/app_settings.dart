@@ -51,6 +51,8 @@ class AppSettings {
   final bool unloadModelsBeforeLoad;
   final bool tempChatKeyboardIncognito;
   final bool resumeLastChat;
+  final bool downloadAutoResume;
+  final bool osBackgroundDownloads;
   final bool imageCompressionEnabled;
   final ImageCompressionLevel imageCompressionLevel;
   final bool smartRepliesUsePersona;
@@ -110,6 +112,8 @@ class AppSettings {
     this.unloadModelsBeforeLoad = false,
     this.tempChatKeyboardIncognito = true,
     this.resumeLastChat = true,
+    this.downloadAutoResume = true,
+    this.osBackgroundDownloads = true,
     this.imageCompressionEnabled = false,
     this.imageCompressionLevel = ImageCompressionLevel.medium,
     this.smartRepliesUsePersona = false,
@@ -164,6 +168,8 @@ class AppSettings {
     bool? unloadModelsBeforeLoad,
     bool? tempChatKeyboardIncognito,
     bool? resumeLastChat,
+    bool? downloadAutoResume,
+    bool? osBackgroundDownloads,
     bool? imageCompressionEnabled,
     ImageCompressionLevel? imageCompressionLevel,
     bool? smartRepliesUsePersona,
@@ -235,6 +241,8 @@ class AppSettings {
       tempChatKeyboardIncognito:
           tempChatKeyboardIncognito ?? this.tempChatKeyboardIncognito,
       resumeLastChat: resumeLastChat ?? this.resumeLastChat,
+      downloadAutoResume: downloadAutoResume ?? this.downloadAutoResume,
+      osBackgroundDownloads: osBackgroundDownloads ?? this.osBackgroundDownloads,
       imageCompressionEnabled:
           imageCompressionEnabled ?? this.imageCompressionEnabled,
       imageCompressionLevel:
@@ -296,6 +304,8 @@ class AppSettings {
       'unloadModelsBeforeLoad': unloadModelsBeforeLoad,
       'tempChatKeyboardIncognito': tempChatKeyboardIncognito,
       'resumeLastChat': resumeLastChat,
+      'downloadAutoResume': downloadAutoResume,
+      'osBackgroundDownloads': osBackgroundDownloads,
       'imageCompressionEnabled': imageCompressionEnabled,
       'imageCompressionLevel': imageCompressionLevel.name,
       'smartRepliesUsePersona': smartRepliesUsePersona,
@@ -354,6 +364,8 @@ class AppSettings {
       unloadModelsBeforeLoad: map['unloadModelsBeforeLoad'] ?? false,
       tempChatKeyboardIncognito: map['tempChatKeyboardIncognito'] ?? true,
       resumeLastChat: map['resumeLastChat'] ?? true,
+      downloadAutoResume: map['downloadAutoResume'] ?? true,
+      osBackgroundDownloads: map['osBackgroundDownloads'] ?? true,
       imageCompressionEnabled: map['imageCompressionEnabled'] ?? false,
       imageCompressionLevel: _parseImageCompressionLevel(
         map['imageCompressionLevel'],

@@ -135,6 +135,9 @@ class MainActivity : AudioServiceActivity() {
             }
         }
 
+        OsBackgroundDownloadPlugin.register(
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, OsBackgroundDownloadPlugin.CHANNEL_NAME)
+        )
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MEMORY_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "getMemoryInfo" -> {

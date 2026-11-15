@@ -32,6 +32,10 @@ class DownloadTask {
   final String finalPath;
   final String partPath;
   final String? error;
+  /// Task bytes are moved by the OS downloader (iOS URLSession / Android
+  /// WorkManager) instead of the in-app dio streaming loop. Bookkeeping
+  /// (sidecar, state machine, publish) stays with the engine.
+  final bool osManaged;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -44,6 +48,7 @@ class DownloadTask {
     required this.partPath,
     this.dependsOnTaskId,
     this.requiresAuth = false,
+    this.osManaged = false,
     this.state = DownloadTaskState.queued,
     this.receivedBytes = 0,
     this.totalBytes = 0,
@@ -64,6 +69,7 @@ class DownloadTask {
     String? etag,
     String? error,
     bool clearError = false,
+    bool? osManaged,
     DateTime? updatedAt,
   }) {
     return DownloadTask(
@@ -75,6 +81,7 @@ class DownloadTask {
       partPath: partPath,
       dependsOnTaskId: dependsOnTaskId,
       requiresAuth: requiresAuth,
+      osManaged: osManaged ?? this.osManaged,
       state: state ?? this.state,
       receivedBytes: receivedBytes ?? this.receivedBytes,
       totalBytes: totalBytes ?? this.totalBytes,
@@ -92,6 +99,7 @@ class DownloadTask {
         'url': url,
         'dependsOnTaskId': dependsOnTaskId,
         'requiresAuth': requiresAuth,
+        'osManaged': osManaged,
         'state': state.name,
         'receivedBytes': receivedBytes,
         'totalBytes': totalBytes,
@@ -111,6 +119,7 @@ class DownloadTask {
       url: json['url'] as String,
       dependsOnTaskId: json['dependsOnTaskId'] as String?,
       requiresAuth: json['requiresAuth'] as bool? ?? false,
+      osManaged: json['osManaged'] as bool? ?? false,
       state: DownloadTaskState.values.byName(json['state'] as String),
       receivedBytes: json['receivedBytes'] as int? ?? 0,
       totalBytes: json['totalBytes'] as int? ?? 0,
