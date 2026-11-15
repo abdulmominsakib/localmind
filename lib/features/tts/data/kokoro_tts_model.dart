@@ -20,13 +20,12 @@ class KokoroTtsModel implements TtsBundleDescriptor {
       'https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/'
       '$bundleDirName.tar.bz2';
 
-  // Nominal int8 bundle size (model ~82 MB + voices.bin 26 MB + espeak data);
-  // the live progress bar prefers the server-reported total when present.
+  // Verified against the actual release asset: 147,052,523 bytes.
   @override
-  int get totalSizeBytes => 115 * 1024 * 1024;
+  int get totalSizeBytes => 147052523;
 
   @override
-  String get modelFileName => 'model.int8';
+  String get modelFileName => 'model.int8.onnx';
 
   @override
   String get tokensFileName => 'tokens.txt';

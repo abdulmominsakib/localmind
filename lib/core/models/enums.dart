@@ -58,7 +58,7 @@ class EngineMeta {
   static const kokoro = EngineMeta(
     name: 'Kokoro TTS',
     tagline: 'Chinese-English neural voices',
-    sizeMb: 115,
+    sizeMb: 147,
     ramMb: 300,
     voiceCount: 15,
     accentColor: 0xFF3F51B5,

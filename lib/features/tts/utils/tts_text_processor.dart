@@ -61,4 +61,52 @@ class TtsTextProcessor {
     s = s.replaceAll(RegExp(r'\n{3,}'), '\n\n');
     return s;
   }
+
+  /// Target chunk size used by [splitIntoChunks] — small enough that the
+  /// first chunk starts playing quickly, large enough to keep intonation.
+  static const chunkTargetLength = 250;
+
+  /// Splits [text] into synthesis chunks at sentence boundaries.
+  ///
+  /// Sentence terminators: Latin `.!?` followed by whitespace, and CJK
+  /// terminal punctuation (。！？；…) which has no trailing space in Chinese
+  /// text. Oversized sentences sub-split at commas (，、 and Latin `,;`).
+  static List<String> splitIntoChunks(String text) {
+    if (text.length <= chunkTargetLength) return [text];
+
+    final regex = RegExp(r'(?<=[.!?])\s+|(?<=[。！？；…])');
+    final sentences = text.split(regex);
+
+    final List<String> chunks = [];
+    String currentChunk = '';
+
+    for (final sentence in sentences) {
+      if ((currentChunk.length + sentence.length) > chunkTargetLength &&
+          currentChunk.isNotEmpty) {
+        chunks.add(currentChunk.trim());
+        currentChunk = '';
+      }
+
+      if (sentence.length > chunkTargetLength) {
+        final subRegex = RegExp(r'(?<=[,;])\s+|(?<=[，、])');
+        final parts = sentence.split(subRegex);
+        for (final part in parts) {
+          if ((currentChunk.length + part.length) > chunkTargetLength &&
+              currentChunk.isNotEmpty) {
+            chunks.add(currentChunk.trim());
+            currentChunk = '';
+          }
+          currentChunk += '$part ';
+        }
+      } else {
+        currentChunk += '$sentence ';
+      }
+    }
+
+    if (currentChunk.trim().isNotEmpty) {
+      chunks.add(currentChunk.trim());
+    }
+
+    return chunks;
+  }
 }

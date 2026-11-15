@@ -18,16 +18,26 @@ import 'tts_bundle.dart';
 /// `tts_models/<engine>/<bundle>/` and validates it before the task is
 /// allowed to complete; the archive itself is scratch and deleted on success.
 class TtsBundleDownloadService {
-  TtsBundleDownloadService({required DownloadEngine engine}) : _engine = engine {
+  TtsBundleDownloadService({
+    required DownloadEngine engine,
+    List<TtsBundleDescriptor>? descriptors,
+    Future<Directory> Function()? supportDirectoryResolver,
+  }) : _engine = engine,
+       descriptors = descriptors ?? _defaultDescriptors,
+       _resolveSupportDir =
+           supportDirectoryResolver ?? getApplicationSupportDirectory {
     engine.registerPostTransfer(_handleTtsBundleTask);
   }
 
   final DownloadEngine _engine;
+  final Future<Directory> Function() _resolveSupportDir;
 
-  final List<TtsBundleDescriptor> descriptors = const [
+  static const List<TtsBundleDescriptor> _defaultDescriptors = [
     MeloTtsModel.instance,
     KokoroTtsModel.instance,
   ];
+
+  final List<TtsBundleDescriptor> descriptors;
 
   TtsBundleDescriptor? descriptorFor(EngineId engine) {
     for (final descriptor in descriptors) {
@@ -51,7 +61,7 @@ class TtsBundleDownloadService {
   /// are merely paused; the hook deletes archives on success and
   /// [_clearArchiveLineage] on explicit cancel/delete.
   Future<Directory> _archiveDir() async {
-    final supportDir = await getApplicationSupportDirectory();
+    final supportDir = await _resolveSupportDir();
     final dir = Directory('${supportDir.path}/tts_bundle_archives');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
@@ -60,7 +70,7 @@ class TtsBundleDownloadService {
   }
 
   Future<Directory> engineDirFor(TtsBundleDescriptor descriptor) async {
-    final supportDir = await getApplicationSupportDirectory();
+    final supportDir = await _resolveSupportDir();
     final dir = Directory('${supportDir.path}/tts_models/${descriptor.engine.name}');
     if (!await dir.exists()) {
       await dir.create(recursive: true);

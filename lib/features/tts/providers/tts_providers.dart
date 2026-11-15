@@ -510,47 +510,8 @@ class TtsNotifier extends Notifier<TtsState> {
     }
   }
 
-  List<String> _splitText(String text) {
-    if (text.length <= 250) return [text];
-
-    // Sentence boundaries: Latin punctuation followed by whitespace, or CJK
-    // terminal punctuation (zero-width split — Chinese has no trailing
-    // spaces, and the punctuation must stay attached to its sentence).
-    final regex = RegExp(r'(?<=[.!?])\s+|(?<=[。！？；…])');
-    final sentences = text.split(regex);
-
-    final List<String> chunks = [];
-    String currentChunk = "";
-
-    for (final sentence in sentences) {
-      if ((currentChunk.length + sentence.length) > 250 &&
-          currentChunk.isNotEmpty) {
-        chunks.add(currentChunk.trim());
-        currentChunk = "";
-      }
-
-      if (sentence.length > 250) {
-        final subRegex = RegExp(r'(?<=[,;])\s+|(?<=[，、])');
-        final parts = sentence.split(subRegex);
-        for (final part in parts) {
-          if ((currentChunk.length + part.length) > 250 &&
-              currentChunk.isNotEmpty) {
-            chunks.add(currentChunk.trim());
-            currentChunk = "";
-          }
-          currentChunk += "$part ";
-        }
-      } else {
-        currentChunk += "$sentence ";
-      }
-    }
-
-    if (currentChunk.trim().isNotEmpty) {
-      chunks.add(currentChunk.trim());
-    }
-
-    return chunks;
-  }
+  List<String> _splitText(String text) =>
+      TtsTextProcessor.splitIntoChunks(text);
 
   Future<void> _initEngine(EngineId engineId, {String? voiceId}) async {
     await _ensureWorker();

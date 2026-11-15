@@ -117,7 +117,7 @@ void ttsWorkerEntry(SendPort mainSendPort) {
           return;
         }
 
-        final speakerId = _resolveSpeakerId(activeEngineId!, message.voiceId);
+        final speakerId = resolveSpeakerId(activeEngineId!, message.voiceId);
         final genConfig = sherpa_onnx.OfflineTtsGenerationConfig(
           sid: speakerId,
           speed: message.speed,
@@ -259,7 +259,8 @@ sherpa_onnx.OfflineTts _createTts(TtsInitRequest message) {
   return sherpa_onnx.OfflineTts(config);
 }
 
-int _resolveSpeakerId(EngineId engine, String voiceId) {
+@visibleForTesting
+int resolveSpeakerId(EngineId engine, String voiceId) {
   if (engine == EngineId.piper || engine == EngineId.melo) {
     return 0;
   }
