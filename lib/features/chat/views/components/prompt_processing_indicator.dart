@@ -64,7 +64,11 @@ class _PromptProcessingStatusBarState
     final enabled = ref.watch(
       settingsProvider.select((s) => s.showPromptProcessingIndicator),
     );
-    if (!enabled) return const SizedBox.shrink();
+    if (!enabled) {
+      _timer?.cancel();
+      _timer = null;
+      return const SizedBox.shrink();
+    }
 
     final live = ref.watch(chatProvider.select((s) => s.liveGeneration));
     _syncTimer(live);

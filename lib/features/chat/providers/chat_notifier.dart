@@ -2850,7 +2850,6 @@ class ChatNotifier extends Notifier<ChatState> {
                 finalMessage,
                 isCurrentContext: isCurrentContext,
               );
-              await _maybeCountPrompt(session, streamConvId);
               if (!ref.mounted || finalMessage.status == MessageStatus.error) {
                 if (ref.mounted &&
                     isCurrentContext &&
@@ -2859,6 +2858,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 }
                 return;
               }
+              await _maybeCountPrompt(session, streamConvId);
               _maybeRequestReviewAfterSuccessfulCompletion(
                 finalMessage: finalMessage,
                 server: server,
@@ -3116,7 +3116,7 @@ class ChatNotifier extends Notifier<ChatState> {
         );
 
     if (generated == null || generated.trim().isEmpty) return;
-    await sendMessage(generated.trim());
+    await sendMessage(generated.trim(), countsAsPrompt: false);
   }
 
   Future<void> saveTemporaryChatToHistory() async {

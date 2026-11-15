@@ -183,6 +183,35 @@ void main() {
     });
   });
 
+  group('PromptProcessingStatusBar disabled', () {
+    testWidgets('renders nothing when the indicator setting is disabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          chatState: ChatState(
+            liveGeneration: LiveGeneration(
+              phase: LiveGenerationPhase.processingPrompt,
+              startedAt: DateTime.now().subtract(const Duration(seconds: 2)),
+              estimatedPrefillMs: 4000,
+            ),
+          ),
+          settings: AppSettings(showPromptProcessingIndicator: false),
+        ),
+      );
+
+      expect(find.byType(PromptProcessingStatusBar), findsOneWidget);
+      expect(find.textContaining('Processing prompt'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('PromptProcessingStatusBar generating', () {
     testWidgets(
       'shows thinking state with elapsed time when reasoning arrived but no content',

@@ -426,11 +426,10 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
         .build();
     final existingEntity = query.findFirst();
     query.close();
+    if (existingEntity == null) return;
 
     final entity = ConversationEntity.fromDomain(updated);
-    if (existingEntity != null) {
-      entity.internalId = existingEntity.internalId;
-    }
+    entity.internalId = existingEntity.internalId;
     db.conversationBox.put(entity);
     _updateInState(updated);
   }

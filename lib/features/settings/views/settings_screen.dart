@@ -654,6 +654,7 @@ class _MoreChatOptionsPage extends ConsumerWidget {
     l10n.send_top_p_to_api,
     l10n.temp_chat_keyboard_incognito,
     l10n.role_swap_button_enabled,
+    l10n.prompt_processing_indicator_enabled,
     l10n.enable_image_compression,
   ];
 
