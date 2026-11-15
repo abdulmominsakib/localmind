@@ -1,0 +1,65 @@
+# Codemagic CI/CD — LocalMind X（Flutter iOS → TestFlight）
+# 部署步骤见 docs/codemagic-testflight.md
+#
+# 使用前置条件（Codemagic 控制台配置）：
+#   1. Team integrations → App Store Connect → Developer Portal 里添加 API Key，
+#      名称必须为 `LocalMind ASC API Key`（与本文件 integrations.app_store_connect 一致）
+#   2. 应用级环境变量添加 XCODE_TEAM_ID = 你的 Apple Team ID（App Store Connect → Membership 页面，10 位）
+workflows:
+  ios-testflight:
+    name: iOS TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+
+    # push 到 main 自动触发构建；也可在控制台手动 Start build
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+
+    integrations:
+      app_store_connect: LocalMind ASC API Key
+
+    environment:
+      flutter: 3.44.0
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      # 仓库里的 DEVELOPMENT_TEAM 是原作者的团队 ID，CI 里用 XCODE_TEAM_ID 覆盖
+      - name: Override Xcode development team
+        script: |
+          set -e
+          if [ -n "$XCODE_TEAM_ID" ]; then
+            sed -i.bak "s/DEVELOPMENT_TEAM = [A-Z0-9]*/DEVELOPMENT_TEAM = $XCODE_TEAM_ID/g" \
+              ios/Runner.xcodeproj/project.pbxproj
+            rm ios/Runner.xcodeproj/project.pbxproj.bak
+            echo "DEVELOPMENT_TEAM overridden to $XCODE_TEAM_ID"
+          else
+            echo "::error::XCODE_TEAM_ID 未配置，无法签名。请在 Codemagic 环境变量中添加它（见 docs/codemagic-testflight.md）"
+            exit 1
+          fi
+
+      - name: Get Flutter packages
+        script: flutter packages pub get
+
+      # build 号用 Codemagic 每次构建自增的 PROJECT_BUILD_NUMBER，
+      # TestFlight 要求每次上传的 CFBundleVersion 递增
+      - name: Build IPA
+        script: |
+          set -e
+          flutter build ipa \
+            --release \
+            --build-number=$PROJECT_BUILD_NUMBER \
+            --export-options-plist=$FCI_BUILD_DIR/ios/ExportOptions.plist
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # 需在 App Store Connect → TestFlight 里先建好同名内部测试组
+        beta_groups:
+          - Internal Testers
