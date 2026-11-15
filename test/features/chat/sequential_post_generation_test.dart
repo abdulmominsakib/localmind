@@ -348,6 +348,9 @@ class _TestConversationsNotifier extends ConversationsNotifier {
     List<String> replies,
     String lastMessageId,
   ) async {}
+
+  @override
+  Future<void> incrementPromptsProcessed(String id) async {}
 }
 
 class _TestActiveConversationNotifier extends ActiveConversationNotifier {

@@ -246,6 +246,7 @@ class CloudSyncSnapshot {
     'keepPersonaOnNewChat',
     'roleSwapButtonEnabled',
     'showSystemMessagesInChat',
+    'showPromptProcessingIndicator',
   };
 
   static void _validatePayload(Map<String, dynamic> payload) {

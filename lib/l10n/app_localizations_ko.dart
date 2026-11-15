@@ -365,6 +365,23 @@ class AppLocalizationsKo extends AppLocalizations {
       '응답을 생성하지 않고 사용자 대신 어시스턴트로 메시지를 보내려면 채팅 입력에 버튼을 표시하세요.';
 
   @override
+  String get processing_prompt_label => 'Processing prompt…';
+
+  @override
+  String get generating_label => 'Generating…';
+
+  @override
+  String get prompts_processed_label => 'Prompts processed';
+
+  @override
+  String get prompt_processing_indicator_enabled =>
+      'Show prompt processing indicator';
+
+  @override
+  String get prompt_processing_indicator_enabled_desc =>
+      'Show live prompt-processing progress and the per-chat prompts-processed count above the chat input.';
+
+  @override
   String get send_as_user_tooltip => '사용자로 보내기';
 
   @override

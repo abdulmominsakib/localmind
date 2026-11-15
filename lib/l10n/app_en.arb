@@ -498,6 +498,26 @@
   "@role_swap_button_enabled_desc": {
     "description": "Description for the role-swap-button-enabled toggle"
   },
+  "processing_prompt_label": "Processing prompt…",
+  "@processing_prompt_label": {
+    "description": "Status shown in the composer while the request is being processed before the first token arrives."
+  },
+  "generating_label": "Generating…",
+  "@generating_label": {
+    "description": "Status shown in the composer while the reply is streaming."
+  },
+  "prompts_processed_label": "Prompts processed",
+  "@prompts_processed_label": {
+    "description": "Label for the per-chat prompts-processed counter chip."
+  },
+  "prompt_processing_indicator_enabled": "Show prompt processing indicator",
+  "@prompt_processing_indicator_enabled": {
+    "description": "Settings toggle to show the live prompt-processing indicator and prompts-processed chip in the composer."
+  },
+  "prompt_processing_indicator_enabled_desc": "Show live prompt-processing progress and the per-chat prompts-processed count above the chat input.",
+  "@prompt_processing_indicator_enabled_desc": {
+    "description": "Description for the prompt processing indicator toggle."
+  },
   "send_as_user_tooltip": "Send as user",
   "@send_as_user_tooltip": {
     "description": "Tooltip for the role-swap button when it will send as the user role"

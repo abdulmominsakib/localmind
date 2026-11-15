@@ -726,6 +726,12 @@ class _MoreChatOptionsPage extends ConsumerWidget {
                 onChanged: notifier.setRoleSwapButtonEnabled,
               ),
               _ToggleSetting(
+                label: l10n.prompt_processing_indicator_enabled,
+                description: l10n.prompt_processing_indicator_enabled_desc,
+                value: settings.showPromptProcessingIndicator,
+                onChanged: notifier.setShowPromptProcessingIndicator,
+              ),
+              _ToggleSetting(
                 label: l10n.temp_chat_keyboard_incognito,
                 description: l10n.temp_chat_keyboard_incognito_desc,
                 value: settings.tempChatKeyboardIncognito,

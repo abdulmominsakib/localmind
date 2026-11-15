@@ -57,6 +57,7 @@ class DataBackupService {
     'keepPersonaOnNewChat',
     'roleSwapButtonEnabled',
     'showSystemMessagesInChat',
+    'showPromptProcessingIndicator',
   };
 
   Map<String, dynamic> _messageToMap(Message message) => {
@@ -113,6 +114,7 @@ class DataBackupService {
     'isArchived': domain.isArchived,
     'characterCount': domain.characterCount,
     'totalTokenCount': domain.totalTokenCount,
+    'promptsProcessed': domain.promptsProcessed,
   };
 
   List<Map<String, dynamic>> _exportSavedMessages(Store store) {
@@ -738,6 +740,7 @@ class DataBackupService {
             isArchived: item['isArchived'] as bool? ?? false,
             characterCount: item['characterCount'] as int? ?? 0,
             totalTokenCount: item['totalTokenCount'] as int?,
+            promptsProcessed: item['promptsProcessed'] as int? ?? 0,
           );
           final query = convBox
               .query(ConversationEntity_.id.equals(conversation.id))

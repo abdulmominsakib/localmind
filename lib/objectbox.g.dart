@@ -22,7 +22,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 6060443518060866028),
     name: 'ConversationEntity',
-    lastPropertyId: const obx_int.IdUid(24, 2324488738774851555),
+    lastPropertyId: const obx_int.IdUid(25, 614156416722889084),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -167,6 +167,12 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(24, 2324488738774851555),
         name: 'totalTokenCount',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(25, 614156416722889084),
+        name: 'promptsProcessed',
         type: 6,
         flags: 0,
       ),
@@ -809,7 +815,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final folderIdOffset = object.folderId == null
             ? null
             : fbb.writeString(object.folderId!);
-        fbb.startTable(25);
+        fbb.startTable(26);
         fbb.addInt64(0, object.internalId);
         fbb.addOffset(1, idOffset);
         fbb.addOffset(2, titleOffset);
@@ -834,6 +840,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addBool(21, object.isArchived);
         fbb.addInt64(22, object.characterCount);
         fbb.addInt64(23, object.totalTokenCount);
+        fbb.addInt64(24, object.promptsProcessed);
         fbb.finish(fbb.endTable());
         return object.internalId;
       },
@@ -942,6 +949,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
           rootOffset,
           50,
         );
+        final promptsProcessedParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          52,
+          0,
+        );
         final object = ConversationEntity(
           internalId: internalIdParam,
           id: idParam,
@@ -967,6 +980,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           isArchived: isArchivedParam,
           characterCount: characterCountParam,
           totalTokenCount: totalTokenCountParam,
+          promptsProcessed: promptsProcessedParam,
         );
         obx_int.InternalToManyAccess.setRelInfo<ConversationEntity>(
           object.messages,
@@ -1777,6 +1791,11 @@ class ConversationEntity_ {
   /// See [ConversationEntity.totalTokenCount].
   static final totalTokenCount = obx.QueryIntegerProperty<ConversationEntity>(
     _entities[0].properties[23],
+  );
+
+  /// See [ConversationEntity.promptsProcessed].
+  static final promptsProcessed = obx.QueryIntegerProperty<ConversationEntity>(
+    _entities[0].properties[24],
   );
 
   /// see [ConversationEntity.messages]

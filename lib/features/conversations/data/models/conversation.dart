@@ -23,6 +23,11 @@ class Conversation {
   final int characterCount;
   final int? totalTokenCount;
 
+  /// Number of user prompts in this conversation that generated a reply
+  /// successfully. Persisted with the conversation; never written for
+  /// temporary/incognito chats.
+  final int promptsProcessed;
+
   Conversation({
     required this.id,
     required this.title,
@@ -47,6 +52,7 @@ class Conversation {
     this.isArchived = false,
     this.characterCount = 0,
     this.totalTokenCount,
+    this.promptsProcessed = 0,
   });
 
   Conversation copyWith({
@@ -83,6 +89,7 @@ class Conversation {
     bool? isArchived,
     int? characterCount,
     int? totalTokenCount,
+    int? promptsProcessed,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -116,6 +123,7 @@ class Conversation {
       isArchived: isArchived ?? this.isArchived,
       characterCount: characterCount ?? this.characterCount,
       totalTokenCount: totalTokenCount ?? this.totalTokenCount,
+      promptsProcessed: promptsProcessed ?? this.promptsProcessed,
     );
   }
 }
