@@ -28,6 +28,7 @@ import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/objectbox.g.dart';
 import '../data/chat_service.dart';
 import '../data/image_generation_service.dart';
+import '../data/models/live_generation.dart';
 import '../data/models/message.dart' hide ToolCallData;
 import '../data/models/message.dart' as msg_model show ToolCallData;
 import '../data/title_generation_service.dart';
@@ -77,6 +78,7 @@ class ChatState {
   final Message? streamingMessage;
   final PendingToolApproval? pendingToolApproval;
   final bool isTemporary;
+  final LiveGeneration? liveGeneration;
 
   const ChatState({
     this.messages = const [],
@@ -87,6 +89,7 @@ class ChatState {
     this.streamingMessage,
     this.pendingToolApproval,
     this.isTemporary = false,
+    this.liveGeneration,
   });
 
   ChatState copyWith({
@@ -98,9 +101,11 @@ class ChatState {
     Message? streamingMessage,
     PendingToolApproval? pendingToolApproval,
     bool? isTemporary,
+    LiveGeneration? liveGeneration,
     bool clearError = false,
     bool clearStreaming = false,
     bool clearPendingApproval = false,
+    bool clearLiveGeneration = false,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
@@ -115,6 +120,9 @@ class ChatState {
           ? null
           : (pendingToolApproval ?? this.pendingToolApproval),
       isTemporary: isTemporary ?? this.isTemporary,
+      liveGeneration: clearLiveGeneration
+          ? null
+          : (liveGeneration ?? this.liveGeneration),
     );
   }
 }
@@ -168,6 +176,7 @@ class ChatNotifier extends Notifier<ChatState> {
     Server server,
     ChatService chatService, {
     bool isImageGeneration = false,
+    bool countsAsPrompt = false,
   }) {
     final previous = _sessions[conversationId];
     final session = GenerationSession(
@@ -176,6 +185,7 @@ class ChatNotifier extends Notifier<ChatState> {
       chatService: chatService,
       persisted: previous?.persisted ?? !_isInMemoryChat,
       imageCancelToken: isImageGeneration ? CancelToken() : null,
+      countsAsPrompt: countsAsPrompt,
     );
     _sessions[conversationId] = session;
     if (previous != null) unawaited(previous.detach());
@@ -191,6 +201,68 @@ class ChatNotifier extends Notifier<ChatState> {
       _sessions.remove(session.conversationId);
     }
     _publishGenerations();
+  }
+
+  /// Moves the live status from "reading the prompt" to "generating" the first
+  /// time the backend yields a token for [session].
+  void _markFirstToken(GenerationSession session) {
+    if (_currentConversationId != session.conversationId) return;
+    final current = state.liveGeneration;
+    if (current == null) return;
+    state = state.copyWith(
+      liveGeneration: current.copyWith(
+        phase: LiveGenerationPhase.generating,
+        firstTokenAt: DateTime.now(),
+      ),
+    );
+  }
+
+  /// Freezes the final throughput numbers on the status bar once [session]
+  /// produced [finalMessage].
+  void _completeLiveGeneration(
+    GenerationSession session,
+    Message finalMessage,
+  ) {
+    if (_currentConversationId != session.conversationId) return;
+    final current = state.liveGeneration;
+    if (current == null) return;
+    final stats = session.stats;
+    final genMs = session.startTime == null
+        ? null
+        : DateTime.now().difference(session.startTime!).inMilliseconds;
+    double? tps = stats?.tokensPerSecond;
+    final outTokens = stats?.totalOutputTokens ?? finalMessage.tokenCount;
+    if (tps == null && outTokens != null && genMs != null && genMs > 0) {
+      tps = outTokens / (genMs / 1000);
+    }
+    state = state.copyWith(
+      liveGeneration: current.copyWith(
+        phase: LiveGenerationPhase.completed,
+        completedAt: DateTime.now(),
+        outputTokens: outTokens,
+        tokensPerSecond: tps,
+        generationTimeMs: genMs,
+      ),
+    );
+  }
+
+  /// Counts one prompt against the conversation's usage, once per session.
+  /// AI-authored turns (title generation, smart replies) pass
+  /// `countsAsPrompt: false` so they do not inflate the user's count.
+  Future<void> _maybeCountPrompt(
+    GenerationSession session,
+    String conversationId,
+  ) async {
+    if (!session.countsAsPrompt ||
+        !session.persisted ||
+        session.promptCounted) {
+      return;
+    }
+    session.promptCounted = true;
+    if (!ref.mounted) return;
+    await ref
+        .read(conv.conversationsProvider.notifier)
+        .incrementPromptsProcessed(conversationId);
   }
 
   /// Pushes the running replies to the UI providers and keeps the Android
@@ -939,7 +1011,11 @@ class ChatNotifier extends Notifier<ChatState> {
     });
   }
 
-  Future<void> sendMessage(String content, {List<File>? attachments}) async {
+  Future<void> sendMessage(
+    String content, {
+    List<File>? attachments,
+    bool countsAsPrompt = true,
+  }) async {
     if (_blockIfOnDeviceBusy()) return;
     final target = ref.read(activeChatTargetProvider);
     final server = target.server;
@@ -1070,6 +1146,7 @@ class ChatNotifier extends Notifier<ChatState> {
       server,
       chatService,
       isImageGeneration: target.isImageGeneration,
+      countsAsPrompt: countsAsPrompt && !target.isImageGeneration,
     );
     if (session.isImageGeneration) {
       unawaited(
@@ -1119,6 +1196,20 @@ class ChatNotifier extends Notifier<ChatState> {
     session.resetStreamMetrics();
     session.resetCheckpointMetrics();
     session.updateSavedMetrics(assistantMessage);
+
+    final estimatedPrefillMs = PrefillEstimator.estimatePrefillMs(
+      inputChars: trimmedContent.length,
+      isOnDevice: server.isOnDevice,
+    );
+    if (_currentConversationId == convId) {
+      state = state.copyWith(
+        liveGeneration: LiveGeneration(
+          phase: LiveGenerationPhase.processingPrompt,
+          startedAt: DateTime.now(),
+          estimatedPrefillMs: estimatedPrefillMs,
+        ),
+      );
+    }
 
     final messagesForApi = _buildMessagesForApi(selectedModel);
 
@@ -1183,7 +1274,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 switch (response.type) {
                   case ChatResponseType.message:
                     if (response.content?.isNotEmpty ?? false) {
-                      session.noteFirstToken();
+                      if (session.noteFirstToken()) _markFirstToken(session);
                     }
                     streamingAssistantMessage = streamingAssistantMessage
                         .copyWith(
@@ -1209,7 +1300,7 @@ class ChatNotifier extends Notifier<ChatState> {
                     break;
                   case ChatResponseType.reasoning:
                     if (response.reasoningContent?.isNotEmpty ?? false) {
-                      session.noteFirstToken();
+                      if (session.noteFirstToken()) _markFirstToken(session);
                     }
                     reasoningContent += response.reasoningContent ?? '';
                     streamingAssistantMessage = streamingAssistantMessage
@@ -1243,6 +1334,18 @@ class ChatNotifier extends Notifier<ChatState> {
                       ref.read(appHapticsProvider).light();
                     }
                     break;
+                  case ChatResponseType.prefillProgress:
+                    if (isCurrentContext) {
+                      final current = state.liveGeneration;
+                      if (current != null) {
+                        state = state.copyWith(
+                          liveGeneration: current.copyWith(
+                            realPrefillProgress: response.progress,
+                          ),
+                        );
+                      }
+                    }
+                    break;
                   case ChatResponseType.timeoutError:
                   case ChatResponseType.error:
                     streamHadError = true;
@@ -1266,6 +1369,7 @@ class ChatNotifier extends Notifier<ChatState> {
                       state = state.copyWith(
                         isStreaming: false,
                         errorMessage: streamingAssistantMessage.errorMessage,
+                        clearLiveGeneration: true,
                       );
                     }
                     _endSession(session);
@@ -1359,6 +1463,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   if (ref.mounted && isCurrentContext) {
                     _replaceMessageInState(finalMessage, clearStreaming: true);
                     state = state.copyWith(isStreaming: false);
+                    _completeLiveGeneration(session, finalMessage);
                     _maybeAutoGenerateTitleAfterFirstReply();
                   }
                   if (ref.mounted) {
@@ -1371,6 +1476,7 @@ class ChatNotifier extends Notifier<ChatState> {
                     finalMessage,
                     isCurrentContext: isCurrentContext,
                   );
+                  await _maybeCountPrompt(session, streamConvId);
 
                   if (ref.mounted) {
                     _maybeRequestReviewAfterSuccessfulCompletion(
@@ -2219,6 +2325,7 @@ class ChatNotifier extends Notifier<ChatState> {
       server,
       chatService,
       isImageGeneration: target.isImageGeneration,
+      countsAsPrompt: true,
     );
     if (session.isImageGeneration) {
       unawaited(
@@ -2493,6 +2600,23 @@ class ChatNotifier extends Notifier<ChatState> {
         ? _buildMessagesForContinue(selectedModel, assistantMessage)
         : _buildMessagesForApi(selectedModel);
 
+    if (!isToolFollowup &&
+        _activeConversationId == assistantMessage.conversationId) {
+      state = state.copyWith(
+        liveGeneration: LiveGeneration(
+          phase: LiveGenerationPhase.processingPrompt,
+          startedAt: DateTime.now(),
+          estimatedPrefillMs: PrefillEstimator.estimatePrefillMs(
+            inputChars: messagesForApi.fold<int>(
+              0,
+              (s, m) => s + m.content.length,
+            ),
+            isOnDevice: server.isOnDevice,
+          ),
+        ),
+      );
+    }
+
     try {
       session.resetStreamMetrics();
 
@@ -2551,7 +2675,7 @@ class ChatNotifier extends Notifier<ChatState> {
               switch (response.type) {
                 case ChatResponseType.message:
                   if (response.content?.isNotEmpty ?? false) {
-                    session.noteFirstToken();
+                    if (session.noteFirstToken()) _markFirstToken(session);
                   }
                   var delta = response.content ?? '';
                   if (isFirstContinueChunk && delta.isNotEmpty) {
@@ -2583,7 +2707,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   break;
                 case ChatResponseType.reasoning:
                   if (response.reasoningContent?.isNotEmpty ?? false) {
-                    session.noteFirstToken();
+                    if (session.noteFirstToken()) _markFirstToken(session);
                   }
                   reasoningContent += response.reasoningContent ?? '';
                   streamingAssistantMessage = streamingAssistantMessage
@@ -2606,6 +2730,18 @@ class ChatNotifier extends Notifier<ChatState> {
                       .copyWith(isProcessing: true);
                   session.latestMessage = streamingAssistantMessage;
                   stateNeedsUpdate = true;
+                  break;
+                case ChatResponseType.prefillProgress:
+                  if (isCurrentContext) {
+                    final current = state.liveGeneration;
+                    if (current != null) {
+                      state = state.copyWith(
+                        liveGeneration: current.copyWith(
+                          realPrefillProgress: response.progress,
+                        ),
+                      );
+                    }
+                  }
                   break;
                 case ChatResponseType.timeoutError:
                 case ChatResponseType.error:
@@ -2633,6 +2769,7 @@ class ChatNotifier extends Notifier<ChatState> {
                       state = state.copyWith(
                         isStreaming: false,
                         clearStreaming: true,
+                        clearLiveGeneration: true,
                       );
                     }
                     _endSession(session);
@@ -2702,6 +2839,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   isStreaming: false,
                   clearStreaming: true,
                 );
+                _completeLiveGeneration(session, finalMessage);
                 _maybeAutoGenerateTitleAfterFirstReply();
               }
               if (ref.mounted) {
@@ -2712,7 +2850,13 @@ class ChatNotifier extends Notifier<ChatState> {
                 finalMessage,
                 isCurrentContext: isCurrentContext,
               );
+              await _maybeCountPrompt(session, streamConvId);
               if (!ref.mounted || finalMessage.status == MessageStatus.error) {
+                if (ref.mounted &&
+                    isCurrentContext &&
+                    finalMessage.status == MessageStatus.error) {
+                  state = state.copyWith(clearLiveGeneration: true);
+                }
                 return;
               }
               _maybeRequestReviewAfterSuccessfulCompletion(
@@ -2759,6 +2903,7 @@ class ChatNotifier extends Notifier<ChatState> {
                 state = state.copyWith(
                   isStreaming: false,
                   clearStreaming: true,
+                  clearLiveGeneration: true,
                   errorMessage: error.toString(),
                 );
               }
@@ -2773,6 +2918,7 @@ class ChatNotifier extends Notifier<ChatState> {
         isStreaming: false,
         errorMessage: e.toString(),
         clearStreaming: true,
+        clearLiveGeneration: true,
       );
       _endSession(session);
     }

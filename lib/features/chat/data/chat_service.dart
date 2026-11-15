@@ -95,6 +95,7 @@ class ChatResponse {
   final ToolCallData? toolCall;
   final InvalidToolCallData? invalidToolCall;
   final ChatStats? stats;
+  final double? progress;
 
   const ChatResponse({
     required this.type,
@@ -103,6 +104,7 @@ class ChatResponse {
     this.toolCall,
     this.invalidToolCall,
     this.stats,
+    this.progress,
   });
 }
 
@@ -113,6 +115,7 @@ enum ChatResponseType {
   invalidToolCall,
   done,
   processing,
+  prefillProgress,
   timeoutError,
   error,
 }
@@ -474,6 +477,15 @@ class LMStudioChatService implements ChatService {
               // the debug log — they don't carry user-visible content.
               if (eventType.isNotEmpty) {
                 Log.debug('LMStudio stream event: $eventType');
+              }
+              if (eventType.contains('prompt_processing')) {
+                final progress = json['progress'];
+                if (progress is num) {
+                  yield ChatResponse(
+                    type: ChatResponseType.prefillProgress,
+                    progress: progress.toDouble().clamp(0.0, 1.0),
+                  );
+                }
               }
           }
         }

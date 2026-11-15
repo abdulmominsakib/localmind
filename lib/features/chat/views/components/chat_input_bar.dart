@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:localmind/features/chat/views/components/token_usage_indicator.dart';
+import 'prompt_processing_indicator.dart';
 
 import '../../../../core/models/enums.dart';
 import '../../../../core/providers/app_providers.dart';
@@ -1115,6 +1116,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               ),
             ],
 
+            const PromptProcessingStatusBar(),
             // One row: add, the text (growing upward as it wraps), mic,
             // and voice mode or send. Thinking and send-as-assistant live in
             // the + sheet; a dot on + shows when either is on.
