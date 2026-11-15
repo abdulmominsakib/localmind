@@ -3485,6 +3485,13 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get gguf_import_queued_message =>
       'import queued — track it under Downloads';
+
+  @override
+  String get download_auto_resume_title => 'Auto-resume downloads';
+
+  @override
+  String get download_auto_resume_desc =>
+      'When the app returns to the foreground or connectivity returns, downloads paused by the system resume automatically.';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

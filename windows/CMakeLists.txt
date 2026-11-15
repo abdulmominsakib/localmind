@@ -106,3 +106,10 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# connectivity_plus ships UTF-8 comments (em dashes) without a BOM; MSVC
+# under a non-UTF-8 system code page raises C4819 on them, which the plugin's
+# /WX turns into a hard error. Force UTF-8 source parsing for that target.
+if(TARGET connectivity_plus_plugin)
+  target_compile_options(connectivity_plus_plugin PRIVATE /utf-8)
+endif()

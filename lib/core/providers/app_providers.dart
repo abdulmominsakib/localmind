@@ -125,6 +125,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(tempChatKeyboardIncognito: value));
   void setResumeLastChat(bool value) =>
       _update(state.copyWith(resumeLastChat: value));
+  void setDownloadAutoResume(bool value) =>
+      _update(state.copyWith(downloadAutoResume: value));
   void setImageCompressionEnabled(bool value) =>
       _update(state.copyWith(imageCompressionEnabled: value));
   void setImageCompressionLevel(ImageCompressionLevel value) =>

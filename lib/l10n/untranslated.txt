@@ -83,7 +83,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "bn": [
@@ -174,7 +176,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "de": [
@@ -265,7 +269,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "es": [
@@ -356,7 +362,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "fr": [
@@ -447,7 +455,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "hi": [
@@ -538,7 +548,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "it": [
@@ -629,7 +641,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "ja": [
@@ -720,7 +734,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "ko": [
@@ -797,7 +813,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "pt": [
@@ -874,7 +892,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "ru": [
@@ -965,7 +985,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "tr": [
@@ -1056,7 +1078,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "zh": [
@@ -1147,7 +1171,9 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ],
 
   "zh_TW": [
@@ -1238,6 +1264,8 @@
     "download_action_cancel",
     "download_action_retry",
     "download_action_delete",
-    "gguf_import_queued_message"
+    "gguf_import_queued_message",
+    "download_auto_resume_title",
+    "download_auto_resume_desc"
   ]
 }

@@ -53,14 +53,24 @@ enum _StopReason { pause, cancel, delete }
 /// The engine owns bytes and task state; consumers (e.g. the GGUF import
 /// repository) own validation/publishing via [registerPostTransfer] — only a
 /// successful post-transfer hook lets a task reach `completed`.
-class DownloadEngine {
+/// The engine surface the lifecycle observer drives — declared here so the
+/// engine implements it and the observer (and tests) depend on the
+/// abstraction, not the concrete engine.
+abstract class DownloadLifecycleController {
+  Future<void> pauseAllRunning({String? note});
+  Future<void> resumeSystemPaused();
+}
+
+class DownloadEngine implements DownloadLifecycleController {
   static const _diskMarginBytes = 64 * 1024 * 1024;
+  static const _defaultCheckpointIntervalBytes = 8 * 1024 * 1024;
 
   final DownloadTaskStore _store;
   final Dio _dio;
   final Future<Directory> Function() _workDirectory;
   final String? Function() _tokenResolver;
   final int maxConcurrent;
+  final int checkpointIntervalBytes;
   final int? Function(String path)? _freeDiskSpaceBytes;
 
   final Map<String, DownloadTask> _tasks = {};
@@ -68,11 +78,18 @@ class DownloadEngine {
   final Map<String, CancelToken> _activeTokens = {};
   final Map<CancelToken, _StopReason> _stopReasons = {};
   final Map<String, Completer<_StopReason>> _stopSignals = {};
+  /// Tasks paused by the system (lifecycle/network), not by the user.
+  /// Drives [resumeSystemPaused]; membership is cleared by user intent.
+  final Set<String> _systemPaused = {};
+  /// Notes (e.g. network-loss markers) attached to system pauses, applied to
+  /// the task's error field when the stop finalizes.
+  final Map<String, String> _pauseNotes = {};
   final StreamController<List<DownloadTask>> _changes =
       StreamController<List<DownloadTask>>.broadcast();
   final Completer<void> _ready = Completer<void>();
 
   Future<void> Function(DownloadTask task)? _postTransfer;
+  Future<void> _sidecarChain = Future<void>.value();
   Future<void> Function(DownloadTask task, Object error)? _taskFailureHandler;
   bool _disposed = false;
   int _activeCount = 0;
@@ -83,6 +100,7 @@ class DownloadEngine {
     required Future<Directory> Function() workDirectory,
     required String? Function() tokenResolver,
     this.maxConcurrent = 2,
+    this.checkpointIntervalBytes = _defaultCheckpointIntervalBytes,
     int? Function(String path)? freeDiskSpaceBytes,
   })  : _store = store,
         _dio = dio,
@@ -205,6 +223,9 @@ class DownloadEngine {
   Future<void> pause(String taskId) async {
     final task = _tasks[taskId];
     if (task == null) return;
+    // User pause overrides a system pause — drop the system bookkeeping.
+    _systemPaused.remove(taskId);
+    _pauseNotes.remove(taskId);
     if (task.state == DownloadTaskState.queued) {
       await _update(task.copyWith(state: DownloadTaskState.paused));
       return;
@@ -218,6 +239,9 @@ class DownloadEngine {
   Future<void> resume(String taskId) async {
     final task = _tasks[taskId];
     if (task == null) return;
+    // The user resuming a system-paused task is user intent — drop it from
+    // the system set so a later resumeSystemPaused does not double-handle it.
+    _systemPaused.remove(taskId);
     if (task.state == DownloadTaskState.paused ||
         task.state == DownloadTaskState.canceled) {
       await _update(task.copyWith(
@@ -227,9 +251,61 @@ class DownloadEngine {
     }
   }
 
+  /// Gracefully pauses every running task (and holds queued ones from
+  /// starting), recording them as system-paused so [resumeSystemPaused] can
+  /// restore exactly this set. [note] — e.g. a network-loss marker — is
+  /// applied to each task's error field when the stop finalizes. Never
+  /// touches user-paused or failed tasks.
+  @override
+  Future<void> pauseAllRunning({String? note}) async {
+    final affected = _tasks.values
+        .where((t) =>
+            t.state == DownloadTaskState.running ||
+            t.state == DownloadTaskState.queued)
+        .toList(growable: false);
+    for (final task in affected) {
+      _systemPaused.add(task.id);
+      if (note != null) {
+        _pauseNotes[task.id] = note;
+      }
+      if (task.state == DownloadTaskState.running) {
+        _stop(task, _StopReason.pause);
+      } else {
+        final current = _tasks[task.id] ?? task;
+        _tasks[task.id] = current.copyWith(
+          state: DownloadTaskState.paused,
+          error: note,
+        );
+      }
+    }
+    if (affected.isNotEmpty) {
+      await _persist();
+      _emit();
+    }
+  }
+
+  /// Re-queues exactly the system-paused set (lifecycle/network pauses).
+  /// User-paused and failed tasks are never touched.
+  @override
+  Future<void> resumeSystemPaused() async {
+    final ids = _systemPaused.toList(growable: false);
+    _systemPaused.clear();
+    _pauseNotes.clear();
+    for (final id in ids) {
+      final task = _tasks[id];
+      if (task != null && task.state == DownloadTaskState.paused) {
+        await _update(task.copyWith(
+          state: DownloadTaskState.queued,
+          clearError: true,
+        ));
+      }
+    }
+  }
+
   Future<void> cancel(String taskId) async {
     final task = _tasks[taskId];
     if (task == null) return;
+    _systemPaused.remove(taskId);
     if (task.state == DownloadTaskState.running) {
       _stop(task, _StopReason.cancel);
       return;
@@ -259,6 +335,8 @@ class DownloadEngine {
   Future<void> delete(String taskId) async {
     final task = _tasks[taskId];
     if (task == null) return;
+    _systemPaused.remove(taskId);
+    _pauseNotes.remove(taskId);
     await _cancelDependents(taskId, 'Dependency deleted');
     if (task.state == DownloadTaskState.running) {
       _stop(task, _StopReason.delete);
@@ -423,6 +501,19 @@ class DownloadEngine {
           offset = 0;
         } else {
           offset = resolved;
+          // OS-cached bytes can extend past the last checkpoint (hard kill
+          // between our sidecar write and the OS flushing the tail). Append
+          // mode writes at END-of-file, so anything past the recorded offset
+          // must be truncated away or the resume leaves a mid-file hole.
+          final partLength = await _fileLength(partFile);
+          if (partLength > offset) {
+            final raf = await partFile.open(mode: FileMode.append);
+            try {
+              await raf.truncate(offset);
+            } finally {
+              await raf.close();
+            }
+          }
         }
       }
 
@@ -508,10 +599,25 @@ class DownloadEngine {
           etag: respEtag ?? task.etag,
         ));
 
+        // Initial sidecar: a transfer entering running without one (fresh
+        // task) records its starting offset immediately, so even the first
+        // stop boundary is unambiguous.
+        if (sidecar == null) {
+          sidecar = DownloadSidecar(
+            sourceUrl: task.url,
+            etag: respEtag ?? task.etag ?? '',
+            totalBytes: resolvedTotal,
+            offset: offset,
+          );
+          await _writeSidecar(sidecarPath, sidecar.sourceUrl, sidecar.etag,
+              sidecar.totalBytes, sidecar.offset);
+        }
+
         final sink = partFile.openWrite(
           mode: offset > 0 ? FileMode.append : FileMode.write,
         );
         var received = offset;
+        var lastCheckpoint = offset;
 
         final body = response.data;
         if (body == null) {
@@ -525,7 +631,9 @@ class DownloadEngine {
         // pause/cancel must arrive through the signal. Writes are plain
         // buffered adds — no flush mid-stream, so nothing can overlap them;
         // the sidecar lands when the transfer stops (pause/cancel/fail) or
-        // completes.
+        // completes. Crash-level checkpoints periodically advance the sidecar
+        // offset (no flush: process kills keep the OS page cache, and the
+        // reconcile-time truncate + torn-write clamp keep power-loss safe).
         final stopSignal = Completer<_StopReason>();
         _stopSignals[task.id] = stopSignal;
         final streamDone = Completer<void>();
@@ -539,6 +647,11 @@ class DownloadEngine {
             }
             sink.add(chunk);
             received += chunk.length;
+            if (received - lastCheckpoint >= checkpointIntervalBytes) {
+              lastCheckpoint = received;
+              unawaited(_writeSidecar(sidecarPath, task.url,
+                  respEtag ?? task.etag ?? '', resolvedTotal, received));
+            }
             final current = _tasks[task.id];
             if (current != null) {
               _tasks[task.id] = current.copyWith(receivedBytes: received);
@@ -571,21 +684,27 @@ class DownloadEngine {
 
         if (stopped != null) {
           // pause/cancel/delete while running: bytes retained, state per
-          // reason (delete removes the record and its files).
+          // reason (delete removes the record and its files). A system pause
+          // note (e.g. network loss) lands in the error field.
           if (stopped == _StopReason.delete) {
             await _remove(task);
           } else {
+            final note = _pauseNotes.remove(task.id);
             await _update(task.copyWith(
               state: stopped == _StopReason.pause
                   ? DownloadTaskState.paused
                   : DownloadTaskState.canceled,
               receivedBytes: durableOffset,
+              totalBytes: resolvedTotal,
+              error: note,
+              clearError: note == null,
             ));
           }
           return;
         }
         if (streamFailure != null) {
           final failure = _transferErrorText(streamFailure!);
+          _systemPaused.remove(task.id);
           await _update(task.copyWith(
             state: DownloadTaskState.failed,
             receivedBytes: durableOffset,
@@ -601,6 +720,7 @@ class DownloadEngine {
           // never publish a partial file as complete.
           final failure = 'Transfer ended early: '
               '$durableOffset of $resolvedTotal bytes';
+          _systemPaused.remove(task.id);
           await _update(task.copyWith(
             state: DownloadTaskState.failed,
             receivedBytes: durableOffset,
@@ -661,6 +781,7 @@ class DownloadEngine {
       final current = _tasks[task.id];
       if (current != null) {
         final failure = _transferErrorText(e);
+        _systemPaused.remove(current.id);
         await _update(current.copyWith(
           state: DownloadTaskState.failed,
           error: failure,
@@ -699,6 +820,10 @@ class DownloadEngine {
     }
   }
 
+  /// All sidecar writes serialize through one chain: two overlapping saves
+  /// share the same `.tmp` path and collide (write handle vs rename →
+  /// sharing violation on Windows). Checkpoint saves are best-effort — a
+  /// failure is logged and the chain stays alive for the next save.
   Future<void> _writeSidecar(
     String sidecarPath,
     String sourceUrl,
@@ -706,12 +831,19 @@ class DownloadEngine {
     int totalBytes,
     int offset,
   ) {
-    return DownloadSidecar(
-      sourceUrl: sourceUrl,
-      etag: etag,
-      totalBytes: totalBytes,
-      offset: offset,
-    ).save(sidecarPath);
+    _sidecarChain = _sidecarChain.then((_) async {
+      try {
+        await DownloadSidecar(
+          sourceUrl: sourceUrl,
+          etag: etag,
+          totalBytes: totalBytes,
+          offset: offset,
+        ).save(sidecarPath);
+      } catch (e) {
+        Log.warning('Sidecar write failed for $sidecarPath: $e');
+      }
+    });
+    return _sidecarChain;
   }
 
   Future<int> _fileLength(File file) async {

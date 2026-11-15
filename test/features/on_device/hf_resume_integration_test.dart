@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/features/on_device/data/download_engine.dart';
+import 'package:localmind/features/on_device/data/download_lifecycle_observer.dart';
 import 'package:localmind/features/on_device/data/download_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -80,7 +82,15 @@ void main() {
       }
       expect(reached, isTrue,
           reason: 'transfer did not reach 512 KiB (is the URL reachable?)');
-      await engine1.pause(modelTaskId);
+      // Pause through the lifecycle observer (as an app-backgrounding event
+      // would), not via a direct engine.pause — proving the observer-driven
+      // system-pause path works over the real CDN.
+      final observer = DownloadLifecycleObserver(
+        controller: engine1,
+        autoResumeEnabled: () => false,
+      );
+      await observer.handleLifecycleState(AppLifecycleState.paused);
+      observer.stop();
       final paused = await _waitFor(
         engine1,
         (t) => t.id == modelTaskId && t.state == DownloadTaskState.paused,

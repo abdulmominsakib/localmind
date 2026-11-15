@@ -35,3 +35,19 @@ The engine (see archived `add-download-resume-pause-queue`) already has graceful
 
 ## Risks deferred to tasks
 - Widget-binding availability in engine unit tests: lifecycle tests use a `WidgetsBinding`-initialized test harness already in place.
+
+## Appendix: flutter_test serialized-chain deadlock (resolved)
+
+The original checkpoint design chained every sink write through one future
+and awaited the chain to drain. Under flutter_test the chain deadlocked:
+the stream listener kept extending the chain faster than the drain consumed
+it (fake-async event starvation), so the drain never completed. The shipped
+design removes mid-stream flushes entirely: transfer writes are plain
+buffered adds, and checkpoints write the sidecar **without flushing** (no
+overlap possible). Safety analysis: on process kill the OS page cache keeps
+buffered bytes (sidecar offset ≤ file length; the resume truncate brings the
+file back to the recorded offset); on power loss the torn-write clamp
+(file < sidecar offset) restarts from byte 0. A Windows sharing-violation
+between concurrent sidecar saves was fixed by serializing all sidecar
+writes through one engine-level chain that swallows per-save errors.
+

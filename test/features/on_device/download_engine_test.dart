@@ -64,7 +64,12 @@ class _SlowSource {
   Completer<void>? holdUntil;
   int sent = 0;
 
-  void drip({int chunkSize = 100, int total = 1000, Completer<void>? holdUntil}) {
+  void drip({
+    int chunkSize = 100,
+    int total = 1000,
+    Completer<void>? holdUntil,
+    int delayMs = 5,
+  }) {
     unawaited(() async {
       while (sent < total && !controller.isClosed) {
         final end = (sent + chunkSize).clamp(0, total);
@@ -75,7 +80,7 @@ class _SlowSource {
         if (holdUntil != null && !holdUntil.isCompleted) {
           await holdUntil.future;
         }
-        await Future<void>.delayed(const Duration(milliseconds: 5));
+        await Future<void>.delayed(Duration(milliseconds: delayMs));
       }
       if (!controller.isClosed) await controller.close();
     }());
@@ -821,6 +826,325 @@ void main() {
       );
       expect(failed, isNotNull);
       expect(failed!.error, contains('disk space'));
+      await engine.dispose();
+    });
+
+    test('pauseAllRunning pauses running+queued as system-paused and '
+        'resumeSystemPaused restores exactly them', () async {
+      final dir = await _tempDir('syspause');
+      addTearDown(() => dir.delete(recursive: true));
+      final gate = Completer<void>();
+      final adapter = MockDownloadAdapter((options, _) async {
+        final range = options.headers['range']?.toString();
+        if (range != null) {
+          final start = int.parse(range.replaceAll(RegExp(r'[^\d]'), ''));
+          return _continueResponseBody(start);
+        }
+        final source = _SlowSource();
+        source.drip(holdUntil: gate, chunkSize: 100, total: 1000);
+        return _slowResponseBody(source);
+      });
+      final engine = await _engine(adapter, dir, maxConcurrent: 2);
+      final running = await engine.enqueue(
+        kind: DownloadTaskKind.gguf,
+        groupId: 'g-running',
+        url: 'https://huggingface.co/o/r/resolve/main/running.gguf',
+        finalPath: '${dir.path}/running.gguf',
+        partPath: '${dir.path}/running.gguf.part',
+      );
+      final queued = await engine.enqueue(
+        kind: DownloadTaskKind.gguf,
+        groupId: 'g-queued',
+        url: 'https://huggingface.co/o/r/resolve/main/queued.gguf',
+        finalPath: '${dir.path}/queued.gguf',
+        partPath: '${dir.path}/queued.gguf.part',
+      );
+      // Fill the 2 slots so the queued task stays queued.
+      await engine.enqueue(
+        kind: DownloadTaskKind.gguf,
+        groupId: 'g-slot',
+        url: 'https://huggingface.co/o/r/resolve/main/slot.gguf',
+        finalPath: '${dir.path}/slot.gguf',
+        partPath: '${dir.path}/slot.gguf.part',
+      );
+      await _waitFor(
+        engine,
+        (t) =>
+            t.id == running.id &&
+            t.state == DownloadTaskState.running &&
+            t.receivedBytes > 0,
+      );
+      // User pauses a third task manually.
+      final userPaused = await engine.enqueue(
+        kind: DownloadTaskKind.gguf,
+        groupId: 'g-user',
+        url: 'https://huggingface.co/o/r/resolve/main/user.gguf',
+        finalPath: '${dir.path}/user.gguf',
+        partPath: '${dir.path}/user.gguf.part',
+      );
+      await engine.pause(userPaused.id);
+
+      await engine.pauseAllRunning(note: 'network: connection lost');
+
+      final pausedRunning = await _waitFor(
+        engine,
+        (t) =>
+            t.id == running.id &&
+            t.state == DownloadTaskState.paused &&
+            t.receivedBytes > 0,
+      );
+      expect(pausedRunning, isNotNull);
+      expect(
+        engine.tasks
+            .firstWhere((t) => t.id == queued.id)
+            .state,
+        DownloadTaskState.paused,
+      );
+      expect(
+        engine.tasks.firstWhere((t) => t.id == userPaused.id).state,
+        DownloadTaskState.paused,
+      );
+      // Network note lands in the error field of the system-paused task.
+      expect(pausedRunning!.error, contains('network'));
+
+      gate.complete();
+      await engine.resumeSystemPaused();
+
+      final resumedRunning = await _waitFor(
+        engine,
+        (t) =>
+            t.id == running.id &&
+            (t.state == DownloadTaskState.completed ||
+                t.state == DownloadTaskState.running),
+      );
+      expect(resumedRunning, isNotNull);
+      // The queued task started after its slot freed; the user-paused task
+      // was never touched by resumeSystemPaused.
+      expect(
+        engine.tasks.firstWhere((t) => t.id == userPaused.id).state,
+        DownloadTaskState.paused,
+      );
+      await engine.dispose();
+    });
+
+    test('user pause clears system bookkeeping (no double resume)',
+        () async {
+      final dir = await _tempDir('userpause');
+      addTearDown(() => dir.delete(recursive: true));
+      final gate = Completer<void>();
+      final source = _SlowSource();
+      final adapter = MockDownloadAdapter((options, _) async {
+        source.drip(holdUntil: gate, chunkSize: 100, total: 1000);
+        return _slowResponseBody(source);
+      });
+      final engine = await _engine(adapter, dir);
+      final task = await engine.enqueue(
+        kind: DownloadTaskKind.gguf,
+        groupId: 'g',
+        url: 'https://huggingface.co/o/r/resolve/main/m.gguf',
+        finalPath: '${dir.path}/m.gguf',
+        partPath: '${dir.path}/m.gguf.part',
+      );
+      await _waitFor(
+        engine,
+        (t) => t.id == task.id && t.receivedBytes >= 100,
+      );
+      await engine.pauseAllRunning(note: 'backgrounded');
+      await _waitFor(
+        engine,
+        (t) => t.id == task.id && t.state == DownloadTaskState.paused,
+      );
+      // The user resumes manually — resumeSystemPaused must not re-queue.
+      await engine.resume(task.id);
+      gate.complete();
+      await engine.resumeSystemPaused();
+
+      // Wait a moment; if double-handled, the task would flip states.
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      final t = engine.tasks.firstWhere((x) => x.id == task.id);
+      expect(
+        t.state,
+        isNot(DownloadTaskState.paused),
+        reason: 'user-resumed task should be running/queued/completed',
+      );
+      await engine.dispose();
+    });
+
+    test('checkpoint sidecar advances during transfer and honors the '
+        'interval knob', () async {
+      final dir = await _tempDir('checkpoint');
+      addTearDown(() => dir.delete(recursive: true));
+      final source = _SlowSource();
+      // 50 bytes every 30ms: reaches 400 bytes with three checkpoints in
+      // ~240ms, completes ~3s — time to observe checkpoints while running.
+      final adapter = MockDownloadAdapter((options, _) async {
+        final range = options.headers['range']?.toString();
+        if (range != null) {
+          final start = int.parse(range.replaceAll(RegExp(r'[^\d]'), ''));
+          return _body(
+            status: 206,
+            bytes: _payload(start, 5000),
+            total: 5000,
+            start: start,
+            etag: 'etag-1',
+          );
+        }
+        source.drip(chunkSize: 50, total: 5000, delayMs: 30);
+        return ResponseBody(
+          source.controller.stream,
+          200,
+          headers: {
+            HttpHeaders.etagHeader: ['etag-1'],
+            HttpHeaders.contentLengthHeader: ['5000'],
+          },
+        );
+      });
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final engine = DownloadEngine(
+        store: DownloadTaskStore(prefs),
+        dio: Dio()..httpClientAdapter = adapter,
+        workDirectory: () async => dir,
+        tokenResolver: () => null,
+        checkpointIntervalBytes: 200,
+      );
+      engine.registerPostTransfer((task) async {
+        final part = File(task.partPath);
+        if (await part.exists()) await part.rename(task.finalPath);
+      });
+      await engine.ready;
+      final task = await engine.enqueue(
+        kind: DownloadTaskKind.gguf,
+        groupId: 'g',
+        url: 'https://huggingface.co/o/r/resolve/main/m.gguf',
+        finalPath: '${dir.path}/m.gguf',
+        partPath: '${dir.path}/m.gguf.part',
+      );
+      // Wait until at least two checkpoints (400 bytes) landed in the
+      // sidecar while the transfer is still running.
+      final deadline = DateTime.now().add(const Duration(seconds: 20));
+      var checkpointed = 0;
+      while (DateTime.now().isBefore(deadline)) {
+        final sidecar = await DownloadSidecar.load('${task.partPath}.json');
+        checkpointed = sidecar?.offset ?? 0;
+        if (checkpointed >= 400) break;
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+      }
+      expect(checkpointed, greaterThanOrEqualTo(400),
+          reason: 'checkpoints should trail received bytes by < interval');
+      await engine.pause(task.id);
+      await _waitFor(
+        engine,
+        (t) => t.id == task.id && t.state == DownloadTaskState.paused,
+      );
+      await engine.resume(task.id);
+      final done = await _waitFor(
+        engine,
+        (t) => t.id == task.id && t.state == DownloadTaskState.completed,
+        timeout: const Duration(seconds: 30),
+      );
+      expect(done, isNotNull);
+      expect(File(task.finalPath).lengthSync(), 5000);
+      await engine.dispose();
+    });
+
+    test('initial sidecar is written when a transfer enters running',
+        () async {
+      final dir = await _tempDir('initialsidecar');
+      addTearDown(() => dir.delete(recursive: true));
+      final source = _SlowSource();
+      final gate = Completer<void>();
+      final adapter = MockDownloadAdapter((options, _) async {
+        source.drip(holdUntil: gate, chunkSize: 100, total: 1000);
+        return _slowResponseBody(source);
+      });
+      final engine = await _engine(adapter, dir);
+      final task = await engine.enqueue(
+        kind: DownloadTaskKind.gguf,
+        groupId: 'g',
+        url: 'https://huggingface.co/o/r/resolve/main/m.gguf',
+        finalPath: '${dir.path}/m.gguf',
+        partPath: '${dir.path}/m.gguf.part',
+      );
+      await _waitFor(
+        engine,
+        (t) => t.id == task.id && t.state == DownloadTaskState.running,
+      );
+      // The running state emits before the async initial-sidecar write
+      // completes — poll for it.
+      DownloadSidecar? sidecar;
+      final sidecarDeadline = DateTime.now().add(const Duration(seconds: 5));
+      while (DateTime.now().isBefore(sidecarDeadline)) {
+        sidecar = await DownloadSidecar.load('${task.partPath}.json');
+        if (sidecar != null) break;
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      expect(sidecar, isNotNull);
+      expect(sidecar!.sourceUrl, task.url);
+      expect(sidecar.totalBytes, 1000);
+      gate.complete();
+      await _waitFor(
+        engine,
+        (t) => t.id == task.id && t.state == DownloadTaskState.completed,
+      );
+      await engine.dispose();
+    });
+
+    test('resume after hard kill truncates OS-cached bytes past the '
+        'checkpoint (no mid-file hole)', () async {
+      final dir = await _tempDir('truncate');
+      addTearDown(() => dir.delete(recursive: true));
+      final requested = <String>[];
+      final adapter = MockDownloadAdapter((options, _) async {
+        final range = options.headers['range']?.toString();
+        requested.add(range ?? 'none');
+        if (range == 'bytes=1000-') {
+          return _body(
+            status: 206,
+            bytes: _payload(1000, 2000),
+            total: 2000,
+            start: 1000,
+            etag: 'etag-1',
+          );
+        }
+        return _body(status: 200, bytes: _payload(0, 2000), total: 2000, etag: 'etag-1');
+      });
+      final engine = await _engine(adapter, dir);
+      // Simulate a hard kill: the OS cache kept 1200 bytes but the last
+      // checkpoint (sidecar) only recorded 1000.
+      final part = File('${dir.path}/m.gguf.part');
+      await part.writeAsBytes(_payload(0, 1200));
+      const sidecar = DownloadSidecar(
+        sourceUrl: 'https://huggingface.co/o/r/resolve/main/m.gguf',
+        etag: 'etag-1',
+        totalBytes: 2000,
+        offset: 1000,
+      );
+      await sidecar.save('${dir.path}/m.gguf.part.json');
+      final task = await engine.enqueue(
+        kind: DownloadTaskKind.gguf,
+        groupId: 'g',
+        url: 'https://huggingface.co/o/r/resolve/main/m.gguf',
+        finalPath: '${dir.path}/m.gguf',
+        partPath: '${dir.path}/m.gguf.part',
+      );
+      final done = await _waitFor(
+        engine,
+        (t) => t.id == task.id && t.state == DownloadTaskState.completed,
+      );
+      expect(done, isNotNull);
+      expect(requested, ['bytes=1000-']);
+      // Verify no hole: every byte matches the deterministic payload.
+      final bytes = await File(task.finalPath).readAsBytes();
+      expect(bytes.length, 2000);
+      var hole = -1;
+      for (var i = 0; i < bytes.length; i++) {
+        if (bytes[i] != i % 256) {
+          hole = i;
+          break;
+        }
+      }
+      expect(hole, -1, reason: 'byte $hole diverges — mid-file hole');
       await engine.dispose();
     });
   });

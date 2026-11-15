@@ -55,3 +55,27 @@ Date: 2026-11-15. Platform: Windows host (Flutter 3.44.2).
 - The engine-level real-CDN integration test runs the engine directly; the
   interactive UI pass (pause via the app's own task-list buttons) is left as
   a manual step above.
+
+## Lifecycle resilience (add-download-lifecycle-resilience, 2026-11-15)
+
+- Engine: pauseAllRunning/resumeSystemPaused with system-pause bookkeeping
+  (user pause/cancel/fail/delete clears membership; resumeSystemPaused never
+  touches user-paused tasks) — 5 new unit tests.
+- Checkpoints: initial sidecar on entering running; periodic sidecar
+  (no flush — safe per design appendix); resume-time truncate of OS-cached
+  bytes past the checkpoint; serialized sidecar writes (sharing-violation
+  fix) — 4 new unit tests incl. a no-mid-file-hole byte scan.
+- Observer: 6 unit tests (lifecycle mapping, connectivity pause/resume,
+  auto-resume gating, dedup).
+- Real CDN: integration test pause driven through the lifecycle observer
+  (paused 620KB -> engine dispose -> restore -> resume -> 189126080 bytes,
+  GGUF magic ok).
+- Windows app UI: imported LFM2.5-VL-450M-Q8_0.gguf (361.7 MB) through the
+  dialog; task queued -> downloading (11.2 MB observed) -> Pause kept
+  20.7 MB -> Resume continued at 21.0 MB -> Completed 100% -> published as
+  an imported model (1 imported / 1 Hugging Face). Previously interrupted
+  tasks survived app restarts as Paused with Resume/Delete actions.
+- Fixed during validation: paused-card totalBytes display; connectivity_plus
+  Windows build (UTF-8 comments without BOM + /WX) handled via /utf-8 on the
+  plugin target in windows/CMakeLists.txt.
+

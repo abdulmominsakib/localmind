@@ -345,6 +345,12 @@ class _SettingsViewsState extends ConsumerState<SettingsViews> {
           value: settings.unloadModelsBeforeLoad,
           onChanged: notifier.setUnloadModelsBeforeLoad,
         ),
+        _ToggleSetting(
+          label: l10n.download_auto_resume_title,
+          description: l10n.download_auto_resume_desc,
+          value: settings.downloadAutoResume,
+          onChanged: notifier.setDownloadAutoResume,
+        ),
         _HuggingFaceTokenSetting(
           currentToken: settings.huggingFaceToken,
           onSave: (value) {

@@ -102,6 +102,7 @@ dependencies:
   geocoding: ^5.0.0
   marionette_flutter: ^0.6.0
   marionette_logger: ^0.6.0
+  connectivity_plus: ^7.3.1
 
 dev_dependencies:
   flutter_test:

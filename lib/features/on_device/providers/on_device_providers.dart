@@ -20,6 +20,7 @@ import '../../../core/providers/review_prompt_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/storage_providers.dart';
 import '../data/download_engine.dart';
+import '../data/download_lifecycle_observer.dart';
 import '../data/download_task.dart';
 import '../data/disk_space.dart';
 import '../data/imported_gguf_model_repository.dart';
@@ -110,6 +111,19 @@ class DownloadTasksNotifier extends Notifier<List<DownloadTask>> {
     return engine.tasks;
   }
 }
+
+final downloadLifecycleObserverProvider = Provider<DownloadLifecycleObserver>(
+  (ref) {
+    final observer = DownloadLifecycleObserver(
+      controller: ref.watch(downloadEngineProvider),
+      autoResumeEnabled: () => ref
+          .read(settingsProvider)
+          .downloadAutoResume,
+    );
+    ref.onDispose(() => observer.stop());
+    return observer;
+  },
+);
 
 final importedGgufModelsProvider =
     NotifierProvider<ImportedGgufModelsNotifier, List<OnDeviceModel>>(() {

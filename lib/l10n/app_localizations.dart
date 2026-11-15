@@ -6602,6 +6602,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'import queued — track it under Downloads'**
   String get gguf_import_queued_message;
+
+  /// No description provided for @download_auto_resume_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-resume downloads'**
+  String get download_auto_resume_title;
+
+  /// No description provided for @download_auto_resume_desc.
+  ///
+  /// In en, this message translates to:
+  /// **'When the app returns to the foreground or connectivity returns, downloads paused by the system resume automatically.'**
+  String get download_auto_resume_desc;
 }
 
 class _AppLocalizationsDelegate
