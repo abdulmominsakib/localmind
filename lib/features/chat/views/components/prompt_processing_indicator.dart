@@ -23,6 +23,7 @@ class PromptProcessingStatusBar extends ConsumerStatefulWidget {
     this.centeredInComposer = false,
     this.alignment,
     this.mainAxisAlignment,
+    this.emphasized = false,
   });
 
   /// Whether the status row should be centered within the composer box
@@ -36,6 +37,10 @@ class PromptProcessingStatusBar extends ConsumerStatefulWidget {
   final bool centeredInComposer;
   final Alignment? alignment;
   final MainAxisAlignment? mainAxisAlignment;
+
+  /// When true, render the live status with larger text/arc for the
+  /// in-field composer presentation.
+  final bool emphasized;
 
   bool get _centered =>
       centered ||
@@ -116,6 +121,14 @@ class _PromptProcessingStatusBarState
     final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
 
     final centered = widget._centered;
+    final emphasized = widget.emphasized;
+
+    if (emphasized) {
+      if (live == null) return const SizedBox.shrink();
+      return Center(
+        child: _LiveIndicator(live: live, muted: muted, emphasized: true),
+      );
+    }
 
     if (centered) {
       return Padding(
@@ -220,29 +233,51 @@ class _PromptProcessingStatusBarState
 }
 
 class _LiveIndicator extends StatelessWidget {
-  const _LiveIndicator({required this.live, required this.muted});
+  const _LiveIndicator({
+    required this.live,
+    required this.muted,
+    this.emphasized = false,
+  });
 
   final LiveGeneration live;
   final Color muted;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
     switch (live.phase) {
       case LiveGenerationPhase.processingPrompt:
-        return _ProcessingIndicator(live: live, muted: muted);
+        return _ProcessingIndicator(
+          live: live,
+          muted: muted,
+          emphasized: emphasized,
+        );
       case LiveGenerationPhase.generating:
-        return _GeneratingIndicator(live: live, muted: muted);
+        return _GeneratingIndicator(
+          live: live,
+          muted: muted,
+          emphasized: emphasized,
+        );
       case LiveGenerationPhase.completed:
-        return _CompletedIndicator(live: live, muted: muted);
+        return _CompletedIndicator(
+          live: live,
+          muted: muted,
+          emphasized: emphasized,
+        );
     }
   }
 }
 
 class _ProcessingIndicator extends StatelessWidget {
-  const _ProcessingIndicator({required this.live, required this.muted});
+  const _ProcessingIndicator({
+    required this.live,
+    required this.muted,
+    this.emphasized = false,
+  });
 
   final LiveGeneration live;
   final Color muted;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
@@ -264,15 +299,19 @@ class _ProcessingIndicator extends StatelessWidget {
     // Keep the arc in step with the label so its semantics do not report 100%
     // while prefill is still running either.
     final arc = pct / 100;
+    final arcSize = emphasized ? 18.0 : 12.0;
+    final stroke = emphasized ? 2.5 : 2.0;
+    final fontSize = emphasized ? 16.0 : 11.0;
+    final gap = emphasized ? 8.0 : 6.0;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 12,
-          height: 12,
+          width: arcSize,
+          height: arcSize,
           child: CircularProgressIndicator(
             value: arc,
-            strokeWidth: 2,
+            strokeWidth: stroke,
             backgroundColor: (isDark ? Colors.white : Colors.black).withValues(
               alpha: 0.12,
             ),
@@ -281,10 +320,10 @@ class _ProcessingIndicator extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: gap),
         Text(
           '${l10n.processing_prompt_label} $pct%',
-          style: TextStyle(fontSize: 11, color: muted),
+          style: TextStyle(fontSize: fontSize, color: muted),
         ),
       ],
     );
@@ -292,10 +331,15 @@ class _ProcessingIndicator extends StatelessWidget {
 }
 
 class _GeneratingIndicator extends ConsumerWidget {
-  const _GeneratingIndicator({required this.live, required this.muted});
+  const _GeneratingIndicator({
+    required this.live,
+    required this.muted,
+    this.emphasized = false,
+  });
 
   final LiveGeneration live;
   final Color muted;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -311,24 +355,29 @@ class _GeneratingIndicator extends ConsumerWidget {
       ),
     );
 
+    final arcSize = emphasized ? 18.0 : 12.0;
+    final stroke = emphasized ? 2.5 : 2.0;
+    final fontSize = emphasized ? 16.0 : 11.0;
+    final gap = emphasized ? 8.0 : 6.0;
+
     if (outputChars == 0 && reasoningChars > 0) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: 12,
-            height: 12,
+            width: arcSize,
+            height: arcSize,
             child: CircularProgressIndicator(
-              strokeWidth: 2,
+              strokeWidth: stroke,
               valueColor: AlwaysStoppedAnimation<Color>(
                 Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: gap),
           Text(
             '${l10n.thinking}… ${(elapsed / 1000).toStringAsFixed(1)}s',
-            style: TextStyle(fontSize: 11, color: muted),
+            style: TextStyle(fontSize: fontSize, color: muted),
           ),
         ],
       );
@@ -340,19 +389,19 @@ class _GeneratingIndicator extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 12,
-          height: 12,
+          width: arcSize,
+          height: arcSize,
           child: CircularProgressIndicator(
-            strokeWidth: 2,
+            strokeWidth: stroke,
             valueColor: AlwaysStoppedAnimation<Color>(
               Theme.of(context).colorScheme.primary,
             ),
           ),
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: gap),
         Text(
           '${l10n.generating_label} ${tps.toStringAsFixed(1)} tok/s · ${(elapsed / 1000).toStringAsFixed(1)}s',
-          style: TextStyle(fontSize: 11, color: muted),
+          style: TextStyle(fontSize: fontSize, color: muted),
         ),
       ],
     );
@@ -360,10 +409,15 @@ class _GeneratingIndicator extends ConsumerWidget {
 }
 
 class _CompletedIndicator extends StatelessWidget {
-  const _CompletedIndicator({required this.live, required this.muted});
+  const _CompletedIndicator({
+    required this.live,
+    required this.muted,
+    this.emphasized = false,
+  });
 
   final LiveGeneration live;
   final Color muted;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
@@ -374,18 +428,21 @@ class _CompletedIndicator extends StatelessWidget {
     final out = live.outputTokens ?? 0;
     final tps = live.tokensPerSecond;
     final genMs = live.generationTimeMs ?? 0;
+    final iconSize = emphasized ? 18.0 : 12.0;
+    final fontSize = emphasized ? 16.0 : 11.0;
+    final gap = emphasized ? 8.0 : 6.0;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         HugeIcon(
           icon: HugeIcons.strokeRoundedCheckmarkCircle01,
-          size: 12,
+          size: iconSize,
           color: muted,
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: gap),
         Text(
           '$out tok · ${tps?.toStringAsFixed(1) ?? "0.0"} tok/s · ${(genMs / 1000).toStringAsFixed(1)}s',
-          style: TextStyle(fontSize: 11, color: muted),
+          style: TextStyle(fontSize: fontSize, color: muted),
         ),
       ],
     );
