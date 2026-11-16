@@ -1116,7 +1116,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               ),
             ],
 
-            const PromptProcessingStatusBar(),
+            if (_controller.text.isNotEmpty) const PromptProcessingStatusBar(),
             // One row: add, the text (growing upward as it wraps), mic,
             // and voice mode or send. Thinking and send-as-assistant live in
             // the + sheet; a dot on + shows when either is on.
@@ -1248,6 +1248,10 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                           ),
                         ),
                       ),
+                      if (_controller.text.isEmpty)
+                        const Center(
+                          child: PromptProcessingStatusBar(centered: true),
+                        ),
                       if (!isImageGeneration && _controller.text.isEmpty)
                         Positioned(
                           right: 4,

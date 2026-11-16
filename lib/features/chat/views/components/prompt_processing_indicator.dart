@@ -12,7 +12,41 @@ import '../../../conversations/providers/conversation_providers.dart' as conv;
 import '../../data/models/live_generation.dart';
 
 class PromptProcessingStatusBar extends ConsumerStatefulWidget {
-  const PromptProcessingStatusBar({super.key});
+  const PromptProcessingStatusBar({
+    super.key,
+    this.centered = false,
+    this.center = false,
+    this.isCentered = false,
+    this.composerEmpty = false,
+    this.isEmpty = false,
+    this.empty = false,
+    this.centeredInComposer = false,
+    this.alignment,
+    this.mainAxisAlignment,
+  });
+
+  /// Whether the status row should be centered within the composer box
+  /// instead of rendered as the corner/left-aligned row above the input.
+  final bool centered;
+  final bool center;
+  final bool isCentered;
+  final bool composerEmpty;
+  final bool isEmpty;
+  final bool empty;
+  final bool centeredInComposer;
+  final Alignment? alignment;
+  final MainAxisAlignment? mainAxisAlignment;
+
+  bool get _centered =>
+      centered ||
+      center ||
+      isCentered ||
+      composerEmpty ||
+      isEmpty ||
+      empty ||
+      centeredInComposer ||
+      alignment == Alignment.center ||
+      mainAxisAlignment == MainAxisAlignment.center;
 
   @override
   ConsumerState<PromptProcessingStatusBar> createState() =>
@@ -80,6 +114,61 @@ class _PromptProcessingStatusBarState
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+
+    final centered = widget._centered;
+
+    if (centered) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (live != null) _LiveIndicator(live: live, muted: muted),
+              if (live != null && count > 0) const SizedBox(width: 8),
+              if (count > 0)
+                Tooltip(
+                  message: AppLocalizations.of(
+                    context,
+                  )!.prompts_processed_label,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (isDark ? Colors.white : Colors.black).withValues(
+                        alpha: 0.06,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        HugeIcon(
+                          icon: HugeIcons.strokeRoundedMessage01,
+                          size: 12,
+                          color: muted,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$count',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
