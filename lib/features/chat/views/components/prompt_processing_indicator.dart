@@ -321,9 +321,13 @@ class _ProcessingIndicator extends StatelessWidget {
           ),
         ),
         SizedBox(width: gap),
-        Text(
-          '${l10n.processing_prompt_label} $pct%',
-          style: TextStyle(fontSize: fontSize, color: muted),
+        Flexible(
+          child: Text(
+            '${l10n.processing_prompt_label} $pct%',
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: TextStyle(fontSize: fontSize, color: muted),
+          ),
         ),
       ],
     );
@@ -375,9 +379,13 @@ class _GeneratingIndicator extends ConsumerWidget {
             ),
           ),
           SizedBox(width: gap),
-          Text(
-            '${l10n.thinking}… ${(elapsed / 1000).toStringAsFixed(1)}s',
-            style: TextStyle(fontSize: fontSize, color: muted),
+          Flexible(
+            child: Text(
+              '${l10n.thinking}… ${(elapsed / 1000).toStringAsFixed(1)}s',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: TextStyle(fontSize: fontSize, color: muted),
+            ),
           ),
         ],
       );
@@ -399,9 +407,13 @@ class _GeneratingIndicator extends ConsumerWidget {
           ),
         ),
         SizedBox(width: gap),
-        Text(
-          '${l10n.generating_label} ${tps.toStringAsFixed(1)} tok/s · ${(elapsed / 1000).toStringAsFixed(1)}s',
-          style: TextStyle(fontSize: fontSize, color: muted),
+        Flexible(
+          child: Text(
+            '${l10n.generating_label} ${tps.toStringAsFixed(1)} tok/s · ${(elapsed / 1000).toStringAsFixed(1)}s',
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: TextStyle(fontSize: fontSize, color: muted),
+          ),
         ),
       ],
     );
@@ -440,9 +452,13 @@ class _CompletedIndicator extends StatelessWidget {
           color: muted,
         ),
         SizedBox(width: gap),
-        Text(
-          '$out tok · ${tps?.toStringAsFixed(1) ?? "0.0"} tok/s · ${(genMs / 1000).toStringAsFixed(1)}s',
-          style: TextStyle(fontSize: fontSize, color: muted),
+        Flexible(
+          child: Text(
+            '$out tok · ${tps?.toStringAsFixed(1) ?? "0.0"} tok/s · ${(genMs / 1000).toStringAsFixed(1)}s',
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: TextStyle(fontSize: fontSize, color: muted),
+          ),
         ),
       ],
     );

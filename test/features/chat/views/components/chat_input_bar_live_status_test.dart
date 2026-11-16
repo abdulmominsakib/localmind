@@ -116,7 +116,10 @@ class _OnDeviceEngine extends OnDeviceEngineNotifier {
       const OnDeviceEngineState(status: OnDeviceEngineStatus.notLoaded);
 }
 
-Widget _inputHost({required ChatState chatState}) {
+Widget _inputHost({
+  required ChatState chatState,
+  bool showIndicator = true,
+}) {
   final target = ActiveChatTarget(
     server: Server(
       id: 's1',
@@ -137,7 +140,7 @@ Widget _inputHost({required ChatState chatState}) {
       chatProvider.overrideWith(() => _FixedChatNotifier(chatState)),
       settingsProvider.overrideWith(
         () => _MockSettingsNotifier(
-          AppSettings(showPromptProcessingIndicator: true),
+          AppSettings(showPromptProcessingIndicator: showIndicator),
         ),
       ),
       conv.activeConversationProvider.overrideWith(_NoActiveConversation.new),
@@ -250,5 +253,27 @@ void main() {
       expect(find.byKey(const ValueKey('in-field-status')), findsOneWidget);
       expect(find.byKey(const ValueKey('corner-status')), findsNothing);
     });
+
+    testWidgets(
+      'disabled indicator keeps normal hint visible even while live',
+      (tester) async {
+        await tester.pumpWidget(
+          _inputHost(
+            chatState: ChatState(
+              liveGeneration: LiveGeneration(
+                phase: LiveGenerationPhase.processingPrompt,
+                startedAt: DateTime.now(),
+                estimatedPrefillMs: 3000,
+              ),
+            ),
+            showIndicator: false,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byKey(const ValueKey('in-field-status')), findsNothing);
+        expect(find.byKey(const ValueKey('chat_input')), findsOneWidget);
+      },
+    );
   });
 }

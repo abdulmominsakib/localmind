@@ -842,8 +842,12 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     final liveGeneration = ref.watch(
       chatProvider.select((s) => s.liveGeneration),
     );
+    final showPromptProcessingIndicator = ref.watch(
+      settingsProvider.select((s) => s.showPromptProcessingIndicator),
+    );
     final composerEmpty = _controller.text.isEmpty;
     final showInFieldLiveStatus =
+        showPromptProcessingIndicator &&
         liveGeneration != null &&
         composerEmpty &&
         !(liveGeneration.phase == LiveGenerationPhase.completed &&
@@ -1273,18 +1277,20 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                         ),
                       ),
                       if (composerEmpty)
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 180),
-                          switchInCurve: Curves.easeOut,
-                          switchOutCurve: Curves.easeIn,
-                          child: showInFieldLiveStatus
-                              ? const PromptProcessingStatusBar(
-                                  key: ValueKey('in-field-status'),
-                                  emphasized: true,
-                                )
-                              : const SizedBox.shrink(
-                                  key: ValueKey('no-in-field-status'),
-                                ),
+                        IgnorePointer(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 180),
+                            switchInCurve: Curves.easeOut,
+                            switchOutCurve: Curves.easeIn,
+                            child: showInFieldLiveStatus
+                                ? const PromptProcessingStatusBar(
+                                    key: ValueKey('in-field-status'),
+                                    emphasized: true,
+                                  )
+                                : const SizedBox.shrink(
+                                    key: ValueKey('no-in-field-status'),
+                                  ),
+                          ),
                         ),
                       if (!isImageGeneration &&
                           composerEmpty &&
