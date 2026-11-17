@@ -12,6 +12,7 @@ import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/features/models/providers/model_metadata_providers.dart';
 import 'package:localmind/features/models/providers/model_picker_providers.dart';
 import 'package:localmind/features/models/utils/model_instance_utils.dart';
+import 'package:localmind/features/models/utils/model_sort_utils.dart';
 import 'package:localmind/features/servers/providers/server_providers.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'model_tile.dart';
@@ -64,37 +65,11 @@ class _ModelListState extends ConsumerState<ModelList> {
   List<ModelInfo> _sortedModels(List<ModelInfo> models) {
     final metadata = ref.watch(modelMetadataProvider);
     final sortOption = ref.watch(modelSortOptionProvider);
-    final sorted = List<ModelInfo>.from(models);
-
-    int byName(ModelInfo a, ModelInfo b) =>
-        a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
-
-    switch (sortOption) {
-      case ModelSortOption.favorites:
-        sorted.sort((a, b) {
-          final aFavorite = metadata[a.id]?.isFavorite ?? false;
-          final bFavorite = metadata[b.id]?.isFavorite ?? false;
-          if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
-          return byName(a, b);
-        });
-      case ModelSortOption.nameAsc:
-        sorted.sort(byName);
-      case ModelSortOption.sizeAsc:
-        sorted.sort((a, b) {
-          final size = (a.fileSize ?? 0).compareTo(b.fileSize ?? 0);
-          return size != 0 ? size : byName(a, b);
-        });
-      case ModelSortOption.sizeDesc:
-        sorted.sort((a, b) {
-          final size = (b.fileSize ?? 0).compareTo(a.fileSize ?? 0);
-          return size != 0 ? size : byName(a, b);
-        });
-      case ModelSortOption.contextDesc:
-        sorted.sort((a, b) {
-          final ctx = (b.contextLength ?? 0).compareTo(a.contextLength ?? 0);
-          return ctx != 0 ? ctx : byName(a, b);
-        });
-    }
+    final sorted = sortPickerModels(
+      models,
+      sortOption,
+      isFavorite: (model) => metadata[model.id]?.isFavorite ?? false,
+    );
 
     final selectedId = widget.selectedModelId;
     if (selectedId != null) {

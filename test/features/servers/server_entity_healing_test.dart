@@ -221,6 +221,47 @@ void main() {
     });
   });
 
+  group('Switching from Ollama Cloud to Standard Compute', () {
+    test('clears the hidden Ollama Cloud endpoint', () {
+      expect(
+        hostAfterServerTypeChange(
+          from: ServerType.ollamaCloud,
+          to: ServerType.standardCompute,
+          host: 'https://ollama.com',
+        ),
+        isEmpty,
+      );
+      expect(
+        hostAfterServerTypeChange(
+          from: ServerType.lmStudio,
+          to: ServerType.ollama,
+          host: 'http://192.168.1.10',
+        ),
+        'http://192.168.1.10',
+      );
+    });
+
+    test('keeps the saved type even with a leftover Ollama host', () {
+      final now = DateTime(2026, 1, 1);
+      final saved = Server(
+        id: 'standard-compute-2',
+        name: 'Standard Compute',
+        type: ServerType.standardCompute,
+        host: 'https://ollama.com',
+        port: 443,
+        apiKey: 'sc-test-key',
+        createdAt: now,
+        lastConnectedAt: now,
+      );
+
+      final loaded = ServerEntity.fromDomain(saved).toDomain();
+
+      expect(loaded.type, ServerType.standardCompute);
+      expect(loaded.modelsEndpoint, 'https://api.stdcmpt.com/v1/models');
+      expect(loaded.modelsEndpoint, isNot(contains('ollama.com')));
+    });
+  });
+
   group('Server.isOnDevice', () {
     test('returns true for ServerType.onDevice', () {
       final server = Server(

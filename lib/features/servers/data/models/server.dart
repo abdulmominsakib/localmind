@@ -89,6 +89,20 @@ String displayServerAddress(
   return prefix.isNotEmpty ? '$base$prefix' : base;
 }
 
+/// The endpoint text to keep when the Add Server form switches from [from] to
+/// [to]. Ollama Cloud fills a hidden endpoint, so it is cleared on the way out
+/// and the next provider never inherits `ollama.com`.
+String hostAfterServerTypeChange({
+  required ServerType from,
+  required ServerType to,
+  required String host,
+}) {
+  if (from == ServerType.ollamaCloud && to != ServerType.ollamaCloud) {
+    return '';
+  }
+  return host;
+}
+
 String buildServerBaseUrl(String host, int port, ServerType type) {
   if (type == ServerType.openRouter) {
     return 'https://openrouter.ai/api/v1';

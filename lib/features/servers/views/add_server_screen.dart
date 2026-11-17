@@ -139,8 +139,18 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
 
   void _onTypeChanged(ServerType type) {
     setState(() {
+      final previousType = _selectedType;
       _selectedType = type;
       _testResult = null;
+
+      final host = hostAfterServerTypeChange(
+        from: previousType,
+        to: type,
+        host: _hostController.text,
+      );
+      if (host != _hostController.text) {
+        _hostController.text = host;
+      }
 
       final isHttps = isHttpsAddressInput(_hostController.text);
       if (type == ServerType.openRouter ||

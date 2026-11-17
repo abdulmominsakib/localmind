@@ -341,8 +341,7 @@ class _OnboardingServerSetupScreenState
     final isCloud = _isCloudProvider;
     final isOllamaCloud = widget.selectedType == ServerType.ollamaCloud;
     final isRequesty = widget.selectedType == ServerType.requesty;
-    final isStandardCompute =
-        widget.selectedType == ServerType.standardCompute;
+    final isStandardCompute = widget.selectedType == ServerType.standardCompute;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.setup_connection)),
