@@ -100,6 +100,22 @@ class CloudSyncMergeService {
   }) async {
     if (remote == null) return CloudSyncMergeResult(local, 0);
 
+    final remoteSettings = remote.payload['settings'];
+    if (remoteSettings is Map &&
+        remoteSettings.containsKey('showPromptProcessingIndicator')) {
+      remote = CloudSyncSnapshot(
+        deviceId: remote.deviceId,
+        revision: remote.revision,
+        updatedAt: remote.updatedAt,
+        payload: {
+          ...remote.payload,
+          'settings': Map<String, dynamic>.from(remoteSettings)
+            ..remove('showPromptProcessingIndicator'),
+        },
+        tombstones: remote.tombstones,
+      );
+    }
+
     final localHash = await fingerprint(local.payload);
     final lastHash = journal['payloadHash'] as String?;
     final lastRemoteRevision = journal['remoteRevision'] as int?;

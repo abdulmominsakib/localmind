@@ -53,6 +53,30 @@ void main() {
   });
 
   test(
+    'removes the local indicator preference from a legacy snapshot',
+    () async {
+      final remote = snapshot('remote-device', 3, {
+        'settings': {'fontSize': 22.0, 'showPromptProcessingIndicator': true},
+      });
+      final local = snapshot('local-device', 1, {
+        'settings': {'fontSize': 22.0},
+      });
+
+      final result = await service.merge(
+        local: local,
+        remote: remote,
+        journal: {'payloadHash': await service.fingerprint(local.payload)},
+      );
+
+      expect(result.snapshot.payload['settings'], {'fontSize': 22.0});
+      expect(
+        await service.snapshotFingerprint(result.snapshot),
+        isNot(await service.snapshotFingerprint(remote)),
+      );
+    },
+  );
+
+  test(
     'uses remote settings when linking a device for the first time',
     () async {
       final remote = snapshot('remote-device', 3, {

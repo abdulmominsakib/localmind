@@ -350,31 +350,14 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     required int characterCount,
     String? preview,
   }) async {
-    final db = ref.read(databaseProvider);
-    final conversations = state.value ?? [];
-    final existingIndex = conversations.indexWhere((c) => c.id == id);
-    if (existingIndex == -1) return;
-
-    final existing = conversations[existingIndex];
-    final updated = existing.copyWith(
-      messageCount: messageCount,
-      characterCount: characterCount,
-      lastMessagePreview: preview ?? existing.lastMessagePreview,
-      updatedAt: DateTime.now(),
-    );
-
-    final query = db.conversationBox
-        .query(ConversationEntity_.id.equals(id))
-        .build();
-    final existingEntity = query.findFirst();
-    query.close();
-
-    final entity = ConversationEntity.fromDomain(updated);
-    if (existingEntity != null) {
-      entity.internalId = existingEntity.internalId;
-    }
-    db.conversationBox.put(entity);
-    await _updateState();
+    final updated = _updateStoredConversation(id, (entity) {
+      entity.messageCount = messageCount;
+      entity.characterCount = characterCount;
+      if (preview != null) entity.lastMessagePreview = preview;
+      entity.updatedAt = DateTime.now();
+      return true;
+    });
+    if (updated != null) await _updateState();
   }
 
   /// Updates just the embeddings-derived total token count without
@@ -382,26 +365,11 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
   /// send/edit/regenerate and shouldn't bump the conversation's sort order
   /// or last-modified time on its own.
   Future<void> updateTokenCount(String id, int totalTokenCount) async {
-    final db = ref.read(databaseProvider);
-    final conversations = state.value ?? [];
-    final existingIndex = conversations.indexWhere((c) => c.id == id);
-    if (existingIndex == -1) return;
-
-    final existing = conversations[existingIndex];
-    final updated = existing.copyWith(totalTokenCount: totalTokenCount);
-
-    final query = db.conversationBox
-        .query(ConversationEntity_.id.equals(id))
-        .build();
-    final existingEntity = query.findFirst();
-    query.close();
-
-    final entity = ConversationEntity.fromDomain(updated);
-    if (existingEntity != null) {
-      entity.internalId = existingEntity.internalId;
-    }
-    db.conversationBox.put(entity);
-    await _updateState();
+    final updated = _updateStoredConversation(id, (entity) {
+      entity.totalTokenCount = totalTokenCount;
+      return true;
+    });
+    if (updated != null) await _updateState();
   }
 
   /// Increments the per-conversation "prompts processed" counter after a
@@ -409,29 +377,35 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
   /// the chat is not re-sorted just because a counter changed. Temporary
   /// (incognito) conversations are never counted.
   Future<void> incrementPromptsProcessed(String id) async {
+    const maxCounter = 0x7fffffffffffffff;
+    final updated = _updateStoredConversation(id, (entity) {
+      if (entity.isTemporary || entity.promptsProcessed >= maxCounter) {
+        return false;
+      }
+      entity.promptsProcessed = max(0, entity.promptsProcessed) + 1;
+      return true;
+    });
+    if (updated != null) _updateInState(updated);
+  }
+
+  Conversation? _updateStoredConversation(
+    String id,
+    bool Function(ConversationEntity) update,
+  ) {
     final db = ref.read(databaseProvider);
-    final conversations = state.value ?? [];
-    final existingIndex = conversations.indexWhere((c) => c.id == id);
-    if (existingIndex == -1) return;
-
-    final existing = conversations[existingIndex];
-    if (existing.isTemporary) return;
-
-    final updated = existing.copyWith(
-      promptsProcessed: existing.promptsProcessed + 1,
-    );
-
-    final query = db.conversationBox
-        .query(ConversationEntity_.id.equals(id))
-        .build();
-    final existingEntity = query.findFirst();
-    query.close();
-    if (existingEntity == null) return;
-
-    final entity = ConversationEntity.fromDomain(updated);
-    entity.internalId = existingEntity.internalId;
-    db.conversationBox.put(entity);
-    _updateInState(updated);
+    return db.store.runInTransaction(TxMode.write, () {
+      final query = db.conversationBox
+          .query(ConversationEntity_.id.equals(id))
+          .build();
+      try {
+        final entity = query.findFirst();
+        if (entity == null || !update(entity)) return null;
+        db.conversationBox.put(entity);
+        return entity.toDomain();
+      } finally {
+        query.close();
+      }
+    });
   }
 
   Future<void> updatePersonas(String id, List<Persona> personas) async {

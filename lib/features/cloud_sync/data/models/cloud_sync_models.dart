@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../../../../core/services/data_backup_import_helpers.dart';
+
 enum CloudSyncPhase { disabled, ready, syncing, synced, error, locked }
 
 enum CloudSyncFailureKind {
@@ -246,6 +248,8 @@ class CloudSyncSnapshot {
     'keepPersonaOnNewChat',
     'roleSwapButtonEnabled',
     'showSystemMessagesInChat',
+    // Accept snapshots from builds that synchronized this local preference.
+    // The merge service removes it before writing or applying the snapshot.
     'showPromptProcessingIndicator',
   };
 
@@ -295,6 +299,7 @@ class CloudSyncSnapshot {
       if (!validDate(record['createdAt']) || !validDate(record['updatedAt'])) {
         throw const FormatException('Invalid cloud conversation');
       }
+      backupImportPromptsProcessed(record['promptsProcessed']);
     }
     for (final raw in payload['personas'] as List) {
       final record = raw as Map;

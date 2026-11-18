@@ -57,7 +57,6 @@ class DataBackupService {
     'keepPersonaOnNewChat',
     'roleSwapButtonEnabled',
     'showSystemMessagesInChat',
-    'showPromptProcessingIndicator',
   };
 
   Map<String, dynamic> _messageToMap(Message message) => {
@@ -521,6 +520,13 @@ class DataBackupService {
       throw FormatException('Invalid backup format');
     }
 
+    final conversations = decoded['conversations'];
+    if (conversations is List) {
+      for (final record in conversations.whereType<Map>()) {
+        backupImportPromptsProcessed(record['promptsProcessed']);
+      }
+    }
+
     // Imported attachment paths are restored verbatim onto Message records
     // and later opened directly as files (image/text preview), so a
     // crafted backup could otherwise point them at arbitrary files already
@@ -740,7 +746,9 @@ class DataBackupService {
             isArchived: item['isArchived'] as bool? ?? false,
             characterCount: item['characterCount'] as int? ?? 0,
             totalTokenCount: item['totalTokenCount'] as int?,
-            promptsProcessed: item['promptsProcessed'] as int? ?? 0,
+            promptsProcessed: backupImportPromptsProcessed(
+              item['promptsProcessed'],
+            ),
           );
           final query = convBox
               .query(ConversationEntity_.id.equals(conversation.id))

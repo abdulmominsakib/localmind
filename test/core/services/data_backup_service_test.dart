@@ -175,6 +175,7 @@ void main() {
         'hasCompletedOnboarding': true,
         'hasAskedForNotifications': true,
         'futureSecret': 'must-not-sync',
+        'showPromptProcessingIndicator': true,
       }),
     );
 
@@ -192,7 +193,39 @@ void main() {
     expect(payload['settings'], isNot(contains('defaultServerId')));
     expect(payload['settings'], isNot(contains('hasCompletedOnboarding')));
     expect(payload['settings'], isNot(contains('futureSecret')));
+    expect(
+      payload['settings'],
+      isNot(contains('showPromptProcessingIndicator')),
+    );
   });
+
+  test(
+    'backup rejects an invalid counter before opening a transaction',
+    () async {
+      final service = DataBackupService();
+      final store = _FakeStore(const {});
+
+      for (final value in ['4', 4.5, -1]) {
+        await expectLater(
+          service.importFromJson(
+            store,
+            jsonEncode({
+              'conversations': [
+                {'id': 'conversation', 'promptsProcessed': value},
+              ],
+            }),
+          ),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('promptsProcessed'),
+            ),
+          ),
+        );
+      }
+    },
+  );
 
   test(
     'cloud import rejects incomplete replacement payloads before mutation',

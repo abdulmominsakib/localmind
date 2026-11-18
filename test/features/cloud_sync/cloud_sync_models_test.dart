@@ -95,4 +95,21 @@ void main() {
     ];
     expect(() => CloudSyncSnapshot.fromJson(localPath), throwsFormatException);
   });
+
+  test('snapshot validates optional prompts processed counters', () {
+    final snapshot = validSnapshot();
+    final conversation =
+        ((snapshot['payload'] as Map)['conversations'] as List).single as Map;
+    expect(CloudSyncSnapshot.fromJson(snapshot).revision, 1);
+
+    for (final value in [0, 12, 0x7fffffffffffffff]) {
+      conversation['promptsProcessed'] = value;
+      expect(CloudSyncSnapshot.fromJson(snapshot).revision, 1);
+    }
+
+    for (final value in ['12', 12.5, -1]) {
+      conversation['promptsProcessed'] = value;
+      expect(() => CloudSyncSnapshot.fromJson(snapshot), throwsFormatException);
+    }
+  });
 }

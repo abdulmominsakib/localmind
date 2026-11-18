@@ -101,6 +101,10 @@ void main() {
         await chatService.finish();
         await _pump();
 
+        final conversations =
+            container.read(conv.conversationsProvider.notifier)
+                as _FakeConversationsNotifier;
+        expect(conversations.countedPrompts, isEmpty);
         expect(chatService.controllers, hasLength(2));
         final followUp = chatService.requests.last;
         final callTurn = followUp.singleWhere(
@@ -125,6 +129,7 @@ void main() {
         final state = container.read(chatProvider);
         expect(state.isStreaming, isFalse);
         expect(state.messages.last.content, 'Here is the answer.');
+        expect(conversations.countedPrompts, [_conversationA.id]);
         expect(
           notifier.saved
               .lastWhere((message) => message.id == callTurn.id)
@@ -352,11 +357,13 @@ void main() {
     expect(container.read(activeGenerationsProvider).length, 2);
 
     // Cancel only B (the open chat).
+    expect(container.read(chatProvider).liveGeneration, isNotNull);
     await n.cancelStream();
     await _pump();
 
     expect(serviceB.cancelCount, 1, reason: 'B should be cancelled');
     expect(serviceA.cancelCount, 0, reason: 'A should still run');
+    expect(container.read(chatProvider).liveGeneration, isNull);
     expect(container.read(activeGenerationsProvider).length, 1);
     expect(
       container.read(activeGenerationsProvider),
@@ -692,6 +699,8 @@ class _TestMcpToolProvider implements ToolProvider {
 }
 
 class _FakeConversationsNotifier extends conv.ConversationsNotifier {
+  final countedPrompts = <String>[];
+
   @override
   Future<List<Conversation>> build() async => [_conversationA, _conversationB];
 
@@ -707,7 +716,9 @@ class _FakeConversationsNotifier extends conv.ConversationsNotifier {
   Future<void> updateTokenCount(String id, int totalTokenCount) async {}
 
   @override
-  Future<void> incrementPromptsProcessed(String id) async {}
+  Future<void> incrementPromptsProcessed(String id) async {
+    countedPrompts.add(id);
+  }
 }
 
 class _RemoteServerNotifier extends ActiveServerNotifier {

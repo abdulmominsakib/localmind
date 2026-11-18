@@ -255,6 +255,7 @@ class ChatNotifier extends Notifier<ChatState> {
   ) async {
     if (!session.countsAsPrompt ||
         !session.persisted ||
+        session.cancelled ||
         session.promptCounted) {
       return;
     }
@@ -334,12 +335,16 @@ class ChatNotifier extends Notifier<ChatState> {
     final session = _sessions[conversationId];
     if (session == null) return;
     await session.detach();
-    if (!ref.mounted) return;
+    if (!ref.mounted || !identical(_sessions[conversationId], session)) return;
     session.chatService.cancelStream();
     session.latestMessage = null;
     _endSession(session);
     if (_activeConversationId == conversationId) {
-      state = state.copyWith(isStreaming: false, clearStreaming: true);
+      state = state.copyWith(
+        isStreaming: false,
+        clearStreaming: true,
+        clearLiveGeneration: true,
+      );
     }
   }
 
@@ -740,6 +745,7 @@ class ChatNotifier extends Notifier<ChatState> {
       state = state.copyWith(
         allMessages: updatedAll,
         messages: MessageVariants.resolveActiveTimeline(updatedAll),
+        clearLiveGeneration: true,
       );
 
       unawaited(
@@ -1430,6 +1436,7 @@ class ChatNotifier extends Notifier<ChatState> {
                     state = state.copyWith(
                       isStreaming: false,
                       errorMessage: errorMessage.errorMessage,
+                      clearLiveGeneration: true,
                     );
                   }
                   if (ref.mounted) {
@@ -1527,6 +1534,7 @@ class ChatNotifier extends Notifier<ChatState> {
                   state = state.copyWith(
                     isStreaming: false,
                     errorMessage: error.toString(),
+                    clearLiveGeneration: true,
                   );
                 }
                 if (ref.mounted) {
@@ -1551,6 +1559,7 @@ class ChatNotifier extends Notifier<ChatState> {
         isStreaming: false,
         errorMessage: e.toString(),
         clearStreaming: true,
+        clearLiveGeneration: true,
       );
       _endSession(session);
       session.latestMessage = null;
@@ -2030,18 +2039,23 @@ class ChatNotifier extends Notifier<ChatState> {
 
   Future<void> cancelStream() async {
     final session = _activeSession;
+    final conversationId = _activeConversationId;
+    final streamingMessage = session?.latestMessage ?? state.streamingMessage;
     _clearPendingApproval();
     await session?.detach();
-    if (!ref.mounted) return;
+    if (!ref.mounted ||
+        (session != null && !identical(_sessions[conversationId], session))) {
+      return;
+    }
 
     session?.chatService.cancelStream();
 
     await _saveService?.flush();
     if (!ref.mounted) return;
 
-    final streamingMessage = session?.latestMessage ?? state.streamingMessage;
+    Message? finalMessage;
     if (streamingMessage != null) {
-      final finalMessage = _finalizeStreamMessage(
+      finalMessage = _finalizeStreamMessage(
         streamingMessage.copyWith(
           status: MessageStatus.cancelled,
           isProcessing: false,
@@ -2051,11 +2065,19 @@ class ChatNotifier extends Notifier<ChatState> {
       );
       await _saveMessage(finalMessage, persist: session?.persisted);
       if (!ref.mounted) return;
-      _replaceMessageInState(finalMessage, clearStreaming: true);
     }
 
-    if (!ref.mounted) return;
-    state = state.copyWith(isStreaming: false, clearStreaming: true);
+    if (_activeConversationId == conversationId &&
+        identical(_activeSession, session)) {
+      if (finalMessage != null) {
+        _replaceMessageInState(finalMessage, clearStreaming: true);
+      }
+      state = state.copyWith(
+        isStreaming: false,
+        clearStreaming: true,
+        clearLiveGeneration: true,
+      );
+    }
     session?.latestMessage = null;
     if (session != null) _endSession(session);
   }
@@ -2574,6 +2596,7 @@ class ChatNotifier extends Notifier<ChatState> {
       continuationMessage.conversationId,
       origin.server,
       origin.chatService,
+      countsAsPrompt: origin.countsAsPrompt && !origin.promptCounted,
     );
     await _runAssistantStream(
       session,
