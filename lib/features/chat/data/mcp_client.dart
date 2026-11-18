@@ -7,6 +7,9 @@ import 'package:dio/dio.dart';
 import 'package:localmind/core/logger/app_logger.dart';
 
 class McpClient {
+  static const _connectTimeout = Duration(seconds: 10);
+  static const _requestTimeout = Duration(seconds: 30);
+
   final String serverUrl;
   final Map<String, String>? headers;
   final String _version;
@@ -15,8 +18,10 @@ class McpClient {
   McpCapabilities? _capabilities;
   Future<McpCapabilities>? _initializationFuture;
 
-  bool _useSse = false;
-  StreamSubscription? _sseSubscription;
+  String? _sessionId;
+  String? _protocolVersion;
+  CancelToken? _sseCancelToken;
+  StreamSubscription<({String event, String data})>? _sseSubscription;
   String? _postUrl;
   final Map<String, Completer<Map<String, dynamic>>> _pendingRequests = {};
   int _requestIdCounter = 1;
@@ -27,75 +32,41 @@ class McpClient {
     String version = '1.0.0',
     Dio? dio,
   }) : _version = version,
-       _dio = dio ?? Dio();
+       _dio = dio ?? Dio(BaseOptions(connectTimeout: _connectTimeout));
 
   bool get isInitialized => _initialized;
   McpCapabilities? get capabilities => _capabilities;
 
   Future<void> _connectSse() async {
+    final cancelToken = CancelToken();
+    _sseCancelToken = cancelToken;
     try {
-      final response = await _dio.get<ResponseBody>(
-        serverUrl,
-        options: Options(
-          headers: {
-            'Accept': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            ...?headers,
-          },
-          responseType: ResponseType.stream,
-        ),
-      );
+      final response = await _dio
+          .get<ResponseBody>(
+            serverUrl,
+            options: Options(
+              headers: {
+                'Accept': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                ...?headers,
+              },
+              responseType: ResponseType.stream,
+              receiveDataWhenStatusError: false,
+            ),
+            cancelToken: cancelToken,
+          )
+          .timeout(_connectTimeout);
 
-      final contentType = response.headers.value('content-type') ?? '';
-      if (!contentType.contains('text/event-stream') &&
-          !serverUrl.contains('sse')) {
-        // Not an SSE stream endpoint, fallback to direct HTTP POST
-        return;
+      final stream = response.data!.stream;
+      if (!_isEventStream(response.headers)) {
+        await stream.listen(null).cancel();
+        throw McpException('Expected an SSE stream from the legacy endpoint');
       }
 
-      _useSse = true;
       final handshakeCompleter = Completer<void>();
-
-      final stream = response.data!.stream.cast<List<int>>().transform(
-        utf8.decoder,
-      );
-      String buffer = '';
-      String currentEvent = 'message';
-      String currentData = '';
-
-      _sseSubscription = stream.listen(
-        (chunk) {
-          buffer += chunk;
-          final lines = buffer.split('\n');
-          buffer = lines.removeLast();
-
-          for (final line in lines) {
-            final trimmed = line.trim();
-            if (trimmed.isEmpty) {
-              if (currentData.isNotEmpty) {
-                _handleSseMessage(
-                  currentEvent,
-                  currentData,
-                  handshakeCompleter,
-                );
-                currentEvent = 'message';
-                currentData = '';
-              }
-              continue;
-            }
-
-            if (trimmed.startsWith('event:')) {
-              currentEvent = trimmed.substring(6).trim();
-            } else if (trimmed.startsWith('data:')) {
-              final val = trimmed.substring(5).trim();
-              if (currentData.isNotEmpty) {
-                currentData += '\n$val';
-              } else {
-                currentData = val;
-              }
-            }
-          }
-        },
+      _sseSubscription = _sseEvents(stream).listen(
+        (message) =>
+            _handleSseMessage(message.event, message.data, handshakeCompleter),
         onError: (e) {
           if (!handshakeCompleter.isCompleted) {
             handshakeCompleter.completeError(e);
@@ -103,18 +74,6 @@ class McpClient {
           _handleSseDisconnect(e);
         },
         onDone: () {
-          // Process any remaining data in the buffer before disconnecting.
-          if (buffer.isNotEmpty || currentData.isNotEmpty) {
-            if (currentData.isNotEmpty) {
-              _handleSseMessage(currentEvent, currentData, handshakeCompleter);
-            } else if (buffer.trim().isNotEmpty) {
-              _handleSseMessage(
-                currentEvent,
-                buffer.trim(),
-                handshakeCompleter,
-              );
-            }
-          }
           if (!handshakeCompleter.isCompleted) {
             handshakeCompleter.completeError(
               McpException('SSE stream closed before handshake completed'),
@@ -126,16 +85,15 @@ class McpClient {
 
       // Wait for the endpoint event or timeout
       await handshakeCompleter.future.timeout(
-        const Duration(seconds: 10),
+        _connectTimeout,
         onTimeout: () {
           throw McpException(
             'Handshake timeout waiting for SSE endpoint event',
           );
         },
       );
-    } catch (e) {
+    } catch (_) {
       await _closeSse();
-      _useSse = false;
       rethrow;
     }
   }
@@ -148,7 +106,7 @@ class McpClient {
     if (event == 'endpoint') {
       try {
         final baseUri = Uri.parse(serverUrl);
-        final resolvedUri = baseUri.resolve(data);
+        final resolvedUri = baseUri.resolve(data.trim());
         _postUrl = resolvedUri.toString();
         Log.debug('MCP SSE Handshake completed. Message endpoint: $_postUrl');
         if (!initCompleter.isCompleted) {
@@ -186,13 +144,17 @@ class McpClient {
       }
     }
     _pendingRequests.clear();
+    _postUrl = null;
     _initialized = false;
   }
 
   Future<void> _closeSse() async {
-    await _sseSubscription?.cancel();
+    final cancellation = _sseSubscription?.cancel();
+    _sseCancelToken?.cancel();
+    _sseCancelToken = null;
     _sseSubscription = null;
     _postUrl = null;
+    await cancellation;
   }
 
   Future<Map<String, dynamic>> _sendJsonRpc(
@@ -207,76 +169,137 @@ class McpClient {
       'params': params,
     };
 
-    if (_useSse) {
-      if (_postUrl == null) {
-        throw McpException(
-          'SSE transport initialized but POST endpoint is missing',
-        );
-      }
-
-      final completer = Completer<Map<String, dynamic>>();
-      _pendingRequests[id.toString()] = completer;
-
-      try {
-        await _dio.post(
-          _postUrl!,
-          data: payload,
-          options: Options(
-            headers: {'Content-Type': 'application/json', ...?headers},
-          ),
-        );
-      } catch (e) {
-        _pendingRequests.remove(id.toString());
-        throw McpException('Failed to post message over SSE transport: $e');
-      }
-
-      final responseJson = await completer.future.timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          _pendingRequests.remove(id.toString());
-          throw McpException(
-            'Timeout waiting for JSON-RPC response over SSE transport',
-          );
-        },
+    final postUrl = _postUrl;
+    final response = postUrl == null
+        ? (await _postHttp(payload))!
+        : await _sendLegacyRequest(postUrl, payload, id);
+    if (response.containsKey('error')) {
+      final error = response['error'];
+      final message = error is Map ? error['message'] : null;
+      throw McpException(
+        'Server returned error: ${message ?? 'Unknown error'}',
       );
-
-      if (responseJson.containsKey('error')) {
-        final error = responseJson['error'];
-        final message = error is Map
-            ? (error['message'] ?? 'Unknown error')
-            : 'Unknown error';
-        throw McpException('Server returned error: $message');
-      }
-
-      return responseJson;
-    } else {
-      try {
-        final response = await _dio.post(
-          serverUrl,
-          data: payload,
-          options: Options(
-            headers: {'Content-Type': 'application/json', ...?headers},
-          ),
-        );
-
-        final responseData = response.data;
-        if (responseData is! Map<String, dynamic>) {
-          throw McpException('Invalid JSON-RPC response payload format');
-        }
-
-        if (responseData.containsKey('error')) {
-          final error = responseData['error'];
-          final message = error is Map
-              ? (error['message'] ?? 'Unknown error')
-              : 'Unknown error';
-          throw McpException('Server returned error: $message');
-        }
-
-        return responseData;
-      } catch (e) {
-        throw McpException('Failed to send JSON-RPC request over HTTP: $e');
-      }
     }
+    return response;
+  }
+
+  Future<Map<String, dynamic>> _sendLegacyRequest(
+    String postUrl,
+    Map<String, dynamic> payload,
+    int id,
+  ) async {
+    final key = id.toString();
+    final completer = Completer<Map<String, dynamic>>();
+    _pendingRequests[key] = completer;
+    try {
+      final responses = await Future.wait<Map<String, dynamic>?>([
+        completer.future,
+        _postLegacy(postUrl, payload).then((_) => null),
+      ], eagerError: true).timeout(_requestTimeout);
+      return responses.first!;
+    } on TimeoutException {
+      throw McpException('Timeout waiting for a legacy SSE response');
+    } finally {
+      _pendingRequests.remove(key);
+    }
+  }
+
+  Future<Response<dynamic>> _postLegacy(
+    String url,
+    Map<String, dynamic> payload,
+  ) => _dio.post(
+    url,
+    data: payload,
+    options: Options(
+      headers: {'Content-Type': 'application/json', ...?headers},
+      sendTimeout: _connectTimeout,
+      receiveTimeout: _requestTimeout,
+    ),
+  );
+
+  Map<String, String> get _httpHeaders => {
+    ...?headers,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json, text/event-stream',
+    'Mcp-Session-Id': ?_sessionId,
+    'MCP-Protocol-Version': ?_protocolVersion,
+  };
+
+  Future<Map<String, dynamic>?> _postHttp(Map<String, dynamic> payload) async {
+    final cancelToken = CancelToken();
+    final sessionId = _sessionId;
+    try {
+      return await _readHttpResponse(
+        payload,
+        cancelToken,
+      ).timeout(_requestTimeout);
+    } on TimeoutException {
+      throw McpException('Timeout waiting for an MCP HTTP response');
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404 &&
+          sessionId != null &&
+          _sessionId == sessionId) {
+        // The next request will initialize a new session without this ID.
+        _initialized = false;
+        _sessionId = null;
+        _protocolVersion = null;
+      }
+      rethrow;
+    } finally {
+      // Dio's response stream may remain open after the matching SSE event.
+      cancelToken.cancel();
+    }
+  }
+
+  Future<Map<String, dynamic>?> _readHttpResponse(
+    Map<String, dynamic> payload,
+    CancelToken cancelToken,
+  ) async {
+    final response = await _dio.post<ResponseBody>(
+      serverUrl,
+      data: payload,
+      options: Options(
+        headers: _httpHeaders,
+        responseType: ResponseType.stream,
+        receiveDataWhenStatusError: false,
+      ),
+      cancelToken: cancelToken,
+    );
+    final stream = response.data!.stream;
+    final id = payload['id'];
+    if (id == null) {
+      await stream.listen(null).cancel();
+      return null;
+    }
+
+    final Map<String, dynamic> message;
+    if (_isEventStream(response.headers)) {
+      Map<String, dynamic>? result;
+      await for (final event in _sseEvents(stream)) {
+        if (event.event != 'message' || event.data.isEmpty) continue;
+        final data = jsonDecode(event.data);
+        if (data is Map<String, dynamic> &&
+            data['id'] == id &&
+            (data.containsKey('result') || data.containsKey('error'))) {
+          result = data;
+          break;
+        }
+      }
+      if (result == null) {
+        throw McpException('MCP event stream closed before the response');
+      }
+      message = result;
+    } else {
+      final data = jsonDecode(await utf8.decoder.bind(stream).join());
+      if (data is! Map<String, dynamic>) {
+        throw McpException('Invalid JSON-RPC response payload format');
+      }
+      message = data;
+    }
+    if (payload['method'] == 'initialize') {
+      _sessionId = response.headers.value('Mcp-Session-Id');
+    }
+    return message;
   }
 
   Future<McpCapabilities> initialize() async {
@@ -299,62 +322,63 @@ class McpClient {
 
   Future<McpCapabilities> _doInitialize() async {
     try {
+      await _closeSse();
+      _sessionId = null;
+      _protocolVersion = null;
+
+      Map<String, dynamic> response;
       try {
-        await _connectSse();
-      } catch (e) {
+        response = await _requestInitialization('2025-06-18');
+      } on DioException catch (error) {
+        final status = error.response?.statusCode;
+        if (status != 400 && status != 404 && status != 405) rethrow;
         Log.debug(
-          'Failed to connect via SSE: $e. Falling back to direct HTTP POST.',
+          'MCP HTTP initialization returned $status. Trying legacy SSE.',
         );
-        _useSse = false;
+        await _connectSse();
+        response = await _requestInitialization('2024-11-05');
       }
 
-      final response = await _sendJsonRpc('initialize', {
-        'protocolVersion': '2024-11-05',
-        'capabilities': {},
-        'clientInfo': {'name': 'localmind', 'version': _version},
-      });
-
-      _capabilities = McpCapabilities.fromJson(
-        response['result']['capabilities'] as Map<String, dynamic>,
+      final result = response['result'] as Map<String, dynamic>;
+      _protocolVersion = result['protocolVersion'] as String?;
+      final capabilities = McpCapabilities.fromJson(
+        result['capabilities'] as Map<String, dynamic>,
       );
+      await _sendInitializedNotification();
+      _capabilities = capabilities;
       _initialized = true;
 
-      await _sendInitializedNotification();
-
-      return _capabilities!;
+      return capabilities;
     } catch (e) {
       throw McpException('Failed to initialize MCP client: $e');
     }
   }
 
-  Future<void> _sendInitializedNotification() async {
-    try {
-      final payload = {
-        'jsonrpc': '2.0',
-        'method': 'notifications/initialized',
-        'params': {},
-      };
+  Future<Map<String, dynamic>> _requestInitialization(String protocolVersion) =>
+      _sendJsonRpc('initialize', {
+        'protocolVersion': protocolVersion,
+        'capabilities': {},
+        'clientInfo': {'name': 'localmind', 'version': _version},
+      });
 
-      if (_useSse) {
-        if (_postUrl != null) {
-          await _dio.post(
-            _postUrl!,
-            data: payload,
-            options: Options(
-              headers: {'Content-Type': 'application/json', ...?headers},
-            ),
-          );
-        }
+  Future<void> _sendInitializedNotification() async {
+    final payload = {
+      'jsonrpc': '2.0',
+      'method': 'notifications/initialized',
+      'params': {},
+    };
+    final postUrl = _postUrl;
+    try {
+      if (postUrl == null) {
+        await _postHttp(payload);
       } else {
-        await _dio.post(
-          serverUrl,
-          data: payload,
-          options: Options(
-            headers: {'Content-Type': 'application/json', ...?headers},
-          ),
-        );
+        await _postLegacy(postUrl, payload);
       }
-    } catch (_) {}
+    } on DioException catch (error) {
+      // Some older servers reject notifications. A missing HTTP session
+      // means initialization itself failed and needs to be retried.
+      if (postUrl == null && error.response?.statusCode == 404) rethrow;
+    }
   }
 
   Future<List<McpTool>> listTools() async {
@@ -444,9 +468,58 @@ class McpClient {
 
   Future<void> close() async {
     await _closeSse();
-    _initialized = false;
+    _handleSseDisconnect(null);
+    final sessionHeaders = _sessionId == null ? null : _httpHeaders;
+    _sessionId = null;
+    _protocolVersion = null;
     _capabilities = null;
+    if (sessionHeaders == null) return;
+
+    final cancelToken = CancelToken();
+    try {
+      await _dio
+          .delete<void>(
+            serverUrl,
+            options: Options(headers: sessionHeaders),
+            cancelToken: cancelToken,
+          )
+          .timeout(const Duration(seconds: 2));
+    } on TimeoutException {
+      cancelToken.cancel();
+    } on DioException {
+      // The server may decline client-initiated session termination.
+    }
   }
+}
+
+bool _isEventStream(Headers headers) =>
+    headers.value(Headers.contentTypeHeader)?.split(';').first.trim() ==
+    'text/event-stream';
+
+Stream<({String event, String data})> _sseEvents(Stream<List<int>> stream) {
+  var event = 'message';
+  final data = <String>[];
+  final lines = utf8.decoder.bind(stream).transform(const LineSplitter());
+  return lines.transform(
+    StreamTransformer<String, ({String event, String data})>.fromHandlers(
+      handleData: (line, sink) {
+        if (line.isEmpty) {
+          if (data.isNotEmpty) sink.add((event: event, data: data.join('\n')));
+          event = 'message';
+          data.clear();
+        } else if (line.startsWith('event:')) {
+          event = line.substring(6).trim();
+        } else if (line.startsWith('data:')) {
+          final value = line.substring(5);
+          data.add(value.startsWith(' ') ? value.substring(1) : value);
+        }
+      },
+      handleDone: (sink) {
+        if (data.isNotEmpty) sink.add((event: event, data: data.join('\n')));
+        sink.close();
+      },
+    ),
+  );
 }
 
 class McpCapabilities {
@@ -462,9 +535,9 @@ class McpCapabilities {
 
   factory McpCapabilities.fromJson(Map<String, dynamic> json) {
     return McpCapabilities(
-      tools: json['tools'] == true,
-      resources: json['resources'] == true,
-      prompts: json['prompts'] == true,
+      tools: json['tools'] is Map || json['tools'] == true,
+      resources: json['resources'] is Map || json['resources'] == true,
+      prompts: json['prompts'] is Map || json['prompts'] == true,
     );
   }
 }

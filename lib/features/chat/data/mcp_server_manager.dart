@@ -26,11 +26,7 @@ class McpServerManager {
 
     try {
       if (_clients.containsKey(label)) {
-        final oldClient = _clients.remove(label);
-        await oldClient?.close();
-        _capabilities.remove(label);
-        _tools.remove(label);
-        _serverUrls.remove(label);
+        await removeServer(label);
       }
 
       final client = McpClient(
@@ -39,13 +35,18 @@ class McpServerManager {
         version: appVersion,
       );
 
-      final capabilities = await client.initialize();
-      final tools = await client.listTools();
+      try {
+        final capabilities = await client.initialize();
+        final tools = await client.listTools();
 
-      _clients[label] = client;
-      _capabilities[label] = capabilities;
-      _tools[label] = tools;
-      _serverUrls[label] = url;
+        _clients[label] = client;
+        _capabilities[label] = capabilities;
+        _tools[label] = tools;
+        _serverUrls[label] = url;
+      } catch (_) {
+        await client.close();
+        rethrow;
+      }
     } finally {
       _pendingLabels.remove(label);
     }
@@ -53,11 +54,11 @@ class McpServerManager {
 
   Future<void> removeServer(String label) async {
     final client = _clients.remove(label);
-    await client?.close();
     _capabilities.remove(label);
     _tools.remove(label);
     _serverUrls.remove(label);
     _localExampleServers.remove(label);
+    await client?.close();
   }
 
   Future<void> addExampleServer() async {
@@ -147,14 +148,13 @@ class McpServerManager {
   }
 
   Future<void> clear() async {
-    for (final client in _clients.values) {
-      await client.close();
-    }
+    final clients = _clients.values.toList();
     _clients.clear();
     _capabilities.clear();
     _tools.clear();
     _serverUrls.clear();
     _localExampleServers.clear();
+    await Future.wait(clients.map((client) => client.close()));
   }
 
   String _callExampleTool(String toolName, Map<String, dynamic> args) {
