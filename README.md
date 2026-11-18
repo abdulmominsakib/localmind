@@ -100,8 +100,14 @@ We are incredibly grateful to the developers who have helped build LocalMind:
   <a href="https://github.com/onlypuppy7">
     <img src="https://github.com/onlypuppy7.png?size=100" width="50" height="50" style="border-radius: 50%; margin-right: 4px;" title="onlypuppy7" alt="onlypuppy7"/>
   </a>
+  <a href="https://github.com/wetw0rks-c0ding">
+    <img src="https://github.com/wetw0rks-c0ding.png?size=100" width="50" height="50" style="border-radius: 50%; margin-right: 4px;" title="wetw0rks-c0ding" alt="wetw0rks-c0ding"/>
+  </a>
   <a href="https://github.com/leo-rnl">
     <img src="https://github.com/leo-rnl.png?size=100" width="50" height="50" style="border-radius: 50%; margin-right: 4px;" title="Léo Reynal (leo-rnl)" alt="Léo Reynal"/>
+  </a>
+  <a href="https://github.com/Thibaultjaigu">
+    <img src="https://github.com/Thibaultjaigu.png?size=100" width="50" height="50" style="border-radius: 50%; margin-right: 4px;" title="Thibaultjaigu" alt="Thibaultjaigu"/>
   </a>
   <a href="https://github.com/dtrknt15">
     <img src="https://github.com/dtrknt15.png?size=100" width="50" height="50" style="border-radius: 50%; margin-right: 4px;" title="dtrknt15" alt="dtrknt15"/>
@@ -111,6 +117,12 @@ We are incredibly grateful to the developers who have helped build LocalMind:
   </a>
   <a href="https://github.com/ystartgo">
     <img src="https://github.com/ystartgo.png?size=100" width="50" height="50" style="border-radius: 50%; margin-right: 4px;" title="ystartgo" alt="ystartgo"/>
+  </a>
+  <a href="https://github.com/lennartschoch">
+    <img src="https://github.com/lennartschoch.png?size=100" width="50" height="50" style="border-radius: 50%; margin-right: 4px;" title="lennartschoch" alt="lennartschoch"/>
+  </a>
+  <a href="https://github.com/maur1ce12">
+    <img src="https://github.com/maur1ce12.png?size=100" width="50" height="50" style="border-radius: 50%; margin-right: 4px;" title="maur1ce12" alt="maur1ce12"/>
   </a>
 </p>
 
