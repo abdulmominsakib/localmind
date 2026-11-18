@@ -1155,6 +1155,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Conéctate a través de Requesty con una clave API válida y mantén este perfil listo para el enrutamiento de modelos.';
 
   @override
+  String get add_server_uberllm_subtitle =>
+      'Conéctate a través de UberLLM con una clave API válida y mantén este perfil listo para el enrutamiento de modelos.';
+
+  @override
   String get add_server_endpoint_subtitle =>
       'Configura un punto de enlace local o alojado por ti mismo y luego verifica la conexión antes de guardar.';
 
@@ -1165,10 +1169,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get server_type_requesty => 'Requesty';
 
   @override
+  String get server_type_uberllm => 'UberLLM';
+
+  @override
   String get server_type_openrouter_sub => 'NUBE UNIFICADA';
 
   @override
   String get server_type_requesty_sub => 'NUBE UNIFICADA';
+
+  @override
+  String get server_type_uberllm_sub => 'NUBE UNIFICADA';
 
   @override
   String get ready_continue => 'LISTO PARA CONTINUAR';
@@ -1225,6 +1235,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get api_key_required_requesty => 'Clave API requerida para Requesty';
 
   @override
+  String get api_key_required_uberllm => 'Clave API requerida para UberLLM';
+
+  @override
   String get api_key_format =>
       'Las claves de API de OpenRouter comienzan con sk-';
 
@@ -1243,6 +1256,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get api_key_hint_requesty => 'rqsty-...';
+
+  @override
+  String get api_key_hint_uberllm => 'ull_...';
 
   @override
   String get api_key_hint_generic => 'Para servidores autenticados';
@@ -1438,6 +1454,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get server_type_requesty_display => 'Requesty';
 
   @override
+  String get server_type_uberllm_display => 'UberLLM';
+
+  @override
   String get server_type_on_device_display => 'Local';
 
   @override
@@ -1445,6 +1464,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get server_address_requesty => 'router.requesty.ai';
+
+  @override
+  String get server_address_uberllm => 'api.uberllm.dev';
 
   @override
   String get server_address_on_device => 'Inferencia local';
@@ -2360,6 +2382,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Requesty requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_uberllm =>
+      'UberLLM requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -3010,6 +3036,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get requesty_disclosure =>
+      'Al conectar este proveedor, tus mensajes de chat y entradas se enviarán a sus servidores. LocalMind no rastrea ni almacena tus conversaciones.';
+
+  @override
+  String get uberllm_disclosure =>
       'Al conectar este proveedor, tus mensajes de chat y entradas se enviarán a sus servidores. LocalMind no rastrea ni almacena tus conversaciones.';
 
   @override

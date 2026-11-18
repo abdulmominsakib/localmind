@@ -2205,6 +2205,12 @@ abstract class AppLocalizations {
   /// **'Connect through Requesty with a valid API key and keep this profile ready for model routing.'**
   String get add_server_requesty_subtitle;
 
+  /// Add server screen subtitle for UberLLM
+  ///
+  /// In en, this message translates to:
+  /// **'Connect through UberLLM with a valid API key and keep this profile ready for model routing.'**
+  String get add_server_uberllm_subtitle;
+
   /// Add server screen subtitle for endpoint-based servers
   ///
   /// In en, this message translates to:
@@ -2223,6 +2229,12 @@ abstract class AppLocalizations {
   /// **'Requesty'**
   String get server_type_requesty;
 
+  /// UberLLM server type card title
+  ///
+  /// In en, this message translates to:
+  /// **'UberLLM'**
+  String get server_type_uberllm;
+
   /// OpenRouter server type card subtitle
   ///
   /// In en, this message translates to:
@@ -2234,6 +2246,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'UNIFIED CLOUD'**
   String get server_type_requesty_sub;
+
+  /// UberLLM server type card subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'UNIFIED CLOUD'**
+  String get server_type_uberllm_sub;
 
   /// Onboarding ready status
   ///
@@ -2337,6 +2355,12 @@ abstract class AppLocalizations {
   /// **'API Key required for Requesty'**
   String get api_key_required_requesty;
 
+  /// Validation: API key for UberLLM
+  ///
+  /// In en, this message translates to:
+  /// **'API Key required for UberLLM'**
+  String get api_key_required_uberllm;
+
   /// Validation: API key format
   ///
   /// In en, this message translates to:
@@ -2372,6 +2396,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'rqsty-...'**
   String get api_key_hint_requesty;
+
+  /// UberLLM API key hint
+  ///
+  /// In en, this message translates to:
+  /// **'ull_...'**
+  String get api_key_hint_uberllm;
 
   /// Generic API key hint
   ///
@@ -2709,6 +2739,12 @@ abstract class AppLocalizations {
   /// **'Requesty'**
   String get server_type_requesty_display;
 
+  /// UberLLM server type display
+  ///
+  /// In en, this message translates to:
+  /// **'UberLLM'**
+  String get server_type_uberllm_display;
+
   /// On-device server type display
   ///
   /// In en, this message translates to:
@@ -2726,6 +2762,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'router.requesty.ai'**
   String get server_address_requesty;
+
+  /// UberLLM default address
+  ///
+  /// In en, this message translates to:
+  /// **'api.uberllm.dev'**
+  String get server_address_uberllm;
 
   /// On-device server address
   ///
@@ -4365,6 +4407,12 @@ abstract class AppLocalizations {
   /// **'Requesty requires an API key before testing.'**
   String get server_authentication_required_desc_requesty;
 
+  /// No description provided for @server_authentication_required_desc_uberllm.
+  ///
+  /// In en, this message translates to:
+  /// **'UberLLM requires an API key before testing.'**
+  String get server_authentication_required_desc_uberllm;
+
   /// No description provided for @server_authentication_optional_desc.
   ///
   /// In en, this message translates to:
@@ -5576,6 +5624,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.'**
   String get requesty_disclosure;
+
+  /// Disclosure shown when connecting to UberLLM about data being sent to their servers
+  ///
+  /// In en, this message translates to:
+  /// **'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.'**
+  String get uberllm_disclosure;
 
   /// Welcome message shown when a cloud provider (e.g. OpenRouter) is active
   ///

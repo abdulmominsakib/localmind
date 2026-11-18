@@ -111,7 +111,13 @@ class ServerEntity {
       return ServerType.openRouter;
     }
 
-    // 3. Ollama Cloud detection:
+    // 3. UberLLM detection: its profiles always store the UberLLM base URL as
+    // host, so a shifted or stale type index still resolves to UberLLM.
+    if (trimmedHost.contains('api.uberllm.dev')) {
+      return ServerType.uberllm;
+    }
+
+    // 4. Ollama Cloud detection:
     final isProbablyOllamaCloud =
         trimmedHost.contains('ollama.com') ||
         lowerName.contains('ollama cloud');
@@ -119,7 +125,7 @@ class ServerEntity {
       return ServerType.ollamaCloud;
     }
 
-    // 4. Default bounds-checked enum resolution:
+    // 5. Default bounds-checked enum resolution:
     if (typeIndex >= 0 && typeIndex < ServerType.values.length) {
       return ServerType.values[typeIndex];
     }

@@ -247,6 +247,20 @@ class _OnboardingServerTypeScreenState
                                     ),
                                     theme: theme,
                                   ),
+                                  _buildServerCard(
+                                    type: ServerType.uberllm,
+                                    title: l10n.server_type_uberllm,
+                                    subtitle: l10n.server_type_uberllm_sub,
+                                    iconWidget: ServerLogo(
+                                      type: ServerType.uberllm,
+                                      size: 20,
+                                      iconColor:
+                                          _selectedType == ServerType.uberllm
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                    ),
+                                    theme: theme,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 12),

@@ -1124,6 +1124,10 @@ class AppLocalizationsJa extends AppLocalizations {
       '有効な API キーで Requesty 経由で接続し、モデルルーティングの準備を整えます。';
 
   @override
+  String get add_server_uberllm_subtitle =>
+      '有効な API キーで UberLLM 経由で接続し、モデルルーティングの準備を整えます。';
+
+  @override
   String get add_server_endpoint_subtitle =>
       'ローカルまたはセルフホストのエンドポイントを設定し、保存前に接続を確認します。';
 
@@ -1134,10 +1138,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get server_type_requesty => 'Requesty';
 
   @override
+  String get server_type_uberllm => 'UberLLM';
+
+  @override
   String get server_type_openrouter_sub => '統合クラウド';
 
   @override
   String get server_type_requesty_sub => '統合クラウド';
+
+  @override
+  String get server_type_uberllm_sub => '統合クラウド';
 
   @override
   String get ready_continue => '続行可能';
@@ -1193,6 +1203,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get api_key_required_requesty => 'RequestyにはAPIキーが必要です';
 
   @override
+  String get api_key_required_uberllm => 'UberLLMにはAPIキーが必要です';
+
+  @override
   String get api_key_format => 'OpenRouterのAPIキーは sk- で始まります';
 
   @override
@@ -1209,6 +1222,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get api_key_hint_requesty => 'rqsty-...';
+
+  @override
+  String get api_key_hint_uberllm => 'ull_...';
 
   @override
   String get api_key_hint_generic => '認証が必要なサーバー用';
@@ -1397,6 +1413,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get server_type_requesty_display => 'Requesty';
 
   @override
+  String get server_type_uberllm_display => 'UberLLM';
+
+  @override
   String get server_type_on_device_display => 'ローカル';
 
   @override
@@ -1404,6 +1423,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get server_address_requesty => 'router.requesty.ai';
+
+  @override
+  String get server_address_uberllm => 'api.uberllm.dev';
 
   @override
   String get server_address_on_device => 'ローカル推論';
@@ -2302,6 +2324,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'Requesty requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_uberllm =>
+      'UberLLM requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -2939,6 +2965,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get requesty_disclosure =>
+      'このプロバイダーに接続すると、チャットメッセージと入力がそのサーバーに送信されます。LocalMindはお客様の会話を追跡または保存することはありません。';
+
+  @override
+  String get uberllm_disclosure =>
       'このプロバイダーに接続すると、チャットメッセージと入力がそのサーバーに送信されます。LocalMindはお客様の会話を追跡または保存することはありません。';
 
   @override

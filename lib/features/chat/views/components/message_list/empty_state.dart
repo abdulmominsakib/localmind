@@ -237,5 +237,6 @@ class NewChatIntro extends StatelessWidget {
         ServerType.openAICompatible => l10n.server_type_openai_display,
         ServerType.openRouter => l10n.server_type_openrouter_display,
         ServerType.requesty => l10n.server_type_requesty_display,
+        ServerType.uberllm => l10n.server_type_uberllm_display,
       };
 }

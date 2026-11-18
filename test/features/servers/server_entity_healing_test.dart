@@ -167,6 +167,29 @@ void main() {
         ),
         ServerType.requesty,
       );
+
+      expect(
+        ServerEntity.resolveServerType(
+          typeIndex: 7,
+          id: 'uberllm-1',
+          name: 'UberLLM',
+          host: 'https://api.uberllm.dev/v1',
+          port: 443,
+        ),
+        ServerType.uberllm,
+      );
+
+      // A stale index never moves an UberLLM profile to another provider.
+      expect(
+        ServerEntity.resolveServerType(
+          typeIndex: 3,
+          id: 'uberllm-2',
+          name: 'My cloud',
+          host: 'https://api.uberllm.dev/v1',
+          port: 443,
+        ),
+        ServerType.uberllm,
+      );
     });
   });
 

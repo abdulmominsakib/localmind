@@ -96,6 +96,7 @@ void main() {
         ServerType.openRouter: NewChatReach.cloud,
         ServerType.onDevice: NewChatReach.onDevice,
         ServerType.requesty: NewChatReach.cloud,
+        ServerType.uberllm: NewChatReach.cloud,
       });
       expect(NewChatPresence.forServerType(null).reach, NewChatReach.none);
     });
