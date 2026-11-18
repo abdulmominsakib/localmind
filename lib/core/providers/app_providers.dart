@@ -135,6 +135,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(keepPersonaOnNewChat: value));
   void setRoleSwapButtonEnabled(bool value) =>
       _update(state.copyWith(roleSwapButtonEnabled: value));
+  void setShowPromptProcessingIndicator(bool value) =>
+      _update(state.copyWith(showPromptProcessingIndicator: value));
   void setShowSystemMessagesInChat(bool value) =>
       _update(state.copyWith(showSystemMessagesInChat: value));
   void setCalendarToolsEnabled(bool value) =>

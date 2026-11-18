@@ -270,7 +270,9 @@ class VoiceModeNotifier extends Notifier<VoiceModeState> {
     // Send the transcript as a regular chat message. The streaming
     // listener will handle the transition to speaking phase.
     try {
-      await ref.read(chatProvider.notifier).sendMessage(transcript);
+      await ref
+          .read(chatProvider.notifier)
+          .sendMessage(transcript, countsAsPrompt: false);
     } catch (e) {
       if (!_active || !ref.mounted) return;
       Log.error('Voice mode send error: $e');

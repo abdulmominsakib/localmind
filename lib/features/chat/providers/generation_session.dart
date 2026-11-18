@@ -31,6 +31,7 @@ class GenerationSession {
     required this.chatService,
     required this.persisted,
     this.imageCancelToken,
+    this.countsAsPrompt = false,
   });
 
   static const _checkpointChunkThreshold = 20;
@@ -48,6 +49,10 @@ class GenerationSession {
   final CancelToken? imageCancelToken;
   bool get isImageGeneration => imageCancelToken != null;
 
+  /// Whether this reply is a user prompt that should increment the per-chat
+  /// prompts-processed counter once it completes successfully.
+  final bool countsAsPrompt;
+
   bool get isOnDevice => server.isOnDevice;
 
   StreamSubscription<ChatResponse>? subscription;
@@ -59,6 +64,9 @@ class GenerationSession {
 
   /// Set once the reply is cancelled or replaced; late events are ignored.
   bool cancelled = false;
+
+  /// Set once the prompt has been counted, so it is never counted twice.
+  bool promptCounted = false;
 
   int chunkCount = 0;
   DateTime? lastCheckpointTime;
@@ -75,8 +83,12 @@ class GenerationSession {
     firstTokenTime = null;
   }
 
-  void noteFirstToken() {
-    firstTokenTime ??= DateTime.now();
+  /// Records the first token of the reply. Returns true only on the first
+  /// call, so callers can run one-time transitions without re-checking.
+  bool noteFirstToken() {
+    if (firstTokenTime != null) return false;
+    firstTokenTime = DateTime.now();
+    return true;
   }
 
   bool shouldCheckpointSave(Message message) {

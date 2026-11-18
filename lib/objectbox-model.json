@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:6060443518060866028",
-      "lastPropertyId": "24:2324488738774851555",
+      "lastPropertyId": "25:614156416722889084",
       "name": "ConversationEntity",
       "properties": [
         {
@@ -129,6 +129,11 @@
         {
           "id": "24:2324488738774851555",
           "name": "totalTokenCount",
+          "type": 6
+        },
+        {
+          "id": "25:614156416722889084",
+          "name": "promptsProcessed",
           "type": 6
         }
       ],

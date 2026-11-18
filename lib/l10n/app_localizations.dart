@@ -789,6 +789,36 @@ abstract class AppLocalizations {
   /// **'Show a button in the chat input to send your message as the assistant instead of the user, without generating a response'**
   String get role_swap_button_enabled_desc;
 
+  /// Status shown in the composer while the request is being processed before the first token arrives.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing prompt…'**
+  String get processing_prompt_label;
+
+  /// Status shown in the composer while the reply is streaming.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating…'**
+  String get generating_label;
+
+  /// Label for the per-chat prompts-processed counter chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompts processed'**
+  String get prompts_processed_label;
+
+  /// Settings toggle to show the live prompt-processing indicator and prompts-processed chip in the composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Show prompt processing indicator'**
+  String get prompt_processing_indicator_enabled;
+
+  /// Description for the prompt processing indicator toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show live prompt-processing progress and the per-chat prompts-processed count above the chat input.'**
+  String get prompt_processing_indicator_enabled_desc;
+
   /// Tooltip for the role-swap button when it will send as the user role
   ///
   /// In en, this message translates to:

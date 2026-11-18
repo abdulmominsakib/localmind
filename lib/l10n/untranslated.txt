@@ -1,5 +1,10 @@
 {
   "ar": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -73,6 +78,11 @@
   ],
 
   "bn": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -150,6 +160,11 @@
   ],
 
   "de": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -227,6 +242,11 @@
   ],
 
   "es": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -304,6 +324,11 @@
   ],
 
   "fr": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -381,6 +406,11 @@
   ],
 
   "hi": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -458,6 +488,11 @@
   ],
 
   "it": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -535,6 +570,11 @@
   ],
 
   "ja": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -612,6 +652,11 @@
   ],
 
   "ko": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -675,6 +720,11 @@
   ],
 
   "pt": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -738,6 +788,11 @@
   ],
 
   "ru": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -815,6 +870,11 @@
   ],
 
   "tr": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -892,6 +952,11 @@
   ],
 
   "zh": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",
@@ -969,6 +1034,11 @@
   ],
 
   "zh_TW": [
+    "processing_prompt_label",
+    "generating_label",
+    "prompts_processed_label",
+    "prompt_processing_indicator_enabled",
+    "prompt_processing_indicator_enabled_desc",
     "mcp_connection_failed",
     "mcp_tools_unsupported_runtime",
     "no_model_downloaded_title",

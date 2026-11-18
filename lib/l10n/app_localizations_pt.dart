@@ -369,6 +369,23 @@ class AppLocalizationsPt extends AppLocalizations {
       'Mostrar um botão na entrada do chat para enviar sua mensagem como assistente em vez de usuário, sem gerar resposta';
 
   @override
+  String get processing_prompt_label => 'Processing prompt…';
+
+  @override
+  String get generating_label => 'Generating…';
+
+  @override
+  String get prompts_processed_label => 'Prompts processed';
+
+  @override
+  String get prompt_processing_indicator_enabled =>
+      'Show prompt processing indicator';
+
+  @override
+  String get prompt_processing_indicator_enabled_desc =>
+      'Show live prompt-processing progress and the per-chat prompts-processed count above the chat input.';
+
+  @override
   String get send_as_user_tooltip => 'Enviar como usuário';
 
   @override

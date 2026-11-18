@@ -273,6 +273,7 @@ class ConversationEntity {
   bool isArchived;
   int characterCount;
   int? totalTokenCount;
+  int promptsProcessed;
 
   @Backlink()
   final messages = ToMany<MessageEntity>();
@@ -302,6 +303,7 @@ class ConversationEntity {
     this.isArchived = false,
     this.characterCount = 0,
     this.totalTokenCount,
+    this.promptsProcessed = 0,
   });
 
   factory ConversationEntity.fromDomain(Conversation conversation) {
@@ -331,6 +333,7 @@ class ConversationEntity {
       isArchived: conversation.isArchived,
       characterCount: conversation.characterCount,
       totalTokenCount: conversation.totalTokenCount,
+      promptsProcessed: conversation.promptsProcessed,
     );
   }
 
@@ -371,6 +374,7 @@ class ConversationEntity {
       isArchived: isArchived,
       characterCount: characterCount,
       totalTokenCount: totalTokenCount,
+      promptsProcessed: promptsProcessed,
     );
   }
 }

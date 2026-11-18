@@ -705,6 +705,9 @@ class _FakeConversationsNotifier extends conv.ConversationsNotifier {
 
   @override
   Future<void> updateTokenCount(String id, int totalTokenCount) async {}
+
+  @override
+  Future<void> incrementPromptsProcessed(String id) async {}
 }
 
 class _RemoteServerNotifier extends ActiveServerNotifier {

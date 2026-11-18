@@ -361,6 +361,23 @@ class AppLocalizationsZh extends AppLocalizations {
       '在聊天输入框中显示一个按钮，允许您以助手而非用户的身份发送消息，而不生成任何回复';
 
   @override
+  String get processing_prompt_label => 'Processing prompt…';
+
+  @override
+  String get generating_label => 'Generating…';
+
+  @override
+  String get prompts_processed_label => 'Prompts processed';
+
+  @override
+  String get prompt_processing_indicator_enabled =>
+      'Show prompt processing indicator';
+
+  @override
+  String get prompt_processing_indicator_enabled_desc =>
+      'Show live prompt-processing progress and the per-chat prompts-processed count above the chat input.';
+
+  @override
   String get send_as_user_tooltip => '以用户身份发送';
 
   @override

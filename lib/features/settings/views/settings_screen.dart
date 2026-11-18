@@ -654,6 +654,7 @@ class _MoreChatOptionsPage extends ConsumerWidget {
     l10n.send_top_p_to_api,
     l10n.temp_chat_keyboard_incognito,
     l10n.role_swap_button_enabled,
+    l10n.prompt_processing_indicator_enabled,
     l10n.enable_image_compression,
   ];
 
@@ -724,6 +725,12 @@ class _MoreChatOptionsPage extends ConsumerWidget {
                 description: l10n.role_swap_button_enabled_desc,
                 value: settings.roleSwapButtonEnabled,
                 onChanged: notifier.setRoleSwapButtonEnabled,
+              ),
+              _ToggleSetting(
+                label: l10n.prompt_processing_indicator_enabled,
+                description: l10n.prompt_processing_indicator_enabled_desc,
+                value: settings.showPromptProcessingIndicator,
+                onChanged: notifier.setShowPromptProcessingIndicator,
               ),
               _ToggleSetting(
                 label: l10n.temp_chat_keyboard_incognito,

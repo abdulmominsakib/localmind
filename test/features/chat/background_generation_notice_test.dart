@@ -65,6 +65,9 @@ class _StaticConversationsNotifier extends conv.ConversationsNotifier {
 
   @override
   Future<List<Conversation>> build() async => _conversations;
+
+  @override
+  Future<void> incrementPromptsProcessed(String id) async {}
 }
 
 void main() {

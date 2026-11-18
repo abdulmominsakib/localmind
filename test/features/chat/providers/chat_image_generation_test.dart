@@ -202,6 +202,9 @@ class _Conversations extends ConversationsNotifier {
 
   @override
   Future<void> updateTokenCount(String id, int totalTokenCount) async {}
+
+  @override
+  Future<void> incrementPromptsProcessed(String id) async {}
 }
 
 class _ImageService extends ImageGenerationService {

@@ -404,6 +404,36 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     await _updateState();
   }
 
+  /// Increments the per-conversation "prompts processed" counter after a
+  /// user prompt produces a successful reply. Does not touch `updatedAt`, so
+  /// the chat is not re-sorted just because a counter changed. Temporary
+  /// (incognito) conversations are never counted.
+  Future<void> incrementPromptsProcessed(String id) async {
+    final db = ref.read(databaseProvider);
+    final conversations = state.value ?? [];
+    final existingIndex = conversations.indexWhere((c) => c.id == id);
+    if (existingIndex == -1) return;
+
+    final existing = conversations[existingIndex];
+    if (existing.isTemporary) return;
+
+    final updated = existing.copyWith(
+      promptsProcessed: existing.promptsProcessed + 1,
+    );
+
+    final query = db.conversationBox
+        .query(ConversationEntity_.id.equals(id))
+        .build();
+    final existingEntity = query.findFirst();
+    query.close();
+    if (existingEntity == null) return;
+
+    final entity = ConversationEntity.fromDomain(updated);
+    entity.internalId = existingEntity.internalId;
+    db.conversationBox.put(entity);
+    _updateInState(updated);
+  }
+
   Future<void> updatePersonas(String id, List<Persona> personas) async {
     final personaId = personas.isEmpty
         ? null

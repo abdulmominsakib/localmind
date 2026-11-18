@@ -61,6 +61,10 @@ class AppSettings {
   final bool locationToolsEnabled;
   final bool autoCollapseThinking;
 
+  /// Whether the composer shows the live "processing prompt / generating"
+  /// indicator and the per-chat prompts-processed chip.
+  final bool showPromptProcessingIndicator;
+
   /// Whether `temperature` / `top_p` are sent to remote APIs. Some providers
   /// (e.g. reasoning models) reject them (#81).
   final bool sendTemperature;
@@ -119,6 +123,7 @@ class AppSettings {
     this.calendarToolsEnabled = false,
     this.locationToolsEnabled = false,
     this.autoCollapseThinking = false,
+    this.showPromptProcessingIndicator = true,
     this.sendTemperature = true,
     this.sendTopP = true,
     this.defaultSystemPrompt = '',
@@ -173,6 +178,7 @@ class AppSettings {
     bool? calendarToolsEnabled,
     bool? locationToolsEnabled,
     bool? autoCollapseThinking,
+    bool? showPromptProcessingIndicator,
     bool? sendTemperature,
     bool? sendTopP,
     String? defaultSystemPrompt,
@@ -249,6 +255,8 @@ class AppSettings {
       calendarToolsEnabled: calendarToolsEnabled ?? this.calendarToolsEnabled,
       locationToolsEnabled: locationToolsEnabled ?? this.locationToolsEnabled,
       autoCollapseThinking: autoCollapseThinking ?? this.autoCollapseThinking,
+      showPromptProcessingIndicator:
+          showPromptProcessingIndicator ?? this.showPromptProcessingIndicator,
       sendTemperature: sendTemperature ?? this.sendTemperature,
       sendTopP: sendTopP ?? this.sendTopP,
       defaultSystemPrompt: defaultSystemPrompt ?? this.defaultSystemPrompt,
@@ -305,6 +313,7 @@ class AppSettings {
       'calendarToolsEnabled': calendarToolsEnabled,
       'locationToolsEnabled': locationToolsEnabled,
       'autoCollapseThinking': autoCollapseThinking,
+      'showPromptProcessingIndicator': showPromptProcessingIndicator,
       'sendTemperature': sendTemperature,
       'sendTopP': sendTopP,
       'defaultSystemPrompt': defaultSystemPrompt,
@@ -365,6 +374,8 @@ class AppSettings {
       calendarToolsEnabled: map['calendarToolsEnabled'] ?? false,
       locationToolsEnabled: map['locationToolsEnabled'] ?? false,
       autoCollapseThinking: map['autoCollapseThinking'] ?? false,
+      showPromptProcessingIndicator:
+          map['showPromptProcessingIndicator'] ?? true,
       sendTemperature: map['sendTemperature'] ?? true,
       sendTopP: map['sendTopP'] ?? true,
       defaultSystemPrompt: map['defaultSystemPrompt'] as String? ?? '',

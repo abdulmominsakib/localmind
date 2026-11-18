@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:localmind/features/chat/views/components/token_usage_indicator.dart';
+import 'prompt_processing_indicator.dart';
+import '../../data/models/live_generation.dart';
 
 import '../../../../core/models/enums.dart';
 import '../../../../core/providers/app_providers.dart';
@@ -399,9 +401,9 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
           ),
 
           child: Container(
-            width: 36,
+            width: 40,
 
-            height: 36,
+            height: 40,
 
             decoration: BoxDecoration(
               color: isListening
@@ -416,7 +418,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
               icon: HugeIcon(
                 icon: HugeIcons.strokeRoundedMic01,
-                size: 20,
+                size: 22,
                 color: isListening
                     ? (isDark ? Colors.white : Colors.black)
                     : theme.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -749,13 +751,13 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
-                width: 36,
-                height: 36,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: backgroundColor.withValues(
                     alpha: (canSend || widget.isStreaming) ? 1.0 : 0.2,
                   ),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
                   child: AnimatedSwitcher(
@@ -837,7 +839,25 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         reasoning.enabled;
     final sendingAsAssistant =
         !isImageGeneration && showRoleSwapButton && _sendAsAssistant;
-    final hint = isImageGeneration
+    final liveGeneration = ref.watch(
+      chatProvider.select((s) => s.liveGeneration),
+    );
+    final showPromptProcessingIndicator = ref.watch(
+      settingsProvider.select((s) => s.showPromptProcessingIndicator),
+    );
+    final composerEmpty = _controller.text.isEmpty;
+    final showInFieldLiveStatus =
+        showPromptProcessingIndicator &&
+        liveGeneration != null &&
+        composerEmpty &&
+        !(liveGeneration.phase == LiveGenerationPhase.completed &&
+            (DateTime.now()
+                    .difference(liveGeneration.completedAt ?? DateTime.now())
+                    .inMilliseconds >
+                2500));
+    final hint = showInFieldLiveStatus
+        ? null
+        : isImageGeneration
         ? l10n.image_generation_prompt
         : sendingAsAssistant
         ? l10n.chat_input_hint_assistant
@@ -1115,6 +1135,16 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               ),
             ],
 
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              child: !composerEmpty
+                  ? const PromptProcessingStatusBar(
+                      key: ValueKey('corner-status'),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('no-corner-status')),
+            ),
             // One row: add, the text (growing upward as it wraps), mic,
             // and voice mode or send. Thinking and send-as-assistant live in
             // the + sheet; a dot on + shows when either is on.
@@ -1246,7 +1276,25 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                           ),
                         ),
                       ),
-                      if (!isImageGeneration && _controller.text.isEmpty)
+                      if (composerEmpty)
+                        IgnorePointer(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 180),
+                            switchInCurve: Curves.easeOut,
+                            switchOutCurve: Curves.easeIn,
+                            child: showInFieldLiveStatus
+                                ? const PromptProcessingStatusBar(
+                                    key: ValueKey('in-field-status'),
+                                    emphasized: true,
+                                  )
+                                : const SizedBox.shrink(
+                                    key: ValueKey('no-in-field-status'),
+                                  ),
+                          ),
+                        ),
+                      if (!isImageGeneration &&
+                          composerEmpty &&
+                          !showInFieldLiveStatus)
                         Positioned(
                           right: 4,
                           top: 0,
@@ -1269,8 +1317,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                   _buildVoiceModeButton(theme)
                 else
                   SizedBox(
-                    width: 36,
-                    height: 36,
+                    width: 40,
+                    height: 40,
                     child: OverflowBox(
                       maxWidth: 44,
                       maxHeight: 44,
