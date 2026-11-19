@@ -123,11 +123,18 @@ class TtsState {
 }
 
 class TtsNotifier extends Notifier<TtsState> {
+  TtsNotifier({
+    AudioPlayer? player,
+    this._workerEntry = ttsWorkerEntry,
+  }) : _player = player ?? AudioPlayer();
+
   FlutterTts? _flutterTts;
   final _systemTtsConfiguration = SystemTtsConfiguration();
-  final AudioPlayer _player = AudioPlayer();
+  final AudioPlayer _player;
+  final void Function(SendPort) _workerEntry;
   bool _isPlayerDisposed = false;
   bool _isStopping = false;
+  Future<void>? _stopFuture;
   List<String> _chunks = [];
   int _currentChunkIndex = 0;
   EngineId? _currentEngine;
@@ -148,6 +155,7 @@ class TtsNotifier extends Notifier<TtsState> {
   Completer<void>? _initCompleter;
   bool _isWorkerInitializing = false;
   int _currentSessionId = 0;
+  int _speakRequestId = 0;
 
   StreamSubscription<void>? _playerCompleteSubscription;
   int _playbackSessionId = 0;
@@ -218,6 +226,7 @@ class TtsNotifier extends Notifier<TtsState> {
     );
 
     _currentIndexSubscription = _player.currentIndexStream.listen((index) {
+      if (!_isActivePlayback(_playbackSessionId)) return;
       if (index != null && index != _currentChunkIndex) {
         _currentChunkIndex = index;
         state = state.copyWith(currentChunkIndex: index);
@@ -263,52 +272,60 @@ class TtsNotifier extends Notifier<TtsState> {
   }
 
   void _setupWorkerListener() {
-    _mainReceivePort.listen((message) async {
-      if (message is SendPort) {
-        _workerSendPort = message;
-        _workerPortCompleter?.complete(message);
-        _workerPortCompleter = null;
-      } else if (message is TtsWorkerResponse) {
-        if (message.isInitResponse) {
-          _initCompleter?.complete();
-          _initCompleter = null;
-        } else if (message.chunkIndex != null) {
-          if (message.sessionId != _currentSessionId) {
-            Log.debug('Ignoring stale chunk ${message.chunkIndex}');
-            return;
-          }
-          if (message.wavBytes != null) {
-            _synthesizedChunks[message.chunkIndex!] = message.wavBytes!;
-            _computeChunkDuration(message.chunkIndex!, message.wavBytes!);
-            await _addChunkToPlaylist(message.chunkIndex!, message.wavBytes!);
-            _updatePlaybackProgress();
-          } else {
-            Log.error(
-              'Worker error for chunk ${message.chunkIndex}: ${message.error}',
-            );
-            _synthesizedChunks[message.chunkIndex!] = Uint8List(0);
-            await _addChunkToPlaylist(message.chunkIndex!, Uint8List(0));
-          }
-        } else if (message.error != null) {
-          Log.error('Worker general error: ${message.error}');
-          _initCompleter?.completeError(message.error!);
-          _initCompleter = null;
+    // Finish adding each worker response before processing the next one.
+    _mainReceivePort.asyncMap(_handleWorkerMessage).listen(null);
+  }
+
+  Future<void> _handleWorkerMessage(Object? message) async {
+    if (message is SendPort) {
+      _workerSendPort = message;
+      _workerPortCompleter?.complete(message);
+      _workerPortCompleter = null;
+      return;
+    }
+    if (message is! TtsWorkerResponse) return;
+    if (message.isInitResponse) {
+      _initCompleter?.complete();
+      _initCompleter = null;
+    } else if (message.chunkIndex case final index?) {
+      final sessionId = message.sessionId;
+      if (sessionId == null || !_isActivePlayback(sessionId)) return;
+      try {
+        final bytes = message.wavBytes;
+        if (bytes == null || bytes.isEmpty) {
+          throw StateError(message.error ?? 'TTS worker returned no audio');
         }
+        _synthesizedChunks[index] = bytes;
+        _computeChunkDuration(index, bytes);
+        await _addChunkToPlaylist(sessionId, index, bytes);
+        if (_isActivePlayback(sessionId)) _updatePlaybackProgress();
+      } catch (error, stackTrace) {
+        await _handlePlaybackFailure(sessionId, error, stackTrace);
       }
-    });
+    } else if (message.error != null) {
+      Log.error('Worker general error: ${message.error}');
+      _initCompleter?.completeError(message.error!);
+      _initCompleter = null;
+    }
   }
 
   Future<void> _ensureWorker() async {
+    final pendingPort = _workerPortCompleter;
+    if (pendingPort != null) {
+      await pendingPort.future.timeout(const Duration(seconds: 10));
+      return;
+    }
     if (_workerIsolate != null) return;
 
     Log.info('Spawning TTS worker isolate...');
-    _workerPortCompleter = Completer<SendPort>();
+    final portCompleter = Completer<SendPort>();
+    _workerPortCompleter = portCompleter;
     _workerIsolate = await Isolate.spawn(
-      ttsWorkerEntry,
+      _workerEntry,
       _mainReceivePort.sendPort,
     );
 
-    await _workerPortCompleter!.future.timeout(const Duration(seconds: 10));
+    await portCompleter.future.timeout(const Duration(seconds: 10));
   }
 
   void _computeChunkDuration(int index, Uint8List wavBytes) {
@@ -490,17 +507,17 @@ class TtsNotifier extends Notifier<TtsState> {
       chunks: const [],
       currentChunkIndex: -1,
       canSeek: false,
+      isSeekPending: false,
     );
     // Hand the iOS audio session back to record so a follow-up
     // STT startListening() can capture audio immediately.
-    _configureAudioSessionForSpeech();
+    unawaited(_configureAudioSessionForSpeech());
   }
 
-  void _configureAudioSessionForSpeech() {
+  Future<void> _configureAudioSessionForSpeech() async {
     try {
-      AudioSession.instance.then((session) {
-        session.configure(const AudioSessionConfiguration.speech());
-      });
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.speech());
     } catch (e) {
       Log.error('Error configuring audio session for speech: $e');
     }
@@ -545,12 +562,17 @@ class TtsNotifier extends Notifier<TtsState> {
     return chunks;
   }
 
-  Future<void> _initEngine(EngineId engineId, {String? voiceId}) async {
+  Future<void> _initEngine(
+    int sessionId,
+    EngineId engineId, {
+    String? voiceId,
+  }) async {
     await _ensureWorker();
 
     if (_isWorkerInitializing && _initCompleter != null) {
       await _initCompleter!.future.timeout(const Duration(seconds: 30));
     }
+    if (!_isActivePlayback(sessionId)) return;
 
     String modelPath = '';
     String voicesPath = '';
@@ -607,6 +629,7 @@ class TtsNotifier extends Notifier<TtsState> {
       default:
         return;
     }
+    if (!_isActivePlayback(sessionId)) return;
 
     if (_currentEngine == engineId &&
         !_isWorkerInitializing &&
@@ -690,18 +713,22 @@ class TtsNotifier extends Notifier<TtsState> {
       return true;
     }
 
-    if (await tryPlayCached()) return;
-
-    _isStopping = false;
+    final requestId = ++_speakRequestId;
+    final pendingStop = _stopFuture;
+    if (pendingStop != null) await pendingStop;
+    if (_isPlayerDisposed || requestId != _speakRequestId) return;
     if (state.isSpeaking) {
-      await stop();
+      await _stopPlayback();
       await Future.delayed(const Duration(milliseconds: 100));
-      _isStopping = false;
+      if (_isPlayerDisposed || _isStopping || requestId != _speakRequestId) {
+        return;
+      }
     }
 
     if (await tryPlayCached()) return;
 
     if (resolvedEngine == EngineId.system) {
+      _currentSessionId++;
       _flutterTts ??= FlutterTts();
       _resetSystemSeekState();
       final speakGeneration = ++_systemSpeakGeneration;
@@ -823,23 +850,12 @@ class TtsNotifier extends Notifier<TtsState> {
     _currentVoice = resolvedVoiceId;
     _synthesizedChunks.clear();
     _lastEnqueuedChunk = -1;
-    _currentSessionId++;
-    _playbackSessionId = _currentSessionId;
+    final sessionId = ++_currentSessionId;
+    _playbackSessionId = sessionId;
 
     _isPreview = isPreview;
     _playlistBuffer.clear();
     _nextPlaylistIndexToAdd = 0;
-    await _player.stop();
-    await _player.clearAudioSources();
-
-    try {
-      AudioSession.instance.then((session) {
-        session.configure(const AudioSessionConfiguration.speech());
-      });
-    } catch (e) {
-      Log.error('Error configuring audio session: $e');
-    }
-
     state = state.copyWith(
       isSpeaking: true,
       isPaused: false,
@@ -854,40 +870,75 @@ class TtsNotifier extends Notifier<TtsState> {
     );
 
     try {
-      await _initEngine(resolvedEngine, voiceId: resolvedVoiceId);
+      await _player.stop();
+      if (!_isActivePlayback(sessionId)) return;
+      await _player.clearAudioSources();
+      if (!_isActivePlayback(sessionId)) return;
+      unawaited(_configureAudioSessionForSpeech());
+      await _initEngine(sessionId, resolvedEngine, voiceId: resolvedVoiceId);
+      if (!_isActivePlayback(sessionId)) return;
       await _player.setSpeed(state.playbackSpeed);
+      if (!_isActivePlayback(sessionId)) return;
       state = state.copyWith(
         isInitializing: false,
         canSeek: false,
         duration: _estimatedTotalDuration(),
       );
       _enqueueNextChunks();
-    } catch (e, st) {
-      if (_isPlayerDisposed) return;
-      Log.error('TTS speak error: $e\n$st');
-      state = state.copyWith(
-        isSpeaking: false,
-        isInitializing: false,
-        error: e.toString(),
-        playingContent: null,
-        clearPlayingTarget: true,
-      );
+    } catch (error, stackTrace) {
+      await _handlePlaybackFailure(sessionId, error, stackTrace);
     }
   }
 
-  Future<void> _addChunkToPlaylist(int chunkIndex, Uint8List wavBytes) async {
-    if (_isStopping || chunkIndex >= _chunks.length) return;
+  bool _isActivePlayback(int sessionId) =>
+      !_isPlayerDisposed &&
+      !_isStopping &&
+      sessionId == _currentSessionId &&
+      sessionId == _playbackSessionId &&
+      state.isSpeaking;
+
+  Future<void> _handlePlaybackFailure(
+    int sessionId,
+    Object error,
+    StackTrace stackTrace,
+  ) async {
+    if (!_isActivePlayback(sessionId)) return;
+    Log.warning('TTS playback failed: $error\n$stackTrace');
+    await _stopPlayback(error: error.toString());
+  }
+
+  Future<void> _playAudio(int sessionId) async {
+    try {
+      await _player.play();
+    } catch (error, stackTrace) {
+      await _handlePlaybackFailure(sessionId, error, stackTrace);
+    }
+  }
+
+  Future<void> _addChunkToPlaylist(
+    int sessionId,
+    int chunkIndex,
+    Uint8List wavBytes,
+  ) async {
+    if (!_isActivePlayback(sessionId) || chunkIndex >= _chunks.length) return;
 
     final tempDir = Directory.systemTemp;
     final tempFile = File(
-      '${tempDir.path}/tts_chunk_${_currentSessionId}_$chunkIndex.wav',
+      '${tempDir.path}/tts_chunk_${sessionId}_$chunkIndex.wav',
     );
-    await tempFile.writeAsBytes(wavBytes);
+    try {
+      await tempFile.writeAsBytes(wavBytes);
+    } finally {
+      if (!_isActivePlayback(sessionId)) {
+        _deleteChunkFile(sessionId, chunkIndex);
+      }
+    }
+    if (!_isActivePlayback(sessionId)) return;
 
     final source = AudioSource.file(
       tempFile.path,
       tag: MediaItem(
-        id: 'tts_chunk_${_currentSessionId}_$chunkIndex',
+        id: 'tts_chunk_${sessionId}_$chunkIndex',
         album: _isPreview ? 'Voice Preview' : 'LocalMind TTS',
         title: _chunks[chunkIndex],
         artist: _currentEngine == EngineId.kitten ? 'Kitten TTS' : 'Piper TTS',
@@ -900,14 +951,12 @@ class TtsNotifier extends Notifier<TtsState> {
       final src = _playlistBuffer.remove(indexBeingAdded)!;
       if (indexBeingAdded == 0) {
         await _player.setAudioSources([src]);
+        if (!_isActivePlayback(sessionId)) return;
+        await _player.setSpeed(state.playbackSpeed);
       } else {
         await _player.addAudioSource(src);
       }
-
-      if (indexBeingAdded == 0 && !state.isPaused) {
-        await _player.setSpeed(state.playbackSpeed);
-        _player.play();
-      }
+      if (!_isActivePlayback(sessionId)) return;
 
       _nextPlaylistIndexToAdd++;
 
@@ -916,6 +965,11 @@ class TtsNotifier extends Notifier<TtsState> {
         _saveMessageAudioCache();
       } else {
         state = state.copyWith(isInitializing: false);
+      }
+      if (indexBeingAdded == 0 &&
+          _isActivePlayback(sessionId) &&
+          !state.isPaused) {
+        unawaited(_playAudio(sessionId));
       }
     }
   }
@@ -947,14 +1001,16 @@ class TtsNotifier extends Notifier<TtsState> {
     }
   }
 
-  Future<void> _ensurePlaylistThrough(int targetIndex) async {
+  Future<void> _ensurePlaylistThrough(int sessionId, int targetIndex) async {
     if (targetIndex < 0 || targetIndex >= _chunks.length) return;
     _enqueueChunk(targetIndex);
 
     final deadline = DateTime.now().add(const Duration(seconds: 20));
-    while (_nextPlaylistIndexToAdd <= targetIndex &&
+    while (_isActivePlayback(sessionId) &&
+        _nextPlaylistIndexToAdd <= targetIndex &&
         DateTime.now().isBefore(deadline)) {
       await Future.delayed(const Duration(milliseconds: 50));
+      if (!_isActivePlayback(sessionId)) return;
       if (_lastEnqueuedChunk < targetIndex) {
         _enqueueChunk(targetIndex);
       }
@@ -978,6 +1034,7 @@ class TtsNotifier extends Notifier<TtsState> {
       return;
     }
 
+    final sessionId = _currentSessionId;
     state = state.copyWith(isSeekPending: true);
     try {
       final maxDuration = _estimatedTotalDuration();
@@ -988,7 +1045,8 @@ class TtsNotifier extends Notifier<TtsState> {
       if (clamped > maxDuration) clamped = maxDuration;
 
       final targetChunk = _chunkIndexForPosition(clamped);
-      await _ensurePlaylistThrough(targetChunk);
+      await _ensurePlaylistThrough(sessionId, targetChunk);
+      if (!_isActivePlayback(sessionId)) return;
 
       var chunkStart = Duration.zero;
       for (var i = 0; i < targetChunk; i++) {
@@ -998,18 +1056,24 @@ class TtsNotifier extends Notifier<TtsState> {
 
       if (_player.currentIndex != targetChunk) {
         await _player.seek(Duration.zero, index: targetChunk);
+        if (!_isActivePlayback(sessionId)) return;
       }
       if (localPosition > Duration.zero) {
         await _player.seek(localPosition);
       } else {
         await _player.seek(Duration.zero);
       }
+      if (!_isActivePlayback(sessionId)) return;
       _currentChunkIndex = targetChunk;
       state = state.copyWith(currentChunkIndex: targetChunk);
       _updateChunkOffset();
       _updatePlaybackProgress();
+    } catch (error, stackTrace) {
+      await _handlePlaybackFailure(sessionId, error, stackTrace);
     } finally {
-      state = state.copyWith(isSeekPending: false);
+      if (_isActivePlayback(sessionId)) {
+        state = state.copyWith(isSeekPending: false);
+      }
     }
   }
 
@@ -1072,8 +1136,8 @@ class TtsNotifier extends Notifier<TtsState> {
       unawaited(
         _flutterTts?.speak(_systemFullText ?? state.playingContent ?? ''),
       );
-    } else {
-      _player.play();
+    } else if (_nextPlaylistIndexToAdd > 0 && !_isStopping) {
+      unawaited(_playAudio(_currentSessionId));
     }
     state = state.copyWith(isPaused: false);
   }
@@ -1086,24 +1150,39 @@ class TtsNotifier extends Notifier<TtsState> {
     }
   }
 
-  Future<void> stop() async {
+  Future<void> stop() {
+    _speakRequestId++;
+    return _stopPlayback();
+  }
+
+  Future<void> _stopPlayback({String? error}) =>
+      _stopFuture ??= _stop(error).whenComplete(() {
+        _isStopping = false;
+        _stopFuture = null;
+      });
+
+  Future<void> _stop(String? error) async {
     _isStopping = true;
     _systemSpeakGeneration++;
-    if (_isPlayerDisposed) {
-      _isStopping = false;
-      return;
-    }
+    final sessionId = _currentSessionId++;
+    if (_isPlayerDisposed) return;
     try {
       await _player.stop();
       await _player.clearAudioSources();
     } catch (_) {}
-    await _flutterTts?.stop();
-    _cleanupSessionFiles(_currentSessionId, _chunks.length);
+    try {
+      await _flutterTts?.stop();
+    } catch (error) {
+      Log.warning('Could not stop system TTS: $error');
+    }
+    _cleanupSessionFiles(sessionId, _chunks.length);
+    if (_isPlayerDisposed) return;
     _resetProgress();
     state = state.copyWith(
       isSpeaking: false,
       isPaused: false,
       isInitializing: false,
+      error: error,
       playingContent: null,
       isPreview: false,
       clearPlayingTarget: true,
@@ -1111,9 +1190,9 @@ class TtsNotifier extends Notifier<TtsState> {
       chunks: const [],
       currentChunkIndex: -1,
       canSeek: false,
+      isSeekPending: false,
     );
-    _configureAudioSessionForSpeech();
-    _isStopping = false;
+    unawaited(_configureAudioSessionForSpeech());
   }
 
   Future<void> setPlaybackSpeed(double speed) async {
@@ -1170,13 +1249,11 @@ class TtsNotifier extends Notifier<TtsState> {
       _totalDuration += duration;
     }
     _lastEnqueuedChunk = _chunks.length - 1;
-    _currentSessionId++;
-    _playbackSessionId = _currentSessionId;
+    final sessionId = ++_currentSessionId;
+    _playbackSessionId = sessionId;
     _isPreview = isPreview;
     _playlistBuffer.clear();
     _nextPlaylistIndexToAdd = 0;
-    await _player.stop();
-
     state = state.copyWith(
       isSpeaking: true,
       isPaused: false,
@@ -1190,16 +1267,15 @@ class TtsNotifier extends Notifier<TtsState> {
       duration: _totalDuration,
     );
 
-    for (var i = 0; i < _chunks.length; i++) {
-      final bytes = _synthesizedChunks[i];
-      if (bytes != null && bytes.isNotEmpty) {
-        await _addChunkToPlaylist(i, bytes);
+    try {
+      await _player.stop();
+      if (!_isActivePlayback(sessionId)) return;
+      for (var i = 0; i < _chunks.length; i++) {
+        await _addChunkToPlaylist(sessionId, i, cache.synthesizedChunks[i]!);
+        if (!_isActivePlayback(sessionId)) return;
       }
-    }
-
-    state = state.copyWith(isInitializing: false, canSeek: true);
-    if (!state.isPaused) {
-      await _player.play();
+    } catch (error, stackTrace) {
+      await _handlePlaybackFailure(sessionId, error, stackTrace);
     }
   }
 
