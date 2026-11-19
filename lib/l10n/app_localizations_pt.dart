@@ -1151,6 +1151,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Conecte-se através do Requesty com uma chave de API válida e mantenha este perfil pronto para roteamento de modelo.';
 
   @override
+  String get add_server_standard_compute_subtitle =>
+      'Conecte-se através do Standard Compute com uma chave de API válida e mantenha este perfil pronto para roteamento de modelo.';
+
+  @override
   String get add_server_endpoint_subtitle =>
       'Configure um endpoint local ou auto-hospedado e verifique a conexão antes de salvar.';
 
@@ -1161,10 +1165,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get server_type_requesty => 'Requesty';
 
   @override
+  String get server_type_standard_compute => 'Standard Compute';
+
+  @override
   String get server_type_openrouter_sub => 'NUVEM UNIFICADA';
 
   @override
   String get server_type_requesty_sub => 'NUVEM UNIFICADA';
+
+  @override
+  String get server_type_standard_compute_sub => 'NUVEM UNIFICADA';
 
   @override
   String get ready_continue => 'PRONTO PARA CONTINUAR';
@@ -1222,6 +1232,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Chave de API necessária para Requesty';
 
   @override
+  String get api_key_required_standard_compute =>
+      'Chave de API necessária para Standard Compute';
+
+  @override
   String get api_key_format => 'As chaves da API OpenRouter começam com sk-';
 
   @override
@@ -1238,6 +1252,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get api_key_hint_requesty => 'rqsty-...';
+
+  @override
+  String get api_key_hint_standard_compute => 'sk_live_...';
 
   @override
   String get api_key_hint_generic => 'Para servidores autenticados';
@@ -1433,6 +1450,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get server_type_requesty_display => 'Requesty';
 
   @override
+  String get server_type_standard_compute_display => 'Standard Compute';
+
+  @override
   String get server_type_on_device_display => 'No dispositivo';
 
   @override
@@ -1440,6 +1460,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get server_address_requesty => 'router.requesty.ai';
+
+  @override
+  String get server_address_standard_compute => 'api.stdcmpt.com';
 
   @override
   String get server_address_on_device => 'Inferência local';
@@ -2361,6 +2384,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Requesty requer uma chave API antes do teste.';
 
   @override
+  String get server_authentication_required_desc_standard_compute =>
+      'Standard Compute requer uma chave API antes do teste.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Deixe a chave de API vazia se este servidor não exigir uma.';
 
@@ -3026,6 +3053,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get requesty_disclosure =>
+      'Ao conectar este provedor, suas mensagens e entradas de chat serão enviadas para seus servidores. LocalMind não rastreia nem armazena suas conversas.';
+
+  @override
+  String get standard_compute_disclosure =>
       'Ao conectar este provedor, suas mensagens e entradas de chat serão enviadas para seus servidores. LocalMind não rastreia nem armazena suas conversas.';
 
   @override

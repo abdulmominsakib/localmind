@@ -52,6 +52,9 @@ String displayServerAddress(
   if (type == ServerType.requesty) {
     return 'router.requesty.ai';
   }
+  if (type == ServerType.standardCompute) {
+    return 'api.stdcmpt.com';
+  }
   if (type == ServerType.ollamaCloud) {
     return 'ollama.com';
   }
@@ -86,12 +89,29 @@ String displayServerAddress(
   return prefix.isNotEmpty ? '$base$prefix' : base;
 }
 
+/// The endpoint text to keep when the Add Server form switches from [from] to
+/// [to]. Ollama Cloud fills a hidden endpoint, so it is cleared on the way out
+/// and the next provider never inherits `ollama.com`.
+String hostAfterServerTypeChange({
+  required ServerType from,
+  required ServerType to,
+  required String host,
+}) {
+  if (from == ServerType.ollamaCloud && to != ServerType.ollamaCloud) {
+    return '';
+  }
+  return host;
+}
+
 String buildServerBaseUrl(String host, int port, ServerType type) {
   if (type == ServerType.openRouter) {
     return 'https://openrouter.ai/api/v1';
   }
   if (type == ServerType.requesty) {
     return AppConstants.requestyBaseUrl;
+  }
+  if (type == ServerType.standardCompute) {
+    return AppConstants.standardComputeBaseUrl;
   }
   if (type == ServerType.ollamaCloud) {
     return AppConstants.ollamaCloudBaseUrl;
@@ -217,6 +237,7 @@ class Server {
         return '$baseUrl${_apiPath('/api/chat')}';
       case ServerType.openRouter:
       case ServerType.requesty:
+      case ServerType.standardCompute:
         return '$baseUrl/chat/completions';
       case ServerType.onDevice:
         return '';
@@ -240,6 +261,7 @@ class Server {
         return '$baseUrl${_apiPath('/api/tags')}';
       case ServerType.openRouter:
       case ServerType.requesty:
+      case ServerType.standardCompute:
         return '$baseUrl/models';
       case ServerType.onDevice:
         return '';
@@ -258,6 +280,7 @@ class Server {
       case ServerType.openRouter:
       case ServerType.onDevice:
       case ServerType.requesty:
+      case ServerType.standardCompute:
         return '';
     }
   }
@@ -272,6 +295,7 @@ class Server {
       case ServerType.openRouter:
       case ServerType.onDevice:
       case ServerType.requesty:
+      case ServerType.standardCompute:
         return '';
     }
   }
@@ -288,6 +312,7 @@ class Server {
       case ServerType.openRouter:
       case ServerType.onDevice:
       case ServerType.requesty:
+      case ServerType.standardCompute:
         return '';
     }
   }
@@ -304,6 +329,7 @@ class Server {
       case ServerType.openRouter:
       case ServerType.onDevice:
       case ServerType.requesty:
+      case ServerType.standardCompute:
         return '';
     }
   }

@@ -209,6 +209,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
       !activeServer.isOnDevice &&
       (activeServer.type == ServerType.openRouter ||
           activeServer.type == ServerType.requesty ||
+          activeServer.type == ServerType.standardCompute ||
           activeServer.type == ServerType.openAICompatible)) {
     return;
   }
@@ -273,6 +274,7 @@ final autoSelectFirstLoadedModelProvider = FutureProvider<void>((ref) async {
     if (!activeServer.isOnDevice &&
         (activeServer.type == ServerType.openRouter ||
             activeServer.type == ServerType.requesty ||
+            activeServer.type == ServerType.standardCompute ||
             activeServer.type == ServerType.openAICompatible)) {
       return;
     }

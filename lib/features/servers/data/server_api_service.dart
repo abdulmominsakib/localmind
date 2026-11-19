@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
 import '../../models/data/models/model_info.dart';
@@ -105,6 +106,9 @@ class ServerApiService {
         case ServerType.requesty:
           models = await _fetchRequestyModels(response.data, server);
           break;
+        case ServerType.standardCompute:
+          models = _parseStandardComputeModels(response.data, server);
+          break;
         case ServerType.onDevice:
           models = [];
           break;
@@ -150,6 +154,7 @@ class ServerApiService {
   Future<Set<String>> fetchRunningModels(Server server) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
+        server.type == ServerType.standardCompute ||
         server.type == ServerType.openAICompatible ||
         server.isOnDevice) {
       return {};
@@ -173,6 +178,7 @@ class ServerApiService {
   Future<void> loadModel(Server server, String modelId) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
+        server.type == ServerType.standardCompute ||
         server.isOnDevice) {
       return;
     }
@@ -199,6 +205,7 @@ class ServerApiService {
         return;
       case ServerType.openRouter:
       case ServerType.requesty:
+      case ServerType.standardCompute:
       case ServerType.onDevice:
         break;
     }
@@ -211,6 +218,7 @@ class ServerApiService {
   }) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
+        server.type == ServerType.standardCompute ||
         server.isOnDevice) {
       return null;
     }
@@ -260,6 +268,7 @@ class ServerApiService {
         return null;
       case ServerType.openRouter:
       case ServerType.requesty:
+      case ServerType.standardCompute:
       case ServerType.onDevice:
         return null;
     }
@@ -294,6 +303,7 @@ class ServerApiService {
   }) async {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
+        server.type == ServerType.standardCompute ||
         server.isOnDevice) {
       return;
     }
@@ -324,6 +334,7 @@ class ServerApiService {
         return;
       case ServerType.openRouter:
       case ServerType.requesty:
+      case ServerType.standardCompute:
       case ServerType.onDevice:
         break;
     }
@@ -965,6 +976,47 @@ class ServerApiService {
           ),
         ),
       );
+    }
+    return models;
+  }
+
+  /// Standard Compute's `/models` endpoint is OpenRouter-shaped
+  /// (`context_length`, `architecture.input_modalities`,
+  /// `supported_parameters`) and uses `display_name` for labels. The routed
+  /// `StandardCompute` id is listed first so it is the obvious pick.
+  List<ModelInfo> _parseStandardComputeModels(dynamic data, Server server) {
+    final List<ModelInfo> models = [];
+    if (data is! Map) return models;
+    final items = data['data'];
+    if (items is! List) return models;
+    for (final item in items) {
+      if (item is! Map) continue;
+      final id = item['id']?.toString() ?? '';
+      if (id.isEmpty) continue;
+      final architecture = item['architecture'];
+      final output = architecture is Map
+          ? architecture['output_modalities']
+          : null;
+      if (output is List &&
+          !output.map((e) => e.toString().toLowerCase()).contains('text')) {
+        continue;
+      }
+      final capabilities = _parseOpenRouterCapabilities(item);
+      final model = ModelInfo(
+        id: id,
+        name: item['display_name']?.toString() ?? id,
+        contextLength: _toInt(item['context_length']),
+        serverType: server.type,
+        serverId: server.id,
+        supportsVision: capabilities.supportsVision,
+        supportsReasoning: capabilities.supportsReasoning,
+        supportsToolUse: capabilities.supportsToolUse,
+      );
+      if (id == AppConstants.standardComputeRoutedModelId) {
+        models.insert(0, model);
+      } else {
+        models.add(model);
+      }
     }
     return models;
   }

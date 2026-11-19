@@ -27,6 +27,9 @@ void main() {
 
       expect(ServerType.onDevice.logoAsset, isNull);
       expect(ServerType.onDevice.hasLogo, isFalse);
+
+      expect(ServerType.standardCompute.logoAsset, isNull);
+      expect(ServerType.standardCompute.hasLogo, isFalse);
     });
   });
 

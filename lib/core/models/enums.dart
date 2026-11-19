@@ -210,6 +210,7 @@ enum ServerType {
   openRouter,
   onDevice,
   requesty,
+  standardCompute,
 }
 
 extension ServerTypeLogoExtension on ServerType {
@@ -226,6 +227,7 @@ extension ServerTypeLogoExtension on ServerType {
         return AppConstants.requestyLogoAsset;
       case ServerType.openAICompatible:
       case ServerType.onDevice:
+      case ServerType.standardCompute:
         return null;
     }
   }

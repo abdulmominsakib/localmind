@@ -83,6 +83,14 @@ class ServerEntity {
     required int port,
     String? apiKey,
   }) {
+    // Types added after the Ollama Cloud enum shift were never stored under a
+    // drifted index, so the saved type wins over the host and name guesses
+    // below. A leftover host must not turn them into another provider.
+    if (typeIndex == ServerType.requesty.index ||
+        typeIndex == ServerType.standardCompute.index) {
+      return ServerType.values[typeIndex];
+    }
+
     final trimmedHost = host.trim();
     final lowerId = id.trim().toLowerCase();
     final lowerName = name.trim().toLowerCase();

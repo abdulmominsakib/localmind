@@ -50,6 +50,7 @@ class NewChatPresence {
       ServerType.ollamaCloud => (NewChatReach.cloud, AsciiLogo.ollama),
       ServerType.openRouter => (NewChatReach.cloud, AsciiLogo.openRouter),
       ServerType.requesty => (NewChatReach.cloud, AsciiLogo.requesty),
+      ServerType.standardCompute => (NewChatReach.cloud, AsciiLogo.server),
     };
     return NewChatPresence(reach: reach, logo: logo, serverType: serverType);
   }

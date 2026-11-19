@@ -39,6 +39,7 @@ Built for those who value privacy and performance, LocalMind runs models directl
 | [LM Studio](https://lmstudio.ai/) | Local | Includes the LM Studio model catalog |
 | [OpenRouter](https://openrouter.ai/) | Cloud | Bring your own API key |
 | [Requesty](https://www.requesty.ai/) | Cloud | Bring your own API key |
+| [Standard Compute](https://standardcompute.com) | Cloud | Bring your own API key |
 | OpenAI-compatible | Local or cloud | llama.cpp server, vLLM, LocalAI, Jan, and others |
 
 ## Key Features
@@ -47,7 +48,7 @@ Built for those who value privacy and performance, LocalMind runs models directl
 - **Model Context Protocol (MCP)**: Seamlessly connect to local or remote MCP servers. Grant models access to custom tools and integrations (e.g., file access, web APIs, shell actions) with fine-grained global and chat-level toggles.
 - **Local API (Android)**: Serve a loaded model to other apps through an authenticated OpenAI-compatible endpoint. See the [Local API setup guide](docs/local-api.md).
 - **Model Manager**: Download curated models or download GGUF models directly from HuggingFace. Manage model files directly within the app.
-- **Multi-Server Connection**: Connect to Ollama, LM Studio, OpenRouter, Requesty, or any OpenAI-compatible API with real-time server health and speed monitoring.
+- **Multi-Server Connection**: Connect to Ollama, LM Studio, OpenRouter, Requesty, Standard Compute, or any OpenAI-compatible API with real-time server health and speed monitoring.
 - **Premium Chat Experience**: A polished, Claude/ChatGPT-inspired user interface featuring:
   - **Streaming Responses**: Real-time SSE support for instant generation.
   - **Markdown Rendering**: Beautiful rendering of text and code with rich syntax highlighting.
