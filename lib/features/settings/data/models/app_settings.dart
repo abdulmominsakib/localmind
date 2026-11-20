@@ -70,6 +70,12 @@ class AppSettings {
   final bool sendTemperature;
   final bool sendTopP;
 
+  /// Whether downloads may continue while the app is backgrounded.
+  final bool allowBackgroundDownloads;
+
+  /// Whether downloads are restricted to WiFi/unmetered networks.
+  final bool downloadOverWifiOnly;
+
   /// Fallback system prompt used when a chat has neither its own prompt nor
   /// a persona.
   final String defaultSystemPrompt;
@@ -126,6 +132,8 @@ class AppSettings {
     this.showPromptProcessingIndicator = true,
     this.sendTemperature = true,
     this.sendTopP = true,
+    this.allowBackgroundDownloads = false,
+    this.downloadOverWifiOnly = true,
     this.defaultSystemPrompt = '',
     this.savedMcpIntegrations = const [],
   });
@@ -181,6 +189,8 @@ class AppSettings {
     bool? showPromptProcessingIndicator,
     bool? sendTemperature,
     bool? sendTopP,
+    bool? allowBackgroundDownloads,
+    bool? downloadOverWifiOnly,
     String? defaultSystemPrompt,
     List<McpIntegration>? savedMcpIntegrations,
   }) {
@@ -259,6 +269,10 @@ class AppSettings {
           showPromptProcessingIndicator ?? this.showPromptProcessingIndicator,
       sendTemperature: sendTemperature ?? this.sendTemperature,
       sendTopP: sendTopP ?? this.sendTopP,
+      allowBackgroundDownloads:
+          allowBackgroundDownloads ?? this.allowBackgroundDownloads,
+      downloadOverWifiOnly:
+          downloadOverWifiOnly ?? this.downloadOverWifiOnly,
       defaultSystemPrompt: defaultSystemPrompt ?? this.defaultSystemPrompt,
       savedMcpIntegrations: savedMcpIntegrations ?? this.savedMcpIntegrations,
     );
@@ -316,6 +330,8 @@ class AppSettings {
       'showPromptProcessingIndicator': showPromptProcessingIndicator,
       'sendTemperature': sendTemperature,
       'sendTopP': sendTopP,
+      'allowBackgroundDownloads': allowBackgroundDownloads,
+      'downloadOverWifiOnly': downloadOverWifiOnly,
       'defaultSystemPrompt': defaultSystemPrompt,
       'savedMcpIntegrations': savedMcpIntegrations
           .map((i) => i.toJson())
@@ -378,6 +394,8 @@ class AppSettings {
           map['showPromptProcessingIndicator'] ?? true,
       sendTemperature: map['sendTemperature'] ?? true,
       sendTopP: map['sendTopP'] ?? true,
+      allowBackgroundDownloads: map['allowBackgroundDownloads'] ?? false,
+      downloadOverWifiOnly: map['downloadOverWifiOnly'] ?? true,
       defaultSystemPrompt: map['defaultSystemPrompt'] as String? ?? '',
       savedMcpIntegrations: _parseSavedMcpIntegrations(
         map['savedMcpIntegrations'],

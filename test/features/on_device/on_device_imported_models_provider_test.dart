@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,10 +48,12 @@ void main() {
   test(
     'downloadedModelsProvider treats imported GGUF models as local',
     () async {
+      final downloadedFile = File('/tmp/downloaded.gguf');
+      await downloadedFile.writeAsString('gguf bytes');
       final metadata = ImportedGgufModelMetadata(
         id: 'gguf-downloaded',
         name: 'Downloaded GGUF',
-        filePath: '/tmp/downloaded.gguf',
+        filePath: downloadedFile.path,
         fileSizeBytes: 4096,
         importedAt: DateTime.utc(2026, 6, 21),
         source: OnDeviceImportedSource.localFile,

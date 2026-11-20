@@ -21,6 +21,7 @@ class AppRoutes {
   static const String mcpTools = '/mcp-tools';
   static const String chatHistory = '/history';
   static const String onDeviceModels = '/on-device-models';
+  static const String addOnDeviceModel = '/on-device-models/add';
   static const String ttsModels = '/tts-models';
   static const String savedMessages = '/saved-messages';
   static const String lmStudioModelBrowser = '/lm-studio-models';

@@ -65,6 +65,7 @@ dependencies:
   objectbox_flutter_libs: ^5.3.1
   path: ^1.9.1
   flutter_gemma: ^1.7.0
+  background_downloader: ^9.5.7
   flutter_gemma_litertlm: ^1.6.0
   # Keep these two pinned in lockstep: the companion ships the Apple native
   # llama.cpp framework, and its tag must match llamadart's FFI bindings or

@@ -244,12 +244,3 @@ enum MessageStatus { sending, streaming, complete, error, cancelled }
 enum ModelStatus { unloaded, loading, loaded, preloaded, thinking }
 
 enum OnDeviceEngineStatus { notLoaded, loading, loaded, error }
-
-enum OnDeviceModelState {
-  notDownloaded,
-  downloading,
-  downloaded,
-  loading,
-  loaded,
-  error,
-}

@@ -408,9 +408,7 @@ class _ModelCard extends ConsumerWidget {
     final isDownloading =
         progressInfo?.status == DownloadStatus.running ||
         progressInfo?.status == DownloadStatus.pending;
-    final isPaused =
-        progressInfo?.status == DownloadStatus.paused ||
-        progressInfo?.status == DownloadStatus.canceled;
+    final isPaused = progressInfo?.status == DownloadStatus.paused;
     final builtInAvailability = model.isBuiltIn
         ? ref.watch(builtInAiAvailabilityProvider).value
         : null;
@@ -580,7 +578,7 @@ class _ModelCard extends ConsumerWidget {
                             l10n.download_progress(
                               ((progressInfo?.progress ?? 0) * 100)
                                   .toStringAsFixed(0),
-                              progressInfo?.speedFormatted ?? '0 B/s',
+                              progressInfo?.speedFormatted ?? '—',
                             ),
                             style: theme.textTheme.labelSmall,
                           ),

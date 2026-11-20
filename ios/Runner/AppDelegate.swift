@@ -11,6 +11,8 @@ import UIKit
     ) -> Bool {
         GeneratedPluginRegistrant.register(with: self)
 
+        UNUserNotificationCenter.current().delegate = self
+
         let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
 
         guard let controller = window?.rootViewController as? FlutterViewController else {

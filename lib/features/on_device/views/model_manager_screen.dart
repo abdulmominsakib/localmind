@@ -1,24 +1,23 @@
-import 'package:hugeicons/hugeicons.dart';
 import 'package:dio/dio.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/providers/app_providers.dart';
-import 'package:localmind/core/utils/safe_file_picker.dart';
+import 'package:localmind/core/providers/storage_providers.dart';
+import 'package:go_router/go_router.dart';
+import 'package:localmind/core/routes/app_routes.dart';
 import 'package:localmind/l10n/app_localizations.dart';
-import 'package:path/path.dart' as p;
-import 'package:localmind/features/on_device/data/imported_gguf_model_repository.dart';
 import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:localmind/features/on_device/providers/foreground_download_providers.dart';
 import 'package:localmind/features/on_device/providers/on_device_providers.dart';
 import 'package:localmind/features/on_device/components/memory_stats_panel.dart';
 import 'package:localmind/features/on_device/components/model_card.dart';
+import 'package:localmind/features/on_device/providers/imported_model_update_provider.dart';
+import 'package:localmind/features/on_device/views/components/add_model_from_url_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-enum _ImportAction { localFile, huggingFace }
 
 class OnDeviceModelManagerScreen extends ConsumerStatefulWidget {
   const OnDeviceModelManagerScreen({super.key});
@@ -30,15 +29,29 @@ class OnDeviceModelManagerScreen extends ConsumerStatefulWidget {
 
 class _OnDeviceModelManagerScreenState
     extends ConsumerState<OnDeviceModelManagerScreen> {
+  bool _curatedExpanded = true;
+  static const _curatedExpandedKey = 'on_device_curated_expanded';
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
+    Future.microtask(() async {
       // The microtask runs on the next event loop tick — by then the State
       // may already be deactivated, so we must guard the ref access.
       if (!mounted) return;
+      final prefs = ref.read(sharedPreferencesProvider);
+      _curatedExpanded = prefs.getBool(_curatedExpandedKey) ?? true;
+      if (mounted) setState(() {});
       ref.read(importedGgufModelsProvider.notifier).pruneMissing();
+      ref.read(importedLitertModelsProvider.notifier).pruneMissing();
     });
+  }
+
+  void _setCuratedExpanded(bool value) {
+    _curatedExpanded = value;
+    setState(() {});
+    final prefs = ref.read(sharedPreferencesProvider);
+    prefs.setBool(_curatedExpandedKey, value);
   }
 
   @override
@@ -62,8 +75,7 @@ class _OnDeviceModelManagerScreenState
         _ManagerHeader(
           l10n: l10n,
           theme: theme,
-          onImportLocalGguf: () => _importLocalGguf(context),
-          onImportFromHuggingFace: () => _importFromHuggingFace(context),
+          onAddModels: () => context.push(AppRoutes.addOnDeviceModel),
         ),
         Expanded(
           child: ListView(
@@ -72,8 +84,7 @@ class _OnDeviceModelManagerScreenState
               const MemoryStatsPanel(),
               _ImportOverviewCard(
                 importedModels: importedModels,
-                onImportLocalGguf: () => _importLocalGguf(context),
-                onImportFromHuggingFace: () => _importFromHuggingFace(context),
+                onAddModels: () => context.push(AppRoutes.addOnDeviceModel),
               ),
               _EngineStatusCard(
                 engineState: engineState,
@@ -82,41 +93,88 @@ class _OnDeviceModelManagerScreenState
                 theme: theme,
               ),
               const SizedBox(height: 4),
-              _SectionHeader(
-                title: l10n.gguf_imported_models_title,
-                subtitle: importedModels.isEmpty
-                    ? l10n.gguf_imported_models_empty_subtitle
-                    : '${importedModels.length} ${l10n.gguf_imported_models_ready}',
-              ),
-              if (importedModels.isEmpty)
-                _EmptyImportedModelsCard(
-                  onImportLocalGguf: () => _importLocalGguf(context),
-                  onImportFromHuggingFace: () =>
-                      _importFromHuggingFace(context),
-                )
-              else
-                ...importedModels.map(
-                  (model) => ModelCard(
-                    model: model,
-                    downloadedAsync: downloadedAsync,
-                    downloadProgress: downloadProgress[model.id],
-                    engineState: engineState,
-                  ),
+              GestureDetector(
+                onTap: () => _setCuratedExpanded(!_curatedExpanded),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _SectionHeader(
+                        title: l10n.curated_models_title,
+                        subtitle: l10n.curated_models_count(curatedModels.length),
+                      ),
+                    ),
+                    HugeIcon(
+                      icon: _curatedExpanded
+                          ? HugeIcons.strokeRoundedArrowUp01
+                          : HugeIcons.strokeRoundedArrowDown01,
+                      size: 20,
+                    ),
+                  ],
                 ),
-              const SizedBox(height: 8),
-              _SectionHeader(
-                title: l10n.available_models,
-                subtitle: l10n.gguf_curated_models_subtitle,
               ),
               const SizedBox(height: 4),
-              ...curatedModels.map(
-                (model) => ModelCard(
-                  model: model,
-                  downloadedAsync: downloadedAsync,
-                  downloadProgress: downloadProgress[model.id],
-                  engineState: engineState,
-                ),
-              ),
+              if (importedModels.isEmpty)
+                _EmptyImportedModelsCard(
+                  onAddModels: () => context.push(AppRoutes.addOnDeviceModel),
+                )
+              else ...[
+                if (_curatedExpanded)
+                  ...curatedModels.map(
+                    (model) => ModelCard(
+                      model: model,
+                      downloadedAsync: downloadedAsync,
+                      downloadProgress: downloadProgress[model.id],
+                      engineState: engineState,
+                    ),
+                  ),
+                if (importedModels.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SectionHeader(
+                          title: l10n.your_models_title,
+                          subtitle: l10n.your_models_count(importedModels.length),
+                        ),
+                      ),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final async = ref.watch(importedModelUpdateProvider);
+                          return IconButton(
+                            tooltip: l10n.onDeviceCheckForUpdates,
+                            onPressed: async.isLoading
+                                ? null
+                                : () => ref
+                                    .read(importedModelUpdateProvider.notifier)
+                                    .checkForUpdates(),
+                            icon: async.isLoading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const HugeIcon(
+                                    icon: HugeIcons.strokeRoundedRefresh,
+                                    size: 20,
+                                  ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ...importedModels.map(
+                    (model) => ModelCard(
+                      model: model,
+                      downloadedAsync: downloadedAsync,
+                      downloadProgress: downloadProgress[model.id],
+                      engineState: engineState,
+                    ),
+                  ),
+                ],
+              ],
               const SizedBox(height: 24),
             ],
           ),
@@ -124,143 +182,18 @@ class _OnDeviceModelManagerScreenState
       ],
     );
   }
-
-  Future<void> _importLocalGguf(BuildContext context) async {
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final result = await SafeFilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: const ['gguf'],
-        allowMultiple: true,
-      );
-      if (result == null || result.files.isEmpty) return;
-
-      final paths = result.files
-          .map((f) => f.path)
-          .whereType<String>()
-          .where((p) => p.toLowerCase().endsWith('.gguf'))
-          .toList();
-
-      if (paths.isEmpty) {
-        if (!mounted) return;
-        messenger?.showSnackBar(
-          SnackBar(content: Text(l10n.gguf_only_supported)),
-        );
-        return;
-      }
-
-      if (paths.length == 1) {
-        final path = paths.single;
-        if (ImportedGgufModelRepository.isProjectorFileName(p.basename(path))) {
-          if (!mounted) return;
-          messenger?.showSnackBar(
-            SnackBar(content: Text(l10n.gguf_is_projector_file)),
-          );
-          return;
-        }
-
-        final model = await ref
-            .read(importedGgufModelsProvider.notifier)
-            .importModel(path);
-        if (!mounted) return;
-        final msg = model.hasProjector
-            ? '${model.name} ${l10n.gguf_imported_from_local_file} (${l10n.gguf_projector_auto_detected(model.projectorFileName ?? "")})'
-            : '${model.name} ${l10n.gguf_imported_from_local_file}';
-        messenger?.showSnackBar(SnackBar(content: Text(msg)));
-      } else {
-        final models = await ref
-            .read(importedGgufModelsProvider.notifier)
-            .importModels(paths);
-        if (!mounted) return;
-        final names = models.map((m) => m.name).join(', ');
-        messenger?.showSnackBar(
-          SnackBar(
-            content: Text('$names ${l10n.gguf_imported_from_local_file}'),
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text(
-            '${l10n.gguf_import_failed}: ${_friendlyErrorForL10n(l10n, e)}',
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _importFromHuggingFace(BuildContext context) async {
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    final l10n = AppLocalizations.of(context)!;
-    final importedModel = await showDialog<OnDeviceModel>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const _HuggingFaceGgufImportDialog(),
-    );
-
-    if (!mounted || importedModel == null) return;
-    messenger?.showSnackBar(
-      SnackBar(
-        content: Text(
-          '${importedModel.name} ${l10n.gguf_imported_from_huggingface}',
-        ),
-      ),
-    );
-  }
-
-  String _friendlyErrorForL10n(AppLocalizations l10n, Object error) {
-    if (SafeFilePicker.isExplorerNotFoundError(error)) {
-      return l10n.file_explorer_not_found;
-    }
-    final message = error.toString();
-    final normalized = message
-        .replaceFirst('HttpException: ', '')
-        .replaceFirst('FormatException: ', '')
-        .replaceFirst('FileSystemException: ', '')
-        .replaceFirst('PlatformException: ', '');
-
-    switch (normalized) {
-      case 'GGUF import canceled.':
-        return l10n.gguf_import_canceled;
-      case 'Enter a Hugging Face GGUF URL.':
-        return l10n.gguf_enter_huggingface_url;
-      case 'Only official Hugging Face GGUF URLs are supported.':
-        return l10n.gguf_only_official_huggingface_urls;
-      case 'Use an HTTPS Hugging Face URL for GGUF import.':
-        return l10n.gguf_use_https_url;
-      case 'The Hugging Face URL must point directly to a .gguf file.':
-        return l10n.gguf_url_must_point_to_file;
-      case 'Unable to determine the GGUF file name.':
-        return l10n.gguf_unable_to_detect_file_name;
-      case 'The downloaded GGUF file was empty or missing.':
-        return l10n.gguf_download_empty;
-      case 'Selected model file does not exist':
-        return l10n.gguf_selected_file_missing;
-      default:
-        return SafeFilePicker.getErrorMessage(
-          error,
-          l10n,
-          fallbackMessage: normalized,
-        );
-    }
-  }
 }
 
 class _ManagerHeader extends StatelessWidget {
   const _ManagerHeader({
     required this.l10n,
     required this.theme,
-    required this.onImportLocalGguf,
-    required this.onImportFromHuggingFace,
+    required this.onAddModels,
   });
 
   final AppLocalizations l10n;
   final ThemeData theme;
-  final VoidCallback onImportLocalGguf;
-  final VoidCallback onImportFromHuggingFace;
+  final VoidCallback onAddModels;
 
   @override
   Widget build(BuildContext context) {
@@ -306,94 +239,26 @@ class _ManagerHeader extends StatelessWidget {
               ),
             ),
           ),
-          if (defaultTargetPlatform == TargetPlatform.android ||
-              defaultTargetPlatform == TargetPlatform.iOS)
-            PopupMenuButton<_ImportAction>(
-              tooltip: l10n.gguf_import_action,
-              onSelected: (value) {
-                switch (value) {
-                  case _ImportAction.localFile:
-                    onImportLocalGguf();
-                  case _ImportAction.huggingFace:
-                    onImportFromHuggingFace();
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem<_ImportAction>(
-                  value: _ImportAction.localFile,
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const HugeIcon(
-                      icon: HugeIcons.strokeRoundedFolder01,
-                    ),
-                    title: Text(l10n.gguf_import_local_title),
-                    subtitle: Text(l10n.gguf_import_local_subtitle),
-                  ),
-                ),
-                PopupMenuItem<_ImportAction>(
-                  value: _ImportAction.huggingFace,
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const HugeIcon(
-                      icon: HugeIcons.strokeRoundedCloudDownload,
-                    ),
-                    title: Text(l10n.gguf_import_huggingface_title),
-                    subtitle: Text(l10n.gguf_import_huggingface_subtitle),
-                  ),
-                ),
-              ],
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    HugeIcon(
-                      icon: HugeIcons.strokeRoundedAddCircle,
-                      size: 18,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(l10n.gguf_import_action),
-                  ],
-                ),
-              ),
-            ),
+          // Top header "Add models" button removed; import actions live in cards.
         ],
       ),
     );
   }
 }
 
-class _ImportOverviewCard extends StatelessWidget {
+class _ImportOverviewCard extends ConsumerWidget {
   const _ImportOverviewCard({
     required this.importedModels,
-    required this.onImportLocalGguf,
-    required this.onImportFromHuggingFace,
+    required this.onAddModels,
   });
 
   final List<OnDeviceModel> importedModels;
-  final VoidCallback onImportLocalGguf;
-  final VoidCallback onImportFromHuggingFace;
+  final VoidCallback onAddModels;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final localImports = importedModels
-        .where((model) => model.isImportedFromLocalFile)
-        .length;
-    final huggingFaceImports = importedModels
-        .where((model) => model.isImportedFromHuggingFace)
-        .length;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -457,14 +322,6 @@ class _ImportOverviewCard extends StatelessWidget {
                 label:
                     '${importedModels.length} ${l10n.gguf_imported_count_label}',
               ),
-              _SummaryPill(
-                icon: HugeIcons.strokeRoundedFolder01,
-                label: '$localImports ${l10n.gguf_local_files_label}',
-              ),
-              _SummaryPill(
-                icon: HugeIcons.strokeRoundedCloudDownload,
-                label: '$huggingFaceImports ${l10n.gguf_huggingface_label}',
-              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -473,16 +330,24 @@ class _ImportOverviewCard extends StatelessWidget {
             runSpacing: 10,
             children: [
               OutlinedButton.icon(
-                onPressed: onImportLocalGguf,
-                icon: const HugeIcon(icon: HugeIcons.strokeRoundedFolder01),
-                label: Text(l10n.gguf_import_local_title),
+                onPressed: onAddModels,
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedSearch01),
+                label: Text(l10n.onDeviceSearchModels),
               ),
               OutlinedButton.icon(
-                onPressed: onImportFromHuggingFace,
-                icon: const HugeIcon(
-                  icon: HugeIcons.strokeRoundedCloudDownload,
-                ),
-                label: Text(l10n.gguf_import_huggingface_title),
+                onPressed: () {
+                  showDialog<bool>(
+                    context: context,
+                    builder: (_) => const AddModelFromUrlDialog(),
+                  );
+                },
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedLink01),
+                label: Text(l10n.onDeviceImportFromUrl),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _importFromDevice(context, ref, l10n),
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedFile01),
+                label: Text(l10n.onDeviceImportFromDevice),
               ),
             ],
           ),
@@ -560,17 +425,15 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _EmptyImportedModelsCard extends StatelessWidget {
+class _EmptyImportedModelsCard extends ConsumerWidget {
   const _EmptyImportedModelsCard({
-    required this.onImportLocalGguf,
-    required this.onImportFromHuggingFace,
+    required this.onAddModels,
   });
 
-  final VoidCallback onImportLocalGguf;
-  final VoidCallback onImportFromHuggingFace;
+  final VoidCallback onAddModels;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     return Container(
@@ -605,16 +468,24 @@ class _EmptyImportedModelsCard extends StatelessWidget {
             runSpacing: 10,
             children: [
               OutlinedButton.icon(
-                onPressed: onImportLocalGguf,
-                icon: const HugeIcon(icon: HugeIcons.strokeRoundedFolder01),
-                label: Text(l10n.gguf_import_local_title),
+                onPressed: onAddModels,
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedSearch01),
+                label: Text(l10n.onDeviceSearchModels),
               ),
               OutlinedButton.icon(
-                onPressed: onImportFromHuggingFace,
-                icon: const HugeIcon(
-                  icon: HugeIcons.strokeRoundedCloudDownload,
-                ),
-                label: Text(l10n.gguf_import_huggingface_title),
+                onPressed: () {
+                  showDialog<bool>(
+                    context: context,
+                    builder: (_) => const AddModelFromUrlDialog(),
+                  );
+                },
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedLink01),
+                label: Text(l10n.onDeviceImportFromUrl),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _importFromDevice(context, ref, l10n),
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedFile01),
+                label: Text(l10n.onDeviceImportFromDevice),
               ),
             ],
           ),
@@ -1413,5 +1284,47 @@ class _EngineStatusCard extends StatelessWidget {
     }
 
     return const SizedBox.shrink();
+  }
+}
+
+Future<void> _importFromDevice(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+) async {
+  final result = await FilePicker.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: const ['gguf', 'litertlm'],
+  );
+  if (result == null || result.files.isEmpty) return;
+  final path = result.files.single.path;
+  final name = result.files.single.name;
+  if (path == null) return;
+
+  // Show a blocking spinner while importing.
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    if (name.toLowerCase().endsWith('.gguf')) {
+      await ref.read(importedGgufModelsProvider.notifier).importModel(path);
+    } else {
+      await ref.read(importedLitertModelsProvider.notifier).addFromPath(path);
+    }
+    if (!context.mounted) return;
+    Navigator.of(context).pop(); // dismiss spinner
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.add_model_file_added(name))),
+    );
+  } catch (e) {
+    if (context.mounted) {
+      Navigator.of(context).pop(); // dismiss spinner
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Import failed. Please check the file and try again.')),
+      );
+    }
   }
 }
