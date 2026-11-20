@@ -178,6 +178,17 @@ void main() {
         ),
         ServerType.standardCompute,
       );
+
+      expect(
+        ServerEntity.resolveServerType(
+          typeIndex: 8,
+          id: 'llmtr-1',
+          name: 'LLMTR',
+          host: 'https://ollama.com',
+          port: 443,
+        ),
+        ServerType.llmtr,
+      );
     });
   });
 

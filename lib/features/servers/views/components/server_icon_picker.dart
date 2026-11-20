@@ -253,6 +253,7 @@ HugeIconData? getDefaultServerIcon(String? serverType) {
         orElse: () => serverIcons.first,
       );
     case 'standardCompute':
+    case 'llmtr':
       return serverIcons.firstWhere(
         (icon) => icon.name == 'Cloud Server',
         orElse: () => serverIcons.first,
