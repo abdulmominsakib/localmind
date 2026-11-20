@@ -87,7 +87,8 @@ class ServerEntity {
     // drifted index, so the saved type wins over the host and name guesses
     // below. A leftover host must not turn them into another provider.
     if (typeIndex == ServerType.requesty.index ||
-        typeIndex == ServerType.standardCompute.index) {
+        typeIndex == ServerType.standardCompute.index ||
+        typeIndex == ServerType.llmtr.index) {
       return ServerType.values[typeIndex];
     }
 

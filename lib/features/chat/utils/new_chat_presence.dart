@@ -51,6 +51,7 @@ class NewChatPresence {
       ServerType.openRouter => (NewChatReach.cloud, AsciiLogo.openRouter),
       ServerType.requesty => (NewChatReach.cloud, AsciiLogo.requesty),
       ServerType.standardCompute => (NewChatReach.cloud, AsciiLogo.server),
+      ServerType.llmtr => (NewChatReach.cloud, AsciiLogo.server),
     };
     return NewChatPresence(reach: reach, logo: logo, serverType: serverType);
   }

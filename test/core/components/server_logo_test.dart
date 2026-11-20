@@ -30,6 +30,9 @@ void main() {
 
       expect(ServerType.standardCompute.logoAsset, isNull);
       expect(ServerType.standardCompute.hasLogo, isFalse);
+
+      expect(ServerType.llmtr.logoAsset, isNull);
+      expect(ServerType.llmtr.hasLogo, isFalse);
     });
   });
 
