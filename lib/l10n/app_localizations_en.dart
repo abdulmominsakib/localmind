@@ -1142,6 +1142,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Connect through Standard Compute with a valid API key and keep this profile ready for model routing.';
 
   @override
+  String get add_server_llmtr_subtitle =>
+      'Connect through LLMTR with a valid API key and keep this profile ready for model routing.';
+
+  @override
   String get add_server_endpoint_subtitle =>
       'Configure a local or self-hosted endpoint, then verify the connection before saving.';
 
@@ -1155,6 +1159,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get server_type_standard_compute => 'Standard Compute';
 
   @override
+  String get server_type_llmtr => 'LLMTR';
+
+  @override
   String get server_type_openrouter_sub => 'UNIFIED CLOUD';
 
   @override
@@ -1162,6 +1169,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get server_type_standard_compute_sub => 'UNIFIED CLOUD';
+
+  @override
+  String get server_type_llmtr_sub => 'UNIFIED CLOUD';
 
   @override
   String get ready_continue => 'READY TO CONTINUE';
@@ -1221,6 +1231,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'API Key required for Standard Compute';
 
   @override
+  String get api_key_required_llmtr => 'API Key required for LLMTR';
+
+  @override
   String get api_key_format => 'OpenRouter API keys start with sk-';
 
   @override
@@ -1240,6 +1253,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get api_key_hint_standard_compute => 'sk_live_...';
+
+  @override
+  String get api_key_hint_llmtr => 'Your LLMTR API key';
 
   @override
   String get api_key_hint_generic => 'For authenticated servers';
@@ -1435,6 +1451,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get server_type_standard_compute_display => 'Standard Compute';
 
   @override
+  String get server_type_llmtr_display => 'LLMTR';
+
+  @override
   String get server_type_on_device_display => 'On-Device';
 
   @override
@@ -1445,6 +1464,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get server_address_standard_compute => 'api.stdcmpt.com';
+
+  @override
+  String get server_address_llmtr => 'llmtr.com';
 
   @override
   String get server_address_on_device => 'Local inference';
@@ -2358,6 +2380,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Standard Compute requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_llmtr =>
+      'LLMTR requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -3039,6 +3065,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get standard_compute_disclosure =>
+      'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.';
+
+  @override
+  String get llmtr_disclosure =>
       'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.';
 
   @override

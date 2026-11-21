@@ -263,6 +263,20 @@ class _OnboardingServerTypeScreenState
                                     ),
                                     theme: theme,
                                   ),
+                                  _buildServerCard(
+                                    type: ServerType.llmtr,
+                                    title: l10n.server_type_llmtr,
+                                    subtitle: l10n.server_type_llmtr_sub,
+                                    iconWidget: ServerLogo(
+                                      type: ServerType.llmtr,
+                                      size: 20,
+                                      iconColor:
+                                          _selectedType == ServerType.llmtr
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                    ),
+                                    theme: theme,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 12),

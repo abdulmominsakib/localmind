@@ -1158,6 +1158,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Geçerli bir API anahtarıyla Standard Compute üzerinden bağlanın ve model yönlendirmesi için bu profili hazır tutun.';
 
   @override
+  String get add_server_llmtr_subtitle =>
+      'Geçerli bir API anahtarıyla LLMTR üzerinden bağlanın ve model yönlendirmesi için bu profili hazır tutun.';
+
+  @override
   String get add_server_endpoint_subtitle =>
       'Yerel veya kendi barındırdığınız bir uç noktayı yapılandırın ve kaydetmeden önce bağlantıyı doğrulayın.';
 
@@ -1171,6 +1175,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get server_type_standard_compute => 'Standard Compute';
 
   @override
+  String get server_type_llmtr => 'LLMTR';
+
+  @override
   String get server_type_openrouter_sub => 'BİRLEŞİK BULUT';
 
   @override
@@ -1178,6 +1185,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get server_type_standard_compute_sub => 'BİRLEŞİK BULUT';
+
+  @override
+  String get server_type_llmtr_sub => 'BİRLEŞİK BULUT';
 
   @override
   String get ready_continue => 'DEVAM ETMEYE HAZIR';
@@ -1239,6 +1249,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Standard Compute için API Anahtarı gereklidir';
 
   @override
+  String get api_key_required_llmtr => 'LLMTR için API Anahtarı gereklidir';
+
+  @override
   String get api_key_format => 'OpenRouter API anahtarları sk- ile başlar';
 
   @override
@@ -1260,6 +1273,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get api_key_hint_standard_compute => 'sk_live_...';
+
+  @override
+  String get api_key_hint_llmtr => 'LLMTR API anahtarınız';
 
   @override
   String get api_key_hint_generic => 'Kimlik doğrulamalı sunucular için';
@@ -1455,6 +1471,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get server_type_standard_compute_display => 'Standard Compute';
 
   @override
+  String get server_type_llmtr_display => 'LLMTR';
+
+  @override
   String get server_type_on_device_display => 'Cihaz Üstü';
 
   @override
@@ -1465,6 +1484,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get server_address_standard_compute => 'api.stdcmpt.com';
+
+  @override
+  String get server_address_llmtr => 'llmtr.com';
 
   @override
   String get server_address_on_device => 'Yerel çıkarım';
@@ -2384,6 +2406,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Standard Compute requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_llmtr =>
+      'LLMTR requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -3070,6 +3096,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get standard_compute_disclosure =>
+      'Bu sağlayıcıya bağlanarak sohbet mesajlarınız ve girdileriniz onların sunucularına gönderilir. LocalMind sohbetlerinizi izlemez veya saklamaz.';
+
+  @override
+  String get llmtr_disclosure =>
       'Bu sağlayıcıya bağlanarak sohbet mesajlarınız ve girdileriniz onların sunucularına gönderilir. LocalMind sohbetlerinizi izlemez veya saklamaz.';
 
   @override

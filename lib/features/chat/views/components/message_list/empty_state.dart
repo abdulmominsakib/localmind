@@ -238,5 +238,6 @@ class NewChatIntro extends StatelessWidget {
         ServerType.openRouter => l10n.server_type_openrouter_display,
         ServerType.requesty => l10n.server_type_requesty_display,
         ServerType.standardCompute => l10n.server_type_standard_compute_display,
+        ServerType.llmtr => l10n.server_type_llmtr_display,
       };
 }

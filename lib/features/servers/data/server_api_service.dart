@@ -109,6 +109,9 @@ class ServerApiService {
         case ServerType.standardCompute:
           models = _parseStandardComputeModels(response.data, server);
           break;
+        case ServerType.llmtr:
+          models = _parseLlmtrModels(response.data, server);
+          break;
         case ServerType.onDevice:
           models = [];
           break;
@@ -155,6 +158,7 @@ class ServerApiService {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
         server.type == ServerType.standardCompute ||
+        server.type == ServerType.llmtr ||
         server.type == ServerType.openAICompatible ||
         server.isOnDevice) {
       return {};
@@ -179,6 +183,7 @@ class ServerApiService {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
         server.type == ServerType.standardCompute ||
+        server.type == ServerType.llmtr ||
         server.isOnDevice) {
       return;
     }
@@ -206,6 +211,7 @@ class ServerApiService {
       case ServerType.openRouter:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.llmtr:
       case ServerType.onDevice:
         break;
     }
@@ -219,6 +225,7 @@ class ServerApiService {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
         server.type == ServerType.standardCompute ||
+        server.type == ServerType.llmtr ||
         server.isOnDevice) {
       return null;
     }
@@ -269,6 +276,7 @@ class ServerApiService {
       case ServerType.openRouter:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.llmtr:
       case ServerType.onDevice:
         return null;
     }
@@ -304,6 +312,7 @@ class ServerApiService {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
         server.type == ServerType.standardCompute ||
+        server.type == ServerType.llmtr ||
         server.isOnDevice) {
       return;
     }
@@ -335,6 +344,7 @@ class ServerApiService {
       case ServerType.openRouter:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.llmtr:
       case ServerType.onDevice:
         break;
     }
@@ -1017,6 +1027,53 @@ class ServerApiService {
       } else {
         models.add(model);
       }
+    }
+    return models;
+  }
+
+  /// LLMTR's `/models` endpoint is OpenRouter-shaped and also lists image,
+  /// embedding, rerank and Responses-only models. Only text models served on
+  /// `/v1/chat/completions` are kept, since that is the endpoint chat uses.
+  /// `llmtr/` ids are models hosted in Turkey; other `vendor/model` ids are
+  /// routed to their vendors.
+  List<ModelInfo> _parseLlmtrModels(dynamic data, Server server) {
+    final List<ModelInfo> models = [];
+    if (data is! Map) return models;
+    final items = data['data'];
+    if (items is! List) return models;
+    for (final item in items) {
+      if (item is! Map) continue;
+      final id = item['id']?.toString() ?? '';
+      if (id.isEmpty) continue;
+      final architecture = item['architecture'];
+      final output = architecture is Map
+          ? architecture['output_modalities']
+          : null;
+      if (output is List &&
+          !output.map((e) => e.toString().toLowerCase()).contains('text')) {
+        continue;
+      }
+      final endpoints = item['supported_endpoints'];
+      if (endpoints is List &&
+          !endpoints
+              .map((e) => e.toString())
+              .contains('/v1/chat/completions')) {
+        continue;
+      }
+      final capabilities = _parseOpenRouterCapabilities(item);
+      models.add(
+        ModelInfo(
+          id: id,
+          name: item['name']?.toString() ?? id,
+          description: item['description'] as String?,
+          contextLength: _toInt(item['context_length']),
+          serverType: server.type,
+          serverId: server.id,
+          supportsVision: capabilities.supportsVision,
+          supportsReasoning: capabilities.supportsReasoning,
+          supportsToolUse: capabilities.supportsToolUse,
+        ),
+      );
     }
     return models;
   }

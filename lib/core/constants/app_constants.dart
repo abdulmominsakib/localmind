@@ -26,6 +26,7 @@ class AppConstants {
   static const String requestyBaseUrl = 'https://router.requesty.ai/v1';
   static const String standardComputeBaseUrl = 'https://api.stdcmpt.com/v1';
   static const String standardComputeRoutedModelId = 'StandardCompute';
+  static const String llmtrBaseUrl = 'https://llmtr.com/v1';
   static const String ollamaCloudBaseUrl = 'https://ollama.com';
   static const int ollamaCloudDefaultPort = 443;
 

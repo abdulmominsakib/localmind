@@ -1427,6 +1427,113 @@ void main() {
     });
   });
 
+  group('ServerApiService - LLMTR model parsing', () {
+    late Server llmtrServer;
+
+    setUp(() {
+      llmtrServer = Server(
+        id: 'test-llmtr',
+        name: 'Test LLMTR',
+        type: ServerType.llmtr,
+        host: '',
+        port: 443,
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        lastConnectedAt: DateTime.now(),
+      );
+    });
+
+    test('uses the LLMTR endpoints', () {
+      expect(llmtrServer.baseUrl, 'https://llmtr.com/v1');
+      expect(llmtrServer.chatEndpoint, 'https://llmtr.com/v1/chat/completions');
+      expect(llmtrServer.modelsEndpoint, 'https://llmtr.com/v1/models');
+      expect(llmtrServer.displayAddress, 'llmtr.com');
+    });
+
+    test('keeps chat models and maps capabilities', () async {
+      final service = ServerApiService(
+        Dio()
+          ..interceptors.add(
+            RoutingInterceptor({
+              'GET https://llmtr.com/v1/models': {
+                'object': 'list',
+                'data': [
+                  {
+                    'id': 'llmtr/gemma-4',
+                    'object': 'model',
+                    'name': 'Gemma 4',
+                    'context_length': 131072,
+                    'supported_endpoints': ['/v1/chat/completions'],
+                    'architecture': {
+                      'input_modalities': ['text', 'image'],
+                      'output_modalities': ['text'],
+                    },
+                    'pricing': {'prompt': '0.000002', 'completion': '0.000005'},
+                    'supported_parameters': [
+                      'include_reasoning',
+                      'reasoning',
+                      'tool_choice',
+                      'tools',
+                    ],
+                  },
+                  {
+                    'id': 'anthropic/claude-sonnet-5',
+                    'object': 'model',
+                    'name': 'Claude Sonnet 5',
+                    'context_length': 1000000,
+                    'supported_endpoints': ['/v1/chat/completions'],
+                    'architecture': {
+                      'input_modalities': ['text', 'image'],
+                      'output_modalities': ['text'],
+                    },
+                    'supported_parameters': ['tools', 'tool_choice'],
+                  },
+                  {
+                    'id': 'llmtr/embeddingmagibu-200m',
+                    'object': 'model',
+                    'supported_endpoints': ['/v1/embeddings'],
+                    'architecture': {
+                      'input_modalities': ['text'],
+                      'output_modalities': ['embedding'],
+                    },
+                  },
+                  {
+                    'id': 'example/responses-only',
+                    'object': 'model',
+                    'supported_endpoints': ['/v1/responses'],
+                    'architecture': {
+                      'input_modalities': ['text'],
+                      'output_modalities': ['text'],
+                    },
+                  },
+                ],
+              },
+            }),
+          ),
+      );
+      final models = await service.fetchModels(llmtrServer);
+
+      expect(models.map((m) => m.id), [
+        'llmtr/gemma-4',
+        'anthropic/claude-sonnet-5',
+      ]);
+
+      final hosted = models.first;
+      expect(hosted.name, 'Gemma 4');
+      expect(hosted.serverType, ServerType.llmtr);
+      expect(hosted.contextLength, 131072);
+      expect(hosted.supportsVision, isTrue);
+      expect(hosted.supportsToolUse, isTrue);
+      expect(hosted.supportsReasoning, isTrue);
+      expect(hosted.pricingLabel, isNull);
+
+      final routed = models.last;
+      expect(routed.name, 'Claude Sonnet 5');
+      expect(routed.supportsReasoning, isFalse);
+      expect(routed.supportsToolUse, isTrue);
+    });
+  });
+
   group('ServerApiService - LM Studio load model behavior', () {
     late Server lmStudioServer;
 
