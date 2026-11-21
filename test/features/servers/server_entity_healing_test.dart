@@ -178,6 +178,17 @@ void main() {
         ),
         ServerType.standardCompute,
       );
+
+      expect(
+        ServerEntity.resolveServerType(
+          typeIndex: 8,
+          id: 'openllm-1',
+          name: 'OpenLLM',
+          host: 'www.openllm.sh',
+          port: 443,
+        ),
+        ServerType.openLlm,
+      );
     });
   });
 

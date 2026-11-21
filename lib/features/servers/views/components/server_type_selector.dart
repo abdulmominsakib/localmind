@@ -63,6 +63,12 @@ class ServerTypeSelector extends StatelessWidget {
         HugeIcons.strokeRoundedCloudServer,
         Colors.indigo,
       ),
+      (
+        ServerType.openLlm,
+        l10n.server_type_openllm,
+        HugeIcons.strokeRoundedApi,
+        Colors.green,
+      ),
     ];
 
     return LayoutBuilder(

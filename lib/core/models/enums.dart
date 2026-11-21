@@ -211,6 +211,7 @@ enum ServerType {
   onDevice,
   requesty,
   standardCompute,
+  openLlm,
 }
 
 extension ServerTypeLogoExtension on ServerType {
@@ -228,6 +229,7 @@ extension ServerTypeLogoExtension on ServerType {
       case ServerType.openAICompatible:
       case ServerType.onDevice:
       case ServerType.standardCompute:
+      case ServerType.openLlm:
         return null;
     }
   }

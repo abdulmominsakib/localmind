@@ -80,6 +80,10 @@ class _OnboardingServerSetupScreenState
         defaultName = 'Standard Compute';
         defaultPort = '443';
         break;
+      case ServerType.openLlm:
+        defaultName = 'OpenLLM';
+        defaultPort = '443';
+        break;
       case ServerType.onDevice:
         defaultName = 'On-Device';
         defaultPort = '0';
@@ -105,6 +109,7 @@ class _OnboardingServerSetupScreenState
       ServerType.openRouter => 443,
       ServerType.requesty => 443,
       ServerType.standardCompute => 443,
+      ServerType.openLlm => 443,
       ServerType.onDevice => 0,
     };
   }
@@ -195,6 +200,7 @@ class _OnboardingServerSetupScreenState
       widget.selectedType == ServerType.openRouter ||
       widget.selectedType == ServerType.requesty ||
       widget.selectedType == ServerType.standardCompute ||
+      widget.selectedType == ServerType.openLlm ||
       widget.selectedType == ServerType.ollamaCloud;
 
   String? _validateHost(String? value) {
@@ -329,6 +335,8 @@ class _OnboardingServerSetupScreenState
         return l10n.server_type_requesty;
       case ServerType.standardCompute:
         return l10n.server_type_standard_compute;
+      case ServerType.openLlm:
+        return l10n.server_type_openllm;
       case ServerType.onDevice:
         return l10n.server_type_on_device;
     }
@@ -342,6 +350,7 @@ class _OnboardingServerSetupScreenState
     final isOllamaCloud = widget.selectedType == ServerType.ollamaCloud;
     final isRequesty = widget.selectedType == ServerType.requesty;
     final isStandardCompute = widget.selectedType == ServerType.standardCompute;
+    final isOpenLlm = widget.selectedType == ServerType.openLlm;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.setup_connection)),
@@ -477,6 +486,8 @@ class _OnboardingServerSetupScreenState
                                     ? l10n.api_key_hint_requesty
                                     : isStandardCompute
                                     ? l10n.api_key_hint_standard_compute
+                                    : isOpenLlm
+                                    ? l10n.api_key_hint_openllm
                                     : l10n.api_key_hint_openrouter)
                               : null,
                         ),
@@ -488,6 +499,8 @@ class _OnboardingServerSetupScreenState
                                 ? l10n.api_key_required_requesty
                                 : isStandardCompute
                                 ? l10n.api_key_required_standard_compute
+                                : isOpenLlm
+                                ? l10n.api_key_required_openllm
                                 : l10n.api_key_required_openrouter;
                           }
                           if (isCloud &&
@@ -532,6 +545,8 @@ class _OnboardingServerSetupScreenState
                                       ? l10n.requesty_disclosure
                                       : isStandardCompute
                                       ? l10n.standard_compute_disclosure
+                                      : isOpenLlm
+                                      ? l10n.openllm_disclosure
                                       : l10n.openrouter_disclosure,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurface
