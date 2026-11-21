@@ -97,6 +97,7 @@ void main() {
         ServerType.onDevice: NewChatReach.onDevice,
         ServerType.requesty: NewChatReach.cloud,
         ServerType.standardCompute: NewChatReach.cloud,
+        ServerType.openLlm: NewChatReach.cloud,
       });
       expect(NewChatPresence.forServerType(null).reach, NewChatReach.none);
     });

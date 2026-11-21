@@ -55,6 +55,9 @@ String displayServerAddress(
   if (type == ServerType.standardCompute) {
     return 'api.stdcmpt.com';
   }
+  if (type == ServerType.openLlm) {
+    return 'www.openllm.sh';
+  }
   if (type == ServerType.ollamaCloud) {
     return 'ollama.com';
   }
@@ -112,6 +115,9 @@ String buildServerBaseUrl(String host, int port, ServerType type) {
   }
   if (type == ServerType.standardCompute) {
     return AppConstants.standardComputeBaseUrl;
+  }
+  if (type == ServerType.openLlm) {
+    return AppConstants.openLlmBaseUrl;
   }
   if (type == ServerType.ollamaCloud) {
     return AppConstants.ollamaCloudBaseUrl;
@@ -238,6 +244,7 @@ class Server {
       case ServerType.openRouter:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.openLlm:
         return '$baseUrl/chat/completions';
       case ServerType.onDevice:
         return '';
@@ -262,6 +269,7 @@ class Server {
       case ServerType.openRouter:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.openLlm:
         return '$baseUrl/models';
       case ServerType.onDevice:
         return '';
@@ -281,6 +289,7 @@ class Server {
       case ServerType.onDevice:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.openLlm:
         return '';
     }
   }
@@ -296,6 +305,7 @@ class Server {
       case ServerType.onDevice:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.openLlm:
         return '';
     }
   }
@@ -313,6 +323,7 @@ class Server {
       case ServerType.onDevice:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.openLlm:
         return '';
     }
   }
@@ -330,6 +341,7 @@ class Server {
       case ServerType.onDevice:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.openLlm:
         return '';
     }
   }

@@ -46,6 +46,8 @@ class ServerCard extends StatelessWidget {
         return l10n.server_type_requesty_display;
       case ServerType.standardCompute:
         return l10n.server_type_standard_compute_display;
+      case ServerType.openLlm:
+        return l10n.server_type_openllm_display;
       case ServerType.onDevice:
         return l10n.server_type_on_device_display;
     }
@@ -60,6 +62,9 @@ class ServerCard extends StatelessWidget {
     }
     if (server.type == ServerType.standardCompute) {
       return l10n.server_address_standard_compute;
+    }
+    if (server.type == ServerType.openLlm) {
+      return l10n.server_address_openllm;
     }
     if (server.type == ServerType.ollamaCloud) {
       return l10n.server_address_ollama_cloud;
@@ -112,6 +117,8 @@ class ServerCard extends StatelessWidget {
         return HugeIcons.strokeRoundedAiNetwork;
       case ServerType.standardCompute:
         return HugeIcons.strokeRoundedCloudServer;
+      case ServerType.openLlm:
+        return HugeIcons.strokeRoundedApi;
       case ServerType.onDevice:
         return HugeIcons.strokeRoundedHardDrive;
     }
