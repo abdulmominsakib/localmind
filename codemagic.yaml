@@ -119,10 +119,14 @@ workflows:
       - name: Build IPA
         script: |
           set -e
-          BUILD_NUMBER="$PROJECT_BUILD_NUMBER"
+          BUILD_NUMBER="${PROJECT_BUILD_NUMBER:-0}"
           PUBSPEC_BUILD=$(sed -nE 's/^version:.*\+([0-9]+).*/\1/p' pubspec.yaml | head -1)
           if [ -n "$PUBSPEC_BUILD" ] && [ "$PUBSPEC_BUILD" -ge "$BUILD_NUMBER" ]; then
             BUILD_NUMBER=$((PUBSPEC_BUILD + 1))
+          fi
+          if [ "$BUILD_NUMBER" -lt 1 ]; then
+            echo "::error::构建号无法确定（PROJECT_BUILD_NUMBER 未设置，且 pubspec version 不可用）"
+            exit 1
           fi
           if [ -n "$APP_STORE_APPLE_ID" ]; then
             LATEST=0
