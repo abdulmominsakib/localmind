@@ -1,10 +1,18 @@
 # Codemagic CI/CD — LocalMind X（Flutter iOS → TestFlight）
-# 部署步骤见 docs/codemagic-testflight.md
+# 控制台逐条操作清单见 docs/codemagic-testflight.md（改控制台前先读那份）
 #
-# 使用前置条件（Codemagic 控制台配置）：
-#   1. Team integrations → App Store Connect → Developer Portal 里添加 API Key，
-#      名称必须为 `LocalMind ASC API Key`（与本文件 integrations.app_store_connect 一致）
-#   2. 应用级环境变量添加 XCODE_TEAM_ID = 你的 Apple Team ID（App Store Connect → Membership 页面，10 位）
+# 下面三处「名字」必须与控制台上的写法完全一致（大小写敏感），对不上构建会直接失败：
+#   1) integrations.app_store_connect: App Manager
+#      = Codemagic 控制台 Team settings → Integrations → Developer Portal 里那条 ASC API Key 的名字
+#        （与 one/ToMobileScreen 共用同一个集成；要在 Codemagic 里改名，就必须同步改这一行）
+#   2) publishing.app_store_connect.beta_groups: Internal Testers
+#      = App Store Connect → TestFlight → 内部测试组的名字
+#   3) environment.ios_signing.bundle_identifier: top.headwindx.localmind
+#      = Apple Developer Portal 里注册的 App ID
+#
+# 需要你（Henry）在 Codemagic 应用设置 → Environment variables 里自己加的（都可留空，留空走降级路径）：
+#   XCODE_TEAM_ID      = 你的 10 位 Apple Team ID（Apple Developer Portal → Membership details）
+#   APP_STORE_APPLE_ID = App Store Connect 里 LocalMind X 的数字 Apple ID（纯数字，用于查 ASC 上的最新构建号）
 workflows:
   ios-testflight:
     name: iOS TestFlight
@@ -21,45 +29,113 @@ workflows:
           source: true
 
     integrations:
-      app_store_connect: LocalMind ASC API Key
+      app_store_connect: App Manager
 
     environment:
-      flutter: 3.44.0
+      # 3.44.2 = 仓库根 .fvmrc 锁定的版本（Flutter 3.44.2 / Dart 3.12.2，2026-06-10 发布）
+      flutter: 3.44.2
       xcode: latest
       cocoapods: default
+      # 从 App Store Connect 集成里取签名证书 + 描述文件（bundle id 必须与 App ID 一致）
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: top.headwindx.localmind
+      # Codemagic 控制台里的环境变量组（含 ASC 凭据 APP_STORE_CONNECT_*），用来查 ASC 上的最新构建号。
+      # 账号里没有名为 app_store 的组 → 删掉这两行，构建号自动退回 PROJECT_BUILD_NUMBER。
+      groups:
+        - app_store
+
+    cache:
+      cache_paths:
+        - ~/.pub-cache
 
     scripts:
-      # 仓库里的 DEVELOPMENT_TEAM 是原作者的团队 ID，CI 里用 XCODE_TEAM_ID 覆盖
+      # pbxproj 里 DEVELOPMENT_TEAM 是空占位（见 docs/codemagic-testflight.md）。
+      # 配了 XCODE_TEAM_ID 就覆盖成你的 Team ID；没配就跳过，签名团队由下面的 use-profiles 按签名文件决定。
       - name: Override Xcode development team
         script: |
           set -e
-          if [ -n "$XCODE_TEAM_ID" ]; then
-            sed -i.bak "s/DEVELOPMENT_TEAM = [A-Z0-9]*/DEVELOPMENT_TEAM = $XCODE_TEAM_ID/g" \
-              ios/Runner.xcodeproj/project.pbxproj
-            rm ios/Runner.xcodeproj/project.pbxproj.bak
-            echo "DEVELOPMENT_TEAM overridden to $XCODE_TEAM_ID"
+          if [ -z "$XCODE_TEAM_ID" ]; then
+            echo "::warning::未设置 XCODE_TEAM_ID，跳过团队覆盖；签名团队将由 xcode-project use-profiles 按 App Store Connect 集成里的证书/描述文件决定"
           else
-            echo "::error::XCODE_TEAM_ID 未配置，无法签名。请在 Codemagic 环境变量中添加它（见 docs/codemagic-testflight.md）"
-            exit 1
+            echo "$XCODE_TEAM_ID" | grep -Eq '^[A-Z0-9]{10}$' || {
+              echo "::error::XCODE_TEAM_ID 必须是 10 位字母数字（例：TZX5LG7ZW5），当前值不合法"
+              exit 1
+            }
+            # macOS 自带 BSD sed（-i ''），GNU sed 写法不同，这里两种都兼容
+            if sed --version >/dev/null 2>&1; then
+              SED_I="sed -i"
+            else
+              SED_I="sed -i ''"
+            fi
+            $SED_I -E "s/DEVELOPMENT_TEAM = [A-Za-z0-9]*(\"[A-Za-z0-9]*\")?/DEVELOPMENT_TEAM = $XCODE_TEAM_ID/g" \
+              ios/Runner.xcodeproj/project.pbxproj
+            grep -q "DEVELOPMENT_TEAM = $XCODE_TEAM_ID;" ios/Runner.xcodeproj/project.pbxproj || {
+              echo "::error::DEVELOPMENT_TEAM 覆盖失败，请检查 project.pbxproj 里的写法"
+              exit 1
+            }
+            echo "DEVELOPMENT_TEAM overridden to $XCODE_TEAM_ID"
           fi
 
-      - name: Get Flutter packages
-        script: flutter packages pub get
+      # 用 App Store Connect 集成里的证书 + 描述文件配置 Xcode 签名（这一步也会把签名团队写回工程）
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
 
-      # build 号用 Codemagic 每次构建自增的 PROJECT_BUILD_NUMBER，
-      # TestFlight 要求每次上传的 CFBundleVersion 递增
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Install pods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+
+      # 构建号（CFBundleVersion）必须严格大于 App Store Connect 上已上传的最大号，否则被 Apple 拒收。
+      # 取三个来源的较大值：
+      #   a) PROJECT_BUILD_NUMBER —— Codemagic 的项目级计数（只在 Codemagic 内单调递增）
+      #   b) ASC 上该 app 的最新 build 号 + 1 —— 需要 APP_STORE_APPLE_ID，优先 get-latest-build-number
+      #   c) pubspec.yaml 里 version 的 build 号 + 1 —— 防止首次构建号低于手工上传过的号
       - name: Build IPA
         script: |
           set -e
+          BUILD_NUMBER="$PROJECT_BUILD_NUMBER"
+          PUBSPEC_BUILD=$(sed -nE 's/^version:.*\+([0-9]+).*/\1/p' pubspec.yaml | head -1)
+          if [ -n "$PUBSPEC_BUILD" ] && [ "$PUBSPEC_BUILD" -ge "$BUILD_NUMBER" ]; then
+            BUILD_NUMBER=$((PUBSPEC_BUILD + 1))
+          fi
+          if [ -n "$APP_STORE_APPLE_ID" ]; then
+            LATEST=""
+            for CMD in get-latest-build-number get-latest-testflight-build-number get-latest-app-store-build-number; do
+              if OUT=$(app-store-connect "$CMD" "$APP_STORE_APPLE_ID" 2>&1) && echo "$OUT" | grep -Eq '^[0-9]+$'; then
+                LATEST="$OUT"
+                break
+              fi
+            done
+            if [ -n "$LATEST" ] && [ "$LATEST" -ge "$BUILD_NUMBER" ]; then
+              BUILD_NUMBER=$((LATEST + 1))
+            elif [ -z "$LATEST" ]; then
+              echo "::warning::取 ASC 最新构建号失败（app=$APP_STORE_APPLE_ID），沿用当前号 $BUILD_NUMBER"
+            fi
+          else
+            echo "::warning::未设置 APP_STORE_APPLE_ID，构建号只按 Codemagic 计数与 pubspec 推导；若 ASC 上已有更大的号会被拒收"
+          fi
+          echo "CFBundleVersion = $BUILD_NUMBER"
+          # 优先用 xcode-project use-profiles 生成的导出配置；没有就退回仓库里的 ios/ExportOptions.plist
+          EXPORT_OPTIONS=/Users/builder/export_options.plist
+          [ -f "$EXPORT_OPTIONS" ] || EXPORT_OPTIONS=ios/ExportOptions.plist
+          echo "export options = $EXPORT_OPTIONS"
           flutter build ipa \
             --release \
-            --build-number=$PROJECT_BUILD_NUMBER \
-            --export-options-plist=$FCI_BUILD_DIR/ios/ExportOptions.plist
+            --build-number="$BUILD_NUMBER" \
+            --export-options-plist="$EXPORT_OPTIONS"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
 
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        # 需在 App Store Connect → TestFlight 里先建好同名内部测试组
+        # 必须与 App Store Connect → TestFlight 里的内部测试组同名
         beta_groups:
           - Internal Testers
