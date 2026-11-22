@@ -1,10 +1,26 @@
 # Codemagic CI/CD — LocalMind X（Flutter iOS → TestFlight）
 # 控制台逐条操作清单见 docs/codemagic-testflight.md（改控制台前先读那份）
 #
-# 下面三处「名字」必须与控制台上的写法完全一致（大小写敏感），对不上构建会直接失败：
+# ── 构建源：自建 Gitea（正本）────────────────────────────────────────────
+#   Repository URL（SSH）  ：git@git.headwindx.top:one/localmind-x.git
+#   Repository URL（HTTPS）：https://code.headwindx.top/one/localmind-x.git
+#   接入方式：Codemagic → Add application → HTTPS/SSH → Generate key pair
+#             → 把 Codemagic 给的**公钥**加到 Gitea 仓库 Settings → Deploy Keys
+#   自动触发：Gitea 仓库 → Settings → Webhooks → Target URL = https://api.codemagic.io/hooks/<appId>
+#             （Codemagic 官方口径：SSH/HTTPS 接入的仓库必须手配 webhook）
+#   兜底    ：控制台手动 Start build / Builds API
+#   GitHub 的 dehengxu/localmind-x 降级为只读备份，不再是构建源。
+#
+# ── 三处「名字」必须与控制台完全一致（大小写敏感），对不上构建直接失败 ──
 #   1) integrations.app_store_connect: App Manager
-#      = Codemagic 控制台 Team settings → Integrations → Developer Portal 里那条 ASC API Key 的名字
-#        （与 one/ToMobileScreen 共用同一个集成；要在 Codemagic 里改名，就必须同步改这一行）
+#      依据：one/ToMobileScreen（同一个 Codemagic 账号、同一个 Apple 团队）master 分支的
+#            codemagic.yaml 里写的就是 App Manager（2026-11-22 从 code.headwindx.top 核对）。
+#      控制台位置：Team settings → Integrations → Developer Portal → 「App Store Connect API key name」。
+#      若控制台里没有这个名字，两条路二选一：
+#        ① Henry 新建一条 ASC API Key 集成，名字一字不差地写 App Manager；
+#        ② 改用别的名字，同时把下面这一行改成同一个名字。
+#      两边同名是硬要求，控制台改名后本行必须同步改。
+#      （ASC 侧那条 API Key 的「角色」也必须是 App Manager —— 那是权限位，与这里的集成名是两回事。）
 #   2) publishing.app_store_connect.beta_groups: Internal Testers
 #      = App Store Connect → TestFlight → 内部测试组的名字
 #   3) environment.ios_signing.bundle_identifier: top.headwindx.localmind
@@ -19,7 +35,8 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 90
 
-    # push 到 main 自动触发构建；也可在控制台手动 Start build
+    # 触发源 = Gitea 仓库的 push webhook（配法见 docs/codemagic-testflight.md §2.3）。
+    # Gitea 侧还没配 webhook 时，可在控制台手动 Start build 跑同一条流水线。
     triggering:
       events:
         - push
@@ -90,10 +107,15 @@ workflows:
           find . -name "Podfile" -execdir pod install \;
 
       # 构建号（CFBundleVersion）必须严格大于 App Store Connect 上已上传的最大号，否则被 Apple 拒收。
-      # 取三个来源的较大值：
+      # 取多个来源的较大值，再 +1（宁可跳号，也不要撞号）：
       #   a) PROJECT_BUILD_NUMBER —— Codemagic 的项目级计数（只在 Codemagic 内单调递增）
-      #   b) ASC 上该 app 的最新 build 号 + 1 —— 需要 APP_STORE_APPLE_ID，优先 get-latest-build-number
+      #   b) ASC 上该 app 已用过的最大构建号 —— 需要 APP_STORE_APPLE_ID + 环境变量组 app_store
+      #      三个命令都查一遍取最大值：
+      #        get-latest-app-store-build-number（参考项目 one/ToMobileScreen 在用）
+      #        get-latest-build-number（跨 TestFlight/App Store 的最高号）
+      #        get-latest-testflight-build-number
       #   c) pubspec.yaml 里 version 的 build 号 + 1 —— 防止首次构建号低于手工上传过的号
+      # 不用 agvtool：Flutter 项目用 flutter build ipa --build-number 写 CFBundleVersion。
       - name: Build IPA
         script: |
           set -e
@@ -103,16 +125,24 @@ workflows:
             BUILD_NUMBER=$((PUBSPEC_BUILD + 1))
           fi
           if [ -n "$APP_STORE_APPLE_ID" ]; then
-            LATEST=""
-            for CMD in get-latest-build-number get-latest-testflight-build-number get-latest-app-store-build-number; do
+            LATEST=0
+            FOUND=0
+            for CMD in get-latest-app-store-build-number get-latest-build-number get-latest-testflight-build-number; do
               if OUT=$(app-store-connect "$CMD" "$APP_STORE_APPLE_ID" 2>&1) && echo "$OUT" | grep -Eq '^[0-9]+$'; then
-                LATEST="$OUT"
-                break
+                FOUND=1
+                echo "ASC $CMD = $OUT"
+                if [ "$OUT" -gt "$LATEST" ]; then
+                  LATEST=$OUT
+                fi
+              else
+                echo "::notice::命令 $CMD 未返回纯数字构建号（输出：$(echo "$OUT" | tr '\n' ' ' | cut -c1-120)）"
               fi
             done
-            if [ -n "$LATEST" ] && [ "$LATEST" -ge "$BUILD_NUMBER" ]; then
-              BUILD_NUMBER=$((LATEST + 1))
-            elif [ -z "$LATEST" ]; then
+            if [ "$FOUND" = "1" ]; then
+              if [ "$LATEST" -ge "$BUILD_NUMBER" ]; then
+                BUILD_NUMBER=$((LATEST + 1))
+              fi
+            else
               echo "::warning::取 ASC 最新构建号失败（app=$APP_STORE_APPLE_ID），沿用当前号 $BUILD_NUMBER"
             fi
           else
