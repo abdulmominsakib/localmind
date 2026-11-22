@@ -131,21 +131,27 @@ Codemagic 官方口径（"Starting builds automatically with codemagic.yaml"）�
 **"For repositories added via SSH or HTTP/HTTPS … you would have to set up webhooks manually."**
 所以接了 Gitea 之后，自动触发要手配：
 
-1. 在 Codemagic 打开应用，浏览器地址栏是 `https://codemagic.io/app/<appId>`，`<appId>` 就是 payload 地址里的那段。
+1. 在 Codemagic 打开**这个应用**（不是团队设置页）→ **Webhooks** → 复制 **payload URL**。
+   官方原文："Webhook settings are found in your app settings, not your team settings … Go to the
+   Webhooks section and copy your payload URL."（payload URL 从控制台复制，不要自己拼 `api.codemagic.io/hooks/<appId>`。）
 2. Gitea 仓库 → **Settings → Webhooks → Add Webhook**：
-   - Target URL：`https://api.codemagic.io/hooks/<appId>`
-   - Content type：`application/json`
-   - Events：勾 **Push**（想跑 PR 构建再勾 Pull Request —— 但 PR 触发是 GitHub 专属，Gitea 侧不用勾）
+   - Target URL：粘贴刚才复制的 payload URL
+   - Content type：`application/json`（Codemagic 官方：json 与 x-www-form-urlencoded 都支持）
+   - Events：勾 **Push**（PR 事件 Gitea 侧不用勾，Codemagic 的 PR 构建是 GitHub 专属）
    - Active：勾上 → **Add Webhook**
 3. 校验：Codemagic 应用页 → **Webhooks** 标签 → **Recent deliveries** 能看到这次推送的记录。
 
-> **待核**：Codemagic 官方文档只给了 GitHub / GitLab / Bitbucket / AWS CodeCommit / Azure DevOps 的 webhook 配法，
-> 没写 Gitea。Gitea 的 push payload 是 GitHub 风格 JSON，Codemagic 能否解析**没有公开结论**。
-> 如果配了 webhook 但推 main 没触发构建，按下面三条兜底走：
-> ① 控制台手动 **Start build**（同一 workflow、同一脚本，跑的是完全一样的流水线）；
-> ② 用 Builds API（`api.codemagic.io/builds`）触发；
-> ③ 给 `codemagic.yaml` 加一段 `scheduling`（定时跑），把 webhook 这条降级成加速手段。
-> 另外文档里有一句提醒："webhook triggers might not be supported for all repository providers"。
+> **已核（2026-11-22 证据）**：Codemagic 判断事件类型看的是 **GitHub 兼容请求头**，不是 payload 正文。
+> ① Gitea 官方文档《Webhooks → Delivery headers》列明它同时发 `X-Gitea-Event` 与 **`X-GitHub-Event`**
+>    （GitHub-style compatibility headers），push 事件的 `X-GitHub-Event: push`；
+> ② Codemagic 官方知识库《Why are tag events not triggering automatic builds with Codeberg?》原文：
+>    "while **push events successfully trigger automatic builds**, tag events do not work"，
+>    根因是 Codeberg 在 tag 事件里发 `X-Github-Event: create`，而 Codemagic 只认 push / pull_request。
+>    Codeberg 是 Gitea 的分支，同源同头。
+> ⇒ **Gitea 推 main（push）能触发构建；tag 事件不触发是已知限制且无解，本项目只用 push，不受影响。**
+>
+> 兜底（万一首次推送没触发）：① 控制台手动 **Start build**（同一 workflow、同一脚本）；
+> ② Builds API（`api.codemagic.io/builds`）触发；③ 给 `codemagic.yaml` 加 `scheduling` 定时跑。
 
 ### 2.4 选 workflow
 
@@ -302,7 +308,7 @@ ASC 侧三个命令都查一遍、取返回数字的最大值（命令名取自 
 | `XCODE_TEAM_ID` | 10 位 Team ID | 应用 → Environment variables |
 | `APP_STORE_APPLE_ID` | 数字 Apple ID | 应用 → Environment variables |
 | （不在 yaml 里）Repository URL | `git@git.headwindx.top:one/localmind-x.git` | Codemagic 应用 → Repository settings → Repository URL |
-| （不在 yaml 里）webhook Target URL | `https://api.codemagic.io/hooks/<appId>` | Gitea 仓库 → Settings → Webhooks |
+| （不在 yaml 里）webhook Target URL | 从 Codemagic 应用设置 → **Webhooks** 复制的 **payload URL**（不手拼） | Gitea 仓库 → Settings → Webhooks |
 
 ## 7. 仍需 Henry 本人提供的项
 
@@ -313,5 +319,5 @@ ASC 侧三个命令都查一遍、取返回数字的最大值（命令名取自 
 | 3 | **Codemagic 控制台里 ASC 集成的真实名字** | Team settings → Integrations → Developer Portal → Manage keys | 与 yaml 的 `integrations.app_store_connect` 对齐 | yaml 与控制台对不上 → 取不到签名材料，构建直接失败。当前 yaml 写的是 `App Manager`（依据见 §3.1） |
 | 4 | **Gitea 令牌**（如需我代跑建仓 API） | Gitea → Settings → Applications → 生成，令牌不经过聊天 | 建 `one/localmind-x` 仓库（实例禁用 push-to-create），以及推本席分支到 Gitea | 仓库不存在 → Codemagic 接不上 Gitea，CI 只能继续用 GitHub 源 |
 | 5 | **Codemagic 应用接入 Gitea 的密钥方式**（Henry 在控制台点 Generate key pair 或上传自有私钥） | Codemagic → Add application → HTTPS/SSH | 决定用哪种密钥方式拿公钥去 Gitea 加 Deploy Key | 拉不到私有仓库 → 构建在 clone 阶段失败 |
-| 6 | **Codemagic 的 appId**（`codemagic.io/app/<appId>`） | Codemagic 应用页地址栏 | 拼 Gitea webhook 的 Target URL `https://api.codemagic.io/hooks/<appId>` | 推 main 不自动触发构建（只能手动 Start build） |
+| 6 | **Codemagic 应用的 payload URL** | Codemagic 应用设置 → **Webhooks** → 复制 payload URL | 贴进 Gitea 仓库 Settings → Webhooks 的 Target URL | 推 main 不自动触发构建（只能手动 Start build） |
 | 7 | **内部测试组名** | App Store Connect → TestFlight | 与 yaml 的 `beta_groups` 一致 | 上传成功但发不进测试组 |

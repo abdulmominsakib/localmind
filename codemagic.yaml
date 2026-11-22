@@ -6,8 +6,9 @@
 #   Repository URL（HTTPS）：https://code.headwindx.top/one/localmind-x.git
 #   接入方式：Codemagic → Add application → HTTPS/SSH → Generate key pair
 #             → 把 Codemagic 给的**公钥**加到 Gitea 仓库 Settings → Deploy Keys
-#   自动触发：Gitea 仓库 → Settings → Webhooks → Target URL = https://api.codemagic.io/hooks/<appId>
-#             （Codemagic 官方口径：SSH/HTTPS 接入的仓库必须手配 webhook）
+#   自动触发：Gitea 仓库 → Settings → Webhooks → Target URL = 从 Codemagic 应用设置 → Webhooks
+#             复制的 payload URL（官方口径：SSH/HTTPS 接入的仓库必须手配 webhook；不要自己拼 URL）
+#             Gitea 推 main 会带 GitHub 兼容头 X-GitHub-Event: push，Codemagic 认这个头 → push 可触发
 #   兜底    ：控制台手动 Start build / Builds API
 #   GitHub 的 dehengxu/localmind-x 降级为只读备份，不再是构建源。
 #
