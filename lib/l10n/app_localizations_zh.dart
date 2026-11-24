@@ -2750,6 +2750,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get attach_text_document => '附加文本文件';
 
   @override
+  String get attach_shortcut_camera => '相机';
+
+  @override
   String get attach_shortcut_images => '照片';
 
   @override
@@ -6372,6 +6375,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get attach_text_document => '附加文字檔案';
+
+  @override
+  String get attach_shortcut_camera => '相機';
 
   @override
   String get attach_shortcut_images => '相片';

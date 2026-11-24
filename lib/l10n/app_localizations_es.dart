@@ -2839,6 +2839,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get attach_text_document => 'Adjuntar documento de texto';
 
   @override
+  String get attach_shortcut_camera => 'Cámara';
+
+  @override
   String get attach_shortcut_images => 'Fotos';
 
   @override

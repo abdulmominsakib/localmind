@@ -61,6 +61,7 @@ Future<ProviderContainer> _pump(
 void main() {
   testWidgets('shows only sources when there are no options', (tester) async {
     await _pump(tester, model: _model(reasoning: false));
+    expect(find.text('Camera'), findsOneWidget);
     expect(find.text('Photos'), findsOneWidget);
     expect(find.text('Files'), findsOneWidget);
     expect(find.text('Saved'), findsOneWidget);
@@ -100,5 +101,34 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('attach_send_as_assistant')));
     await tester.pump();
     expect(reported, isTrue);
+  });
+
+  testWidgets('camera tile returns the camera action', (tester) async {
+    AttachAction? picked;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () async => picked = await showAttachSheet(context),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('attach_camera')));
+    await tester.pumpAndSettle();
+    expect(picked, AttachAction.camera);
   });
 }

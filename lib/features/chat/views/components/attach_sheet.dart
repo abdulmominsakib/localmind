@@ -7,7 +7,7 @@ import 'package:localmind/features/chat/providers/chat_reasoning_providers.dart'
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
-enum AttachAction { documents, images, savedMessage }
+enum AttachAction { camera, images, documents, savedMessage }
 
 /// Shows the composer's + sheet: sources to attach from, then the options
 /// that used to crowd the input bar — thinking effort for reasoning models
@@ -95,6 +95,15 @@ class _AttachSheetState extends State<AttachSheet> {
               const SizedBox(height: 14),
               Row(
                 children: [
+                  Expanded(
+                    child: AttachSourceTile(
+                      key: const ValueKey('attach_camera'),
+                      icon: HugeIcons.strokeRoundedCamera01,
+                      label: l10n.attach_shortcut_camera,
+                      onTap: () => pick(AttachAction.camera),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: AttachSourceTile(
                       key: const ValueKey('attach_images'),

@@ -3255,6 +3255,10 @@
   "stream_generation_time": "Generation time",
   "attach_image": "Photos",
   "attach_text_document": "Documents",
+  "attach_shortcut_camera": "Camera",
+  "@attach_shortcut_camera": {
+    "description": "Attach sheet tile that takes a photo with the camera"
+  },
   "attach_shortcut_images": "Photos",
   "attach_shortcut_documents": "Files",
   "attach_shortcut_saved": "Saved",

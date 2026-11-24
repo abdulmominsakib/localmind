@@ -2756,6 +2756,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get attach_text_document => '문서';
 
   @override
+  String get attach_shortcut_camera => '카메라';
+
+  @override
   String get attach_shortcut_images => '사진';
 
   @override

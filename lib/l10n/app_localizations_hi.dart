@@ -2826,6 +2826,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get attach_text_document => 'पाठ दस्तावेज़ संलग्न करें';
 
   @override
+  String get attach_shortcut_camera => 'कैमरा';
+
+  @override
   String get attach_shortcut_images => 'फ़ोटो';
 
   @override

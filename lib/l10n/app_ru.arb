@@ -780,6 +780,7 @@
   "stream_generation_time": "Время генерации",
   "attach_image": "Прикрепить изображение",
   "attach_text_document": "Прикрепить текстовый документ",
+  "attach_shortcut_camera": "Камера",
   "attach_shortcut_images": "Фото",
   "attach_shortcut_documents": "Файлы",
   "attach_shortcut_saved": "Сохраненные",

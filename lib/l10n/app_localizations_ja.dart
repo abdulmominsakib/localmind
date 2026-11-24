@@ -2771,6 +2771,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get attach_text_document => 'テキストファイルを添付';
 
   @override
+  String get attach_shortcut_camera => 'カメラ';
+
+  @override
   String get attach_shortcut_images => '写真';
 
   @override

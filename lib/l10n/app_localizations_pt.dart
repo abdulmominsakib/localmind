@@ -2845,6 +2845,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get attach_text_document => 'Documentos';
 
   @override
+  String get attach_shortcut_camera => 'Câmera';
+
+  @override
   String get attach_shortcut_images => 'Fotos';
 
   @override

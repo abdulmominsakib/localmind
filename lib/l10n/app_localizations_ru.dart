@@ -2837,6 +2837,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get attach_text_document => 'Прикрепить текстовый документ';
 
   @override
+  String get attach_shortcut_camera => 'Камера';
+
+  @override
   String get attach_shortcut_images => 'Фото';
 
   @override

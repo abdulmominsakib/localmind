@@ -2835,6 +2835,9 @@ class AppLocalizationsBn extends AppLocalizations {
   String get attach_text_document => 'টেক্সট ডকুমেন্ট সংযুক্ত করুন';
 
   @override
+  String get attach_shortcut_camera => 'ক্যামেরা';
+
+  @override
   String get attach_shortcut_images => 'ফটো';
 
   @override

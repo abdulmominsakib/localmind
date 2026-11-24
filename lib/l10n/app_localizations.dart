@@ -5241,6 +5241,12 @@ abstract class AppLocalizations {
   /// **'Documents'**
   String get attach_text_document;
 
+  /// Attach sheet tile that takes a photo with the camera
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get attach_shortcut_camera;
+
   /// No description provided for @attach_shortcut_images.
   ///
   /// In en, this message translates to:

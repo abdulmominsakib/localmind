@@ -816,6 +816,7 @@
   "stream_generation_time": "생성 시간",
   "attach_image": "사진",
   "attach_text_document": "문서",
+  "attach_shortcut_camera": "카메라",
   "attach_shortcut_images": "사진",
   "attach_shortcut_documents": "파일",
   "attach_shortcut_saved": "저장됨",

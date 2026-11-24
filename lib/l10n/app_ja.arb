@@ -780,6 +780,7 @@
   "stream_generation_time": "生成時間",
   "attach_image": "画像を添付",
   "attach_text_document": "テキストファイルを添付",
+  "attach_shortcut_camera": "カメラ",
   "attach_shortcut_images": "写真",
   "attach_shortcut_documents": "ファイル",
   "attach_shortcut_saved": "保存済み",

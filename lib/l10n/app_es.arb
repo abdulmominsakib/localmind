@@ -780,6 +780,7 @@
   "stream_generation_time": "Tiempo de generación",
   "attach_image": "Adjuntar imagen",
   "attach_text_document": "Adjuntar documento de texto",
+  "attach_shortcut_camera": "Cámara",
   "attach_shortcut_images": "Fotos",
   "attach_shortcut_documents": "Archivos",
   "attach_shortcut_saved": "Guardados",

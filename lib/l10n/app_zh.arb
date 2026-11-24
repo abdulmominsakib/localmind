@@ -780,6 +780,7 @@
   "stream_generation_time": "生成时间",
   "attach_image": "附加图片",
   "attach_text_document": "附加文本文件",
+  "attach_shortcut_camera": "相机",
   "attach_shortcut_images": "照片",
   "attach_shortcut_documents": "文件",
   "attach_shortcut_saved": "已保存",

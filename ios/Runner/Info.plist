@@ -95,6 +95,8 @@
 	<true/>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app requires local network access for model inference services.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app uses the camera only when you choose to take a photo to attach to a chat.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires access to your photo library to let you select and import files, documents, or images into your chats.</string>
 	<key>NSMicrophoneUsageDescription</key>

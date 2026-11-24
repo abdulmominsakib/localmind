@@ -780,6 +780,7 @@
   "stream_generation_time": "जेनरेशन का समय",
   "attach_image": "छवि संलग्न करें",
   "attach_text_document": "पाठ दस्तावेज़ संलग्न करें",
+  "attach_shortcut_camera": "कैमरा",
   "attach_shortcut_images": "फ़ोटो",
   "attach_shortcut_documents": "फ़ाइलें",
   "attach_shortcut_saved": "सहेजे गए",

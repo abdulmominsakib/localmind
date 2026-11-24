@@ -2810,6 +2810,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get attach_text_document => 'إرفاق مستند نصي';
 
   @override
+  String get attach_shortcut_camera => 'الكاميرا';
+
+  @override
   String get attach_shortcut_images => 'الصور';
 
   @override

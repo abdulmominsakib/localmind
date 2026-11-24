@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart' show ImageSource, XFile;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -238,26 +239,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         context: context,
       );
 
-      if (images.isEmpty) return;
-
-      final settings = ref.read(settingsProvider);
-      final compressed = <File>[];
-      for (final image in images) {
-        compressed.add(
-          await ImageUploadUtils.prepareImageFile(
-            File(image.path),
-            enabled: settings.imageCompressionEnabled,
-            level: settings.imageCompressionLevel,
-          ),
-        );
-      }
-
-      if (!mounted) return;
-      setState(() {
-        _attachedFiles.addAll(compressed);
-      });
-
-      widget.onAttach?.call(_attachedFiles);
+      await _attachImages(images);
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
@@ -274,6 +256,58 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         );
       }
     }
+  }
+
+  /// Takes a photo with the device camera and attaches it like a picked
+  /// image, so vision models can describe what's in front of the user.
+  Future<void> _capturePhoto() async {
+    try {
+      final photo = await SafeFilePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        context: context,
+      );
+      if (photo == null) return;
+      await _attachImages([photo]);
+    } catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text(
+              SafeFilePicker.getErrorMessage(
+                e,
+                l10n,
+                fallbackMessage: l10n.image_pick_failed(e.toString()),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _attachImages(List<XFile> images) async {
+    if (images.isEmpty) return;
+
+    final settings = ref.read(settingsProvider);
+    final compressed = <File>[];
+    for (final image in images) {
+      compressed.add(
+        await ImageUploadUtils.prepareImageFile(
+          File(image.path),
+          enabled: settings.imageCompressionEnabled,
+          level: settings.imageCompressionLevel,
+        ),
+      );
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _attachedFiles.addAll(compressed);
+    });
+
+    widget.onAttach?.call(_attachedFiles);
   }
 
   Future<void> _pickDocuments() async {
@@ -335,6 +369,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
     switch (result) {
       case AttachAction.documents:
         await _pickDocuments();
+      case AttachAction.camera:
+        await _capturePhoto();
       case AttachAction.images:
         await _pickImages();
       case AttachAction.savedMessage:
