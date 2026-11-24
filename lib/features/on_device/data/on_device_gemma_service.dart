@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
-import 'package:flutter_gemma/flutter_gemma.dart';
-import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
-import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
+import 'package:flutter_edge_ai/flutter_edge_ai.dart';
+import 'package:flutter_edge_ai_builtin_ai/flutter_edge_ai_builtin_ai.dart';
+import 'package:flutter_edge_ai_litertlm/flutter_edge_ai_litertlm.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../core/inference/local_inference.dart';
@@ -268,6 +268,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
       orElse: () => throw StateError('Model not found: $modelId'),
     );
   }
+
   PreferredBackend? _currentBackend;
   int _currentMaxTokens = defaultMaxTokens;
   bool _isDisposed = false;
@@ -298,7 +299,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   /// The filename of the model restored by the native model manager on app
   /// restart (e.g. "Qwen3-0.6B.litertlm"), or null if no active model spec is
   /// set. This is a cheap synchronous read that does NOT load the engine.
-  String? get restoredActiveModelName => FlutterGemma.activeModelSpec?.name;
+  String? get restoredActiveModelName => FlutterEdgeAi.activeModelSpec?.name;
 
   /// Syncs the service's internal tracking to the native restored active model
   /// spec so that [createChat] can lazy-load the model on first use after a
@@ -312,7 +313,8 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     final specName = restoredActiveModelName;
     if (specName == null) return;
 
-    final resolvedModel = model ??
+    final resolvedModel =
+        model ??
         OnDeviceModel.allCuratedModels.firstWhere(
           (m) => m.fileName == specName || m.id == specName,
           orElse: () => throw StateError('No curated model for $specName'),
@@ -324,7 +326,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
   }
 
   static Future<void> initialize({String? huggingFaceToken}) async {
-    await FlutterGemma.initialize(
+    await FlutterEdgeAi.initialize(
       inferenceEngines: const [LiteRtLmEngine(), BuiltInAiEngine()],
       huggingFaceToken: huggingFaceToken,
       maxDownloadRetries: 10,
@@ -340,7 +342,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     if (model.isBuiltIn) {
       Log.info('Installing built-in model ${model.id}');
       await BuiltInAi.ensureReady(onProgress: onProgress);
-      var builder = FlutterGemma.installModel(
+      var builder = FlutterEdgeAi.installModel(
         modelType: ModelType.general,
         fileType: ModelFileType.builtIn,
       ).fromBundled(model.fileName);
@@ -352,19 +354,16 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
 
     Log.info('Installing model ${model.id} from ${model.huggingFaceUrl}');
 
-    var builder = FlutterGemma.installModel(
-          modelType: model.flutterGemmaModelType,
-          fileType: ModelFileType.litertlm,
-        )
-        .fromNetwork(model.huggingFaceUrl, token: token, foreground: true);
+    var builder = FlutterEdgeAi.installModel(
+      modelType: model.flutterGemmaModelType,
+      fileType: ModelFileType.litertlm,
+    ).fromNetwork(model.huggingFaceUrl, token: token, foreground: true);
     if (cancelToken != null) {
       builder = builder.withCancelToken(cancelToken);
     }
-    await builder
-        .withProgress((progress) {
-          onProgress?.call(progress);
-        })
-        .install();
+    await builder.withProgress((progress) {
+      onProgress?.call(progress);
+    }).install();
 
     Log.info('Model ${model.id} installed successfully');
   }
@@ -384,11 +383,11 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
         }
       } catch (_) {}
     }
-    return FlutterGemma.isModelInstalled(model.fileName);
+    return FlutterEdgeAi.isModelInstalled(model.fileName);
   }
 
   Future<List<String>> getInstalledModelIds() async {
-    final installed = await FlutterGemma.listInstalledModels();
+    final installed = await FlutterEdgeAi.listInstalledModels();
     final installedSet = installed.toSet();
     final installedIds = <String>[];
 
@@ -407,7 +406,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     } catch (_) {
       return;
     }
-    await FlutterGemma.uninstallModel(model.fileName);
+    await FlutterEdgeAi.uninstallModel(model.fileName);
 
     if (model.isBuiltIn) {
       Log.info('Built-in model $modelId uninstalled');
@@ -467,9 +466,9 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     final InferenceModelSpec spec;
     if (model.isBuiltIn) {
       await BuiltInAi.ensureReady();
-      final installed = await FlutterGemma.isModelInstalled(model.fileName);
+      final installed = await FlutterEdgeAi.isModelInstalled(model.fileName);
       if (!installed) {
-        await FlutterGemma.installModel(
+        await FlutterEdgeAi.installModel(
           modelType: ModelType.general,
           fileType: ModelFileType.builtIn,
         ).fromBundled(model.fileName).install();
@@ -500,9 +499,11 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
       );
     }
 
-    FlutterGemmaPlugin.instance.modelManager.setActiveModel(spec);
+    await FlutterEdgeAiPlugin.instance.modelManager.ensureModelReadyFromSpec(
+      spec,
+    );
 
-    _model = await FlutterGemma.getActiveModel(
+    _model = await FlutterEdgeAi.getActiveModel(
       maxTokens: effectiveMaxTokens,
       preferredBackend: backend,
       supportImage: model.supportsVision,
@@ -577,24 +578,13 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     bool? supportImage,
   }) async {
     final visionEnabled = currentModelSupportsVision && (supportImage ?? true);
-    // createChat() keeps one native conversation per model and deletes the
-    // previous one first, so a reply still decoding there must stop before.
-    if (_model!.fileType != ModelFileType.builtIn && visionEnabled) {
-      await _drainGenerations();
-    }
     final model = _model!;
-
     final InferenceChat chat;
-    if (model.fileType == ModelFileType.builtIn) {
-      chat = await model.createChat(
-        systemInstruction: systemInstruction,
-        tools: tools,
-        supportsFunctionCalls: tools.isNotEmpty,
-        supportImage: visionEnabled,
-      );
-    } else if (visionEnabled) {
-      // Multimodal .litertlm models MUST use createChat() (single-session)
-      // because openChat() (virtual concurrent session) rejects media.
+    if (model.fileType != ModelFileType.builtIn && visionEnabled) {
+      // Keep the native conversation path for multimodal models on backends
+      // where independent chats would use the shared conversation.
+      await _drainGenerations();
+      // ignore: deprecated_member_use
       chat = await model.createChat(
         systemInstruction: systemInstruction,
         tools: tools,
@@ -606,6 +596,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
         systemInstruction: systemInstruction,
         tools: tools,
         supportsFunctionCalls: tools.isNotEmpty,
+        supportImage: visionEnabled,
       );
     }
     late final DrainingInferenceSession session;
@@ -716,7 +707,7 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
     );
   }
 
-  /// Migrate models from old custom download location to flutter_gemma storage.
+  /// Migrate models from old custom download location to Flutter Edge AI storage.
   /// Returns the number of models migrated.
   static Future<int> migrateOldModels() async {
     try {
@@ -731,15 +722,15 @@ class OnDeviceGemmaService implements OnDeviceInferenceService {
           final fileName = entity.path.split('/').last;
           final modelId = fileName.replaceAll('.litertlm', '');
 
-          // Check if already registered in flutter_gemma
-          final alreadyInstalled = await FlutterGemma.isModelInstalled(
+          // Check if already registered in Flutter Edge AI
+          final alreadyInstalled = await FlutterEdgeAi.isModelInstalled(
             fileName,
           );
           if (alreadyInstalled) continue;
 
-          // Register the existing file with flutter_gemma
+          // Register the existing file with Flutter Edge AI
           try {
-            await FlutterGemma.installModel(
+            await FlutterEdgeAi.installModel(
               modelType: _inferModelType(modelId),
               fileType: ModelFileType.litertlm,
             ).fromFile(entity.path).install();

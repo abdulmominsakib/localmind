@@ -1,6 +1,6 @@
 import '../views/components/imported_model_projector_setting.dart';
 import '../views/components/imported_model_reasoning_setting.dart';
-import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
+import 'package:flutter_edge_ai_builtin_ai/flutter_edge_ai_builtin_ai.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'dart:io';
 

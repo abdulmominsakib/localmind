@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
+import 'package:flutter_edge_ai/flutter_edge_ai.dart' as gemma;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/features/on_device/data/on_device_gemma_service.dart';
 

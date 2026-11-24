@@ -1,4 +1,4 @@
-import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
+import 'package:flutter_edge_ai_builtin_ai/flutter_edge_ai_builtin_ai.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'dart:async';
 import 'dart:io';

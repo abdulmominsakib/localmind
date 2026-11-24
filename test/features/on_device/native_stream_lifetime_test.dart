@@ -1,82 +1,103 @@
 import 'dart:async';
 import 'dart:ffi';
-import 'package:flutter_gemma_litertlm/src/ffi/litert_lm_bindings.dart';
-import 'package:flutter_gemma_litertlm/src/ffi/litert_lm_client.dart';
-import 'package:flutter_gemma_litertlm/src/ffi/native_stream_lifetime.dart';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:litertlm_dart/src/ffi/litert_lm_bindings.dart';
+import 'package:litertlm_dart/src/ffi/litert_lm_client.dart';
+import 'package:litertlm_dart/src/runtime/types.dart';
 
 void main() {
-  test(
-    'cancel while waiting for native lock does not strand the mutex',
-    () async {
-      final client = LiteRtLmFfiClient();
-      final release = Completer<void>();
-      final holding = client.withNativeLockForTest(() => release.future);
-      await pumpEventQueue();
-      final stream = client.startVirtualTurn(
-        conversationToken: Object(),
-        messageJson: '{}',
-        history: const [],
-      );
-      final subscription = stream.listen((_) {});
-      await pumpEventQueue();
-      var cancelled = false;
-      final cancellation = subscription.cancel().then((_) => cancelled = true);
-      await pumpEventQueue();
-      expect(cancelled, isFalse);
-      release.complete();
-      await holding;
-      await cancellation;
-      // A subsequent owner must be able to take the same native mutex.
-      expect(
-        await client.withNativeLockForTest(() async => 'available'),
-        'available',
-      );
-    },
-  );
+  test('cancelling a queued turn leaves the native mutex usable', () async {
+    final client = LiteRtLmFfiClient();
+    final release = Completer<void>();
+    final holding = client.holdNativeMutexForTest(() => release.future);
+    await pumpEventQueue();
 
-  test(
-    'deletion stays deferred while native is live and is idempotent',
-    () async {
-      final client = LiteRtLmFfiClient();
-      final conversation = Pointer<LiteRtLmConversation>.fromAddress(123);
-      final nativeDone = Completer<void>();
-      client.registerLiveForTest(conversation);
-      client.registerNativeTurnForTest(conversation, nativeDone.future);
-      final first = client.deleteConversationForTest(conversation);
-      final second = client.deleteConversationForTest(conversation);
-      await pumpEventQueue();
-      expect(client.isConversationLiveForTest(conversation), isTrue);
-      nativeDone.complete();
-      await Future.wait([first, second]);
-      expect(client.isConversationLiveForTest(conversation), isFalse);
-    },
-  );
+    final stream = client.startVirtualTurn(
+      conversationToken: Object(),
+      messageJson: '{}',
+      history: const [],
+      sampling: const Sampler(temperature: 0, topK: 1, topP: 1, randomSeed: 1),
+      samplingExplicit: false,
+      thinking: false,
+      filterChannelContent: false,
+    );
+    final subscription = stream.listen((_) {});
+    await pumpEventQueue();
+    var cancelled = false;
+    final cancellation = subscription.cancel().then((_) => cancelled = true);
+    await pumpEventQueue();
+    expect(cancelled, isFalse);
+    release.complete();
+    await holding;
+    await cancellation;
 
-  test('callback before return retains memory until call returns', () async {
-    final lifetime = NativeStreamLifetime();
-    lifetime.terminalCallback();
-    expect(lifetime.isComplete, isFalse);
-    lifetime.callReturned();
-    await lifetime.done;
-    expect(lifetime.isComplete, isTrue);
+    expect(
+      await client.holdNativeMutexForTest(() async => 'available'),
+      'available',
+    );
   });
 
   test(
-    'return before callback retains callback and cancellation wait',
+    'shutdown waits for the conversation worker after the turn ends',
     () async {
-      final lifetime = NativeStreamLifetime();
-      var released = false;
-      lifetime.done.then((_) => released = true);
-      lifetime.callReturned();
+      final client = LiteRtLmFfiClient();
+      final conversation = Pointer<LiteRtLmConversation>.fromAddress(123);
+      final deletionStarted = Completer<int>();
+      final deletionFinished = Completer<void>();
+      client.deleteConversationOffIsolateForTest = (address) {
+        deletionStarted.complete(address);
+        return deletionFinished.future;
+      };
+      client.registerLiveForTest(conversation);
+      final turn = client.newTurnForTest(conversation);
+
+      client.releaseConversationForTest(conversation);
+      final shutdown = client.shutdown();
+      expect(client.shutdown(), same(shutdown));
       await pumpEventQueue();
-      expect(released, isFalse);
-      lifetime.terminalCallback();
-      await lifetime.done;
-      expect(released, isTrue);
-      // Duplicate lifecycle notifications cannot complete twice.
-      lifetime.terminalCallback();
-      lifetime.callReturned();
+      expect(client.isConversationLiveForTest(conversation), isTrue);
+      expect(deletionStarted.isCompleted, isFalse);
+
+      turn.finished();
+      expect(await deletionStarted.future, conversation.address);
+      expect(client.isConversationLiveForTest(conversation), isFalse);
+      var shutdownFinished = false;
+      unawaited(shutdown.then((_) => shutdownFinished = true));
+      await pumpEventQueue();
+      expect(shutdownFinished, isFalse);
+
+      deletionFinished.complete();
+      await shutdown;
+      expect(shutdownFinished, isTrue);
     },
   );
+
+  test('terminal callback retains native arguments until send returns', () {
+    var freeCalls = 0;
+    var ended = false;
+    final gate = SendCallGate(freeStrings: () => freeCalls++);
+    gate.callStarted();
+    gate.end(() => ended = true);
+    gate.release();
+    expect(freeCalls, 0);
+    expect(ended, isFalse);
+
+    gate.callReturned();
+    gate.flushEnd();
+    expect(freeCalls, 1);
+    expect(ended, isTrue);
+  });
+
+  test('send return retains native arguments until terminal callback', () {
+    var freeCalls = 0;
+    final gate = SendCallGate(freeStrings: () => freeCalls++);
+    gate.callStarted();
+    gate.callReturned();
+    expect(freeCalls, 0);
+
+    gate.release();
+    gate.release();
+    expect(freeCalls, 1);
+  });
 }

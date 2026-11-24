@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_edge_ai/flutter_edge_ai.dart';
 
 import '../../../../core/models/enums.dart';
 import '../../../../features/chat/data/models/mcp_integration.dart';
@@ -427,7 +427,7 @@ class AppSettings {
       return PreferredBackend.values[value];
     }
     // Handle migration from old LiteLmBackendType (had cpu=0, gpu=1, npu=2)
-    // Map npu (2) to gpu since flutter_gemma only has cpu/gpu
+    // Map npu (2) to gpu since flutter_edge_ai only has cpu/gpu
     if (value is int && value == 2) return PreferredBackend.gpu;
     return PreferredBackend.cpu;
   }

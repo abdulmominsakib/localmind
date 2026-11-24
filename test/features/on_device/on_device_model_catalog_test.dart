@@ -1,4 +1,4 @@
-import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_edge_ai/flutter_edge_ai.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 
@@ -34,7 +34,7 @@ void main() {
           model.huggingFaceUrl,
           endsWith('.litertlm'),
           reason:
-              '${model.id} must stay compatible with flutter_gemma_litertlm',
+              '${model.id} must stay compatible with flutter_edge_ai_litertlm',
         );
         expect(model.fileName, isNotEmpty);
         expect(model.fileName, isNot(contains('/')));

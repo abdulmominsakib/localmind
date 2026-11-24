@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_edge_ai/flutter_edge_ai.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -592,17 +592,10 @@ class ImportedLitertModelRepository {
         }
 
         try {
-          final previousSpec = FlutterGemma.activeModelSpec;
-          await FlutterGemma.installModel(
+          await FlutterEdgeAi.installModel(
             modelType: ModelType.general,
             fileType: ModelFileType.litertlm,
-          ).fromFile(filePath).install();
-          final manager = FlutterGemmaPlugin.instance.modelManager;
-          if (previousSpec != null) {
-            manager.setActiveModel(previousSpec);
-          } else {
-            await FlutterGemma.clearActiveInferenceIdentity();
-          }
+          ).fromFile(filePath).install(activate: false);
         } catch (_) {
           // Quarantine: delete record and temp file.
           try { await _gateway.deleteRecord(rawId); } catch (_) {}
@@ -634,7 +627,7 @@ class ImportedLitertModelRepository {
             // THEN uninstall/delete old (best-effort).
             if (oldInstallName != record.task.filename) {
               try {
-                await FlutterGemma.uninstallModel(oldInstallName);
+                await FlutterEdgeAi.uninstallModel(oldInstallName);
               } catch (_) {}
             }
             if (oldPath != null && oldPath != filePath && await File(oldPath).exists()) {
@@ -669,17 +662,10 @@ class ImportedLitertModelRepository {
       if (!await file.exists() || await file.length() <= 0) continue;
 
       try {
-        final previousSpec = FlutterGemma.activeModelSpec;
-        await FlutterGemma.installModel(
+        await FlutterEdgeAi.installModel(
           modelType: ModelType.general,
           fileType: ModelFileType.litertlm,
-        ).fromFile(filePath).install();
-        final manager = FlutterGemmaPlugin.instance.modelManager;
-        if (previousSpec != null) {
-          manager.setActiveModel(previousSpec);
-        } else {
-          await FlutterGemma.clearActiveInferenceIdentity();
-        }
+        ).fromFile(filePath).install(activate: false);
       } catch (_) {
         continue;
       }
@@ -794,21 +780,13 @@ class ImportedLitertModelRepository {
     if (!_registeredLocalModels.add(model.id)) return;
     try {
       final installName = model.installFileName ?? model.fileName;
-      final alreadyInstalled = await FlutterGemma.isModelInstalled(installName);
+      final alreadyInstalled = await FlutterEdgeAi.isModelInstalled(installName);
       if (alreadyInstalled) return;
 
-      final previousSpec = FlutterGemma.activeModelSpec;
-      await FlutterGemma.installModel(
+      await FlutterEdgeAi.installModel(
         modelType: ModelType.general,
         fileType: ModelFileType.litertlm,
-      ).fromFile(model.filePath!).install();
-
-      final manager = FlutterGemmaPlugin.instance.modelManager;
-      if (previousSpec != null) {
-        manager.setActiveModel(previousSpec);
-      } else {
-        await FlutterGemma.clearActiveInferenceIdentity();
-      }
+      ).fromFile(model.filePath!).install(activate: false);
     } catch (e) {
       _registeredLocalModels.remove(model.id);
       rethrow;
@@ -859,7 +837,7 @@ class ImportedLitertModelRepository {
           importedAt: DateTime.now(),
           source: OnDeviceImportedSource.localFile,
         );
-        // Register with FlutterGemma before persisting, so a failed
+        // Register with FlutterEdgeAi before persisting, so a failed
         // registration does not leave a misleading ready entry.
         await _ensureRegistered(metadata);
         _registeredLocalModels.add(metadata.id);
@@ -983,15 +961,10 @@ class ImportedLitertModelRepository {
     });
 
     if (model.filePath != null && model.filePath!.isNotEmpty) {
-      final previousSpec = FlutterGemma.activeModelSpec;
-      await FlutterGemma.installModel(
+      await FlutterEdgeAi.installModel(
         modelType: ModelType.general,
         fileType: ModelFileType.litertlm,
-      ).fromFile(model.filePath!).install();
-      final manager = FlutterGemmaPlugin.instance.modelManager;
-      if (previousSpec != null) {
-        manager.setActiveModel(previousSpec);
-      }
+      ).fromFile(model.filePath!).install(activate: false);
       return TaskStatus.complete;
     }
 
@@ -1260,17 +1233,10 @@ class ImportedLitertModelRepository {
     }
 
     // Register new install.
-    final previousSpec = FlutterGemma.activeModelSpec;
-    await FlutterGemma.installModel(
+    await FlutterEdgeAi.installModel(
       modelType: ModelType.general,
       fileType: ModelFileType.litertlm,
-    ).fromFile(filePath).install();
-    final manager = FlutterGemmaPlugin.instance.modelManager;
-    if (previousSpec != null) {
-      manager.setActiveModel(previousSpec);
-    } else {
-      await FlutterGemma.clearActiveInferenceIdentity();
-    }
+    ).fromFile(filePath).install(activate: false);
 
     await _mutex.run(() async {
       final models = load();
@@ -1284,7 +1250,7 @@ class ImportedLitertModelRepository {
       if (models[index].revision != oldModel.revision) {
         Log.warning('Revision changed during update for $modelId; aborting finalization.');
         // Clean up the orphan install + temp file (best-effort).
-        try { await FlutterGemma.uninstallModel(installName); } catch (_) {}
+        try { await FlutterEdgeAi.uninstallModel(installName); } catch (_) {}
         try {
           final tp = await task.filePath();
           final tf = File(tp);
@@ -1311,7 +1277,7 @@ class ImportedLitertModelRepository {
         // THEN delete old install + file (best-effort; lingering old file is OK).
         if (oldInstallName != installName) {
           try {
-            await FlutterGemma.uninstallModel(oldInstallName);
+            await FlutterEdgeAi.uninstallModel(oldInstallName);
           } catch (_) {}
         }
         if (oldFilePath != null &&
@@ -1342,17 +1308,10 @@ class ImportedLitertModelRepository {
       );
     }
 
-    final previousSpec = FlutterGemma.activeModelSpec;
-    await FlutterGemma.installModel(
+    await FlutterEdgeAi.installModel(
       modelType: ModelType.general,
       fileType: ModelFileType.litertlm,
-    ).fromFile(filePath).install();
-    final manager = FlutterGemmaPlugin.instance.modelManager;
-    if (previousSpec != null) {
-      manager.setActiveModel(previousSpec);
-    } else {
-      await FlutterGemma.clearActiveInferenceIdentity();
-    }
+    ).fromFile(filePath).install(activate: false);
 
     await _mutex.run(() async {
       final models = load();
@@ -1578,7 +1537,7 @@ class ImportedLitertModelRepository {
       );
       if (shared.isEmpty) {
         try {
-          await FlutterGemma.uninstallModel(model.fileName);
+          await FlutterEdgeAi.uninstallModel(model.fileName);
         } catch (_) {
           // The file may already be absent; metadata cleanup still matters.
         }
@@ -1617,7 +1576,7 @@ class ImportedLitertModelRepository {
           );
           if (shared.isEmpty) {
             try {
-              await FlutterGemma.uninstallModel(model.fileName);
+              await FlutterEdgeAi.uninstallModel(model.fileName);
             } catch (_) {}
             if (model.filePath != null) {
               final file = File(model.filePath!);

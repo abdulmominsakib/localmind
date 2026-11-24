@@ -367,14 +367,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
-  dart_sentencepiece_tokenizer:
-    dependency: transitive
-    description:
-      name: dart_sentencepiece_tokenizer
-      sha256: "85825632845cf6427ea0cd13dfba96b4341cf63525165155e5b9b97011239289"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.3.2"
   dart_style:
     dependency: transitive
     description:
@@ -604,37 +596,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.1"
-  flutter_gemma:
+  flutter_edge_ai:
     dependency: "direct main"
     description:
-      name: flutter_gemma
-      sha256: cc56be546ffcbe4ea708a21d0cc21658b87ac55be99ca81c252daf1394b78f8c
+      name: flutter_edge_ai
+      sha256: "9f1d3d2aaaf287a19c01ab88aa06a2ab79b765cdbfc875e5d9ed299760689b25"
       url: "https://pub.dev"
     source: hosted
-    version: "1.7.0"
-  flutter_gemma_builtin_ai:
+    version: "2.7.2"
+  flutter_edge_ai_builtin_ai:
     dependency: "direct main"
     description:
-      name: flutter_gemma_builtin_ai
-      sha256: "169e270519656acda10aa359c6176ddd0ce3853eb6f6659cdc2bc3cbc4d94529"
+      name: flutter_edge_ai_builtin_ai
+      sha256: "5fe25e174f4f74a27c6ea34fc9d8b2821501e0444de3c3b358643c6d0a726af7"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
-  flutter_gemma_embeddings:
-    dependency: transitive
-    description:
-      name: flutter_gemma_embeddings
-      sha256: e2662743cc296a6fe1483677937ab3c77b141b028db5392d71e6c82292e37804
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.0"
-  flutter_gemma_litertlm:
+    version: "0.4.3"
+  flutter_edge_ai_litertlm:
     dependency: "direct main"
     description:
-      path: "packages/flutter_gemma_litertlm"
-      relative: true
-    source: path
-    version: "1.6.0"
+      name: flutter_edge_ai_litertlm
+      sha256: "6d06d63a59f4ea09f3d454bdc3b92430b7cd06b129cc356d136fd457ea588039"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.21.2"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -643,6 +628,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
+  flutter_local_ai:
+    dependency: transitive
+    description:
+      name: flutter_local_ai
+      sha256: e40de3b516ef2d25da62cae0dba5be81dcd958a001eccc51819c972744d9c0c6
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
   flutter_local_notifications:
     dependency: "direct main"
     description:
@@ -1250,6 +1243,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.0"
+  litertlm_dart:
+    dependency: "direct dev"
+    description:
+      path: "packages/litertlm_dart"
+      relative: true
+    source: path
+    version: "0.19.1+3"
   llamadart:
     dependency: "direct main"
     description:

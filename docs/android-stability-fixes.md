@@ -31,7 +31,7 @@ strict calendar-day counts. Per-issue unique users must not be summed.
   stops. Retaining the engine does not keep an idle foreground service running.
 
 Dependency sources, versions and patch limits are recorded in
-`packages/{audio_service,flutter_gemma_litertlm,llamadart}/LOCALMIND_PATCHES.md`.
+`packages/{audio_service,litertlm_dart,llamadart}/LOCALMIND_PATCHES.md`.
 Generated localization code was regenerated with FVM; no generated native bindings
 were edited. Existing store-media directories were preserved.
 
@@ -42,8 +42,7 @@ Use the repository's restored Flutter 3.44.2 SDK through FVM. Run:
 ```sh
 fvm flutter analyze
 fvm flutter test
-# from packages/flutter_gemma_litertlm:
-fvm flutter test --no-pub
+fvm flutter test test/features/on_device/native_stream_lifetime_test.dart
 # from android:
 ./gradlew :app:testReleaseUnitTest
 # from the repository root:

@@ -34,7 +34,7 @@ Built for those who value privacy and performance, LocalMind runs models directl
 
 | Backend | Type | Notes |
 | --- | --- | --- |
-| On-device | Offline | GGUF (llama.cpp via `llamadart`) and LiteRT (`flutter_gemma`) models |
+| On-device | Offline | GGUF (llama.cpp via `llamadart`) and LiteRT (`flutter_edge_ai`) models |
 | [Ollama](https://ollama.com/) | Local | Also supports Ollama Cloud |
 | [LM Studio](https://lmstudio.ai/) | Local | Includes the LM Studio model catalog |
 | [OpenRouter](https://openrouter.ai/) | Cloud | Bring your own API key |
@@ -44,7 +44,7 @@ Built for those who value privacy and performance, LocalMind runs models directl
 
 ## Key Features
 
-- **On-Device AI Support (iOS & Android)**: Private, fast, and offline. Run powerful GGUF and LiteRT models (Gemma, Qwen, DeepSeek R1) directly on your device via `llamadart` and `flutter_gemma`. No internet connection required.
+- **On-Device AI Support (iOS & Android)**: Private, fast, and offline. Run powerful GGUF and LiteRT models (Gemma, Qwen, DeepSeek R1) directly on your device via `llamadart` and `flutter_edge_ai`. No internet connection required.
 - **Model Context Protocol (MCP)**: Seamlessly connect to local or remote MCP servers. Grant models access to custom tools and integrations (e.g., file access, web APIs, shell actions) with fine-grained global and chat-level toggles.
 - **Local API (Android)**: Serve a loaded model to other apps through an authenticated OpenAI-compatible endpoint. See the [Local API setup guide](docs/local-api.md).
 - **Model Manager**: Download curated models or download GGUF models directly from HuggingFace. Manage model files directly within the app.
@@ -76,7 +76,7 @@ Built for those who value privacy and performance, LocalMind runs models directl
 LocalMind is built with modern, scalable technologies:
 
 - **Framework**: [Flutter](https://flutter.dev/) 3.44 (pinned with [FVM](https://fvm.app/))
-- **On-Device AI**: `llamadart` + `flutter_gemma` (supporting llama.cpp & LiteRT) for native, high-performance localized inference.
+- **On-Device AI**: `llamadart` + `flutter_edge_ai` (supporting llama.cpp & LiteRT) for native, high-performance localized inference.
 - **UI Components**: Shadcn-inspired design system (`shadcn_ui`)
 - **State Management**: [Riverpod](https://riverpod.dev/) for robust, testable state.
 - **Local Storage**: [ObjectBox](https://objectbox.io/) for high-performance on-device persistence.

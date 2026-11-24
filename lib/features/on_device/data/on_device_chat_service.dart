@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
+import 'package:flutter_edge_ai/flutter_edge_ai.dart' as gemma;
 
 import '../../../core/inference/local_inference.dart';
 import '../../../core/logger/app_logger.dart';
@@ -374,7 +374,7 @@ class OnDeviceChatService implements ChatService {
       }
       final subscription = run.subscription;
       run.subscription = null;
-      await subscription?.cancel();
+      await _cancelGenerationSubscription(subscription);
     }
     await _closeSession(run, stopGeneration: false);
     await recover?.call();
@@ -414,13 +414,24 @@ class OnDeviceChatService implements ChatService {
           }
         }
       }
-      await subscription?.cancel();
+      await _cancelGenerationSubscription(subscription);
       await _closeSession(run, stopGeneration: false);
       await _closeController(run, notifyListener: notifyListener);
       _activeRuns.remove(run);
       _completeRunFuture(run);
     }();
     await cleanup;
+  }
+
+  Future<void> _cancelGenerationSubscription(
+    StreamSubscription<gemma.ModelResponse>? subscription,
+  ) async {
+    try {
+      await subscription?.cancel();
+    } on NativeGenerationDrainTimeout catch (error) {
+      // The session still owns the native turn and defers closing until it ends.
+      Log.warning('On-device generation is still stopping: $error');
+    }
   }
 
   void _completeRunFuture(_InferenceRun run) {

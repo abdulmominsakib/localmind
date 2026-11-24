@@ -125,7 +125,7 @@ class _BootstrapHostState extends State<BootstrapHost> {
 
       // Configure app-owned LiteRT downloads (background_downloader).
       final liteRtDownloader = FileDownloader();
-      // Disable automatic global reschedule (it touches FlutterGemma records
+      // Disable automatic global reschedule (it touches FlutterEdgeAi records
       // and can create duplicate WorkSpecs). We do group-scoped recovery below.
       await liteRtDownloader.start(doRescheduleKilledTasks: false);
       await liteRtDownloader.configure(
@@ -211,7 +211,7 @@ class _BootstrapHostState extends State<BootstrapHost> {
       await ggufDownloader.trackTasksInGroup('localmind_gguf_downloads');
       await ggufDownloader.resumeFromBackground();
 
-      // Apply WiFi policy (global, covers imported + FlutterGemma downloads).
+      // Apply WiFi policy (global, covers imported + FlutterEdgeAi downloads).
       await FileDownloader().requireWiFi(
         downloadOverWifiOnly
             ? RequireWiFi.forAllTasks

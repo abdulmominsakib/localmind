@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:apple_mlx/apple_mlx.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_gemma/flutter_gemma.dart' hide CancelToken;
-import 'package:flutter_gemma_builtin_ai/flutter_gemma_builtin_ai.dart';
+import 'package:flutter_edge_ai/flutter_edge_ai.dart' hide CancelToken;
+import 'package:flutter_edge_ai_builtin_ai/flutter_edge_ai_builtin_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/async_operation_queue.dart';
@@ -177,7 +177,7 @@ final downloadedModelsProvider = FutureProvider<Set<String>>((ref) async {
   final importedLitert = ref.watch(importedLitertModelsProvider);
   final flutterGemmaInstalled = importedLitert.isEmpty
       ? const <String>{}
-      : await FlutterGemma.listInstalledModels();
+      : await FlutterEdgeAi.listInstalledModels();
 
   final builtInIds = <String>{};
   try {

@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
+import 'package:flutter_edge_ai/flutter_edge_ai.dart' as gemma;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/core/models/enums.dart';
 import 'package:localmind/core/services/crash_report_service.dart';
@@ -720,6 +720,33 @@ void main() {
     expect(CrashReportService.instance.currentCrash.value, isNull);
   });
 
+  test('stopping a slow native turn defers close without a crash', () async {
+    inferenceService.drainTimeout = const Duration(milliseconds: 1);
+    final responses = <ChatResponse>[];
+    final done = chatService
+        .sendMessage(
+          server: _server(),
+          modelId: 'qwen3-0.6b',
+          messages: [_message('long reply')],
+          params: ChatParameters.defaults(),
+        )
+        .listen(responses.add)
+        .asFuture<void>();
+
+    await _waitFor(
+      () => inferenceService.sessions.singleOrNull?.didGenerate == true,
+    );
+    final native = inferenceService.sessions.single;
+    chatService.cancelStream();
+    await done;
+
+    expect(responses.single.type, ChatResponseType.done);
+    expect(native.closeCount, 0);
+
+    await native.responses.close();
+    await _waitFor(() => native.closeCount == 1);
+  });
+
   test(
     'native engine failure drops the retained session and reloads (#84)',
     () async {
@@ -1024,6 +1051,7 @@ class _FakeInferenceService implements OnDeviceInferenceService {
   int createCount = 0;
   int recoverCount = 0;
   bool canReuseChatSession = true;
+  Duration? drainTimeout;
 
   @override
   bool get isLoaded => true;
@@ -1046,6 +1074,9 @@ class _FakeInferenceService implements OnDeviceInferenceService {
     supportImages.add(supportImage);
     final session = _FakeInferenceSession();
     sessions.add(session);
+    if (drainTimeout case final timeout?) {
+      return DrainingInferenceSession(session, drainTimeout: timeout);
+    }
     return session;
   }
 

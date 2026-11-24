@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:background_downloader/background_downloader.dart';
-import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
+import 'package:flutter_edge_ai/flutter_edge_ai.dart' as gemma;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
