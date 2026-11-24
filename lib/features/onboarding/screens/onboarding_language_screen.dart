@@ -143,6 +143,16 @@ const _languages = [
     gradient: [Color(0xFFE11D48), Color(0xFFBE123C)],
   ),
   _LanguageOption(
+    code: 'ro',
+    nativeName: 'Română',
+    englishName: 'Romanian',
+    flag: '🇷🇴',
+    flagAsset: 'assets/images/flag_ro.png',
+    countryCode: 'RO',
+    shortText: 'Ro',
+    gradient: [Color(0xFF2563EB), Color(0xFFCA8A04)],
+  ),
+  _LanguageOption(
     code: 'fr',
     nativeName: 'Français',
     englishName: 'French',
