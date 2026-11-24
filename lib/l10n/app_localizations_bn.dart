@@ -3914,4 +3914,11 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => 'পরের উত্তর:';
+
+  @override
+  String get read_images_on_device => 'শুধু-টেক্সট মডেলের জন্য ছবি পড়ুন';
+
+  @override
+  String get read_images_on_device_desc =>
+      'অন-ডিভাইস মডেল ছবি দেখতে না পারলে, আপনার ছবির লেখা ও বস্তু এই ডিভাইসেই পড়ে টেক্সট হিসেবে পাঠানো হয়। কিছুই আপনার ফোনের বাইরে যায় না।';
 }

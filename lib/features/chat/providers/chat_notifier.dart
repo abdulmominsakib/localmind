@@ -37,12 +37,14 @@ import '../data/tools/tool_event.dart';
 import '../data/tools/tool_execution_loop.dart';
 import '../data/tools/adapters/tool_transport_adapter.dart' show ParsedToolCall;
 import '../utils/attachment_helpers.dart';
+import '../utils/image_readout_messages.dart';
 import 'chat_mcp_providers.dart';
 import 'chat_origin_provider.dart';
 import 'chat_params_providers.dart';
 import 'chat_reasoning_providers.dart';
 import 'chat_service_providers.dart';
 import 'generation_session.dart';
+import 'image_reading_providers.dart';
 import 'message_selection_provider.dart';
 import 'model_selection_providers.dart';
 import 'tooling_providers.dart';
@@ -1247,6 +1249,10 @@ class ChatNotifier extends Notifier<ChatState> {
             : null;
 
         final tools = await _toolsForTurn(mcpConfig.enabled);
+        final requestMessages = await _readImagesIfNeeded(
+          server,
+          messagesForApi,
+        );
         if (!ref.mounted || session.cancelled) return;
 
         final collectedToolCalls = <ToolCallData>[];
@@ -1277,7 +1283,7 @@ class ChatNotifier extends Notifier<ChatState> {
             .sendMessage(
               server: server,
               modelId: effectiveModelId,
-              messages: messagesForApi,
+              messages: requestMessages,
               params: chatParams,
               integrations: integrations,
               tools: tools,
@@ -1677,6 +1683,28 @@ class ChatNotifier extends Notifier<ChatState> {
             ),
             preview: preview,
           );
+    }
+  }
+
+  /// For an on-device model without vision, swaps attached photos for what
+  /// on-device text and object recognition read from them.
+  Future<List<Message>> _readImagesIfNeeded(
+    Server server,
+    List<Message> messages,
+  ) async {
+    final hasImages = messages.any(
+      (m) => m.attachmentPaths?.any(AttachmentHelpers.isImagePath) ?? false,
+    );
+    if (!hasImages) return messages;
+    try {
+      if (!await needsOnDeviceImageReading(ref, server)) return messages;
+      return await replaceImagesWithReadouts(
+        messages,
+        ref.read(imageReaderProvider),
+      );
+    } catch (e) {
+      Log.warning('Reading images on-device failed: $e');
+      return messages;
     }
   }
 
@@ -2692,6 +2720,7 @@ class ChatNotifier extends Notifier<ChatState> {
         }
       }
 
+      final requestMessages = await _readImagesIfNeeded(server, messagesForApi);
       if (!ref.mounted || session.cancelled) return;
 
       session.uiUpdateTimer = Timer.periodic(const Duration(milliseconds: 80), (
@@ -2704,7 +2733,7 @@ class ChatNotifier extends Notifier<ChatState> {
           .sendMessage(
             server: server,
             modelId: effectiveModelId,
-            messages: messagesForApi,
+            messages: requestMessages,
             params: chatParams,
             integrations: integrations,
             tools: tools,

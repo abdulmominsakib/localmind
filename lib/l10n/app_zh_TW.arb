@@ -1033,5 +1033,7 @@
   "turn_instruction_desc": "只套用於你的下一則訊息，附加在對話的提示詞之後。",
   "turn_instruction_hint": "例如：用三個重點回答",
   "turn_instruction_remove": "移除指示",
-  "turn_instruction_chip_label": "下一則回覆："
+  "turn_instruction_chip_label": "下一則回覆：",
+  "read_images_on_device": "為純文字模型讀取照片",
+  "read_images_on_device_desc": "當裝置上的模型無法查看圖片時，會在本機辨識照片中的文字和物體，並以文字形式傳送。資料不會離開你的手機。"
 }

@@ -1037,5 +1037,7 @@
   "turn_instruction_desc": "تنطبق على رسالتك التالية فقط، إضافةً إلى موجّه المحادثة.",
   "turn_instruction_hint": "مثلًا: أجب في ثلاث نقاط",
   "turn_instruction_remove": "إزالة التعليمات",
-  "turn_instruction_chip_label": "الرد التالي:"
+  "turn_instruction_chip_label": "الرد التالي:",
+  "read_images_on_device": "قراءة الصور للنماذج النصية فقط",
+  "read_images_on_device_desc": "عندما لا يستطيع نموذج على الجهاز رؤية الصور، تُقرأ النصوص والأشياء في صورتك على هذا الجهاز وتُرسل كنص. لا يغادر أي شيء هاتفك."
 }

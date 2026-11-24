@@ -1033,5 +1033,7 @@
   "turn_instruction_desc": "次のメッセージにだけ適用され、チャットのプロンプトに追加されます。",
   "turn_instruction_hint": "例: 3つの箇条書きで答えて",
   "turn_instruction_remove": "指示を削除",
-  "turn_instruction_chip_label": "次の返信:"
+  "turn_instruction_chip_label": "次の返信:",
+  "read_images_on_device": "テキスト専用モデル向けに写真を読み取る",
+  "read_images_on_device_desc": "端末上のモデルが画像を扱えない場合、写真内の文字や物体をこの端末で読み取り、テキストとして送ります。データは端末の外に出ません。"
 }

@@ -3904,4 +3904,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => 'Nächste Antwort:';
+
+  @override
+  String get read_images_on_device => 'Fotos für reine Textmodelle lesen';
+
+  @override
+  String get read_images_on_device_desc =>
+      'Wenn ein On-Device-Modell keine Bilder sehen kann, werden Text und Objekte in deinem Foto auf diesem Gerät erkannt und als Text gesendet. Nichts verlässt dein Telefon.';
 }

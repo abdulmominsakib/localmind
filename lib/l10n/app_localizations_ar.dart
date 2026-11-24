@@ -3888,4 +3888,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => 'الرد التالي:';
+
+  @override
+  String get read_images_on_device => 'قراءة الصور للنماذج النصية فقط';
+
+  @override
+  String get read_images_on_device_desc =>
+      'عندما لا يستطيع نموذج على الجهاز رؤية الصور، تُقرأ النصوص والأشياء في صورتك على هذا الجهاز وتُرسل كنص. لا يغادر أي شيء هاتفك.';
 }

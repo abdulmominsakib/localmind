@@ -3917,4 +3917,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => 'Следующий ответ:';
+
+  @override
+  String get read_images_on_device => 'Читать фото для текстовых моделей';
+
+  @override
+  String get read_images_on_device_desc =>
+      'Если модель на устройстве не видит изображения, текст и объекты на фото распознаются на этом устройстве и отправляются текстом. Ничего не покидает телефон.';
 }

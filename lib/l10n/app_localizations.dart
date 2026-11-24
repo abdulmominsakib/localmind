@@ -7174,6 +7174,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next reply:'**
   String get turn_instruction_chip_label;
+
+  /// Setting: read photos on-device for on-device models without vision
+  ///
+  /// In en, this message translates to:
+  /// **'Read photos for text-only models'**
+  String get read_images_on_device;
+
+  /// Explains the read-photos setting
+  ///
+  /// In en, this message translates to:
+  /// **'When an on-device model can\'t see images, read text and objects in your photo on this device and send them as text. Nothing leaves your phone.'**
+  String get read_images_on_device_desc;
 }
 
 class _AppLocalizationsDelegate

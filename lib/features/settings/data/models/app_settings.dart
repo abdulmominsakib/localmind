@@ -57,6 +57,10 @@ class AppSettings {
   final bool tempChatKeyboardIncognito;
   final bool resumeLastChat;
   final bool imageCompressionEnabled;
+
+  /// For on-device models without vision: read attached photos with on-device
+  /// text and object recognition and send what was found as text.
+  final bool readImagesOnDevice;
   final ImageCompressionLevel imageCompressionLevel;
   final bool smartRepliesUsePersona;
   final bool keepPersonaOnNewChat;
@@ -127,6 +131,7 @@ class AppSettings {
     this.tempChatKeyboardIncognito = true,
     this.resumeLastChat = true,
     this.imageCompressionEnabled = false,
+    this.readImagesOnDevice = true,
     this.imageCompressionLevel = ImageCompressionLevel.medium,
     this.smartRepliesUsePersona = false,
     this.keepPersonaOnNewChat = false,
@@ -185,6 +190,7 @@ class AppSettings {
     bool? tempChatKeyboardIncognito,
     bool? resumeLastChat,
     bool? imageCompressionEnabled,
+    bool? readImagesOnDevice,
     ImageCompressionLevel? imageCompressionLevel,
     bool? smartRepliesUsePersona,
     bool? keepPersonaOnNewChat,
@@ -262,6 +268,7 @@ class AppSettings {
       resumeLastChat: resumeLastChat ?? this.resumeLastChat,
       imageCompressionEnabled:
           imageCompressionEnabled ?? this.imageCompressionEnabled,
+      readImagesOnDevice: readImagesOnDevice ?? this.readImagesOnDevice,
       imageCompressionLevel:
           imageCompressionLevel ?? this.imageCompressionLevel,
       smartRepliesUsePersona:
@@ -328,6 +335,7 @@ class AppSettings {
       'tempChatKeyboardIncognito': tempChatKeyboardIncognito,
       'resumeLastChat': resumeLastChat,
       'imageCompressionEnabled': imageCompressionEnabled,
+      'readImagesOnDevice': readImagesOnDevice,
       'imageCompressionLevel': imageCompressionLevel.name,
       'smartRepliesUsePersona': smartRepliesUsePersona,
       'keepPersonaOnNewChat': keepPersonaOnNewChat,
@@ -394,6 +402,7 @@ class AppSettings {
       tempChatKeyboardIncognito: map['tempChatKeyboardIncognito'] ?? true,
       resumeLastChat: map['resumeLastChat'] ?? true,
       imageCompressionEnabled: map['imageCompressionEnabled'] ?? false,
+      readImagesOnDevice: map['readImagesOnDevice'] as bool? ?? true,
       imageCompressionLevel: _parseImageCompressionLevel(
         map['imageCompressionLevel'],
       ),

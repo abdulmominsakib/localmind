@@ -3903,4 +3903,11 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => 'अगला जवाब:';
+
+  @override
+  String get read_images_on_device => 'सिर्फ़-टेक्स्ट मॉडल के लिए फ़ोटो पढ़ें';
+
+  @override
+  String get read_images_on_device_desc =>
+      'जब ऑन-डिवाइस मॉडल चित्र नहीं देख सकता, तो आपकी फ़ोटो का टेक्स्ट और वस्तुएँ इसी डिवाइस पर पढ़कर टेक्स्ट के रूप में भेजी जाती हैं। कुछ भी आपके फ़ोन से बाहर नहीं जाता।';
 }

@@ -3810,4 +3810,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => '다음 답변:';
+
+  @override
+  String get read_images_on_device => '텍스트 전용 모델을 위해 사진 읽기';
+
+  @override
+  String get read_images_on_device_desc =>
+      '기기 내 모델이 이미지를 볼 수 없으면 사진 속 글자와 사물을 이 기기에서 읽어 텍스트로 보냅니다. 어떤 데이터도 휴대폰 밖으로 나가지 않습니다.';
 }

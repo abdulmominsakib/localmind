@@ -761,6 +761,12 @@ class _MoreChatOptionsPage extends ConsumerWidget {
                   value: settings.imageCompressionLevel,
                   onChanged: notifier.setImageCompressionLevel,
                 ),
+              _ToggleSetting(
+                label: l10n.read_images_on_device,
+                description: l10n.read_images_on_device_desc,
+                value: settings.readImagesOnDevice,
+                onChanged: notifier.setReadImagesOnDevice,
+              ),
             ],
           ),
         ],

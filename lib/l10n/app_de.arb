@@ -1030,5 +1030,7 @@
   "turn_instruction_desc": "Gilt nur für deine nächste Nachricht, zusätzlich zum Prompt des Chats.",
   "turn_instruction_hint": "z. B. Antworte in drei Stichpunkten",
   "turn_instruction_remove": "Anweisung entfernen",
-  "turn_instruction_chip_label": "Nächste Antwort:"
+  "turn_instruction_chip_label": "Nächste Antwort:",
+  "read_images_on_device": "Fotos für reine Textmodelle lesen",
+  "read_images_on_device_desc": "Wenn ein On-Device-Modell keine Bilder sehen kann, werden Text und Objekte in deinem Foto auf diesem Gerät erkannt und als Text gesendet. Nichts verlässt dein Telefon."
 }

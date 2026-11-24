@@ -101,6 +101,8 @@ dependencies:
   geocoding: ^5.0.0
   marionette_flutter: ^0.6.0
   marionette_logger: ^0.6.0
+  google_mlkit_text_recognition: ^1.0.3
+  google_mlkit_image_labeling: ^1.0.3
 
 dev_dependencies:
   flutter_test:

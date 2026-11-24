@@ -3919,4 +3919,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => 'Prossima risposta:';
+
+  @override
+  String get read_images_on_device => 'Leggi le foto per i modelli solo testo';
+
+  @override
+  String get read_images_on_device_desc =>
+      'Se un modello sul dispositivo non vede le immagini, testo e oggetti della foto vengono letti su questo dispositivo e inviati come testo. Niente lascia il telefono.';
 }

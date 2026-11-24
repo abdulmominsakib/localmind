@@ -3796,6 +3796,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => '下一条回复：';
+
+  @override
+  String get read_images_on_device => '为纯文本模型读取照片';
+
+  @override
+  String get read_images_on_device_desc =>
+      '当设备上的模型无法查看图片时，会在本机识别照片中的文字和物体，并以文本形式发送。数据不会离开你的手机。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -7096,4 +7103,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get turn_instruction_chip_label => '下一則回覆：';
+
+  @override
+  String get read_images_on_device => '為純文字模型讀取照片';
+
+  @override
+  String get read_images_on_device_desc =>
+      '當裝置上的模型無法查看圖片時，會在本機辨識照片中的文字和物體，並以文字形式傳送。資料不會離開你的手機。';
 }

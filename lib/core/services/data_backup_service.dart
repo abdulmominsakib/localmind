@@ -53,6 +53,7 @@ class DataBackupService {
     'resumeLastChat',
     'imageCompressionEnabled',
     'imageCompressionLevel',
+    'readImagesOnDevice',
     'smartRepliesUsePersona',
     'keepPersonaOnNewChat',
     'roleSwapButtonEnabled',

@@ -3828,4 +3828,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => '次の返信:';
+
+  @override
+  String get read_images_on_device => 'テキスト専用モデル向けに写真を読み取る';
+
+  @override
+  String get read_images_on_device_desc =>
+      '端末上のモデルが画像を扱えない場合、写真内の文字や物体をこの端末で読み取り、テキストとして送ります。データは端末の外に出ません。';
 }

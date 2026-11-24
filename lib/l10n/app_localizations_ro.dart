@@ -3936,4 +3936,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => 'Următorul răspuns:';
+
+  @override
+  String get read_images_on_device =>
+      'Citește fotografiile pentru modelele doar text';
+
+  @override
+  String get read_images_on_device_desc =>
+      'Când un model de pe dispozitiv nu poate vedea imagini, textul și obiectele din fotografie sunt citite pe acest dispozitiv și trimise ca text. Nimic nu părăsește telefonul.';
 }

@@ -1030,5 +1030,7 @@
   "turn_instruction_desc": "Yalnızca bir sonraki mesajınıza, sohbetin istemine ek olarak uygulanır.",
   "turn_instruction_hint": "örn. Üç madde halinde yanıtla",
   "turn_instruction_remove": "Talimatı kaldır",
-  "turn_instruction_chip_label": "Sonraki yanıt:"
+  "turn_instruction_chip_label": "Sonraki yanıt:",
+  "read_images_on_device": "Yalnızca metin modelleri için fotoğrafları oku",
+  "read_images_on_device_desc": "Cihazdaki model görselleri göremediğinde, fotoğraftaki metin ve nesneler bu cihazda okunup metin olarak gönderilir. Hiçbir şey telefonunuzdan çıkmaz."
 }

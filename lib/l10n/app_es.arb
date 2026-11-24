@@ -1033,5 +1033,7 @@
   "turn_instruction_desc": "Solo se aplica a tu próximo mensaje, además del prompt del chat.",
   "turn_instruction_hint": "p. ej., Responde en tres viñetas",
   "turn_instruction_remove": "Quitar instrucción",
-  "turn_instruction_chip_label": "Próxima respuesta:"
+  "turn_instruction_chip_label": "Próxima respuesta:",
+  "read_images_on_device": "Leer fotos para modelos solo de texto",
+  "read_images_on_device_desc": "Si un modelo en el dispositivo no puede ver imágenes, el texto y los objetos de tu foto se leen en este dispositivo y se envían como texto. Nada sale de tu teléfono."
 }

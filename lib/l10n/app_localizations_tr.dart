@@ -3924,4 +3924,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => 'Sonraki yanıt:';
+
+  @override
+  String get read_images_on_device =>
+      'Yalnızca metin modelleri için fotoğrafları oku';
+
+  @override
+  String get read_images_on_device_desc =>
+      'Cihazdaki model görselleri göremediğinde, fotoğraftaki metin ve nesneler bu cihazda okunup metin olarak gönderilir. Hiçbir şey telefonunuzdan çıkmaz.';
 }

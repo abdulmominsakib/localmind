@@ -3908,4 +3908,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get turn_instruction_chip_label => 'Prochaine réponse :';
+
+  @override
+  String get read_images_on_device => 'Lire les photos pour les modèles texte';
+
+  @override
+  String get read_images_on_device_desc =>
+      'Quand un modèle sur l\'appareil ne voit pas les images, le texte et les objets de votre photo sont lus sur cet appareil et envoyés sous forme de texte. Rien ne quitte votre téléphone.';
 }

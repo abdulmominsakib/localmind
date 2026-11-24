@@ -1174,5 +1174,7 @@
   "turn_instruction_desc": "Se aplică doar următorului tău mesaj, pe lângă promptul conversației.",
   "turn_instruction_hint": "de ex. Răspunde în trei puncte",
   "turn_instruction_remove": "Elimină instrucțiunea",
-  "turn_instruction_chip_label": "Următorul răspuns:"
+  "turn_instruction_chip_label": "Următorul răspuns:",
+  "read_images_on_device": "Citește fotografiile pentru modelele doar text",
+  "read_images_on_device_desc": "Când un model de pe dispozitiv nu poate vedea imagini, textul și obiectele din fotografie sunt citite pe acest dispozitiv și trimise ca text. Nimic nu părăsește telefonul."
 }

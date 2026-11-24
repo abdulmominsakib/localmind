@@ -3853,5 +3853,9 @@
   "turn_instruction_remove": "Remove instruction",
   "@turn_instruction_remove": {"description": "Removes the one-reply instruction"},
   "turn_instruction_chip_label": "Next reply:",
-  "@turn_instruction_chip_label": {"description": "Label before the instruction text in the composer"}
+  "@turn_instruction_chip_label": {"description": "Label before the instruction text in the composer"},
+  "read_images_on_device": "Read photos for text-only models",
+  "@read_images_on_device": {"description": "Setting: read photos on-device for on-device models without vision"},
+  "read_images_on_device_desc": "When an on-device model can't see images, read text and objects in your photo on this device and send them as text. Nothing leaves your phone.",
+  "@read_images_on_device_desc": {"description": "Explains the read-photos setting"}
 }
