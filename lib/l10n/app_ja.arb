@@ -1022,5 +1022,16 @@
   "downloadBackgroundActive": "Background",
   "downloadBackgroundDescription": "This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.",
   "downloadQueued": "Queued",
-  "downloadWaitingToRetry": "Waiting to retry"
+  "downloadWaitingToRetry": "Waiting to retry",
+  "conversation_tags": "タグ",
+  "conversation_tags_desc": "チャットをトピックごとにまとめます。フォルダーに加えて、1つのチャットに複数のタグを付けられます。",
+  "conversation_tags_add_hint": "タグを入力して Enter を押す",
+  "conversation_tags_existing": "あなたのタグ",
+  "conversation_tags_add": "タグを追加",
+  "conversation_tags_edit": "タグを編集",
+  "turn_instruction_title": "次の返信への指示",
+  "turn_instruction_desc": "次のメッセージにだけ適用され、チャットのプロンプトに追加されます。",
+  "turn_instruction_hint": "例: 3つの箇条書きで答えて",
+  "turn_instruction_remove": "指示を削除",
+  "turn_instruction_chip_label": "次の返信:"
 }

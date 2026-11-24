@@ -13,6 +13,7 @@ import '../../data/models/conversation.dart';
 import '../../providers/conversation_providers.dart';
 import 'rename_conversation_dialog.dart';
 import 'date_section_header.dart';
+import 'conversation_tags_sheet.dart';
 import 'conversation_tile.dart';
 
 class ConversationList extends ConsumerWidget {
@@ -129,6 +130,9 @@ class ConversationList extends ConsumerWidget {
                   },
                   onMoveToFolder: () {
                     showMoveToFolderSheet(context, ref, l10n, conversation);
+                  },
+                  onEditTags: () {
+                    showConversationTagsSheet(context, conversation);
                   },
                   onExport: () {
                     _exportConversation(context, ref, l10n, conversation);

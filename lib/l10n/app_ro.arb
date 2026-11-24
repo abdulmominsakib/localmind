@@ -1163,5 +1163,16 @@
   "onDeviceSplitModel": "Împarte modelul",
   "onDevicePickGguf": "Alege GGUF",
   "onDevicePickLitert": "Alege LiteRT",
-  "onDeviceUnknownSizeHidden": "{count} modele cu dimensiune necunoscută ascunse"
+  "onDeviceUnknownSizeHidden": "{count} modele cu dimensiune necunoscută ascunse",
+  "conversation_tags": "Etichete",
+  "conversation_tags_desc": "Grupează conversațiile după subiect. O conversație poate avea mai multe etichete, pe lângă un dosar.",
+  "conversation_tags_add_hint": "Adaugă o etichetă, apoi apasă Enter",
+  "conversation_tags_existing": "Etichetele tale",
+  "conversation_tags_add": "Adaugă etichete",
+  "conversation_tags_edit": "Editează etichetele",
+  "turn_instruction_title": "Instrucțiune pentru următorul răspuns",
+  "turn_instruction_desc": "Se aplică doar următorului tău mesaj, pe lângă promptul conversației.",
+  "turn_instruction_hint": "de ex. Răspunde în trei puncte",
+  "turn_instruction_remove": "Elimină instrucțiunea",
+  "turn_instruction_chip_label": "Următorul răspuns:"
 }

@@ -18,6 +18,11 @@ class Conversation {
   final List<String>? smartReplies;
   final String? smartRepliesLastMessageId;
   final String? folderId;
+
+  /// Free-form labels, stored lowercase-insensitively unique and in the
+  /// order the user added them. A chat sits in one folder but can carry
+  /// any number of tags.
+  final List<String> tags;
   final bool isTemporary;
   final bool isArchived;
   final int characterCount;
@@ -48,6 +53,7 @@ class Conversation {
     this.smartReplies,
     this.smartRepliesLastMessageId,
     this.folderId,
+    this.tags = const [],
     this.isTemporary = false,
     this.isArchived = false,
     this.characterCount = 0,
@@ -85,6 +91,7 @@ class Conversation {
     bool clearSmartRepliesLastMessageId = false,
     String? folderId,
     bool clearFolderId = false,
+    List<String>? tags,
     bool? isTemporary,
     bool? isArchived,
     int? characterCount,
@@ -119,6 +126,7 @@ class Conversation {
           ? null
           : (smartRepliesLastMessageId ?? this.smartRepliesLastMessageId),
       folderId: clearFolderId ? null : (folderId ?? this.folderId),
+      tags: tags ?? this.tags,
       isTemporary: isTemporary ?? this.isTemporary,
       isArchived: isArchived ?? this.isArchived,
       characterCount: characterCount ?? this.characterCount,

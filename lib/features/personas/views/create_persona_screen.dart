@@ -7,6 +7,9 @@ import '../data/models/persona.dart';
 import '../providers/personas_providers.dart';
 import 'components/prompt_length_warning.dart';
 
+/// Longest persona description accepted.
+const maxPersonaDescriptionLength = 500;
+
 class CreatePersonaScreen extends ConsumerStatefulWidget {
   final Persona? editPersona;
 
@@ -303,7 +306,11 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
                 labelText: l10n.description_optional,
                 hintText: l10n.description_hint,
               ),
-              maxLength: 200,
+              // Descriptions are only shown in lists, trimmed to a couple of
+              // lines; the system prompt itself has no limit (#151).
+              maxLength: maxPersonaDescriptionLength,
+              minLines: 1,
+              maxLines: 4,
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: 12),
@@ -322,14 +329,16 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
                 Row(
                   children: [
                     Text(
-                      l10n.character_count_max(_promptController.text.length),
+                      // A plain count: the prompt has no length limit, and a
+                      // "/4000" counter read as one (#151).
+                      l10n.conversation_character_count(
+                        _promptController.text.length,
+                      ),
                       style: TextStyle(
                         fontSize: 12,
-                        color: _promptController.text.length > 4000
-                            ? Colors.red
-                            : (isDark
-                                  ? const Color(0xFF666666)
-                                  : const Color(0xFF999999)),
+                        color: isDark
+                            ? const Color(0xFF666666)
+                            : const Color(0xFF999999),
                       ),
                     ),
                     const SizedBox(width: 8),

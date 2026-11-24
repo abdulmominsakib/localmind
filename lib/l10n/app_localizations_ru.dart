@@ -3882,4 +3882,39 @@ class AppLocalizationsRu extends AppLocalizations {
   String onDeviceUnknownSizeHidden(int count) {
     return '$count models with unknown size hidden';
   }
+
+  @override
+  String get conversation_tags => 'Теги';
+
+  @override
+  String get conversation_tags_desc =>
+      'Группируйте чаты по темам. У чата может быть несколько тегов и папка.';
+
+  @override
+  String get conversation_tags_add_hint => 'Введите тег и нажмите Enter';
+
+  @override
+  String get conversation_tags_existing => 'Ваши теги';
+
+  @override
+  String get conversation_tags_add => 'Добавить теги';
+
+  @override
+  String get conversation_tags_edit => 'Изменить теги';
+
+  @override
+  String get turn_instruction_title => 'Указание для следующего ответа';
+
+  @override
+  String get turn_instruction_desc =>
+      'Действует только для следующего сообщения, в дополнение к промпту чата.';
+
+  @override
+  String get turn_instruction_hint => 'например: Ответь тремя пунктами';
+
+  @override
+  String get turn_instruction_remove => 'Убрать указание';
+
+  @override
+  String get turn_instruction_chip_label => 'Следующий ответ:';
 }

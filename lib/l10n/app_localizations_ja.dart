@@ -3794,4 +3794,38 @@ class AppLocalizationsJa extends AppLocalizations {
   String onDeviceUnknownSizeHidden(int count) {
     return '$count models with unknown size hidden';
   }
+
+  @override
+  String get conversation_tags => 'タグ';
+
+  @override
+  String get conversation_tags_desc =>
+      'チャットをトピックごとにまとめます。フォルダーに加えて、1つのチャットに複数のタグを付けられます。';
+
+  @override
+  String get conversation_tags_add_hint => 'タグを入力して Enter を押す';
+
+  @override
+  String get conversation_tags_existing => 'あなたのタグ';
+
+  @override
+  String get conversation_tags_add => 'タグを追加';
+
+  @override
+  String get conversation_tags_edit => 'タグを編集';
+
+  @override
+  String get turn_instruction_title => '次の返信への指示';
+
+  @override
+  String get turn_instruction_desc => '次のメッセージにだけ適用され、チャットのプロンプトに追加されます。';
+
+  @override
+  String get turn_instruction_hint => '例: 3つの箇条書きで答えて';
+
+  @override
+  String get turn_instruction_remove => '指示を削除';
+
+  @override
+  String get turn_instruction_chip_label => '次の返信:';
 }

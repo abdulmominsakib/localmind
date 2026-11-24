@@ -3856,4 +3856,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String onDeviceUnknownSizeHidden(int count) {
     return '$count models with unknown size hidden';
   }
+
+  @override
+  String get conversation_tags => 'Tags';
+
+  @override
+  String get conversation_tags_desc =>
+      'Group chats by topic. A chat can have several tags as well as a folder.';
+
+  @override
+  String get conversation_tags_add_hint => 'Add a tag, then press Enter';
+
+  @override
+  String get conversation_tags_existing => 'Your tags';
+
+  @override
+  String get conversation_tags_add => 'Add tags';
+
+  @override
+  String get conversation_tags_edit => 'Edit tags';
+
+  @override
+  String get turn_instruction_title => 'Instruction for next reply';
+
+  @override
+  String get turn_instruction_desc =>
+      'Applies to your next message only, on top of the chat\'s prompt.';
+
+  @override
+  String get turn_instruction_hint => 'e.g. Answer in three bullet points';
+
+  @override
+  String get turn_instruction_remove => 'Remove instruction';
+
+  @override
+  String get turn_instruction_chip_label => 'Next reply:';
 }

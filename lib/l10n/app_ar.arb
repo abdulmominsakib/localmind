@@ -1026,5 +1026,16 @@
   "downloadBackgroundActive": "Background",
   "downloadBackgroundDescription": "This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.",
   "downloadQueued": "Queued",
-  "downloadWaitingToRetry": "Waiting to retry"
+  "downloadWaitingToRetry": "Waiting to retry",
+  "conversation_tags": "الوسوم",
+  "conversation_tags_desc": "جمّع المحادثات حسب الموضوع. يمكن أن تحمل المحادثة عدة وسوم إلى جانب مجلد.",
+  "conversation_tags_add_hint": "أضف وسمًا ثم اضغط Enter",
+  "conversation_tags_existing": "وسومك",
+  "conversation_tags_add": "إضافة وسوم",
+  "conversation_tags_edit": "تعديل الوسوم",
+  "turn_instruction_title": "تعليمات للرد التالي",
+  "turn_instruction_desc": "تنطبق على رسالتك التالية فقط، إضافةً إلى موجّه المحادثة.",
+  "turn_instruction_hint": "مثلًا: أجب في ثلاث نقاط",
+  "turn_instruction_remove": "إزالة التعليمات",
+  "turn_instruction_chip_label": "الرد التالي:"
 }

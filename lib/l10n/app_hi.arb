@@ -1022,5 +1022,16 @@
   "downloadBackgroundActive": "Background",
   "downloadBackgroundDescription": "This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.",
   "downloadQueued": "Queued",
-  "downloadWaitingToRetry": "Waiting to retry"
+  "downloadWaitingToRetry": "Waiting to retry",
+  "conversation_tags": "टैग",
+  "conversation_tags_desc": "चैट को विषय के अनुसार समूहित करें। एक चैट में फ़ोल्डर के साथ कई टैग हो सकते हैं।",
+  "conversation_tags_add_hint": "टैग लिखें, फिर Enter दबाएँ",
+  "conversation_tags_existing": "आपके टैग",
+  "conversation_tags_add": "टैग जोड़ें",
+  "conversation_tags_edit": "टैग संपादित करें",
+  "turn_instruction_title": "अगले जवाब के लिए निर्देश",
+  "turn_instruction_desc": "सिर्फ़ आपके अगले संदेश पर लागू होता है, चैट के प्रॉम्प्ट के अतिरिक्त।",
+  "turn_instruction_hint": "जैसे: तीन बुलेट पॉइंट में जवाब दो",
+  "turn_instruction_remove": "निर्देश हटाएँ",
+  "turn_instruction_chip_label": "अगला जवाब:"
 }

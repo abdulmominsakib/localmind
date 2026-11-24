@@ -1022,5 +1022,16 @@
   "downloadBackgroundActive": "Background",
   "downloadBackgroundDescription": "This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.",
   "downloadQueued": "Queued",
-  "downloadWaitingToRetry": "Waiting to retry"
+  "downloadWaitingToRetry": "Waiting to retry",
+  "conversation_tags": "ট্যাগ",
+  "conversation_tags_desc": "বিষয় অনুযায়ী চ্যাট সাজান। একটি চ্যাটে ফোল্ডারের পাশাপাশি একাধিক ট্যাগ থাকতে পারে।",
+  "conversation_tags_add_hint": "একটি ট্যাগ লিখে Enter চাপুন",
+  "conversation_tags_existing": "আপনার ট্যাগ",
+  "conversation_tags_add": "ট্যাগ যোগ করুন",
+  "conversation_tags_edit": "ট্যাগ সম্পাদনা",
+  "turn_instruction_title": "পরের উত্তরের জন্য নির্দেশনা",
+  "turn_instruction_desc": "শুধু আপনার পরের মেসেজে প্রযোজ্য, চ্যাটের প্রম্পটের সাথে যুক্ত হয়।",
+  "turn_instruction_hint": "যেমন: তিনটি বুলেট পয়েন্টে উত্তর দাও",
+  "turn_instruction_remove": "নির্দেশনা সরান",
+  "turn_instruction_chip_label": "পরের উত্তর:"
 }

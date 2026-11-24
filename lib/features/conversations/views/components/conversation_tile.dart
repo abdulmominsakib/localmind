@@ -18,6 +18,7 @@ class ConversationTile extends StatelessWidget {
     required this.onMoveToFolder,
     required this.onExport,
     required this.onArchive,
+    this.onEditTags,
     this.selectionMode = false,
     this.isSelected = false,
     this.onEnterSelectionMode,
@@ -37,6 +38,7 @@ class ConversationTile extends StatelessWidget {
   final VoidCallback onMoveToFolder;
   final VoidCallback onExport;
   final VoidCallback onArchive;
+  final VoidCallback? onEditTags;
   final bool selectionMode;
   final bool isSelected;
   final VoidCallback? onEnterSelectionMode;
@@ -195,6 +197,13 @@ class ConversationTile extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
+                      if (conversation.tags.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        ConversationTagLine(
+                          tags: conversation.tags,
+                          color: muted,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -223,6 +232,7 @@ class ConversationTile extends StatelessWidget {
         onRename: onRename,
         onDuplicate: onDuplicate,
         onMoveToFolder: onMoveToFolder,
+        onEditTags: onEditTags,
         onExport: onExport,
         onArchive: onArchive,
         onDelete: onDelete,
@@ -244,6 +254,7 @@ class ConversationActionsSheet extends StatelessWidget {
     required this.onExport,
     required this.onArchive,
     required this.onDelete,
+    this.onEditTags,
     this.onEnterSelectionMode,
   });
 
@@ -255,6 +266,7 @@ class ConversationActionsSheet extends StatelessWidget {
   final VoidCallback onExport;
   final VoidCallback onArchive;
   final VoidCallback onDelete;
+  final VoidCallback? onEditTags;
   final VoidCallback? onEnterSelectionMode;
 
   @override
@@ -333,6 +345,15 @@ class ConversationActionsSheet extends StatelessWidget {
                 label: l10n.move_to_folder,
                 onTap: () => run(onMoveToFolder),
               ),
+              if (onEditTags != null)
+                ActionSheetTile(
+                  key: const ValueKey('conversation_action_tags'),
+                  icon: HugeIcons.strokeRoundedTag01,
+                  label: conversation.tags.isEmpty
+                      ? l10n.conversation_tags_add
+                      : l10n.conversation_tags_edit,
+                  onTap: () => run(onEditTags!),
+                ),
               ActionSheetTile(
                 key: const ValueKey('conversation_action_duplicate'),
                 icon: HugeIcons.strokeRoundedCopy01,
@@ -381,6 +402,40 @@ class ConversationActionsSheet extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The tags on a history row, as one quiet line of `#tag` labels.
+class ConversationTagLine extends StatelessWidget {
+  const ConversationTagLine({
+    super.key,
+    required this.tags,
+    required this.color,
+  });
+
+  final List<String> tags;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        HugeIcon(icon: HugeIcons.strokeRoundedTag01, size: 12, color: color),
+        const SizedBox(width: 5),
+        Expanded(
+          child: Text(
+            tags.join(' · '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

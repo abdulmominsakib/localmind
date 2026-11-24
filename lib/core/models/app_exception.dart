@@ -28,7 +28,9 @@ enum AppErrorType {
   contextLengthExceeded(
     'Context length exceeded. Try shortening your messages.',
   ),
-  rateLimited('Rate limited. Please wait before sending more messages.'),
+  rateLimited(
+    "The provider's rate limit was reached. LocalMind has no chat limit of its own; wait a moment before sending more messages.",
+  ),
   storageError('Storage error. Your data may not be saved.'),
   unknown('An unexpected error occurred.');
 

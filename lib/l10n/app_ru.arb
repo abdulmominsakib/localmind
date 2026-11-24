@@ -1019,5 +1019,16 @@
   "downloadBackgroundActive": "Background",
   "downloadBackgroundDescription": "This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.",
   "downloadQueued": "Queued",
-  "downloadWaitingToRetry": "Waiting to retry"
+  "downloadWaitingToRetry": "Waiting to retry",
+  "conversation_tags": "Теги",
+  "conversation_tags_desc": "Группируйте чаты по темам. У чата может быть несколько тегов и папка.",
+  "conversation_tags_add_hint": "Введите тег и нажмите Enter",
+  "conversation_tags_existing": "Ваши теги",
+  "conversation_tags_add": "Добавить теги",
+  "conversation_tags_edit": "Изменить теги",
+  "turn_instruction_title": "Указание для следующего ответа",
+  "turn_instruction_desc": "Действует только для следующего сообщения, в дополнение к промпту чата.",
+  "turn_instruction_hint": "например: Ответь тремя пунктами",
+  "turn_instruction_remove": "Убрать указание",
+  "turn_instruction_chip_label": "Следующий ответ:"
 }

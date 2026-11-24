@@ -19,6 +19,7 @@ import 'package:localmind/features/chat/providers/chat_service_providers.dart';
 import 'package:localmind/features/chat/providers/model_selection_providers.dart';
 
 import 'package:localmind/features/chat/providers/tooling_providers.dart';
+import 'package:localmind/features/chat/providers/turn_instruction_provider.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
     as conv;
@@ -84,6 +85,35 @@ void main() {
     chatService.emit('Hello');
     await _pump();
   }
+
+  test('a one-reply instruction reaches only the next request', () async {
+    String systemOf(List<Message> request) => request
+        .where((m) => m.role == MessageRole.system)
+        .map((m) => m.content)
+        .join('\n');
+
+    await notifier.loadConversation(_conversationA);
+    container.read(turnInstructionProvider.notifier).set('Answer in French');
+
+    await notifier.sendMessage('First');
+    await _pump();
+    expect(chatService.requests, hasLength(1));
+    expect(
+      systemOf(chatService.requests.single),
+      contains('For this reply only: Answer in French'),
+    );
+    expect(container.read(turnInstructionProvider), isNull);
+    chatService.emit('Bonjour');
+    await chatService.finish();
+    await _pump();
+
+    await notifier.sendMessage('Second');
+    await _pump();
+    expect(chatService.requests, hasLength(2));
+    expect(systemOf(chatService.requests.last), isNot(contains('French')));
+    await chatService.finish();
+    await _pump();
+  });
 
   for (final retry in [false, true]) {
     test(

@@ -1019,5 +1019,16 @@
   "downloadBackgroundActive": "Background",
   "downloadBackgroundDescription": "This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.",
   "downloadQueued": "Queued",
-  "downloadWaitingToRetry": "Waiting to retry"
+  "downloadWaitingToRetry": "Waiting to retry",
+  "conversation_tags": "Étiquettes",
+  "conversation_tags_desc": "Regroupez les discussions par sujet. Une discussion peut avoir plusieurs étiquettes en plus d'un dossier.",
+  "conversation_tags_add_hint": "Ajoutez une étiquette, puis appuyez sur Entrée",
+  "conversation_tags_existing": "Vos étiquettes",
+  "conversation_tags_add": "Ajouter des étiquettes",
+  "conversation_tags_edit": "Modifier les étiquettes",
+  "turn_instruction_title": "Instruction pour la prochaine réponse",
+  "turn_instruction_desc": "S'applique uniquement à votre prochain message, en plus du prompt de la discussion.",
+  "turn_instruction_hint": "ex. : Réponds en trois puces",
+  "turn_instruction_remove": "Supprimer l'instruction",
+  "turn_instruction_chip_label": "Prochaine réponse :"
 }

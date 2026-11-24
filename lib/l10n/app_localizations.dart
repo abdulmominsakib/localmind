@@ -7108,6 +7108,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} models with unknown size hidden'**
   String onDeviceUnknownSizeHidden(int count);
+
+  /// Title of the sheet that edits a chat's tags
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get conversation_tags;
+
+  /// Explains what conversation tags are for
+  ///
+  /// In en, this message translates to:
+  /// **'Group chats by topic. A chat can have several tags as well as a folder.'**
+  String get conversation_tags_desc;
+
+  /// Hint in the field that adds a tag
+  ///
+  /// In en, this message translates to:
+  /// **'Add a tag, then press Enter'**
+  String get conversation_tags_add_hint;
+
+  /// Heading above tags already used on other chats
+  ///
+  /// In en, this message translates to:
+  /// **'Your tags'**
+  String get conversation_tags_existing;
+
+  /// Chat action: add tags to a chat with none
+  ///
+  /// In en, this message translates to:
+  /// **'Add tags'**
+  String get conversation_tags_add;
+
+  /// Chat action: edit a chat's tags
+  ///
+  /// In en, this message translates to:
+  /// **'Edit tags'**
+  String get conversation_tags_edit;
+
+  /// Composer option: an extra instruction for the next reply only
+  ///
+  /// In en, this message translates to:
+  /// **'Instruction for next reply'**
+  String get turn_instruction_title;
+
+  /// Explains that the instruction applies to one reply
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to your next message only, on top of the chat\'s prompt.'**
+  String get turn_instruction_desc;
+
+  /// Example instruction shown as a hint
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Answer in three bullet points'**
+  String get turn_instruction_hint;
+
+  /// Removes the one-reply instruction
+  ///
+  /// In en, this message translates to:
+  /// **'Remove instruction'**
+  String get turn_instruction_remove;
+
+  /// Label before the instruction text in the composer
+  ///
+  /// In en, this message translates to:
+  /// **'Next reply:'**
+  String get turn_instruction_chip_label;
 }
 
 class _AppLocalizationsDelegate

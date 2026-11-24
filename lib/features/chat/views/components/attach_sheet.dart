@@ -7,7 +7,7 @@ import 'package:localmind/features/chat/providers/chat_reasoning_providers.dart'
 import 'package:localmind/features/models/data/models/model_info.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 
-enum AttachAction { camera, images, documents, savedMessage }
+enum AttachAction { camera, images, documents, savedMessage, turnInstruction }
 
 /// Shows the composer's + sheet: sources to attach from, then the options
 /// that used to crowd the input bar — thinking effort for reasoning models
@@ -22,6 +22,7 @@ Future<AttachAction?> showAttachSheet(
   ModelInfo? model,
   bool? sendAsAssistant,
   ValueChanged<bool>? onSendAsAssistantChanged,
+  String? turnInstruction,
 }) {
   return showModalBottomSheet<AttachAction>(
     context: context,
@@ -34,6 +35,7 @@ Future<AttachAction?> showAttachSheet(
       model: model,
       sendAsAssistant: sendAsAssistant,
       onSendAsAssistantChanged: onSendAsAssistantChanged,
+      turnInstruction: turnInstruction,
     ),
   );
 }
@@ -44,11 +46,15 @@ class AttachSheet extends StatefulWidget {
     this.model,
     this.sendAsAssistant,
     this.onSendAsAssistantChanged,
+    this.turnInstruction,
   });
 
   final ModelInfo? model;
   final bool? sendAsAssistant;
   final ValueChanged<bool>? onSendAsAssistantChanged;
+
+  /// The one-reply instruction currently set, shown under its option.
+  final String? turnInstruction;
 
   @override
   State<AttachSheet> createState() => _AttachSheetState();
@@ -132,14 +138,16 @@ class _AttachSheetState extends State<AttachSheet> {
                   ),
                 ],
               ),
-              if (showThinking || showRole) ...[
-                const SizedBox(height: 16),
-                Divider(
-                  height: 1,
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                ),
-                const SizedBox(height: 8),
-              ],
+              const SizedBox(height: 16),
+              Divider(
+                height: 1,
+                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+              ),
+              const SizedBox(height: 8),
+              TurnInstructionOption(
+                current: widget.turnInstruction,
+                onTap: () => pick(AttachAction.turnInstruction),
+              ),
               if (showThinking) ThinkingOption(model: widget.model!),
               if (showRole)
                 SendAsAssistantOption(
@@ -355,6 +363,36 @@ class ThinkingOption extends ConsumerWidget {
         ReasoningEffort.xhigh => l10n.reasoning_effort_xhigh,
         ReasoningEffort.max => l10n.reasoning_effort_max,
       };
+}
+
+/// Opens the one-reply instruction editor; shows the current note, if any.
+class TurnInstructionOption extends StatelessWidget {
+  const TurnInstructionOption({super.key, required this.onTap, this.current});
+
+  final VoidCallback onTap;
+  final String? current;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+    return InkWell(
+      key: const ValueKey('attach_turn_instruction'),
+      borderRadius: .circular(12),
+      onTap: onTap,
+      child: AttachOptionRow(
+        icon: HugeIcons.strokeRoundedNoteEdit,
+        title: l10n.turn_instruction_title,
+        subtitle: current ?? l10n.turn_instruction_desc,
+        trailing: HugeIcon(
+          icon: HugeIcons.strokeRoundedArrowRight01,
+          size: 18,
+          color: muted,
+        ),
+      ),
+    );
+  }
 }
 
 class SendAsAssistantOption extends StatelessWidget {

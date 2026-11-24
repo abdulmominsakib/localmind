@@ -1033,5 +1033,16 @@
   "downloadBackgroundActive": "Background",
   "downloadBackgroundDescription": "This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.",
   "downloadQueued": "Queued",
-  "downloadWaitingToRetry": "Waiting to retry"
+  "downloadWaitingToRetry": "Waiting to retry",
+  "conversation_tags": "Etiquetas",
+  "conversation_tags_desc": "Agrupe as conversas por assunto. Uma conversa pode ter várias etiquetas além de uma pasta.",
+  "conversation_tags_add_hint": "Adicione uma etiqueta e pressione Enter",
+  "conversation_tags_existing": "Suas etiquetas",
+  "conversation_tags_add": "Adicionar etiquetas",
+  "conversation_tags_edit": "Editar etiquetas",
+  "turn_instruction_title": "Instrução para a próxima resposta",
+  "turn_instruction_desc": "Vale só para sua próxima mensagem, além do prompt da conversa.",
+  "turn_instruction_hint": "ex.: Responda em três tópicos",
+  "turn_instruction_remove": "Remover instrução",
+  "turn_instruction_chip_label": "Próxima resposta:"
 }

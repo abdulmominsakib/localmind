@@ -46,6 +46,7 @@ import 'generation_session.dart';
 import 'message_selection_provider.dart';
 import 'model_selection_providers.dart';
 import 'tooling_providers.dart';
+import 'turn_instruction_provider.dart';
 import '../utils/message_variants.dart';
 import '../../tts/providers/tts_providers.dart';
 import '../../stt/providers/stt_providers.dart' as stt;
@@ -177,6 +178,7 @@ class ChatNotifier extends Notifier<ChatState> {
     ChatService chatService, {
     bool isImageGeneration = false,
     bool countsAsPrompt = false,
+    String? turnInstruction,
   }) {
     final previous = _sessions[conversationId];
     final session = GenerationSession(
@@ -186,6 +188,7 @@ class ChatNotifier extends Notifier<ChatState> {
       persisted: previous?.persisted ?? !_isInMemoryChat,
       imageCancelToken: isImageGeneration ? CancelToken() : null,
       countsAsPrompt: countsAsPrompt,
+      turnInstruction: turnInstruction,
     );
     _sessions[conversationId] = session;
     if (previous != null) unawaited(previous.detach());
@@ -1057,6 +1060,12 @@ class ChatNotifier extends Notifier<ChatState> {
       return;
     }
 
+    // Consumed by this send whether or not it succeeds, so a failed reply
+    // doesn't carry the note into an unrelated later message.
+    final turnInstruction = target.isImageGeneration
+        ? null
+        : ref.read(turnInstructionProvider.notifier).take();
+
     await _abortStreamImmediately();
     if (!ref.mounted) return;
 
@@ -1153,6 +1162,7 @@ class ChatNotifier extends Notifier<ChatState> {
       chatService,
       isImageGeneration: target.isImageGeneration,
       countsAsPrompt: countsAsPrompt && !target.isImageGeneration,
+      turnInstruction: turnInstruction,
     );
     if (session.isImageGeneration) {
       unawaited(
@@ -1217,7 +1227,10 @@ class ChatNotifier extends Notifier<ChatState> {
       );
     }
 
-    final messagesForApi = _buildMessagesForApi(selectedModel);
+    final messagesForApi = _buildMessagesForApi(
+      selectedModel,
+      turnInstruction: session.turnInstruction,
+    );
 
     try {
       String reasoningContent = '';
@@ -1667,7 +1680,10 @@ class ChatNotifier extends Notifier<ChatState> {
     }
   }
 
-  List<Message> _buildMessagesForApi(ModelInfo? selectedModel) {
+  List<Message> _buildMessagesForApi(
+    ModelInfo? selectedModel, {
+    String? turnInstruction,
+  }) {
     final settings = ref.read(settingsProvider);
     final messages = <Message>[];
 
@@ -1684,6 +1700,8 @@ class ChatNotifier extends Notifier<ChatState> {
         (settings.showSystemMessages
             ? 'You are LocalMind, a helpful AI assistant. Provide clear, accurate, and concise responses.'
             : null);
+
+    systemContent = withTurnInstruction(systemContent, turnInstruction);
 
     final isVoiceActive = ref.read(voiceModeProvider).isActive;
     if (isVoiceActive && settings.conciseVoiceResponsesEnabled) {
@@ -2621,7 +2639,10 @@ class ChatNotifier extends Notifier<ChatState> {
 
     final messagesForApi = continueGeneration
         ? _buildMessagesForContinue(selectedModel, assistantMessage)
-        : _buildMessagesForApi(selectedModel);
+        : _buildMessagesForApi(
+            selectedModel,
+            turnInstruction: isToolFollowup ? session.turnInstruction : null,
+          );
 
     if (!isToolFollowup &&
         _activeConversationId == assistantMessage.conversationId) {

@@ -3776,4 +3776,38 @@ class AppLocalizationsKo extends AppLocalizations {
   String onDeviceUnknownSizeHidden(int count) {
     return '$count models with unknown size hidden';
   }
+
+  @override
+  String get conversation_tags => '태그';
+
+  @override
+  String get conversation_tags_desc =>
+      '주제별로 채팅을 묶습니다. 채팅 하나에 폴더와 함께 여러 태그를 달 수 있습니다.';
+
+  @override
+  String get conversation_tags_add_hint => '태그를 입력하고 Enter를 누르세요';
+
+  @override
+  String get conversation_tags_existing => '내 태그';
+
+  @override
+  String get conversation_tags_add => '태그 추가';
+
+  @override
+  String get conversation_tags_edit => '태그 편집';
+
+  @override
+  String get turn_instruction_title => '다음 답변 지시';
+
+  @override
+  String get turn_instruction_desc => '다음 메시지에만 적용되며, 채팅 프롬프트에 더해집니다.';
+
+  @override
+  String get turn_instruction_hint => '예: 세 개의 글머리 기호로 답해 줘';
+
+  @override
+  String get turn_instruction_remove => '지시 삭제';
+
+  @override
+  String get turn_instruction_chip_label => '다음 답변:';
 }

@@ -3889,4 +3889,39 @@ class AppLocalizationsTr extends AppLocalizations {
   String onDeviceUnknownSizeHidden(int count) {
     return '$count models with unknown size hidden';
   }
+
+  @override
+  String get conversation_tags => 'Etiketler';
+
+  @override
+  String get conversation_tags_desc =>
+      'Sohbetleri konuya göre gruplayın. Bir sohbetin klasörün yanı sıra birden fazla etiketi olabilir.';
+
+  @override
+  String get conversation_tags_add_hint => 'Bir etiket yazıp Enter\'a basın';
+
+  @override
+  String get conversation_tags_existing => 'Etiketleriniz';
+
+  @override
+  String get conversation_tags_add => 'Etiket ekle';
+
+  @override
+  String get conversation_tags_edit => 'Etiketleri düzenle';
+
+  @override
+  String get turn_instruction_title => 'Sonraki yanıt için talimat';
+
+  @override
+  String get turn_instruction_desc =>
+      'Yalnızca bir sonraki mesajınıza, sohbetin istemine ek olarak uygulanır.';
+
+  @override
+  String get turn_instruction_hint => 'örn. Üç madde halinde yanıtla';
+
+  @override
+  String get turn_instruction_remove => 'Talimatı kaldır';
+
+  @override
+  String get turn_instruction_chip_label => 'Sonraki yanıt:';
 }

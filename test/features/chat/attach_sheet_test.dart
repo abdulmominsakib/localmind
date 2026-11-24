@@ -131,4 +131,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(picked, AttachAction.camera);
   });
+
+  testWidgets('instruction option shows the current note and returns it', (
+    tester,
+  ) async {
+    AttachAction? picked;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () async => picked = await showAttachSheet(
+                context,
+                turnInstruction: 'Reply in Spanish',
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reply in Spanish'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('attach_turn_instruction')));
+    await tester.pumpAndSettle();
+    expect(picked, AttachAction.turnInstruction);
+  });
 }

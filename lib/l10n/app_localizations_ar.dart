@@ -3853,4 +3853,39 @@ class AppLocalizationsAr extends AppLocalizations {
   String onDeviceUnknownSizeHidden(int count) {
     return '$count models with unknown size hidden';
   }
+
+  @override
+  String get conversation_tags => 'الوسوم';
+
+  @override
+  String get conversation_tags_desc =>
+      'جمّع المحادثات حسب الموضوع. يمكن أن تحمل المحادثة عدة وسوم إلى جانب مجلد.';
+
+  @override
+  String get conversation_tags_add_hint => 'أضف وسمًا ثم اضغط Enter';
+
+  @override
+  String get conversation_tags_existing => 'وسومك';
+
+  @override
+  String get conversation_tags_add => 'إضافة وسوم';
+
+  @override
+  String get conversation_tags_edit => 'تعديل الوسوم';
+
+  @override
+  String get turn_instruction_title => 'تعليمات للرد التالي';
+
+  @override
+  String get turn_instruction_desc =>
+      'تنطبق على رسالتك التالية فقط، إضافةً إلى موجّه المحادثة.';
+
+  @override
+  String get turn_instruction_hint => 'مثلًا: أجب في ثلاث نقاط';
+
+  @override
+  String get turn_instruction_remove => 'إزالة التعليمات';
+
+  @override
+  String get turn_instruction_chip_label => 'الرد التالي:';
 }

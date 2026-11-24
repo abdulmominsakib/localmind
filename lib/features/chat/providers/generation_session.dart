@@ -32,6 +32,7 @@ class GenerationSession {
     required this.persisted,
     this.imageCancelToken,
     this.countsAsPrompt = false,
+    this.turnInstruction,
   });
 
   static const _checkpointChunkThreshold = 20;
@@ -52,6 +53,10 @@ class GenerationSession {
   /// Whether this reply is a user prompt that should increment the per-chat
   /// prompts-processed counter once it completes successfully.
   final bool countsAsPrompt;
+
+  /// One-reply instruction from the composer. Kept for the whole turn so
+  /// tool follow-up requests carry it too.
+  final String? turnInstruction;
 
   bool get isOnDevice => server.isOnDevice;
 

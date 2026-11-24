@@ -277,6 +277,7 @@ class ConversationEntity {
   String? smartRepliesJson;
   String? smartRepliesLastMessageId;
   String? folderId;
+  String? tagsJson;
   bool isTemporary;
   bool isArchived;
   int characterCount;
@@ -307,6 +308,7 @@ class ConversationEntity {
     this.smartRepliesJson,
     this.smartRepliesLastMessageId,
     this.folderId,
+    this.tagsJson,
     this.isTemporary = false,
     this.isArchived = false,
     this.characterCount = 0,
@@ -337,6 +339,9 @@ class ConversationEntity {
           : null,
       smartRepliesLastMessageId: conversation.smartRepliesLastMessageId,
       folderId: conversation.folderId,
+      tagsJson: conversation.tags.isEmpty
+          ? null
+          : jsonEncode(conversation.tags),
       isTemporary: conversation.isTemporary,
       isArchived: conversation.isArchived,
       characterCount: conversation.characterCount,
@@ -378,12 +383,24 @@ class ConversationEntity {
           : null,
       smartRepliesLastMessageId: smartRepliesLastMessageId,
       folderId: folderId,
+      tags: _decodeTags(tagsJson),
       isTemporary: isTemporary,
       isArchived: isArchived,
       characterCount: characterCount,
       totalTokenCount: totalTokenCount,
       promptsProcessed: promptsProcessed,
     );
+  }
+
+  static List<String> _decodeTags(String? json) {
+    if (json == null || json.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is List) {
+        return List<String>.unmodifiable(decoded.whereType<String>());
+      }
+    } catch (_) {}
+    return const [];
   }
 }
 

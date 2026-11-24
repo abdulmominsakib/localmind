@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:6060443518060866028",
-      "lastPropertyId": "25:614156416722889084",
+      "lastPropertyId": "26:4853330795456984867",
       "name": "ConversationEntity",
       "properties": [
         {
@@ -135,6 +135,11 @@
           "id": "25:614156416722889084",
           "name": "promptsProcessed",
           "type": 6
+        },
+        {
+          "id": "26:4853330795456984867",
+          "name": "tagsJson",
+          "type": 9
         }
       ],
       "relations": []

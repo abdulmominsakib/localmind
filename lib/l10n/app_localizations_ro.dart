@@ -3900,4 +3900,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String onDeviceUnknownSizeHidden(int count) {
     return '$count modele cu dimensiune necunoscută ascunse';
   }
+
+  @override
+  String get conversation_tags => 'Etichete';
+
+  @override
+  String get conversation_tags_desc =>
+      'Grupează conversațiile după subiect. O conversație poate avea mai multe etichete, pe lângă un dosar.';
+
+  @override
+  String get conversation_tags_add_hint =>
+      'Adaugă o etichetă, apoi apasă Enter';
+
+  @override
+  String get conversation_tags_existing => 'Etichetele tale';
+
+  @override
+  String get conversation_tags_add => 'Adaugă etichete';
+
+  @override
+  String get conversation_tags_edit => 'Editează etichetele';
+
+  @override
+  String get turn_instruction_title => 'Instrucțiune pentru următorul răspuns';
+
+  @override
+  String get turn_instruction_desc =>
+      'Se aplică doar următorului tău mesaj, pe lângă promptul conversației.';
+
+  @override
+  String get turn_instruction_hint => 'de ex. Răspunde în trei puncte';
+
+  @override
+  String get turn_instruction_remove => 'Elimină instrucțiunea';
+
+  @override
+  String get turn_instruction_chip_label => 'Următorul răspuns:';
 }

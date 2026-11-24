@@ -43,7 +43,16 @@ void main() {
       final formatted = ChatErrorFormatter.formatBody('', statusCode: 429);
       final parsed = ChatApiError.tryParse(formatted)!;
       expect(parsed.type, 'rate_limited');
-      expect(parsed.message, contains('Rate limit'));
+      expect(parsed.message, contains('rate limit'));
+      // Says the limit is the provider's, not a LocalMind chat quota.
+      expect(parsed.message, contains('LocalMind has no chat limit'));
+    });
+
+    test('402 explains the credit limit belongs to the provider', () {
+      final formatted = ChatErrorFormatter.formatBody('', statusCode: 402);
+      final parsed = ChatApiError.tryParse(formatted)!;
+      expect(parsed.type, 'billing');
+      expect(parsed.message, contains('LocalMind has no chat limit'));
     });
 
     test('humanises ECONNREFUSED-style messages', () {

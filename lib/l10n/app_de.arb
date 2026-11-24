@@ -1019,5 +1019,16 @@
   "downloadBackgroundActive": "Background",
   "downloadBackgroundDescription": "This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.",
   "downloadQueued": "Queued",
-  "downloadWaitingToRetry": "Waiting to retry"
+  "downloadWaitingToRetry": "Waiting to retry",
+  "conversation_tags": "Tags",
+  "conversation_tags_desc": "Ordne Chats nach Thema. Ein Chat kann zusätzlich zu einem Ordner mehrere Tags haben.",
+  "conversation_tags_add_hint": "Tag eingeben, dann Enter drücken",
+  "conversation_tags_existing": "Deine Tags",
+  "conversation_tags_add": "Tags hinzufügen",
+  "conversation_tags_edit": "Tags bearbeiten",
+  "turn_instruction_title": "Anweisung für die nächste Antwort",
+  "turn_instruction_desc": "Gilt nur für deine nächste Nachricht, zusätzlich zum Prompt des Chats.",
+  "turn_instruction_hint": "z. B. Antworte in drei Stichpunkten",
+  "turn_instruction_remove": "Anweisung entfernen",
+  "turn_instruction_chip_label": "Nächste Antwort:"
 }

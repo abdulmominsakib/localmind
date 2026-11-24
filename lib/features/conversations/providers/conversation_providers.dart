@@ -614,6 +614,28 @@ class ConversationsNotifier extends AsyncNotifier<List<Conversation>> {
     await _updateState();
   }
 
+  /// Replaces a chat's tags. Tags are trimmed, empty ones dropped, and
+  /// duplicates removed case-insensitively, keeping the first spelling.
+  Future<void> setTags(String id, List<String> tags) async {
+    final db = ref.read(databaseProvider);
+    final conversations = state.value ?? [];
+    final existing = conversations.firstWhere((c) => c.id == id);
+    // Tagging is a metadata edit, not conversation activity — don't bump
+    // updatedAt.
+    final updated = existing.copyWith(tags: normalizeConversationTags(tags));
+
+    final query = db.conversationBox
+        .query(ConversationEntity_.id.equals(id))
+        .build();
+    final existingEntity = query.findFirst();
+    query.close();
+
+    final entity = ConversationEntity.fromDomain(updated);
+    if (existingEntity != null) entity.internalId = existingEntity.internalId;
+    db.conversationBox.put(entity);
+    _updateInState(updated);
+  }
+
   String _generateUuid() {
     final secure = Random.secure();
     final now = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
@@ -704,6 +726,7 @@ final filteredConversationsProvider = Provider<AsyncValue<List<Conversation>>>((
   final conversationsAsync = ref.watch(conversationsProvider);
   final query = ref.watch(conversationSearchProvider).toLowerCase();
   final folderFilter = ref.watch(historyFolderFilterProvider);
+  final tagFilter = ref.watch(historyTagFilterProvider);
   final listFilter = ref.watch(historyListFilterProvider);
   final sortOption = ref.watch(historySortOptionProvider);
 
@@ -728,9 +751,16 @@ final filteredConversationsProvider = Provider<AsyncValue<List<Conversation>>>((
         filtered = filtered.where((c) => c.folderId == folderFilter).toList();
       }
     }
+    if (tagFilter != null) {
+      final wanted = tagFilter.toLowerCase();
+      filtered = filtered
+          .where((c) => c.tags.any((t) => t.toLowerCase() == wanted))
+          .toList();
+    }
     if (query.isNotEmpty) {
       filtered = filtered.where((c) {
         return c.title.toLowerCase().contains(query) ||
+            c.tags.any((t) => t.toLowerCase().contains(query)) ||
             (c.lastMessagePreview?.toLowerCase().contains(query) ?? false);
       }).toList();
     }
@@ -814,6 +844,53 @@ class HistoryFolderFilterNotifier extends Notifier<String?> {
   String? build() => null;
 
   void setFilter(String? folderId) => state = folderId;
+}
+
+/// The tag the history list is narrowed to, or null for every chat.
+final historyTagFilterProvider =
+    NotifierProvider<HistoryTagFilterNotifier, String?>(
+      HistoryTagFilterNotifier.new,
+    );
+
+class HistoryTagFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setFilter(String? tag) => state = tag;
+}
+
+/// Every tag used by a saved chat, sorted alphabetically, one spelling per
+/// tag regardless of case.
+final conversationTagsProvider = Provider<List<String>>((ref) {
+  final conversations = ref.watch(conversationsProvider).value ?? const [];
+  final byKey = <String, String>{};
+  for (final conversation in conversations) {
+    if (conversation.isTemporary) continue;
+    for (final tag in conversation.tags) {
+      byKey.putIfAbsent(tag.toLowerCase(), () => tag);
+    }
+  }
+  final tags = byKey.values.toList()
+    ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  return tags;
+});
+
+/// Longest tag accepted, so a tag stays a short label on a chip.
+const maxConversationTagLength = 32;
+
+List<String> normalizeConversationTags(Iterable<String> tags) {
+  final seen = <String>{};
+  final result = <String>[];
+  for (final raw in tags) {
+    var tag = raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (tag.startsWith('#')) tag = tag.substring(1).trim();
+    if (tag.isEmpty) continue;
+    if (tag.length > maxConversationTagLength) {
+      tag = tag.substring(0, maxConversationTagLength).trim();
+    }
+    if (seen.add(tag.toLowerCase())) result.add(tag);
+  }
+  return List.unmodifiable(result);
 }
 
 final historySelectionModeProvider =

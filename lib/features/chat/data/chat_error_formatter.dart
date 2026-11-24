@@ -147,7 +147,10 @@ class ChatErrorFormatter {
         );
       case 402:
         return const ChatApiError(
-          message: 'Monthly credit limit reached or insufficient balance.',
+          // Users read quota errors as a LocalMind chat limit; say whose
+          // limit it is.
+          message:
+              'The provider says your credit limit is reached or your balance is too low. LocalMind has no chat limit of its own; check your plan with the provider.',
           type: 'billing',
         );
       case 403:
@@ -176,7 +179,8 @@ class ChatErrorFormatter {
         );
       case 429:
         return const ChatApiError(
-          message: 'Rate limit exceeded. Please wait before trying again.',
+          message:
+              'The provider\'s rate limit or quota was reached. LocalMind has no chat limit of its own; wait a moment, or check your plan or credits with the provider.',
           type: 'rate_limited',
         );
       case 500:

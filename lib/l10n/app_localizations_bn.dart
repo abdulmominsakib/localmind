@@ -3879,4 +3879,39 @@ class AppLocalizationsBn extends AppLocalizations {
   String onDeviceUnknownSizeHidden(int count) {
     return '$count models with unknown size hidden';
   }
+
+  @override
+  String get conversation_tags => 'ট্যাগ';
+
+  @override
+  String get conversation_tags_desc =>
+      'বিষয় অনুযায়ী চ্যাট সাজান। একটি চ্যাটে ফোল্ডারের পাশাপাশি একাধিক ট্যাগ থাকতে পারে।';
+
+  @override
+  String get conversation_tags_add_hint => 'একটি ট্যাগ লিখে Enter চাপুন';
+
+  @override
+  String get conversation_tags_existing => 'আপনার ট্যাগ';
+
+  @override
+  String get conversation_tags_add => 'ট্যাগ যোগ করুন';
+
+  @override
+  String get conversation_tags_edit => 'ট্যাগ সম্পাদনা';
+
+  @override
+  String get turn_instruction_title => 'পরের উত্তরের জন্য নির্দেশনা';
+
+  @override
+  String get turn_instruction_desc =>
+      'শুধু আপনার পরের মেসেজে প্রযোজ্য, চ্যাটের প্রম্পটের সাথে যুক্ত হয়।';
+
+  @override
+  String get turn_instruction_hint => 'যেমন: তিনটি বুলেট পয়েন্টে উত্তর দাও';
+
+  @override
+  String get turn_instruction_remove => 'নির্দেশনা সরান';
+
+  @override
+  String get turn_instruction_chip_label => 'পরের উত্তর:';
 }

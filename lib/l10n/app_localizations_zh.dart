@@ -3763,6 +3763,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String onDeviceUnknownSizeHidden(int count) {
     return '$count models with unknown size hidden';
   }
+
+  @override
+  String get conversation_tags => '标签';
+
+  @override
+  String get conversation_tags_desc => '按主题归类对话。除文件夹外，一个对话还可以有多个标签。';
+
+  @override
+  String get conversation_tags_add_hint => '输入标签后按回车';
+
+  @override
+  String get conversation_tags_existing => '你的标签';
+
+  @override
+  String get conversation_tags_add => '添加标签';
+
+  @override
+  String get conversation_tags_edit => '编辑标签';
+
+  @override
+  String get turn_instruction_title => '下一条回复的指令';
+
+  @override
+  String get turn_instruction_desc => '仅作用于你的下一条消息，附加在对话的提示词之后。';
+
+  @override
+  String get turn_instruction_hint => '例如：用三个要点回答';
+
+  @override
+  String get turn_instruction_remove => '移除指令';
+
+  @override
+  String get turn_instruction_chip_label => '下一条回复：';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -7030,4 +7063,37 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get onDeviceImportFromDevice => 'Import from device';
+
+  @override
+  String get conversation_tags => '標籤';
+
+  @override
+  String get conversation_tags_desc => '依主題歸類對話。除了資料夾外，一則對話還可以有多個標籤。';
+
+  @override
+  String get conversation_tags_add_hint => '輸入標籤後按 Enter';
+
+  @override
+  String get conversation_tags_existing => '你的標籤';
+
+  @override
+  String get conversation_tags_add => '新增標籤';
+
+  @override
+  String get conversation_tags_edit => '編輯標籤';
+
+  @override
+  String get turn_instruction_title => '下一則回覆的指示';
+
+  @override
+  String get turn_instruction_desc => '只套用於你的下一則訊息，附加在對話的提示詞之後。';
+
+  @override
+  String get turn_instruction_hint => '例如：用三個重點回答';
+
+  @override
+  String get turn_instruction_remove => '移除指示';
+
+  @override
+  String get turn_instruction_chip_label => '下一則回覆：';
 }

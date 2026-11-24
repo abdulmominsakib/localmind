@@ -12,6 +12,7 @@ import 'components/conversation_folder_bar.dart';
 import 'components/conversation_empty_state.dart';
 import 'components/conversation_list.dart';
 import 'components/conversation_search_bar.dart';
+import 'components/conversation_tag_bar.dart';
 import 'components/message_search_results_list.dart';
 
 class ChatHistoryScreen extends ConsumerWidget {
@@ -32,6 +33,7 @@ class ChatHistoryScreen extends ConsumerWidget {
     final selectedIds = ref.watch(historySelectedIdsProvider);
     final currentFolder = ref.watch(historyFolderFilterProvider);
     final listFilter = ref.watch(historyListFilterProvider);
+    final tagFilter = ref.watch(historyTagFilterProvider);
 
     return Stack(
       children: [
@@ -140,6 +142,7 @@ class ChatHistoryScreen extends ConsumerWidget {
 
             const ConversationSearchBar(),
             const ConversationFolderBar(),
+            const ConversationTagBar(),
             if (messageSearchHits.isNotEmpty)
               ConstrainedBox(
                 constraints: BoxConstraints(
@@ -159,6 +162,7 @@ class ChatHistoryScreen extends ConsumerWidget {
                     ? ConversationEmptyState(
                         isSearching:
                             searchQuery.isNotEmpty ||
+                            tagFilter != null ||
                             listFilter != HistoryListFilter.all,
                       )
                     : ConversationList(

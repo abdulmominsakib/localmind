@@ -109,6 +109,7 @@ class DataBackupService {
     'smartReplies': domain.smartReplies,
     'smartRepliesLastMessageId': domain.smartRepliesLastMessageId,
     'folderId': domain.folderId,
+    'tags': domain.tags,
     'isTemporary': domain.isTemporary,
     'isArchived': domain.isArchived,
     'characterCount': domain.characterCount,
@@ -742,6 +743,9 @@ class DataBackupService {
             smartRepliesLastMessageId:
                 item['smartRepliesLastMessageId'] as String?,
             folderId: item['folderId'] as String?,
+            tags: item['tags'] is List
+                ? List<String>.from((item['tags'] as List).whereType<String>())
+                : const [],
             isTemporary: item['isTemporary'] as bool? ?? false,
             isArchived: item['isArchived'] as bool? ?? false,
             characterCount: item['characterCount'] as int? ?? 0,

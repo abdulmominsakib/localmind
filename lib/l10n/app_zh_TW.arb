@@ -1022,5 +1022,16 @@
   "downloadBackgroundActive": "Background",
   "downloadBackgroundDescription": "This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.",
   "downloadQueued": "Queued",
-  "downloadWaitingToRetry": "Waiting to retry"
+  "downloadWaitingToRetry": "Waiting to retry",
+  "conversation_tags": "標籤",
+  "conversation_tags_desc": "依主題歸類對話。除了資料夾外，一則對話還可以有多個標籤。",
+  "conversation_tags_add_hint": "輸入標籤後按 Enter",
+  "conversation_tags_existing": "你的標籤",
+  "conversation_tags_add": "新增標籤",
+  "conversation_tags_edit": "編輯標籤",
+  "turn_instruction_title": "下一則回覆的指示",
+  "turn_instruction_desc": "只套用於你的下一則訊息，附加在對話的提示詞之後。",
+  "turn_instruction_hint": "例如：用三個重點回答",
+  "turn_instruction_remove": "移除指示",
+  "turn_instruction_chip_label": "下一則回覆："
 }

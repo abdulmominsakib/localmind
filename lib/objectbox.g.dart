@@ -22,7 +22,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 6060443518060866028),
     name: 'ConversationEntity',
-    lastPropertyId: const obx_int.IdUid(25, 614156416722889084),
+    lastPropertyId: const obx_int.IdUid(26, 4853330795456984867),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -174,6 +174,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(25, 614156416722889084),
         name: 'promptsProcessed',
         type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(26, 4853330795456984867),
+        name: 'tagsJson',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -815,7 +821,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final folderIdOffset = object.folderId == null
             ? null
             : fbb.writeString(object.folderId!);
-        fbb.startTable(26);
+        final tagsJsonOffset = object.tagsJson == null
+            ? null
+            : fbb.writeString(object.tagsJson!);
+        fbb.startTable(27);
         fbb.addInt64(0, object.internalId);
         fbb.addOffset(1, idOffset);
         fbb.addOffset(2, titleOffset);
@@ -841,6 +850,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addInt64(22, object.characterCount);
         fbb.addInt64(23, object.totalTokenCount);
         fbb.addInt64(24, object.promptsProcessed);
+        fbb.addOffset(25, tagsJsonOffset);
         fbb.finish(fbb.endTable());
         return object.internalId;
       },
@@ -926,6 +936,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final folderIdParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 42);
+        final tagsJsonParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 54);
         final isTemporaryParam = const fb.BoolReader().vTableGet(
           buffer,
           rootOffset,
@@ -976,6 +989,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           smartRepliesJson: smartRepliesJsonParam,
           smartRepliesLastMessageId: smartRepliesLastMessageIdParam,
           folderId: folderIdParam,
+          tagsJson: tagsJsonParam,
           isTemporary: isTemporaryParam,
           isArchived: isArchivedParam,
           characterCount: characterCountParam,
@@ -1796,6 +1810,11 @@ class ConversationEntity_ {
   /// See [ConversationEntity.promptsProcessed].
   static final promptsProcessed = obx.QueryIntegerProperty<ConversationEntity>(
     _entities[0].properties[24],
+  );
+
+  /// See [ConversationEntity.tagsJson].
+  static final tagsJson = obx.QueryStringProperty<ConversationEntity>(
+    _entities[0].properties[25],
   );
 
   /// see [ConversationEntity.messages]

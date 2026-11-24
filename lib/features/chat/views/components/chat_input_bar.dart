@@ -28,6 +28,7 @@ import '../../utils/image_upload_utils.dart';
 import '../../../models/views/model_picker_sheet.dart';
 import '../../../os_widget/providers/os_widget_providers.dart';
 import 'attach_sheet.dart';
+import 'turn_instruction_chip.dart';
 import 'image_preview_dialog.dart';
 import '../../../voice_mode/views/voice_mode_overlay.dart';
 
@@ -360,6 +361,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
       context,
       model: ref.read(selectedModelProvider),
       sendAsAssistant: showRoleSwap ? _sendAsAssistant : null,
+      turnInstruction: ref.read(turnInstructionProvider),
       onSendAsAssistantChanged: (value) {
         ref.read(appHapticsProvider).light();
         setState(() => _sendAsAssistant = value);
@@ -375,6 +377,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         await _pickImages();
       case AttachAction.savedMessage:
         await _handleInsertSavedMessage();
+      case AttachAction.turnInstruction:
+        await showTurnInstructionDialog(context, ref);
     }
   }
 
@@ -1060,6 +1064,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
           crossAxisAlignment: CrossAxisAlignment.stretch,
 
           children: [
+            const TurnInstructionChip(),
             if (imageNotice != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),

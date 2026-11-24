@@ -3831,5 +3831,27 @@
     "placeholders": {
       "count": { "type": "int" }
     }
-  }
+  },
+  "conversation_tags": "Tags",
+  "@conversation_tags": {"description": "Title of the sheet that edits a chat's tags"},
+  "conversation_tags_desc": "Group chats by topic. A chat can have several tags as well as a folder.",
+  "@conversation_tags_desc": {"description": "Explains what conversation tags are for"},
+  "conversation_tags_add_hint": "Add a tag, then press Enter",
+  "@conversation_tags_add_hint": {"description": "Hint in the field that adds a tag"},
+  "conversation_tags_existing": "Your tags",
+  "@conversation_tags_existing": {"description": "Heading above tags already used on other chats"},
+  "conversation_tags_add": "Add tags",
+  "@conversation_tags_add": {"description": "Chat action: add tags to a chat with none"},
+  "conversation_tags_edit": "Edit tags",
+  "@conversation_tags_edit": {"description": "Chat action: edit a chat's tags"},
+  "turn_instruction_title": "Instruction for next reply",
+  "@turn_instruction_title": {"description": "Composer option: an extra instruction for the next reply only"},
+  "turn_instruction_desc": "Applies to your next message only, on top of the chat's prompt.",
+  "@turn_instruction_desc": {"description": "Explains that the instruction applies to one reply"},
+  "turn_instruction_hint": "e.g. Answer in three bullet points",
+  "@turn_instruction_hint": {"description": "Example instruction shown as a hint"},
+  "turn_instruction_remove": "Remove instruction",
+  "@turn_instruction_remove": {"description": "Removes the one-reply instruction"},
+  "turn_instruction_chip_label": "Next reply:",
+  "@turn_instruction_chip_label": {"description": "Label before the instruction text in the composer"}
 }

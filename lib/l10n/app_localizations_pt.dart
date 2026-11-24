@@ -3899,4 +3899,40 @@ class AppLocalizationsPt extends AppLocalizations {
   String onDeviceUnknownSizeHidden(int count) {
     return '$count models with unknown size hidden';
   }
+
+  @override
+  String get conversation_tags => 'Etiquetas';
+
+  @override
+  String get conversation_tags_desc =>
+      'Agrupe as conversas por assunto. Uma conversa pode ter várias etiquetas além de uma pasta.';
+
+  @override
+  String get conversation_tags_add_hint =>
+      'Adicione uma etiqueta e pressione Enter';
+
+  @override
+  String get conversation_tags_existing => 'Suas etiquetas';
+
+  @override
+  String get conversation_tags_add => 'Adicionar etiquetas';
+
+  @override
+  String get conversation_tags_edit => 'Editar etiquetas';
+
+  @override
+  String get turn_instruction_title => 'Instrução para a próxima resposta';
+
+  @override
+  String get turn_instruction_desc =>
+      'Vale só para sua próxima mensagem, além do prompt da conversa.';
+
+  @override
+  String get turn_instruction_hint => 'ex.: Responda em três tópicos';
+
+  @override
+  String get turn_instruction_remove => 'Remover instrução';
+
+  @override
+  String get turn_instruction_chip_label => 'Próxima resposta:';
 }

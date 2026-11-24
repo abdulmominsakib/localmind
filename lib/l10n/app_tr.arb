@@ -1019,5 +1019,16 @@
   "downloadBackgroundActive": "Background",
   "downloadBackgroundDescription": "This download is managed by Android and may continue while LocalMind is closed. Android may pause or defer it depending on system conditions.",
   "downloadQueued": "Queued",
-  "downloadWaitingToRetry": "Waiting to retry"
+  "downloadWaitingToRetry": "Waiting to retry",
+  "conversation_tags": "Etiketler",
+  "conversation_tags_desc": "Sohbetleri konuya göre gruplayın. Bir sohbetin klasörün yanı sıra birden fazla etiketi olabilir.",
+  "conversation_tags_add_hint": "Bir etiket yazıp Enter'a basın",
+  "conversation_tags_existing": "Etiketleriniz",
+  "conversation_tags_add": "Etiket ekle",
+  "conversation_tags_edit": "Etiketleri düzenle",
+  "turn_instruction_title": "Sonraki yanıt için talimat",
+  "turn_instruction_desc": "Yalnızca bir sonraki mesajınıza, sohbetin istemine ek olarak uygulanır.",
+  "turn_instruction_hint": "örn. Üç madde halinde yanıtla",
+  "turn_instruction_remove": "Talimatı kaldır",
+  "turn_instruction_chip_label": "Sonraki yanıt:"
 }
