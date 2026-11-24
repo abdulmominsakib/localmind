@@ -328,7 +328,7 @@ Future<void> _loadDefaultModel(
   if (!ref.mounted) return;
   final apiService = ref.read(serverApiServiceProvider);
   final settings = ref.read(settingsProvider);
-  final contextLength = ref.read(chatParamsProvider).contextLength;
+  final contextLength = ref.read(chatParamsProvider).requestedContextLength;
 
   ref.read(modelLoadingProvider.notifier).setLoading(model.id);
   try {

@@ -270,7 +270,13 @@ class _ModelPickerHeader extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
     final activeConv = ref.watch(conv.activeConversationProvider);
-    final contextLength = activeConv?.contextLength ?? settings.contextLength;
+    // In server-default mode this is the context LM Studio reports for the
+    // loaded model, not the app's 4096 fallback.
+    final contextLength = ref.watch(
+      chatParamsProvider.select((p) => p.contextLength),
+    );
+    final contextLengthExplicit =
+        activeConv?.contextLength != null || settings.contextLengthOverridden;
     final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
 
     final status = [
@@ -351,6 +357,8 @@ class _ModelPickerHeader extends ConsumerWidget {
                   ref,
                   contextLength,
                   activeConv?.id,
+                  isExplicit: contextLengthExplicit,
+                  hasChatOverride: activeConv?.contextLength != null,
                 ),
               ),
               if (showBrowseButton && onBrowseModels != null)
@@ -440,13 +448,17 @@ void _showContextLengthDialog(
   BuildContext context,
   WidgetRef ref,
   int currentLength,
-  String? activeConversationId,
-) {
+  String? activeConversationId, {
+  required bool isExplicit,
+  required bool hasChatOverride,
+}) {
   showDialog(
     context: context,
     builder: (context) => _ContextLengthEditDialog(
       initialValue: currentLength,
       activeConversationId: activeConversationId,
+      isExplicit: isExplicit,
+      hasChatOverride: hasChatOverride,
     ),
   );
 }
@@ -455,10 +467,18 @@ class _ContextLengthEditDialog extends ConsumerStatefulWidget {
   const _ContextLengthEditDialog({
     required this.initialValue,
     required this.activeConversationId,
+    required this.isExplicit,
+    required this.hasChatOverride,
   });
 
   final int initialValue;
   final String? activeConversationId;
+
+  /// Whether a context length is currently being sent to the server.
+  final bool isExplicit;
+
+  /// Whether the active chat overrides the global context length.
+  final bool hasChatOverride;
 
   @override
   ConsumerState<_ContextLengthEditDialog> createState() =>
@@ -497,6 +517,22 @@ class __ContextLengthEditDialogState
               contextLength: parsed,
             );
       }
+    }
+    Navigator.of(context).pop();
+  }
+
+  /// Stops sending a context length: clears the chat override when there is
+  /// one, otherwise the global choice, so LM Studio keeps its loaded context.
+  void _useServerDefault() {
+    if (widget.activeConversationId != null && widget.hasChatOverride) {
+      ref
+          .read(conv.conversationsProvider.notifier)
+          .updateChatParams(
+            widget.activeConversationId!,
+            clearContextLength: true,
+          );
+    } else {
+      ref.read(settingsProvider.notifier).useServerDefaultContextLength();
     }
     Navigator.of(context).pop();
   }
@@ -588,6 +624,17 @@ class __ContextLengthEditDialogState
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  if (widget.isExplicit)
+                    Flexible(
+                      child: TextButton(
+                        key: const ValueKey('context_length_server_default'),
+                        onPressed: _useServerDefault,
+                        child: Text(
+                          l10n.context_length_use_server_default,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: Text(l10n.cancel),

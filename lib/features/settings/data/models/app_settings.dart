@@ -17,6 +17,11 @@ class AppSettings {
   final double topP;
   final int maxTokens;
   final int contextLength;
+
+  /// True once the user has deliberately chosen [contextLength]. When false,
+  /// remote servers that manage their own context (LM Studio) receive no
+  /// `context_length`, so the server's configured value is kept.
+  final bool contextLengthOverridden;
   final ThemeMode themeMode;
   final double fontSize;
   final bool showSystemMessages;
@@ -86,6 +91,7 @@ class AppSettings {
     this.topP = 0.9,
     this.maxTokens = 2048,
     this.contextLength = 4096,
+    this.contextLengthOverridden = false,
     this.themeMode = ThemeMode.dark,
     this.fontSize = 16.0,
     this.showSystemMessages = false,
@@ -143,6 +149,7 @@ class AppSettings {
     double? topP,
     int? maxTokens,
     int? contextLength,
+    bool? contextLengthOverridden,
     ThemeMode? themeMode,
     double? fontSize,
     bool? showSystemMessages,
@@ -199,6 +206,8 @@ class AppSettings {
       topP: topP ?? this.topP,
       maxTokens: maxTokens ?? this.maxTokens,
       contextLength: contextLength ?? this.contextLength,
+      contextLengthOverridden:
+          contextLengthOverridden ?? this.contextLengthOverridden,
       themeMode: themeMode ?? this.themeMode,
       fontSize: fontSize ?? this.fontSize,
       showSystemMessages: showSystemMessages ?? this.showSystemMessages,
@@ -271,8 +280,7 @@ class AppSettings {
       sendTopP: sendTopP ?? this.sendTopP,
       allowBackgroundDownloads:
           allowBackgroundDownloads ?? this.allowBackgroundDownloads,
-      downloadOverWifiOnly:
-          downloadOverWifiOnly ?? this.downloadOverWifiOnly,
+      downloadOverWifiOnly: downloadOverWifiOnly ?? this.downloadOverWifiOnly,
       defaultSystemPrompt: defaultSystemPrompt ?? this.defaultSystemPrompt,
       savedMcpIntegrations: savedMcpIntegrations ?? this.savedMcpIntegrations,
     );
@@ -284,6 +292,7 @@ class AppSettings {
       'topP': topP,
       'maxTokens': maxTokens,
       'contextLength': contextLength,
+      'contextLengthOverridden': contextLengthOverridden,
       'themeMode': themeMode.index,
       'fontSize': fontSize,
       'showSystemMessages': showSystemMessages,
@@ -345,6 +354,11 @@ class AppSettings {
       topP: map['topP']?.toDouble() ?? 0.9,
       maxTokens: map['maxTokens']?.toInt() ?? 2048,
       contextLength: map['contextLength']?.toInt() ?? 4096,
+      // Settings saved before this flag existed: only a non-default value
+      // can be a deliberate choice, so 4096 migrates to server-default mode.
+      contextLengthOverridden:
+          map['contextLengthOverridden'] as bool? ??
+          ((map['contextLength'] as num?)?.toInt() ?? 4096) != 4096,
       themeMode: ThemeMode.values[map['themeMode'] ?? 2],
       fontSize: map['fontSize']?.toDouble() ?? 16.0,
       showSystemMessages: map['showSystemMessages'] ?? false,

@@ -148,6 +148,45 @@ class AppLocalizationsRu extends AppLocalizations {
       'Соединение не удалось. Проверьте свои настройки.';
 
   @override
+  String get connection_failed_unreachable =>
+      'Couldn\'t reach the server. Check the address and port, that the server listens on your network (not only localhost), and that Local Network access is allowed for LocalMind.';
+
+  @override
+  String get connection_failed_timeout =>
+      'The server didn\'t respond in time. Check that the device and the server are on the same network or VPN.';
+
+  @override
+  String get connection_failed_tls =>
+      'Secure connection failed. Check the server\'s certificate, or use http:// if it doesn\'t use HTTPS.';
+
+  @override
+  String connection_failed_unauthorized(int status) {
+    return 'The server rejected the request (HTTP $status). Check the API key.';
+  }
+
+  @override
+  String get connection_failed_not_found =>
+      'The server answered, but not on the expected API routes. Check the server type, port, and path prefix.';
+
+  @override
+  String connection_failed_status(int status) {
+    return 'The server answered with HTTP $status.';
+  }
+
+  @override
+  String get connection_failed_missing_key => 'This provider needs an API key.';
+
+  @override
+  String get connection_warning_lmstudio_native =>
+      'Connected, but only through the OpenAI-compatible /v1 routes. Chat uses LM Studio\'s native /api/v1 routes, so make sure your proxy forwards them.';
+
+  @override
+  String get context_length_server_default => 'Server default';
+
+  @override
+  String get context_length_use_server_default => 'Use server default';
+
+  @override
   String get save_continue => 'Сохранить и продолжить';
 
   @override

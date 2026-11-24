@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/models/enums.dart';
 import '../../models/data/models/model_info.dart';
+import 'models/connection_diagnosis.dart';
 import 'models/server.dart';
 
 class ServerApiService {
@@ -12,9 +13,21 @@ class ServerApiService {
 
   ServerApiService(this._dio);
 
-  Future<bool> testConnection(Server server) async {
+  Future<bool> testConnection(Server server) async =>
+      (await diagnoseConnection(server)).ok;
+
+  /// Probes the server's model-listing endpoints and reports which stage
+  /// failed instead of collapsing every failure into `false`.
+  Future<ConnectionDiagnosis> diagnoseConnection(Server server) async {
     if (server.isOnDevice) {
-      return true;
+      return const ConnectionDiagnosis.success();
+    }
+    if (server.type == ServerType.standardCompute &&
+        (server.apiKey?.trim().isEmpty ?? true)) {
+      // The public model catalog can return 200 without a key.
+      return const ConnectionDiagnosis.failure(
+        ConnectionFailureKind.missingApiKey,
+      );
     }
 
     final endpointsToTry = <String>[];
@@ -33,6 +46,14 @@ class ServerApiService {
       endpointsToTry.add('${server.baseUrl}$prefix/api/version');
     }
 
+    ConnectionDiagnosis? worst;
+    void record(ConnectionDiagnosis diagnosis) {
+      if (worst == null ||
+          _failureRank(diagnosis.failure!) > _failureRank(worst!.failure!)) {
+        worst = diagnosis;
+      }
+    }
+
     for (final endpoint in endpointsToTry.toSet()) {
       if (endpoint.isEmpty) continue;
       try {
@@ -43,14 +64,86 @@ class ServerApiService {
             validateStatus: (status) => status != null && status < 500,
           ),
         );
-        if (response.statusCode == 200) {
-          return true;
+        final status = response.statusCode;
+        if (status == 200) {
+          return ConnectionDiagnosis.success(
+            endpoint: endpoint,
+            // Chat goes to /api/v1/chat; reaching only the compat routes
+            // means a proxy (or an old LM Studio) won't serve chat.
+            nativeApiUnavailable:
+                server.type == ServerType.lmStudio &&
+                endpoint == '${server.baseUrl}$prefix/v1/models',
+          );
         }
-      } catch (_) {
-        // Try next endpoint
+        record(_failureForStatus(status, endpoint));
+      } on DioException catch (e) {
+        Log.warning(
+          'Connection probe failed (${e.type.name}, '
+          'status ${e.response?.statusCode})',
+        );
+        record(_failureForDioException(e, endpoint));
+      } catch (e) {
+        record(
+          ConnectionDiagnosis.failure(
+            ConnectionFailureKind.unreachable,
+            endpoint: endpoint,
+          ),
+        );
       }
     }
-    return false;
+    return worst ??
+        const ConnectionDiagnosis.failure(ConnectionFailureKind.unreachable);
+  }
+
+  /// Higher ranks carry more information: an HTTP answer says more about
+  /// the problem than a socket that never opened.
+  static int _failureRank(ConnectionFailureKind kind) => switch (kind) {
+    ConnectionFailureKind.unreachable => 0,
+    ConnectionFailureKind.timeout => 1,
+    ConnectionFailureKind.tls => 2,
+    ConnectionFailureKind.notFound => 3,
+    ConnectionFailureKind.unexpectedStatus => 4,
+    ConnectionFailureKind.unauthorized => 5,
+    ConnectionFailureKind.missingApiKey => 6,
+  };
+
+  static ConnectionDiagnosis _failureForStatus(int? status, String endpoint) {
+    final kind = switch (status) {
+      401 || 403 => ConnectionFailureKind.unauthorized,
+      404 => ConnectionFailureKind.notFound,
+      _ => ConnectionFailureKind.unexpectedStatus,
+    };
+    return ConnectionDiagnosis.failure(
+      kind,
+      endpoint: endpoint,
+      statusCode: status,
+    );
+  }
+
+  static ConnectionDiagnosis _failureForDioException(
+    DioException e,
+    String endpoint,
+  ) {
+    final response = e.response;
+    if (response != null) {
+      return _failureForStatus(response.statusCode, endpoint);
+    }
+    final kind = switch (e.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.sendTimeout => ConnectionFailureKind.timeout,
+      DioExceptionType.badCertificate => ConnectionFailureKind.tls,
+      _ when _looksLikeTlsError(e) => ConnectionFailureKind.tls,
+      _ => ConnectionFailureKind.unreachable,
+    };
+    return ConnectionDiagnosis.failure(kind, endpoint: endpoint);
+  }
+
+  static bool _looksLikeTlsError(DioException e) {
+    final text = '${e.error ?? ''} ${e.message ?? ''}'.toLowerCase();
+    return text.contains('handshake') ||
+        text.contains('certificate') ||
+        text.contains('tls');
   }
 
   Future<int?> pingServer(Server server) async {
@@ -355,7 +448,8 @@ class ServerApiService {
 
     try {
       final response = await _dio.get(
-        '${server.baseUrl}/api/v0/models/${Uri.encodeComponent(modelId)}',
+        '${server.baseUrl}${server.apiPathPrefix}/api/v0/models/'
+        '${Uri.encodeComponent(modelId)}',
         options: Options(
           headers: buildServerAuthHeaders(server),
           validateStatus: (status) => status != null && status < 500,

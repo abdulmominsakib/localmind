@@ -61,8 +61,18 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(temperature: value));
   void setTopP(double value) => _update(state.copyWith(topP: value));
   void setMaxTokens(int value) => _update(state.copyWith(maxTokens: value));
-  void setContextLength(int value) =>
-      _update(state.copyWith(contextLength: value));
+  void setContextLength(int value) => _update(
+    state.copyWith(contextLength: value, contextLengthOverridden: true),
+  );
+
+  /// Returns to server-default context mode: the stored length still drives
+  /// on-device runtimes and history truncation, but LM Studio keeps its own.
+  void useServerDefaultContextLength() => _update(
+    state.copyWith(
+      contextLength: AppSettings().contextLength,
+      contextLengthOverridden: false,
+    ),
+  );
   void setFontSize(double value) => _update(state.copyWith(fontSize: value));
   void setShowSystemMessages(bool value) =>
       _update(state.copyWith(showSystemMessages: value));

@@ -6,6 +6,11 @@ class ChatParameters {
   final double topP;
   final int maxTokens;
   final int contextLength;
+
+  /// Whether [contextLength] was chosen by the user (globally or per chat).
+  /// When false it is only a local estimate for history truncation, and
+  /// servers that manage context themselves must not receive it.
+  final bool contextLengthExplicit;
   final String? systemPrompt;
   final int? topK;
   final double? minP;
@@ -38,6 +43,7 @@ class ChatParameters {
     required this.topP,
     required this.maxTokens,
     required this.contextLength,
+    this.contextLengthExplicit = true,
     this.systemPrompt,
     this.topK,
     this.minP,
@@ -57,11 +63,17 @@ class ChatParameters {
     contextLength: AppConstants.defaultContextLength,
   );
 
+  /// The context length to send to a remote server, or null to keep the
+  /// server's own configuration.
+  int? get requestedContextLength =>
+      contextLengthExplicit && contextLength > 0 ? contextLength : null;
+
   ChatParameters copyWith({
     double? temperature,
     double? topP,
     int? maxTokens,
     int? contextLength,
+    bool? contextLengthExplicit,
     String? systemPrompt,
     int? topK,
     double? minP,
@@ -78,6 +90,8 @@ class ChatParameters {
       topP: topP ?? this.topP,
       maxTokens: maxTokens ?? this.maxTokens,
       contextLength: contextLength ?? this.contextLength,
+      contextLengthExplicit:
+          contextLengthExplicit ?? this.contextLengthExplicit,
       systemPrompt: systemPrompt ?? this.systemPrompt,
       topK: topK ?? this.topK,
       minP: minP ?? this.minP,

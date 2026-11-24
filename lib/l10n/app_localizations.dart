@@ -399,6 +399,66 @@ abstract class AppLocalizations {
   /// **'Connection failed. Check your settings.'**
   String get connection_failed;
 
+  /// Connection test failed because no socket could be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the server. Check the address and port, that the server listens on your network (not only localhost), and that Local Network access is allowed for LocalMind.'**
+  String get connection_failed_unreachable;
+
+  /// Connection test timed out
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t respond in time. Check that the device and the server are on the same network or VPN.'**
+  String get connection_failed_timeout;
+
+  /// Connection test failed during the TLS handshake
+  ///
+  /// In en, this message translates to:
+  /// **'Secure connection failed. Check the server\'s certificate, or use http:// if it doesn\'t use HTTPS.'**
+  String get connection_failed_tls;
+
+  /// Connection test got 401 or 403
+  ///
+  /// In en, this message translates to:
+  /// **'The server rejected the request (HTTP {status}). Check the API key.'**
+  String connection_failed_unauthorized(int status);
+
+  /// Connection test got 404 on every probed endpoint
+  ///
+  /// In en, this message translates to:
+  /// **'The server answered, but not on the expected API routes. Check the server type, port, and path prefix.'**
+  String get connection_failed_not_found;
+
+  /// Connection test got an unexpected HTTP status
+  ///
+  /// In en, this message translates to:
+  /// **'The server answered with HTTP {status}.'**
+  String connection_failed_status(int status);
+
+  /// Connection test skipped because the API key is empty
+  ///
+  /// In en, this message translates to:
+  /// **'This provider needs an API key.'**
+  String get connection_failed_missing_key;
+
+  /// LM Studio setup reached /v1/models but not the native /api/v1 API
+  ///
+  /// In en, this message translates to:
+  /// **'Connected, but only through the OpenAI-compatible /v1 routes. Chat uses LM Studio\'s native /api/v1 routes, so make sure your proxy forwards them.'**
+  String get connection_warning_lmstudio_native;
+
+  /// Label shown when LocalMind does not send a context length and the server keeps its own
+  ///
+  /// In en, this message translates to:
+  /// **'Server default'**
+  String get context_length_server_default;
+
+  /// Button that stops sending an explicit context length
+  ///
+  /// In en, this message translates to:
+  /// **'Use server default'**
+  String get context_length_use_server_default;
+
   /// Save and proceed button
   ///
   /// In en, this message translates to:

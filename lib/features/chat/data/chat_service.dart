@@ -268,8 +268,11 @@ class LMStudioChatService implements ChatService {
     if (reasoningValue != null) {
       body['reasoning'] = reasoningValue;
     }
-    if (params.contextLength > 0) {
-      body['context_length'] = params.contextLength;
+    // Optional in LM Studio: omitting it keeps the context the model was
+    // loaded with instead of forcing the app's default (4096) onto it.
+    final requestedContextLength = params.requestedContextLength;
+    if (requestedContextLength != null) {
+      body['context_length'] = requestedContextLength;
     }
 
     // MCP integrations are the only tool path supported by /api/v1/chat.

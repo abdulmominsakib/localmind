@@ -232,7 +232,7 @@ class _OsWidgetInvocationHostState
           await apiService.loadModelWithInstanceId(
             defaultServer,
             defaultModelId,
-            contextLength: ref.read(chatParamsProvider).contextLength,
+            contextLength: ref.read(chatParamsProvider).requestedContextLength,
           );
           if (_isCanceled || !mounted || _isDisposed) {
             applyPostLoadState = false;

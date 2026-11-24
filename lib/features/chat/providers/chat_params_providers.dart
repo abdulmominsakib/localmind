@@ -24,6 +24,7 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
   double topP = settings.topP;
   int maxTokens = settings.maxTokens;
   int contextLength = settings.contextLength;
+  bool contextLengthExplicit = settings.contextLengthOverridden;
 
   if (activeConv?.temperature != null) {
     temperature = activeConv!.temperature!;
@@ -36,6 +37,15 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
   }
   if (activeConv?.contextLength != null) {
     contextLength = activeConv!.contextLength!;
+    contextLengthExplicit = true;
+  }
+  if (!contextLengthExplicit) {
+    // Server-default mode: size history truncation to the context the model
+    // is actually loaded with (LM Studio reports it) rather than 4096.
+    final loadedContext = ref.watch(activeModelContextLengthProvider).value;
+    if (loadedContext != null && loadedContext > 0) {
+      contextLength = loadedContext;
+    }
   }
 
   String? systemPrompt;
@@ -78,6 +88,7 @@ final chatParamsProvider = Provider<ChatParameters>((ref) {
     sendTopP: settings.sendTopP,
     maxTokens: maxTokens,
     contextLength: contextLength,
+    contextLengthExplicit: contextLengthExplicit,
     systemPrompt: systemPrompt,
     reasoningEnabled: reasoningEnabled,
     reasoningEffort: resolveEffortForModel(

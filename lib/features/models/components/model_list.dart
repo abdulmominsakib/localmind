@@ -441,7 +441,7 @@ class _ModelListState extends ConsumerState<ModelList> {
                     final settings = ref.read(settingsProvider);
                     final contextLength = ref
                         .read(chatParamsProvider)
-                        .contextLength;
+                        .requestedContextLength;
 
                     if (settings.unloadModelsBeforeLoad) {
                       final instances = await ref.read(

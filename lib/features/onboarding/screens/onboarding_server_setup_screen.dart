@@ -15,6 +15,7 @@ import '../../../core/routes/app_routes.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../servers/data/models/server.dart';
 import '../../servers/providers/server_providers.dart';
+import '../../servers/utils/connection_diagnosis_message.dart';
 import '../../servers/views/components/https_scheme_hint.dart';
 
 class OnboardingServerSetupScreen extends ConsumerStatefulWidget {
@@ -245,13 +246,12 @@ class _OnboardingServerSetupScreenState
     final testServer = _buildServer();
 
     try {
-      final isConnected = await apiService.testConnection(testServer);
+      final diagnosis = await apiService.diagnoseConnection(testServer);
+      final isConnected = diagnosis.ok;
       if (!mounted) return;
       setState(() {
         _testSuccess = isConnected;
-        _testResult = isConnected
-            ? (l10n?.connection_successful ?? 'Connection successful')
-            : (l10n?.connection_failed ?? 'Connection failed');
+        _testResult = connectionDiagnosisMessage(l10n, diagnosis);
       });
       if (isConnected) {
         invalidateAvailableModelsCache(testServer.id);

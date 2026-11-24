@@ -6,11 +6,13 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import '../../../core/components/server_logo.dart';
 import '../../../core/constants/app_constants.dart';
+import '../data/models/connection_diagnosis.dart';
 import '../data/models/server.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/utils/system_insets.dart';
 import '../providers/server_providers.dart';
+import '../utils/connection_diagnosis_message.dart';
 import 'components/https_scheme_hint.dart';
 import 'components/server_icon_picker.dart';
 import 'components/server_type_selector.dart';
@@ -40,6 +42,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   bool _isTesting = false;
   bool _isSaving = false;
   String? _testResult;
+  ConnectionDiagnosis? _testDiagnosis;
 
   bool get _isEditing => widget.editServer != null;
   bool get _requiresEndpoint =>
@@ -193,6 +196,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     setState(() {
       _isTesting = true;
       _testResult = null;
+      _testDiagnosis = null;
     });
     _scrollToBottom();
 
@@ -200,14 +204,15 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     final testServer = _buildServer();
 
     try {
-      final isConnected = await apiService.testConnection(testServer);
+      final diagnosis = await apiService.diagnoseConnection(testServer);
+      final isConnected = diagnosis.ok;
       if (!mounted) return;
       setState(() {
-        _testResult = isConnected
-            ? AppLocalizations.of(context)?.connection_successful ??
-                  'Connection successful'
-            : AppLocalizations.of(context)?.connection_failed ??
-                  'Connection failed';
+        _testDiagnosis = diagnosis;
+        _testResult = connectionDiagnosisMessage(
+          AppLocalizations.of(context),
+          diagnosis,
+        );
       });
       if (isConnected) {
         invalidateAvailableModelsCache(testServer.id);
@@ -877,12 +882,14 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   }
 
   Widget _buildTestResultBanner(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final success = _testResult!.contains(
-      l10n.connection_successful.split('!')[0],
-    );
-    final accent = success ? Colors.green : theme.colorScheme.error;
+    final success = _testDiagnosis?.ok ?? false;
+    final warning = _testDiagnosis?.nativeApiUnavailable ?? false;
+    final accent = !success
+        ? theme.colorScheme.error
+        : warning
+        ? Colors.orange
+        : Colors.green;
 
     return Container(
       padding: const EdgeInsets.all(14),
