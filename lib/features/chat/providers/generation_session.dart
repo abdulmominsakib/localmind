@@ -58,6 +58,11 @@ class GenerationSession {
   /// tool follow-up requests carry it too.
   final String? turnInstruction;
 
+  /// Web search results gathered for this turn, when the user asked for a
+  /// search on this message. Kept for tool follow-ups like
+  /// [turnInstruction].
+  String? webContext;
+
   bool get isOnDevice => server.isOnDevice;
 
   StreamSubscription<ChatResponse>? subscription;

@@ -3932,4 +3932,70 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get read_images_on_device_desc =>
       'Cihazdaki model görselleri göremediğinde, fotoğraftaki metin ve nesneler bu cihazda okunup metin olarak gönderilir. Hiçbir şey telefonunuzdan çıkmaz.';
+
+  @override
+  String get web_search_title => 'Web araması';
+
+  @override
+  String get web_search_enable_desc =>
+      'Sohbetlerin web\'de arama yapmasına izin verir. Arama sözcükleriniz seçtiğiniz sağlayıcıya gider, sayfalar bu cihazdan indirilir. Varsayılan olarak kapalı.';
+
+  @override
+  String get web_search_provider => 'Arama sağlayıcısı';
+
+  @override
+  String get web_search_searxng_url => 'SearXNG adresi';
+
+  @override
+  String get web_search_searxng_hint => 'https://searx.example.com';
+
+  @override
+  String get web_search_searxng_help =>
+      'Kendi SearXNG sunucunuzu kullanın. settings.yml dosyasında search → formats altında JSON biçimini açın.';
+
+  @override
+  String get web_search_api_key => 'API anahtarı';
+
+  @override
+  String get web_search_api_key_saved =>
+      'Kayıtlı bir anahtar var. Değiştirmek için yenisini yazın.';
+
+  @override
+  String get web_search_remove_key => 'Kayıtlı anahtarı kaldır';
+
+  @override
+  String get web_search_test => 'Aramayı dene';
+
+  @override
+  String web_search_test_ok(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Arama çalışıyor: $count sonuç.',
+      zero: 'Arama çalıştı ama sonuç dönmedi.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String web_search_test_failed(String error) {
+    return 'Arama başarısız: $error';
+  }
+
+  @override
+  String get web_search_tools_note =>
+      'Araç kullanan modeller, sohbette araçlar açıkken web.search ve web.fetch\'i de çağırabilir. Her çağrıyı siz onaylarsınız.';
+
+  @override
+  String get attach_search_web => 'Web\'de ara';
+
+  @override
+  String get attach_search_web_desc =>
+      'Yanıtlamadan önce bu mesajı internette ara';
+
+  @override
+  String get web_search_next_chip => 'Bu mesaj için web araması açık';
+
+  @override
+  String get web_search_next_off => 'Web aramasını kapat';
 }

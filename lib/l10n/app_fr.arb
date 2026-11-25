@@ -1032,5 +1032,22 @@
   "turn_instruction_remove": "Supprimer l'instruction",
   "turn_instruction_chip_label": "Prochaine réponse :",
   "read_images_on_device": "Lire les photos pour les modèles texte",
-  "read_images_on_device_desc": "Quand un modèle sur l'appareil ne voit pas les images, le texte et les objets de votre photo sont lus sur cet appareil et envoyés sous forme de texte. Rien ne quitte votre téléphone."
+  "read_images_on_device_desc": "Quand un modèle sur l'appareil ne voit pas les images, le texte et les objets de votre photo sont lus sur cet appareil et envoyés sous forme de texte. Rien ne quitte votre téléphone.",
+  "web_search_title": "Recherche web",
+  "web_search_enable_desc": "Permet aux discussions de chercher sur le web. Vos mots-clés sont envoyés au fournisseur choisi et les pages sont récupérées depuis cet appareil. Désactivée par défaut.",
+  "web_search_provider": "Fournisseur de recherche",
+  "web_search_searxng_url": "Adresse SearXNG",
+  "web_search_searxng_hint": "https://searx.example.com",
+  "web_search_searxng_help": "Utilisez votre propre instance SearXNG. Activez le format JSON dans search → formats de son settings.yml.",
+  "web_search_api_key": "Clé API",
+  "web_search_api_key_saved": "Une clé est enregistrée. Saisissez-en une nouvelle pour la remplacer.",
+  "web_search_remove_key": "Supprimer la clé enregistrée",
+  "web_search_test": "Tester la recherche",
+  "web_search_test_ok": "{count, plural, =0{La recherche a fonctionné mais n’a renvoyé aucun résultat.} =1{La recherche fonctionne : 1 résultat.} other{La recherche fonctionne : {count} résultats.}}",
+  "web_search_test_failed": "Échec de la recherche : {error}",
+  "web_search_tools_note": "Les modèles qui utilisent des outils peuvent aussi appeler web.search et web.fetch quand les outils sont activés dans une discussion. Vous approuvez chaque appel.",
+  "attach_search_web": "Rechercher sur le web",
+  "attach_search_web_desc": "Chercher ce message en ligne avant de répondre",
+  "web_search_next_chip": "Recherche web activée pour ce message",
+  "web_search_next_off": "Désactiver la recherche web"
 }

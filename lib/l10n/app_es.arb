@@ -1035,5 +1035,22 @@
   "turn_instruction_remove": "Quitar instrucción",
   "turn_instruction_chip_label": "Próxima respuesta:",
   "read_images_on_device": "Leer fotos para modelos solo de texto",
-  "read_images_on_device_desc": "Si un modelo en el dispositivo no puede ver imágenes, el texto y los objetos de tu foto se leen en este dispositivo y se envían como texto. Nada sale de tu teléfono."
+  "read_images_on_device_desc": "Si un modelo en el dispositivo no puede ver imágenes, el texto y los objetos de tu foto se leen en este dispositivo y se envían como texto. Nada sale de tu teléfono.",
+  "web_search_title": "Búsqueda web",
+  "web_search_enable_desc": "Permite que los chats busquen en la web. Tus términos de búsqueda van al proveedor que elijas y las páginas se descargan desde este dispositivo. Desactivada por defecto.",
+  "web_search_provider": "Proveedor de búsqueda",
+  "web_search_searxng_url": "Dirección de SearXNG",
+  "web_search_searxng_hint": "https://searx.example.com",
+  "web_search_searxng_help": "Usa tu propia instancia de SearXNG. Activa el formato JSON en search → formats de su settings.yml.",
+  "web_search_api_key": "Clave de API",
+  "web_search_api_key_saved": "Hay una clave guardada. Escribe una nueva para reemplazarla.",
+  "web_search_remove_key": "Quitar la clave guardada",
+  "web_search_test": "Probar búsqueda",
+  "web_search_test_ok": "{count, plural, =0{La búsqueda funcionó pero no devolvió resultados.} =1{La búsqueda funciona: 1 resultado.} other{La búsqueda funciona: {count} resultados.}}",
+  "web_search_test_failed": "La búsqueda falló: {error}",
+  "web_search_tools_note": "Los modelos que usan herramientas también pueden llamar a web.search y web.fetch cuando las herramientas están activas en un chat. Tú apruebas cada llamada.",
+  "attach_search_web": "Buscar en la web",
+  "attach_search_web_desc": "Buscar este mensaje en internet antes de responder",
+  "web_search_next_chip": "Búsqueda web activada para este mensaje",
+  "web_search_next_off": "Desactivar búsqueda web"
 }

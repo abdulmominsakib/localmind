@@ -3803,6 +3803,70 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get read_images_on_device_desc =>
       '当设备上的模型无法查看图片时，会在本机识别照片中的文字和物体，并以文本形式发送。数据不会离开你的手机。';
+
+  @override
+  String get web_search_title => '网页搜索';
+
+  @override
+  String get web_search_enable_desc =>
+      '允许对话在网上查找信息。搜索词会发送给你选择的服务商，网页由本设备直接获取。默认关闭。';
+
+  @override
+  String get web_search_provider => '搜索服务商';
+
+  @override
+  String get web_search_searxng_url => 'SearXNG 地址';
+
+  @override
+  String get web_search_searxng_hint => 'https://searx.example.com';
+
+  @override
+  String get web_search_searxng_help =>
+      '使用你自己的 SearXNG 实例。在其 settings.yml 的 search → formats 中启用 JSON 格式。';
+
+  @override
+  String get web_search_api_key => 'API 密钥';
+
+  @override
+  String get web_search_api_key_saved => '已保存密钥。输入新密钥即可替换。';
+
+  @override
+  String get web_search_remove_key => '移除已保存的密钥';
+
+  @override
+  String get web_search_test => '测试搜索';
+
+  @override
+  String web_search_test_ok(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '搜索可用：$count 条结果。',
+      zero: '搜索成功，但没有返回结果。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String web_search_test_failed(String error) {
+    return '搜索失败：$error';
+  }
+
+  @override
+  String get web_search_tools_note =>
+      '支持工具的模型在对话开启工具时，也可以调用 web.search 和 web.fetch。每次调用都需要你批准。';
+
+  @override
+  String get attach_search_web => '搜索网页';
+
+  @override
+  String get attach_search_web_desc => '回复前先在网上查找这条消息';
+
+  @override
+  String get web_search_next_chip => '此消息已开启网页搜索';
+
+  @override
+  String get web_search_next_off => '关闭网页搜索';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -7110,4 +7174,68 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get read_images_on_device_desc =>
       '當裝置上的模型無法查看圖片時，會在本機辨識照片中的文字和物體，並以文字形式傳送。資料不會離開你的手機。';
+
+  @override
+  String get web_search_title => '網頁搜尋';
+
+  @override
+  String get web_search_enable_desc =>
+      '允許對話在網路上查找資訊。搜尋字詞會傳送給你選擇的服務商，網頁由這台裝置直接取得。預設關閉。';
+
+  @override
+  String get web_search_provider => '搜尋服務商';
+
+  @override
+  String get web_search_searxng_url => 'SearXNG 位址';
+
+  @override
+  String get web_search_searxng_hint => 'https://searx.example.com';
+
+  @override
+  String get web_search_searxng_help =>
+      '使用你自己的 SearXNG 執行個體。在其 settings.yml 的 search → formats 中啟用 JSON 格式。';
+
+  @override
+  String get web_search_api_key => 'API 金鑰';
+
+  @override
+  String get web_search_api_key_saved => '已儲存金鑰。輸入新金鑰即可取代。';
+
+  @override
+  String get web_search_remove_key => '移除已儲存的金鑰';
+
+  @override
+  String get web_search_test => '測試搜尋';
+
+  @override
+  String web_search_test_ok(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '搜尋可用：$count 筆結果。',
+      zero: '搜尋成功，但沒有傳回結果。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String web_search_test_failed(String error) {
+    return '搜尋失敗：$error';
+  }
+
+  @override
+  String get web_search_tools_note =>
+      '支援工具的模型在對話開啟工具時，也可以呼叫 web.search 和 web.fetch。每次呼叫都需要你核准。';
+
+  @override
+  String get attach_search_web => '搜尋網頁';
+
+  @override
+  String get attach_search_web_desc => '回覆前先在網路上查找這則訊息';
+
+  @override
+  String get web_search_next_chip => '此訊息已開啟網頁搜尋';
+
+  @override
+  String get web_search_next_off => '關閉網頁搜尋';
 }

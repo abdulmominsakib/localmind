@@ -139,6 +139,12 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _update(state.copyWith(imageCompressionEnabled: value));
   void setReadImagesOnDevice(bool value) =>
       _update(state.copyWith(readImagesOnDevice: value));
+  void setWebSearchEnabled(bool value) =>
+      _update(state.copyWith(webSearchEnabled: value));
+  void setWebSearchProvider(String value) =>
+      _update(state.copyWith(webSearchProvider: value));
+  void setWebSearchSearxngUrl(String value) =>
+      _update(state.copyWith(webSearchSearxngUrl: value.trim()));
   void setImageCompressionLevel(ImageCompressionLevel value) =>
       _update(state.copyWith(imageCompressionLevel: value));
   void setSmartRepliesUsePersona(bool value) =>

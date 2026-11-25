@@ -3921,4 +3921,71 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get read_images_on_device_desc =>
       'অন-ডিভাইস মডেল ছবি দেখতে না পারলে, আপনার ছবির লেখা ও বস্তু এই ডিভাইসেই পড়ে টেক্সট হিসেবে পাঠানো হয়। কিছুই আপনার ফোনের বাইরে যায় না।';
+
+  @override
+  String get web_search_title => 'ওয়েব সার্চ';
+
+  @override
+  String get web_search_enable_desc =>
+      'চ্যাটকে ওয়েবে খুঁজে দেখতে দিন। আপনার সার্চের শব্দ আপনার বেছে নেওয়া প্রোভাইডারের কাছে যায়, আর পেজগুলো এই ডিভাইস থেকে আনা হয়। ডিফল্টভাবে বন্ধ।';
+
+  @override
+  String get web_search_provider => 'সার্চ প্রোভাইডার';
+
+  @override
+  String get web_search_searxng_url => 'SearXNG ঠিকানা';
+
+  @override
+  String get web_search_searxng_hint => 'https://searx.example.com';
+
+  @override
+  String get web_search_searxng_help =>
+      'নিজের SearXNG ইনস্ট্যান্স ব্যবহার করুন। এর settings.yml-এ search → formats-এর মধ্যে JSON ফরম্যাট চালু করুন।';
+
+  @override
+  String get web_search_api_key => 'API কী';
+
+  @override
+  String get web_search_api_key_saved =>
+      'একটি কী সেভ করা আছে। বদলাতে নতুন কী লিখুন।';
+
+  @override
+  String get web_search_remove_key => 'সেভ করা কী মুছুন';
+
+  @override
+  String get web_search_test => 'সার্চ পরীক্ষা করুন';
+
+  @override
+  String web_search_test_ok(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'সার্চ কাজ করছে: $countটি ফলাফল।',
+      one: 'সার্চ কাজ করছে: ১টি ফলাফল।',
+      zero: 'সার্চ কাজ করেছে কিন্তু কোনো ফলাফল আসেনি।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String web_search_test_failed(String error) {
+    return 'সার্চ ব্যর্থ হয়েছে: $error';
+  }
+
+  @override
+  String get web_search_tools_note =>
+      'যেসব মডেল টুল ব্যবহার করে, চ্যাটে টুল চালু থাকলে তারা web.search ও web.fetch-ও কল করতে পারে। প্রতিটি কল আপনি অনুমোদন করেন।';
+
+  @override
+  String get attach_search_web => 'ওয়েবে খুঁজুন';
+
+  @override
+  String get attach_search_web_desc =>
+      'উত্তর দেওয়ার আগে এই মেসেজটি অনলাইনে খুঁজে দেখুন';
+
+  @override
+  String get web_search_next_chip => 'এই মেসেজের জন্য ওয়েব সার্চ চালু';
+
+  @override
+  String get web_search_next_off => 'ওয়েব সার্চ বন্ধ করুন';
 }

@@ -3898,4 +3898,71 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get read_images_on_device_desc =>
       'When an on-device model can\'t see images, read text and objects in your photo on this device and send them as text. Nothing leaves your phone.';
+
+  @override
+  String get web_search_title => 'Web search';
+
+  @override
+  String get web_search_enable_desc =>
+      'Let chats look things up on the web. Your search words go to the provider you choose, and pages are fetched from this device. Off by default.';
+
+  @override
+  String get web_search_provider => 'Search provider';
+
+  @override
+  String get web_search_searxng_url => 'SearXNG address';
+
+  @override
+  String get web_search_searxng_hint => 'https://searx.example.com';
+
+  @override
+  String get web_search_searxng_help =>
+      'Use your own SearXNG instance. Turn on the JSON format under search → formats in its settings.yml.';
+
+  @override
+  String get web_search_api_key => 'API key';
+
+  @override
+  String get web_search_api_key_saved =>
+      'A key is saved. Type a new one to replace it.';
+
+  @override
+  String get web_search_remove_key => 'Remove saved key';
+
+  @override
+  String get web_search_test => 'Test search';
+
+  @override
+  String web_search_test_ok(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Search works: $count results.',
+      one: 'Search works: 1 result.',
+      zero: 'The search worked but returned no results.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String web_search_test_failed(String error) {
+    return 'Search failed: $error';
+  }
+
+  @override
+  String get web_search_tools_note =>
+      'Models that use tools can also call web.search and web.fetch when tools are on for a chat. You approve each call.';
+
+  @override
+  String get attach_search_web => 'Search the web';
+
+  @override
+  String get attach_search_web_desc =>
+      'Look this message up online before replying';
+
+  @override
+  String get web_search_next_chip => 'Web search on for this message';
+
+  @override
+  String get web_search_next_off => 'Turn off web search';
 }

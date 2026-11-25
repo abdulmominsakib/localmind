@@ -1035,5 +1035,22 @@
   "turn_instruction_remove": "Rimuovi istruzione",
   "turn_instruction_chip_label": "Prossima risposta:",
   "read_images_on_device": "Leggi le foto per i modelli solo testo",
-  "read_images_on_device_desc": "Se un modello sul dispositivo non vede le immagini, testo e oggetti della foto vengono letti su questo dispositivo e inviati come testo. Niente lascia il telefono."
+  "read_images_on_device_desc": "Se un modello sul dispositivo non vede le immagini, testo e oggetti della foto vengono letti su questo dispositivo e inviati come testo. Niente lascia il telefono.",
+  "web_search_title": "Ricerca web",
+  "web_search_enable_desc": "Consenti alle chat di cercare sul web. Le parole cercate vanno al fornitore scelto e le pagine vengono scaricate da questo dispositivo. Disattivata per impostazione predefinita.",
+  "web_search_provider": "Fornitore di ricerca",
+  "web_search_searxng_url": "Indirizzo SearXNG",
+  "web_search_searxng_hint": "https://searx.example.com",
+  "web_search_searxng_help": "Usa la tua istanza SearXNG. Attiva il formato JSON in search → formats del suo settings.yml.",
+  "web_search_api_key": "Chiave API",
+  "web_search_api_key_saved": "È salvata una chiave. Scrivine una nuova per sostituirla.",
+  "web_search_remove_key": "Rimuovi chiave salvata",
+  "web_search_test": "Prova ricerca",
+  "web_search_test_ok": "{count, plural, =0{La ricerca ha funzionato ma non ha restituito risultati.} =1{La ricerca funziona: 1 risultato.} other{La ricerca funziona: {count} risultati.}}",
+  "web_search_test_failed": "Ricerca non riuscita: {error}",
+  "web_search_tools_note": "I modelli che usano strumenti possono anche chiamare web.search e web.fetch quando gli strumenti sono attivi in una chat. Approvi tu ogni chiamata.",
+  "attach_search_web": "Cerca sul web",
+  "attach_search_web_desc": "Cerca questo messaggio online prima di rispondere",
+  "web_search_next_chip": "Ricerca web attiva per questo messaggio",
+  "web_search_next_off": "Disattiva ricerca web"
 }

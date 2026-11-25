@@ -1035,5 +1035,22 @@
   "turn_instruction_remove": "নির্দেশনা সরান",
   "turn_instruction_chip_label": "পরের উত্তর:",
   "read_images_on_device": "শুধু-টেক্সট মডেলের জন্য ছবি পড়ুন",
-  "read_images_on_device_desc": "অন-ডিভাইস মডেল ছবি দেখতে না পারলে, আপনার ছবির লেখা ও বস্তু এই ডিভাইসেই পড়ে টেক্সট হিসেবে পাঠানো হয়। কিছুই আপনার ফোনের বাইরে যায় না।"
+  "read_images_on_device_desc": "অন-ডিভাইস মডেল ছবি দেখতে না পারলে, আপনার ছবির লেখা ও বস্তু এই ডিভাইসেই পড়ে টেক্সট হিসেবে পাঠানো হয়। কিছুই আপনার ফোনের বাইরে যায় না।",
+  "web_search_title": "ওয়েব সার্চ",
+  "web_search_enable_desc": "চ্যাটকে ওয়েবে খুঁজে দেখতে দিন। আপনার সার্চের শব্দ আপনার বেছে নেওয়া প্রোভাইডারের কাছে যায়, আর পেজগুলো এই ডিভাইস থেকে আনা হয়। ডিফল্টভাবে বন্ধ।",
+  "web_search_provider": "সার্চ প্রোভাইডার",
+  "web_search_searxng_url": "SearXNG ঠিকানা",
+  "web_search_searxng_hint": "https://searx.example.com",
+  "web_search_searxng_help": "নিজের SearXNG ইনস্ট্যান্স ব্যবহার করুন। এর settings.yml-এ search → formats-এর মধ্যে JSON ফরম্যাট চালু করুন।",
+  "web_search_api_key": "API কী",
+  "web_search_api_key_saved": "একটি কী সেভ করা আছে। বদলাতে নতুন কী লিখুন।",
+  "web_search_remove_key": "সেভ করা কী মুছুন",
+  "web_search_test": "সার্চ পরীক্ষা করুন",
+  "web_search_test_ok": "{count, plural, =0{সার্চ কাজ করেছে কিন্তু কোনো ফলাফল আসেনি।} =1{সার্চ কাজ করছে: ১টি ফলাফল।} other{সার্চ কাজ করছে: {count}টি ফলাফল।}}",
+  "web_search_test_failed": "সার্চ ব্যর্থ হয়েছে: {error}",
+  "web_search_tools_note": "যেসব মডেল টুল ব্যবহার করে, চ্যাটে টুল চালু থাকলে তারা web.search ও web.fetch-ও কল করতে পারে। প্রতিটি কল আপনি অনুমোদন করেন।",
+  "attach_search_web": "ওয়েবে খুঁজুন",
+  "attach_search_web_desc": "উত্তর দেওয়ার আগে এই মেসেজটি অনলাইনে খুঁজে দেখুন",
+  "web_search_next_chip": "এই মেসেজের জন্য ওয়েব সার্চ চালু",
+  "web_search_next_off": "ওয়েব সার্চ বন্ধ করুন"
 }

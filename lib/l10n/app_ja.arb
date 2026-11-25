@@ -1035,5 +1035,22 @@
   "turn_instruction_remove": "指示を削除",
   "turn_instruction_chip_label": "次の返信:",
   "read_images_on_device": "テキスト専用モデル向けに写真を読み取る",
-  "read_images_on_device_desc": "端末上のモデルが画像を扱えない場合、写真内の文字や物体をこの端末で読み取り、テキストとして送ります。データは端末の外に出ません。"
+  "read_images_on_device_desc": "端末上のモデルが画像を扱えない場合、写真内の文字や物体をこの端末で読み取り、テキストとして送ります。データは端末の外に出ません。",
+  "web_search_title": "ウェブ検索",
+  "web_search_enable_desc": "チャットでウェブを調べられるようにします。検索語は選んだプロバイダーに送られ、ページはこの端末から取得されます。初期設定はオフです。",
+  "web_search_provider": "検索プロバイダー",
+  "web_search_searxng_url": "SearXNG のアドレス",
+  "web_search_searxng_hint": "https://searx.example.com",
+  "web_search_searxng_help": "ご自身の SearXNG インスタンスを使います。settings.yml の search → formats で JSON 形式を有効にしてください。",
+  "web_search_api_key": "API キー",
+  "web_search_api_key_saved": "キーは保存済みです。置き換えるには新しいキーを入力してください。",
+  "web_search_remove_key": "保存したキーを削除",
+  "web_search_test": "検索をテスト",
+  "web_search_test_ok": "{count, plural, =0{検索は成功しましたが、結果はありませんでした。} other{検索できました: {count} 件の結果。}}",
+  "web_search_test_failed": "検索に失敗しました: {error}",
+  "web_search_tools_note": "ツールを使えるモデルは、チャットでツールがオンのときに web.search と web.fetch も呼び出せます。呼び出しは毎回あなたが承認します。",
+  "attach_search_web": "ウェブを検索",
+  "attach_search_web_desc": "返信する前にこのメッセージをオンラインで調べる",
+  "web_search_next_chip": "このメッセージはウェブ検索オン",
+  "web_search_next_off": "ウェブ検索をオフにする"
 }

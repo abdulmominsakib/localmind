@@ -23,6 +23,8 @@ Future<AttachAction?> showAttachSheet(
   bool? sendAsAssistant,
   ValueChanged<bool>? onSendAsAssistantChanged,
   String? turnInstruction,
+  bool? searchWeb,
+  ValueChanged<bool>? onSearchWebChanged,
 }) {
   return showModalBottomSheet<AttachAction>(
     context: context,
@@ -36,6 +38,8 @@ Future<AttachAction?> showAttachSheet(
       sendAsAssistant: sendAsAssistant,
       onSendAsAssistantChanged: onSendAsAssistantChanged,
       turnInstruction: turnInstruction,
+      searchWeb: searchWeb,
+      onSearchWebChanged: onSearchWebChanged,
     ),
   );
 }
@@ -47,6 +51,8 @@ class AttachSheet extends StatefulWidget {
     this.sendAsAssistant,
     this.onSendAsAssistantChanged,
     this.turnInstruction,
+    this.searchWeb,
+    this.onSearchWebChanged,
   });
 
   final ModelInfo? model;
@@ -56,12 +62,18 @@ class AttachSheet extends StatefulWidget {
   /// The one-reply instruction currently set, shown under its option.
   final String? turnInstruction;
 
+  /// Per-message web search; the switch is shown only when non-null (web
+  /// search is enabled and set up).
+  final bool? searchWeb;
+  final ValueChanged<bool>? onSearchWebChanged;
+
   @override
   State<AttachSheet> createState() => _AttachSheetState();
 }
 
 class _AttachSheetState extends State<AttachSheet> {
   late bool? _sendAsAssistant = widget.sendAsAssistant;
+  late bool? _searchWeb = widget.searchWeb;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +160,14 @@ class _AttachSheetState extends State<AttachSheet> {
                 current: widget.turnInstruction,
                 onTap: () => pick(AttachAction.turnInstruction),
               ),
+              if (_searchWeb != null)
+                SearchWebOption(
+                  value: _searchWeb!,
+                  onChanged: (value) {
+                    setState(() => _searchWeb = value);
+                    widget.onSearchWebChanged?.call(value);
+                  },
+                ),
               if (showThinking) ThinkingOption(model: widget.model!),
               if (showRole)
                 SendAsAssistantOption(
@@ -390,6 +410,33 @@ class TurnInstructionOption extends StatelessWidget {
           size: 18,
           color: muted,
         ),
+      ),
+    );
+  }
+}
+
+/// Searches the web for the next message before the model answers.
+class SearchWebOption extends StatelessWidget {
+  const SearchWebOption({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AttachOptionRow(
+      icon: HugeIcons.strokeRoundedGlobalSearch,
+      title: l10n.attach_search_web,
+      subtitle: l10n.attach_search_web_desc,
+      trailing: Switch.adaptive(
+        key: const ValueKey('attach_search_web'),
+        value: value,
+        onChanged: onChanged,
       ),
     );
   }

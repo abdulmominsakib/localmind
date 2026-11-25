@@ -3895,4 +3895,71 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get read_images_on_device_desc =>
       'عندما لا يستطيع نموذج على الجهاز رؤية الصور، تُقرأ النصوص والأشياء في صورتك على هذا الجهاز وتُرسل كنص. لا يغادر أي شيء هاتفك.';
+
+  @override
+  String get web_search_title => 'البحث على الويب';
+
+  @override
+  String get web_search_enable_desc =>
+      'اسمح للمحادثات بالبحث على الويب. تُرسل كلمات البحث إلى المزوّد الذي تختاره، وتُجلب الصفحات من هذا الجهاز. متوقف افتراضيًا.';
+
+  @override
+  String get web_search_provider => 'مزوّد البحث';
+
+  @override
+  String get web_search_searxng_url => 'عنوان SearXNG';
+
+  @override
+  String get web_search_searxng_hint => 'https://searx.example.com';
+
+  @override
+  String get web_search_searxng_help =>
+      'استخدم خادم SearXNG خاصًا بك. فعّل صيغة JSON ضمن search → formats في ملف settings.yml.';
+
+  @override
+  String get web_search_api_key => 'مفتاح API';
+
+  @override
+  String get web_search_api_key_saved =>
+      'تم حفظ مفتاح. اكتب مفتاحًا جديدًا لاستبداله.';
+
+  @override
+  String get web_search_remove_key => 'إزالة المفتاح المحفوظ';
+
+  @override
+  String get web_search_test => 'تجربة البحث';
+
+  @override
+  String web_search_test_ok(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'البحث يعمل: $count نتيجة.',
+      one: 'البحث يعمل: نتيجة واحدة.',
+      zero: 'نجح البحث لكنه لم يُرجع أي نتائج.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String web_search_test_failed(String error) {
+    return 'فشل البحث: $error';
+  }
+
+  @override
+  String get web_search_tools_note =>
+      'يمكن للنماذج التي تستخدم الأدوات أيضًا استدعاء web.search و web.fetch عند تفعيل الأدوات في المحادثة. أنت توافق على كل استدعاء.';
+
+  @override
+  String get attach_search_web => 'البحث على الويب';
+
+  @override
+  String get attach_search_web_desc =>
+      'ابحث عن هذه الرسالة على الإنترنت قبل الرد';
+
+  @override
+  String get web_search_next_chip => 'البحث على الويب مفعّل لهذه الرسالة';
+
+  @override
+  String get web_search_next_off => 'إيقاف البحث على الويب';
 }

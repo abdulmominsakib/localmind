@@ -3944,4 +3944,72 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get read_images_on_device_desc =>
       'Când un model de pe dispozitiv nu poate vedea imagini, textul și obiectele din fotografie sunt citite pe acest dispozitiv și trimise ca text. Nimic nu părăsește telefonul.';
+
+  @override
+  String get web_search_title => 'Căutare pe web';
+
+  @override
+  String get web_search_enable_desc =>
+      'Permite conversațiilor să caute pe web. Termenii căutați ajung la furnizorul ales, iar paginile sunt descărcate de pe acest dispozitiv. Dezactivată implicit.';
+
+  @override
+  String get web_search_provider => 'Furnizor de căutare';
+
+  @override
+  String get web_search_searxng_url => 'Adresa SearXNG';
+
+  @override
+  String get web_search_searxng_hint => 'https://searx.example.com';
+
+  @override
+  String get web_search_searxng_help =>
+      'Folosește propria instanță SearXNG. Activează formatul JSON la search → formats în settings.yml.';
+
+  @override
+  String get web_search_api_key => 'Cheie API';
+
+  @override
+  String get web_search_api_key_saved =>
+      'O cheie este salvată. Scrie una nouă ca s-o înlocuiești.';
+
+  @override
+  String get web_search_remove_key => 'Elimină cheia salvată';
+
+  @override
+  String get web_search_test => 'Testează căutarea';
+
+  @override
+  String web_search_test_ok(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Căutarea funcționează: $count de rezultate.',
+      few: 'Căutarea funcționează: $count rezultate.',
+      one: 'Căutarea funcționează: 1 rezultat.',
+      zero: 'Căutarea a mers, dar nu a returnat rezultate.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String web_search_test_failed(String error) {
+    return 'Căutarea a eșuat: $error';
+  }
+
+  @override
+  String get web_search_tools_note =>
+      'Modelele care folosesc unelte pot apela și web.search și web.fetch când uneltele sunt pornite într-o conversație. Aprobi fiecare apel.';
+
+  @override
+  String get attach_search_web => 'Caută pe web';
+
+  @override
+  String get attach_search_web_desc =>
+      'Caută acest mesaj online înainte de răspuns';
+
+  @override
+  String get web_search_next_chip => 'Căutare pe web activă pentru acest mesaj';
+
+  @override
+  String get web_search_next_off => 'Oprește căutarea pe web';
 }

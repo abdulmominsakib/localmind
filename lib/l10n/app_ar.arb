@@ -1039,5 +1039,22 @@
   "turn_instruction_remove": "إزالة التعليمات",
   "turn_instruction_chip_label": "الرد التالي:",
   "read_images_on_device": "قراءة الصور للنماذج النصية فقط",
-  "read_images_on_device_desc": "عندما لا يستطيع نموذج على الجهاز رؤية الصور، تُقرأ النصوص والأشياء في صورتك على هذا الجهاز وتُرسل كنص. لا يغادر أي شيء هاتفك."
+  "read_images_on_device_desc": "عندما لا يستطيع نموذج على الجهاز رؤية الصور، تُقرأ النصوص والأشياء في صورتك على هذا الجهاز وتُرسل كنص. لا يغادر أي شيء هاتفك.",
+  "web_search_title": "البحث على الويب",
+  "web_search_enable_desc": "اسمح للمحادثات بالبحث على الويب. تُرسل كلمات البحث إلى المزوّد الذي تختاره، وتُجلب الصفحات من هذا الجهاز. متوقف افتراضيًا.",
+  "web_search_provider": "مزوّد البحث",
+  "web_search_searxng_url": "عنوان SearXNG",
+  "web_search_searxng_hint": "https://searx.example.com",
+  "web_search_searxng_help": "استخدم خادم SearXNG خاصًا بك. فعّل صيغة JSON ضمن search → formats في ملف settings.yml.",
+  "web_search_api_key": "مفتاح API",
+  "web_search_api_key_saved": "تم حفظ مفتاح. اكتب مفتاحًا جديدًا لاستبداله.",
+  "web_search_remove_key": "إزالة المفتاح المحفوظ",
+  "web_search_test": "تجربة البحث",
+  "web_search_test_ok": "{count, plural, =0{نجح البحث لكنه لم يُرجع أي نتائج.} =1{البحث يعمل: نتيجة واحدة.} other{البحث يعمل: {count} نتيجة.}}",
+  "web_search_test_failed": "فشل البحث: {error}",
+  "web_search_tools_note": "يمكن للنماذج التي تستخدم الأدوات أيضًا استدعاء web.search و web.fetch عند تفعيل الأدوات في المحادثة. أنت توافق على كل استدعاء.",
+  "attach_search_web": "البحث على الويب",
+  "attach_search_web_desc": "ابحث عن هذه الرسالة على الإنترنت قبل الرد",
+  "web_search_next_chip": "البحث على الويب مفعّل لهذه الرسالة",
+  "web_search_next_off": "إيقاف البحث على الويب"
 }

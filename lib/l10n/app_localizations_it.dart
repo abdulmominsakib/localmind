@@ -3926,4 +3926,71 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get read_images_on_device_desc =>
       'Se un modello sul dispositivo non vede le immagini, testo e oggetti della foto vengono letti su questo dispositivo e inviati come testo. Niente lascia il telefono.';
+
+  @override
+  String get web_search_title => 'Ricerca web';
+
+  @override
+  String get web_search_enable_desc =>
+      'Consenti alle chat di cercare sul web. Le parole cercate vanno al fornitore scelto e le pagine vengono scaricate da questo dispositivo. Disattivata per impostazione predefinita.';
+
+  @override
+  String get web_search_provider => 'Fornitore di ricerca';
+
+  @override
+  String get web_search_searxng_url => 'Indirizzo SearXNG';
+
+  @override
+  String get web_search_searxng_hint => 'https://searx.example.com';
+
+  @override
+  String get web_search_searxng_help =>
+      'Usa la tua istanza SearXNG. Attiva il formato JSON in search → formats del suo settings.yml.';
+
+  @override
+  String get web_search_api_key => 'Chiave API';
+
+  @override
+  String get web_search_api_key_saved =>
+      'È salvata una chiave. Scrivine una nuova per sostituirla.';
+
+  @override
+  String get web_search_remove_key => 'Rimuovi chiave salvata';
+
+  @override
+  String get web_search_test => 'Prova ricerca';
+
+  @override
+  String web_search_test_ok(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'La ricerca funziona: $count risultati.',
+      one: 'La ricerca funziona: 1 risultato.',
+      zero: 'La ricerca ha funzionato ma non ha restituito risultati.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String web_search_test_failed(String error) {
+    return 'Ricerca non riuscita: $error';
+  }
+
+  @override
+  String get web_search_tools_note =>
+      'I modelli che usano strumenti possono anche chiamare web.search e web.fetch quando gli strumenti sono attivi in una chat. Approvi tu ogni chiamata.';
+
+  @override
+  String get attach_search_web => 'Cerca sul web';
+
+  @override
+  String get attach_search_web_desc =>
+      'Cerca questo messaggio online prima di rispondere';
+
+  @override
+  String get web_search_next_chip => 'Ricerca web attiva per questo messaggio';
+
+  @override
+  String get web_search_next_off => 'Disattiva ricerca web';
 }

@@ -3817,4 +3817,68 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get read_images_on_device_desc =>
       '기기 내 모델이 이미지를 볼 수 없으면 사진 속 글자와 사물을 이 기기에서 읽어 텍스트로 보냅니다. 어떤 데이터도 휴대폰 밖으로 나가지 않습니다.';
+
+  @override
+  String get web_search_title => '웹 검색';
+
+  @override
+  String get web_search_enable_desc =>
+      '채팅에서 웹을 찾아볼 수 있게 합니다. 검색어는 선택한 제공자로 전송되고, 페이지는 이 기기에서 가져옵니다. 기본값은 꺼짐입니다.';
+
+  @override
+  String get web_search_provider => '검색 제공자';
+
+  @override
+  String get web_search_searxng_url => 'SearXNG 주소';
+
+  @override
+  String get web_search_searxng_hint => 'https://searx.example.com';
+
+  @override
+  String get web_search_searxng_help =>
+      '직접 운영하는 SearXNG 인스턴스를 사용하세요. settings.yml의 search → formats에서 JSON 형식을 켜 주세요.';
+
+  @override
+  String get web_search_api_key => 'API 키';
+
+  @override
+  String get web_search_api_key_saved => '키가 저장되어 있습니다. 바꾸려면 새 키를 입력하세요.';
+
+  @override
+  String get web_search_remove_key => '저장된 키 삭제';
+
+  @override
+  String get web_search_test => '검색 테스트';
+
+  @override
+  String web_search_test_ok(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '검색이 됩니다: 결과 $count개.',
+      zero: '검색은 되었지만 결과가 없습니다.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String web_search_test_failed(String error) {
+    return '검색 실패: $error';
+  }
+
+  @override
+  String get web_search_tools_note =>
+      '도구를 쓰는 모델은 채팅에서 도구가 켜져 있으면 web.search와 web.fetch도 호출할 수 있습니다. 호출마다 직접 승인합니다.';
+
+  @override
+  String get attach_search_web => '웹 검색';
+
+  @override
+  String get attach_search_web_desc => '답하기 전에 이 메시지를 온라인에서 찾아보기';
+
+  @override
+  String get web_search_next_chip => '이 메시지에 웹 검색 켜짐';
+
+  @override
+  String get web_search_next_off => '웹 검색 끄기';
 }

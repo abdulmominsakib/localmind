@@ -61,6 +61,14 @@ class AppSettings {
   /// For on-device models without vision: read attached photos with on-device
   /// text and object recognition and send what was found as text.
   final bool readImagesOnDevice;
+
+  /// Built-in web search. Off by default: it is the one feature that sends
+  /// the user's words to a third-party service.
+  final bool webSearchEnabled;
+
+  /// A `WebSearchProviderKind` name.
+  final String webSearchProvider;
+  final String webSearchSearxngUrl;
   final ImageCompressionLevel imageCompressionLevel;
   final bool smartRepliesUsePersona;
   final bool keepPersonaOnNewChat;
@@ -132,6 +140,9 @@ class AppSettings {
     this.resumeLastChat = true,
     this.imageCompressionEnabled = false,
     this.readImagesOnDevice = true,
+    this.webSearchEnabled = false,
+    this.webSearchProvider = 'searxng',
+    this.webSearchSearxngUrl = '',
     this.imageCompressionLevel = ImageCompressionLevel.medium,
     this.smartRepliesUsePersona = false,
     this.keepPersonaOnNewChat = false,
@@ -191,6 +202,9 @@ class AppSettings {
     bool? resumeLastChat,
     bool? imageCompressionEnabled,
     bool? readImagesOnDevice,
+    bool? webSearchEnabled,
+    String? webSearchProvider,
+    String? webSearchSearxngUrl,
     ImageCompressionLevel? imageCompressionLevel,
     bool? smartRepliesUsePersona,
     bool? keepPersonaOnNewChat,
@@ -269,6 +283,9 @@ class AppSettings {
       imageCompressionEnabled:
           imageCompressionEnabled ?? this.imageCompressionEnabled,
       readImagesOnDevice: readImagesOnDevice ?? this.readImagesOnDevice,
+      webSearchEnabled: webSearchEnabled ?? this.webSearchEnabled,
+      webSearchProvider: webSearchProvider ?? this.webSearchProvider,
+      webSearchSearxngUrl: webSearchSearxngUrl ?? this.webSearchSearxngUrl,
       imageCompressionLevel:
           imageCompressionLevel ?? this.imageCompressionLevel,
       smartRepliesUsePersona:
@@ -336,6 +353,9 @@ class AppSettings {
       'resumeLastChat': resumeLastChat,
       'imageCompressionEnabled': imageCompressionEnabled,
       'readImagesOnDevice': readImagesOnDevice,
+      'webSearchEnabled': webSearchEnabled,
+      'webSearchProvider': webSearchProvider,
+      'webSearchSearxngUrl': webSearchSearxngUrl,
       'imageCompressionLevel': imageCompressionLevel.name,
       'smartRepliesUsePersona': smartRepliesUsePersona,
       'keepPersonaOnNewChat': keepPersonaOnNewChat,
@@ -403,6 +423,9 @@ class AppSettings {
       resumeLastChat: map['resumeLastChat'] ?? true,
       imageCompressionEnabled: map['imageCompressionEnabled'] ?? false,
       readImagesOnDevice: map['readImagesOnDevice'] as bool? ?? true,
+      webSearchEnabled: map['webSearchEnabled'] as bool? ?? false,
+      webSearchProvider: map['webSearchProvider'] as String? ?? 'searxng',
+      webSearchSearxngUrl: map['webSearchSearxngUrl'] as String? ?? '',
       imageCompressionLevel: _parseImageCompressionLevel(
         map['imageCompressionLevel'],
       ),

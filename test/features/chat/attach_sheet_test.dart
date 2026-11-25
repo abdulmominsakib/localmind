@@ -27,6 +27,8 @@ Future<ProviderContainer> _pump(
   ModelInfo? model,
   bool? sendAsAssistant,
   ValueChanged<bool>? onSendAsAssistantChanged,
+  bool? searchWeb,
+  ValueChanged<bool>? onSearchWebChanged,
 }) async {
   final container = ProviderContainer();
   addTearDown(container.dispose);
@@ -49,6 +51,8 @@ Future<ProviderContainer> _pump(
               model: model,
               sendAsAssistant: sendAsAssistant,
               onSendAsAssistantChanged: onSendAsAssistantChanged,
+              searchWeb: searchWeb,
+              onSearchWebChanged: onSearchWebChanged,
             ),
           ),
         ),
@@ -165,5 +169,23 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('attach_turn_instruction')));
     await tester.pumpAndSettle();
     expect(picked, AttachAction.turnInstruction);
+  });
+
+  testWidgets('no search the web switch until it is set up', (tester) async {
+    await _pump(tester);
+    expect(find.byKey(const ValueKey('attach_search_web')), findsNothing);
+  });
+
+  testWidgets('search the web switch reports its toggle', (tester) async {
+    bool? changed;
+    await _pump(
+      tester,
+      searchWeb: false,
+      onSearchWebChanged: (v) => changed = v,
+    );
+    expect(find.text('Search the web'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('attach_search_web')));
+    await tester.pump();
+    expect(changed, isTrue);
   });
 }

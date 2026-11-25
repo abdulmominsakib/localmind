@@ -7,6 +7,9 @@ import '../data/tools/location_service.dart';
 import '../data/tools/mcp_tool_provider.dart';
 import '../data/tools/tool_definition.dart';
 import '../data/mcp_server_manager.dart';
+import '../data/tools/web/web_search_client.dart';
+import '../data/tools/web/web_search_service.dart';
+import '../data/tools/web/web_tool_provider.dart';
 
 final mcpServerManagerProvider = Provider<McpServerManager>((ref) {
   // Built once: rebuilding would drop every live server connection, so the
@@ -37,11 +40,41 @@ final builtInToolProviderProvider = Provider<BuiltInToolProvider>((ref) {
   );
 });
 
+final webSearchKeyStoreProvider = Provider<WebSearchKeyStore>(
+  (ref) => WebSearchKeyStore(),
+);
+
+final webSearchServiceProvider = Provider<WebSearchService>((ref) {
+  final kind = ref.watch(
+    settingsProvider.select(
+      (s) => WebSearchProviderKind.parse(s.webSearchProvider),
+    ),
+  );
+  final url = ref.watch(settingsProvider.select((s) => s.webSearchSearxngUrl));
+  return WebSearchService(
+    kind: kind,
+    searxngUrl: url,
+    keyStore: ref.watch(webSearchKeyStoreProvider),
+  );
+});
+
+/// Whether web search is switched on and has what it needs to run.
+final webSearchReadyProvider = FutureProvider<bool>((ref) async {
+  if (!ref.watch(settingsProvider.select((s) => s.webSearchEnabled))) {
+    return false;
+  }
+  return ref.watch(webSearchServiceProvider).isConfigured();
+});
+
 final toolRegistryProvider = Provider<ToolRegistry>((ref) {
   final mcpServerManager = ref.watch(mcpServerManagerProvider);
   return ToolRegistry(
     providers: [
       ref.watch(builtInToolProviderProvider),
+      WebToolProvider(
+        service: ref.watch(webSearchServiceProvider),
+        enabled: ref.watch(settingsProvider.select((s) => s.webSearchEnabled)),
+      ),
       McpToolProvider(serverManager: mcpServerManager),
     ],
   );

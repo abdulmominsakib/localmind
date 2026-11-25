@@ -1035,5 +1035,22 @@
   "turn_instruction_remove": "移除指示",
   "turn_instruction_chip_label": "下一則回覆：",
   "read_images_on_device": "為純文字模型讀取照片",
-  "read_images_on_device_desc": "當裝置上的模型無法查看圖片時，會在本機辨識照片中的文字和物體，並以文字形式傳送。資料不會離開你的手機。"
+  "read_images_on_device_desc": "當裝置上的模型無法查看圖片時，會在本機辨識照片中的文字和物體，並以文字形式傳送。資料不會離開你的手機。",
+  "web_search_title": "網頁搜尋",
+  "web_search_enable_desc": "允許對話在網路上查找資訊。搜尋字詞會傳送給你選擇的服務商，網頁由這台裝置直接取得。預設關閉。",
+  "web_search_provider": "搜尋服務商",
+  "web_search_searxng_url": "SearXNG 位址",
+  "web_search_searxng_hint": "https://searx.example.com",
+  "web_search_searxng_help": "使用你自己的 SearXNG 執行個體。在其 settings.yml 的 search → formats 中啟用 JSON 格式。",
+  "web_search_api_key": "API 金鑰",
+  "web_search_api_key_saved": "已儲存金鑰。輸入新金鑰即可取代。",
+  "web_search_remove_key": "移除已儲存的金鑰",
+  "web_search_test": "測試搜尋",
+  "web_search_test_ok": "{count, plural, =0{搜尋成功，但沒有傳回結果。} other{搜尋可用：{count} 筆結果。}}",
+  "web_search_test_failed": "搜尋失敗：{error}",
+  "web_search_tools_note": "支援工具的模型在對話開啟工具時，也可以呼叫 web.search 和 web.fetch。每次呼叫都需要你核准。",
+  "attach_search_web": "搜尋網頁",
+  "attach_search_web_desc": "回覆前先在網路上查找這則訊息",
+  "web_search_next_chip": "此訊息已開啟網頁搜尋",
+  "web_search_next_off": "關閉網頁搜尋"
 }

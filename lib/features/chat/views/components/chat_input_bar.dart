@@ -23,12 +23,14 @@ import '../../../stt/utils/stt_error_messages.dart';
 import '../../../tts/providers/tts_providers.dart';
 import '../../../voice_mode/providers/voice_mode_provider.dart';
 import '../../providers/chat_providers.dart';
+import '../../providers/tooling_providers.dart';
 import '../../utils/attachment_helpers.dart';
 import '../../utils/image_upload_utils.dart';
 import '../../../models/views/model_picker_sheet.dart';
 import '../../../os_widget/providers/os_widget_providers.dart';
 import 'attach_sheet.dart';
 import 'turn_instruction_chip.dart';
+import 'web_search_next_chip.dart';
 import 'image_preview_dialog.dart';
 import '../../../voice_mode/views/voice_mode_overlay.dart';
 
@@ -357,11 +359,18 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
   Future<void> _showAttachMenu() async {
     final showRoleSwap = ref.read(settingsProvider).roleSwapButtonEnabled;
+    final webSearchReady = await ref
+        .read(webSearchReadyProvider.future)
+        .catchError((_) => false);
+    if (!mounted) return;
     final result = await showAttachSheet(
       context,
       model: ref.read(selectedModelProvider),
       sendAsAssistant: showRoleSwap ? _sendAsAssistant : null,
       turnInstruction: ref.read(turnInstructionProvider),
+      searchWeb: webSearchReady ? ref.read(webSearchNextProvider) : null,
+      onSearchWebChanged: (value) =>
+          ref.read(webSearchNextProvider.notifier).set(value),
       onSendAsAssistantChanged: (value) {
         ref.read(appHapticsProvider).light();
         setState(() => _sendAsAssistant = value);
@@ -1065,6 +1074,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
 
           children: [
             const TurnInstructionChip(),
+            const WebSearchNextChip(),
             if (imageNotice != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),

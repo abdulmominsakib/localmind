@@ -1032,5 +1032,22 @@
   "turn_instruction_remove": "Anweisung entfernen",
   "turn_instruction_chip_label": "Nächste Antwort:",
   "read_images_on_device": "Fotos für reine Textmodelle lesen",
-  "read_images_on_device_desc": "Wenn ein On-Device-Modell keine Bilder sehen kann, werden Text und Objekte in deinem Foto auf diesem Gerät erkannt und als Text gesendet. Nichts verlässt dein Telefon."
+  "read_images_on_device_desc": "Wenn ein On-Device-Modell keine Bilder sehen kann, werden Text und Objekte in deinem Foto auf diesem Gerät erkannt und als Text gesendet. Nichts verlässt dein Telefon.",
+  "web_search_title": "Websuche",
+  "web_search_enable_desc": "Chats dürfen im Web nachschlagen. Deine Suchbegriffe gehen an den gewählten Anbieter, Seiten werden von diesem Gerät abgerufen. Standardmäßig aus.",
+  "web_search_provider": "Suchanbieter",
+  "web_search_searxng_url": "SearXNG-Adresse",
+  "web_search_searxng_hint": "https://searx.example.com",
+  "web_search_searxng_help": "Nutze deine eigene SearXNG-Instanz. Aktiviere in deren settings.yml unter search → formats das JSON-Format.",
+  "web_search_api_key": "API-Schlüssel",
+  "web_search_api_key_saved": "Ein Schlüssel ist gespeichert. Gib einen neuen ein, um ihn zu ersetzen.",
+  "web_search_remove_key": "Gespeicherten Schlüssel entfernen",
+  "web_search_test": "Suche testen",
+  "web_search_test_ok": "{count, plural, =0{Die Suche hat funktioniert, aber keine Ergebnisse geliefert.} =1{Suche funktioniert: 1 Ergebnis.} other{Suche funktioniert: {count} Ergebnisse.}}",
+  "web_search_test_failed": "Suche fehlgeschlagen: {error}",
+  "web_search_tools_note": "Modelle mit Werkzeugen können auch web.search und web.fetch aufrufen, wenn Werkzeuge im Chat aktiv sind. Du bestätigst jeden Aufruf.",
+  "attach_search_web": "Im Web suchen",
+  "attach_search_web_desc": "Diese Nachricht vor der Antwort online nachschlagen",
+  "web_search_next_chip": "Websuche für diese Nachricht an",
+  "web_search_next_off": "Websuche ausschalten"
 }

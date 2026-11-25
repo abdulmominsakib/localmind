@@ -1032,5 +1032,22 @@
   "turn_instruction_remove": "Talimatı kaldır",
   "turn_instruction_chip_label": "Sonraki yanıt:",
   "read_images_on_device": "Yalnızca metin modelleri için fotoğrafları oku",
-  "read_images_on_device_desc": "Cihazdaki model görselleri göremediğinde, fotoğraftaki metin ve nesneler bu cihazda okunup metin olarak gönderilir. Hiçbir şey telefonunuzdan çıkmaz."
+  "read_images_on_device_desc": "Cihazdaki model görselleri göremediğinde, fotoğraftaki metin ve nesneler bu cihazda okunup metin olarak gönderilir. Hiçbir şey telefonunuzdan çıkmaz.",
+  "web_search_title": "Web araması",
+  "web_search_enable_desc": "Sohbetlerin web'de arama yapmasına izin verir. Arama sözcükleriniz seçtiğiniz sağlayıcıya gider, sayfalar bu cihazdan indirilir. Varsayılan olarak kapalı.",
+  "web_search_provider": "Arama sağlayıcısı",
+  "web_search_searxng_url": "SearXNG adresi",
+  "web_search_searxng_hint": "https://searx.example.com",
+  "web_search_searxng_help": "Kendi SearXNG sunucunuzu kullanın. settings.yml dosyasında search → formats altında JSON biçimini açın.",
+  "web_search_api_key": "API anahtarı",
+  "web_search_api_key_saved": "Kayıtlı bir anahtar var. Değiştirmek için yenisini yazın.",
+  "web_search_remove_key": "Kayıtlı anahtarı kaldır",
+  "web_search_test": "Aramayı dene",
+  "web_search_test_ok": "{count, plural, =0{Arama çalıştı ama sonuç dönmedi.} other{Arama çalışıyor: {count} sonuç.}}",
+  "web_search_test_failed": "Arama başarısız: {error}",
+  "web_search_tools_note": "Araç kullanan modeller, sohbette araçlar açıkken web.search ve web.fetch'i de çağırabilir. Her çağrıyı siz onaylarsınız.",
+  "attach_search_web": "Web'de ara",
+  "attach_search_web_desc": "Yanıtlamadan önce bu mesajı internette ara",
+  "web_search_next_chip": "Bu mesaj için web araması açık",
+  "web_search_next_off": "Web aramasını kapat"
 }

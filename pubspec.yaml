@@ -105,6 +105,7 @@ dependencies:
   google_mlkit_image_labeling: ^1.0.3
 
 dev_dependencies:
+  html: ^0.15.7
   flutter_test:
     sdk: flutter
   litertlm_dart: 0.19.1+3

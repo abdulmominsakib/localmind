@@ -9,3 +9,4 @@ export 'model_loading_providers.dart';
 export 'model_selection_providers.dart';
 export 'smart_reply_providers.dart';
 export 'turn_instruction_provider.dart';
+export 'web_search_next_provider.dart';

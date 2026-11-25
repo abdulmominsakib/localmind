@@ -1046,5 +1046,22 @@
   "turn_instruction_remove": "Remover instrução",
   "turn_instruction_chip_label": "Próxima resposta:",
   "read_images_on_device": "Ler fotos para modelos só de texto",
-  "read_images_on_device_desc": "Quando um modelo no dispositivo não vê imagens, o texto e os objetos da foto são lidos neste dispositivo e enviados como texto. Nada sai do seu telefone."
+  "read_images_on_device_desc": "Quando um modelo no dispositivo não vê imagens, o texto e os objetos da foto são lidos neste dispositivo e enviados como texto. Nada sai do seu telefone.",
+  "web_search_title": "Pesquisa na web",
+  "web_search_enable_desc": "Permite que as conversas pesquisem na web. Seus termos de busca vão para o provedor escolhido e as páginas são baixadas deste dispositivo. Desativada por padrão.",
+  "web_search_provider": "Provedor de pesquisa",
+  "web_search_searxng_url": "Endereço do SearXNG",
+  "web_search_searxng_hint": "https://searx.example.com",
+  "web_search_searxng_help": "Use sua própria instância do SearXNG. Ative o formato JSON em search → formats no settings.yml dela.",
+  "web_search_api_key": "Chave de API",
+  "web_search_api_key_saved": "Há uma chave salva. Digite uma nova para substituí-la.",
+  "web_search_remove_key": "Remover chave salva",
+  "web_search_test": "Testar pesquisa",
+  "web_search_test_ok": "{count, plural, =0{A pesquisa funcionou, mas não trouxe resultados.} =1{A pesquisa funciona: 1 resultado.} other{A pesquisa funciona: {count} resultados.}}",
+  "web_search_test_failed": "A pesquisa falhou: {error}",
+  "web_search_tools_note": "Modelos que usam ferramentas também podem chamar web.search e web.fetch quando as ferramentas estão ativas numa conversa. Você aprova cada chamada.",
+  "attach_search_web": "Pesquisar na web",
+  "attach_search_web_desc": "Pesquisar esta mensagem na internet antes de responder",
+  "web_search_next_chip": "Pesquisa na web ativa para esta mensagem",
+  "web_search_next_off": "Desativar pesquisa na web"
 }

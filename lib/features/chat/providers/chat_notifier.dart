@@ -49,6 +49,7 @@ import 'message_selection_provider.dart';
 import 'model_selection_providers.dart';
 import 'tooling_providers.dart';
 import 'turn_instruction_provider.dart';
+import 'web_search_next_provider.dart';
 import '../utils/message_variants.dart';
 import '../../tts/providers/tts_providers.dart';
 import '../../stt/providers/stt_providers.dart' as stt;
@@ -1067,6 +1068,10 @@ class ChatNotifier extends Notifier<ChatState> {
     final turnInstruction = target.isImageGeneration
         ? null
         : ref.read(turnInstructionProvider.notifier).take();
+    final searchWeb =
+        !target.isImageGeneration &&
+        ref.read(webSearchNextProvider.notifier).take() &&
+        content.trim().isNotEmpty;
 
     await _abortStreamImmediately();
     if (!ref.mounted) return;
@@ -1229,9 +1234,15 @@ class ChatNotifier extends Notifier<ChatState> {
       );
     }
 
+    if (searchWeb) {
+      session.webContext = await _webContextFor(trimmedContent);
+      if (!ref.mounted || session.cancelled) return;
+    }
+
     final messagesForApi = _buildMessagesForApi(
       selectedModel,
       turnInstruction: session.turnInstruction,
+      webContext: session.webContext,
     );
 
     try {
@@ -1686,6 +1697,18 @@ class ChatNotifier extends Notifier<ChatState> {
     }
   }
 
+  /// Runs the per-message web search. Never throws: a failure becomes a note
+  /// telling the model the search didn't work.
+  Future<String> _webContextFor(String query) async {
+    try {
+      return await ref.read(webSearchServiceProvider).buildContext(query);
+    } catch (e) {
+      Log.warning('Web search for the message failed: $e');
+      return 'A web search was requested but failed. Tell the user the '
+          'search did not work.';
+    }
+  }
+
   /// For an on-device model without vision, swaps attached photos for what
   /// on-device text and object recognition read from them.
   Future<List<Message>> _readImagesIfNeeded(
@@ -1711,6 +1734,7 @@ class ChatNotifier extends Notifier<ChatState> {
   List<Message> _buildMessagesForApi(
     ModelInfo? selectedModel, {
     String? turnInstruction,
+    String? webContext,
   }) {
     final settings = ref.read(settingsProvider);
     final messages = <Message>[];
@@ -1730,6 +1754,11 @@ class ChatNotifier extends Notifier<ChatState> {
             : null);
 
     systemContent = withTurnInstruction(systemContent, turnInstruction);
+    if (webContext != null && webContext.trim().isNotEmpty) {
+      systemContent = (systemContent == null || systemContent.trim().isEmpty)
+          ? webContext
+          : '$systemContent\n\n$webContext';
+    }
 
     final isVoiceActive = ref.read(voiceModeProvider).isActive;
     if (isVoiceActive && settings.conciseVoiceResponsesEnabled) {
@@ -2670,6 +2699,7 @@ class ChatNotifier extends Notifier<ChatState> {
         : _buildMessagesForApi(
             selectedModel,
             turnInstruction: isToolFollowup ? session.turnInstruction : null,
+            webContext: isToolFollowup ? session.webContext : null,
           );
 
     if (!isToolFollowup &&

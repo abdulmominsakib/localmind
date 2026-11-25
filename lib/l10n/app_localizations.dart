@@ -7186,6 +7186,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'When an on-device model can\'t see images, read text and objects in your photo on this device and send them as text. Nothing leaves your phone.'**
   String get read_images_on_device_desc;
+
+  /// Web search UI: web_search_title
+  ///
+  /// In en, this message translates to:
+  /// **'Web search'**
+  String get web_search_title;
+
+  /// Web search UI: web_search_enable_desc
+  ///
+  /// In en, this message translates to:
+  /// **'Let chats look things up on the web. Your search words go to the provider you choose, and pages are fetched from this device. Off by default.'**
+  String get web_search_enable_desc;
+
+  /// Web search UI: web_search_provider
+  ///
+  /// In en, this message translates to:
+  /// **'Search provider'**
+  String get web_search_provider;
+
+  /// Web search UI: web_search_searxng_url
+  ///
+  /// In en, this message translates to:
+  /// **'SearXNG address'**
+  String get web_search_searxng_url;
+
+  /// Web search UI: web_search_searxng_hint
+  ///
+  /// In en, this message translates to:
+  /// **'https://searx.example.com'**
+  String get web_search_searxng_hint;
+
+  /// Web search UI: web_search_searxng_help
+  ///
+  /// In en, this message translates to:
+  /// **'Use your own SearXNG instance. Turn on the JSON format under search → formats in its settings.yml.'**
+  String get web_search_searxng_help;
+
+  /// Web search UI: web_search_api_key
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get web_search_api_key;
+
+  /// Web search UI: web_search_api_key_saved
+  ///
+  /// In en, this message translates to:
+  /// **'A key is saved. Type a new one to replace it.'**
+  String get web_search_api_key_saved;
+
+  /// Web search UI: web_search_remove_key
+  ///
+  /// In en, this message translates to:
+  /// **'Remove saved key'**
+  String get web_search_remove_key;
+
+  /// Web search UI: web_search_test
+  ///
+  /// In en, this message translates to:
+  /// **'Test search'**
+  String get web_search_test;
+
+  /// Result of the test search
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{The search worked but returned no results.} =1{Search works: 1 result.} other{Search works: {count} results.}}'**
+  String web_search_test_ok(int count);
+
+  /// Test search error
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed: {error}'**
+  String web_search_test_failed(String error);
+
+  /// Web search UI: web_search_tools_note
+  ///
+  /// In en, this message translates to:
+  /// **'Models that use tools can also call web.search and web.fetch when tools are on for a chat. You approve each call.'**
+  String get web_search_tools_note;
+
+  /// Web search UI: attach_search_web
+  ///
+  /// In en, this message translates to:
+  /// **'Search the web'**
+  String get attach_search_web;
+
+  /// Web search UI: attach_search_web_desc
+  ///
+  /// In en, this message translates to:
+  /// **'Look this message up online before replying'**
+  String get attach_search_web_desc;
+
+  /// Web search UI: web_search_next_chip
+  ///
+  /// In en, this message translates to:
+  /// **'Web search on for this message'**
+  String get web_search_next_chip;
+
+  /// Web search UI: web_search_next_off
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off web search'**
+  String get web_search_next_off;
 }
 
 class _AppLocalizationsDelegate

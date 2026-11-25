@@ -1035,5 +1035,22 @@
   "turn_instruction_remove": "निर्देश हटाएँ",
   "turn_instruction_chip_label": "अगला जवाब:",
   "read_images_on_device": "सिर्फ़-टेक्स्ट मॉडल के लिए फ़ोटो पढ़ें",
-  "read_images_on_device_desc": "जब ऑन-डिवाइस मॉडल चित्र नहीं देख सकता, तो आपकी फ़ोटो का टेक्स्ट और वस्तुएँ इसी डिवाइस पर पढ़कर टेक्स्ट के रूप में भेजी जाती हैं। कुछ भी आपके फ़ोन से बाहर नहीं जाता।"
+  "read_images_on_device_desc": "जब ऑन-डिवाइस मॉडल चित्र नहीं देख सकता, तो आपकी फ़ोटो का टेक्स्ट और वस्तुएँ इसी डिवाइस पर पढ़कर टेक्स्ट के रूप में भेजी जाती हैं। कुछ भी आपके फ़ोन से बाहर नहीं जाता।",
+  "web_search_title": "वेब सर्च",
+  "web_search_enable_desc": "चैट को वेब पर खोजने दें। आपके खोज शब्द आपके चुने प्रोवाइडर को जाते हैं, और पेज इसी डिवाइस से लाए जाते हैं। डिफ़ॉल्ट रूप से बंद।",
+  "web_search_provider": "सर्च प्रोवाइडर",
+  "web_search_searxng_url": "SearXNG पता",
+  "web_search_searxng_hint": "https://searx.example.com",
+  "web_search_searxng_help": "अपना SearXNG इंस्टेंस इस्तेमाल करें। उसकी settings.yml में search → formats के अंदर JSON फ़ॉर्मैट चालू करें।",
+  "web_search_api_key": "API कुंजी",
+  "web_search_api_key_saved": "एक कुंजी सेव है। बदलने के लिए नई कुंजी लिखें।",
+  "web_search_remove_key": "सेव की गई कुंजी हटाएँ",
+  "web_search_test": "सर्च आज़माएँ",
+  "web_search_test_ok": "{count, plural, =0{सर्च चला, पर कोई नतीजा नहीं मिला।} =1{सर्च काम कर रहा है: 1 नतीजा।} other{सर्च काम कर रहा है: {count} नतीजे।}}",
+  "web_search_test_failed": "सर्च विफल: {error}",
+  "web_search_tools_note": "टूल इस्तेमाल करने वाले मॉडल, चैट में टूल चालू होने पर web.search और web.fetch भी कॉल कर सकते हैं। हर कॉल आप मंज़ूर करते हैं।",
+  "attach_search_web": "वेब पर खोजें",
+  "attach_search_web_desc": "जवाब देने से पहले यह संदेश ऑनलाइन खोजें",
+  "web_search_next_chip": "इस संदेश के लिए वेब सर्च चालू",
+  "web_search_next_off": "वेब सर्च बंद करें"
 }

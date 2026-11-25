@@ -3924,4 +3924,73 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get read_images_on_device_desc =>
       'Если модель на устройстве не видит изображения, текст и объекты на фото распознаются на этом устройстве и отправляются текстом. Ничего не покидает телефон.';
+
+  @override
+  String get web_search_title => 'Поиск в интернете';
+
+  @override
+  String get web_search_enable_desc =>
+      'Разрешает чатам искать в интернете. Поисковые запросы уходят выбранному провайдеру, страницы загружаются с этого устройства. По умолчанию выключено.';
+
+  @override
+  String get web_search_provider => 'Поисковый провайдер';
+
+  @override
+  String get web_search_searxng_url => 'Адрес SearXNG';
+
+  @override
+  String get web_search_searxng_hint => 'https://searx.example.com';
+
+  @override
+  String get web_search_searxng_help =>
+      'Используйте свой экземпляр SearXNG. Включите формат JSON в разделе search → formats файла settings.yml.';
+
+  @override
+  String get web_search_api_key => 'Ключ API';
+
+  @override
+  String get web_search_api_key_saved =>
+      'Ключ сохранён. Введите новый, чтобы заменить его.';
+
+  @override
+  String get web_search_remove_key => 'Удалить сохранённый ключ';
+
+  @override
+  String get web_search_test => 'Проверить поиск';
+
+  @override
+  String web_search_test_ok(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Поиск работает: $count результатов.',
+      few: 'Поиск работает: $count результата.',
+      one: 'Поиск работает: $count результат.',
+      zero: 'Поиск сработал, но ничего не нашёл.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String web_search_test_failed(String error) {
+    return 'Ошибка поиска: $error';
+  }
+
+  @override
+  String get web_search_tools_note =>
+      'Модели с инструментами также могут вызывать web.search и web.fetch, когда в чате включены инструменты. Каждый вызов вы подтверждаете.';
+
+  @override
+  String get attach_search_web => 'Искать в интернете';
+
+  @override
+  String get attach_search_web_desc =>
+      'Поискать по этому сообщению в интернете перед ответом';
+
+  @override
+  String get web_search_next_chip =>
+      'Поиск в интернете включён для этого сообщения';
+
+  @override
+  String get web_search_next_off => 'Выключить поиск в интернете';
 }

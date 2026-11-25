@@ -11,6 +11,7 @@ import '../../chat/providers/tooling_providers.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/utils/system_insets.dart';
+import 'components/web_search_settings_card.dart';
 
 class McpToolsScreen extends ConsumerWidget {
   const McpToolsScreen({super.key});
@@ -208,6 +209,8 @@ class McpToolsScreen extends ConsumerWidget {
                                   ref.invalidate(availableToolsProvider),
                             ),
                           ],
+                          const SizedBox(height: 16),
+                          const WebSearchSettingsCard(),
                           const SizedBox(height: 16),
                           toolsCard,
                         ],
