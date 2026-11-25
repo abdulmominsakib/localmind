@@ -1,155 +1,198 @@
-import 'dart:convert';
-
+import 'package:dinja/ast.dart';
 import 'package:dinja/dinja.dart';
-// ignore: implementation_imports
-import 'package:dinja/src/ast/nodes.dart';
-// ignore: implementation_imports
-import 'package:dinja/src/parser.dart';
-// ignore: implementation_imports
-import 'package:dinja/src/lexer.dart';
 
+import '../../llama_logger.dart';
 import '../template_caps.dart';
+import 'jinja_usage_probe.dart';
+import 'legacy_jinja_analyzer.dart';
 
-/// Analyzes a Jinja template AST to detect capabilities more robustly than regex.
+/// Detects a Jinja chat template's capabilities as llama.cpp does.
 class JinjaAnalyzer {
-  static const String _systemMarker = '__llamadart_caps_system__';
-  static const String _typedTextMarker = '__llamadart_caps_typed_text__';
-  static const String _typedImageMarker = '__llamadart_caps_typed_image__';
-  static const String _toolNameMarker = '__llamadart_caps_tool__';
-  static const String _toolCallMarker1 = '__llamadart_caps_call_1__';
-  static const String _toolCallMarker2 = '__llamadart_caps_call_2__';
-
   /// Analyzes the [source] template and returns detected [TemplateCaps].
   static TemplateCaps analyze(String source) {
-    try {
-      final lexer = Lexer(source);
-      final result = lexer.tokenize();
-      final parser = Parser(result.tokens, source);
-      final program = parser.parse();
-
-      final astCaps = _analyzeAST(program, source);
-      return _probeWithExecution(source, astCaps);
-    } catch (e) {
-      // Fallback to regex if parsing fails (e.g. invalid syntax)
-      return TemplateCaps.detectRegex(source);
-    }
+    return analyzeWithOutcome(source).caps;
   }
 
-  static TemplateCaps _probeWithExecution(String source, TemplateCaps astCaps) {
-    final template = _createTemplate(source);
-    if (template == null) {
-      return astCaps;
+  /// Analyzes the [source] template like [analyze] and reports whether any
+  /// step failed.
+  ///
+  /// The content, system-role and tool capabilities come from llama.cpp's
+  /// `jinja::caps_get` probes at llama.cpp 7fe450e19: each renders a fixed
+  /// conversation and reads which of its values the template used, through
+  /// [JinjaUsageProbe]. `supportsThinking` comes from the template's string
+  /// literals.
+  ///
+  /// The media-part probe is not llama.cpp's: a template that reads both
+  /// strings and part lists is rendered with an image part and with an audio
+  /// part, and `supportsTypedContent` is cleared when it rejects both.
+  /// `ChatTemplateEngine` gives no template a media part; the probe only
+  /// selects the handler method that renders a request carrying media.
+  /// Nor is the tool-response probe behind
+  /// [TemplateCaps.supportsToolResponses].
+  ///
+  /// A probe render that throws is one of llama.cpp's outcomes, not a
+  /// failure: it is logged at debug level and read as llama.cpp reads it.
+  /// `failed` is `true` only when the template does not parse, and the regex
+  /// fallback produced `caps`. A template that parses but cannot be prepared
+  /// for the probes gets [LegacyJinjaAnalyzer]'s outcome.
+  ///
+  /// [prepare] builds the probe; tests pass one that throws.
+  static ({TemplateCaps caps, bool failed}) analyzeWithOutcome(
+    String source, {
+    JinjaUsageProbe Function(Program program) prepare = JinjaUsageProbe.new,
+  }) {
+    final Program program;
+    try {
+      program = parseTemplate(source);
+    } catch (e) {
+      // Fallback to regex if parsing fails (e.g. invalid syntax)
+      return (caps: TemplateCaps.detectRegex(source), failed: true);
+    }
+    final JinjaUsageProbe probe;
+    try {
+      probe = prepare(program);
+    } catch (error) {
+      LlamaLogger.instance.debug(
+        'JinjaAnalyzer: Template could not be prepared for capability '
+        'probes; using the legacy analysis: $error',
+      );
+      return LegacyJinjaAnalyzer.analyzeWithOutcome(source);
+    }
+    final supportsThinking = _supportsThinking(program);
+    return (
+      caps: _probe(probe, supportsThinking: supportsThinking),
+      failed: false,
+    );
+  }
+
+  static TemplateCaps _probe(
+    JinjaUsageProbe probe, {
+    required bool supportsThinking,
+  }) {
+    var supportsStringContent = true;
+    var supportsTypedContent = false;
+    var supportsSystemRole = true;
+    var supportsTools = true;
+    var supportsToolCalls = true;
+    var supportsParallelToolCalls = true;
+    var supportsObjectArguments = false;
+
+    bool usedAsArray(JinjaUsageRun run, JinjaValue value) {
+      final ops = run.ops(value);
+      return ops.contains('selectattr') || ops.contains('array_access');
     }
 
-    var supportsSystemRole = astCaps.supportsSystemRole;
-    var supportsTools = astCaps.supportsTools;
-    var supportsToolCalls = astCaps.supportsToolCalls;
-    var supportsParallelToolCalls = astCaps.supportsParallelToolCalls;
-    var supportsStringContent = astCaps.supportsStringContent;
-    var supportsTypedContent = astCaps.supportsTypedContent;
-
-    final stringRender = _renderTemplate(
-      template,
-      messages: <Map<String, dynamic>>[
-        <String, dynamic>{'role': 'user', 'content': 'content'},
-      ],
-      tools: const <Map<String, dynamic>>[],
-    );
-    if (stringRender == null) {
+    final stringContent = _Probe.messages([
+      {'role': 'user', 'content': _contentMarker},
+    ]);
+    final stringRun = _render(probe, 'string-content', stringContent);
+    final content = stringContent.message(0, 'content');
+    final checksForString = stringRun.ops(content).contains('test_is_string');
+    final stringUsedAsArray = usedAsArray(stringRun, content);
+    if (stringUsedAsArray) supportsTypedContent = true;
+    if (!stringRun.success) {
+      supportsStringContent = false;
+    } else if (stringUsedAsArray &&
+        !stringRun.output.contains(_contentMarker)) {
       supportsStringContent = false;
     }
 
-    final typedContent = <Map<String, dynamic>>[
-      <String, dynamic>{'type': 'text', 'text': _typedTextMarker},
-      <String, dynamic>{'type': 'image', 'image_url': _typedImageMarker},
-    ];
-    final typedRender = _renderTemplate(
-      template,
-      messages: <Map<String, dynamic>>[
-        <String, dynamic>{'role': 'user', 'content': typedContent},
-      ],
-      tools: const <Map<String, dynamic>>[],
-    );
-    final typedOutput = typedRender ?? '';
-    final includesTypedText = typedOutput.contains(_typedTextMarker);
-    final includesTypedImage = typedOutput.contains(_typedImageMarker);
-    final likelyRawContentDump = includesTypedText && includesTypedImage;
-    if (includesTypedText &&
-        (astCaps.supportsTypedContent || !likelyRawContentDump)) {
-      supportsTypedContent = true;
+    if (checksForString) {
+      final typedContent = _Probe.messages([
+        {'role': 'user', 'content': <Object?>[]},
+      ]);
+      final typedRun = _render(probe, 'typed-content', typedContent);
+      if (typedRun.success &&
+          usedAsArray(typedRun, typedContent.message(0, 'content'))) {
+        supportsTypedContent = true;
+      }
     }
 
-    final systemRender = _renderTemplate(
-      template,
-      messages: <Map<String, dynamic>>[
-        <String, dynamic>{'role': 'system', 'content': _systemMarker},
-        <String, dynamic>{'role': 'user', 'content': 'hello'},
-      ],
-      tools: const <Map<String, dynamic>>[],
-    );
-    if (systemRender == null) {
-      supportsSystemRole = false;
-    } else {
-      supportsSystemRole = systemRender.contains(_systemMarker);
-    }
-
-    final toolRender = _renderTemplate(
-      template,
-      messages: <Map<String, dynamic>>[
-        <String, dynamic>{'role': 'user', 'content': 'hello'},
-        <String, dynamic>{
-          'role': 'assistant',
-          'content': '',
-          'tool_calls': <Map<String, dynamic>>[
-            <String, dynamic>{
-              'id': 'call_1',
-              'type': 'function',
-              'function': <String, dynamic>{
-                'name': _toolCallMarker1,
-                'arguments': <String, dynamic>{'arg': 'value'},
-              },
-            },
-            <String, dynamic>{
-              'id': 'call_2',
-              'type': 'function',
-              'function': <String, dynamic>{
-                'name': _toolCallMarker2,
-                'arguments': <String, dynamic>{'arg': 'value'},
-              },
-            },
-          ],
-        },
-        <String, dynamic>{'role': 'user', 'content': 'continue'},
-      ],
-      tools: <Map<String, dynamic>>[
-        <String, dynamic>{
-          'type': 'function',
-          'function': <String, dynamic>{
-            'name': _toolNameMarker,
-            'description': 'tool',
-            'parameters': <String, dynamic>{
-              'type': 'object',
-              'properties': <String, dynamic>{
-                'arg': <String, dynamic>{'type': 'string'},
-              },
-              'required': <String>['arg'],
-            },
+    // A template that reads strings too and rejects both media kinds as
+    // typed parts renders a request carrying media as every string template
+    // does. Either way it gets the media marker in the message text.
+    if (supportsTypedContent && supportsStringContent) {
+      bool rejects(String type) => !_render(
+        probe,
+        '$type-content',
+        _Probe.messages([
+          {
+            'role': 'user',
+            'content': [
+              {'type': type},
+            ],
           },
-        },
-      ],
-    );
-
-    if (toolRender == null) {
-      supportsTools = false;
-      supportsToolCalls = false;
-      supportsParallelToolCalls = false;
-    } else {
-      supportsTools = toolRender.contains(_toolNameMarker);
-      final call1Used = toolRender.contains(_toolCallMarker1);
-      final call2Used = toolRender.contains(_toolCallMarker2);
-      supportsToolCalls = call1Used;
-      supportsParallelToolCalls = call1Used && call2Used;
+        ]),
+      ).success;
+      if (rejects('image') && rejects('audio')) supportsTypedContent = false;
     }
+
+    final system = _Probe.messages([
+      {'role': 'system', 'content': 'System message'},
+      {'role': 'user', 'content': 'User message'},
+    ]);
+    final systemRun = _render(probe, 'system-role', system);
+    if (!systemRun.used(system.message(0, 'content'))) {
+      supportsSystemRole = false;
+    }
+
+    final objectCall = _Probe.toolCalls(calls: 1, arguments: {'arg': 'value'});
+    final objectRun = _render(probe, 'object-arguments', objectCall);
+    if (objectRun.success) {
+      if (!objectRun.used(objectCall.toolName)) supportsTools = false;
+      if (!objectRun.used(objectCall.toolCalls)) {
+        supportsToolCalls = false;
+      } else if (objectRun.used(objectCall.argument)) {
+        supportsObjectArguments = true;
+      }
+    }
+
+    if (!supportsObjectArguments) {
+      final stringCall = _Probe.toolCalls(
+        calls: 1,
+        arguments: '{"arg": "value"}',
+      );
+      final stringCallRun = _render(probe, 'tools', stringCall);
+      if (!stringCallRun.success) {
+        supportsToolCalls = false;
+        supportsTools = false;
+      } else {
+        if (!stringCallRun.used(stringCall.toolName)) supportsTools = false;
+        if (!stringCallRun.used(stringCall.toolCalls)) {
+          supportsToolCalls = false;
+        }
+      }
+    }
+
+    final parallel = _Probe.toolCalls(
+      calls: 2,
+      arguments: supportsObjectArguments
+          ? {'arg': 'value'}
+          : '{"arg": "value"}',
+    );
+    final parallelRun = _render(probe, 'parallel-tool-calls', parallel);
+    if (!parallelRun.success || !parallelRun.used(parallel.function(1))) {
+      supportsParallelToolCalls = false;
+    }
+
+    // Not one of llama.cpp's current probes: it restores the minja-era
+    // `supports_tool_responses` check, so a template that rejects the tool
+    // role gets tool results as user turns. A template that also rejects the
+    // user-role equivalent keeps its own error.
+    final responseArguments = supportsObjectArguments
+        ? {'arg': 'value'}
+        : '{"arg": "value"}';
+    final supportsToolResponses =
+        _render(
+          probe,
+          'tool-responses',
+          _Probe.toolResponse(role: 'tool', arguments: responseArguments),
+        ).success ||
+        !_render(
+          probe,
+          'tool-responses-as-user',
+          _Probe.toolResponse(role: 'user', arguments: responseArguments),
+        ).success;
 
     return TemplateCaps(
       supportsSystemRole: supportsSystemRole,
@@ -158,250 +201,48 @@ class JinjaAnalyzer {
       supportsParallelToolCalls: supportsParallelToolCalls,
       supportsStringContent: supportsStringContent,
       supportsTypedContent: supportsTypedContent,
-      supportsThinking: astCaps.supportsThinking,
+      supportsThinking: supportsThinking,
+      supportsObjectArguments: supportsObjectArguments,
+      supportsToolResponses: supportsToolResponses,
     );
   }
 
-  static Template? _createTemplate(String source) {
-    try {
-      return Template(source);
-    } catch (_) {
-      return null;
+  static const String _contentMarker = 'STRING_MARKER';
+
+  static JinjaUsageRun _render(JinjaUsageProbe probe, String label, _Probe p) {
+    final run = probe.render(<String, Object?>{
+      'messages': p.messages,
+      'tools': p.tools,
+      'bos_token': '',
+      'eos_token': '',
+      'add_generation_prompt': true,
+    });
+    if (!run.success) {
+      _logProbeFailure(
+        label,
+        'reading what it used before it threw',
+        run.error!,
+      );
     }
+    return run;
   }
 
-  static String? _renderTemplate(
-    Template template, {
-    required List<Map<String, dynamic>> messages,
-    required List<Map<String, dynamic>> tools,
-  }) {
-    try {
-      final context = <String, dynamic>{
-        'messages': messages,
-        'tools': tools,
-        'functions': tools.isEmpty ? '' : jsonEncode(tools),
-        'bos_token': '',
-        'eos_token': '',
-        'add_generation_prompt': true,
-        'date_string': '',
-        'date': '',
-        'datetime': '',
-      };
-      return template.render(context);
-    } catch (_) {
-      return null;
-    }
+  static void _logProbeFailure(String probe, String outcome, Object error) {
+    LlamaLogger.instance.debug(
+      'JinjaAnalyzer: $probe capability probe failed to render; '
+      '$outcome: $error',
+    );
   }
 
-  static TemplateCaps _analyzeAST(Program template, String source) {
-    bool supportsSystemRole = false;
-    bool supportsToolCalls = false;
-    bool supportsTools = false;
-    bool supportsParallelToolCalls = false;
-    bool supportsTypedContent = false;
-    bool supportsThinking = false;
-
-    // 1. System Role: Look for 'role' == 'system' comparisons
-    for (final node in _findAll<BinaryExpression>(template)) {
-      if (_isRoleSystemCheck(node)) {
-        supportsSystemRole = true;
-      }
-    }
-
-    // Check string literals for thinking tags and raw system
-    for (final node in _findAll<StringLiteral>(template)) {
+  static bool _supportsThinking(Program program) {
+    return _findAll<StringLiteral>(program).any((node) {
       final value = node.value;
-      if (value.contains('<think>') ||
+      return value.contains('<think>') ||
           value.contains('<|think|>') ||
           value.contains('<|channel>thought') ||
           value.contains('<｜thought｜>') ||
-          value.contains('[THINK]')) {
-        supportsThinking = true;
-      }
-    }
-
-    // 2. Tools: Look for iteration over 'tools' or 'tool_calls'
-    for (final node in _findAll<ForStatement>(template)) {
-      final iter = node.iterable;
-      if (iter is Identifier) {
-        final name = iter.name;
-        if (name == 'tools') {
-          supportsTools = true;
-        }
-        if (name == 'tool_calls') {
-          supportsToolCalls = true;
-          supportsParallelToolCalls = true;
-        }
-      } else if (iter is MemberExpression) {
-        // e.g. message['tool_calls'] -> computed: true, property: StringLiteral('tool_calls')
-        // e.g. message.tool_calls -> computed: false, property: Identifier('tool_calls')
-        if (_isMessageToolCalls(iter)) {
-          supportsToolCalls = true;
-          supportsParallelToolCalls = true;
-        }
-      }
-    }
-
-    // Also check If(tools)
-    for (final node in _findAll<IfStatement>(template)) {
-      final test = node.test;
-      if (test is Identifier) {
-        final name = test.name;
-        if (name == 'tools') {
-          supportsTools = true;
-        }
-        if (name == 'tool_calls') {
-          supportsToolCalls = true;
-        }
-      }
-    }
-
-    // Direct message.tool_calls/property access implies tool-call support,
-    // but not necessarily parallel emission.
-    for (final node in _findAll<MemberExpression>(template)) {
-      if (_isMessageToolCalls(node)) {
-        supportsToolCalls = true;
-      }
-      if (_isToolsAccess(node)) {
-        supportsTools = true;
-      }
-    }
-
-    // 3. Typed Content: Look for content['type'] or content.type
-    for (final node in _findAll<MemberExpression>(template)) {
-      // content['type'] or content.type
-      if (_isContentTypeCheck(node)) {
-        supportsTypedContent = true;
-      }
-    }
-
-    // Check if iterating over content
-    for (final node in _findAll<ForStatement>(template)) {
-      final iter = node.iterable;
-      if (iter is Identifier && iter.name == 'content') {
-        supportsTypedContent = true;
-      }
-      if (iter is MemberExpression) {
-        if (_isContentAccess(iter)) {
-          supportsTypedContent = true;
-        }
-      }
-    }
-
-    return TemplateCaps(
-      supportsSystemRole: supportsSystemRole,
-      supportsToolCalls: supportsToolCalls,
-      supportsTools: supportsTools,
-      supportsParallelToolCalls: supportsParallelToolCalls,
-      supportsStringContent: true,
-      supportsTypedContent: supportsTypedContent,
-      supportsThinking: supportsThinking,
-    );
-  }
-
-  static bool _isContentAccess(MemberExpression node) {
-    // Check if accessing 'content' property
-    if (node.computed) {
-      // obj['content']
-      if (node.property is StringLiteral &&
-          (node.property as StringLiteral).value == 'content') {
-        return true;
-      }
-    } else {
-      // obj.content
-      if (node.property is Identifier &&
-          (node.property as Identifier).name == 'content') {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  static bool _isRoleSystemCheck(BinaryExpression node) {
-    if (node.op.value != '==') return false;
-
-    bool isSystem(Expression e) {
-      if (e is StringLiteral && e.value == 'system') return true;
-      return false;
-    }
-
-    bool isRole(Expression e) {
-      if (e is Identifier && e.name == 'role') return true;
-      if (e is MemberExpression) {
-        if (e.computed) {
-          // obj['role']
-          if (e.property is StringLiteral &&
-              (e.property as StringLiteral).value == 'role') {
-            return true;
-          }
-        } else {
-          // obj.role
-          if (e.property is Identifier &&
-              (e.property as Identifier).name == 'role') {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-
-    if (isRole(node.left) && isSystem(node.right)) return true;
-    if (isSystem(node.left) && isRole(node.right)) return true;
-
-    return false;
-  }
-
-  static bool _isMessageToolCalls(MemberExpression node) {
-    // message['tool_calls'] or message.tool_calls
-    if (node.computed) {
-      return node.property is StringLiteral &&
-          (node.property as StringLiteral).value == 'tool_calls';
-    } else {
-      return node.property is Identifier &&
-          (node.property as Identifier).name == 'tool_calls';
-    }
-  }
-
-  static bool _isToolsAccess(MemberExpression node) {
-    if (node.computed) {
-      return node.property is StringLiteral &&
-          (node.property as StringLiteral).value == 'tools';
-    } else {
-      return node.property is Identifier &&
-          (node.property as Identifier).name == 'tools';
-    }
-  }
-
-  static bool _isContentTypeCheck(MemberExpression node) {
-    // content['type'] or content.type
-    // AND the object being accessed is 'content' (either var or prop)
-
-    // Check property name is 'type'
-    bool isTypeAccess = false;
-    if (node.computed) {
-      if (node.property is StringLiteral &&
-          (node.property as StringLiteral).value == 'type') {
-        isTypeAccess = true;
-      }
-    } else {
-      if (node.property is Identifier &&
-          (node.property as Identifier).name == 'type') {
-        isTypeAccess = true;
-      }
-    }
-
-    if (!isTypeAccess) return false;
-
-    final obj = node.object;
-    // Direct: content['type']
-    if (obj is Identifier && obj.name == 'content') return true;
-
-    // Nested: message.content['type']
-    if (obj is MemberExpression) {
-      return _isContentAccess(obj);
-    }
-
-    return false;
+          value.contains('[THINK]');
+    });
   }
 
   // Simple recursive traverser
@@ -472,4 +313,111 @@ class JinjaAnalyzer {
     visit(node);
     return results;
   }
+}
+
+/// One of llama.cpp's capability probe inputs, holding the values whose use
+/// the analyzer reads back.
+class _Probe {
+  _Probe(this.messages, this.tools);
+
+  factory _Probe.messages(List<Map<String, Object?>> messages) =>
+      _Probe(val(messages) as JinjaList, JinjaList(<JinjaValue>[]));
+
+  /// llama.cpp's tool-call conversation with [calls] calls to `tool1`, each
+  /// with [arguments].
+  factory _Probe.toolCalls({required int calls, required Object arguments}) {
+    return _Probe(
+      val(<Map<String, Object?>>[
+            {'role': 'user', 'content': 'User message'},
+            _toolCallMessage(calls: calls, arguments: arguments),
+            {
+              'role': 'tool',
+              'content': 'Tool response',
+              'tool_call_id': 'call00001',
+            },
+            {
+              'role': 'assistant',
+              'content': "The tool response was 'tool response'",
+            },
+            {'role': 'user', 'content': 'User message'},
+          ])
+          as JinjaList,
+      _tools(),
+    );
+  }
+
+  /// A conversation ending in the result of one call to `tool1`, sent under
+  /// [role].
+  factory _Probe.toolResponse({
+    required String role,
+    required Object arguments,
+  }) {
+    return _Probe(
+      val(<Map<String, Object?>>[
+            {'role': 'user', 'content': 'User message'},
+            _toolCallMessage(calls: 1, arguments: arguments),
+            {
+              'role': role,
+              'content': 'Tool response',
+              'tool_call_id': 'call00001',
+              'name': 'tool1',
+            },
+          ])
+          as JinjaList,
+      _tools(),
+    );
+  }
+
+  static Map<String, Object?> _toolCallMessage({
+    required int calls,
+    required Object arguments,
+  }) => {
+    'role': 'assistant',
+    'content': '',
+    'tool_calls': [
+      for (var i = 1; i <= calls; i++)
+        {
+          'id': 'call0000$i',
+          'type': 'function',
+          'function': {'name': 'tool1', 'arguments': arguments},
+        },
+    ],
+  };
+
+  static JinjaList _tools() =>
+      val(<Map<String, Object?>>[
+            {
+              'name': 'tool',
+              'type': 'function',
+              'function': {
+                'name': 'tool1',
+                'description': 'Tool description',
+                'parameters': {
+                  'type': 'object',
+                  'properties': {
+                    'arg': {'type': 'string', 'description': 'Arg description'},
+                  },
+                  'required': ['arg'],
+                },
+              },
+            },
+          ])
+          as JinjaList;
+
+  final JinjaList messages;
+  final JinjaList tools;
+
+  static JinjaValue _at(JinjaValue value, Object key) => key is int
+      ? (value as JinjaList).items[key]
+      : (value as JinjaMap).items[val(key)]!;
+
+  JinjaValue message(int index, String key) => _at(messages.items[index], key);
+
+  JinjaValue get toolName => _at(_at(tools.items[0], 'function'), 'name');
+
+  JinjaValue get toolCalls => message(1, 'tool_calls');
+
+  JinjaValue function(int call) => _at(_at(toolCalls, call), 'function');
+
+  JinjaValue get argument => _at(_at(function(0), 'arguments'), 'arg');
 }

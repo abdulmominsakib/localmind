@@ -7,3 +7,17 @@ tags:
     skip: "Runs only on local machines. Use: dart test --run-skipped -t local-only"
   e2e:
     timeout: 15m
+
+# Local real-model Web E2E only: `dart test -p chrome` runs headless with
+# `--disable-gpu`, which leaves WebGPU without an adapter, and its page is not
+# cross-origin isolated, so the bridge's pthread core needs SharedArrayBuffer
+# enabled explicitly.
+define_platforms:
+  chrome-webgpu:
+    name: Chrome WebGPU
+    extends: chrome
+    settings:
+      headless: false
+      arguments: >-
+        --headless=new --enable-unsafe-webgpu
+        --enable-features=SharedArrayBuffer,SharedArrayBufferUnrestrictedAccessAllowed

@@ -4,7 +4,7 @@ import PackageDescription
 
 let packageRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 let artifactsRoot = packageRoot.appendingPathComponent("Artifacts")
-let liteRtLmTag = "v0.15.0-native.3"
+let liteRtLmTag = "v0.19.1-7"
 
 func localArtifactPath(_ name: String) -> String? {
     let path = artifactsRoot.appendingPathComponent(name).path
@@ -47,31 +47,39 @@ let package = Package(
             repository: "leehack/litert-lm-native",
             artifactName: "litert-lm-native-apple-LiteRtLm-xcframework-\(liteRtLmTag).zip",
             tag: liteRtLmTag,
-            checksum: "c4edfe0a20744f54508dd70cc643846a5802a2a3d23262a7af72b17ea5d4b3a4"
+            checksum: "e636614b981f8ced4a17294bf47a530e66158388a4aa2c906dbd38c7fd2fddec"
         ),
         nativeRepoBinaryTarget(
             name: "CLiteRTLM",
             repository: "leehack/litert-lm-native",
             artifactName: "litert-lm-native-apple-CLiteRTLM-xcframework-\(liteRtLmTag).zip",
             tag: liteRtLmTag,
-            checksum: "ba0e8db00d1dedacc6443afd582211f11c77d12d134c690be26c0ccb34c9b1c4"
+            checksum: "4965f806ee14cba9f25839582aad79ed52b9396cfee09c193fdffed9dc93b8b7"
         ),
         nativeRepoBinaryTarget(
             name: "CLiteRTLMMac",
             repository: "leehack/litert-lm-native",
             artifactName: "litert-lm-native-apple-CLiteRTLMMac-xcframework-\(liteRtLmTag).zip",
             tag: liteRtLmTag,
-            checksum: "687633c1e9567dcc6d82d0b742bf53d1c41f9af3024e381b160d82cf092489dc"
+            checksum: "bb693507fa54f3728497fc0b330932b6d43fcd46fcf77767204f5e469db848b4"
+        ),
+        nativeRepoBinaryTarget(
+            name: "WebgpuDawn",
+            repository: "leehack/litert-lm-native",
+            artifactName: "litert-lm-native-apple-WebgpuDawn-xcframework-\(liteRtLmTag).zip",
+            tag: liteRtLmTag,
+            checksum: "6b0414c076e15b88881d805c9e4e7fe0715c65f581534afaab748b643f6d1202"
         ),
         .target(
             name: "llamadart_litert_lm_flutter",
             dependencies: [
                 .target(name: "LiteRtLm", condition: .when(platforms: [.iOS, .macOS])),
                 .target(name: "CLiteRTLM", condition: .when(platforms: [.iOS])),
-                .target(name: "CLiteRTLMMac", condition: .when(platforms: [.macOS]))
+                .target(name: "CLiteRTLMMac", condition: .when(platforms: [.macOS])),
+                .target(name: "WebgpuDawn", condition: .when(platforms: [.macOS]))
             ],
             linkerSettings: [
-                .unsafeFlags(["-Xlinker", "-reexport_framework", "-Xlinker", "LiteRtLm"], .when(platforms: [.iOS, .macOS])),
+                .unsafeFlags(["-Xlinker", "-reexport_framework", "-Xlinker", "LiteRtLm"], .when(platforms: [.iOS])),
                 .unsafeFlags(["-Xlinker", "-reexport_framework", "-Xlinker", "CLiteRTLM"], .when(platforms: [.iOS]))
             ]
         )

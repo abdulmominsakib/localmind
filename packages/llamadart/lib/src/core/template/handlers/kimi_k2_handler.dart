@@ -22,6 +22,10 @@ class KimiK2Handler extends ChatTemplateHandler {
   static const String _argStart = '<|tool_call_argument_begin|>';
   static const String _callEnd = '<|tool_call_end|>';
 
+  /// Finds a possible tool-call section for the stream's content gate.
+  static int toolCallOpening(String text, [int from = 0]) =>
+      ToolCallParsingUtils.literalOpening(text, const [_scopeStart], from);
+
   @override
   ChatFormat get format => ChatFormat.kimiK2;
 
@@ -56,7 +60,7 @@ class KimiK2Handler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'bos_token': metadata['tokenizer.ggml.bos_token'] ?? '<s>',
@@ -65,16 +69,18 @@ class KimiK2Handler extends ChatTemplateHandler {
     );
 
     var thinkingForcedOpen = false;
+    var thoughtClosed = false;
     if (isThinkingForcedOpen(prompt)) {
       if (!enableThinking) {
         prompt = '${prompt.trimRight()}</think>';
+        thoughtClosed = true;
       } else {
         thinkingForcedOpen = true;
       }
     }
 
     final hasTools = tools != null && tools.isNotEmpty;
-    return LlamaChatTemplateResult(
+    final rendered = LlamaChatTemplateResult(
       prompt: prompt,
       format: format.index,
       grammar: buildGrammar(tools),
@@ -89,6 +95,7 @@ class KimiK2Handler extends ChatTemplateHandler {
           ? [const GrammarTrigger(type: 0, value: '$_scopeStart$_callStart')]
           : [],
     );
+    return withThoughtClosedForThinkingOff(rendered, closed: thoughtClosed);
   }
 
   @override

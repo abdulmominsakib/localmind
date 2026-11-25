@@ -460,10 +460,29 @@ const String _gemmaChatTemplate = r'''
 
 /// Canonical chat template for the qwen3 family.
 const String _qwen3ChatTemplate = r'''
+{%- macro content_text(content) -%}
+    {%- if content is string -%}
+        {{- content -}}
+    {%- elif content is not none and content is defined -%}
+        {%- for part in content -%}
+            {%- if part.type == 'text' and part.text is string -%}
+                {{- part.text -}}
+            {%- elif part.type == 'tool_response' and part.response is defined -%}
+                {%- if part.response is mapping or (part.response is sequence and part.response is not string) -%}
+                    {{- part.response | tojson -}}
+                {%- else -%}
+                    {{- part.response | string -}}
+                {%- endif -%}
+            {%- else -%}
+                {{- raise_exception('Qwen3 text template requires text or tool_response content') -}}
+            {%- endif -%}
+        {%- endfor -%}
+    {%- endif -%}
+{%- endmacro -%}
 {%- if tools %}
     {{- '<|im_start|>system\n' }}
     {%- if messages[0].role == 'system' %}
-        {{- messages[0].content + '\n\n' }}
+        {{- content_text(messages[0].content) + '\n\n' }}
     {%- endif %}
     {{- "# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>" }}
     {%- for tool in tools %}
@@ -473,14 +492,14 @@ const String _qwen3ChatTemplate = r'''
     {{- "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n" }}
 {%- else %}
     {%- if messages[0].role == 'system' %}
-        {{- '<|im_start|>system\n' + messages[0].content + '<|im_end|>\n' }}
+        {{- '<|im_start|>system\n' + content_text(messages[0].content) + '<|im_end|>\n' }}
     {%- endif %}
 {%- endif %}
 {%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}
 {%- for forward_message in messages %}
     {%- set index = (messages|length - 1) - loop.index0 %}
     {%- set message = messages[index] %}
-    {%- set current_content = message.content if message.content is defined and message.content is not none else '' %}
+    {%- set current_content = content_text(message.content) %}
     {%- set tool_start = '<tool_response>' %}
     {%- set tool_start_length = tool_start|length %}
     {%- set start_of_message = current_content[:tool_start_length] %}
@@ -498,9 +517,9 @@ const String _qwen3ChatTemplate = r'''
 {%- endfor %}
 {%- for message in messages %}
     {%- if (message.role == "user") or (message.role == "system" and not loop.first) %}
-        {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>' + '\n' }}
+        {{- '<|im_start|>' + message.role + '\n' + content_text(message.content) + '<|im_end|>' + '\n' }}
     {%- elif message.role == "assistant" %}
-        {%- set m_content = message.content if message.content is defined and message.content is not none else '' %}
+        {%- set m_content = content_text(message.content) %}
         {%- set content = m_content %}
         {%- set reasoning_content = '' %}
         {%- if message.reasoning_content is defined and message.reasoning_content is not none %}
@@ -546,7 +565,7 @@ const String _qwen3ChatTemplate = r'''
             {{- '<|im_start|>user' }}
         {%- endif %}
         {{- '\n<tool_response>\n' }}
-        {{- message.content }}
+        {{- content_text(message.content) }}
         {{- '\n</tool_response>' }}
         {%- if loop.last or (messages[loop.index0 + 1].role != "tool") %}
             {{- '<|im_end|>\n' }}
@@ -558,7 +577,8 @@ const String _qwen3ChatTemplate = r'''
     {%- if enable_thinking is defined and enable_thinking is false %}
         {{- '<think>\n\n</think>\n\n' }}
     {%- endif %}
-{%- endif %}''';
+{%- endif %}
+''';
 
 /// Canonical chat template for the qwen25 family.
 const String _qwen25ChatTemplate = r'''

@@ -1,11 +1,20 @@
 import 'dart:isolate';
 
+import '../../core/exceptions.dart';
 import '../../core/models/chat/chat_message.dart';
 import '../../core/models/chat/content_part.dart';
 import '../../core/models/config/log_level.dart';
 import '../../core/models/inference/generation_params.dart';
 import '../../core/models/inference/model_params.dart';
 import '../../core/models/inference/tool_choice.dart';
+import '../backend.dart';
+import '../worker_log_message.dart';
+import 'litert_lm_embedding.dart';
+import 'litert_lm_native_settlement.dart';
+import '../../core/models/inference/embedding.dart';
+
+export '../worker_log_message.dart';
+export 'litert_lm_native_settlement.dart';
 
 /// Base class for LiteRT-LM worker requests.
 abstract class LiteRtLmWorkerRequest {
@@ -66,6 +75,12 @@ class LiteRtLmContextFreeRequest extends LiteRtLmWorkerRequest {
   LiteRtLmContextFreeRequest(this.contextHandle, super.sendPort);
 }
 
+/// Requests model-specific native JSON Schema provider admission.
+class LiteRtLmJsonSchemaPrepareRequest extends LiteRtLmWorkerRequest {
+  /// Creates an admission request.
+  LiteRtLmJsonSchemaPrepareRequest(super.sendPort);
+}
+
 /// Request to generate text.
 class LiteRtLmGenerateRequest extends LiteRtLmWorkerRequest {
   /// The context handle.
@@ -101,6 +116,9 @@ class LiteRtLmGenerateChatRequest extends LiteRtLmWorkerRequest {
   /// Generation parameters.
   final GenerationParams params;
 
+  /// Optional validated native JSON Schema payload.
+  final String? jsonSchema;
+
   /// Optional native tool definition JSON.
   final List<Map<String, dynamic>>? tools;
 
@@ -116,12 +134,6 @@ class LiteRtLmGenerateChatRequest extends LiteRtLmWorkerRequest {
   /// Additional native template/context values.
   final Map<String, dynamic>? chatTemplateKwargs;
 
-  /// Optional source language code.
-  final String? sourceLangCode;
-
-  /// Optional target language code.
-  final String? targetLangCode;
-
   /// Optional deterministic template time.
   final DateTime? templateNow;
 
@@ -132,12 +144,11 @@ class LiteRtLmGenerateChatRequest extends LiteRtLmWorkerRequest {
     this.params,
     super.sendPort, {
     this.tools,
+    this.jsonSchema,
     this.toolChoice = ToolChoice.auto,
     this.parallelToolCalls = false,
     this.enableThinking = true,
     this.chatTemplateKwargs,
-    this.sourceLangCode,
-    this.targetLangCode,
     this.templateNow,
   });
 }
@@ -159,13 +170,18 @@ class LiteRtLmTokenizeRequest extends LiteRtLmWorkerRequest {
   /// Whether to add special tokens.
   final bool addSpecial;
 
+  /// Whether [text] is a prompt to tokenize as native prefill reads it, which
+  /// ignores [addSpecial].
+  final bool runtimePrompt;
+
   /// Creates a tokenize request.
   LiteRtLmTokenizeRequest(
     this.modelHandle,
     this.text,
     this.addSpecial,
-    super.sendPort,
-  );
+    super.sendPort, {
+    this.runtimePrompt = false,
+  });
 }
 
 /// Request to detokenize token IDs.
@@ -195,30 +211,6 @@ class LiteRtLmMetadataRequest extends LiteRtLmWorkerRequest {
 
   /// Creates a metadata request.
   LiteRtLmMetadataRequest(this.modelHandle, super.sendPort);
-}
-
-/// Request for LoRA operations.
-class LiteRtLmLoraRequest extends LiteRtLmWorkerRequest {
-  /// The context handle.
-  final int contextHandle;
-
-  /// Operation name: set, remove, clear.
-  final String op;
-
-  /// LoRA path.
-  final String? path;
-
-  /// LoRA scale.
-  final double? scale;
-
-  /// Creates a LoRA request.
-  LiteRtLmLoraRequest(
-    this.contextHandle,
-    this.op, {
-    this.path,
-    this.scale,
-    required SendPort sendPort,
-  }) : super(sendPort);
 }
 
 /// Request for active backend information.
@@ -269,6 +261,18 @@ class LiteRtLmLogLevelRequest extends LiteRtLmWorkerRequest {
   LiteRtLmLogLevelRequest(this.logLevel, super.sendPort);
 }
 
+/// Request to set the level the worker's Dart logger forwards from.
+///
+/// Ignored, but still answered with [LiteRtLmDoneResponse], when the
+/// handshake carried no log port.
+class LiteRtLmDartLogLevelRequest extends LiteRtLmWorkerRequest {
+  /// The target log level.
+  final LlamaLogLevel logLevel;
+
+  /// Creates a Dart log level request.
+  LiteRtLmDartLogLevelRequest(this.logLevel, super.sendPort);
+}
+
 /// Request to get the actual context size.
 class LiteRtLmGetContextSizeRequest extends LiteRtLmWorkerRequest {
   /// The context handle.
@@ -278,47 +282,17 @@ class LiteRtLmGetContextSizeRequest extends LiteRtLmWorkerRequest {
   LiteRtLmGetContextSizeRequest(this.contextHandle, super.sendPort);
 }
 
-/// Request to create a multimodal context.
-class LiteRtLmMultimodalContextCreateRequest extends LiteRtLmWorkerRequest {
-  /// The text model handle.
-  final int modelHandle;
-
-  /// Multimodal projector path.
-  final String mmProjPath;
-
-  /// Creates a multimodal context create request.
-  LiteRtLmMultimodalContextCreateRequest(
-    this.modelHandle,
-    this.mmProjPath,
-    super.sendPort,
-  );
+/// Request for what the loaded bundle declares in its section metadata.
+class LiteRtLmBundleCapabilitiesRequest extends LiteRtLmWorkerRequest {
+  /// Creates a bundle capabilities request.
+  LiteRtLmBundleCapabilitiesRequest(super.sendPort);
 }
 
-/// Request to free a multimodal context.
-class LiteRtLmMultimodalContextFreeRequest extends LiteRtLmWorkerRequest {
-  /// The multimodal context handle.
-  final int mmContextHandle;
-
-  /// Creates a multimodal context free request.
-  LiteRtLmMultimodalContextFreeRequest(this.mmContextHandle, super.sendPort);
-}
-
-/// Request to check vision support.
-class LiteRtLmSupportsVisionRequest extends LiteRtLmWorkerRequest {
-  /// The multimodal context handle.
-  final int mmContextHandle;
-
-  /// Creates a vision support request.
-  LiteRtLmSupportsVisionRequest(this.mmContextHandle, super.sendPort);
-}
-
-/// Request to check audio support.
-class LiteRtLmSupportsAudioRequest extends LiteRtLmWorkerRequest {
-  /// The multimodal context handle.
-  final int mmContextHandle;
-
-  /// Creates an audio support request.
-  LiteRtLmSupportsAudioRequest(this.mmContextHandle, super.sendPort);
+/// Request for the per-send decode controls the runtime and loaded bundle
+/// apply.
+class LiteRtLmGenerationControlsRequest extends LiteRtLmWorkerRequest {
+  /// Creates a generation controls request.
+  LiteRtLmGenerationControlsRequest(super.sendPort);
 }
 
 /// Request for system information.
@@ -356,8 +330,12 @@ class LiteRtLmHandleResponse {
   /// The resource handle.
   final int handle;
 
+  /// For a model load, whether the runtime reports why each generation
+  /// ended; see `LiteRtLmRuntimeClient.supportsFinishReasons`.
+  final bool reportsFinishReasons;
+
   /// Creates a handle response.
-  LiteRtLmHandleResponse(this.handle);
+  LiteRtLmHandleResponse(this.handle, {this.reportsFinishReasons = false});
 }
 
 /// Response containing token bytes.
@@ -405,6 +383,41 @@ class LiteRtLmGetContextSizeResponse {
   LiteRtLmGetContextSizeResponse(this.size);
 }
 
+/// Response to a successful native JSON Schema admission.
+class LiteRtLmJsonSchemaAdmissionResponse {
+  /// Whether the admitted model may reason before its constrained reply.
+  final bool thinking;
+
+  /// Creates an admission response.
+  LiteRtLmJsonSchemaAdmissionResponse({required this.thinking});
+}
+
+/// Response containing what the loaded bundle declares, or nothing when no
+/// model is loaded or the runtime cannot read the declaration.
+class LiteRtLmBundleCapabilitiesResponse {
+  /// The declaration, as `LiteRtLmRuntimeClient.bundleCapabilities` reads it.
+  final ({bool vision, bool audio, bool speculativeDecoding})? capabilities;
+
+  /// Creates a bundle capabilities response.
+  LiteRtLmBundleCapabilitiesResponse(this.capabilities);
+}
+
+/// Response containing the per-send decode controls the runtime and loaded
+/// bundle apply, as `LiteRtLmService.generationControls` reports them.
+class LiteRtLmGenerationControlsResponse {
+  /// Whether repetition and presence penalties are applied.
+  final bool penalties;
+
+  /// Whether a thinking budget is applied.
+  final bool thinkingBudget;
+
+  /// Creates a generation controls response.
+  LiteRtLmGenerationControlsResponse({
+    required this.penalties,
+    required this.thinkingBudget,
+  });
+}
+
 /// Response containing an error.
 class LiteRtLmErrorResponse {
   /// Error kind used to preserve public exception semantics across isolates.
@@ -414,10 +427,56 @@ class LiteRtLmErrorResponse {
   final String message;
 
   /// Creates an error response.
-  LiteRtLmErrorResponse(this.message, {this.kind = 'exception'});
+  LiteRtLmErrorResponse(
+    this.message, {
+    this.kind = 'exception',
+    this.argumentName,
+    this.nativeSettlement = LiteRtLmNativeSettlement.settled,
+  });
+
+  /// [LlamaArgumentException.name] of the rejected argument, when known.
+  final String? argumentName;
+
+  /// Native lifetime, independent of the request's error kind.
+  final LiteRtLmNativeSettlement nativeSettlement;
 
   /// Creates a typed response from an error object.
-  factory LiteRtLmErrorResponse.from(Object error) {
+  factory LiteRtLmErrorResponse.from(
+    Object error, {
+    LiteRtLmNativeSettlement nativeSettlement =
+        LiteRtLmNativeSettlement.settled,
+  }) {
+    final response = LiteRtLmErrorResponse._from(error);
+    return LiteRtLmErrorResponse(
+      response.message,
+      kind: response.kind,
+      argumentName: response.argumentName,
+      nativeSettlement: nativeSettlement,
+    );
+  }
+
+  factory LiteRtLmErrorResponse._from(Object error) {
+    if (error is LlamaUnsupportedException) {
+      return LiteRtLmErrorResponse(error.message, kind: 'llamaUnsupported');
+    }
+    if (error is LlamaException) {
+      final kind = switch (error) {
+        LlamaArgumentException() => 'llamaArgument',
+        LlamaModelException() => 'llamaModel',
+        LlamaContextException() => 'llamaContext',
+        LlamaInferenceException() => 'llamaInference',
+        LlamaStateException() => 'llamaState',
+        _ => null,
+      };
+      if (kind != null) {
+        final details = error.details;
+        return LiteRtLmErrorResponse(
+          details == null ? error.message : '${error.message} ($details)',
+          kind: kind,
+          argumentName: error is LlamaArgumentException ? error.name : null,
+        );
+      }
+    }
     if (error is UnsupportedError) {
       return LiteRtLmErrorResponse(
         _stripErrorPrefix(error.toString(), 'Unsupported operation: '),
@@ -528,15 +587,49 @@ class LiteRtLmChatTemplateResponse {
 }
 
 /// Response indicating an operation completed.
-class LiteRtLmDoneResponse {}
+class LiteRtLmDoneResponse {
+  /// The token limit that ended a generation, or null when none did or the
+  /// runtime cannot tell.
+  final BackendGenerationLimit? generationLimit;
+
+  /// Creates a completion response.
+  LiteRtLmDoneResponse({
+    this.generationLimit,
+    this.nativeSettlement = LiteRtLmNativeSettlement.settled,
+  });
+
+  /// Native lifetime at completion; a cancellation acknowledgement may be pending.
+  final LiteRtLmNativeSettlement nativeSettlement;
+}
+
+/// Sent before the final response of a free or dispose request, immediately
+/// before the worker calls native teardown: a free once earlier queued requests
+/// have finished, a dispose once the in-flight request and native callbacks have
+/// settled.
+class LiteRtLmNativeTeardownStarted {
+  /// Creates a teardown-started notice.
+  const LiteRtLmNativeTeardownStarted();
+}
 
 /// Handshake message sent from the backend to the worker.
 class LiteRtLmWorkerHandshake {
   /// Initial log level.
   final LlamaLogLevel initialLogLevel;
 
+  /// The main isolate's [LlamaLogger] level at spawn; the worker forwards
+  /// only records at or above it.
+  final LlamaLogLevel dartLogLevel;
+
+  /// Port that receives [WorkerLogMessage]s; `null` disables forwarding and
+  /// leaves the worker's logger untouched.
+  final SendPort? logPort;
+
   /// Creates a worker handshake.
-  LiteRtLmWorkerHandshake(this.initialLogLevel);
+  LiteRtLmWorkerHandshake(
+    this.initialLogLevel, {
+    this.dartLogLevel = LlamaLogLevel.none,
+    this.logPort,
+  });
 }
 
 String _stripErrorPrefix(String message, String prefix) {
@@ -544,4 +637,60 @@ String _stripErrorPrefix(String message, String prefix) {
     return message.substring(prefix.length);
   }
   return message;
+}
+
+/// Request for processor-backed embedding capabilities.
+class LiteRtLmEmbeddingCapabilitiesRequest extends LiteRtLmWorkerRequest {
+  /// Context to probe.
+  final int contextHandle;
+
+  /// Creates a capability request.
+  LiteRtLmEmbeddingCapabilitiesRequest(this.contextHandle, super.sendPort);
+}
+
+/// Cancels only the embedding identified by its response port.
+class LiteRtLmCancelEmbeddingRequest extends LiteRtLmWorkerRequest {
+  /// Response port of the active or queued request whose deadline expired.
+  final SendPort embeddingPort;
+
+  /// Creates a request-scoped cancellation.
+  LiteRtLmCancelEmbeddingRequest(this.embeddingPort, super.sendPort);
+}
+
+/// Request containing owned embedding input bytes.
+class LiteRtLmEmbedRequest extends LiteRtLmWorkerRequest {
+  /// Loaded context.
+  final int contextHandle;
+
+  /// Ordered, copied inputs.
+  final List<List<LiteRtLmEmbeddingPart>> inputs;
+
+  /// Whether to L2-normalize the output.
+  final bool normalize;
+
+  /// Creates an embedding request.
+  LiteRtLmEmbedRequest(
+    this.contextHandle,
+    this.inputs,
+    this.normalize,
+    super.sendPort,
+  );
+}
+
+/// Processor-backed embedding capabilities.
+class LiteRtLmEmbeddingCapabilitiesResponse {
+  /// Qualified modalities.
+  final LlamaEmbeddingCapabilities capabilities;
+
+  /// Creates a capability response.
+  LiteRtLmEmbeddingCapabilitiesResponse(this.capabilities);
+}
+
+/// Copied embedding vectors in request order.
+class LiteRtLmEmbedResponse {
+  /// Owned vectors.
+  final List<List<double>> vectors;
+
+  /// Creates an embedding response.
+  LiteRtLmEmbedResponse(this.vectors);
 }

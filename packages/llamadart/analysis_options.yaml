@@ -3,6 +3,14 @@ include: package:lints/recommended.yaml
 analyzer:
   exclude:
     - packages/**
+    - website/**
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 
 linter:
   rules:

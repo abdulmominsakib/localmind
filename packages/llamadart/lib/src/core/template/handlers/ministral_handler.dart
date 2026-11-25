@@ -59,7 +59,7 @@ class MinistralHandler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': _serializeMessages(messages),
+        'messages': _serializeMessages(messages, templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((tool) => tool.toJson()).toList(growable: false),
         'bos_token': metadata['tokenizer.ggml.bos_token'] ?? '<s>',
@@ -92,7 +92,12 @@ class MinistralHandler extends ChatTemplateHandler {
     return LlamaChatTemplateResult(
       prompt: prompt,
       format: format.index,
-      grammar: allowToolCalls ? buildGrammar(tools) : null,
+      grammar: allowToolCalls
+          ? _buildGrammarWithOptions(
+              tools,
+              parallelToolCalls: parallelToolCalls,
+            )
+          : null,
       grammarLazy: allowToolCalls && !toolChoiceRequired,
       thinkingForcedOpen: thinkingForcedOpen,
       additionalStops: getStops(
@@ -159,10 +164,10 @@ class MinistralHandler extends ChatTemplateHandler {
 
   List<Map<String, dynamic>> _serializeMessages(
     List<LlamaChatMessage> messages,
+    String templateSource,
   ) {
-    return messages
-        .map((message) {
-          final json = message.toJson();
+    return templateMessages(messages, templateSource: templateSource)
+        .map((json) {
           final role = json['role'];
           if (role != 'system' && role != 'assistant') {
             return json;
@@ -177,9 +182,9 @@ class MinistralHandler extends ChatTemplateHandler {
 
           final content = json['content'];
           if (content is String) {
-            if (content.isNotEmpty) {
-              blocks.add({'type': 'text', 'text': content});
-            }
+            // Empty text still becomes a block, as in llama.cpp, so the
+            // template does not reject an assistant turn without text.
+            blocks.add({'type': 'text', 'text': content});
           } else if (content is List) {
             for (final item in content) {
               final block = ToolCallParsingUtils.coerceMap(item);
@@ -391,6 +396,13 @@ class MinistralHandler extends ChatTemplateHandler {
 
   @override
   String? buildGrammar(List<ToolDefinition>? tools) {
+    return _buildGrammarWithOptions(tools, parallelToolCalls: true);
+  }
+
+  String? _buildGrammarWithOptions(
+    List<ToolDefinition>? tools, {
+    required bool parallelToolCalls,
+  }) {
     if (tools == null || tools.isEmpty) {
       return null;
     }
@@ -412,7 +424,9 @@ class MinistralHandler extends ChatTemplateHandler {
 
     final buffer = StringBuffer()
       ..writeln(
-        'root ::= "[TOOL_CALLS]" space tool-call (space "[TOOL_CALLS]" space tool-call)* space',
+        parallelToolCalls
+            ? 'root ::= "[TOOL_CALLS]" space tool-call (space "[TOOL_CALLS]" space tool-call)* space'
+            : 'root ::= "[TOOL_CALLS]" space tool-call space',
       )
       ..writeln('tool-call ::= ${toolRuleNames.join(' | ')}');
 

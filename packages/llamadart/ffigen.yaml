@@ -16,6 +16,29 @@ headers:
     - '.dart_tool/llamadart/ffigen_headers/llama_cpp/tools/mtmd/mtmd.h'
     - '.dart_tool/llamadart/ffigen_headers/llama_cpp/tools/mtmd/mtmd-helper.h'
     - '.dart_tool/llamadart/ffigen_headers/libllamadart/llama_dart_wrapper.h'
+functions:
+  expose-typedefs:
+    include:
+      - 'llama_dart_sampler_init_reasoning_budget_multi'
+  exclude:
+    # Not kill-safe from Dart: an isolate killed between begin and end never
+    # reaches end, and a Dart program that returns from main after teardown
+    # waits forever for its blocked isolates.
+    - 'llama_dart_exit_call_begin'
+    - 'llama_dart_exit_call_end'
+    - 'llama_dart_exit_teardown'
+structs:
+  dependency-only: opaque
+  exclude:
+    - '_IO_FILE'
+    - '_IO_codecvt'
+    - '_IO_marker'
+    - '_IO_wide_data'
+typedefs:
+  exclude:
+    - '_IO_lock_t'
+    - '__off64_t'
+    - '__off_t'
 compiler-opts:
   - '-I.dart_tool/llamadart/ffigen_headers/llama_cpp/ggml/include'
   - '-I.dart_tool/llamadart/ffigen_headers/llama_cpp/include'

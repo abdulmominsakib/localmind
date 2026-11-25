@@ -7,7 +7,11 @@ Thank you for your interest in contributing to `llamadart`! We welcome contribut
 Before you begin, ensure you have the following installed:
 
 -   **Dart SDK**: >= 3.10.7
--   **Flutter SDK**: >= 3.38.0 (optional, for running UI examples)
+-   **Flutter SDK**: the version pinned in `.flutter-version` (`3.47.1`) for
+    repository-wide quality gates and Flutter examples (runtime support starts
+    at 3.38.6; root-package-only Dart work can use the Dart SDK alone). CI
+    installs that exact version, so it defines the canonical formatter; any
+    other SDK can produce different source layouts.
 -   **CMake**: >= 3.10
 -   **C++ Compiler**:
     -   **macOS**: Xcode Command Line Tools (`xcode-select --install`)
@@ -77,6 +81,12 @@ When a user adds `llamadart` as a dependency and runs their app:
     ```
 
 2.  **Initialize**:
+    For repository-wide format/analyze gates and all maintained examples, use
+    the workspace bootstrap (it invokes Flutter for the Flutter examples):
+    ```bash
+    dart run tool/prepare_workspace.dart
+    ```
+    For root-package-only Dart changes, the Dart SDK is sufficient:
     ```bash
     dart pub get
     ```
@@ -114,12 +124,23 @@ Always verify paths in your environment before using them.
 
 ## 🧪 Testing
 
-We take testing seriously. CI enforces **>=70% line coverage on maintainable `lib/` code**. Auto-generated files are excluded when they are marked with `// coverage:ignore-file`.
+When adding or changing a public capability, update a validation feature pack
+or record a concrete exemption and tracking issue in
+[`capability_coverage.json`](packages/llamadart_validation/assets/capability_coverage.json).
+Run `dart test -p vm test/unit/tooling/validation_coverage_test.dart`. The test
+discovers exported engine APIs, capability reports and runtime feature-matrix
+rows; CI rejects missing/stale mappings and invalid pack/case/profile bindings.
+Its output is the current exemption inventory. A mapping records an obligation,
+not model, backend or device qualification. See the
+[validation runbook](doc/cross_platform_validation.md) for execution evidence.
+
+We take testing seriously. CI enforces **>=70% line coverage on maintainable `lib/` code** after merge: PR CI runs no coverage, so run the `coverage-lib` matrix row before merging a change that could lower it. Auto-generated files are excluded when they are marked with `// coverage:ignore-file`.
 
 The authoritative contributor test matrix lives in
-[`doc/testing_matrix.md`](doc/testing_matrix.md) and
-`tool/testing/test_matrix.dart`. Use it to decide which runtime/model/feature
-rows apply to a PR and to generate the evidence table for the pull request:
+[`doc/testing_matrix.md`](https://github.com/leehack/llamadart/blob/main/doc/testing_matrix.md)
+and `tool/testing/test_matrix.dart`. Use it to decide which
+runtime/model/feature rows apply to a PR and to generate the evidence table for
+the pull request:
 
 ```bash
 dart run tool/testing/test_matrix.dart --list
@@ -159,7 +180,7 @@ You can still target specific platforms if needed:
 
 ```bash
 # Run only VM tests
-dart test -p vm
+TMPDIR="$(mktemp -d)" dart test -p vm
 
 # Run only Chrome tests
 dart test -p chrome
@@ -168,15 +189,23 @@ dart test -p chrome
 dart run tool/testing/check_platform_boundaries.dart
 ```
 
+On macOS, give local VM runs an isolated temp directory. LiteRT-LM engines
+without `liteRtLmCacheDir` prune GPU program caches in
+`$TMPDIR/llamadart_litert_lm`, a cache apps share, and local-only LiteRT-LM
+E2E tests prune it like any app on 0.13 or later. Suites that load LiteRT-LM
+models must call `useSuiteSystemTemp()` from
+`test/support/suite_system_temp.dart`; CI fails a VM lane whose tests delete a
+canary cache there.
+
 ### 3. Coverage
 To collect and view coverage reports:
 
 ```bash
-# 1. Run VM tests with coverage
-dart test -p vm --coverage=coverage
+# 1. Run VM tests with coverage (local-only suites write empty coverage)
+dart test -p vm -j 1 --exclude-tags local-only --coverage=coverage
 
 # 2. Format into LCOV (respects // coverage:ignore-file)
-dart pub global run coverage:format_coverage --lcov --in=coverage/test --out=coverage/lcov.info --report-on=lib --check-ignore
+dart run tool/testing/format_lcov.dart --lcov --in=coverage/test --out=coverage/lcov.info --report-on=lib --check-ignore
 
 # 3. Enforce >=70% threshold
 dart run tool/testing/check_lcov_threshold.dart coverage/lcov.info 70
@@ -240,7 +269,11 @@ If you need to build binaries for a new release:
 
 ## Development Guidelines
 
--   **Code Style**: We follow standard Dart linting rules. Run `dart format .` before committing.
+-   **Code Style**: We follow standard Dart linting rules. Before the root
+    format and analyzer gates, run `dart run tool/prepare_workspace.dart` to
+    resolve the root package and examples and verify that every maintained
+    package is classified. Companion packages resolve and validate in their
+    dedicated CI lanes. Then run `dart format .` before committing.
 -   **Native Assets**: The package uses the modern **Dart Native Assets** (hooks) mechanism.
 -   **Testing**: Add unit tests for new features where possible. Use `dart test` for full integration and unit verification.
 
@@ -251,6 +284,12 @@ If you need to build binaries for a new release:
 3.  Commit your changes.
 4.  Push to your fork and submit a Pull Request.
 5.  Complete the production-readiness sections in the pull request template.
+
+For the initial branch publication, `tool/git/safe_pr_head_update.dart` accepts
+the all-zero expected SHA only while the fork ref is absent. After the pull
+request opens, use the helper with the exact observed fork-branch head for every
+update; blind or force pushes are not authorized open-PR update paths. See
+`doc/pr_branch_writer_inventory.md` for the repository-local writer boundary.
 
 ### Production-readiness expectations
 
@@ -270,7 +309,7 @@ Every non-trivial pull request should explain:
   fail loudly with clear errors, disabled UI, or documented fallback behavior.
   They must not appear to succeed silently.
 - **Docs and release notes**: README, website docs, examples, support matrices,
-  and changelog entries are updated when public behavior changes.
+  and the PR changelog section are updated when public behavior changes.
 - **Regression coverage**: tests cover the original issue and important
   negative/version-skew paths where applicable.
 - **Security/privacy**: logs, errors, cache keys, metadata, and snapshots must
@@ -282,6 +321,21 @@ Every non-trivial pull request should explain:
 If a feature is not ready across all originally imagined paths, prefer reducing
 the declared scope and tracking follow-up issues over merging incomplete or
 ambiguous behavior.
+
+### High-risk pre-merge review
+
+Changes touching parsers, grammars, streaming, backend routing, capabilities,
+artifact consumers, release automation, or regression policy require an
+independent blocking review pass bound to the exact candidate head SHA and base
+SHA (`tool/testing/high_risk_readiness.dart`, `doc/high_risk_pre_merge_readiness.md`).
+The auditor runs a blocking-only adversarial review and is an operator or a
+fresh agent session that took no part in the implementation, never the PR
+author or the retired standalone `qa` identity.
+The local evaluator derives the changed-file inventory from Git and never emits
+operational readiness. Until the separately reviewed GitHub App, auditor
+authentication, and conditional ruleset boundary exist, a valid high-risk run
+is explicitly unverified and the default-branch workflow is a non-required
+advisory that warns rather than fails.
 
 ### PR type examples
 
@@ -295,3 +349,13 @@ ambiguous behavior.
   build/link checks or review performed.
 
 Thank you for contributing!
+
+
+### PR changelog
+
+Fill the PR template's `## Changelog` with a column-zero, one-line
+`- ` bullet per user-visible change, or a specific standalone
+`N/A: reason`. The template lists the optional core and package targets.
+Use normal Markdown links in the text. Core release prep produces the
+numbered changelogs from landed PR notes. Maintain package-local changelogs
+under their own release rules.

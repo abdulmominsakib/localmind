@@ -1,6 +1,6 @@
 name: llamadart_llama_cpp_flutter
 description: Flutter Apple SwiftPM runtime companion package for llamadart llama.cpp and GGUF support.
-version: 0.0.12
+version: 0.20.8
 repository: https://github.com/leehack/llamadart/tree/main/packages/llamadart_llama_cpp_flutter
 homepage: https://github.com/leehack/llamadart
 issue_tracker: https://github.com/leehack/llamadart/issues
@@ -12,11 +12,12 @@ topics:
 
 environment:
   sdk: ^3.10.7
-  flutter: ">=3.38.0"
+  flutter: ">=3.38.6"
 
 dependencies:
   flutter:
     sdk: flutter
+  llamadart: '>=0.20.4 <0.21.0'
 
 dev_dependencies:
   flutter_test:

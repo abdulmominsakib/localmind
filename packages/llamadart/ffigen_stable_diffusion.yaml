@@ -1,0 +1,41 @@
+name: StableDiffusion
+description: Bindings to stable-diffusion.cpp and its sd_dart_ wrapper from stable-diffusion-native
+output: 'lib/src/backends/stable_diffusion/stable_diffusion_bindings.dart'
+headers:
+  entry-points:
+    - '.dart_tool/llamadart/ffigen_headers_stable_diffusion/include/stable-diffusion.h'
+    - '.dart_tool/llamadart/ffigen_headers_stable_diffusion/include/sd_dart_wrapper.h'
+  include-directives:
+    - '.dart_tool/llamadart/ffigen_headers_stable_diffusion/include/stable-diffusion.h'
+    - '.dart_tool/llamadart/ffigen_headers_stable_diffusion/include/sd_dart_wrapper.h'
+functions:
+  exclude:
+    # Not kill-safe from Dart: an isolate killed after a native call never
+    # reaches the track, untrack or call-end that would follow it, and a Dart
+    # program that returns from main after teardown waits forever for its
+    # blocked isolates.
+    - 'sd_dart_exit_call_begin'
+    - 'sd_dart_exit_call_end'
+    - 'sd_dart_exit_teardown'
+    - 'sd_dart_exit_track'
+    - 'sd_dart_exit_untrack'
+  leaf:
+    # Takes no lock, makes no system call and copies a bounded number of
+    # reports, so the calling isolate polls it without leaving Dart.
+    include:
+      - 'sd_dart_progress_read'
+# Incomplete `extern const char* x[]` arrays; ffigen would read the first element
+# as a pointer to the array. Use the *_name functions instead.
+globals:
+  exclude:
+    - 'sample_method_to_str'
+    - 'scheduler_to_str'
+preamble: |
+  // coverage:ignore-file
+  // ignore_for_file: always_specify_types, unused_field
+  // ignore_for_file: camel_case_types
+  // ignore_for_file: non_constant_identifier_names
+  /// @nodoc
+silence-enum-warning: true
+ffi-native:
+  asset-id: 'package:llamadart/stable_diffusion'

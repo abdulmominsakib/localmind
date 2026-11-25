@@ -51,15 +51,15 @@ class SolarOpenHandler extends ChatTemplateHandler {
     List<ToolDefinition>? tools,
     bool enableThinking = true,
   }) {
-    final renderedMessages = messages.map((m) {
-      final json = m.toJson();
-      final reasoning = json['reasoning_content'];
-      if (reasoning is String && reasoning.isNotEmpty) {
-        json['reasoning'] = reasoning;
-        json.remove('reasoning_content');
-      }
-      return json;
-    }).toList();
+    final renderedMessages =
+        templateMessages(messages, templateSource: templateSource).map((json) {
+          final reasoning = json['reasoning_content'];
+          if (reasoning is String && reasoning.isNotEmpty) {
+            json['reasoning'] = reasoning;
+            json.remove('reasoning_content');
+          }
+          return json;
+        }).toList();
 
     final template = Template(templateSource);
     var prompt = renderTemplate(

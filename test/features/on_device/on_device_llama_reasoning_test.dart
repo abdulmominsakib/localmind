@@ -22,15 +22,17 @@ class RecordingEngine implements llama.LlamaEngine {
   @override
   dynamic noSuchMethod(Invocation invocation) {
     switch (invocation.memberName) {
-      case #loadModel:
+      case #setModel:
+        final model = invocation.positionalArguments[0] as llama.LlamaModel;
+        final projector = model.projector;
+        if (projector?.path case final path?) loadedProjectors.add(path);
         return Future<void>.value();
+      case #backend:
+        return _FakeBackend();
       case #dispose:
         return failDisposal
             ? Future<void>.error(StateError('native disposal failed'))
             : Future<void>.value();
-      case #loadMultimodalProjector:
-        loadedProjectors.add(invocation.positionalArguments[0] as String);
-        return Future<void>.value();
       case #supportsVision:
         return Future.value(visionSupported);
       case #chatTemplate:
@@ -59,6 +61,14 @@ class RecordingEngine implements llama.LlamaEngine {
         return super.noSuchMethod(invocation);
     }
   }
+}
+
+class _FakeBackend implements llama.LlamaBackend {
+  @override
+  void cancelGeneration() {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {

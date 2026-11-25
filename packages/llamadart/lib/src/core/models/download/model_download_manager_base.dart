@@ -283,17 +283,26 @@ abstract interface class ModelDownloadManager {
 
   /// Removes cached model entries by [cacheKey] under [cacheDirectory].
   ///
+  /// An implementation should not delete an entry another caller is
+  /// downloading; it may remove the others and then throw
+  /// [ModelCacheEntryInUseException].
+  ///
   /// When [cacheDirectory] is omitted, the manager's default cache root is used.
   Future<void> remove(String cacheKey, {String? cacheDirectory});
 
   /// Clears all package-managed cached model entries under [cacheDirectory],
   /// including transient `noCache` entries.
   ///
+  /// Entries in use are handled as in [remove].
+  ///
   /// When [cacheDirectory] is omitted, the manager's default cache root is used.
   Future<void> clear({String? cacheDirectory});
 
   /// Prunes cached model entries, including transient `noCache` entries, and
   /// returns removed entries.
+  ///
+  /// An implementation should skip, and not return, an entry another caller
+  /// is downloading.
   ///
   /// When [cacheDirectory] is omitted, the manager's default cache root is used.
   Future<List<ModelCacheEntry>> prune({
@@ -421,31 +430,18 @@ String _metadataSafeSourceKey(String sourceCanonicalKey, String cacheKey) {
 }
 
 String _validatedCacheFileName(String fileName) {
-  final decoded = _decodeCacheComponent(fileName, 'fileName');
-  if (decoded.isEmpty ||
-      decoded == '.' ||
-      decoded == '..' ||
-      decoded.contains('/') ||
-      decoded.contains('\\')) {
+  final unescaped = _unescapePathSyntax(fileName);
+  if (fileName.isEmpty ||
+      const {'.', '..'}.contains(unescaped) ||
+      unescaped.contains('/') ||
+      unescaped.contains('\\')) {
     throw ArgumentError.value(
       fileName,
       'fileName',
       'Cache fileName must be a safe basename.',
     );
   }
-  return decoded;
-}
-
-String _decodeCacheComponent(String value, String name) {
-  try {
-    return Uri.decodeComponent(value);
-  } on FormatException catch (error) {
-    throw ArgumentError.value(
-      value,
-      name,
-      'Cache $name contains invalid percent-encoding: ${error.message}',
-    );
-  }
+  return fileName;
 }
 
 String _validatedCacheFilePath(String filePath) {
@@ -456,19 +452,30 @@ String _validatedCacheFilePath(String filePath) {
       'Cache filePath must not be empty.',
     );
   }
-  final decodedPath = _decodeCacheComponent(filePath, 'filePath');
-  final normalizedForValidation = decodedPath.replaceAll('\\', '/');
-  for (final segment in normalizedForValidation.split('/')) {
-    if (segment.isEmpty) {
-      continue;
-    }
-    if (segment == '.' || segment == '..') {
-      throw ArgumentError.value(
-        filePath,
-        'filePath',
-        'Cache filePath must not contain traversal segments.',
-      );
-    }
+  final segments = _unescapePathSyntax(
+    filePath,
+  ).replaceAll('\\', '/').split('/');
+  if (segments.any(const {'.', '..'}.contains)) {
+    throw ArgumentError.value(
+      filePath,
+      'filePath',
+      'Cache filePath must not contain traversal segments.',
+    );
   }
-  return decodedPath;
+  return filePath;
 }
+
+/// [value] with its `.`, `/` and `\` percent escapes decoded.
+///
+/// Cache names and paths are literal file system names, so a `%` in them is
+/// kept, but traversal written with these escapes is still rejected.
+String _unescapePathSyntax(String value) => value.replaceAllMapped(
+  _pathSyntaxEscape,
+  (match) => switch (match[1]!.toLowerCase()) {
+    '2e' => '.',
+    '2f' => '/',
+    _ => '\\',
+  },
+);
+
+final RegExp _pathSyntaxEscape = RegExp('%(2e|2f|5c)', caseSensitive: false);

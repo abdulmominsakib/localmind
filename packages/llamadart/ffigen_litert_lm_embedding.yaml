@@ -1,0 +1,20 @@
+# Headers from google-ai-edge/LiteRT-LM b2f686e2ed4718fb84ec398a61dd59ca0f0aff27.
+# Stage embedding_engine.h, engine.h and api_export.h in the directory below.
+name: LiteRtLmEmbeddingBindings
+description: LiteRT-LM v0.18 embedding C API (optional dynamically loaded symbols).
+output: lib/src/backends/litert_lm/litert_lm_embedding_bindings.dart
+headers:
+  entry-points:
+    - .dart_tool/llamadart/ffigen_headers_litert_embedding/embedding_engine.h
+  include-directives:
+    - .dart_tool/llamadart/ffigen_headers_litert_embedding/*.h
+functions:
+  include:
+    - 'litert_lm_embedding_.*'
+    - 'litert_lm_input_data_.*'
+preamble: |
+  // coverage:ignore-file
+  // ignore_for_file: always_specify_types, unused_field
+  // ignore_for_file: camel_case_types, non_constant_identifier_names
+  /// @nodoc
+silence-enum-warning: true

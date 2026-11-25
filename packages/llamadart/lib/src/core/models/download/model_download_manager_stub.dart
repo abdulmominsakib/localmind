@@ -40,6 +40,9 @@ class DefaultModelDownloadManager extends ThrowingModelDownloadManager {
   /// Creates a non-IO placeholder for an app-group model cache manager.
   const DefaultModelDownloadManager.appGroup({required String cacheDirectory});
 
+  /// Ignored on non-IO platforms, which have no file-backed model cache.
+  static String? globalCacheDirectory;
+
   /// Non-IO platforms do not expose a file-backed shared cache directory.
   static String defaultSharedCacheDirectory({
     String namespace = 'llamadart',

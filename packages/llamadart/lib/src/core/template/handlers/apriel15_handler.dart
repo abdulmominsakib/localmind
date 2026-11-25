@@ -48,7 +48,7 @@ class Apriel15Handler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'bos_token': metadata['tokenizer.ggml.bos_token'] ?? '<s>',
@@ -57,19 +57,25 @@ class Apriel15Handler extends ChatTemplateHandler {
     );
 
     var thinkingForcedOpen = false;
+    var thoughtClosed = false;
     if (isThinkingForcedOpen(prompt, startTag: thinkingStartTag)) {
       if (!enableThinking) {
         prompt = '${prompt.trimRight()}$thinkingEndTag';
+        thoughtClosed = true;
       } else {
         thinkingForcedOpen = true;
       }
     }
 
     final hasTools = tools != null && tools.isNotEmpty;
-    return LlamaChatTemplateResult(
+    final rendered = LlamaChatTemplateResult(
       prompt: prompt,
       format: format.index,
-      grammar: buildGrammar(tools),
+      grammar: requiredGrammarAfterThought(
+        buildGrammar(tools),
+        metadata: metadata,
+        thinkingForcedOpen: thinkingForcedOpen,
+      ),
       grammarLazy: hasTools,
       thinkingForcedOpen: thinkingForcedOpen,
       additionalStops: getStops(
@@ -81,6 +87,7 @@ class Apriel15Handler extends ChatTemplateHandler {
           ? [const GrammarTrigger(type: 0, value: '<tool_calls>[{"name": "')]
           : [],
     );
+    return withThoughtClosedForThinkingOff(rendered, closed: thoughtClosed);
   }
 
   @override
@@ -96,6 +103,7 @@ class Apriel15Handler extends ChatTemplateHandler {
       startThink: thinkingStartTag,
       endThink: thinkingEndTag,
       parseToolCalls: parseToolCalls,
+      thinkingForcedOpen: thinkingForcedOpen,
     );
     return ChatParseResult(
       content: parsed.content.trim(),

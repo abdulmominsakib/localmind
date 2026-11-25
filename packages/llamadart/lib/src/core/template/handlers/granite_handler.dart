@@ -14,6 +14,16 @@ import '../tool_call_grammar_utils.dart';
 
 /// Handler for IBM Granite models.
 class GraniteHandler extends ChatTemplateHandler {
+  static const String _toolCallPrefix = '<|tool_call|>';
+
+  /// Finds where [parse] may find a tool-call opening in [text].
+  ///
+  /// Returns the first index at or after [from] where `<|tool_call|>`
+  /// starts, or where the rest of [text] is the start of it, and
+  /// `text.length` when there is none.
+  static int toolCallOpening(String text, [int from = 0]) =>
+      ToolCallParsingUtils.literalOpening(text, const [_toolCallPrefix], from);
+
   static const List<String> _toolPreservedTokens = <String>[
     '<think>',
     '</think>',
@@ -57,7 +67,7 @@ class GraniteHandler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'bos_token':
@@ -67,9 +77,11 @@ class GraniteHandler extends ChatTemplateHandler {
     );
 
     var thinkingForcedOpen = false;
+    var thoughtClosed = false;
     if (isThinkingForcedOpen(prompt)) {
       if (!enableThinking) {
         prompt = '${prompt.trimRight()}</think>\n';
+        thoughtClosed = true;
       } else {
         thinkingForcedOpen = true;
       }
@@ -80,16 +92,14 @@ class GraniteHandler extends ChatTemplateHandler {
     final toolChoiceRequired = toolChoice == ToolChoice.required.name;
     final parallelToolCalls =
         metadata[internalParallelToolCallsMetadataKey] == 'true';
-    return LlamaChatTemplateResult(
+    final rendered = LlamaChatTemplateResult(
       prompt: prompt,
       format: format.index,
-      grammar: hasTools
-          ? _buildGraniteToolGrammar(
-              tools,
-              thinkingForcedOpen: thinkingForcedOpen,
-              parallelToolCalls: parallelToolCalls,
-            )
-          : (thinkingForcedOpen ? _buildThinkingOnlyGrammar() : null),
+      grammar: requiredGrammarAfterThought(
+        _buildGraniteToolGrammar(tools, parallelToolCalls: parallelToolCalls),
+        metadata: metadata,
+        thinkingForcedOpen: thinkingForcedOpen,
+      ),
       grammarLazy: hasTools && !toolChoiceRequired,
       thinkingForcedOpen: thinkingForcedOpen,
       additionalStops: getStops(
@@ -103,6 +113,7 @@ class GraniteHandler extends ChatTemplateHandler {
           ? [const GrammarTrigger(type: 0, value: '<|tool_call|>')]
           : [],
     );
+    return withThoughtClosedForThinkingOff(rendered, closed: thoughtClosed);
   }
 
   @override
@@ -125,8 +136,7 @@ class GraniteHandler extends ChatTemplateHandler {
       );
     }
 
-    const toolCallPrefix = '<|tool_call|>';
-    final toolCallIndex = text.indexOf(toolCallPrefix);
+    final toolCallIndex = text.indexOf(_toolCallPrefix);
     if (toolCallIndex == -1) {
       return ChatParseResult(
         content: text.trim(),
@@ -135,7 +145,7 @@ class GraniteHandler extends ChatTemplateHandler {
     }
 
     final prelude = text.substring(0, toolCallIndex);
-    final payload = text.substring(toolCallIndex + toolCallPrefix.length);
+    final payload = text.substring(toolCallIndex + _toolCallPrefix.length);
     var payloadOffset = 0;
     while (payloadOffset < payload.length &&
         payload.codeUnitAt(payloadOffset) <= 0x20) {
@@ -180,58 +190,18 @@ class GraniteHandler extends ChatTemplateHandler {
 
   @override
   String? buildGrammar(List<ToolDefinition>? tools) {
-    return _buildGraniteToolGrammar(
-      tools,
-      thinkingForcedOpen: false,
-      parallelToolCalls: true,
-    );
+    return _buildGraniteToolGrammar(tools, parallelToolCalls: true);
   }
 
   String? _buildGraniteToolGrammar(
     List<ToolDefinition>? tools, {
-    required bool thinkingForcedOpen,
     required bool parallelToolCalls,
-  }) {
-    final base = ToolCallGrammarUtils.buildWrappedArrayGrammar(
-      tools: tools,
-      prefix: '<|tool_call|>',
-      suffix: '',
-      nameKey: 'name',
-      argumentsKey: 'arguments',
-      allowParallelToolCalls: parallelToolCalls,
-    );
-    if (base == null) {
-      return null;
-    }
-    if (!thinkingForcedOpen) {
-      return base;
-    }
-    return _rewriteRootForThinkingPrelude(base);
-  }
-
-  String _rewriteRootForThinkingPrelude(String grammar) {
-    final lines = grammar.trimRight().split('\n');
-    final rootIndex = lines.indexWhere((line) => line.startsWith('root ::= '));
-    if (rootIndex == -1) {
-      return grammar;
-    }
-    final rootExpr = lines[rootIndex].substring('root ::= '.length).trim();
-    lines[rootIndex] =
-        'root ::= "</think>" space "<response>" space response-body "</response>" space $rootExpr';
-    final hasResponseRule = lines.any(
-      (line) => line.startsWith('response-body ::= '),
-    );
-    if (!hasResponseRule) {
-      lines.add('response-body ::= [^<]*');
-    }
-    return '${lines.join('\n')}\n';
-  }
-
-  String _buildThinkingOnlyGrammar() {
-    return '''
-root ::= "</think>" space "<response>" space response-body "</response>" space
-response-body ::= [^<]*
-space ::= "" | " " | "\\n"{1,2} [ \\t]{0,20}
-''';
-  }
+  }) => ToolCallGrammarUtils.buildWrappedArrayGrammar(
+    tools: tools,
+    prefix: '<|tool_call|>',
+    suffix: '',
+    nameKey: 'name',
+    argumentsKey: 'arguments',
+    allowParallelToolCalls: parallelToolCalls,
+  );
 }

@@ -107,36 +107,39 @@ class OnDeviceLlamaService {
     final engine =
         engineFactory?.call() ?? llama.LlamaEngine(llama.LlamaBackend());
     try {
-      await engine.loadModel(
-        model.localPath!,
-        modelParams: llama.ModelParams(
+      final projectorPath = model.projectorPath;
+      final hasProjector = projectorPath != null && projectorPath.isNotEmpty;
+      if (hasProjector && !await File(projectorPath).exists()) {
+        throw FileSystemException(
+          'Configured multimodal projector file was not found',
+          projectorPath,
+        );
+      }
+      if (hasProjector) {
+        Log.info('Loading multimodal projector from $projectorPath');
+      }
+      await engine.setModel(
+        llama.LlamaModel(
+          llama.ModelSource.path(model.localPath!),
+          projector: hasProjector
+              ? llama.ModelSource.path(projectorPath)
+              : null,
+        ),
+        params: llama.ModelParams(
           contextSize: contextLength,
           gpuLayers: gpuLayers,
         ),
       );
 
-      if (model.projectorPath != null && model.projectorPath!.isNotEmpty) {
-        final projFile = File(model.projectorPath!);
-        if (!await projFile.exists()) {
-          throw FileSystemException(
-            'Configured multimodal projector file was not found',
-            model.projectorPath,
+      if (hasProjector) {
+        final hasVision = await engine.supportsVision;
+        if (!hasVision) {
+          throw StateError(
+            'Failed to load multimodal projector: the selected projector did '
+            'not enable vision support.',
           );
         }
-        Log.info('Loading multimodal projector from ${model.projectorPath}');
-        try {
-          await engine.loadMultimodalProjector(model.projectorPath!);
-          final hasVision = await engine.supportsVision;
-          if (!hasVision) {
-            throw StateError(
-              'The selected projector did not enable vision support.',
-            );
-          }
-          Log.info('Multimodal projector loaded (supportsVision=$hasVision)');
-        } catch (e) {
-          Log.error('Failed to load multimodal projector: $e');
-          throw StateError('Failed to load multimodal projector: $e');
-        }
+        Log.info('Multimodal projector loaded (supportsVision=$hasVision)');
       }
     } catch (_) {
       try {

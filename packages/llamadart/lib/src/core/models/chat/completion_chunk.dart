@@ -1,16 +1,27 @@
-/// Represents a tool call within a completion chunk.
-/// Aligns with OpenAI's `ToolCall` in streaming chunks.
+import '../inference/generation_usage.dart';
+
+/// A tool call in a completion chunk, shaped like OpenAI's streaming
+/// `ToolCall`.
+///
+/// `LlamaEngine.create` does not stream calls as fragments. It emits each
+/// call once, complete, in the final chunk, whose `finishReason` is
+/// `tool_calls`. When the backend reports that the reply ended at the token
+/// limit, every call is withheld, including complete ones, and the reply
+/// finishes with `length`.
+/// The same raw record type backs `partialToolCalls`, where entries can be
+/// unfinished diagnostics and must never be executed.
 class LlamaCompletionChunkToolCall {
-  /// The index of the tool call in the list of tool calls.
+  /// The position of this call among the calls of the completion.
   final int index;
 
-  /// The ID of the tool call. Only present in the first chunk for this tool call.
+  /// The call ID. `LlamaEngine.create` fills `call_<index>` when the model
+  /// output has none for executable calls; diagnostics keep any generated ID.
   final String? id;
 
   /// The type of the tool call. Usually "function".
   final String? type;
 
-  /// The arguments delta. This is a JSON fragment that should be accumulated.
+  /// The function name and its arguments text.
   final LlamaCompletionChunkFunction? function;
 
   /// Creates a new [LlamaCompletionChunkToolCall].
@@ -55,7 +66,10 @@ class LlamaCompletionChunkFunction {
   /// The name of the function.
   final String? name;
 
-  /// The arguments of the function (JSON fragment).
+  /// The function arguments as text. From `LlamaEngine.create` this is the
+  /// complete arguments as a string, not a streaming fragment: usually a JSON
+  /// object, but it can be empty or not an object. In `partialToolCalls`, this
+  /// is raw diagnostic text and may be unfinished Python or JSON syntax.
   final String? arguments;
 
   /// Creates a new [LlamaCompletionChunkFunction].
@@ -94,11 +108,28 @@ class LlamaCompletionChunk {
   /// The Unix timestamp (in seconds) of when the completion was created.
   final int created;
 
-  /// The model used for completion.
+  /// The name of the model used for completion.
+  ///
+  /// `LlamaEngine` reports the last path segment of the source the model was
+  /// loaded from, such as `qwen.gguf`: the file name of a local path, or the
+  /// last segment of a URL path without its query or fragment. For a
+  /// downloaded `ModelSource`, that is its `fileName`. A local file name is
+  /// reported as written, `%` included; a URL segment is percent-decoded. It
+  /// is `llama_model` when that segment is empty or contains one of
+  /// `/ \ ? # @ ; & =` as written or percent-escaped, when a URL segment
+  /// does not percent-decode to UTF-8, and for `data:` and `blob:` URLs.
+  ///
+  /// The value leaves out directories, hosts, queries and fragments, but not
+  /// the segment itself: a URL whose last segment is a token reports that
+  /// token.
   final String model;
 
   /// A list of completion choices.
   final List<LlamaCompletionChunkChoice> choices;
+
+  /// Token counts and timings of the request, set only on the final chunk
+  /// and only when the backend reports them.
+  final LlamaGenerationUsage? usage;
 
   /// Creates a new [LlamaCompletionChunk].
   LlamaCompletionChunk({
@@ -107,6 +138,7 @@ class LlamaCompletionChunk {
     required this.created,
     required this.model,
     required this.choices,
+    this.usage,
   });
 
   /// Creates a [LlamaCompletionChunk] from a JSON map.
@@ -122,6 +154,11 @@ class LlamaCompletionChunk {
                 LlamaCompletionChunkChoice.fromJson(e as Map<String, dynamic>),
           )
           .toList(),
+      usage: json['usage'] == null
+          ? null
+          : LlamaGenerationUsage.fromJson(
+              json['usage'] as Map<String, dynamic>,
+            ),
     );
   }
 
@@ -133,12 +170,14 @@ class LlamaCompletionChunk {
       'created': created,
       'model': model,
       'choices': choices.map((e) => e.toJson()).toList(),
+      if (usage != null) 'usage': usage!.toJson(),
     };
   }
 
   @override
   String toString() =>
-      'LlamaCompletionChunk(id: $id, object: $object, created: $created, model: $model, choices: $choices)';
+      'LlamaCompletionChunk(id: $id, object: $object, created: $created, model: $model, choices: $choices'
+      '${usage == null ? '' : ', usage: $usage'})';
 }
 
 /// Represents a choice in a completion chunk.
@@ -192,6 +231,13 @@ class LlamaCompletionChunkDelta {
   /// The tool calls information.
   final List<LlamaCompletionChunkToolCall>? toolCalls;
 
+  /// Raw calls from an unfinished LFM tool envelope at a reported length limit.
+  ///
+  /// Terminal diagnostics only: arguments preserve generated text and may not
+  /// be JSON. Never execute these records or add them to message history.
+  /// Natural EOF and cancellation do not populate this field or imply a limit.
+  final List<LlamaCompletionChunkToolCall>? partialToolCalls;
+
   /// The thinking content (LlamaDart extension).
   final String? thinking;
 
@@ -202,6 +248,7 @@ class LlamaCompletionChunkDelta {
   LlamaCompletionChunkDelta({
     this.content,
     this.toolCalls,
+    this.partialToolCalls,
     this.thinking,
     this.role,
   });
@@ -211,6 +258,13 @@ class LlamaCompletionChunkDelta {
     return LlamaCompletionChunkDelta(
       content: json['content'] as String?,
       toolCalls: (json['tool_calls'] as List<dynamic>?)
+          ?.map(
+            (e) => LlamaCompletionChunkToolCall.fromJson(
+              e as Map<String, dynamic>,
+            ),
+          )
+          .toList(),
+      partialToolCalls: (json['partial_tool_calls'] as List<dynamic>?)
           ?.map(
             (e) => LlamaCompletionChunkToolCall.fromJson(
               e as Map<String, dynamic>,
@@ -228,6 +282,8 @@ class LlamaCompletionChunkDelta {
       if (content != null) 'content': content,
       if (toolCalls != null)
         'tool_calls': toolCalls!.map((e) => e.toJson()).toList(),
+      if (partialToolCalls != null)
+        'partial_tool_calls': partialToolCalls!.map((e) => e.toJson()).toList(),
       if (thinking != null) 'thinking': thinking,
       if (role != null) 'role': role,
     };
@@ -235,5 +291,75 @@ class LlamaCompletionChunkDelta {
 
   @override
   String toString() =>
-      'LlamaCompletionChunkDelta(content: $content, toolCalls: $toolCalls, thinking: $thinking, role: $role)';
+      'LlamaCompletionChunkDelta(content: $content, toolCalls: $toolCalls, partialToolCallCount: ${partialToolCalls?.length ?? 0}, thinking: $thinking, role: $role)';
+}
+
+/// Why a completion stopped, typed from the `finish_reason` wire value of a
+/// [LlamaCompletionChunkChoice].
+enum LlamaFinishReason {
+  /// The model ended its output or hit a stop sequence. Wire value `stop`.
+  stop('stop'),
+
+  /// Generation stopped at `GenerationParams.maxTokens` or a full context
+  /// before the model ended its output. Wire value `length`.
+  length('length'),
+
+  /// The final chunk carries tool calls. Wire value `tool_calls`.
+  toolCalls('tool_calls');
+
+  const LlamaFinishReason(this.wireValue);
+
+  /// The `finish_reason` string this value is reported as.
+  final String wireValue;
+
+  /// Returns the value whose [wireValue] is [value].
+  ///
+  /// Returns null for null and for a value this enum does not know, such as
+  /// one read by [LlamaCompletionChunk.fromJson]; the raw string stays on
+  /// [LlamaCompletionChunkChoice.finishReason].
+  static LlamaFinishReason? fromWireValue(String? value) {
+    for (final reason in values) {
+      if (reason.wireValue == value) return reason;
+    }
+    return null;
+  }
+}
+
+/// Shortcuts for the first choice of a [LlamaCompletionChunk].
+///
+/// `LlamaEngine` and `ChatSession` stream one choice per chunk, so these
+/// replace `chunk.choices.first.delta` lookups:
+///
+/// ```dart
+/// await for (final chunk in engine.create(messages)) {
+///   stdout.write(chunk.text);
+/// }
+/// ```
+extension LlamaCompletionChunkExtension on LlamaCompletionChunk {
+  /// The content delta of the first choice, or an empty string when the
+  /// chunk has no choice or no content.
+  String get text => choices.firstOrNull?.delta.content ?? '';
+
+  /// The reasoning delta of the first choice, or an empty string when the
+  /// chunk has no choice or no reasoning.
+  String get thinking => choices.firstOrNull?.delta.thinking ?? '';
+
+  /// The tool-call deltas of the first choice, or an empty list.
+  ///
+  /// Each entry is a fragment to accumulate by
+  /// [LlamaCompletionChunkToolCall.index]; collect the stream with
+  /// `collect()` to get complete tool calls.
+  List<LlamaCompletionChunkToolCall> get toolCalls =>
+      choices.firstOrNull?.delta.toolCalls ?? const [];
+
+  /// Non-executable terminal diagnostics of the first choice, or an empty list.
+  List<LlamaCompletionChunkToolCall> get partialToolCalls =>
+      choices.firstOrNull?.delta.partialToolCalls ?? const [];
+
+  /// The typed finish reason of the first choice.
+  ///
+  /// Null on every chunk but the final one, and for a `finish_reason` that
+  /// [LlamaFinishReason] does not know.
+  LlamaFinishReason? get finishReason =>
+      LlamaFinishReason.fromWireValue(choices.firstOrNull?.finishReason);
 }

@@ -30,6 +30,14 @@ class GptOssHandler extends ChatTemplateHandler {
     '<|end|>',
   ];
 
+  /// Finds a possible assistant frame.
+  static int toolCallOpening(String text, [int from = 0]) =>
+      ToolCallParsingUtils.literalOpening(text, const [
+        _assistantStart,
+        '<|channel|>',
+        'to=functions.',
+      ], from);
+
   @override
   ChatFormat get format => ChatFormat.gptOss;
 
@@ -45,15 +53,17 @@ class GptOssHandler extends ChatTemplateHandler {
     List<ToolDefinition>? tools,
     bool enableThinking = true,
   }) {
-    final renderedMessages = messages.map((m) {
-      final json = m.toJson();
-      final reasoning = json['reasoning_content'];
-      final toolCalls = json['tool_calls'];
-      if (reasoning is String && toolCalls is List && toolCalls.isNotEmpty) {
-        json['thinking'] = reasoning;
-      }
-      return json;
-    }).toList();
+    final renderedMessages =
+        templateMessages(messages, templateSource: templateSource).map((json) {
+          final reasoning = json['reasoning_content'];
+          final toolCalls = json['tool_calls'];
+          if (reasoning is String &&
+              toolCalls is List &&
+              toolCalls.isNotEmpty) {
+            json['thinking'] = reasoning;
+          }
+          return json;
+        }).toList();
 
     final template = Template(templateSource);
     final prompt = renderTemplate(
@@ -86,12 +96,19 @@ class GptOssHandler extends ChatTemplateHandler {
       preservedTokens: _gptOssPreservedTokens,
       grammarTriggers: hasTools
           ? const <GrammarTrigger>[
-              GrammarTrigger(type: 0, value: '<|channel|>commentary'),
-              GrammarTrigger(type: 0, value: '<|channel|>analysis'),
+              GrammarTrigger(
+                type: 0,
+                value: '<|channel|>commentary to=functions.',
+              ),
+              GrammarTrigger(
+                type: 0,
+                value: '<|channel|>analysis to=functions.',
+              ),
               GrammarTrigger(
                 type: 0,
                 value: '<|start|>assistant to=functions.',
               ),
+              GrammarTrigger(type: 3, value: r'^( to=functions\.)[\s\S]*'),
             ]
           : const <GrammarTrigger>[],
     );
@@ -104,6 +121,14 @@ class GptOssHandler extends ChatTemplateHandler {
     bool parseToolCalls = true,
     bool thinkingForcedOpen = false,
   }) {
+    // The model's generation prompt already ends with an assistant header.
+    // Reconstruct only a protocol continuation, never ordinary answer text.
+    final leading = output.trimLeft();
+    if (leading.startsWith('<|channel|>')) {
+      output = '$_assistantStart$leading';
+    } else if (leading.startsWith('to=functions.')) {
+      output = '$_assistantStart $leading';
+    }
     final reasoningParts = <String>[];
     final contentParts = <String>[];
     final toolCalls = <LlamaCompletionChunkToolCall>[];
@@ -129,10 +154,6 @@ class GptOssHandler extends ChatTemplateHandler {
       final headerStart = start + _assistantStart.length;
       final messageIdx = output.indexOf(_messageTag, headerStart);
       if (messageIdx == -1) {
-        final trailing = output.substring(start).trim();
-        if (trailing.isNotEmpty) {
-          contentParts.add(trailing);
-        }
         break;
       }
 
@@ -185,6 +206,9 @@ class GptOssHandler extends ChatTemplateHandler {
     final functionName = _extractFunctionRecipient(header);
 
     if (functionName != null && parseToolCalls) {
+      if (!ToolCallParsingUtils.hasUniqueJsonObjectKeys(normalizedBody)) {
+        return;
+      }
       toolCalls.add(
         ToolCallParsingUtils.createFunctionToolCall(
           index: toolCalls.length,
@@ -243,6 +267,7 @@ class GptOssHandler extends ChatTemplateHandler {
     final converter = JsonSchemaConverter();
     final roleRules = <String>[];
     final channelRules = <String>[];
+    final recipientRules = <String>[];
 
     converter.rules['channel'] =
         '${ToolCallGrammarUtils.literal('commentary')} | ${ToolCallGrammarUtils.literal('analysis')}';
@@ -262,16 +287,26 @@ class GptOssHandler extends ChatTemplateHandler {
       converter.rules[channelRule] =
           '${ToolCallGrammarUtils.literal('<|channel|>')} channel ${ToolCallGrammarUtils.literal(' to=functions.${tool.name}<|message|>')} space $argsRule ${ToolCallGrammarUtils.literal('<|end|>')}';
       channelRules.add(channelRule);
+
+      final recipientRule = 'tool-$i-recipient-call';
+      converter.rules[recipientRule] =
+          '${ToolCallGrammarUtils.literal(' to=functions.${tool.name}<|channel|>')} channel ${ToolCallGrammarUtils.literal('<|message|>')} space $argsRule ${ToolCallGrammarUtils.literal('<|end|>')}';
+      recipientRules.add(recipientRule);
     }
 
     final buffer = StringBuffer()
       ..writeln('tool-call-role ::= ${roleRules.join(' | ')}')
-      ..writeln('tool-call-channel ::= ${channelRules.join(' | ')}');
+      ..writeln('tool-call-channel ::= ${channelRules.join(' | ')}')
+      ..writeln('tool-call-recipient ::= ${recipientRules.join(' | ')}');
 
     if (toolCallsRequired) {
-      buffer.writeln('root ::= tool-call-role | tool-call-channel');
+      buffer.writeln(
+        'root ::= tool-call-role | tool-call-channel | tool-call-recipient',
+      );
     } else {
-      buffer.writeln('root ::= tool-call-role | tool-call-channel');
+      buffer.writeln(
+        'root ::= tool-call-role | tool-call-channel | tool-call-recipient',
+      );
     }
 
     final otherRules = converter.rules.entries.toList(growable: false)
@@ -279,7 +314,8 @@ class GptOssHandler extends ChatTemplateHandler {
     for (final entry in otherRules) {
       if (entry.key == 'root' ||
           entry.key == 'tool-call-role' ||
-          entry.key == 'tool-call-channel') {
+          entry.key == 'tool-call-channel' ||
+          entry.key == 'tool-call-recipient') {
         continue;
       }
       buffer.writeln('${entry.key} ::= ${entry.value}');

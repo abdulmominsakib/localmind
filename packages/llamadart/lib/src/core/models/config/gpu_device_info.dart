@@ -71,3 +71,113 @@ class GpuDeviceInfo {
       'type: ${type.name}, memoryFree: $memoryFreeBytes, '
       'memoryTotal: $memoryTotalBytes)';
 }
+
+/// How a [ModelParams.gpuMemoryFit] request changed a load.
+enum GpuMemoryFitOutcome {
+  /// Everything fits: the load keeps its requested layers and context.
+  unchanged,
+
+  /// Fewer layers, or a smaller context, than requested.
+  reduced,
+
+  /// No layer fits, so the model loads on the CPU.
+  cpu,
+
+  /// The load was not fitted; [GpuMemoryFitReport.reason] says why.
+  skipped,
+}
+
+/// One GPU's memory in a [GpuMemoryFitReport].
+class GpuMemoryFitDevice {
+  /// The ggml device name, such as `Vulkan0`.
+  final String name;
+
+  /// Free device memory in bytes when the fit measured it.
+  final int freeBytes;
+
+  /// Total device memory in bytes.
+  final int totalBytes;
+
+  /// Bytes the fitted load puts on the device for model weights.
+  final int modelBytes;
+
+  /// Bytes the fitted load puts on the device for the context (KV cache).
+  final int contextBytes;
+
+  /// Bytes the fitted load puts on the device for compute buffers.
+  final int computeBytes;
+
+  /// Creates a [GpuMemoryFitDevice].
+  const GpuMemoryFitDevice({
+    required this.name,
+    required this.freeBytes,
+    required this.totalBytes,
+    required this.modelBytes,
+    required this.contextBytes,
+    required this.computeBytes,
+  });
+
+  /// Bytes the fitted load is projected to use on the device.
+  int get projectedBytes => modelBytes + contextBytes + computeBytes;
+
+  @override
+  String toString() =>
+      'GpuMemoryFitDevice(name: $name, free: $freeBytes, total: $totalBytes, '
+      'projected: $projectedBytes)';
+}
+
+/// What a [ModelParams.gpuMemoryFit] request did to a load.
+class GpuMemoryFitReport {
+  /// How the fit changed the load.
+  final GpuMemoryFitOutcome outcome;
+
+  /// Why the load was not fitted, for [GpuMemoryFitOutcome.skipped].
+  final String? reason;
+
+  /// Offloadable layers of the model, the output layer included.
+  final int modelLayers;
+
+  /// GPU layers the load uses.
+  final int gpuLayers;
+
+  /// Context size the load uses; `0` when the fit did not choose one.
+  final int contextSize;
+
+  /// The free memory left on each GPU that the fit was asked for.
+  final int marginBytes;
+
+  /// The GPUs of the load, empty when the load was not fitted.
+  final List<GpuMemoryFitDevice> devices;
+
+  /// How long the fit took.
+  final Duration elapsed;
+
+  /// Creates a [GpuMemoryFitReport].
+  const GpuMemoryFitReport({
+    required this.outcome,
+    this.reason,
+    this.modelLayers = 0,
+    this.gpuLayers = 0,
+    this.contextSize = 0,
+    this.marginBytes = 0,
+    this.devices = const [],
+    this.elapsed = Duration.zero,
+  });
+
+  @override
+  String toString() {
+    final buffer = StringBuffer(
+      'GpuMemoryFitReport(${outcome.name}, gpuLayers: $gpuLayers of '
+      '$modelLayers, contextSize: $contextSize, marginBytes: $marginBytes',
+    );
+    for (final device in devices) {
+      buffer.write(
+        ', ${device.name}: free ${device.freeBytes}, projected '
+        '${device.projectedBytes}',
+      );
+    }
+    if (reason != null) buffer.write(', reason: $reason');
+    buffer.write(')');
+    return buffer.toString();
+  }
+}

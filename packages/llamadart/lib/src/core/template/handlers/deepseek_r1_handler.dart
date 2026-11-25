@@ -8,6 +8,7 @@ import '../../models/tools/tool_definition.dart';
 import '../chat_format.dart';
 import '../chat_parse_result.dart';
 import '../chat_template_handler.dart';
+import '../template_internal_metadata.dart';
 import '../thinking_utils.dart';
 import '../tool_call_parsing_utils.dart';
 import '../tool_call_grammar_utils.dart';
@@ -19,6 +20,27 @@ import '../tool_call_grammar_utils.dart';
 /// - `<｜tool▁call▁begin｜>` / `<｜tool▁call▁end｜>`
 /// - `<｜tool▁sep｜>` separates function name from arguments
 class DeepseekR1Handler extends ChatTemplateHandler {
+  static const List<String> _toolCallsOpenings = <String>[
+    '<｜tool▁calls▁begin｜>',
+    '<｜tool_calls_begin｜>',
+    '<｜tool calls begin｜>',
+    r'<｜tool\_calls\_begin｜>',
+    '<｜tool▁calls｜>',
+  ];
+  static final RegExp _toolsBlockRegex = RegExp(
+    '(${_toolCallsOpenings.map(RegExp.escape).join('|')})'
+    '([\\s\\S]*?)<｜tool▁calls▁end｜>',
+    dotAll: true,
+  );
+
+  /// Finds where [parse] may find a tool-call opening in [text].
+  ///
+  /// Returns the first index at or after [from] where a DeepSeek tool-call
+  /// opening starts, or where the rest of [text] is the start of one, and
+  /// `text.length` when there is none.
+  static int toolCallOpening(String text, [int from = 0]) =>
+      ToolCallParsingUtils.literalOpening(text, _toolCallsOpenings, from);
+
   @override
   ChatFormat get format => ChatFormat.deepseekR1;
 
@@ -55,7 +77,7 @@ class DeepseekR1Handler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'bos_token':
@@ -67,9 +89,11 @@ class DeepseekR1Handler extends ChatTemplateHandler {
 
     // Handle enableThinking post-render logic
     var thinkingForcedOpen = false;
+    var thoughtClosed = false;
     if (isThinkingForcedOpen(prompt)) {
       if (!enableThinking) {
         prompt = '${prompt.trimRight()}</think>\n';
+        thoughtClosed = true;
       } else {
         thinkingForcedOpen = true;
       }
@@ -79,10 +103,14 @@ class DeepseekR1Handler extends ChatTemplateHandler {
     final triggerPattern = thinkingForcedOpen
         ? r'[\s\S]*?(</think>\s*)(<｜tool▁calls▁begin｜>|<｜tool_calls_begin｜>|<｜tool calls begin｜>|<｜tool\\_calls\\_begin｜>|<｜tool▁calls｜>)[\s\S]*'
         : r'(?:<think>[\s\S]*?</think>\s*)?(<｜tool▁calls▁begin｜>|<｜tool_calls_begin｜>|<｜tool calls begin｜>|<｜tool\\_calls\\_begin｜>|<｜tool▁calls｜>)[\s\S]*';
-    return LlamaChatTemplateResult(
+    final rendered = LlamaChatTemplateResult(
       prompt: prompt,
       format: format.index,
-      grammar: buildGrammar(tools),
+      grammar: _buildGrammarWithOptions(
+        tools,
+        parallelToolCalls:
+            metadata[internalParallelToolCallsMetadataKey] == 'true',
+      ),
       grammarLazy: hasTools,
       thinkingForcedOpen: thinkingForcedOpen,
       additionalStops: getStops(
@@ -94,6 +122,7 @@ class DeepseekR1Handler extends ChatTemplateHandler {
           ? [GrammarTrigger(type: 3, value: triggerPattern)]
           : [],
     );
+    return withThoughtClosedForThinkingOff(rendered, closed: thoughtClosed);
   }
 
   @override
@@ -119,12 +148,7 @@ class DeepseekR1Handler extends ChatTemplateHandler {
     final toolCalls = <LlamaCompletionChunkToolCall>[];
     var contentText = text;
 
-    final toolsBlockRegex = RegExp(
-      r'(<｜tool▁calls▁begin｜>|<｜tool_calls_begin｜>|<｜tool calls begin｜>|<｜tool\\_calls\\_begin｜>|<｜tool▁calls｜>)([\s\S]*?)<｜tool▁calls▁end｜>',
-      dotAll: true,
-    );
-
-    final blockMatch = toolsBlockRegex.firstMatch(text);
+    final blockMatch = _toolsBlockRegex.firstMatch(text);
     if (blockMatch != null) {
       final leading = text.substring(0, blockMatch.start).trim();
       final trailing = text.substring(blockMatch.end).trim();
@@ -178,6 +202,13 @@ class DeepseekR1Handler extends ChatTemplateHandler {
 
   @override
   String? buildGrammar(List<ToolDefinition>? tools) {
+    return _buildGrammarWithOptions(tools, parallelToolCalls: true);
+  }
+
+  String? _buildGrammarWithOptions(
+    List<ToolDefinition>? tools, {
+    required bool parallelToolCalls,
+  }) {
     if (tools == null || tools.isEmpty) {
       return null;
     }
@@ -193,7 +224,7 @@ class DeepseekR1Handler extends ChatTemplateHandler {
 
       final toolRuleName = 'tool-$i-call';
       final prefix = ToolCallGrammarUtils.literal(
-        'function<｜tool▁sep｜>${tool.name}\\n```json\\n',
+        'function<｜tool▁sep｜>${tool.name}\n```json\n',
       );
       final suffix = ToolCallGrammarUtils.literal('```<｜tool▁call▁end｜>');
       converter.rules[toolRuleName] =
@@ -202,8 +233,10 @@ class DeepseekR1Handler extends ChatTemplateHandler {
     }
 
     const rootRule = '( "</think>" space )? tool-calls';
-    const toolCallsRule =
-        '( "<｜tool▁calls▁begin｜>" | "<｜tool_calls_begin｜>" | "<｜tool calls begin｜>" | "<｜tool\\\\_calls\\\\_begin｜>" | "<｜tool▁calls｜>" ) space tool-call+ "<｜tool▁calls▁end｜>" space';
+    // Templates put a newline before each later call; llama.cpp joins
+    // parallel calls with `space`.
+    final toolCallsRule =
+        '( "<｜tool▁calls▁begin｜>" | "<｜tool_calls_begin｜>" | "<｜tool calls begin｜>" | "<｜tool\\\\_calls\\\\_begin｜>" | "<｜tool▁calls｜>" ) space tool-call${parallelToolCalls ? ' ( space tool-call )*' : ''} "<｜tool▁calls▁end｜>" space';
     final toolCallRule = toolRuleNames.join(' | ');
 
     final buffer = StringBuffer()

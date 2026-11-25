@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dinja/dinja.dart';
 
 import '../../grammar/json_schema_converter.dart';
@@ -18,6 +20,14 @@ import '../tool_call_parsing_utils.dart';
 ///
 /// EXAONE MoE uses `<think>` tags and `<tool_call>{...}</tool_call>` blocks.
 class ExaoneMoeHandler extends ChatTemplateHandler {
+  /// Finds where [parse] may find a tool-call opening in [text].
+  ///
+  /// Returns the first index at or after [from] where `<tool_call` starts,
+  /// or where the rest of [text] is the start of it, and `text.length` when
+  /// there is none.
+  static int toolCallOpening(String text, [int from = 0]) =>
+      ToolCallParsingUtils.literalOpening(text, const ['<tool_call'], from);
+
   @override
   ChatFormat get format => ChatFormat.exaoneMoe;
 
@@ -38,7 +48,7 @@ class ExaoneMoeHandler extends ChatTemplateHandler {
       template,
       metadata: metadata,
       context: {
-        'messages': templateMessages(messages),
+        'messages': templateMessages(messages, templateSource: templateSource),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
         'bos_token': metadata['tokenizer.ggml.bos_token'] ?? '<s>',
@@ -47,9 +57,11 @@ class ExaoneMoeHandler extends ChatTemplateHandler {
     );
 
     var thinkingForcedOpen = false;
+    var thoughtClosed = false;
     if (isThinkingForcedOpen(prompt)) {
       if (!enableThinking) {
         prompt = '${prompt.trimRight()}</think>';
+        thoughtClosed = true;
       } else {
         thinkingForcedOpen = true;
       }
@@ -60,12 +72,13 @@ class ExaoneMoeHandler extends ChatTemplateHandler {
     final toolChoiceRequired = toolChoice == ToolChoice.required.name;
     final parallelToolCalls =
         metadata[internalParallelToolCallsMetadataKey] == 'true';
-    return LlamaChatTemplateResult(
+    final rendered = LlamaChatTemplateResult(
       prompt: prompt,
       format: format.index,
-      grammar: _buildGrammarWithOptions(
-        tools,
-        parallelToolCalls: parallelToolCalls,
+      grammar: requiredGrammarAfterThought(
+        _buildGrammarWithOptions(tools, parallelToolCalls: parallelToolCalls),
+        metadata: metadata,
+        thinkingForcedOpen: thinkingForcedOpen,
       ),
       grammarLazy: hasTools && !toolChoiceRequired,
       thinkingForcedOpen: thinkingForcedOpen,
@@ -77,6 +90,7 @@ class ExaoneMoeHandler extends ChatTemplateHandler {
           ? [const GrammarTrigger(type: 0, value: '<tool_call>')]
           : [],
     );
+    return withThoughtClosedForThinkingOff(rendered, closed: thoughtClosed);
   }
 
   @override
@@ -86,12 +100,12 @@ class ExaoneMoeHandler extends ChatTemplateHandler {
     bool parseToolCalls = true,
     bool thinkingForcedOpen = false,
   }) {
-    final shouldTreatAsContent =
-        thinkingForcedOpen && !isPartial && !output.contains('</think>');
-
-    final extracted = shouldTreatAsContent
-        ? (content: output, reasoning: null)
-        : extractThinking(output, thinkingForcedOpen: thinkingForcedOpen);
+    // As in llama.cpp (`620d2225c`), a forced-open thought that never closes
+    // is reasoning.
+    final extracted = extractThinking(
+      output,
+      thinkingForcedOpen: thinkingForcedOpen,
+    );
 
     if (!parseToolCalls) {
       return ChatParseResult(
@@ -208,7 +222,7 @@ class ExaoneMoeHandler extends ChatTemplateHandler {
 
       final ruleName = 'tool-$i-call';
       converter.rules[ruleName] =
-          '"{" space "\\"name\\"" space ":" space ${ToolCallGrammarUtils.literal(tool.name)} space "," space "\\"arguments\\"" space ":" space $argsRule "}" space';
+          '"{" space "\\"name\\"" space ":" space ${ToolCallGrammarUtils.literal(jsonEncode(tool.name))} space "," space "\\"arguments\\"" space ":" space $argsRule "}" space';
       toolRuleNames.add(ruleName);
     }
 

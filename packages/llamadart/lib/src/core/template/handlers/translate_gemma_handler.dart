@@ -1,11 +1,37 @@
 import 'package:dinja/dinja.dart';
 
+import '../../exceptions.dart';
 import '../../models/chat/chat_message.dart';
 import '../../models/chat/chat_template_result.dart';
 import '../../models/tools/tool_definition.dart';
 import '../chat_format.dart';
 import '../chat_parse_result.dart';
 import '../chat_template_handler.dart';
+import '../template_internal_metadata.dart';
+
+const String _sourceLangCodeKey = 'source_lang_code';
+const String _targetLangCodeKey = 'target_lang_code';
+const String _defaultLangCode = 'en-GB';
+
+/// Adds the deprecated `sourceLangCode` and `targetLangCode` arguments to
+/// [chatTemplateKwargs], where [TranslateGemmaHandler] reads them.
+///
+/// A non-empty code replaces the same key in [chatTemplateKwargs]; null or
+/// empty codes leave it unchanged.
+Map<String, dynamic>? chatTemplateKwargsWithLanguageCodes(
+  Map<String, dynamic>? chatTemplateKwargs, {
+  String? sourceLangCode,
+  String? targetLangCode,
+}) {
+  final hasSource = sourceLangCode != null && sourceLangCode.isNotEmpty;
+  final hasTarget = targetLangCode != null && targetLangCode.isNotEmpty;
+  if (!hasSource && !hasTarget) return chatTemplateKwargs;
+  return <String, dynamic>{
+    ...?chatTemplateKwargs,
+    if (hasSource) _sourceLangCodeKey: sourceLangCode,
+    if (hasTarget) _targetLangCodeKey: targetLangCode,
+  };
+}
 
 /// Handler for TranslateGemma templates.
 ///
@@ -15,7 +41,8 @@ import '../chat_template_handler.dart';
 /// Matches llama.cpp behavior:
 /// - no tool calling support
 /// - no reasoning format
-/// - default language codes to `en-GB` when not provided
+/// - language codes come from `chat_template_kwargs`, then from the
+///   `source_lang_code`/`target_lang_code` metadata keys, then `en-GB`
 class TranslateGemmaHandler extends ChatTemplateHandler {
   @override
   ChatFormat get format => ChatFormat.translateGemma;
@@ -33,19 +60,27 @@ class TranslateGemmaHandler extends ChatTemplateHandler {
     bool enableThinking = true,
   }) {
     final template = Template(templateSource);
-    final sourceLangCode = metadata['source_lang_code'] ?? 'en-GB';
-    final targetLangCode = metadata['target_lang_code'] ?? 'en-GB';
+    final kwargs = chatTemplateKwargsFromMetadata(metadata);
+    final sourceLangCode = _languageCode(_sourceLangCodeKey, kwargs, metadata);
+    final targetLangCode = _languageCode(_targetLangCodeKey, kwargs, metadata);
 
-    final normalizedMessages = messages
-        .map((message) => message.toJson())
-        .map(
-          (message) => _normalizeUserContent(
-            message,
-            sourceLangCode: sourceLangCode,
-            targetLangCode: targetLangCode,
-          ),
-        )
-        .toList();
+    // Only user turns become typed parts, which carry the language codes.
+    // Other turns keep string content: the template prints it whole, and a
+    // list would print as its repr.
+    final normalizedMessages =
+        templateMessages(
+              messages,
+              templateSource: templateSource,
+              typedContent: false,
+            )
+            .map(
+              (message) => _normalizeUserContent(
+                message,
+                sourceLangCode: sourceLangCode,
+                targetLangCode: targetLangCode,
+              ),
+            )
+            .toList();
 
     final prompt = renderTemplate(
       template,
@@ -60,6 +95,21 @@ class TranslateGemmaHandler extends ChatTemplateHandler {
     );
 
     return LlamaChatTemplateResult(prompt: prompt, format: format.index);
+  }
+
+  String _languageCode(
+    String key,
+    Map<String, dynamic> kwargs,
+    Map<String, String> metadata,
+  ) {
+    final value = kwargs[key];
+    if (value == null) return metadata[key] ?? _defaultLangCode;
+    if (value is String) return value;
+    throw LlamaArgumentException(
+      'chatTemplateKwargs["$key"] must be a String language code, '
+      'got ${value.runtimeType}.',
+      name: 'chatTemplateKwargs',
+    );
   }
 
   Map<String, dynamic> _normalizeUserContent(
@@ -86,8 +136,8 @@ class TranslateGemmaHandler extends ChatTemplateHandler {
       {
         'type': 'text',
         'text': content.toString(),
-        'source_lang_code': sourceLangCode,
-        'target_lang_code': targetLangCode,
+        _sourceLangCodeKey: sourceLangCode,
+        _targetLangCodeKey: targetLangCode,
       },
     ];
 

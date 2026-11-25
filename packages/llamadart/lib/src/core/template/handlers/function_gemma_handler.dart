@@ -7,8 +7,10 @@ import '../../models/chat/completion_chunk.dart';
 import '../../models/chat/content_part.dart';
 import '../../models/tools/tool_definition.dart';
 import '../chat_format.dart';
+import '../media_placeholders.dart';
 import '../chat_parse_result.dart';
 import '../chat_template_handler.dart';
+import '../template_render_context.dart';
 import '../tool_call_fallback_parser.dart';
 import '../tool_call_parsing_utils.dart';
 
@@ -19,6 +21,12 @@ import '../tool_call_parsing_utils.dart';
 ///
 /// Tool declarations use `<start_function_declaration>` / `<end_function_declaration>`.
 class FunctionGemmaHandler extends ChatTemplateHandler {
+  /// Finds a possible function call for the stream's content gate.
+  static int toolCallOpening(String text, [int from = 0]) =>
+      ToolCallParsingUtils.literalOpening(text, const [
+        '<start_function_call>',
+      ], from);
+
   @override
   ChatFormat get format => ChatFormat.functionGemma;
 
@@ -53,6 +61,7 @@ class FunctionGemmaHandler extends ChatTemplateHandler {
     bool addAssistant = true,
     List<ToolDefinition>? tools,
     bool enableThinking = true,
+    String mediaMarker = mtmdMediaMarker,
   }) {
     return _renderInternal(
       templateSource: templateSource,
@@ -62,6 +71,7 @@ class FunctionGemmaHandler extends ChatTemplateHandler {
       tools: tools,
       enableThinking: enableThinking,
       multimodalContent: true,
+      mediaMarker: mediaMarker,
     );
   }
 
@@ -73,6 +83,7 @@ class FunctionGemmaHandler extends ChatTemplateHandler {
     required List<ToolDefinition>? tools,
     required bool enableThinking,
     required bool multimodalContent,
+    String mediaMarker = mtmdMediaMarker,
   }) {
     final template = Template(templateSource);
     var prompt = renderTemplate(
@@ -80,8 +91,10 @@ class FunctionGemmaHandler extends ChatTemplateHandler {
       metadata: metadata,
       context: {
         'messages': _serializeMessages(
+          templateSource,
           messages,
           multimodalContent: multimodalContent,
+          mediaMarker: mediaMarker,
         ),
         'add_generation_prompt': addAssistant,
         'tools': tools?.map((t) => t.toJson()).toList(),
@@ -89,10 +102,6 @@ class FunctionGemmaHandler extends ChatTemplateHandler {
         'eos_token': metadata['tokenizer.ggml.eos_token'] ?? '<eos>',
       },
     );
-
-    if (multimodalContent) {
-      prompt = prompt.replaceAll('<start_of_image>', '<__media__>');
-    }
 
     final hasTools = tools != null && tools.isNotEmpty;
     return LlamaChatTemplateResult(
@@ -111,51 +120,37 @@ class FunctionGemmaHandler extends ChatTemplateHandler {
   }
 
   List<Map<String, dynamic>> _serializeMessages(
+    String templateSource,
     List<LlamaChatMessage> messages, {
     required bool multimodalContent,
+    required String mediaMarker,
   }) {
-    return messages
-        .map((message) {
-          if (message.role == LlamaChatRole.tool) {
-            return _serializeToolMessage(message);
-          }
-
-          return multimodalContent
-              ? message.toJsonMultimodal()
-              : message.toJson();
-        })
-        .toList(growable: false);
+    final split = TemplateRenderContext.splitToolResults(messages);
+    final rendered = templateMessages(
+      split,
+      multimodal: multimodalContent,
+      mediaMarker: mediaMarker,
+      templateSource: templateSource,
+    );
+    return [
+      for (var i = 0; i < split.length; i++)
+        _serializeToolMessage(split[i]) ?? rendered[i],
+    ];
   }
 
-  Map<String, dynamic> _serializeToolMessage(LlamaChatMessage message) {
-    final toolResults = message.parts
+  Map<String, dynamic>? _serializeToolMessage(LlamaChatMessage message) {
+    if (message.role != LlamaChatRole.tool) return null;
+    final result = message.parts
         .whereType<LlamaToolResultContent>()
-        .toList();
-    if (toolResults.isEmpty) {
-      return message.toJson();
-    }
-
-    if (toolResults.length == 1) {
-      final result = toolResults.first;
-      return {
-        'role': 'tool',
-        'content': {
-          'name': result.name,
-          'response': _normalizeToolResponse(result.result),
-        },
-      };
-    }
+        .firstOrNull;
+    if (result == null) return null;
 
     return {
       'role': 'tool',
-      'content': toolResults
-          .map(
-            (result) => {
-              'name': result.name,
-              'response': _normalizeToolResponse(result.result),
-            },
-          )
-          .toList(growable: false),
+      'content': {
+        'name': result.name,
+        'response': _normalizeToolResponse(result.result),
+      },
     };
   }
 

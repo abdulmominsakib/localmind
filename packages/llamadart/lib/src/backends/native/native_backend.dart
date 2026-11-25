@@ -1,3 +1,6 @@
+import '../../core/engine/engine_capabilities.dart';
+import '../../core/engine/engine_observer.dart';
+import '../../core/exceptions.dart';
 import '../../core/models/chat/chat_message.dart';
 import '../../core/models/chat/content_part.dart';
 import '../../core/models/config/gpu_backend.dart';
@@ -5,40 +8,88 @@ import '../../core/models/config/gpu_device_info.dart';
 import '../../core/models/config/log_level.dart';
 import '../../core/models/diagnostics/model_file_type.dart';
 import '../../core/models/inference/generation_params.dart';
+import '../../core/models/inference/generation_usage.dart';
 import '../../core/models/inference/model_params.dart';
+import '../../core/models/inference/model_params_runtime_support.dart';
+import '../../core/models/inference/embedding.dart';
+import '../../core/models/inference/reranking.dart';
+import '../../core/models/inference/next_token_scores.dart';
+import '../../core/models/inference/state_identity.dart';
 import '../../core/models/inference/tool_choice.dart';
+import '../../core/models/model_format.dart';
 import '../../core/models/tools/tool_definition.dart';
+import '../../core/template/handlers/translate_gemma_handler.dart';
+import '../../core/template/media_placeholders.dart';
 import '../backend.dart';
 import '../litert_lm/litert_lm_backend.dart';
+import '../litert_lm/litert_lm_platform.dart';
+import '../litert_lm/litert_lm_runtime.dart';
 import '../llama_cpp/llama_cpp_backend.dart';
+import 'model_format_probe.dart';
 
 /// Creates the native backend for the current platform.
 LlamaBackend createBackend() => NativeAutoBackend();
 
+/// Preserves native runtime selection for the portable text-history opt-in.
+LlamaBackend createTextHistoryBackend() => createBackend();
+
 /// Native backend router that chooses an engine from the model format.
 ///
-/// GGUF and all unknown file extensions stay on the existing llama.cpp backend.
-/// `.litertlm` model bundles use the LiteRT-LM backend.
+/// The file header picks the runtime: GGUF files use llama.cpp and LiteRT-LM
+/// bundles use LiteRT-LM. When the header is unreadable or unrecognized, an
+/// explicit format, then the `.litertlm` extension, select LiteRT-LM, and
+/// anything else stays on llama.cpp.
 class NativeAutoBackend
     implements
+        BackendRuntimeIdentity,
+        BackendModelFormatRouting,
+        BackendModelFormatDetection,
+        BackendLoadCheck,
         LlamaBackend,
         BackendAvailability,
+        BackendLoraSupport,
+        BackendMultimodalSupport,
+        BackendDirectMediaInput,
+        BackendToolResultMedia,
         BackendRuntimeDiagnostics,
         BackendModelFileTypeDiagnostics,
         BackendGpuEnumeration,
         BackendPerformanceDiagnostics,
         BackendEmbeddings,
         BackendEmbeddingsSupport,
+        BackendMultimodalEmbeddings,
         BackendBatchEmbeddings,
+        BackendReranking,
+        BackendNextTokenScoring,
+        BackendNextTokenScoringSupport,
         BackendStatePersistence,
         BackendStatePersistenceSupport,
+        BackendStateIdentity,
+        BackendStreamingSpeechToText,
         BackendGrammarConstraintsSupport,
-        BackendNativeChatGeneration {
+        BackendNativeChatGeneration,
+        BackendJsonSchemaThinkingChatGeneration,
+        BackendChatPromptGeneration,
+        BackendPromptPenaltyGeneration,
+        BackendDeferredEngineCreation,
+        BackendTextToSpeech,
+        BackendTextToSpeechModelSupport,
+        BackendDecision,
+        BackendGenerationCapabilitiesSupport,
+        BackendVideoRuntimeSupport,
+        BackendGpuMemoryFitReporting,
+        BackendGenerationLimitReporting,
+        BackendGenerationLimitSupport,
+        BackendGenerationUsageReporting,
+        BackendRuntimePromptTokenization,
+        BackendDartLogLevel {
   final LlamaBackend Function() _llamaCppFactory;
   final LlamaBackend Function() _liteRtLmFactory;
+  final bool _defaultLiteRtLm;
 
   LlamaBackend? _delegate;
-  _NativeBackendKind? _delegateKind;
+  int _embeddingCancelEpoch = 0;
+  LlamaRuntime? _delegateKind;
   LlamaBackend? _diagnosticDelegate;
   Future<LlamaBackend>? _diagnosticDelegateStart;
   LlamaLogLevel _currentLogLevel = LlamaLogLevel.warn;
@@ -48,7 +99,17 @@ class NativeAutoBackend
     LlamaBackend Function()? llamaCppFactory,
     LlamaBackend Function()? liteRtLmFactory,
   }) : _llamaCppFactory = llamaCppFactory ?? (() => NativeLlamaBackend()),
-       _liteRtLmFactory = liteRtLmFactory ?? (() => LiteRtLmBackend());
+       _liteRtLmFactory = liteRtLmFactory ?? (() => LiteRtLmBackend()),
+       _defaultLiteRtLm = liteRtLmFactory == null;
+
+  @override
+  String? get generationLimitUnsupportedReason {
+    final delegate = _delegate;
+    return delegate is BackendGenerationLimitSupport
+        ? (delegate as BackendGenerationLimitSupport)
+              .generationLimitUnsupportedReason
+        : null;
+  }
 
   @override
   bool get isReady => _delegate?.isReady ?? false;
@@ -70,6 +131,85 @@ class NativeAutoBackend
   }
 
   @override
+  bool get supportsJsonSchemaChatGeneration {
+    final delegate = _delegate;
+    return delegate is BackendJsonSchemaChatGeneration &&
+        (delegate as BackendJsonSchemaChatGeneration)
+            .supportsJsonSchemaChatGeneration;
+  }
+
+  @override
+  bool get supportsJsonSchemaChatThinking {
+    final delegate = _delegate;
+    return delegate is BackendJsonSchemaThinkingChatGeneration &&
+        (delegate as BackendJsonSchemaThinkingChatGeneration)
+            .supportsJsonSchemaChatThinking;
+  }
+
+  @override
+  Future<void> prepareJsonSchemaChat() async {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendJsonSchemaChatGeneration) {
+      throw LlamaUnsupportedException(
+        'The selected backend has no native JSON Schema chat provider.',
+      );
+    }
+    await (delegate as BackendJsonSchemaChatGeneration).prepareJsonSchemaChat();
+  }
+
+  @override
+  Stream<List<int>> generateChatWithJsonSchema(
+    int contextHandle,
+    List<LlamaChatMessage> messages,
+    GenerationParams params, {
+    required Map<String, dynamic> jsonSchema,
+    Map<String, dynamic>? chatTemplateKwargs,
+    DateTime? templateNow,
+  }) {
+    final delegate = _requireDelegate();
+    if (delegate is BackendJsonSchemaChatGeneration) {
+      return (delegate as BackendJsonSchemaChatGeneration)
+          .generateChatWithJsonSchema(
+            contextHandle,
+            messages,
+            params,
+            jsonSchema: jsonSchema,
+            chatTemplateKwargs: chatTemplateKwargs,
+            templateNow: templateNow,
+          );
+    }
+    throw LlamaUnsupportedException(
+      'The selected backend has no native JSON Schema chat provider.',
+    );
+  }
+
+  @override
+  Stream<List<int>> generateChatWithJsonSchemaAndThinking(
+    int contextHandle,
+    List<LlamaChatMessage> messages,
+    GenerationParams params, {
+    required Map<String, dynamic> jsonSchema,
+    Map<String, dynamic>? chatTemplateKwargs,
+    DateTime? templateNow,
+  }) {
+    final delegate = _requireDelegate();
+    if (delegate is BackendJsonSchemaThinkingChatGeneration) {
+      return (delegate as BackendJsonSchemaThinkingChatGeneration)
+          .generateChatWithJsonSchemaAndThinking(
+            contextHandle,
+            messages,
+            params,
+            jsonSchema: jsonSchema,
+            chatTemplateKwargs: chatTemplateKwargs,
+            templateNow: templateNow,
+          );
+    }
+    throw LlamaUnsupportedException(
+      'The selected backend cannot reason before a native JSON Schema reply.',
+    );
+  }
+
+  @override
   bool get supportsNativeChatGeneration {
     final delegate = _delegate;
     if (delegate is BackendNativeChatGeneration) {
@@ -80,16 +220,70 @@ class NativeAutoBackend
   }
 
   @override
+  bool get defersEngineCreation {
+    final delegate = _delegate;
+    if (delegate is BackendDeferredEngineCreation) {
+      return (delegate as BackendDeferredEngineCreation).defersEngineCreation;
+    }
+    return false;
+  }
+
+  @override
   Future<int> modelLoad(String path, ModelParams params) async {
-    final delegate = await _delegateForPath(path);
+    final format = await resolveLocalModelFormat(path);
+    final delegate = await _delegateFor(format.runtime);
     return delegate.modelLoad(path, params);
+  }
+
+  @override
+  String? checkLoad(ModelParams params, ModelFormat? format) {
+    if (format == null) return null;
+    checkModelParamsSupportedBy(params, format.runtime, web: false);
+    if (format.runtime != LlamaRuntime.liteRtLm) return null;
+    if (_defaultLiteRtLm) {
+      final unsupported = liteRtLmUnsupportedAbiException(liteRtLmGateAbi());
+      if (unsupported != null) throw unsupported;
+    }
+    liteRtLmEnsureDeviceAvailable(params.device);
+    if (params.liteRtLmEmbeddingEngine) {
+      liteRtLmEnsureNativeEmbeddingsQualified();
+    }
+    return _defaultLiteRtLm
+        ? null
+        : 'A custom LiteRT-LM factory brings its own runtime, so whether it '
+              'runs on this platform is known only when it loads the model.';
+  }
+
+  @override
+  Future<ModelFormat?> detectModelFormat(String path) =>
+      readModelFormatHeader(path);
+
+  @override
+  Future<int> modelLoadAs(
+    String path,
+    ModelParams params,
+    ModelFormat format,
+  ) async {
+    await resolveLocalModelFormat(path, requested: format);
+    final delegate = await _delegateFor(format.runtime);
+    return delegate.modelLoad(path, params);
+  }
+
+  @override
+  Future<int> modelLoadFromUrlAs(
+    String url,
+    ModelParams params,
+    ModelFormat format, {
+    void Function(double progress)? onProgress,
+  }) {
+    return modelLoadFromUrl(url, params, onProgress: onProgress);
   }
 
   @override
   Future<int> modelLoadFromUrl(
     String url,
     ModelParams params, {
-    Function(double progress)? onProgress,
+    void Function(double progress)? onProgress,
   }) {
     throw UnsupportedError(
       'NativeAutoBackend uses llamadart download/cache before modelLoad.',
@@ -132,6 +326,82 @@ class NativeAutoBackend
   }
 
   @override
+  bool get supportsPromptPenaltiesWithGrammar {
+    final delegate = _delegate;
+    return delegate is BackendPromptPenaltyGeneration &&
+        (delegate as BackendPromptPenaltyGeneration)
+            .supportsPromptPenaltiesWithGrammar;
+  }
+
+  @override
+  Stream<List<int>> generateWithPromptPenalties(
+    int contextHandle,
+    String prompt,
+    GenerationParams params, {
+    String? mediaMarker,
+    List<LlamaContentPart>? parts,
+  }) {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendPromptPenaltyGeneration ||
+        !(delegate as BackendPromptPenaltyGeneration)
+            .supportsPromptPenaltiesWithGrammar) {
+      throw LlamaUnsupportedException(
+        'The selected native runtime cannot preserve prompt penalties with a grammar.',
+      );
+    }
+    return (delegate as BackendPromptPenaltyGeneration)
+        .generateWithPromptPenalties(
+          contextHandle,
+          prompt,
+          params,
+          mediaMarker: mediaMarker,
+          parts: parts,
+        );
+  }
+
+  @override
+  Stream<List<int>> generateChatPrompt(
+    int contextHandle,
+    String prompt,
+    GenerationParams params, {
+    required String mediaMarker,
+    List<LlamaContentPart>? parts,
+  }) {
+    final delegate = _requireDelegate();
+    if (delegate is BackendChatPromptGeneration) {
+      return (delegate as BackendChatPromptGeneration).generateChatPrompt(
+        contextHandle,
+        prompt,
+        params,
+        mediaMarker: mediaMarker,
+        parts: parts,
+      );
+    }
+    return delegate.generate(
+      contextHandle,
+      prompt.replaceAll(mediaMarker, mtmdMediaMarker),
+      params,
+      parts: parts,
+    );
+  }
+
+  @override
+  BackendGenerationLimit? generationLimitOf(Stream<List<int>> generation) {
+    return generationLimitReporterOf(_delegate)?.generationLimitOf(generation);
+  }
+
+  @override
+  LlamaGenerationUsage? generationUsageOf(Stream<List<int>> generation) {
+    final delegate = _delegate;
+    if (delegate is BackendGenerationUsageReporting) {
+      return (delegate as BackendGenerationUsageReporting).generationUsageOf(
+        generation,
+      );
+    }
+    return null;
+  }
+
+  @override
   Stream<List<int>> generateChat(
     int contextHandle,
     List<LlamaChatMessage> messages,
@@ -141,7 +411,9 @@ class NativeAutoBackend
     bool parallelToolCalls = false,
     bool enableThinking = true,
     Map<String, dynamic>? chatTemplateKwargs,
+    @Deprecated("Use chatTemplateKwargs: {'source_lang_code': ...} instead.")
     String? sourceLangCode,
+    @Deprecated("Use chatTemplateKwargs: {'target_lang_code': ...} instead.")
     String? targetLangCode,
     DateTime? templateNow,
   }) {
@@ -155,9 +427,11 @@ class NativeAutoBackend
         toolChoice: toolChoice,
         parallelToolCalls: parallelToolCalls,
         enableThinking: enableThinking,
-        chatTemplateKwargs: chatTemplateKwargs,
-        sourceLangCode: sourceLangCode,
-        targetLangCode: targetLangCode,
+        chatTemplateKwargs: chatTemplateKwargsWithLanguageCodes(
+          chatTemplateKwargs,
+          sourceLangCode: sourceLangCode,
+          targetLangCode: targetLangCode,
+        ),
         templateNow: templateNow,
       );
     }
@@ -168,6 +442,7 @@ class NativeAutoBackend
 
   @override
   void cancelGeneration() {
+    _embeddingCancelEpoch++;
     _delegate?.cancelGeneration();
   }
 
@@ -182,6 +457,15 @@ class NativeAutoBackend
       text,
       addSpecial: addSpecial,
     );
+  }
+
+  @override
+  Future<List<int>> tokenizeRuntimePrompt(int modelHandle, String prompt) {
+    final delegate = _requireDelegate();
+    return runtimePromptTokenizerOf(
+          delegate,
+        )?.tokenizeRuntimePrompt(modelHandle, prompt) ??
+        delegate.tokenize(modelHandle, prompt, addSpecial: false);
   }
 
   @override
@@ -200,17 +484,33 @@ class NativeAutoBackend
 
   @override
   Future<void> setLoraAdapter(int contextHandle, String path, double scale) {
-    return _requireDelegate().setLoraAdapter(contextHandle, path, scale);
+    return _requireLora().setLoraAdapter(contextHandle, path, scale);
   }
 
   @override
   Future<void> removeLoraAdapter(int contextHandle, String path) {
-    return _requireDelegate().removeLoraAdapter(contextHandle, path);
+    return _requireLora().removeLoraAdapter(contextHandle, path);
   }
 
   @override
   Future<void> clearLoraAdapters(int contextHandle) {
-    return _requireDelegate().clearLoraAdapters(contextHandle);
+    return _requireLora().clearLoraAdapters(contextHandle);
+  }
+
+  BackendLoraSupport _requireLora() {
+    final delegate = _requireDelegate();
+    if (delegate is BackendLoraSupport) return delegate as BackendLoraSupport;
+    throw LlamaUnsupportedException(
+      'LoRA adapters are not supported by the active native runtime.',
+    );
+  }
+
+  @override
+  LlamaRuntime? get runtime {
+    final delegate = _delegate;
+    return delegate is BackendRuntimeIdentity
+        ? (delegate as BackendRuntimeIdentity).runtime
+        : null;
   }
 
   @override
@@ -229,6 +529,15 @@ class NativeAutoBackend
       return (delegate as BackendAvailability).getAvailableBackends();
     }
     return 'llama.cpp, LiteRT-LM';
+  }
+
+  @override
+  Future<GpuMemoryFitReport?> getGpuMemoryFitReport() {
+    final delegate = _delegate;
+    if (delegate is BackendGpuMemoryFitReporting) {
+      return (delegate as BackendGpuMemoryFitReporting).getGpuMemoryFitReport();
+    }
+    return Future<GpuMemoryFitReport?>.value(null);
   }
 
   @override
@@ -274,6 +583,15 @@ class NativeAutoBackend
   }
 
   @override
+  Future<void> setDartLogLevel(LlamaLogLevel level) async {
+    for (final delegate in {?_delegate, ?_diagnosticDelegate}) {
+      if (delegate is BackendDartLogLevel) {
+        await (delegate as BackendDartLogLevel).setDartLogLevel(level);
+      }
+    }
+  }
+
+  @override
   Future<void> setLogLevel(LlamaLogLevel level) async {
     _currentLogLevel = level;
     await _delegate?.setLogLevel(level);
@@ -295,10 +613,12 @@ class NativeAutoBackend
   @override
   Future<void> dispose() async {
     final delegate = _delegate;
-    _delegate = null;
-    _delegateKind = null;
     final diagnosticDelegate = await _takeDiagnosticDelegate();
     await delegate?.dispose();
+    // Retain a delegate whose cleanup failed: replacing it could start another
+    // native runtime while the previous operation is still executing.
+    _delegate = null;
+    _delegateKind = null;
     if (!identical(delegate, diagnosticDelegate)) {
       await diagnosticDelegate?.dispose();
     }
@@ -306,22 +626,225 @@ class NativeAutoBackend
 
   @override
   Future<int?> multimodalContextCreate(int modelHandle, String mmProjPath) {
-    return _requireDelegate().multimodalContextCreate(modelHandle, mmProjPath);
+    return _requireMultimodal().multimodalContextCreate(
+      modelHandle,
+      mmProjPath,
+    );
   }
 
   @override
   Future<void> multimodalContextFree(int mmContextHandle) {
-    return _requireDelegate().multimodalContextFree(mmContextHandle);
+    return _requireMultimodal().multimodalContextFree(mmContextHandle);
+  }
+
+  BackendMultimodalSupport _requireMultimodal() {
+    final delegate = _requireDelegate();
+    if (delegate is BackendMultimodalSupport) {
+      return delegate as BackendMultimodalSupport;
+    }
+    throw LlamaUnsupportedException(
+      'Multimodal projectors are not supported by the active native runtime.',
+    );
+  }
+
+  @override
+  Set<LlamaToolResultMedia> get toolResultMedia {
+    final delegate = _delegate;
+    return delegate is BackendToolResultMedia
+        ? (delegate as BackendToolResultMedia).toolResultMedia
+        : const <LlamaToolResultMedia>{};
+  }
+
+  @override
+  Future<({bool vision, bool audio})> directMediaInput() async {
+    final delegate = _delegate;
+    if (delegate is! BackendDirectMediaInput) {
+      return (vision: false, audio: false);
+    }
+    return (delegate as BackendDirectMediaInput).directMediaInput();
   }
 
   @override
   Future<bool> supportsVision(int mmContextHandle) {
-    return _requireDelegate().supportsVision(mmContextHandle);
+    return _requireMultimodal().supportsVision(mmContextHandle);
   }
 
   @override
   Future<bool> supportsAudio(int mmContextHandle) {
-    return _requireDelegate().supportsAudio(mmContextHandle);
+    return _requireMultimodal().supportsAudio(mmContextHandle);
+  }
+
+  @override
+  Future<bool?> supportsVideoRuntime(int mmContextHandle) {
+    final delegate = _requireDelegate();
+    if (delegate is BackendVideoRuntimeSupport) {
+      return (delegate as BackendVideoRuntimeSupport).supportsVideoRuntime(
+        mmContextHandle,
+      );
+    }
+    return Future<bool?>.value();
+  }
+
+  @override
+  Future<String?> textToSpeechModelUnsupportedReason(
+    BackendTextToSpeechModel model,
+  ) async {
+    // Text-to-speech models are GGUF, which the llama.cpp delegate loads.
+    final delegate = _delegateKind == LlamaRuntime.llamaCpp
+        ? _delegate!
+        : await _ensureDiagnosticDelegate();
+    return delegate is BackendTextToSpeechModelSupport
+        ? (delegate as BackendTextToSpeechModelSupport)
+              .textToSpeechModelUnsupportedReason(model)
+        : null;
+  }
+
+  @override
+  Future<BackendTextToSpeechCapabilities> textToSpeechCapabilities(
+    int contextHandle,
+    int mmContextHandle,
+  ) {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendTextToSpeech) {
+      return Future<BackendTextToSpeechCapabilities>.value(
+        const BackendTextToSpeechCapabilities(
+          isSupported: false,
+          unsupportedReason:
+              'The selected native backend does not expose text-to-speech.',
+        ),
+      );
+    }
+    return (delegate as BackendTextToSpeech).textToSpeechCapabilities(
+      contextHandle,
+      mmContextHandle,
+    );
+  }
+
+  @override
+  Future<BackendTextToSpeechResult> synthesizeTextToSpeech(
+    int contextHandle,
+    int mmContextHandle,
+    BackendTextToSpeechRequest request, {
+    void Function(BackendTextToSpeechProgress progress)? onProgress,
+  }) {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendTextToSpeech) {
+      throw LlamaUnsupportedException(
+        'The selected native backend does not expose text-to-speech.',
+      );
+    }
+    return (delegate as BackendTextToSpeech).synthesizeTextToSpeech(
+      contextHandle,
+      mmContextHandle,
+      request,
+      onProgress: onProgress,
+    );
+  }
+
+  @override
+  void cancelTextToSpeech() {
+    final delegate = _delegate;
+    if (delegate is BackendTextToSpeech) {
+      (delegate as BackendTextToSpeech).cancelTextToSpeech();
+    }
+  }
+
+  @override
+  Future<String?> streamingSpeechToTextUnsupportedReason(
+    int contextHandle,
+    int mmContextHandle,
+  ) {
+    final delegate = _delegate;
+    if (delegate is! BackendStreamingSpeechToText) {
+      return Future<String?>.value(
+        'The selected native backend does not expose streaming '
+        'speech-to-text.',
+      );
+    }
+    return (delegate as BackendStreamingSpeechToText)
+        .streamingSpeechToTextUnsupportedReason(contextHandle, mmContextHandle);
+  }
+
+  @override
+  Future<BackendStreamingSpeechToTextSession> startStreamingSpeechToText(
+    int contextHandle,
+    int mmContextHandle,
+  ) {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendStreamingSpeechToText) {
+      throw LlamaUnsupportedException(
+        'The selected native backend does not expose streaming '
+        'speech-to-text.',
+      );
+    }
+    return (delegate as BackendStreamingSpeechToText)
+        .startStreamingSpeechToText(contextHandle, mmContextHandle);
+  }
+
+  @override
+  Future<BackendGenerationCapabilities> generationCapabilities() async {
+    final delegate = _delegate;
+    if (delegate is! BackendGenerationCapabilitiesSupport) {
+      return const BackendGenerationCapabilities(
+        presencePenalty: false,
+        minP: false,
+        thinkingBudget: false,
+      );
+    }
+    return (delegate as BackendGenerationCapabilitiesSupport)
+        .generationCapabilities();
+  }
+
+  @override
+  Future<BackendDecisionCapabilities> decisionCapabilities(int modelHandle) {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendDecision) {
+      return Future<BackendDecisionCapabilities>.value(
+        const BackendDecisionCapabilities(
+          isSupported: false,
+          unsupportedReason: _decisionUnsupportedMessage,
+        ),
+      );
+    }
+    return (delegate as BackendDecision).decisionCapabilities(modelHandle);
+  }
+
+  @override
+  Future<BackendDecisionHeadInfo> decisionHeadLoad(
+    int modelHandle,
+    String headPath, {
+    String? configPath,
+  }) {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendDecision) {
+      throw LlamaUnsupportedException(_decisionUnsupportedMessage);
+    }
+    return (delegate as BackendDecision).decisionHeadLoad(
+      modelHandle,
+      headPath,
+      configPath: configPath,
+    );
+  }
+
+  @override
+  Future<List<BackendDecisionOutput>> decisionRun(
+    int headHandle,
+    List<BackendDecisionSequence> sequences,
+  ) {
+    final delegate = _requireDelegate();
+    if (delegate is! BackendDecision) {
+      throw LlamaUnsupportedException(_decisionUnsupportedMessage);
+    }
+    return (delegate as BackendDecision).decisionRun(headHandle, sequences);
+  }
+
+  @override
+  Future<void> decisionHeadFree(int headHandle) {
+    final delegate = _delegate;
+    if (delegate is BackendDecision) {
+      return (delegate as BackendDecision).decisionHeadFree(headHandle);
+    }
+    return Future<void>.value();
   }
 
   @override
@@ -383,6 +906,38 @@ class NativeAutoBackend
   }
 
   @override
+  Future<LlamaEmbeddingCapabilities> getEmbeddingCapabilities(
+    int contextHandle,
+  ) async {
+    final delegate = _delegate;
+    if (delegate == null) return const LlamaEmbeddingCapabilities();
+    return delegate.probeEmbeddingCapabilities(contextHandle);
+  }
+
+  @override
+  Future<List<List<double>>> embedContentBatch(
+    int contextHandle,
+    List<LlamaEmbeddingInput> inputs, {
+    bool normalize = true,
+  }) {
+    final cancelEpoch = _embeddingCancelEpoch;
+    return _requireDelegate().embedContentWithFallback(
+      contextHandle,
+      inputs,
+      normalize: normalize,
+      onCompute: (compute) {
+        // Delegate cancellation starts only after the router's own probe.
+        if (cancelEpoch != _embeddingCancelEpoch) {
+          throw LlamaInferenceException(
+            'Content embedding cancelled before dispatch.',
+          );
+        }
+        return compute();
+      },
+    );
+  }
+
+  @override
   Future<List<double>> embed(
     int contextHandle,
     String text, {
@@ -434,6 +989,89 @@ class NativeAutoBackend
   }
 
   @override
+  Future<int> createRerankingContext(int modelHandle, ModelParams params) {
+    final delegate = _requireDelegate();
+    if (delegate is BackendReranking) {
+      return (delegate as BackendReranking).createRerankingContext(
+        modelHandle,
+        params,
+      );
+    }
+    throw LlamaUnsupportedException(
+      'Explicit reranker loading requires the native llama.cpp runtime.',
+    );
+  }
+
+  @override
+  Future<LlamaRerankingCapabilities> getRerankingCapabilities(
+    int contextHandle,
+  ) async {
+    final delegate = _delegate;
+    if (delegate is BackendReranking) {
+      return (delegate as BackendReranking).getRerankingCapabilities(
+        contextHandle,
+      );
+    }
+    return LlamaRerankingCapabilities(
+      isSupported: false,
+      unsupportedReason:
+          'Native reranking requires the llama.cpp runtime and a rank-pooled GGUF model; LiteRT-LM does not expose it.',
+    );
+  }
+
+  @override
+  Future<BackendRerankingOutput> rerank(
+    int contextHandle,
+    String query,
+    List<String> documents,
+  ) {
+    final delegate = _requireDelegate();
+    if (delegate is BackendReranking) {
+      return (delegate as BackendReranking).rerank(
+        contextHandle,
+        query,
+        documents,
+      );
+    }
+    throw LlamaUnsupportedException(
+      'The selected native runtime does not support reranking.',
+    );
+  }
+
+  @override
+  bool get supportsNextTokenScoring {
+    final delegate = _delegate;
+    if (delegate is BackendNextTokenScoringSupport) {
+      return (delegate as BackendNextTokenScoringSupport)
+          .supportsNextTokenScoring;
+    }
+    return delegate is BackendNextTokenScoring;
+  }
+
+  @override
+  Future<LlamaNextTokenScores> scoreNextToken(
+    int contextHandle,
+    String prompt, {
+    required List<int> candidates,
+    required int topK,
+    required bool reusePromptPrefix,
+  }) {
+    final delegate = _requireDelegate();
+    if (delegate is BackendNextTokenScoring) {
+      return (delegate as BackendNextTokenScoring).scoreNextToken(
+        contextHandle,
+        prompt,
+        candidates: candidates,
+        topK: topK,
+        reusePromptPrefix: reusePromptPrefix,
+      );
+    }
+    throw UnsupportedError(
+      'The selected native backend does not support next-token scoring.',
+    );
+  }
+
+  @override
   bool get supportsStatePersistence {
     final delegate = _delegate;
     if (delegate is BackendStatePersistenceSupport) {
@@ -477,8 +1115,18 @@ class NativeAutoBackend
     );
   }
 
-  Future<LlamaBackend> _delegateForPath(String path) async {
-    final kind = _kindForPath(path);
+  @override
+  Future<LlamaStateIdentity> stateIdentity(int contextHandle) {
+    final delegate = _requireDelegate();
+    if (delegate is BackendStateIdentity) {
+      return (delegate as BackendStateIdentity).stateIdentity(contextHandle);
+    }
+    throw UnsupportedError(
+      'The selected native backend does not report a state identity.',
+    );
+  }
+
+  Future<LlamaBackend> _delegateFor(LlamaRuntime kind) async {
     if (_delegate != null && _delegateKind == kind) {
       return _delegate!;
     }
@@ -486,7 +1134,7 @@ class NativeAutoBackend
     final diagnosticDelegate = await _takeDiagnosticDelegate();
     if (_delegate == null &&
         diagnosticDelegate != null &&
-        kind == _NativeBackendKind.llamaCpp) {
+        kind == LlamaRuntime.llamaCpp) {
       await diagnosticDelegate.setLogLevel(_currentLogLevel);
       _delegate = diagnosticDelegate;
       _delegateKind = kind;
@@ -494,14 +1142,14 @@ class NativeAutoBackend
     }
 
     final oldDelegate = _delegate;
+    await oldDelegate?.dispose();
     _delegate = null;
     _delegateKind = null;
-    await oldDelegate?.dispose();
     await diagnosticDelegate?.dispose();
 
     final delegate = switch (kind) {
-      _NativeBackendKind.liteRtLm => _liteRtLmFactory(),
-      _NativeBackendKind.llamaCpp => _llamaCppFactory(),
+      LlamaRuntime.liteRtLm => _liteRtLmFactory(),
+      LlamaRuntime.llamaCpp => _llamaCppFactory(),
     };
     await delegate.setLogLevel(_currentLogLevel);
     _delegate = delegate;
@@ -556,13 +1204,9 @@ class NativeAutoBackend
     return delegate;
   }
 
-  _NativeBackendKind _kindForPath(String path) {
-    final lower = path.toLowerCase();
-    if (lower.endsWith('.litertlm')) {
-      return _NativeBackendKind.liteRtLm;
-    }
-    return _NativeBackendKind.llamaCpp;
-  }
+  static const String _decisionUnsupportedMessage =
+      'The selected native backend does not run decision models. Load a '
+      'ModernBERT encoder GGUF, which uses the llama.cpp backend.';
 
   LlamaBackend _requireDelegate() {
     final delegate = _delegate;
@@ -574,5 +1218,3 @@ class NativeAutoBackend
     return delegate;
   }
 }
-
-enum _NativeBackendKind { llamaCpp, liteRtLm }

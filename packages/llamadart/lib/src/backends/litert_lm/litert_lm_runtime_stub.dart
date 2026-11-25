@@ -1,6 +1,13 @@
 // coverage:ignore-file
 
 import '../../core/models/inference/model_params.dart';
+import 'litert_lm_asr_types.dart';
+import 'litert_lm_finish_reason.dart';
+import 'litert_lm_native_settlement.dart';
+
+export 'litert_lm_asr_types.dart';
+export 'litert_lm_finish_reason.dart';
+export 'litert_lm_native_settlement.dart';
 
 /// Runtime metrics shape shared with the native LiteRT-LM implementation.
 class LiteRtLmRuntimeMetrics {
@@ -63,8 +70,53 @@ class LiteRtLmRuntimeResult {
 /// Web-safe placeholder for the native-only runtime client.
 class LiteRtLmRuntimeClient {
   /// Creates a placeholder client on platforms without `dart:ffi`.
-  LiteRtLmRuntimeClient() {
+  LiteRtLmRuntimeClient({String? libraryPath}) {
     throw UnsupportedError('LiteRT-LM runtime requires a native platform.');
+  }
+
+  /// Configures how LiteRT-LM thought-channel chunks are exposed to parsers.
+  void configureResponseThinkingTags({
+    required String startTag,
+    required String endTag,
+  }) {
+    throw UnsupportedError('LiteRT-LM runtime requires a native platform.');
+  }
+
+  /// No native family exists on this unsupported platform.
+  LiteRtLmNativeSettlement get nativeSettlement =>
+      LiteRtLmNativeSettlement.settled;
+
+  /// Dedicated native ASR is unavailable without `dart:ffi`.
+  bool get supportsAsrBridge => false;
+
+  /// Sampling penalties are unavailable without `dart:ffi`.
+  bool get supportsSamplingPenalties => false;
+
+  /// Thinking budgets are unavailable without `dart:ffi`.
+  bool get supportsThinkingBudget => false;
+
+  /// JSON Schema constraints require the native runtime.
+  bool get supportsJsonSchemaConstraints => false;
+
+  /// JSON Schema constraints require the native runtime.
+  bool get supportsJsonSchemaThinking => false;
+
+  /// Finish reasons are unavailable without `dart:ffi`.
+  bool get supportsFinishReasons => false;
+
+  /// Finish reasons are unavailable without `dart:ffi`.
+  LiteRtLmFinishReason? get lastFinishReason => null;
+
+  /// Bundle capability queries are unavailable without `dart:ffi`.
+  ({bool vision, bool audio, bool speculativeDecoding})? bundleCapabilities(
+    String modelPath,
+  ) {
+    throw UnsupportedError('LiteRT-LM runtime requires a native platform.');
+  }
+
+  /// Dedicated native ASR is unavailable without `dart:ffi`.
+  LiteRtLmAsrRuntimeSession createAsrSession(LiteRtLmAsrRuntimeConfig config) {
+    throw UnsupportedError('LiteRT-LM ASR requires a native platform.');
   }
 
   /// Initializes the native LiteRT-LM engine.
@@ -100,6 +152,7 @@ class LiteRtLmRuntimeClient {
   /// Creates a conversation for generation/token operations.
   void createConversation({
     String? systemMessage,
+    String? promptTemplate,
     List<Map<String, dynamic>>? messages,
     List<Map<String, dynamic>>? tools,
     Map<String, dynamic>? extraContext,
@@ -109,6 +162,7 @@ class LiteRtLmRuntimeClient {
     int seed = 1,
     bool npuBackend = false,
     String? loraPath,
+    bool jsonSchemaConstraints = false,
   }) {
     throw UnsupportedError('LiteRT-LM runtime requires a native platform.');
   }
@@ -124,7 +178,12 @@ class LiteRtLmRuntimeClient {
   }
 
   /// Streams generated text from the active conversation.
-  Stream<String> generate(String prompt, {int? maxOutputTokens}) {
+  Stream<String> generate(
+    String prompt, {
+    int? maxOutputTokens,
+    double? repetitionPenalty,
+    double? presencePenalty,
+  }) {
     throw UnsupportedError('LiteRT-LM runtime requires a native platform.');
   }
 
@@ -134,22 +193,21 @@ class LiteRtLmRuntimeClient {
     Map<String, dynamic>? extraContext,
     int? visualTokenBudget,
     int? maxOutputTokens,
+    double? repetitionPenalty,
+    double? presencePenalty,
+    int? thinkingTokenBudget,
+    String? jsonSchema,
   }) {
     throw UnsupportedError('LiteRT-LM runtime requires a native platform.');
   }
 
+  /// Whether a runtime is loaded and provides the entry point of
+  /// [renderMessageToString].
+  bool get supportsMessageRendering =>
+      throw UnsupportedError('LiteRT-LM runtime requires a native platform.');
+
   /// Renders a message with the active native conversation template.
   String renderMessageToString(Map<String, dynamic> message) {
-    throw UnsupportedError('LiteRT-LM runtime requires a native platform.');
-  }
-
-  /// Returns the active native conversation token count.
-  int conversationTokenCount() {
-    throw UnsupportedError('LiteRT-LM runtime requires a native platform.');
-  }
-
-  /// Replaces the active native conversation with a clone.
-  void replaceConversationWithClone() {
     throw UnsupportedError('LiteRT-LM runtime requires a native platform.');
   }
 

@@ -1,12 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
+
+import '../../backends/backend.dart';
+import 'chat_completion_request_planner.dart';
+import '../template/response_format.dart';
 import 'engine.dart';
+import 'generation_cancellation.dart';
+import '../exceptions.dart';
 import '../llama_logger.dart';
 import '../models/chat/chat_message.dart';
 import '../models/chat/completion_chunk.dart';
 import '../models/chat/chat_role.dart';
+import '../models/chat/completion.dart';
 import '../models/chat/content_part.dart';
 import '../models/inference/generation_params.dart';
+import '../models/inference/structured_output.dart';
 import '../models/inference/tool_choice.dart';
 import '../models/tools/tool_definition.dart';
 
@@ -18,23 +26,26 @@ import '../models/tools/tool_definition.dart';
 ///
 /// Example:
 /// ```dart
-/// final engine = LlamaEngine(LlamaBackend());
-/// await engine.loadModel('model.gguf');
+/// final engine = await LlamaEngine.load(
+///   LlamaModel(ModelSource.path('model.gguf')),
+/// );
 ///
 /// final session = ChatSession(engine);
 /// session.systemPrompt = 'You are a helpful assistant.';
 ///
 /// await for (final chunk in session.create([LlamaTextContent('Hello!')])) {
-///   final text = chunk.choices.first.delta.content;
-///   if (text != null) {
-///     print(text);
-///   }
+///   stdout.write(chunk.text);
 /// }
+///
+/// // Or wait for the whole reply.
+/// final reply = await session.send('And in one word?');
+/// print(reply.text);
 /// ```
 class ChatSession {
   final LlamaEngine _engine;
   final List<LlamaChatMessage> _history = [];
   bool _lastRequestFitContext = true;
+  int _resetEpoch = 0;
 
   /// The maximum number of tokens allowed in the context window.
   ///
@@ -43,7 +54,9 @@ class ChatSession {
   int? maxContextTokens;
 
   /// Creates a new [ChatSession] wrapping the given [engine].
-  ChatSession(this._engine, {this.maxContextTokens, this.systemPrompt});
+  ChatSession(this._engine, {this.maxContextTokens, this.systemPrompt}) {
+    _mutableHistories[this] = _history;
+  }
 
   /// The underlying engine instance.
   LlamaEngine get engine => _engine;
@@ -80,6 +93,7 @@ class ChatSession {
   /// By default, [keepSystemPrompt] is true, meaning only the message history
   /// is cleared.
   void reset({bool keepSystemPrompt = true}) {
+    _resetEpoch++;
     _history.clear();
     if (!keepSystemPrompt) {
       systemPrompt = null;
@@ -106,39 +120,209 @@ class ChatSession {
   /// turn. This keeps text-based tool-result prompts attached to the original
   /// turn when older context is trimmed.
   ///
-  /// Example with tools:
+  /// Pass [responseFormat] to request strict structured output for this turn,
+  /// with the same shapes and backend checks as [LlamaEngine.create]. An
+  /// unrecognised shape, or a strict format on a backend without
+  /// grammar-constrained decoding such as LiteRT-LM, throws
+  /// `LlamaUnsupportedException` before the user message is added to
+  /// [history]. Use [createStructuredJson] to also validate and decode the
+  /// reply.
+  ///
+  /// If the stream ends before the engine yields any reply content, through an
+  /// error such as the backend rejecting the rendered request or through a
+  /// cancelled subscription, this call undoes its own [history] changes: it
+  /// removes the user message it added, and puts back the turns its context
+  /// check trimmed when [history] has not changed since. A retry then does
+  /// not repeat the user message. [onMessageAdded] has already reported that
+  /// message. If the stream ends that way after the first chunk, the reply
+  /// generated so far is added as the assistant turn, so roles keep
+  /// alternating. Empty terminal chunks do not count as reply content.
+  /// Cancelling generation before any content throws [LlamaStateException]
+  /// and rolls back this turn. A reply never enters history after [reset]
+  /// or after its initiating message has been removed. A history edit while
+  /// preparing the context throws [LlamaStateException] instead of trimming
+  /// messages from the changed conversation.
+  ///
+  /// The stream delivers the reply's text in full, including whitespace the
+  /// model ended it with. The assistant turn added to [history], which
+  /// [onMessageAdded] receives, holds that text without the trailing
+  /// whitespace, so it does not reach the next prompt through a template that
+  /// does not trim; leading whitespace, reasoning and tool calls are stored
+  /// as generated. Messages added with [addMessage] are stored as given.
+  ///
+  /// To run the tools' handlers until the model answers, use
+  /// `sendWithTools`. Running the calls yourself:
   /// ```dart
-  /// final response = StringBuffer();
-  /// await for (final chunk in session.create(
+  /// final reply = await session.create(
   ///   [LlamaTextContent('What time is it?')],
   ///   tools: [getTimeTool],
-  /// )) {
-  ///   final text = chunk.choices.first.delta.content;
-  ///   if (text != null) {
-  ///     response.write(text);
-  ///   }
-  /// }
+  /// ).collect();
+  /// if (reply.text.isNotEmpty) print(reply.text);
   ///
-  /// if (isToolCall(response.toString())) {
-  ///   final result = await executeMyTool(parseToolCall(response.toString()));
+  /// for (final call in reply.toolCalls) {
+  ///   final result = await getTimeTool.invoke(call.arguments);
   ///   session.addMessage(
   ///     LlamaChatMessage.withContent(
   ///       role: LlamaChatRole.tool,
   ///       content: [
-  ///         LlamaToolResultContent(name: getTimeTool.name, result: result),
+  ///         LlamaToolResultContent(
+  ///           id: call.id,
+  ///           name: call.name,
+  ///           result: result,
+  ///         ),
   ///       ],
   ///     ),
   ///   );
-  ///   await for (final chunk in session.create([])) {
-  ///     final text = chunk.choices.first.delta.content;
-  ///     if (text != null) {
-  ///       print(text);
-  ///     }
-  ///   }
+  /// }
+  /// if (reply.toolCalls.isNotEmpty) {
+  ///   await session.create([]).textDeltas().forEach(stdout.write);
   /// }
   /// ```
+  /// A handler's `LlamaToolOutput` goes in as `result: output.output` and
+  /// `content: output.content`; a `LlamaToolOutput` `result` throws
+  /// [LlamaArgumentException].
   Stream<LlamaCompletionChunk> create(
     List<LlamaContentPart> parts, {
+    GenerationParams? params,
+    List<ToolDefinition>? tools,
+    ToolChoice? toolChoice,
+    bool parallelToolCalls = false,
+    bool enableThinking = true,
+    Map<String, dynamic>? responseFormat,
+    Map<String, dynamic>? chatTemplateKwargs,
+    void Function(LlamaChatMessage message)? onMessageAdded,
+    bool continuesPreviousTurn = false,
+  }) {
+    final cancellation = GenerationCancellation.forEngine(_engine);
+    final zone = Zone.current;
+    return cancellation.request((request) async* {
+      final templateNow = switch (this) {
+        TemplateTimeChatSession(:final templateNow) => templateNow,
+        _ => null,
+      };
+      if (_engine.backend is BackendJsonSchemaChatGeneration &&
+          !ChatCompletionRequestPlanner.supportsGrammarConstraints(
+            _engine.backend,
+          ) &&
+          responseFormatSchema(responseFormat) != null) {
+        await ChatCompletionRequestPlanner.prepareResponseFormat(
+          _engine.backend,
+          responseFormat,
+        );
+      } else {
+        ChatCompletionRequestPlanner.rejectUnsupportedResponseFormat(
+          _engine.backend,
+          responseFormat,
+        );
+      }
+      final edits = _TurnEdits(this);
+
+      // Add user message if parts provided
+      if (parts.isNotEmpty) {
+        final userMsg = parts.length == 1 && parts.first is LlamaTextContent
+            ? LlamaChatMessage.fromText(
+                role: LlamaChatRole.user,
+                text: (parts.first as LlamaTextContent).text,
+                continuesPreviousTurn: continuesPreviousTurn,
+              )
+            : LlamaChatMessage.withContent(
+                role: LlamaChatRole.user,
+                content: parts,
+                continuesPreviousTurn: continuesPreviousTurn,
+              );
+        edits.add(userMsg);
+        onMessageAdded?.call(userMsg);
+      }
+
+      final reply = LlamaCompletionAccumulator();
+      var started = false;
+      var completed = false;
+      // Chunks that reach this generator after its subscription is cancelled
+      // are never delivered, so they neither start nor extend the reply.
+      var unsubscribed = false;
+      request.onSubscriptionCancel(() async => unsubscribed = true);
+      try {
+        // Ensure the rendered request, including tool schemas, leaves enough
+        // room for the configured response rather than using a fixed small
+        // reserve.
+        _lastRequestFitContext = await _enforceContextLimit(
+          edits,
+          params: params,
+          tools: tools,
+          toolChoice: toolChoice,
+          parallelToolCalls: parallelToolCalls,
+          enableThinking: enableThinking,
+          responseFormat: responseFormat,
+          chatTemplateKwargs: chatTemplateKwargs,
+          templateNow: templateNow,
+        );
+
+        final messages = _buildMessages();
+        final completion = zone.run(
+          () => cancellation.inherit(
+            request,
+            () => _engine.create(
+              messages,
+              params: params,
+              tools: tools,
+              toolChoice: toolChoice,
+              parallelToolCalls: parallelToolCalls,
+              enableThinking: enableThinking,
+              responseFormat: responseFormat,
+              chatTemplateKwargs: chatTemplateKwargs,
+              templateNow: templateNow,
+            ),
+          ),
+        );
+        await for (final chunk in completion) {
+          if (unsubscribed) break;
+          started |= chunk.choices.any(
+            (choice) =>
+                (choice.delta.content?.isNotEmpty ?? false) ||
+                (choice.delta.thinking?.isNotEmpty ?? false) ||
+                (choice.delta.toolCalls?.isNotEmpty ?? false),
+          );
+          reply.add(chunk);
+          yield chunk;
+        }
+        if (!started && request.isCancelled() && !unsubscribed) {
+          throw LlamaStateException(
+            'Generation was cancelled before any output.',
+          );
+        }
+        completed = true;
+      } finally {
+        // Runs on completion, on an error and on a cancelled subscription.
+        if (edits.canCommit &&
+            (started || (completed && !request.isCancelled()))) {
+          final completion = reply.build();
+          // The text keeps the whitespace the model ended it with, and a
+          // template that does not trim would render it into the next
+          // prompt. Stored without it, the turn renders as it did before
+          // replies kept that whitespace.
+          final assistantMsg = LlamaCompletion(
+            text: completion.text.trimRight(),
+            thinking: completion.thinking,
+            toolCalls: completion.toolCalls,
+          ).message;
+          _history.add(assistantMsg);
+          onMessageAdded?.call(assistantMsg);
+        } else {
+          edits.undo();
+        }
+      }
+    });
+  }
+
+  /// Sends a user message, generates strict structured JSON, and decodes it.
+  ///
+  /// This is [create] with `output.responseFormat`, followed by
+  /// [LlamaStructuredOutput.parse] on the completed reply, matching
+  /// [LlamaEngine.createStructuredJson]. The raw JSON reply is added to
+  /// [history] like any other assistant turn.
+  Future<T> createStructuredJson<T>(
+    List<LlamaContentPart> parts, {
+    required LlamaStructuredOutput<T> output,
     GenerationParams? params,
     List<ToolDefinition>? tools,
     ToolChoice? toolChoice,
@@ -147,118 +331,19 @@ class ChatSession {
     Map<String, dynamic>? chatTemplateKwargs,
     void Function(LlamaChatMessage message)? onMessageAdded,
     bool continuesPreviousTurn = false,
-  }) async* {
-    // Add user message if parts provided
-    if (parts.isNotEmpty) {
-      final userMsg = parts.length == 1 && parts.first is LlamaTextContent
-          ? LlamaChatMessage.fromText(
-              role: LlamaChatRole.user,
-              text: (parts.first as LlamaTextContent).text,
-              continuesPreviousTurn: continuesPreviousTurn,
-            )
-          : LlamaChatMessage.withContent(
-              role: LlamaChatRole.user,
-              content: parts,
-              continuesPreviousTurn: continuesPreviousTurn,
-            );
-      _history.add(userMsg);
-      onMessageAdded?.call(userMsg);
-    }
-
-    // Ensure the rendered request, including tool schemas, leaves enough room
-    // for the configured response rather than using a fixed small reserve.
-    _lastRequestFitContext = await _enforceContextLimit(
+  }) {
+    return create(
+      parts,
       params: params,
       tools: tools,
       toolChoice: toolChoice,
       parallelToolCalls: parallelToolCalls,
       enableThinking: enableThinking,
+      responseFormat: output.responseFormat,
       chatTemplateKwargs: chatTemplateKwargs,
-    );
-
-    // Build messages for engine
-    final messages = _buildMessages();
-
-    // Generate response
-    final fullContent = StringBuffer();
-    final fullThinking = StringBuffer();
-    final Map<int, _ToolCallBuilder> toolCallBuilders = {};
-
-    await for (final chunk in _engine.create(
-      messages,
-      params: params,
-      tools: tools,
-      toolChoice: toolChoice,
-      parallelToolCalls: parallelToolCalls,
-      enableThinking: enableThinking,
-      chatTemplateKwargs: chatTemplateKwargs,
-    )) {
-      // Guard against an empty-choices chunk (e.g. a keep-alive) which would
-      // otherwise throw "Bad state: No element" mid-stream.
-      if (chunk.choices.isEmpty) {
-        yield chunk;
-        continue;
-      }
-      final delta = chunk.choices.first.delta;
-      if (delta.content != null) fullContent.write(delta.content!);
-      if (delta.thinking != null) fullThinking.write(delta.thinking!);
-
-      if (delta.toolCalls != null) {
-        for (final tc in delta.toolCalls!) {
-          toolCallBuilders.putIfAbsent(tc.index, () => _ToolCallBuilder());
-          final builder = toolCallBuilders[tc.index]!;
-          if (tc.id != null) builder.id = tc.id;
-          if (tc.type != null) builder.type = tc.type;
-          if (tc.function?.name != null) builder.name = tc.function!.name;
-          if (tc.function?.arguments != null) {
-            builder.arguments.write(tc.function!.arguments!);
-          }
-        }
-      }
-
-      yield chunk;
-    }
-
-    // Reconstruct final message with all parts
-    final contentParts = <LlamaContentPart>[];
-
-    if (fullThinking.isNotEmpty) {
-      contentParts.add(LlamaThinkingContent(fullThinking.toString()));
-    }
-
-    if (fullContent.isNotEmpty) {
-      contentParts.add(LlamaTextContent(fullContent.toString()));
-    }
-
-    // Add tool calls
-    final sortedIndices = toolCallBuilders.keys.toList()..sort();
-    for (final index in sortedIndices) {
-      final b = toolCallBuilders[index]!;
-      Map<String, dynamic> args = {};
-      try {
-        if (b.arguments.isNotEmpty) {
-          args = jsonDecode(b.arguments.toString());
-        }
-      } catch (_) {
-        // Keep empty if parse fails
-      }
-
-      contentParts.add(
-        LlamaToolCallContent(
-          id: b.id,
-          name: b.name ?? "",
-          arguments: args,
-          rawJson: b.arguments.toString(),
-        ),
-      );
-    }
-
-    final assistantMsg = LlamaChatMessage.withContent(
-      role: LlamaChatRole.assistant,
-      content: contentParts,
-    );
-    _history.add(assistantMsg);
-    onMessageAdded?.call(assistantMsg);
+      onMessageAdded: onMessageAdded,
+      continuesPreviousTurn: continuesPreviousTurn,
+    ).parseStructuredJson(output);
   }
 
   /// Builds the message list for the engine, including system prompt.
@@ -281,15 +366,20 @@ class ChatSession {
   }
 
   /// Truncates history if it exceeds the context limit.
-  Future<bool> _enforceContextLimit({
+  Future<bool> _enforceContextLimit(
+    _TurnEdits edits, {
     GenerationParams? params,
     List<ToolDefinition>? tools,
     ToolChoice? toolChoice,
     required bool parallelToolCalls,
     required bool enableThinking,
+    Map<String, dynamic>? responseFormat,
     Map<String, dynamic>? chatTemplateKwargs,
+    required DateTime? templateNow,
   }) async {
+    edits.beginContextPreparation();
     final limit = maxContextTokens ?? await _engine.getContextSize();
+    edits.ensureUnchanged();
     if (limit <= 0) return true;
 
     final requestedResponseTokens =
@@ -315,8 +405,11 @@ class ChatSession {
       toolChoice: toolChoice,
       parallelToolCalls: parallelToolCalls,
       enableThinking: enableThinking,
+      responseFormat: responseFormat,
       chatTemplateKwargs: chatTemplateKwargs,
+      templateNow: templateNow,
     );
+    edits.ensureUnchanged();
     if (fullTokenCount <= targetLimit) return true;
 
     if (turnOffsets.length > 1) {
@@ -333,9 +426,12 @@ class ChatSession {
           toolChoice: toolChoice,
           parallelToolCalls: parallelToolCalls,
           enableThinking: enableThinking,
+          responseFormat: responseFormat,
           chatTemplateKwargs: chatTemplateKwargs,
+          templateNow: templateNow,
         );
 
+        edits.ensureUnchanged();
         if (tokenCount <= targetLimit) {
           bestDropCount = mid;
           foundFit = true;
@@ -347,7 +443,7 @@ class ChatSession {
 
       final removeUntil = turnOffsets[bestDropCount];
       if (removeUntil > 0) {
-        _history.removeRange(0, removeUntil);
+        edits.removeRange(0, removeUntil);
       }
       if (foundFit) {
         return true;
@@ -355,12 +451,15 @@ class ChatSession {
     }
 
     final compacted = await _trimCompletedProtocolExchanges(
+      edits,
       targetLimit: targetLimit,
       tools: tools,
       toolChoice: toolChoice,
       parallelToolCalls: parallelToolCalls,
       enableThinking: enableThinking,
+      responseFormat: responseFormat,
       chatTemplateKwargs: chatTemplateKwargs,
+      templateNow: templateNow,
     );
     if (!compacted) {
       // Even retaining the root request and newest coherent protocol exchange
@@ -376,13 +475,16 @@ class ChatSession {
     return compacted;
   }
 
-  Future<bool> _trimCompletedProtocolExchanges({
+  Future<bool> _trimCompletedProtocolExchanges(
+    _TurnEdits edits, {
     required int targetLimit,
     List<ToolDefinition>? tools,
     ToolChoice? toolChoice,
     required bool parallelToolCalls,
     required bool enableThinking,
+    Map<String, dynamic>? responseFormat,
     Map<String, dynamic>? chatTemplateKwargs,
+    required DateTime? templateNow,
   }) async {
     final anchorIndex = _history.indexWhere(
       (message) =>
@@ -421,8 +523,11 @@ class ChatSession {
         toolChoice: toolChoice,
         parallelToolCalls: parallelToolCalls,
         enableThinking: enableThinking,
+        responseFormat: responseFormat,
         chatTemplateKwargs: chatTemplateKwargs,
+        templateNow: templateNow,
       );
+      edits.ensureUnchanged();
       if (tokenCount <= targetLimit) {
         bestBoundary = boundary;
         foundFit = true;
@@ -432,7 +537,7 @@ class ChatSession {
       }
     }
 
-    _history.removeRange(anchorIndex + 1, bestBoundary);
+    edits.removeRange(anchorIndex + 1, bestBoundary);
     return foundFit;
   }
 
@@ -442,7 +547,9 @@ class ChatSession {
     ToolChoice? toolChoice,
     required bool parallelToolCalls,
     required bool enableThinking,
+    Map<String, dynamic>? responseFormat,
     Map<String, dynamic>? chatTemplateKwargs,
+    required DateTime? templateNow,
   }) async {
     final template = await _engine.chatTemplate(
       messages,
@@ -450,7 +557,9 @@ class ChatSession {
       toolChoice: toolChoice ?? ToolChoice.auto,
       parallelToolCalls: parallelToolCalls,
       enableThinking: enableThinking,
+      responseFormat: responseFormat,
       chatTemplateKwargs: chatTemplateKwargs,
+      templateNow: templateNow,
       includeTokenCount: true,
     );
     return template.tokenCount ?? _estimateTokenCount(template.prompt);
@@ -538,9 +647,145 @@ class ChatSession {
   }
 }
 
-class _ToolCallBuilder {
-  String? id;
-  String? type;
-  String? name;
-  final StringBuffer arguments = StringBuffer();
+/// The [ChatSession.history] changes one [ChatSession.create] call made, so
+/// it can undo them without discarding changes made by anyone else.
+class _TurnEdits {
+  _TurnEdits(this._session)
+    : _resetEpoch = _session._resetEpoch,
+      _anchor = _session._history.lastOrNull,
+      _historyAfter = List.of(_session._history);
+
+  final ChatSession _session;
+  final int _resetEpoch;
+  final LlamaChatMessage? _anchor;
+  final List<(int, List<LlamaChatMessage>)> _removals = [];
+  LlamaChatMessage? _added;
+  List<LlamaChatMessage> _historyAfter;
+  List<LlamaChatMessage> _contextHistory = [];
+
+  List<LlamaChatMessage> get _history => _session._history;
+
+  bool get canCommit {
+    if (_session._resetEpoch != _resetEpoch) return false;
+    final anchor = _added ?? _anchor;
+    return anchor == null ||
+        _history.any((message) => identical(message, anchor));
+  }
+
+  void add(LlamaChatMessage message) {
+    _history.add(message);
+    _added = message;
+    _historyAfter = List.of(_history);
+  }
+
+  void removeRange(int start, int end) {
+    _removals.add((start, _history.sublist(start, end)));
+    _history.removeRange(start, end);
+    _historyAfter = List.of(_history);
+    _contextHistory = List.of(_history);
+  }
+
+  bool get isUnchanged =>
+      _session._resetEpoch == _resetEpoch &&
+      _history.length == _historyAfter.length &&
+      Iterable<int>.generate(
+        _history.length,
+      ).every((i) => identical(_history[i], _historyAfter[i]));
+
+  void beginContextPreparation() {
+    _contextHistory = List.of(_history);
+  }
+
+  void ensureUnchanged() {
+    if (_session._resetEpoch != _resetEpoch ||
+        _history.length != _contextHistory.length ||
+        !Iterable<int>.generate(
+          _history.length,
+        ).every((i) => identical(_history[i], _contextHistory[i]))) {
+      throw LlamaStateException(
+        'Chat history changed while preparing the request. Retry with the current session.',
+      );
+    }
+  }
+
+  /// Puts back the removed turns when no one else changed the history since,
+  /// then removes the added message wherever it now is.
+  void undo() {
+    final unchanged = isUnchanged;
+    if (unchanged) {
+      for (final (start, removed) in _removals.reversed) {
+        _history.insertAll(start, removed);
+      }
+    }
+    final added = _added;
+    if (added == null) return;
+    final index = _history.lastIndexWhere(
+      (message) => identical(message, added),
+    );
+    if (index >= 0) _history.removeAt(index);
+  }
+}
+
+final Expando<List<LlamaChatMessage>> _mutableHistories = Expando(
+  'llamadart.chatSessionHistory',
+);
+
+/// Package-internal: the list behind [ChatSession.history], or `null` for a
+/// class that implements [ChatSession] without extending it.
+List<LlamaChatMessage>? mutableChatSessionHistory(ChatSession session) =>
+    _mutableHistories[session];
+
+/// A chat session with an explicit template clock.
+///
+/// Each listened request snapshots [templateNow] before context preparation,
+/// and uses it for every budget render and the generation request. Changing it
+/// during a request affects the next request only. Tool-loop rounds each start
+/// a request. [ChatSession.reset] keeps this setting.
+///
+/// The separate type preserves the public interface of [ChatSession] and does
+/// not introduce an extension that can collide with application extensions.
+final class TemplateTimeChatSession extends ChatSession {
+  /// Time supplied to the template; null preserves the engine's normal clock.
+  DateTime? templateNow;
+
+  /// Creates a session whose prompts use [templateNow].
+  TemplateTimeChatSession(
+    super.engine, {
+    this.templateNow,
+    super.maxContextTokens,
+    super.systemPrompt,
+  });
+}
+
+/// One-shot replies for [ChatSession].
+extension ChatSessionCompletionExtension on ChatSession {
+  /// Sends [text] as a user message and returns the whole reply.
+  ///
+  /// This is [ChatSession.create] with a single [LlamaTextContent], collected
+  /// with `collect()`. The user message and the reply are added to
+  /// [ChatSession.history] as they are with [ChatSession.create]. Use
+  /// [ChatSession.create] to stream the reply or to send media parts.
+  Future<LlamaCompletion> send(
+    String text, {
+    GenerationParams? params,
+    List<ToolDefinition>? tools,
+    ToolChoice? toolChoice,
+    bool parallelToolCalls = false,
+    bool enableThinking = true,
+    Map<String, dynamic>? responseFormat,
+    Map<String, dynamic>? chatTemplateKwargs,
+    void Function(LlamaChatMessage message)? onMessageAdded,
+  }) {
+    return create(
+      [LlamaTextContent(text)],
+      params: params,
+      tools: tools,
+      toolChoice: toolChoice,
+      parallelToolCalls: parallelToolCalls,
+      enableThinking: enableThinking,
+      responseFormat: responseFormat,
+      chatTemplateKwargs: chatTemplateKwargs,
+      onMessageAdded: onMessageAdded,
+    ).collect();
+  }
 }
