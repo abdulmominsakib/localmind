@@ -116,10 +116,7 @@ class _OnDeviceEngine extends OnDeviceEngineNotifier {
       const OnDeviceEngineState(status: OnDeviceEngineStatus.notLoaded);
 }
 
-Widget _inputHost({
-  required ChatState chatState,
-  bool showIndicator = true,
-}) {
+Widget _inputHost({required ChatState chatState, bool showIndicator = true}) {
   final target = ActiveChatTarget(
     server: Server(
       id: 's1',
@@ -177,103 +174,62 @@ Widget _inputHost({
 }
 
 void main() {
+  ChatState processing() => ChatState(
+    liveGeneration: LiveGeneration(
+      phase: LiveGenerationPhase.processingPrompt,
+      startedAt: DateTime.now(),
+      estimatedPrefillMs: 3000,
+    ),
+  );
+
   group('ChatInputBar live status placement', () {
-    testWidgets(
-      'live + empty composer shows centered in-field status and no corner row',
-      (tester) async {
-        await tester.pumpWidget(
-          _inputHost(
-            chatState: ChatState(
-              liveGeneration: LiveGeneration(
-                phase: LiveGenerationPhase.processingPrompt,
-                startedAt: DateTime.now(),
-                estimatedPrefillMs: 3000,
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
+    testWidgets('live status sits above an empty field that keeps its hint', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_inputHost(chatState: processing()));
+      await tester.pump();
 
-        expect(find.byKey(const ValueKey('in-field-status')), findsOneWidget);
-        expect(find.byKey(const ValueKey('corner-status')), findsNothing);
-      },
-    );
+      final status = find.byKey(const ValueKey('live_status_processing'));
+      expect(status, findsOneWidget);
+      expect(find.text('Ask anything'), findsWidgets);
+      // Above the input row, not inside the field.
+      expect(
+        tester.getBottomLeft(status).dy,
+        lessThanOrEqualTo(
+          tester.getTopLeft(find.byKey(const ValueKey('chat_input'))).dy,
+        ),
+      );
+    });
 
-    testWidgets(
-      'live + typed composer shows typed text in field and corner row above',
-      (tester) async {
-        await tester.pumpWidget(
-          _inputHost(
-            chatState: ChatState(
-              liveGeneration: LiveGeneration(
-                phase: LiveGenerationPhase.processingPrompt,
-                startedAt: DateTime.now(),
-                estimatedPrefillMs: 3000,
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
+    testWidgets('typing while live keeps the status and the text', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_inputHost(chatState: processing()));
+      await tester.pump();
 
-        await tester.enterText(find.byKey(const ValueKey('chat_input')), 'hi');
-        await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('chat_input')), 'hi');
+      await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byKey(const ValueKey('corner-status')), findsOneWidget);
-        expect(find.byKey(const ValueKey('in-field-status')), findsNothing);
-        expect(find.text('hi'), findsOneWidget);
-      },
-    );
+      expect(
+        find.byKey(const ValueKey('live_status_processing')),
+        findsOneWidget,
+      );
+      expect(find.text('hi'), findsOneWidget);
+    });
 
-    testWidgets('empty->typed->empty flips placement both ways', (
+    testWidgets('disabled indicator shows no status while live', (
       tester,
     ) async {
       await tester.pumpWidget(
-        _inputHost(
-          chatState: ChatState(
-            liveGeneration: LiveGeneration(
-              phase: LiveGenerationPhase.processingPrompt,
-              startedAt: DateTime.now(),
-              estimatedPrefillMs: 3000,
-            ),
-          ),
-        ),
+        _inputHost(chatState: processing(), showIndicator: false),
       );
       await tester.pump();
 
-      expect(find.byKey(const ValueKey('in-field-status')), findsOneWidget);
-      expect(find.byKey(const ValueKey('corner-status')), findsNothing);
-
-      await tester.enterText(find.byKey(const ValueKey('chat_input')), 'hi');
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('corner-status')), findsOneWidget);
-      expect(find.byKey(const ValueKey('in-field-status')), findsNothing);
-
-      await tester.enterText(find.byKey(const ValueKey('chat_input')), '');
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('in-field-status')), findsOneWidget);
-      expect(find.byKey(const ValueKey('corner-status')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('live_status_processing')),
+        findsNothing,
+      );
+      expect(find.text('Ask anything'), findsWidgets);
     });
-
-    testWidgets(
-      'disabled indicator keeps normal hint visible even while live',
-      (tester) async {
-        await tester.pumpWidget(
-          _inputHost(
-            chatState: ChatState(
-              liveGeneration: LiveGeneration(
-                phase: LiveGenerationPhase.processingPrompt,
-                startedAt: DateTime.now(),
-                estimatedPrefillMs: 3000,
-              ),
-            ),
-            showIndicator: false,
-          ),
-        );
-        await tester.pump();
-
-        expect(find.byKey(const ValueKey('in-field-status')), findsNothing);
-        expect(find.byKey(const ValueKey('chat_input')), findsOneWidget);
-      },
-    );
   });
 }

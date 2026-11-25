@@ -34,11 +34,7 @@ class _NoActiveConversation extends conv.ActiveConversationNotifier {
   Conversation? build() => null;
 }
 
-Widget _host({
-  required ChatState chatState,
-  AppSettings? settings,
-  bool emphasized = false,
-}) {
+Widget _host({required ChatState chatState, AppSettings? settings}) {
   return ProviderScope(
     overrides: [
       chatProvider.overrideWith(() => _FixedChatNotifier(chatState)),
@@ -62,7 +58,7 @@ Widget _host({
           child: SizedBox(
             width: 320,
             height: 48,
-            child: PromptProcessingStatusBar(emphasized: emphasized),
+            child: const PromptProcessingStatusBar(),
           ),
         ),
       ),
@@ -118,9 +114,7 @@ void main() {
         ),
       );
 
-      final before = tester
-          .widget<Text>(find.textContaining('Processing prompt'))
-          .data;
+      final before = tester.widget<Text>(find.textContaining('%')).data;
       // The indicator derives its value from wall clock time, which fake async
       // pumping does not advance, so let real time pass and then fire the
       // periodic repaint ticker.
@@ -128,9 +122,7 @@ void main() {
         () => Future<void>.delayed(const Duration(milliseconds: 900)),
       );
       await tester.pump(const Duration(milliseconds: 250));
-      final after = tester
-          .widget<Text>(find.textContaining('Processing prompt'))
-          .data;
+      final after = tester.widget<Text>(find.textContaining('%')).data;
 
       expect(before, isNot(after));
       int pct(String? label) =>
@@ -139,7 +131,7 @@ void main() {
 
       // The bar is first built while idle, so the repaint ticker must be
       // started from build() rather than initState alone.
-      expect(before, contains('Processing prompt'));
+      expect(find.text('Processing prompt'), findsOneWidget);
     });
 
     testWidgets('never reports 100% while prefill is still running', (
@@ -285,13 +277,12 @@ void main() {
     });
   });
 
-  group('in-field status', () {
+  group('composer status line', () {
     testWidgets('generating shows a dot, a plain label and steady stats', (
       tester,
     ) async {
       await tester.pumpWidget(
         _host(
-          emphasized: true,
           chatState: ChatState(
             liveGeneration: LiveGeneration(
               phase: LiveGenerationPhase.generating,
@@ -311,7 +302,10 @@ void main() {
         ),
       );
 
-      expect(find.byKey(const ValueKey('in_field_generating')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('live_status_generating')),
+        findsOneWidget,
+      );
       expect(find.text('Generating'), findsOneWidget);
       expect(find.textContaining('…'), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -321,19 +315,22 @@ void main() {
         findsOneWidget,
       );
 
-      // Starts where the placeholder does, not centred.
-      final line = tester.getTopLeft(
-        find.byKey(const ValueKey('in_field_generating')),
+      // Centred in the composer, small and quiet.
+      final line = tester.getCenter(
+        find.byKey(const ValueKey('live_status_generating')),
       );
-      final box = tester.getTopLeft(find.byType(PromptProcessingStatusBar));
-      expect(line.dx - box.dx, lessThan(24));
+      final box = tester.getCenter(find.byType(PromptProcessingStatusBar));
+      expect((line.dx - box.dx).abs(), lessThan(2));
+      expect(
+        tester.widget<Text>(find.text('Generating')).style?.fontSize,
+        lessThanOrEqualTo(12),
+      );
     });
 
-    testWidgets('finished reply says Done with its numbers', (tester) async {
+    testWidgets('finished reply says Done, then goes away', (tester) async {
       final now = DateTime.now();
       await tester.pumpWidget(
         _host(
-          emphasized: true,
           chatState: ChatState(
             liveGeneration: LiveGeneration(
               phase: LiveGenerationPhase.completed,
@@ -350,6 +347,12 @@ void main() {
 
       expect(find.text('Done'), findsOneWidget);
       expect(find.text('223 tok · 60 tok/s · 6.3s'), findsOneWidget);
+
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 2700)),
+      );
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.text('Done'), findsNothing);
     });
 
     test('formats speed and duration', () {

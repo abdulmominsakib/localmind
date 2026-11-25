@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:localmind/features/chat/views/components/token_usage_indicator.dart';
 import 'prompt_processing_indicator.dart';
-import '../../data/models/live_generation.dart';
 
 import '../../../../core/models/enums.dart';
 import '../../../../core/providers/app_providers.dart';
@@ -888,25 +887,8 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
         reasoning.enabled;
     final sendingAsAssistant =
         !isImageGeneration && showRoleSwapButton && _sendAsAssistant;
-    final liveGeneration = ref.watch(
-      chatProvider.select((s) => s.liveGeneration),
-    );
-    final showPromptProcessingIndicator = ref.watch(
-      settingsProvider.select((s) => s.showPromptProcessingIndicator),
-    );
     final composerEmpty = _controller.text.isEmpty;
-    final showInFieldLiveStatus =
-        showPromptProcessingIndicator &&
-        liveGeneration != null &&
-        composerEmpty &&
-        !(liveGeneration.phase == LiveGenerationPhase.completed &&
-            (DateTime.now()
-                    .difference(liveGeneration.completedAt ?? DateTime.now())
-                    .inMilliseconds >
-                2500));
-    final hint = showInFieldLiveStatus
-        ? null
-        : isImageGeneration
+    final hint = isImageGeneration
         ? l10n.image_generation_prompt
         : sendingAsAssistant
         ? l10n.chat_input_hint_assistant
@@ -1186,15 +1168,16 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
               ),
             ],
 
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
-              child: !composerEmpty
-                  ? const PromptProcessingStatusBar(
-                      key: ValueKey('corner-status'),
-                    )
-                  : const SizedBox.shrink(key: ValueKey('no-corner-status')),
+            // Live status sits above the input row, so the field keeps its
+            // placeholder and stays free to type in while a reply streams.
+            // The composer grows to fit it and shrinks back once it is done.
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.bottomCenter,
+              child: const PromptProcessingStatusBar(
+                key: ValueKey('composer-status'),
+              ),
             ),
             // One row: add, the text (growing upward as it wraps), mic,
             // and voice mode or send. Thinking and send-as-assistant live in
@@ -1327,25 +1310,7 @@ class ChatInputBarState extends ConsumerState<ChatInputBar>
                           ),
                         ),
                       ),
-                      if (composerEmpty)
-                        IgnorePointer(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 180),
-                            switchInCurve: Curves.easeOut,
-                            switchOutCurve: Curves.easeIn,
-                            child: showInFieldLiveStatus
-                                ? const PromptProcessingStatusBar(
-                                    key: ValueKey('in-field-status'),
-                                    emphasized: true,
-                                  )
-                                : const SizedBox.shrink(
-                                    key: ValueKey('no-in-field-status'),
-                                  ),
-                          ),
-                        ),
-                      if (!isImageGeneration &&
-                          composerEmpty &&
-                          !showInFieldLiveStatus)
+                      if (!isImageGeneration && composerEmpty)
                         Positioned(
                           right: 4,
                           top: 0,
