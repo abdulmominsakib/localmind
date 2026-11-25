@@ -155,6 +155,23 @@ void main() {
 
   // Regression for issue #111: granting a permission after the screen was
   // unmounted crashed with "Using ref when a widget ... has been unmounted".
+  // Regression for issue #154: a crash screen replaced the app (disposing
+  // the container) while an OS permission prompt was open, and answering the
+  // prompt then threw "Cannot use the Ref of NotifierProvider<SettingsNotifier>
+  // after it has been disposed".
+  test('settings writes after the container is disposed are dropped', () async {
+    final prefs = await SharedPreferences.getInstance();
+    final container = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
+    final notifier = container.read(settingsProvider.notifier);
+    container.dispose();
+
+    expect(() => notifier.setLocationToolsEnabled(true), returnsNormally);
+    expect(() => notifier.setCalendarToolsEnabled(true), returnsNormally);
+    await expectLater(notifier.updateSettings(AppSettings()), completes);
+  });
+
   group('McpToolsScreen permission toggles', () {
     Future<ProviderContainer> pumpUnmountableScreen(
       WidgetTester tester, {

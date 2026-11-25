@@ -45,13 +45,32 @@ class SettingsNotifier extends Notifier<AppSettings> {
     final savedJson = prefs.getString('appSettings');
     if (savedJson != null) {
       try {
-        return AppSettings.fromJson(savedJson);
+        return _lastState = AppSettings.fromJson(savedJson);
       } catch (_) {}
     }
-    return AppSettings();
+    return _lastState = AppSettings();
+  }
+
+  /// The last settings this notifier held, for calls that arrive after its
+  /// container is gone.
+  AppSettings _lastState = AppSettings();
+
+  // Settings writes can arrive after the container is disposed: an OS
+  // permission prompt answered after the crash screen replaced the app, for
+  // example (#154). There is nothing left to update then, so reads return the
+  // last value and writes are dropped instead of throwing.
+  @override
+  AppSettings get state => ref.mounted ? super.state : _lastState;
+
+  @override
+  set state(AppSettings value) {
+    if (!ref.mounted) return;
+    super.state = value;
+    _lastState = value;
   }
 
   Future<void> updateSettings(AppSettings appSettings) async {
+    if (!ref.mounted) return;
     final prefs = ref.read(sharedPreferencesProvider);
     state = appSettings;
     await prefs.setString('appSettings', appSettings.toJson());
@@ -205,6 +224,7 @@ class SettingsNotifier extends Notifier<AppSettings> {
   }
 
   Future<void> _update(AppSettings updated) async {
+    if (!ref.mounted) return;
     state = updated;
     final prefs = ref.read(sharedPreferencesProvider);
     // Fire-and-forget persistence: in-memory state is updated synchronously
@@ -218,6 +238,7 @@ class SettingsNotifier extends Notifier<AppSettings> {
   }
 
   Future<void> resetToDefaults() async {
+    if (!ref.mounted) return;
     state = AppSettings();
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString('appSettings', state.toJson());
