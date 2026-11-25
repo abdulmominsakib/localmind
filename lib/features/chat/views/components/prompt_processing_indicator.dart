@@ -10,6 +10,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../providers/chat_providers.dart';
 import '../../../conversations/providers/conversation_providers.dart' as conv;
 import '../../data/models/live_generation.dart';
+import 'heartbeat_dot.dart';
 
 class PromptProcessingStatusBar extends ConsumerStatefulWidget {
   const PromptProcessingStatusBar({
@@ -125,8 +126,14 @@ class _PromptProcessingStatusBarState
 
     if (emphasized) {
       if (live == null) return const SizedBox.shrink();
-      return Center(
-        child: _LiveIndicator(live: live, muted: muted, emphasized: true),
+      // Sits where the placeholder would, so the status reads as the field's
+      // content and does not drift sideways as the numbers change.
+      return Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Padding(
+          padding: const EdgeInsetsDirectional.only(start: 10, end: 8),
+          child: InFieldLiveStatus(live: live),
+        ),
       );
     }
 
@@ -233,51 +240,29 @@ class _PromptProcessingStatusBarState
 }
 
 class _LiveIndicator extends StatelessWidget {
-  const _LiveIndicator({
-    required this.live,
-    required this.muted,
-    this.emphasized = false,
-  });
+  const _LiveIndicator({required this.live, required this.muted});
 
   final LiveGeneration live;
   final Color muted;
-  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
     switch (live.phase) {
       case LiveGenerationPhase.processingPrompt:
-        return _ProcessingIndicator(
-          live: live,
-          muted: muted,
-          emphasized: emphasized,
-        );
+        return _ProcessingIndicator(live: live, muted: muted);
       case LiveGenerationPhase.generating:
-        return _GeneratingIndicator(
-          live: live,
-          muted: muted,
-          emphasized: emphasized,
-        );
+        return _GeneratingIndicator(live: live, muted: muted);
       case LiveGenerationPhase.completed:
-        return _CompletedIndicator(
-          live: live,
-          muted: muted,
-          emphasized: emphasized,
-        );
+        return _CompletedIndicator(live: live, muted: muted);
     }
   }
 }
 
 class _ProcessingIndicator extends StatelessWidget {
-  const _ProcessingIndicator({
-    required this.live,
-    required this.muted,
-    this.emphasized = false,
-  });
+  const _ProcessingIndicator({required this.live, required this.muted});
 
   final LiveGeneration live;
   final Color muted;
-  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
@@ -299,10 +284,10 @@ class _ProcessingIndicator extends StatelessWidget {
     // Keep the arc in step with the label so its semantics do not report 100%
     // while prefill is still running either.
     final arc = pct / 100;
-    final arcSize = emphasized ? 18.0 : 12.0;
-    final stroke = emphasized ? 2.5 : 2.0;
-    final fontSize = emphasized ? 16.0 : 11.0;
-    final gap = emphasized ? 8.0 : 6.0;
+    final arcSize = 12.0;
+    final stroke = 2.0;
+    final fontSize = 11.0;
+    final gap = 6.0;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -335,15 +320,10 @@ class _ProcessingIndicator extends StatelessWidget {
 }
 
 class _GeneratingIndicator extends ConsumerWidget {
-  const _GeneratingIndicator({
-    required this.live,
-    required this.muted,
-    this.emphasized = false,
-  });
+  const _GeneratingIndicator({required this.live, required this.muted});
 
   final LiveGeneration live;
   final Color muted;
-  final bool emphasized;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -359,10 +339,10 @@ class _GeneratingIndicator extends ConsumerWidget {
       ),
     );
 
-    final arcSize = emphasized ? 18.0 : 12.0;
-    final stroke = emphasized ? 2.5 : 2.0;
-    final fontSize = emphasized ? 16.0 : 11.0;
-    final gap = emphasized ? 8.0 : 6.0;
+    final arcSize = 12.0;
+    final stroke = 2.0;
+    final fontSize = 11.0;
+    final gap = 6.0;
 
     if (outputChars == 0 && reasoningChars > 0) {
       return Row(
@@ -421,15 +401,10 @@ class _GeneratingIndicator extends ConsumerWidget {
 }
 
 class _CompletedIndicator extends StatelessWidget {
-  const _CompletedIndicator({
-    required this.live,
-    required this.muted,
-    this.emphasized = false,
-  });
+  const _CompletedIndicator({required this.live, required this.muted});
 
   final LiveGeneration live;
   final Color muted;
-  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
@@ -440,9 +415,9 @@ class _CompletedIndicator extends StatelessWidget {
     final out = live.outputTokens ?? 0;
     final tps = live.tokensPerSecond;
     final genMs = live.generationTimeMs ?? 0;
-    final iconSize = emphasized ? 18.0 : 12.0;
-    final fontSize = emphasized ? 16.0 : 11.0;
-    final gap = emphasized ? 8.0 : 6.0;
+    final iconSize = 12.0;
+    final fontSize = 11.0;
+    final gap = 6.0;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -463,4 +438,163 @@ class _CompletedIndicator extends StatelessWidget {
       ],
     );
   }
+}
+
+/// The live status shown inside an empty composer while a reply is produced:
+/// an activity mark, what is happening, and quieter numbers beside it.
+class InFieldLiveStatus extends ConsumerWidget {
+  const InFieldLiveStatus({super.key, required this.live});
+
+  final LiveGeneration live;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+    final dotColor = isDark ? Colors.white70 : Colors.black54;
+
+    switch (live.phase) {
+      case LiveGenerationPhase.processingPrompt:
+        final pct = _prefillPercent(live);
+        return LiveStatusLine(
+          key: const ValueKey('in_field_processing'),
+          lead: SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              value: pct / 100,
+              strokeWidth: 2,
+              strokeCap: StrokeCap.round,
+              backgroundColor: muted.withValues(alpha: 0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(muted),
+            ),
+          ),
+          label: _withoutEllipsis(l10n.processing_prompt_label),
+          detail: '$pct%',
+        );
+      case LiveGenerationPhase.generating:
+        final first = live.firstTokenAt ?? live.startedAt;
+        final elapsedMs = DateTime.now().difference(first).inMilliseconds;
+        final outputChars = ref.watch(
+          chatProvider.select((s) => s.streamingMessage?.content.length ?? 0),
+        );
+        final reasoningChars = ref.watch(
+          chatProvider.select(
+            (s) => s.streamingMessage?.reasoningContent?.length ?? 0,
+          ),
+        );
+        final thinking = outputChars == 0 && reasoningChars > 0;
+        final tokens = (outputChars / 4).round();
+        final tps = elapsedMs > 0 ? tokens / (elapsedMs / 1000) : 0.0;
+        return LiveStatusLine(
+          key: const ValueKey('in_field_generating'),
+          lead: HeartbeatDot(size: 7, color: dotColor),
+          label: thinking
+              ? l10n.thinking
+              : _withoutEllipsis(l10n.generating_label),
+          detail: thinking
+              ? formatLiveDuration(elapsedMs)
+              : '${formatTokensPerSecond(tps)} tok/s · '
+                    '${formatLiveDuration(elapsedMs)}',
+        );
+      case LiveGenerationPhase.completed:
+        final tps = live.tokensPerSecond;
+        return LiveStatusLine(
+          key: const ValueKey('in_field_completed'),
+          lead: HugeIcon(
+            icon: HugeIcons.strokeRoundedTick02,
+            size: 16,
+            color: muted,
+          ),
+          label: l10n.done,
+          detail: [
+            '${live.outputTokens ?? 0} tok',
+            if (tps != null) '${formatTokensPerSecond(tps)} tok/s',
+            formatLiveDuration(live.generationTimeMs ?? 0),
+          ].join(' · '),
+        );
+    }
+  }
+}
+
+/// One status line: [lead] in a fixed slot, [label] in the field's text
+/// colour, then [detail] muted with steady-width digits.
+class LiveStatusLine extends StatelessWidget {
+  const LiveStatusLine({
+    super.key,
+    required this.lead,
+    required this.label,
+    required this.detail,
+  });
+
+  final Widget lead;
+  final String label;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final muted = isDark ? AppColors.darkMutedText : AppColors.lightMutedText;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(width: 16, height: 16, child: Center(child: lead)),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            detail,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14,
+              color: muted,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+int _prefillPercent(LiveGeneration live) {
+  final double progress;
+  if (live.realPrefillProgress != null) {
+    progress = live.realPrefillProgress!.clamp(0.0, 1.0);
+  } else {
+    final elapsed = DateTime.now().difference(live.startedAt).inMilliseconds;
+    final t = (elapsed / live.estimatedPrefillMs).clamp(0.0, 0.97);
+    progress = Curves.easeOut.transform(t);
+  }
+  // Prefill is still running until the first token: never claim 100%.
+  return (progress * 100).round().clamp(0, 99);
+}
+
+String _withoutEllipsis(String label) =>
+    label.replaceFirst(RegExp(r'\s*(…|\.\.\.)$'), '');
+
+/// Whole numbers from 10 tok/s up, so the figure does not flicker.
+@visibleForTesting
+String formatTokensPerSecond(double tps) =>
+    tps >= 10 ? tps.toStringAsFixed(0) : tps.toStringAsFixed(1);
+
+/// `4.2s` under a minute, `1m 05s` after.
+@visibleForTesting
+String formatLiveDuration(int ms) {
+  if (ms < 60000) return '${(ms / 1000).toStringAsFixed(1)}s';
+  final seconds = ms ~/ 1000;
+  return '${seconds ~/ 60}m ${(seconds % 60).toString().padLeft(2, '0')}s';
 }

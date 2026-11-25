@@ -34,7 +34,11 @@ class _NoActiveConversation extends conv.ActiveConversationNotifier {
   Conversation? build() => null;
 }
 
-Widget _host({required ChatState chatState, AppSettings? settings}) {
+Widget _host({
+  required ChatState chatState,
+  AppSettings? settings,
+  bool emphasized = false,
+}) {
   return ProviderScope(
     overrides: [
       chatProvider.overrideWith(() => _FixedChatNotifier(chatState)),
@@ -49,13 +53,17 @@ Widget _host({required ChatState chatState, AppSettings? settings}) {
       ),
       conv.conversationsProvider.overrideWith(_EmptyConversations.new),
     ],
-    child: const MaterialApp(
+    child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Padding(
-          padding: EdgeInsets.all(8),
-          child: PromptProcessingStatusBar(),
+          padding: const EdgeInsets.all(8),
+          child: SizedBox(
+            width: 320,
+            height: 48,
+            child: PromptProcessingStatusBar(emphasized: emphasized),
+          ),
         ),
       ),
     ),
@@ -274,6 +282,81 @@ void main() {
 
       expect(find.textContaining('Generating'), findsOneWidget);
       expect(find.textContaining('tok/s'), findsOneWidget);
+    });
+  });
+
+  group('in-field status', () {
+    testWidgets('generating shows a dot, a plain label and steady stats', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          emphasized: true,
+          chatState: ChatState(
+            liveGeneration: LiveGeneration(
+              phase: LiveGenerationPhase.generating,
+              startedAt: DateTime.now().subtract(const Duration(seconds: 3)),
+              estimatedPrefillMs: 500,
+              firstTokenAt: DateTime.now().subtract(const Duration(seconds: 2)),
+            ),
+            streamingMessage: Message(
+              id: 'm1',
+              conversationId: 'c1',
+              role: MessageRole.assistant,
+              content: 'x' * 400,
+              createdAt: DateTime.now(),
+              status: MessageStatus.streaming,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byKey(const ValueKey('in_field_generating')), findsOneWidget);
+      expect(find.text('Generating'), findsOneWidget);
+      expect(find.textContaining('…'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      // 100 tokens over ~2 s: a whole number, no decimal jitter.
+      expect(
+        find.textContaining(RegExp(r'^\d+ tok/s · \d+\.\ds$')),
+        findsOneWidget,
+      );
+
+      // Starts where the placeholder does, not centred.
+      final line = tester.getTopLeft(
+        find.byKey(const ValueKey('in_field_generating')),
+      );
+      final box = tester.getTopLeft(find.byType(PromptProcessingStatusBar));
+      expect(line.dx - box.dx, lessThan(24));
+    });
+
+    testWidgets('finished reply says Done with its numbers', (tester) async {
+      final now = DateTime.now();
+      await tester.pumpWidget(
+        _host(
+          emphasized: true,
+          chatState: ChatState(
+            liveGeneration: LiveGeneration(
+              phase: LiveGenerationPhase.completed,
+              startedAt: now.subtract(const Duration(seconds: 7)),
+              estimatedPrefillMs: 500,
+              completedAt: now,
+              outputTokens: 223,
+              tokensPerSecond: 60.04,
+              generationTimeMs: 6300,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Done'), findsOneWidget);
+      expect(find.text('223 tok · 60 tok/s · 6.3s'), findsOneWidget);
+    });
+
+    test('formats speed and duration', () {
+      expect(formatTokensPerSecond(68.44), '68');
+      expect(formatTokensPerSecond(7.25), '7.3');
+      expect(formatLiveDuration(1900), '1.9s');
+      expect(formatLiveDuration(65000), '1m 05s');
     });
   });
 }
