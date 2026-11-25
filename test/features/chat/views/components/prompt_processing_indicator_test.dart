@@ -6,6 +6,7 @@ import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/features/chat/data/models/live_generation.dart';
 import 'package:localmind/features/chat/data/models/message.dart';
 import 'package:localmind/features/chat/providers/chat_notifier.dart';
+import 'package:localmind/features/chat/views/components/ascii_trail.dart';
 import 'package:localmind/features/chat/views/components/prompt_processing_indicator.dart';
 import 'package:localmind/features/conversations/data/models/conversation.dart';
 import 'package:localmind/features/conversations/providers/conversation_providers.dart'
@@ -306,6 +307,15 @@ void main() {
         find.byKey(const ValueKey('live_status_generating')),
         findsOneWidget,
       );
+      // ASCII trails fill the room on both sides while it streams.
+      for (final side in ['start', 'end']) {
+        final trail = find.byKey(ValueKey('ascii_trail_$side'));
+        expect(trail, findsOneWidget);
+        expect(
+          tester.widget<AsciiTrail>(trail).kind,
+          AsciiTrailKind.generating,
+        );
+      }
       expect(find.text('Generating'), findsOneWidget);
       expect(find.textContaining('…'), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -347,6 +357,7 @@ void main() {
 
       expect(find.text('Done'), findsOneWidget);
       expect(find.text('223 tok · 60 tok/s · 6.3s'), findsOneWidget);
+      expect(find.byType(AsciiTrail), findsNothing);
 
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 2700)),

@@ -10,6 +10,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../providers/chat_providers.dart';
 import '../../../conversations/providers/conversation_providers.dart' as conv;
 import '../../data/models/live_generation.dart';
+import 'ascii_trail.dart';
 import 'heartbeat_dot.dart';
 
 /// How long the finished reply's numbers stay above the composer.
@@ -71,21 +72,74 @@ class _PromptProcessingStatusBarState
       conv.activeConversationProvider.select((c) => c?.promptsProcessed ?? 0),
     );
 
+    final trail = _trailKind(live);
+    final progress = live.phase == LiveGenerationPhase.processingPrompt
+        ? _prefillPercent(live) / 100
+        : 0.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final trailColor =
+        (isDark ? AppColors.darkMutedText : AppColors.lightMutedText)
+            .withValues(alpha: 0.7);
+
+    Widget side(AsciiTrailSide which) => Expanded(
+      child: trail == null
+          ? const SizedBox.shrink()
+          : AsciiTrail(
+              key: ValueKey('ascii_trail_${which.name}'),
+              kind: trail,
+              side: which,
+              progress: progress,
+              color: trailColor,
+            ),
+    );
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 2, 8, 6),
-      child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Row(
           children: [
-            Flexible(child: ComposerLiveStatus(live: live)),
-            if (count > 0) ...[
-              const SizedBox(width: 8),
-              PromptCountChip(count: count),
-            ],
+            side(AsciiTrailSide.start),
+            const SizedBox(width: 10),
+            // The label and numbers keep their natural width, up to most of
+            // the line; past that the numbers shorten with an ellipsis.
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: ComposerLiveStatus(live: live)),
+                  if (count > 0) ...[
+                    const SizedBox(width: 8),
+                    PromptCountChip(count: count),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            side(AsciiTrailSide.end),
           ],
         ),
       ),
     );
+  }
+
+  /// Which animation fills the room beside the label, or none once done.
+  AsciiTrailKind? _trailKind(LiveGeneration live) {
+    switch (live.phase) {
+      case LiveGenerationPhase.processingPrompt:
+        return AsciiTrailKind.processing;
+      case LiveGenerationPhase.generating:
+        final thinking = ref.watch(
+          chatProvider.select((s) {
+            final m = s.streamingMessage;
+            return (m?.content.isEmpty ?? true) &&
+                (m?.reasoningContent?.isNotEmpty ?? false);
+          }),
+        );
+        return thinking ? AsciiTrailKind.thinking : AsciiTrailKind.generating;
+      case LiveGenerationPhase.completed:
+        return null;
+    }
   }
 }
 
