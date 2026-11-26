@@ -45,12 +45,12 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
   bool get _requiresEndpoint =>
       _selectedType != ServerType.openRouter &&
       _selectedType != ServerType.requesty &&
-      _selectedType != ServerType.uberllm &&
+      _selectedType != ServerType.martllm &&
       _selectedType != ServerType.ollamaCloud;
   bool get _requiresMandatoryApiKey =>
       _selectedType == ServerType.openRouter ||
       _selectedType == ServerType.requesty ||
-      _selectedType == ServerType.uberllm ||
+      _selectedType == ServerType.martllm ||
       _selectedType == ServerType.ollamaCloud;
 
   String _lastHostScheme = '';
@@ -63,7 +63,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       ServerType.ollamaCloud => AppConstants.ollamaCloudDefaultPort,
       ServerType.openRouter => 443,
       ServerType.requesty => 443,
-      ServerType.uberllm => 443,
+      ServerType.martllm => 443,
       ServerType.onDevice => 0,
     };
   }
@@ -145,7 +145,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       final isHttps = isHttpsAddressInput(_hostController.text);
       if (type == ServerType.openRouter ||
           type == ServerType.requesty ||
-          type == ServerType.uberllm) {
+          type == ServerType.martllm) {
         _portController.text = '443';
       } else if (type == ServerType.ollamaCloud) {
         _portController.text = AppConstants.ollamaCloudDefaultPort.toString();
@@ -236,10 +236,10 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
     if (_selectedType == ServerType.ollamaCloud) {
       host = AppConstants.ollamaCloudBaseUrl;
       port = AppConstants.ollamaCloudDefaultPort;
-    } else if (_selectedType == ServerType.uberllm) {
-      // Always store the UberLLM URL, so a host left over from another
+    } else if (_selectedType == ServerType.martllm) {
+      // Always store the MartLLM URL, so a host left over from another
       // provider type is never saved with this profile.
-      host = AppConstants.uberllmBaseUrl;
+      host = AppConstants.martllmBaseUrl;
       port = 443;
     } else {
       final parsed = parseServerAddressInput(rawHost);
@@ -413,8 +413,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
             ? l10n.api_key_required_ollama_cloud
             : _selectedType == ServerType.requesty
             ? l10n.api_key_required_requesty
-            : _selectedType == ServerType.uberllm
-            ? l10n.api_key_required_uberllm
+            : _selectedType == ServerType.martllm
+            ? l10n.api_key_required_martllm
             : l10n.api_key_required_openrouter;
       }
       if (_selectedType == ServerType.openRouter &&
@@ -672,8 +672,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
               subtitle: _requiresMandatoryApiKey
                   ? (_selectedType == ServerType.requesty
                         ? l10n.server_authentication_required_desc_requesty
-                        : _selectedType == ServerType.uberllm
-                        ? l10n.server_authentication_required_desc_uberllm
+                        : _selectedType == ServerType.martllm
+                        ? l10n.server_authentication_required_desc_martllm
                         : l10n.server_authentication_required_desc)
                   : l10n.server_authentication_optional_desc,
               child: Column(
@@ -689,8 +689,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                                 ? l10n.api_key_hint_ollama_cloud
                                 : _selectedType == ServerType.requesty
                                 ? l10n.api_key_hint_requesty
-                                : _selectedType == ServerType.uberllm
-                                ? l10n.api_key_hint_uberllm
+                                : _selectedType == ServerType.martllm
+                                ? l10n.api_key_hint_martllm
                                 : l10n.api_key_hint_openrouter)
                           : l10n.api_key_hint_generic,
                     ),
@@ -728,8 +728,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                                   ? l10n.ollama_cloud_disclosure
                                   : _selectedType == ServerType.requesty
                                   ? l10n.requesty_disclosure
-                                  : _selectedType == ServerType.uberllm
-                                  ? l10n.uberllm_disclosure
+                                  : _selectedType == ServerType.martllm
+                                  ? l10n.martllm_disclosure
                                   : l10n.openrouter_disclosure,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurface.withValues(
@@ -1029,7 +1029,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       ServerType.ollamaCloud => l10n.server_type_ollama_cloud,
       ServerType.openRouter => l10n.server_type_openrouter,
       ServerType.requesty => l10n.server_type_requesty,
-      ServerType.uberllm => l10n.server_type_uberllm,
+      ServerType.martllm => l10n.server_type_martllm,
       ServerType.onDevice => l10n.server_type_on_device_display,
     };
   }
@@ -1047,8 +1047,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
         return l10n.add_server_openrouter_subtitle;
       case ServerType.requesty:
         return l10n.add_server_requesty_subtitle;
-      case ServerType.uberllm:
-        return l10n.add_server_uberllm_subtitle;
+      case ServerType.martllm:
+        return l10n.add_server_martllm_subtitle;
     }
   }
 }

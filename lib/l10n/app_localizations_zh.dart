@@ -1097,8 +1097,8 @@ class AppLocalizationsZh extends AppLocalizations {
       '使用有效的 API 密钥通过 Requesty 连接，并为此配置文件做好模型路由准备。';
 
   @override
-  String get add_server_uberllm_subtitle =>
-      '使用有效的 API 密钥通过 UberLLM 连接，并为此配置文件做好模型路由准备。';
+  String get add_server_martllm_subtitle =>
+      '使用有效的 API 密钥通过 MartLLM 连接，并为此配置文件做好模型路由准备。';
 
   @override
   String get add_server_endpoint_subtitle => '配置本地或自托管端点，然后在保存前验证连接。';
@@ -1110,7 +1110,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get server_type_requesty => 'Requesty';
 
   @override
-  String get server_type_uberllm => 'UberLLM';
+  String get server_type_martllm => 'MartLLM';
 
   @override
   String get server_type_openrouter_sub => '统一云';
@@ -1119,7 +1119,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get server_type_requesty_sub => '统一云';
 
   @override
-  String get server_type_uberllm_sub => '统一云';
+  String get server_type_martllm_sub => '统一云';
 
   @override
   String get ready_continue => '准备好继续';
@@ -1175,7 +1175,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get api_key_required_requesty => 'Requesty 需要 API 密钥';
 
   @override
-  String get api_key_required_uberllm => 'UberLLM 需要 API 密钥';
+  String get api_key_required_martllm => 'MartLLM 需要 API 密钥';
 
   @override
   String get api_key_format => 'OpenRouter API 密钥以 sk- 开头';
@@ -1196,7 +1196,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get api_key_hint_requesty => 'rqsty-...';
 
   @override
-  String get api_key_hint_uberllm => 'ull_...';
+  String get api_key_hint_martllm => 'ull_...';
 
   @override
   String get api_key_hint_generic => '适用于已验证的服务器';
@@ -1384,7 +1384,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get server_type_requesty_display => 'Requesty';
 
   @override
-  String get server_type_uberllm_display => 'UberLLM';
+  String get server_type_martllm_display => 'MartLLM';
 
   @override
   String get server_type_on_device_display => '设备端';
@@ -1396,7 +1396,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get server_address_requesty => 'router.requesty.ai';
 
   @override
-  String get server_address_uberllm => 'api.uberllm.dev';
+  String get server_address_martllm => 'api.martllm.com';
 
   @override
   String get server_address_on_device => '本地推理';
@@ -2292,8 +2292,8 @@ class AppLocalizationsZh extends AppLocalizations {
       'Requesty requires an API key before testing.';
 
   @override
-  String get server_authentication_required_desc_uberllm =>
-      'UberLLM requires an API key before testing.';
+  String get server_authentication_required_desc_martllm =>
+      'MartLLM requires an API key before testing.';
 
   @override
   String get server_authentication_optional_desc =>
@@ -2928,7 +2928,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '连接此提供商后，您的聊天消息和输入将被发送到他们的服务器。LocalMind 不会跟踪或存储您的对话。';
 
   @override
-  String get uberllm_disclosure =>
+  String get martllm_disclosure =>
       '连接此提供商后，您的聊天消息和输入将被发送到他们的服务器。LocalMind 不会跟踪或存储您的对话。';
 
   @override
@@ -4557,8 +4557,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '使用有效的 API 金鑰透過 Requesty 連線，並為此設定檔做好模型路由準備。';
 
   @override
-  String get add_server_uberllm_subtitle =>
-      '使用有效的 API 金鑰透過 UberLLM 連線，並為此設定檔做好模型路由準備。';
+  String get add_server_martllm_subtitle =>
+      '使用有效的 API 金鑰透過 MartLLM 連線，並為此設定檔做好模型路由準備。';
 
   @override
   String get add_server_endpoint_subtitle => '設定本地或自託管端點，並在儲存前驗證連線。';
@@ -4570,7 +4570,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get server_type_requesty => 'Requesty';
 
   @override
-  String get server_type_uberllm => 'UberLLM';
+  String get server_type_martllm => 'MartLLM';
 
   @override
   String get server_type_openrouter_sub => '統一雲端';
@@ -4579,7 +4579,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get server_type_requesty_sub => '統一雲端';
 
   @override
-  String get server_type_uberllm_sub => '統一雲端';
+  String get server_type_martllm_sub => '統一雲端';
 
   @override
   String get ready_continue => '準備好繼續';
@@ -4635,7 +4635,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get api_key_required_requesty => 'Requesty 需要 API 金鑰';
 
   @override
-  String get api_key_required_uberllm => 'UberLLM 需要 API 金鑰';
+  String get api_key_required_martllm => 'MartLLM 需要 API 金鑰';
 
   @override
   String get api_key_format => 'OpenRouter API 金鑰以 sk- 開頭';
@@ -4656,7 +4656,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get api_key_hint_requesty => 'rqsty-...';
 
   @override
-  String get api_key_hint_uberllm => 'ull_...';
+  String get api_key_hint_martllm => 'ull_...';
 
   @override
   String get api_key_hint_generic => '適用於已驗證的伺服器';
@@ -4814,7 +4814,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get server_type_requesty_display => 'Requesty';
 
   @override
-  String get server_type_uberllm_display => 'UberLLM';
+  String get server_type_martllm_display => 'MartLLM';
 
   @override
   String get server_type_on_device_display => '裝置端';
@@ -4826,7 +4826,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get server_address_requesty => 'router.requesty.ai';
 
   @override
-  String get server_address_uberllm => 'api.uberllm.dev';
+  String get server_address_martllm => 'api.martllm.com';
 
   @override
   String get server_address_on_device => '本機推論';
@@ -5683,8 +5683,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       'Requesty requires an API key before testing.';
 
   @override
-  String get server_authentication_required_desc_uberllm =>
-      'UberLLM requires an API key before testing.';
+  String get server_authentication_required_desc_martllm =>
+      'MartLLM requires an API key before testing.';
 
   @override
   String get server_authentication_optional_desc =>
@@ -6319,7 +6319,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '連接此提供者後，您的聊天訊息和輸入將被發送到他們的伺服器。LocalMind 不會追蹤或儲存您的對話。';
 
   @override
-  String get uberllm_disclosure =>
+  String get martllm_disclosure =>
       '連接此提供者後，您的聊天訊息和輸入將被發送到他們的伺服器。LocalMind 不會追蹤或儲存您的對話。';
 
   @override

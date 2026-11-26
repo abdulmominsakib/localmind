@@ -1137,8 +1137,8 @@ class AppLocalizationsTr extends AppLocalizations {
       'Geçerli bir API anahtarıyla Requesty üzerinden bağlanın ve model yönlendirmesi için bu profili hazır tutun.';
 
   @override
-  String get add_server_uberllm_subtitle =>
-      'Geçerli bir API anahtarıyla UberLLM üzerinden bağlanın ve model yönlendirmesi için bu profili hazır tutun.';
+  String get add_server_martllm_subtitle =>
+      'Geçerli bir API anahtarıyla MartLLM üzerinden bağlanın ve model yönlendirmesi için bu profili hazır tutun.';
 
   @override
   String get add_server_endpoint_subtitle =>
@@ -1151,7 +1151,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get server_type_requesty => 'Requesty';
 
   @override
-  String get server_type_uberllm => 'UberLLM';
+  String get server_type_martllm => 'MartLLM';
 
   @override
   String get server_type_openrouter_sub => 'BİRLEŞİK BULUT';
@@ -1160,7 +1160,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get server_type_requesty_sub => 'BİRLEŞİK BULUT';
 
   @override
-  String get server_type_uberllm_sub => 'BİRLEŞİK BULUT';
+  String get server_type_martllm_sub => 'BİRLEŞİK BULUT';
 
   @override
   String get ready_continue => 'DEVAM ETMEYE HAZIR';
@@ -1218,7 +1218,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Requesty için API Anahtarı gereklidir';
 
   @override
-  String get api_key_required_uberllm => 'UberLLM için API Anahtarı gereklidir';
+  String get api_key_required_martllm => 'MartLLM için API Anahtarı gereklidir';
 
   @override
   String get api_key_format => 'OpenRouter API anahtarları sk- ile başlar';
@@ -1241,7 +1241,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get api_key_hint_requesty => 'rqsty-...';
 
   @override
-  String get api_key_hint_uberllm => 'ull_...';
+  String get api_key_hint_martllm => 'ull_...';
 
   @override
   String get api_key_hint_generic => 'Kimlik doğrulamalı sunucular için';
@@ -1434,7 +1434,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get server_type_requesty_display => 'Requesty';
 
   @override
-  String get server_type_uberllm_display => 'UberLLM';
+  String get server_type_martllm_display => 'MartLLM';
 
   @override
   String get server_type_on_device_display => 'Cihaz Üstü';
@@ -1446,7 +1446,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get server_address_requesty => 'router.requesty.ai';
 
   @override
-  String get server_address_uberllm => 'api.uberllm.dev';
+  String get server_address_martllm => 'api.martllm.com';
 
   @override
   String get server_address_on_device => 'Yerel çıkarım';
@@ -2362,8 +2362,8 @@ class AppLocalizationsTr extends AppLocalizations {
       'Requesty requires an API key before testing.';
 
   @override
-  String get server_authentication_required_desc_uberllm =>
-      'UberLLM requires an API key before testing.';
+  String get server_authentication_required_desc_martllm =>
+      'MartLLM requires an API key before testing.';
 
   @override
   String get server_authentication_optional_desc =>
@@ -3030,7 +3030,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu sağlayıcıya bağlanarak sohbet mesajlarınız ve girdileriniz onların sunucularına gönderilir. LocalMind sohbetlerinizi izlemez veya saklamaz.';
 
   @override
-  String get uberllm_disclosure =>
+  String get martllm_disclosure =>
       'Bu sağlayıcıya bağlanarak sohbet mesajlarınız ve girdileriniz onların sunucularına gönderilir. LocalMind sohbetlerinizi izlemez veya saklamaz.';
 
   @override

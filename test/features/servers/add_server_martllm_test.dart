@@ -35,7 +35,7 @@ class _CapturingServersNotifier extends ServersNotifier {
 
 void main() {
   testWidgets(
-    'switching from Ollama Cloud to UberLLM saves the UberLLM endpoint',
+    'switching from Ollama Cloud to MartLLM saves the MartLLM endpoint',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
@@ -71,11 +71,11 @@ void main() {
 
       await tester.tap(find.text('Ollama Cloud').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('UberLLM').first);
+      await tester.tap(find.text('MartLLM').first);
       await tester.pumpAndSettle();
 
       final fields = find.byType(TextFormField);
-      await tester.enterText(fields.first, 'My UberLLM');
+      await tester.enterText(fields.first, 'My MartLLM');
       await tester.enterText(fields.last, 'ull_test');
       await tester.pumpAndSettle();
 
@@ -84,12 +84,12 @@ void main() {
 
       final saved = notifier.added;
       expect(saved, isNotNull);
-      expect(saved!.type, ServerType.uberllm);
-      expect(saved.host, 'https://api.uberllm.dev/v1');
+      expect(saved!.type, ServerType.martllm);
+      expect(saved.host, 'https://api.martllm.com/v1');
       expect(saved.apiKey, 'ull_test');
       expect(
         ServerEntity.fromDomain(saved).toDomain().type,
-        ServerType.uberllm,
+        ServerType.martllm,
       );
     },
   );

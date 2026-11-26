@@ -252,7 +252,7 @@ HugeIconData? getDefaultServerIcon(String? serverType) {
         (icon) => icon.name == 'AI Network',
         orElse: () => serverIcons.first,
       );
-    case 'uberllm':
+    case 'martllm':
       return serverIcons.firstWhere(
         (icon) => icon.name == 'Cloud Server',
         orElse: () => serverIcons.first,

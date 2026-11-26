@@ -248,14 +248,14 @@ class _OnboardingServerTypeScreenState
                                     theme: theme,
                                   ),
                                   _buildServerCard(
-                                    type: ServerType.uberllm,
-                                    title: l10n.server_type_uberllm,
-                                    subtitle: l10n.server_type_uberllm_sub,
+                                    type: ServerType.martllm,
+                                    title: l10n.server_type_martllm,
+                                    subtitle: l10n.server_type_martllm_sub,
                                     iconWidget: ServerLogo(
-                                      type: ServerType.uberllm,
+                                      type: ServerType.martllm,
                                       size: 20,
                                       iconColor:
-                                          _selectedType == ServerType.uberllm
+                                          _selectedType == ServerType.martllm
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurface,
                                     ),

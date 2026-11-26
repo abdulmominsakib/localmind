@@ -1520,9 +1520,9 @@
   "@add_server_requesty_subtitle": {
     "description": "Add server screen subtitle for Requesty"
   },
-  "add_server_uberllm_subtitle": "Connect through UberLLM with a valid API key and keep this profile ready for model routing.",
-  "@add_server_uberllm_subtitle": {
-    "description": "Add server screen subtitle for UberLLM"
+  "add_server_martllm_subtitle": "Connect through MartLLM with a valid API key and keep this profile ready for model routing.",
+  "@add_server_martllm_subtitle": {
+    "description": "Add server screen subtitle for MartLLM"
   },
   "add_server_endpoint_subtitle": "Configure a local or self-hosted endpoint, then verify the connection before saving.",
   "@add_server_endpoint_subtitle": {
@@ -1536,9 +1536,9 @@
   "@server_type_requesty": {
     "description": "Requesty server type card title"
   },
-  "server_type_uberllm": "UberLLM",
-  "@server_type_uberllm": {
-    "description": "UberLLM server type card title"
+  "server_type_martllm": "MartLLM",
+  "@server_type_martllm": {
+    "description": "MartLLM server type card title"
   },
   "server_type_openrouter_sub": "UNIFIED CLOUD",
   "@server_type_openrouter_sub": {
@@ -1548,9 +1548,9 @@
   "@server_type_requesty_sub": {
     "description": "Requesty server type card subtitle"
   },
-  "server_type_uberllm_sub": "UNIFIED CLOUD",
-  "@server_type_uberllm_sub": {
-    "description": "UberLLM server type card subtitle"
+  "server_type_martllm_sub": "UNIFIED CLOUD",
+  "@server_type_martllm_sub": {
+    "description": "MartLLM server type card subtitle"
   },
   "ready_continue": "READY TO CONTINUE",
   "@ready_continue": {
@@ -1626,9 +1626,9 @@
   "@api_key_required_requesty": {
     "description": "Validation: API key for Requesty"
   },
-  "api_key_required_uberllm": "API Key required for UberLLM",
-  "@api_key_required_uberllm": {
-    "description": "Validation: API key for UberLLM"
+  "api_key_required_martllm": "API Key required for MartLLM",
+  "@api_key_required_martllm": {
+    "description": "Validation: API key for MartLLM"
   },
   "api_key_format": "OpenRouter API keys start with sk-",
   "@api_key_format": {
@@ -1654,9 +1654,9 @@
   "@api_key_hint_requesty": {
     "description": "Requesty API key hint"
   },
-  "api_key_hint_uberllm": "ull_...",
-  "@api_key_hint_uberllm": {
-    "description": "UberLLM API key hint"
+  "api_key_hint_martllm": "ull_...",
+  "@api_key_hint_martllm": {
+    "description": "MartLLM API key hint"
   },
   "api_key_hint_generic": "For authenticated servers",
   "@api_key_hint_generic": {
@@ -1936,9 +1936,9 @@
   "@server_type_requesty_display": {
     "description": "Requesty server type display"
   },
-  "server_type_uberllm_display": "UberLLM",
-  "@server_type_uberllm_display": {
-    "description": "UberLLM server type display"
+  "server_type_martllm_display": "MartLLM",
+  "@server_type_martllm_display": {
+    "description": "MartLLM server type display"
   },
   "server_type_on_device_display": "On-Device",
   "@server_type_on_device_display": {
@@ -1952,9 +1952,9 @@
   "@server_address_requesty": {
     "description": "Requesty default address"
   },
-  "server_address_uberllm": "api.uberllm.dev",
-  "@server_address_uberllm": {
-    "description": "UberLLM default address"
+  "server_address_martllm": "api.martllm.com",
+  "@server_address_martllm": {
+    "description": "MartLLM default address"
   },
   "server_address_on_device": "Local inference",
   "@server_address_on_device": {
@@ -2967,7 +2967,7 @@
   "server_authentication_title": "Authentication",
   "server_authentication_required_desc": "OpenRouter requires an API key before testing.",
   "server_authentication_required_desc_requesty": "Requesty requires an API key before testing.",
-  "server_authentication_required_desc_uberllm": "UberLLM requires an API key before testing.",
+  "server_authentication_required_desc_martllm": "MartLLM requires an API key before testing.",
   "server_authentication_optional_desc": "Leave the API key empty if this server does not require one.",
   "mcp_tools_title": "MCP Tools",
   "available_tools": "Available tools",
@@ -3337,9 +3337,9 @@
   "@requesty_disclosure": {
     "description": "Disclosure shown when connecting to Requesty about data being sent to their servers"
   },
-  "uberllm_disclosure": "By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.",
-  "@uberllm_disclosure": {
-    "description": "Disclosure shown when connecting to UberLLM about data being sent to their servers"
+  "martllm_disclosure": "By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.",
+  "@martllm_disclosure": {
+    "description": "Disclosure shown when connecting to MartLLM about data being sent to their servers"
   },
   "welcome_message_cloud": "Your messages are sent to your connected provider.",
   "@welcome_message_cloud": {

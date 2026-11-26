@@ -50,7 +50,7 @@ class ModelTile extends StatelessWidget {
     final isPaidCloud =
         (model.serverType == ServerType.openRouter ||
             model.serverType == ServerType.requesty ||
-            model.serverType == ServerType.uberllm) &&
+            model.serverType == ServerType.martllm) &&
         model.pricingLabel != null;
     final showLoadedState =
         (model.serverType == ServerType.lmStudio ||

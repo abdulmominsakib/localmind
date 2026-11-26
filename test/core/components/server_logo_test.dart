@@ -28,8 +28,8 @@ void main() {
       expect(ServerType.onDevice.logoAsset, isNull);
       expect(ServerType.onDevice.hasLogo, isFalse);
 
-      expect(ServerType.uberllm.logoAsset, isNull);
-      expect(ServerType.uberllm.hasLogo, isFalse);
+      expect(ServerType.martllm.logoAsset, isNull);
+      expect(ServerType.martllm.hasLogo, isFalse);
     });
   });
 

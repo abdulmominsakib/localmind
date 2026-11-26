@@ -1333,15 +1333,15 @@ void main() {
     });
   });
 
-  group('ServerApiService - UberLLM model parsing', () {
-    late Server uberllmServer;
+  group('ServerApiService - MartLLM model parsing', () {
+    late Server martllmServer;
 
     setUp(() {
-      uberllmServer = Server(
-        id: 'test-uberllm',
-        name: 'Test UberLLM',
-        type: ServerType.uberllm,
-        host: 'https://api.uberllm.dev/v1',
+      martllmServer = Server(
+        id: 'test-martllm',
+        name: 'Test MartLLM',
+        type: ServerType.martllm,
+        host: 'https://api.martllm.com/v1',
         port: 443,
         apiKey: 'test-key',
         createdAt: DateTime.now(),
@@ -1349,15 +1349,15 @@ void main() {
       );
     });
 
-    test('uses the UberLLM endpoints', () {
-      expect(uberllmServer.baseUrl, 'https://api.uberllm.dev/v1');
+    test('uses the MartLLM endpoints', () {
+      expect(martllmServer.baseUrl, 'https://api.martllm.com/v1');
       expect(
-        uberllmServer.chatEndpoint,
-        'https://api.uberllm.dev/v1/chat/completions',
+        martllmServer.chatEndpoint,
+        'https://api.martllm.com/v1/chat/completions',
       );
-      expect(uberllmServer.modelsEndpoint, 'https://api.uberllm.dev/v1/models');
-      expect(uberllmServer.runningModelsEndpoint, isEmpty);
-      expect(uberllmServer.displayAddress, 'api.uberllm.dev');
+      expect(martllmServer.modelsEndpoint, 'https://api.martllm.com/v1/models');
+      expect(martllmServer.runningModelsEndpoint, isEmpty);
+      expect(martllmServer.displayAddress, 'api.martllm.com');
     });
 
     test('parses names, capabilities and per-million prices', () async {
@@ -1365,7 +1365,7 @@ void main() {
         Dio()
           ..interceptors.add(
             RoutingInterceptor({
-              'GET https://api.uberllm.dev/v1/models': {
+              'GET https://api.martllm.com/v1/models': {
                 'object': 'list',
                 'data': [
                   {
@@ -1389,7 +1389,7 @@ void main() {
             }),
           ),
       );
-      final models = await service.fetchModels(uberllmServer);
+      final models = await service.fetchModels(martllmServer);
 
       expect(models.map((m) => m.id), [
         'anthropic/claude-sonnet-4.6',
@@ -1398,7 +1398,7 @@ void main() {
 
       final sonnet = models.first;
       expect(sonnet.name, 'Claude Sonnet 4.6');
-      expect(sonnet.serverType, ServerType.uberllm);
+      expect(sonnet.serverType, ServerType.martllm);
       expect(sonnet.contextLength, 1000000);
       expect(sonnet.supportsVision, isTrue);
       expect(sonnet.supportsReasoning, isTrue);

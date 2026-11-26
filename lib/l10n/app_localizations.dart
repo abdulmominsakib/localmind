@@ -2175,11 +2175,11 @@ abstract class AppLocalizations {
   /// **'Connect through Requesty with a valid API key and keep this profile ready for model routing.'**
   String get add_server_requesty_subtitle;
 
-  /// Add server screen subtitle for UberLLM
+  /// Add server screen subtitle for MartLLM
   ///
   /// In en, this message translates to:
-  /// **'Connect through UberLLM with a valid API key and keep this profile ready for model routing.'**
-  String get add_server_uberllm_subtitle;
+  /// **'Connect through MartLLM with a valid API key and keep this profile ready for model routing.'**
+  String get add_server_martllm_subtitle;
 
   /// Add server screen subtitle for endpoint-based servers
   ///
@@ -2199,11 +2199,11 @@ abstract class AppLocalizations {
   /// **'Requesty'**
   String get server_type_requesty;
 
-  /// UberLLM server type card title
+  /// MartLLM server type card title
   ///
   /// In en, this message translates to:
-  /// **'UberLLM'**
-  String get server_type_uberllm;
+  /// **'MartLLM'**
+  String get server_type_martllm;
 
   /// OpenRouter server type card subtitle
   ///
@@ -2217,11 +2217,11 @@ abstract class AppLocalizations {
   /// **'UNIFIED CLOUD'**
   String get server_type_requesty_sub;
 
-  /// UberLLM server type card subtitle
+  /// MartLLM server type card subtitle
   ///
   /// In en, this message translates to:
   /// **'UNIFIED CLOUD'**
-  String get server_type_uberllm_sub;
+  String get server_type_martllm_sub;
 
   /// Onboarding ready status
   ///
@@ -2325,11 +2325,11 @@ abstract class AppLocalizations {
   /// **'API Key required for Requesty'**
   String get api_key_required_requesty;
 
-  /// Validation: API key for UberLLM
+  /// Validation: API key for MartLLM
   ///
   /// In en, this message translates to:
-  /// **'API Key required for UberLLM'**
-  String get api_key_required_uberllm;
+  /// **'API Key required for MartLLM'**
+  String get api_key_required_martllm;
 
   /// Validation: API key format
   ///
@@ -2367,11 +2367,11 @@ abstract class AppLocalizations {
   /// **'rqsty-...'**
   String get api_key_hint_requesty;
 
-  /// UberLLM API key hint
+  /// MartLLM API key hint
   ///
   /// In en, this message translates to:
   /// **'ull_...'**
-  String get api_key_hint_uberllm;
+  String get api_key_hint_martllm;
 
   /// Generic API key hint
   ///
@@ -2709,11 +2709,11 @@ abstract class AppLocalizations {
   /// **'Requesty'**
   String get server_type_requesty_display;
 
-  /// UberLLM server type display
+  /// MartLLM server type display
   ///
   /// In en, this message translates to:
-  /// **'UberLLM'**
-  String get server_type_uberllm_display;
+  /// **'MartLLM'**
+  String get server_type_martllm_display;
 
   /// On-device server type display
   ///
@@ -2733,11 +2733,11 @@ abstract class AppLocalizations {
   /// **'router.requesty.ai'**
   String get server_address_requesty;
 
-  /// UberLLM default address
+  /// MartLLM default address
   ///
   /// In en, this message translates to:
-  /// **'api.uberllm.dev'**
-  String get server_address_uberllm;
+  /// **'api.martllm.com'**
+  String get server_address_martllm;
 
   /// On-device server address
   ///
@@ -4377,11 +4377,11 @@ abstract class AppLocalizations {
   /// **'Requesty requires an API key before testing.'**
   String get server_authentication_required_desc_requesty;
 
-  /// No description provided for @server_authentication_required_desc_uberllm.
+  /// No description provided for @server_authentication_required_desc_martllm.
   ///
   /// In en, this message translates to:
-  /// **'UberLLM requires an API key before testing.'**
-  String get server_authentication_required_desc_uberllm;
+  /// **'MartLLM requires an API key before testing.'**
+  String get server_authentication_required_desc_martllm;
 
   /// No description provided for @server_authentication_optional_desc.
   ///
@@ -5595,11 +5595,11 @@ abstract class AppLocalizations {
   /// **'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.'**
   String get requesty_disclosure;
 
-  /// Disclosure shown when connecting to UberLLM about data being sent to their servers
+  /// Disclosure shown when connecting to MartLLM about data being sent to their servers
   ///
   /// In en, this message translates to:
   /// **'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.'**
-  String get uberllm_disclosure;
+  String get martllm_disclosure;
 
   /// Welcome message shown when a cloud provider (e.g. OpenRouter) is active
   ///

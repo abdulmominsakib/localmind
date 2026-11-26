@@ -67,7 +67,7 @@ Future<void> showModelInfoSheet(
             ),
             if ((model?.serverType == ServerType.openRouter ||
                     model?.serverType == ServerType.requesty ||
-                    model?.serverType == ServerType.uberllm) &&
+                    model?.serverType == ServerType.martllm) &&
                 model?.pricingLabel != null)
               _ModelInfoRow(
                 label: l10n.model_api_pricing,

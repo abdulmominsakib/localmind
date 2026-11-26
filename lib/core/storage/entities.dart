@@ -111,10 +111,10 @@ class ServerEntity {
       return ServerType.openRouter;
     }
 
-    // 3. UberLLM detection: its profiles always store the UberLLM base URL as
-    // host, so a shifted or stale type index still resolves to UberLLM.
-    if (trimmedHost.contains('api.uberllm.dev')) {
-      return ServerType.uberllm;
+    // 3. MartLLM detection: its profiles always store the MartLLM base URL as
+    // host, so a shifted or stale type index still resolves to MartLLM.
+    if (trimmedHost.contains('api.martllm.com')) {
+      return ServerType.martllm;
     }
 
     // 4. Ollama Cloud detection:

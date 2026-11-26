@@ -171,24 +171,24 @@ void main() {
       expect(
         ServerEntity.resolveServerType(
           typeIndex: 7,
-          id: 'uberllm-1',
-          name: 'UberLLM',
-          host: 'https://api.uberllm.dev/v1',
+          id: 'martllm-1',
+          name: 'MartLLM',
+          host: 'https://api.martllm.com/v1',
           port: 443,
         ),
-        ServerType.uberllm,
+        ServerType.martllm,
       );
 
-      // A stale index never moves an UberLLM profile to another provider.
+      // A stale index never moves a MartLLM profile to another provider.
       expect(
         ServerEntity.resolveServerType(
           typeIndex: 3,
-          id: 'uberllm-2',
+          id: 'martllm-2',
           name: 'My cloud',
-          host: 'https://api.uberllm.dev/v1',
+          host: 'https://api.martllm.com/v1',
           port: 443,
         ),
-        ServerType.uberllm,
+        ServerType.martllm,
       );
     });
   });
