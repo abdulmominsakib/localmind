@@ -1195,6 +1195,10 @@ class AppLocalizationsHi extends AppLocalizations {
       'एक वैध API Key के साथ Standard Compute के माध्यम से कनेक्ट करें और इस प्रोफ़ाइल को मॉडल राउटिंग के लिए तैयार रखें।';
 
   @override
+  String get add_server_openllm_subtitle =>
+      'एक वैध API Key के साथ OpenLLM के माध्यम से कनेक्ट करें और इस प्रोफ़ाइल को मॉडल राउटिंग के लिए तैयार रखें।';
+
+  @override
   String get add_server_endpoint_subtitle =>
       'एक स्थानीय या स्व-होस्ट किए गए एंडपॉइंट को कॉन्फ़िगर करें, फिर सहेजने से पहले कनेक्शन सत्यापित करें।';
 
@@ -1208,6 +1212,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get server_type_standard_compute => 'Standard Compute';
 
   @override
+  String get server_type_openllm => 'OpenLLM';
+
+  @override
   String get server_type_openrouter_sub => 'एकीकृत क्लाउड';
 
   @override
@@ -1215,6 +1222,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get server_type_standard_compute_sub => 'एकीकृत क्लाउड';
+
+  @override
+  String get server_type_openllm_sub => 'एकीकृत क्लाउड';
 
   @override
   String get ready_continue => 'जारी रखने के लिए तैयार';
@@ -1275,6 +1285,9 @@ class AppLocalizationsHi extends AppLocalizations {
       'Standard Compute के लिए API कुंजी आवश्यक है';
 
   @override
+  String get api_key_required_openllm => 'OpenLLM के लिए API कुंजी आवश्यक है';
+
+  @override
   String get api_key_format => 'OpenRouter API कुंजियाँ sk- से शुरू होती हैं';
 
   @override
@@ -1294,6 +1307,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get api_key_hint_standard_compute => 'sk_live_...';
+
+  @override
+  String get api_key_hint_openllm => 'sk-llm-...';
 
   @override
   String get api_key_hint_generic => 'प्रमाणित सर्वर के लिए';
@@ -1489,6 +1505,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get server_type_standard_compute_display => 'Standard Compute';
 
   @override
+  String get server_type_openllm_display => 'OpenLLM';
+
+  @override
   String get server_type_on_device_display => 'ऑन-डिवाइस';
 
   @override
@@ -1499,6 +1518,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get server_address_standard_compute => 'api.stdcmpt.com';
+
+  @override
+  String get server_address_openllm => 'www.openllm.sh';
 
   @override
   String get server_address_on_device => 'स्थानीय अनुमान (Local Inference)';
@@ -2413,6 +2435,10 @@ class AppLocalizationsHi extends AppLocalizations {
       'Standard Compute requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_openllm =>
+      'OpenLLM requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -3092,6 +3118,10 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get standard_compute_disclosure =>
+      'इस प्रदाता को कनेक्ट करके, आपके चैट संदेश और इनपुट उनके सर्वर पर भेजे जाएंगे। LocalMind आपकी बातचीत को ट्रैक या संग्रहीत नहीं करता है।';
+
+  @override
+  String get openllm_disclosure =>
       'इस प्रदाता को कनेक्ट करके, आपके चैट संदेश और इनपुट उनके सर्वर पर भेजे जाएंगे। LocalMind आपकी बातचीत को ट्रैक या संग्रहीत नहीं करता है।';
 
   @override

@@ -2277,6 +2277,12 @@ abstract class AppLocalizations {
   /// **'Connect through Standard Compute with a valid API key and keep this profile ready for model routing.'**
   String get add_server_standard_compute_subtitle;
 
+  /// Add server screen subtitle for OpenLLM
+  ///
+  /// In en, this message translates to:
+  /// **'Connect through OpenLLM with a valid API key and keep this profile ready for model routing.'**
+  String get add_server_openllm_subtitle;
+
   /// Add server screen subtitle for endpoint-based servers
   ///
   /// In en, this message translates to:
@@ -2301,6 +2307,12 @@ abstract class AppLocalizations {
   /// **'Standard Compute'**
   String get server_type_standard_compute;
 
+  /// OpenLLM server type card title
+  ///
+  /// In en, this message translates to:
+  /// **'OpenLLM'**
+  String get server_type_openllm;
+
   /// OpenRouter server type card subtitle
   ///
   /// In en, this message translates to:
@@ -2318,6 +2330,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'UNIFIED CLOUD'**
   String get server_type_standard_compute_sub;
+
+  /// OpenLLM server type card subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'UNIFIED CLOUD'**
+  String get server_type_openllm_sub;
 
   /// Onboarding ready status
   ///
@@ -2427,6 +2445,12 @@ abstract class AppLocalizations {
   /// **'API Key required for Standard Compute'**
   String get api_key_required_standard_compute;
 
+  /// Validation: API key for OpenLLM
+  ///
+  /// In en, this message translates to:
+  /// **'API Key required for OpenLLM'**
+  String get api_key_required_openllm;
+
   /// Validation: API key format
   ///
   /// In en, this message translates to:
@@ -2468,6 +2492,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'sk_live_...'**
   String get api_key_hint_standard_compute;
+
+  /// OpenLLM API key hint
+  ///
+  /// In en, this message translates to:
+  /// **'sk-llm-...'**
+  String get api_key_hint_openllm;
 
   /// Generic API key hint
   ///
@@ -2811,6 +2841,12 @@ abstract class AppLocalizations {
   /// **'Standard Compute'**
   String get server_type_standard_compute_display;
 
+  /// OpenLLM server type display
+  ///
+  /// In en, this message translates to:
+  /// **'OpenLLM'**
+  String get server_type_openllm_display;
+
   /// On-device server type display
   ///
   /// In en, this message translates to:
@@ -2834,6 +2870,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'api.stdcmpt.com'**
   String get server_address_standard_compute;
+
+  /// OpenLLM default address
+  ///
+  /// In en, this message translates to:
+  /// **'www.openllm.sh'**
+  String get server_address_openllm;
 
   /// On-device server address
   ///
@@ -4479,6 +4521,12 @@ abstract class AppLocalizations {
   /// **'Standard Compute requires an API key before testing.'**
   String get server_authentication_required_desc_standard_compute;
 
+  /// No description provided for @server_authentication_required_desc_openllm.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenLLM requires an API key before testing.'**
+  String get server_authentication_required_desc_openllm;
+
   /// No description provided for @server_authentication_optional_desc.
   ///
   /// In en, this message translates to:
@@ -5738,6 +5786,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.'**
   String get standard_compute_disclosure;
+
+  /// Disclosure shown when connecting to OpenLLM about data being sent to their servers
+  ///
+  /// In en, this message translates to:
+  /// **'By connecting this provider, your chat messages and inputs will be sent to their servers. LocalMind does not track or store your conversations.'**
+  String get openllm_disclosure;
 
   /// Welcome message shown when a cloud provider (e.g. OpenRouter) is active
   ///

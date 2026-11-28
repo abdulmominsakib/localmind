@@ -1427,6 +1427,103 @@ void main() {
     });
   });
 
+  group('ServerApiService - OpenLLM model parsing', () {
+    late Server openLlmServer;
+
+    setUp(() {
+      openLlmServer = Server(
+        id: 'test-openllm',
+        name: 'Test OpenLLM',
+        type: ServerType.openLlm,
+        host: '',
+        port: 443,
+        apiKey: 'sk-llm-test-key',
+        createdAt: DateTime.now(),
+        lastConnectedAt: DateTime.now(),
+      );
+    });
+
+    test('uses the OpenLLM endpoints', () {
+      expect(openLlmServer.baseUrl, 'https://www.openllm.sh/v1');
+      expect(
+        openLlmServer.chatEndpoint,
+        'https://www.openllm.sh/v1/chat/completions',
+      );
+      expect(openLlmServer.modelsEndpoint, 'https://www.openllm.sh/v1/models');
+      expect(openLlmServer.displayAddress, 'www.openllm.sh');
+      expect(openLlmServer.authHeaders, {
+        'Authorization': 'Bearer sk-llm-test-key',
+      });
+    });
+
+    test('maps capabilities and skips models that cannot chat', () async {
+      final service = ServerApiService(
+        Dio()
+          ..interceptors.add(
+            RoutingInterceptor({
+              'GET https://www.openllm.sh/v1/models': {
+                'object': 'list',
+                'data': [
+                  {
+                    'id': 'ultra',
+                    'object': 'model',
+                    'display_name': 'ultra',
+                    'context_window': 1000000,
+                    'capabilities': [
+                      'chat',
+                      'vision',
+                      'tools',
+                      'streaming',
+                      'reasoning',
+                    ],
+                  },
+                  {
+                    'id': 'claude_code/claude-haiku-4-5',
+                    'object': 'model',
+                    'display_name': 'Claude Haiku 4.5 (sub)',
+                    'context_window': 200000,
+                    'capabilities': ['chat', 'tools', 'streaming'],
+                  },
+                  {
+                    'id': 'chatgpt/gpt-image-2',
+                    'object': 'model',
+                    'display_name': 'GPT Image 2',
+                    'capabilities': ['image_generation', 'image_editing'],
+                  },
+                  {
+                    'id': 'chatgpt/transcribe',
+                    'object': 'model',
+                    'capabilities': ['transcription'],
+                  },
+                ],
+              },
+            }),
+          ),
+      );
+      final models = await service.fetchModels(openLlmServer);
+
+      expect(models.map((m) => m.id), [
+        'ultra',
+        'claude_code/claude-haiku-4-5',
+      ]);
+
+      final alias = models.first;
+      expect(alias.serverType, ServerType.openLlm);
+      expect(alias.contextLength, 1000000);
+      expect(alias.supportsVision, isTrue);
+      expect(alias.supportsReasoning, isTrue);
+      expect(alias.supportsToolUse, isTrue);
+      expect(alias.pricingLabel, isNull);
+
+      final haiku = models.last;
+      expect(haiku.name, 'Claude Haiku 4.5 (sub)');
+      expect(haiku.contextLength, 200000);
+      expect(haiku.supportsVision, isFalse);
+      expect(haiku.supportsReasoning, isFalse);
+      expect(haiku.supportsToolUse, isTrue);
+    });
+  });
+
   group('ServerApiService - LM Studio load model behavior', () {
     late Server lmStudioServer;
 

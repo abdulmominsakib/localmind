@@ -1197,6 +1197,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Geçerli bir API anahtarıyla Standard Compute üzerinden bağlanın ve model yönlendirmesi için bu profili hazır tutun.';
 
   @override
+  String get add_server_openllm_subtitle =>
+      'Geçerli bir API anahtarıyla OpenLLM üzerinden bağlanın ve model yönlendirmesi için bu profili hazır tutun.';
+
+  @override
   String get add_server_endpoint_subtitle =>
       'Yerel veya kendi barındırdığınız bir uç noktayı yapılandırın ve kaydetmeden önce bağlantıyı doğrulayın.';
 
@@ -1210,6 +1214,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get server_type_standard_compute => 'Standard Compute';
 
   @override
+  String get server_type_openllm => 'OpenLLM';
+
+  @override
   String get server_type_openrouter_sub => 'BİRLEŞİK BULUT';
 
   @override
@@ -1217,6 +1224,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get server_type_standard_compute_sub => 'BİRLEŞİK BULUT';
+
+  @override
+  String get server_type_openllm_sub => 'BİRLEŞİK BULUT';
 
   @override
   String get ready_continue => 'DEVAM ETMEYE HAZIR';
@@ -1278,6 +1288,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Standard Compute için API Anahtarı gereklidir';
 
   @override
+  String get api_key_required_openllm => 'OpenLLM için API Anahtarı gereklidir';
+
+  @override
   String get api_key_format => 'OpenRouter API anahtarları sk- ile başlar';
 
   @override
@@ -1299,6 +1312,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get api_key_hint_standard_compute => 'sk_live_...';
+
+  @override
+  String get api_key_hint_openllm => 'sk-llm-...';
 
   @override
   String get api_key_hint_generic => 'Kimlik doğrulamalı sunucular için';
@@ -1494,6 +1510,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get server_type_standard_compute_display => 'Standard Compute';
 
   @override
+  String get server_type_openllm_display => 'OpenLLM';
+
+  @override
   String get server_type_on_device_display => 'Cihaz Üstü';
 
   @override
@@ -1504,6 +1523,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get server_address_standard_compute => 'api.stdcmpt.com';
+
+  @override
+  String get server_address_openllm => 'www.openllm.sh';
 
   @override
   String get server_address_on_device => 'Yerel çıkarım';
@@ -2423,6 +2445,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Standard Compute requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_openllm =>
+      'OpenLLM requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -3112,6 +3138,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get standard_compute_disclosure =>
+      'Bu sağlayıcıya bağlanarak sohbet mesajlarınız ve girdileriniz onların sunucularına gönderilir. LocalMind sohbetlerinizi izlemez veya saklamaz.';
+
+  @override
+  String get openllm_disclosure =>
       'Bu sağlayıcıya bağlanarak sohbet mesajlarınız ve girdileriniz onların sunucularına gönderilir. LocalMind sohbetlerinizi izlemez veya saklamaz.';
 
   @override

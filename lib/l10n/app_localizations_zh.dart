@@ -1157,6 +1157,10 @@ class AppLocalizationsZh extends AppLocalizations {
       '使用有效的 API 密钥通过 Standard Compute 连接，并为此配置文件做好模型路由准备。';
 
   @override
+  String get add_server_openllm_subtitle =>
+      '使用有效的 API 密钥通过 OpenLLM 连接，并为此配置文件做好模型路由准备。';
+
+  @override
   String get add_server_endpoint_subtitle => '配置本地或自托管端点，然后在保存前验证连接。';
 
   @override
@@ -1169,6 +1173,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get server_type_standard_compute => 'Standard Compute';
 
   @override
+  String get server_type_openllm => 'OpenLLM';
+
+  @override
   String get server_type_openrouter_sub => '统一云';
 
   @override
@@ -1176,6 +1183,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get server_type_standard_compute_sub => '统一云';
+
+  @override
+  String get server_type_openllm_sub => '统一云';
 
   @override
   String get ready_continue => '准备好继续';
@@ -1234,6 +1244,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get api_key_required_standard_compute => 'Standard Compute 需要 API 密钥';
 
   @override
+  String get api_key_required_openllm => 'OpenLLM 需要 API 密钥';
+
+  @override
   String get api_key_format => 'OpenRouter API 密钥以 sk- 开头';
 
   @override
@@ -1253,6 +1266,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get api_key_hint_standard_compute => 'sk_live_...';
+
+  @override
+  String get api_key_hint_openllm => 'sk-llm-...';
 
   @override
   String get api_key_hint_generic => '适用于已验证的服务器';
@@ -1443,6 +1459,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get server_type_standard_compute_display => 'Standard Compute';
 
   @override
+  String get server_type_openllm_display => 'OpenLLM';
+
+  @override
   String get server_type_on_device_display => '设备端';
 
   @override
@@ -1453,6 +1472,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get server_address_standard_compute => 'api.stdcmpt.com';
+
+  @override
+  String get server_address_openllm => 'www.openllm.sh';
 
   @override
   String get server_address_on_device => '本地推理';
@@ -2352,6 +2374,10 @@ class AppLocalizationsZh extends AppLocalizations {
       'Standard Compute requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_openllm =>
+      'OpenLLM requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -3009,6 +3035,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get standard_compute_disclosure =>
+      '连接此提供商后，您的聊天消息和输入将被发送到他们的服务器。LocalMind 不会跟踪或存储您的对话。';
+
+  @override
+  String get openllm_disclosure =>
       '连接此提供商后，您的聊天消息和输入将被发送到他们的服务器。LocalMind 不会跟踪或存储您的对话。';
 
   @override
@@ -4957,6 +4987,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '使用有效的 API 金鑰透過 Standard Compute 連線，並為此設定檔做好模型路由準備。';
 
   @override
+  String get add_server_openllm_subtitle =>
+      '使用有效的 API 金鑰透過 OpenLLM 連線，並為此設定檔做好模型路由準備。';
+
+  @override
   String get add_server_endpoint_subtitle => '設定本地或自託管端點，並在儲存前驗證連線。';
 
   @override
@@ -4969,6 +5003,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get server_type_standard_compute => 'Standard Compute';
 
   @override
+  String get server_type_openllm => 'OpenLLM';
+
+  @override
   String get server_type_openrouter_sub => '統一雲端';
 
   @override
@@ -4976,6 +5013,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get server_type_standard_compute_sub => '統一雲端';
+
+  @override
+  String get server_type_openllm_sub => '統一雲端';
 
   @override
   String get ready_continue => '準備好繼續';
@@ -5034,6 +5074,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get api_key_required_standard_compute => 'Standard Compute 需要 API 金鑰';
 
   @override
+  String get api_key_required_openllm => 'OpenLLM 需要 API 金鑰';
+
+  @override
   String get api_key_format => 'OpenRouter API 金鑰以 sk- 開頭';
 
   @override
@@ -5053,6 +5096,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get api_key_hint_standard_compute => 'sk_live_...';
+
+  @override
+  String get api_key_hint_openllm => 'sk-llm-...';
 
   @override
   String get api_key_hint_generic => '適用於已驗證的伺服器';
@@ -5213,6 +5259,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get server_type_standard_compute_display => 'Standard Compute';
 
   @override
+  String get server_type_openllm_display => 'OpenLLM';
+
+  @override
   String get server_type_on_device_display => '裝置端';
 
   @override
@@ -5223,6 +5272,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get server_address_standard_compute => 'api.stdcmpt.com';
+
+  @override
+  String get server_address_openllm => 'www.openllm.sh';
 
   @override
   String get server_address_on_device => '本機推論';
@@ -6083,6 +6135,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       'Standard Compute requires an API key before testing.';
 
   @override
+  String get server_authentication_required_desc_openllm =>
+      'OpenLLM requires an API key before testing.';
+
+  @override
   String get server_authentication_optional_desc =>
       'Leave the API key empty if this server does not require one.';
 
@@ -6740,6 +6796,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get standard_compute_disclosure =>
+      '連接此提供者後，您的聊天訊息和輸入將被發送到他們的伺服器。LocalMind 不會追蹤或儲存您的對話。';
+
+  @override
+  String get openllm_disclosure =>
       '連接此提供者後，您的聊天訊息和輸入將被發送到他們的伺服器。LocalMind 不會追蹤或儲存您的對話。';
 
   @override

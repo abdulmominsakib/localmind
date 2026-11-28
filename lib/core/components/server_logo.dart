@@ -35,6 +35,8 @@ class ServerLogo extends StatelessWidget {
         return HugeIcons.strokeRoundedAiNetwork;
       case ServerType.standardCompute:
         return HugeIcons.strokeRoundedCloudServer;
+      case ServerType.openLlm:
+        return HugeIcons.strokeRoundedApi;
       case ServerType.onDevice:
         return HugeIcons.strokeRoundedSmartPhone01;
     }

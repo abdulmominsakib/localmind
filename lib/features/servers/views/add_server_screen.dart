@@ -49,11 +49,13 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       _selectedType != ServerType.openRouter &&
       _selectedType != ServerType.requesty &&
       _selectedType != ServerType.standardCompute &&
+      _selectedType != ServerType.openLlm &&
       _selectedType != ServerType.ollamaCloud;
   bool get _requiresMandatoryApiKey =>
       _selectedType == ServerType.openRouter ||
       _selectedType == ServerType.requesty ||
       _selectedType == ServerType.standardCompute ||
+      _selectedType == ServerType.openLlm ||
       _selectedType == ServerType.ollamaCloud;
 
   String _lastHostScheme = '';
@@ -67,6 +69,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       ServerType.openRouter => 443,
       ServerType.requesty => 443,
       ServerType.standardCompute => 443,
+      ServerType.openLlm => 443,
       ServerType.onDevice => 0,
     };
   }
@@ -158,7 +161,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       final isHttps = isHttpsAddressInput(_hostController.text);
       if (type == ServerType.openRouter ||
           type == ServerType.requesty ||
-          type == ServerType.standardCompute) {
+          type == ServerType.standardCompute ||
+          type == ServerType.openLlm) {
         _portController.text = '443';
       } else if (type == ServerType.ollamaCloud) {
         _portController.text = AppConstants.ollamaCloudDefaultPort.toString();
@@ -425,6 +429,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
             ? l10n.api_key_required_requesty
             : _selectedType == ServerType.standardCompute
             ? l10n.api_key_required_standard_compute
+            : _selectedType == ServerType.openLlm
+            ? l10n.api_key_required_openllm
             : l10n.api_key_required_openrouter;
       }
       if (_selectedType == ServerType.openRouter &&
@@ -684,6 +690,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                         ? l10n.server_authentication_required_desc_requesty
                         : _selectedType == ServerType.standardCompute
                         ? l10n.server_authentication_required_desc_standard_compute
+                        : _selectedType == ServerType.openLlm
+                        ? l10n.server_authentication_required_desc_openllm
                         : l10n.server_authentication_required_desc)
                   : l10n.server_authentication_optional_desc,
               child: Column(
@@ -701,6 +709,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                                 ? l10n.api_key_hint_requesty
                                 : _selectedType == ServerType.standardCompute
                                 ? l10n.api_key_hint_standard_compute
+                                : _selectedType == ServerType.openLlm
+                                ? l10n.api_key_hint_openllm
                                 : l10n.api_key_hint_openrouter)
                           : l10n.api_key_hint_generic,
                     ),
@@ -740,6 +750,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                                   ? l10n.requesty_disclosure
                                   : _selectedType == ServerType.standardCompute
                                   ? l10n.standard_compute_disclosure
+                                  : _selectedType == ServerType.openLlm
+                                  ? l10n.openllm_disclosure
                                   : l10n.openrouter_disclosure,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurface.withValues(
@@ -1042,6 +1054,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
       ServerType.openRouter => l10n.server_type_openrouter,
       ServerType.requesty => l10n.server_type_requesty,
       ServerType.standardCompute => l10n.server_type_standard_compute,
+      ServerType.openLlm => l10n.server_type_openllm,
       ServerType.onDevice => l10n.server_type_on_device_display,
     };
   }
@@ -1061,6 +1074,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
         return l10n.add_server_requesty_subtitle;
       case ServerType.standardCompute:
         return l10n.add_server_standard_compute_subtitle;
+      case ServerType.openLlm:
+        return l10n.add_server_openllm_subtitle;
     }
   }
 }

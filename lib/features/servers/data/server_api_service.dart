@@ -202,6 +202,9 @@ class ServerApiService {
         case ServerType.standardCompute:
           models = _parseStandardComputeModels(response.data, server);
           break;
+        case ServerType.openLlm:
+          models = _parseOpenLlmModels(response.data, server);
+          break;
         case ServerType.onDevice:
           models = [];
           break;
@@ -248,6 +251,7 @@ class ServerApiService {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
         server.type == ServerType.standardCompute ||
+        server.type == ServerType.openLlm ||
         server.type == ServerType.openAICompatible ||
         server.isOnDevice) {
       return {};
@@ -272,6 +276,7 @@ class ServerApiService {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
         server.type == ServerType.standardCompute ||
+        server.type == ServerType.openLlm ||
         server.isOnDevice) {
       return;
     }
@@ -299,6 +304,7 @@ class ServerApiService {
       case ServerType.openRouter:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.openLlm:
       case ServerType.onDevice:
         break;
     }
@@ -312,6 +318,7 @@ class ServerApiService {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
         server.type == ServerType.standardCompute ||
+        server.type == ServerType.openLlm ||
         server.isOnDevice) {
       return null;
     }
@@ -362,6 +369,7 @@ class ServerApiService {
       case ServerType.openRouter:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.openLlm:
       case ServerType.onDevice:
         return null;
     }
@@ -397,6 +405,7 @@ class ServerApiService {
     if (server.type == ServerType.openRouter ||
         server.type == ServerType.requesty ||
         server.type == ServerType.standardCompute ||
+        server.type == ServerType.openLlm ||
         server.isOnDevice) {
       return;
     }
@@ -428,6 +437,7 @@ class ServerApiService {
       case ServerType.openRouter:
       case ServerType.requesty:
       case ServerType.standardCompute:
+      case ServerType.openLlm:
       case ServerType.onDevice:
         break;
     }
@@ -1111,6 +1121,40 @@ class ServerApiService {
       } else {
         models.add(model);
       }
+    }
+    return models;
+  }
+
+  /// OpenLLM's `/models` endpoint returns `display_name`, `context_window`
+  /// and a `capabilities` list (`chat`, `tools`, `vision`, `reasoning`).
+  /// Entries that cannot chat (image generation, speech, transcription) are
+  /// skipped.
+  List<ModelInfo> _parseOpenLlmModels(dynamic data, Server server) {
+    final List<ModelInfo> models = [];
+    if (data is! Map) return models;
+    final items = data['data'];
+    if (items is! List) return models;
+    for (final item in items) {
+      if (item is! Map) continue;
+      final id = item['id']?.toString() ?? '';
+      if (id.isEmpty) continue;
+      final rawCapabilities = item['capabilities'];
+      final capabilities = rawCapabilities is List
+          ? rawCapabilities.map((e) => e.toString().toLowerCase()).toSet()
+          : <String>{};
+      if (capabilities.isNotEmpty && !capabilities.contains('chat')) continue;
+      models.add(
+        ModelInfo(
+          id: id,
+          name: item['display_name']?.toString() ?? id,
+          contextLength: _toInt(item['context_window']),
+          serverType: server.type,
+          serverId: server.id,
+          supportsVision: capabilities.contains('vision'),
+          supportsReasoning: capabilities.contains('reasoning'),
+          supportsToolUse: capabilities.contains('tools'),
+        ),
+      );
     }
     return models;
   }
