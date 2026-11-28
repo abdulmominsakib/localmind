@@ -1164,6 +1164,8 @@ class _LanguageSetting extends StatelessWidget implements _Searchable {
     ('pt', 'Português', 'assets/images/flag_br.png', '🇧🇷'),
     ('ro', 'Română', 'assets/images/flag_ro.png', '🇷🇴'),
     ('ko', '한국어', 'assets/images/flag_kr.png', '🇰🇷'),
+    ('pl', 'Polski', 'assets/images/flag_pl.png', '🇵🇱'),
+    ('vi', 'Tiếng Việt', 'assets/images/flag_vn.png', '🇻🇳'),
   ];
 
   final String? current;

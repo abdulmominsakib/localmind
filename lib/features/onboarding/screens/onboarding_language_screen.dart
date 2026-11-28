@@ -192,6 +192,26 @@ const _languages = [
     shortText: 'Ko',
     gradient: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
   ),
+  _LanguageOption(
+    code: 'pl',
+    nativeName: 'Polski',
+    englishName: 'Polish',
+    flag: '🇵🇱',
+    flagAsset: 'assets/images/flag_pl.png',
+    countryCode: 'PL',
+    shortText: 'Pl',
+    gradient: [Color(0xFFE11D48), Color(0xFFBE123C)],
+  ),
+  _LanguageOption(
+    code: 'vi',
+    nativeName: 'Tiếng Việt',
+    englishName: 'Vietnamese',
+    flag: '🇻🇳',
+    flagAsset: 'assets/images/flag_vn.png',
+    countryCode: 'VN',
+    shortText: 'Vi',
+    gradient: [Color(0xFFDC2626), Color(0xFFCA8A04)],
+  ),
 ];
 
 class OnboardingLanguageScreen extends ConsumerStatefulWidget {

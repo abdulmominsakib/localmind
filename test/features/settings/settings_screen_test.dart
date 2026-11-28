@@ -106,6 +106,28 @@ void main() {
     expect(container.read(themeModeProvider), AppThemeType.dark);
   });
 
+  for (final (code, name) in [('pl', 'Polski'), ('vi', 'Tiếng Việt')]) {
+    testWidgets('the language dropdown saves $name', (tester) async {
+      final container = await _pump(tester);
+      final language = find.byWidgetPredicate(
+        (widget) =>
+            widget is DropdownButton<String?> &&
+            widget.items!.any((item) => item.value == code),
+      );
+
+      await tester.tap(language);
+      await tester.pumpAndSettle();
+      final option = find.text(name).last;
+      await tester.ensureVisible(option);
+      await tester.tap(option);
+      await tester.pumpAndSettle();
+
+      expect(container.read(settingsProvider).localeCode, code);
+      final prefs = container.read(sharedPreferencesProvider);
+      expect(prefs.getString('appSettings'), contains('"localeCode":"$code"'));
+    });
+  }
+
   testWidgets('switch rows toggle from anywhere on the row', (tester) async {
     final container = await _pump(tester);
     final before = container.read(settingsProvider).hapticFeedbackEnabled;
