@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localmind/core/device/device_memory_service.dart';
@@ -41,42 +42,11 @@ void main() {
         importedSource: OnDeviceImportedSource.localFile,
       );
 
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            onDeviceGemmaServiceProvider.overrideWithValue(
-              _FakeOnDeviceGemmaService(),
-            ),
-            onDeviceModelsProvider.overrideWith(
-              (ref) => [...OnDeviceModel.curatedModels, importedModel],
-            ),
-            downloadedModelsProvider.overrideWith(
-              (ref) async => {'gguf-widget'},
-            ),
-            deviceMemoryProvider.overrideWith(
-              (ref) async => const DeviceMemoryInfo(
-                totalMemoryMb: 8192,
-                availableMemoryMb: 8192,
-              ),
-            ),
-          ],
-          child: ShadTheme(
-            data: AppTheme.lightShadTheme,
-            child: MaterialApp(
-              locale: const Locale('en'),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: const Scaffold(body: OnDeviceModelManagerScreen()),
-            ),
-          ),
-        ),
+      await _pumpModelManager(
+        tester,
+        models: [...OnDeviceModel.curatedModels, importedModel],
+        downloadedModelIds: {'gguf-widget'},
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 700));
 
       expect(find.text('Search models'), findsWidgets);
       expect(find.text('On-Device Models'), findsWidgets);
@@ -92,6 +62,77 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     }
   });
+
+  testWidgets(
+    'model import shows a snackbar when the picker throws unknown_path',
+    (tester) async {
+      const channel = MethodChannel('miguelruivo.flutter.plugins.filepicker');
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        throw PlatformException(
+          code: 'unknown_path',
+          message: 'Failed to retrieve path.',
+        );
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+      await _pumpModelManager(tester, models: OnDeviceModel.curatedModels);
+
+      final importButton = find.text('Import from device').first;
+      await tester.ensureVisible(importButton);
+      await tester.tap(importButton);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(SnackBar, 'Failed to retrieve path.'),
+        findsOneWidget,
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
+}
+
+Future<void> _pumpModelManager(
+  WidgetTester tester, {
+  required List<OnDeviceModel> models,
+  Set<String> downloadedModelIds = const {},
+}) async {
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        onDeviceGemmaServiceProvider.overrideWithValue(
+          _FakeOnDeviceGemmaService(),
+        ),
+        onDeviceModelsProvider.overrideWith((ref) => models),
+        downloadedModelsProvider.overrideWith(
+          (ref) async => downloadedModelIds,
+        ),
+        deviceMemoryProvider.overrideWith(
+          (ref) async => const DeviceMemoryInfo(
+            totalMemoryMb: 8192,
+            availableMemoryMb: 8192,
+          ),
+        ),
+      ],
+      child: ShadTheme(
+        data: AppTheme.lightShadTheme,
+        child: MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: OnDeviceModelManagerScreen()),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 700));
 }
 
 class _FakeOnDeviceGemmaService extends OnDeviceGemmaService {

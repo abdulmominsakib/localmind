@@ -9,6 +9,7 @@ import 'package:localmind/core/providers/app_providers.dart';
 import 'package:localmind/core/providers/storage_providers.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localmind/core/routes/app_routes.dart';
+import 'package:localmind/core/utils/safe_file_picker.dart';
 import 'package:localmind/l10n/app_localizations.dart';
 import 'package:localmind/features/on_device/data/models/on_device_model.dart';
 import 'package:localmind/features/on_device/providers/foreground_download_providers.dart';
@@ -1292,9 +1293,10 @@ Future<void> _importFromDevice(
   WidgetRef ref,
   AppLocalizations l10n,
 ) async {
-  final result = await FilePicker.pickFiles(
+  final result = await SafeFilePicker.pickFiles(
     type: FileType.custom,
     allowedExtensions: const ['gguf', 'litertlm'],
+    context: context,
   );
   if (result == null || result.files.isEmpty) return;
   final path = result.files.single.path;
